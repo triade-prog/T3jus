@@ -1,0 +1,11 @@
+{
+  "id": "F0.8",
+  "texto": "Proteção do servidor: cabeçalhos de segurança, CSP com nonce, repasse /api e logs sem senhas, tokens nem dados pessoais desnecessários",
+  "peca": "B4",
+  "refs": [
+    "PT-13"
+  ],
+  "status": "feito",
+  "evidencia": "Vitest cabecalhos.test.ts, repasse.test.ts e registro.test.ts; Playwright fundacao.spec.ts",
+  "ordem": 80
+}

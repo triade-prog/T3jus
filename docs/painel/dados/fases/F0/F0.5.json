@@ -1,0 +1,9 @@
+{
+  "id": "F0.5",
+  "texto": "Relógio da aplicação (app_now) para testar prazos sem esperar o tempo passar",
+  "peca": "B2",
+  "refs": [],
+  "status": "feito",
+  "evidencia": "pgTAP 006_relogio_limites_dinheiro_test.sql",
+  "ordem": 50
+}

@@ -1,0 +1,13 @@
+{
+  "id": "F0.7",
+  "texto": "Vínculos e permissão: pessoa + função + escritório + ação, negar por padrão; uma pessoa em vários escritórios; vínculo revogado não age, autoria fica",
+  "peca": "B1",
+  "refs": [
+    "PT-02",
+    "PT-21",
+    "PT-22"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 005_vinculos_permissao_test.sql e 002",
+  "ordem": 70
+}

@@ -1,0 +1,9 @@
+{
+  "id": "P2",
+  "texto": "Ambientes separados (desenvolvimento e produção), só dados fictícios no desenvolvimento",
+  "refs": [
+    "PT-14"
+  ],
+  "status": "pendente",
+  "ordem": 20
+}

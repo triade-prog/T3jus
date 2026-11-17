@@ -1,0 +1,11 @@
+{
+  "id": "F1.1",
+  "texto": "Console: carteira de escritórios, equipe interna com funções e o escritório atribuído a cada pessoa",
+  "peca": "C1",
+  "refs": [
+    "PT-24"
+  ],
+  "status": "pendente",
+  "ordem": 10,
+  "proximo": "Carol: tornar o repositório privado (P3) e criar o projeto Supabase de desenvolvimento (E1) antes do passo 1"
+}

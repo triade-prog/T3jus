@@ -1,0 +1,11 @@
+{
+  "id": "F1.2",
+  "texto": "Convite do sócio pelo Console e da equipe pelo sócio, com a senha criada pelo link do convite",
+  "peca": "B1",
+  "refs": [
+    "PT-20",
+    "PT-02"
+  ],
+  "status": "pendente",
+  "ordem": 20
+}

@@ -1,0 +1,10 @@
+{
+  "id": "P1",
+  "texto": "Supabase em sa-east-1 com backup diário e restauração ensaiada",
+  "refs": [
+    "PT-12",
+    "PT-16"
+  ],
+  "status": "pendente",
+  "ordem": 10
+}

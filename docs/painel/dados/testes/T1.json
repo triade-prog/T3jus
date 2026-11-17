@@ -1,0 +1,11 @@
+{
+  "id": "T1",
+  "texto": "Tabela nova sem RLS faz o teste falhar",
+  "fase": "F0",
+  "refs": [
+    "PT-06"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 001_acesso_rls_test.sql",
+  "ordem": 10
+}

@@ -1,0 +1,18 @@
+{
+  "data": "17/11/2026",
+  "inicio": "20:24",
+  "fim": "20:35",
+  "texto": "Passo 0 (fundação) trazido do TRÍADE Condo e adaptado ao escritório: monorepo, banco com isolamento por escritório, permissões, histórico, guardião, versão, relógio, dinheiro, login, cabeçalhos, CI e o painel de execução. Lint, tipos, Vitest 35, Deno 25, pgTAP 110, edição simultânea e Playwright 16 passando.",
+  "refs": [
+    "F0.1",
+    "F0.2",
+    "F0.3",
+    "F0.4",
+    "F0.5",
+    "F0.6",
+    "F0.7",
+    "F0.8",
+    "F0.9",
+    "F0.10"
+  ]
+}

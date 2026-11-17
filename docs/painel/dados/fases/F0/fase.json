@@ -1,0 +1,6 @@
+{
+  "id": "F0",
+  "nome": "Fundação",
+  "objetivo": "A Base comum que todo o resto usa: projeto, banco separado por escritório, histórico, login e testes. Termina com os testes T1 a T5 passando no CI.",
+  "ordem": 10
+}

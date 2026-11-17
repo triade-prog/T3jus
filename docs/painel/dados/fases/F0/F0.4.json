@@ -1,0 +1,12 @@
+{
+  "id": "F0.4",
+  "texto": "Histórico só de inserção e guardião de transições (mudança de estado só com evento e autor); controle de versão contra edição simultânea",
+  "peca": "B2",
+  "refs": [
+    "PT-03",
+    "PT-19"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 003 e 004; tests/concorrencia/edicao-simultanea.sh",
+  "ordem": 40
+}

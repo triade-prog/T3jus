@@ -1,0 +1,11 @@
+{
+  "id": "T4",
+  "texto": "Duas alterações simultâneas no mesmo registro: uma grava, a outra recebe aviso de conflito sem perder o que foi escrito",
+  "fase": "F0",
+  "refs": [
+    "PT-19"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 004_versao_test.sql e tests/concorrencia/edicao-simultanea.sh",
+  "ordem": 40
+}

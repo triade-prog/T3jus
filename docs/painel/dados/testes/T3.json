@@ -1,0 +1,11 @@
+{
+  "id": "T3",
+  "texto": "Histórico recusa alteração e exclusão; mudança de estado sem evento e autor é recusada",
+  "fase": "F0",
+  "refs": [
+    "PT-03"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 003_historico_guardiao_test.sql",
+  "ordem": 30
+}

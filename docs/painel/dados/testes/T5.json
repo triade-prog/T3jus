@@ -1,0 +1,11 @@
+{
+  "id": "T5",
+  "texto": "Vínculo revogado não age mais e a autoria antiga continua no histórico",
+  "fase": "F0",
+  "refs": [
+    "PT-21"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 005_vinculos_permissao_test.sql",
+  "ordem": 50
+}
