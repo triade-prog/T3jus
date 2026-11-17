@@ -1,0 +1,12 @@
+{
+  "id": "F0.1",
+  "texto": "Monorepo pnpm em sistema/: apps/plataforma, apps/console, packages/domain, packages/ui, packages/servidor e supabase/",
+  "peca": "B4",
+  "refs": [
+    "PT-05",
+    "PT-17"
+  ],
+  "status": "feito",
+  "evidencia": "pnpm build dos dois apps e pnpm typecheck; sistema/README.md",
+  "ordem": 10
+}

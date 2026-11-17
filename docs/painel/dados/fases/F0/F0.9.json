@@ -1,0 +1,12 @@
+{
+  "id": "F0.9",
+  "texto": "CI: lint, tipos, Vitest, Deno, pgTAP, Playwright com axe, conferência do painel e varredura de segredos",
+  "peca": "B4",
+  "refs": [
+    "PT-18",
+    "PT-14"
+  ],
+  "status": "feito",
+  "evidencia": "Todos passando localmente em 17/11/2026; .github/workflows/ci.yml",
+  "ordem": 90
+}

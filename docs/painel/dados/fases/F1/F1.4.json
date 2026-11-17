@@ -1,0 +1,10 @@
+{
+  "id": "F1.4",
+  "texto": "Telas de entrar, convite, nova senha e escolha do escritório",
+  "peca": "S7",
+  "refs": [
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 40
+}

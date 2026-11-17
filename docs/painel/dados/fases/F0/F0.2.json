@@ -1,0 +1,11 @@
+{
+  "id": "F0.2",
+  "texto": "Banco com migrations, RLS ligado em todas as tabelas e privilégios fechados (só o servidor acessa); teste falha se uma tabela nova vier sem RLS",
+  "peca": "B1",
+  "refs": [
+    "PT-06"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 001_acesso_rls_test.sql; migrations 0001 e 0002",
+  "ordem": 20
+}

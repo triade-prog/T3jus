@@ -1,0 +1,11 @@
+{
+  "id": "T2",
+  "texto": "Usuário do escritório A não lista, lê, busca nem altera nada do escritório B",
+  "fase": "F0",
+  "refs": [
+    "PT-01"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 002_isolamento_escritorios_test.sql",
+  "ordem": 20
+}

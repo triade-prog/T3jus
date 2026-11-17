@@ -1,0 +1,3 @@
+{
+  "texto": "Passo 0 (fundação) construído e testado localmente, com a base vinda do TRÍADE Condo: acesso só pelo servidor, isolamento por escritório, permissões, histórico só de inserção, guardião de transições, controle de versão, relógio da aplicação, dinheiro em centavos, login e cabeçalhos de segurança, com lint, tipos, Vitest, Deno, pgTAP, edição simultânea e ponta a ponta passando. Ainda não há projeto no Supabase nem na Vercel, e as telas são provisórias."
+}

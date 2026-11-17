@@ -1,0 +1,11 @@
+{
+  "id": "F0.3",
+  "texto": "Escritório como dono de todo dado: toda tabela com o escritório, o escritório vem da sessão e nunca do navegador",
+  "peca": "B1",
+  "refs": [
+    "PT-01"
+  ],
+  "status": "feito",
+  "evidencia": "pgTAP 002_isolamento_escritorios_test.sql; Deno api-plataforma/app_test.ts",
+  "ordem": 30
+}

@@ -1,0 +1,10 @@
+{
+  "id": "F1.3",
+  "texto": "Suporte de acesso: a equipe ajuda sem ver nem escolher a senha",
+  "peca": "C3",
+  "refs": [
+    "PT-23"
+  ],
+  "status": "pendente",
+  "ordem": 30
+}

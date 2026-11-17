@@ -1,0 +1,6 @@
+{
+  "id": "F1",
+  "nome": "Escritório e acesso",
+  "objetivo": "O Console cadastra o escritório e convida o sócio; o sócio convida a equipe; cada pessoa com acesso próprio e permissões por função.",
+  "ordem": 20
+}

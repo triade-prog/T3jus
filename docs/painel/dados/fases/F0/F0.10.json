@@ -1,0 +1,11 @@
+{
+  "id": "F0.10",
+  "texto": "Valores em dinheiro exatos (centavos inteiros, moeda explícita) no domínio",
+  "peca": "B2",
+  "refs": [
+    "PT-09"
+  ],
+  "status": "feito",
+  "evidencia": "Vitest dinheiro.test.ts; pgTAP 006",
+  "ordem": 100
+}
