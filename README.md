@@ -8,7 +8,7 @@ O projeto saiu da descoberta e começou a construção: a fundação técnica (p
 
 | Caminho | O que é |
 | --- | --- |
-| [`sistema/`](sistema/) | Código do sistema: Plataforma do escritório, Console T3 Just, banco e Edge Functions ([como funciona](sistema/README.md)) |
+| [`sistema/`](sistema/) | Código do sistema: Portal do advogado, Console T3 Just, banco e Edge Functions ([como funciona](sistema/README.md)) |
 | [`IDEIAS.md`](IDEIAS.md) | Fonte única das ideias, com código por seção |
 | [`docs/CONTEXTO.md`](docs/CONTEXTO.md) | Decisões fechadas e situação |
 | [`docs/painel/`](docs/painel/LEIA-ME.md) | Painel de execução: fases, entregas, testes e histórico |

@@ -11,7 +11,7 @@ export default defineConfig([
   {
     files: ["apps/**/*.{ts,tsx}", "packages/ui/**/*.{ts,tsx}"],
     extends: [...nextVitals, ...nextTs],
-    settings: { next: { rootDir: ["apps/plataforma/", "apps/console/"] }, react: { version: "19" } },
+    settings: { next: { rootDir: ["apps/portal/", "apps/console/"] }, react: { version: "19" } },
   },
   {
     rules: {

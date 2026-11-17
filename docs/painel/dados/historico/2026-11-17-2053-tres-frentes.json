@@ -1,0 +1,13 @@
+{
+  "data": "17/11/2026",
+  "inicio": "20:53",
+  "fim": "21:10",
+  "texto": "Plataforma do escritório virou Portal do advogado (app, API e banco); decididas as três frentes (Portal, Console e site comercial) e o domínio t3jus.pro; o site comercial entrou no IDEIAS (SC-01 a SC-06) e no painel como F2. Lint, tipos, Vitest 35, Deno 25, pgTAP 110 e Playwright 16 passando.",
+  "refs": [
+    "F2.1",
+    "F2.2",
+    "F2.3",
+    "F2.4",
+    "SC-01"
+  ]
+}

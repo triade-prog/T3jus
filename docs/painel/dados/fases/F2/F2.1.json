@@ -1,0 +1,12 @@
+{
+  "id": "F2.1",
+  "texto": "Site em sistema/apps/site (Astro, como o do TRÍADE Condo): início, como funciona, para quem é e contato, com a identidade do T3 Just (E3)",
+  "peca": "W1",
+  "refs": [
+    "SC-01",
+    "SC-03",
+    "SC-06"
+  ],
+  "status": "pendente",
+  "ordem": 10
+}

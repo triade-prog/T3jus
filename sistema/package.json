@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev:plataforma": "pnpm --filter @t3just/plataforma dev",
+    "dev:portal": "pnpm --filter @t3just/portal dev",
     "dev:console": "pnpm --filter @t3just/console dev",
     "build": "pnpm -r --filter \"./apps/*\" build",
     "lint": "eslint .",

@@ -34,9 +34,9 @@ create table equipe_t3 (
 create table funcoes (
   codigo  text primary key check (codigo ~ '^[A-Z][A-Z_]{1,39}$'),
   nome    text not null,
-  sistema text not null check (sistema in ('PLATAFORMA', 'CONSOLE'))
+  sistema text not null check (sistema in ('PORTAL', 'CONSOLE'))
 );
-insert into funcoes (codigo, nome, sistema) values ('SOCIO', 'Sócio', 'PLATAFORMA');
+insert into funcoes (codigo, nome, sistema) values ('SOCIO', 'Sócio', 'PORTAL');
 
 -- O que cada função pode fazer. Ação no formato recurso.verbo (ex.: casos.editar).
 create table funcao_acoes (
@@ -213,8 +213,8 @@ end $$;
 -- ---------------------------------------------------------------------------------------
 -- Funções chamadas pela API (security definer).
 
--- A pessoa existe e pode entrar na Plataforma: tem ao menos um vínculo ativo de função da Plataforma.
-create function acesso_plataforma(p_pessoa uuid) returns boolean
+-- A pessoa existe e pode entrar no Portal: tem ao menos um vínculo ativo de função do Portal.
+create function acesso_portal(p_pessoa uuid) returns boolean
 language plpgsql
 security definer
 set search_path = public
@@ -222,7 +222,7 @@ as $$
 begin
   if not tentar_definir_pessoa(p_pessoa) then return false; end if;
   return exists (select 1 from vinculos v join funcoes f on f.codigo = v.funcao
-                  where v.pessoa_id = p_pessoa and v.revogado_em is null and f.sistema = 'PLATAFORMA');
+                  where v.pessoa_id = p_pessoa and v.revogado_em is null and f.sistema = 'PORTAL');
 end $$;
 
 -- A pessoa é da equipe T3 Just e está ativa: pode entrar no Console (sempre com autenticador).
@@ -237,7 +237,7 @@ begin
 end $$;
 
 -- Escritórios em que a pessoa tem vínculo ativo, com as funções (advogado que atende mais de um escritório, PT-22).
-create function meus_escritorios(p_pessoa uuid, p_sistema text default 'PLATAFORMA')
+create function meus_escritorios(p_pessoa uuid, p_sistema text default 'PORTAL')
 returns table (escritorio_id uuid, nome text, funcoes text[])
 language plpgsql
 security definer

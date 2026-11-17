@@ -1,0 +1,10 @@
+{
+  "id": "F2.2",
+  "texto": "Pedido de demonstração pelo site, com a autorização LGPD, entra no Console como interessado",
+  "peca": "W1",
+  "refs": [
+    "SC-02"
+  ],
+  "status": "pendente",
+  "ordem": 20
+}

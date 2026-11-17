@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -112,6 +112,17 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | PT-23 | Suporte de acesso: a equipe nunca vê nem escolhe a senha; a redefinição vai só para o canal já verificado | [BASE] |
 | PT-24 | Funções da equipe interna, cada uma só com os escritórios atribuídos | [BASE] |
 
+## 9. Site comercial e entrada de clientes
+
+| Código | Ideia | Etiquetas |
+|---|---|---|
+| SC-01 | Site comercial em `t3jus.pro`: início, como funciona, para quem é e contato, para divulgar o sistema e atrair escritórios | [V1] |
+| SC-02 | Pedido de demonstração pelo site entra sozinho no Console como interessado, com data, origem e a autorização LGPD que a pessoa marcou | [V1] |
+| SC-03 | Oferta honesta: o site diz o que já existe e o que é planejado, sem prometer o que o sistema ainda não faz | [V1] |
+| SC-04 | Termos de uso e política de privacidade do T3 Just, com o escritório como controlador e o T3 Just como operador dos dados | [V1] |
+| SC-05 | Console comercial: interessados com responsável, próximo passo e data, do pedido de demonstração até virar escritório cliente sem redigitar | [V1] |
+| SC-06 | Site rápido e encontrável: carrega bem no celular, com título, descrição e prévia de compartilhamento em cada página | [V1] |
+
 ## Contagem
 
 | Seção | Ideias |
@@ -124,4 +135,5 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 6. Indicadores | 6 |
 | 7. A validar com os pilotos | 7 |
 | 8. Princípios técnicos e de qualidade | 24 |
-| **Total** | **66** |
+| 9. Site comercial e entrada de clientes | 6 |
+| **Total** | **72** |

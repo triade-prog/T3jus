@@ -26,7 +26,7 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
   });
 
   it("os dois sistemas fora de frame, de busca e de cache compartilhado", () => {
-    for (const app of ["plataforma", "console"] as const) {
+    for (const app of ["portal", "console"] as const) {
       const h = cabecalhosSeguranca(app);
       expect(h["X-Frame-Options"]).toBe("DENY");
       expect(h["X-Robots-Tag"]).toBe("noindex, nofollow");
@@ -36,7 +36,7 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
   });
 
   it("o link de redefinir senha não vaza o token pelo referrer", () => {
-    expect(cabecalhosSeguranca("plataforma", "/redefinir")["Referrer-Policy"]).toBe("no-referrer");
-    expect(cabecalhosSeguranca("plataforma", "/")["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
+    expect(cabecalhosSeguranca("portal", "/redefinir")["Referrer-Policy"]).toBe("no-referrer");
+    expect(cabecalhosSeguranca("portal", "/")["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
   });
 });

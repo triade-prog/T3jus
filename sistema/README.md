@@ -1,13 +1,13 @@
 # Sistema T3 Just
 
-Código dos dois sistemas do T3 Just (DC1): a **Plataforma do escritório** e o **Console T3 Just** (equipe interna). As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
+Código dos dois sistemas do T3 Just (DC1): a **Portal do advogado** e o **Console T3 Just** (equipe interna). As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
 
 A base veio da fundação (passo 0) do TRÍADE Condo, que por sua vez veio do T-shirt Club (DC5, DC6): só as peças genéricas, com "condomínio" trocado por "escritório".
 
 ## Estrutura
 
 ```
-apps/plataforma     Plataforma do escritório (Next.js 16, porta 3000)
+apps/portal     Portal do advogado (Next.js 16, porta 3000)
 apps/console        Console T3 Just (Next.js 16, porta 3001)
 packages/domain     regras puras em TypeScript: dinheiro, erros, textos, esquemas, logs limpos
                     (roda no Node e no Deno)
@@ -27,7 +27,7 @@ scripts/            banco de teste e Deno
 - **O escritório é o dono de todo dado (PT-01).**
   - Toda tabela de dado de escritório tem `escritorio_id` e a política `isolamento_escritorio`. Só aparece o que é do escritório que está no contexto da transação.
   - O contexto é gravado por `entrar_escritorio`, e só depois de conferir o vínculo e a permissão.
-  - Na Plataforma, o escritório vem da sessão no servidor (`escolher_escritorio`), nunca do que o navegador manda.
+  - No Portal, o escritório vem da sessão no servidor (`escolher_escritorio`), nunca do que o navegador manda.
 - **A permissão é dada por pessoa + função + escritório + ação, e nega por padrão (PT-02).**
   - Quem pode o quê fica em `funcao_acoes`.
   - Cada linha entra junto com a funcionalidade que a usa (DC8).
@@ -65,8 +65,8 @@ Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgt
 
 ```bash
 pnpm install
-cp .env.example apps/plataforma/.env.local   # e apps/console/.env.local
-pnpm dev:plataforma   # http://localhost:3000
+cp .env.example apps/portal/.env.local   # e apps/console/.env.local
+pnpm dev:portal   # http://localhost:3000
 pnpm dev:console      # http://localhost:3001
 ```
 

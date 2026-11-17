@@ -1,7 +1,7 @@
 // Cabeçalhos de segurança e CSP com nonce (F0.8), iguais nos dois apps. Nenhum dos dois
 // pode ser carregado em frame nem aparecer em busca: são sistemas de quem tem acesso.
 
-export type App = "plataforma" | "console";
+export type App = "portal" | "console";
 
 export interface OpcoesCsp {
   nonce: string;

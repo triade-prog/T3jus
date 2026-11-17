@@ -38,8 +38,8 @@ select results_eq($$ select exemplo_listar(pmulti, a) from ids $$, array['Prazo 
 select results_eq($$ select exemplo_listar(pmulti, b) from ids $$, array['Audiência do Bela Vista'], 'advogado que atende mais de um escritório no B vê só o B');
 select results_eq($$ select nome from ids, meus_escritorios(pmulti) $$, array['Aurora Advocacia', 'Bela Vista Advogados'], 'lista os dois escritórios dele');
 select results_eq($$ select nome from ids, meus_escritorios(pa) $$, array['Aurora Advocacia'], 'a sócia do A só vê o A');
-select ok((select acesso_plataforma(pa) from ids), 'quem tem vínculo entra na Plataforma');
-select ok(not (select acesso_plataforma(psem) from ids), 'quem não tem vínculo não entra');
+select ok((select acesso_portal(pa) from ids), 'quem tem vínculo entra no Portal');
+select ok(not (select acesso_portal(psem) from ids), 'quem não tem vínculo não entra');
 
 -- O RLS direto, como o papel dono das tabelas, sem nenhuma função no caminho.
 select set_config('app.pessoa_id', (select pa::text from ids), true), set_config('app.escritorio_id', (select a::text from ids), true);

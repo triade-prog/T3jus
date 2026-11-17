@@ -13,7 +13,7 @@ export function proxy(request: NextRequest) {
 
   const resposta = NextResponse.next({ request: { headers } });
   resposta.headers.set("content-security-policy", csp);
-  for (const [k, v] of Object.entries(cabecalhosSeguranca("plataforma", request.nextUrl.pathname))) resposta.headers.set(k, v);
+  for (const [k, v] of Object.entries(cabecalhosSeguranca("portal", request.nextUrl.pathname))) resposta.headers.set(k, v);
   return resposta;
 }
 

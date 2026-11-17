@@ -7,6 +7,6 @@
     "PT-20"
   ],
   "status": "feito",
-  "evidencia": "Deno api-console/app_test.ts e api-plataforma/app_test.ts (testado com Auth falso)",
+  "evidencia": "Deno api-console/app_test.ts e api-portal/app_test.ts (testado com Auth falso)",
   "ordem": 60
 }

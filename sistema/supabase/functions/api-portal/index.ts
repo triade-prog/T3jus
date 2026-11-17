@@ -1,9 +1,9 @@
-// Entrada da Edge Function api-plataforma. As dependências reais ficam aqui; os testes montam o
+// Entrada da Edge Function api-portal. As dependências reais ficam aqui; os testes montam o
 // mesmo app com dependências falsas.
 
 import { authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
-import { criarApiPlataforma } from "./app.ts";
+import { criarApiPortal } from "./app.ts";
 
 function exigir(nome: string): string {
   const v = Deno.env.get(nome);
@@ -12,10 +12,10 @@ function exigir(nome: string): string {
 }
 
 const url = exigir("SUPABASE_URL");
-const app = criarApiPlataforma(Deno.env.get("REPASSE_SEGREDO"), {
+const app = criarApiPortal(Deno.env.get("REPASSE_SEGREDO"), {
   banco: bancoPostgrest(url, exigir("SUPABASE_SERVICE_ROLE_KEY")),
   auth: authGoTrue(url, exigir("SUPABASE_ANON_KEY")),
-  urlApp: exigir("PLATAFORMA_URL"),
+  urlApp: exigir("PORTAL_URL"),
 });
 
 Deno.serve(app.fetch);

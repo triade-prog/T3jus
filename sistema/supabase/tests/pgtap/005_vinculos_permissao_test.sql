@@ -4,7 +4,7 @@ begin;
 select plan(15);
 
 call teste.criar_exemplos();
-insert into funcoes (codigo, nome, sistema) values ('ZELADOR', 'Estagiário', 'PLATAFORMA');
+insert into funcoes (codigo, nome, sistema) values ('ZELADOR', 'Estagiário', 'PORTAL');
 select teste.permitir('SOCIO', 'exemplos.ver', 'exemplos.criar', 'exemplos.alterar', 'vinculos.revogar');
 select teste.permitir('ZELADOR', 'exemplos.ver', 'exemplos.alterar');
 create temp table ids as select teste.escritorio('Aurora Advocacia') as a, teste.escritorio('Bela Vista Advogados') as b,
@@ -26,7 +26,7 @@ select is((select revogar_vinculo(pa, a, vz, 1) from ids, vs), 2, 'a sócia revo
 select throws_ok($$ select exemplo_listar(pz, a) from ids $$, 'TC401', null, 'T5: vínculo revogado não age mais');
 select is((select escritorio_da_sessao(pz, sessao_z) from ids), null, 'a sessão escolhida para de valer');
 select is((select count(*)::int from ids, meus_escritorios(pz)), 0, 'o escritório sai da lista dele');
-select ok(not (select acesso_plataforma(pz) from ids), 'sem vínculo ativo, não entra na Plataforma');
+select ok(not (select acesso_portal(pz) from ids), 'sem vínculo ativo, não entra no Portal');
 select is(
   (select count(*)::int from historico where autor_id = (select pz from ids) and acao = 'exemplo.alterado'),
   1, 'T5: a autoria antiga continua no histórico');

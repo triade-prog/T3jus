@@ -1,6 +1,6 @@
 // Login e sessão dos dois sistemas (F0.6, PT-08), com as diferenças de cada um:
 // - Console T3 Just: só a equipe ativa, sempre com o autenticador (aal2).
-// - Plataforma do escritório: quem tem vínculo ativo; o autenticador é pedido de quem o cadastrou.
+// - Portal do advogado: quem tem vínculo ativo; o autenticador é pedido de quem o cadastrou.
 // Senha errada e conta sem acesso respondem igual. Tentativas contadas por e-mail + IP em
 // hash. A recuperação responde sempre a mesma coisa, exista a conta ou não.
 
@@ -26,12 +26,12 @@ import { lerCorpo } from "./validar.ts";
 const SESSAO_SEGUNDOS = 12 * 60 * 60;
 
 export interface ConfigSistema {
-  sistema: "plataforma" | "console";
+  sistema: "portal" | "console";
   cookie: string;
-  /** Console: sempre. Plataforma: só de quem cadastrou um autenticador. */
+  /** Console: sempre. Portal: só de quem cadastrou um autenticador. */
   autenticadorObrigatorio: boolean;
   /** Função do banco que diz se a pessoa entra neste sistema. */
-  funcaoAcesso: "acesso_plataforma" | "acesso_console";
+  funcaoAcesso: "acesso_portal" | "acesso_console";
   /** Endereço do app, para o link de redefinir senha. */
   urlApp: string;
 }
@@ -49,7 +49,7 @@ export interface Sessao {
 
 export type VarsSessao = { Variables: { sessao: Sessao } };
 
-/** Qualquer app cujas variáveis incluem a sessão (a Plataforma soma o escritório). */
+/** Qualquer app cujas variáveis incluem a sessão (o Portal soma o escritório). */
 type ComSessao = { Variables: VarsSessao["Variables"] };
 
 function empacotar(s: Pick<SessaoAuth, "accessToken" | "refreshToken">): string {

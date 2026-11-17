@@ -1,9 +1,9 @@
 // Cookies de sessão (F0.6). A api de cada sistema grava e lê; o repasse /api de cada app
 // só deixa passar estes. Um lugar só, para a lista do repasse nunca ficar para trás.
 
-/** Plataforma do escritório: sessão do Supabase Auth (tokens empacotados). */
-export const COOKIES_PLATAFORMA = {
-  sessao: "__Host-plataforma",
+/** Portal do advogado: sessão do Supabase Auth (tokens empacotados). */
+export const COOKIES_PORTAL = {
+  sessao: "__Host-portal",
 } as const;
 
 /** Console T3 Just: sessão da equipe, em aal1 até o código do autenticador. */
