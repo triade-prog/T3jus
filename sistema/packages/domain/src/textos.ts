@@ -42,6 +42,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   FUNCAO_NAO_ATRIBUIDA: "Esta pessoa não tem esta função na equipe. Reveja as funções dela antes.",
   ULTIMA_ADMINISTRACAO: "Sempre precisa sobrar alguém com administração.",
   PROPRIA_CONTA: "Você não pode desativar a sua própria conta.",
+  SEM_SENHA: "Esta pessoa ainda não criou a senha. Reenvie o convite.",
+  SEM_AUTENTICADOR: "Esta pessoa não tem autenticador cadastrado.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

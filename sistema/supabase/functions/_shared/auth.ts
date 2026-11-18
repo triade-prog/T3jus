@@ -223,6 +223,16 @@ export interface AdminAuth {
   emailDe(userId: string): Promise<string | null>;
   /** Tira os autenticadores da conta (autenticador perdido, PT-23). Devolve quantos saíram. */
   removerAutenticadores(userId: string): Promise<number>;
+  /** O que só o Auth sabe da conta, para a ficha de acesso do suporte (PT-23). */
+  conta(userId: string): Promise<ContaAuth | null>;
+}
+
+export interface ContaAuth {
+  email: string | null;
+  emailConfirmado: boolean;
+  ultimaEntrada: string | null;
+  /** Desde quando tem autenticador verificado; null quando não tem. */
+  autenticadorDesde: string | null;
 }
 
 export function adminGoTrue(url: string, chaveServico: string, buscar: typeof fetch = fetch): AdminAuth {
@@ -267,6 +277,22 @@ export function adminGoTrue(url: string, chaveServico: string, buscar: typeof fe
       if (r.status === 404) return null;
       if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
       return ((await r.json()) as { email?: string }).email ?? null;
+    },
+    async conta(userId) {
+      const r = await chamar(`/admin/users/${encodeURIComponent(userId)}`);
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
+      const u = (await r.json()) as {
+        email?: string; email_confirmed_at?: string | null; last_sign_in_at?: string | null;
+        factors?: { status?: string; created_at?: string }[];
+      };
+      const verificados = (u.factors ?? []).filter((f) => f.status === "verified" && f.created_at).map((f) => f.created_at!).sort();
+      return {
+        email: u.email ?? null,
+        emailConfirmado: Boolean(u.email_confirmed_at),
+        ultimaEntrada: u.last_sign_in_at ?? null,
+        autenticadorDesde: verificados[0] ?? null,
+      };
     },
     async removerAutenticadores(userId) {
       const r = await chamar(`/admin/users/${encodeURIComponent(userId)}/factors`);

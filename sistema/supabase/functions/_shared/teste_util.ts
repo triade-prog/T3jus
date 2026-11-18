@@ -195,8 +195,9 @@ export async function erro(r: Response): Promise<{ codigo: string; detalhes?: Re
 }
 
 /** Convites em memória: e-mail já cadastrado devolve a mesma conta, sem e-mail novo. */
-export function adminFalso(contas: Record<string, string> = {}, comSenha = new Set<string>()) {
+export function adminFalso(contas: Record<string, string> = {}, comSenha = new Set<string>(), autenticadores = new Set<string>()) {
   const enviados: { email: string; voltarPara: string }[] = [];
+  const removidos: string[] = [];
   const admin: AdminAuth = {
     convidar(email, voltarPara) {
       if (contas[email]) return Promise.resolve({ userId: contas[email]!, contaNova: false });
@@ -210,9 +211,21 @@ export function adminFalso(contas: Record<string, string> = {}, comSenha = new S
       return Promise.resolve(true);
     },
     emailDe: (id) => Promise.resolve(Object.entries(contas).find(([, v]) => v === id)?.[0] ?? null),
-    removerAutenticadores: () => Promise.resolve(0),
+    removerAutenticadores: (id) => {
+      const tinha = autenticadores.delete(id);
+      removidos.push(id);
+      return Promise.resolve(tinha ? 1 : 0);
+    },
+    conta: (id) => {
+      const email = Object.entries(contas).find(([, v]) => v === id)?.[0];
+      if (!email) return Promise.resolve(null);
+      return Promise.resolve({
+        email, emailConfirmado: true, ultimaEntrada: "2026-11-18T12:40:00Z",
+        autenticadorDesde: autenticadores.has(id) ? "2026-11-04T13:00:00Z" : null,
+      });
+    },
   };
-  return { admin, enviados, contas, comSenha };
+  return { admin, enviados, contas, comSenha, autenticadores, removidos };
 }
 
 /** Storage em memória: o "envio" é marcar o caminho com tamanho e tipo. */

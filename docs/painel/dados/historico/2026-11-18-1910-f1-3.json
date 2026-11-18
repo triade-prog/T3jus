@@ -1,0 +1,12 @@
+{
+  "data": "18/11/2026",
+  "inicio": "19:10",
+  "fim": "19:30",
+  "texto": "Suporte de acesso no Console: busca só nos escritórios atendidos, ficha de acesso e as ações de link de nova senha, desconectar, tirar o autenticador e reenviar convite, sempre com motivo no histórico; aviso por e-mail fica pendente (F1.12).",
+  "refs": [
+    "F1.3",
+    "F1.12",
+    "PT-23",
+    "PT-24"
+  ]
+}

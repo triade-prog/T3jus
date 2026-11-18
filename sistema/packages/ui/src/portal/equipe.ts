@@ -104,6 +104,15 @@ export function fraseEquipe(e: EventoEquipe): FraseEquipe {
         detalhe: `Tarefas, prazos, cobranças e atendimentos · a autoria do que ${primeiro} registrou não mudou`,
       };
     }
+    // Suporte de acesso pelo Console (F1.3): o sócio dono fica sabendo; o motivo fica no Console.
+    case "socio.convite_reenviado":
+      return { quem, fez: [{ t: "reenviou o convite de " }, { t: alguem, b: true }], detalhe: "O link antigo deixou de valer" };
+    case "suporte.link_senha":
+      return { quem: "Suporte T3jus", fez: [{ t: "mandou um link de nova senha para " }, { t: alguem, b: true }], detalhe: "O link foi só para o e-mail cadastrado" };
+    case "suporte.desconectou":
+      return { quem: "Suporte T3jus", fez: [{ t: "desconectou " }, { t: alguem, b: true }, { t: " de todos os aparelhos" }], detalhe: "A senha não mudou" };
+    case "suporte.tirou_autenticador":
+      return { quem: "Suporte T3jus", fez: [{ t: "tirou o autenticador de " }, { t: alguem, b: true }], detalhe: "Identidade conferida pelo telefone do escritório" };
     case "escritorio.exportado":
       return { quem, fez: [{ t: "exportou os dados do escritório" }], detalhe: "Arquivo JSON completo", exportacao: true };
     default:
