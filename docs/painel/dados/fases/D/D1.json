@@ -3,7 +3,8 @@
   "texto": "Identidade do T3jus: logo, paleta, tipografia e tom de voz",
   "peca": "B5",
   "refs": [],
-  "status": "bloqueado",
-  "nota": "Depende da identidade do T3jus (E3, Carol). Até lá as telas usam o tema provisório herdado da fundação (DC10).",
-  "ordem": 10
+  "status": "andamento",
+  "ordem": 10,
+  "evidencia": "docs/IDENTIDADE.md e tokens novos em packages/ui/src/tema.css, com contraste conferido",
+  "proximo": "Logo do T3jus (E3, Carol)"
 }

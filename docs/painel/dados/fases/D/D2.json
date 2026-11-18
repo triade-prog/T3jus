@@ -6,6 +6,6 @@
     "PT-10"
   ],
   "status": "pendente",
-  "nota": "Os componentes base vêm do TRÍADE Condo (packages/ui) e trocam de cara quando a identidade (D1) chegar.",
+  "nota": "Os componentes base vêm do TRÍADE Condo (packages/ui) e seguem a identidade da DC10 (docs/IDENTIDADE.md). As fontes serão servidas pelo próprio app.",
   "ordem": 20
 }
