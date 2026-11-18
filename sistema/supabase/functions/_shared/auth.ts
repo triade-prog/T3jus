@@ -26,6 +26,7 @@ export interface CadastroTotp {
 
 export interface Portador {
   userId: string;
+  email: string;
   /** "aal1" depois da senha; "aal2" depois do código do autenticador. */
   aal: "aal1" | "aal2";
   emailVerificado: boolean;
@@ -54,6 +55,10 @@ export interface ProvedorAuth {
   pedirRecuperacao(email: string, voltarPara: string): Promise<void>;
   /** Troca o token do link por uma sessão; null se vencido, usado ou substituído por outro pedido. */
   usarRecuperacao(tokenHash: string): Promise<SessaoAuth | null>;
+  /** Envia o link de acesso sem senha, só para conta que já existe. Não diz se a conta existe. */
+  pedirLinkAcesso(email: string, voltarPara: string): Promise<void>;
+  /** Troca o token do link de acesso por uma sessão; null se vencido ou já usado. */
+  usarLinkAcesso(tokenHash: string): Promise<SessaoAuth | null>;
   /** O mesmo para o link do convite: a pessoa convidada cria a senha (PT-20). */
   usarConvite(tokenHash: string): Promise<SessaoAuth | null>;
   trocarSenha(accessToken: string, novaSenha: string): Promise<"OK" | "FRACA">;
@@ -135,11 +140,12 @@ export function authGoTrue(url: string, apiKey: string, buscar: typeof fetch = f
     async portador(token) {
       const r = await chamar("/user", { token });
       if (r.status === 401 || r.status === 403) return null;
-      const u = (await exigirOk(r)) as { id: string; email_confirmed_at?: string | null; factors?: { factor_type: string; status: string }[] };
+      const u = (await exigirOk(r)) as { id: string; email?: string; email_confirmed_at?: string | null; factors?: { factor_type: string; status: string }[] };
       const claims = claimsJwt(token);
       if (typeof claims.session_id !== "string") return null;
       return {
         userId: u.id,
+        email: u.email ?? "",
         aal: claims.aal === "aal2" ? "aal2" : "aal1",
         emailVerificado: Boolean(u.email_confirmed_at),
         temAutenticador: (u.factors ?? []).some((f) => f.factor_type === "totp" && f.status === "verified"),
@@ -170,6 +176,19 @@ export function authGoTrue(url: string, apiKey: string, buscar: typeof fetch = f
 
     async usarRecuperacao(tokenHash) {
       const r = await chamar("/verify", { corpo: { type: "recovery", token_hash: tokenHash } });
+      if (r.status >= 400 && r.status < 500) return null;
+      return sessao((await exigirOk(r)) as TokenGoTrue);
+    },
+
+    async pedirLinkAcesso(email, voltarPara) {
+      // create_user: false — o link nunca cria conta; quem não tem conta não recebe nada.
+      const r = await chamar(`/otp?redirect_to=${encodeURIComponent(voltarPara)}`, { corpo: { email, create_user: false } });
+      // 422 (conta inexistente ou sem cadastro por e-mail) e 429 (limite do Auth) respondem igual.
+      if (!r.ok && r.status !== 422 && r.status !== 429 && r.status !== 400) throw new Error(`Auth respondeu ${r.status}`);
+    },
+
+    async usarLinkAcesso(tokenHash) {
+      const r = await chamar("/verify", { corpo: { type: "email", token_hash: tokenHash } });
       if (r.status >= 400 && r.status < 500) return null;
       return sessao((await exigirOk(r)) as TokenGoTrue);
     },

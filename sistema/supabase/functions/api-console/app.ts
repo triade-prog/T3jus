@@ -89,7 +89,7 @@ function historico(l: LinhaHistorico) {
 export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) {
   const app = criarApp<VarsSessao>("api-console", segredo);
   const sessao = criarSessao(
-    { sistema: "console", cookie: COOKIES_CONSOLE.sessao, autenticadorObrigatorio: true, funcaoAcesso: "acesso_console", urlApp: deps.urlApp },
+    { sistema: "console", cookie: COOKIES_CONSOLE.sessao, cookieLink: COOKIES_CONSOLE.link, autenticadorObrigatorio: true, funcaoAcesso: "acesso_console", urlApp: deps.urlApp },
     deps,
   );
   const rpc = deps.banco.rpc.bind(deps.banco);
@@ -97,7 +97,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   /** Convite pelo Auth, com limite por pessoa da equipe. */
   async function convidar(pessoaId: string, email: string, voltarPara: string) {
     if (!(await rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: pessoaId }))) throw new ErroDominio("RATE_LIMITED");
-    return await deps.admin.convidar(email, `${voltarPara}/convite`);
+    return await deps.admin.convidar(email, `${voltarPara}/criar-senha`);
   }
 
   app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-console" }));

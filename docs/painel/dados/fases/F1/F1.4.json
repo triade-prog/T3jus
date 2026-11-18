@@ -3,8 +3,11 @@
   "texto": "Telas de entrar, convite, nova senha e escolha do escritório",
   "peca": "S7",
   "refs": [
-    "PT-10"
+    "PT-10",
+    "PT-08",
+    "PT-20"
   ],
-  "status": "pendente",
-  "ordem": 40
+  "status": "feito",
+  "ordem": 40,
+  "evidencia": "Telas aprovadas (docs/design/aprovadas/entrar.html e docs/design/aprovadas/acesso/) programadas no Portal e no Console: /entrar e /entrar/link (senha, manter conectado, link de acesso por e-mail, autenticador, esqueci a senha); /redefinir (nova senha com as regras à vista, senha vazada conferida no servidor, link vencido pede outro, sai dos outros aparelhos); /criar-senha (convite com quem convidou, nome, aceite dos Termos no histórico; Console segue para o autenticador); /escritorio no Portal (último usado primeiro, busca a partir de 7, sempre que houver mais de um). Link e convite valem 1 hora. Migration 0100 e pgTAP 010; Deno (api-portal, api-console, senha_test); e2e entrar.spec.ts e acesso.spec.ts (celular e computador, axe WCAG 2.2 AA)."
 }

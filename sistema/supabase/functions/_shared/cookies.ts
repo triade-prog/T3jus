@@ -9,9 +9,11 @@ export function lerCookie(headers: Headers, nome: string): string | null {
   return null;
 }
 
-export function gravarCookie(nome: string, valor: string, maxAgeSegundos: number): string {
+/** Sem maxAge (null), o cookie é de sessão do navegador: some quando ele fecha. */
+export function gravarCookie(nome: string, valor: string, maxAgeSegundos: number | null): string {
   if (!nome.startsWith("__Host-") || !/^[A-Za-z0-9._~:-]*$/.test(valor)) throw new Error("Cookie inválido");
-  return `${nome}=${valor}; Path=/; Max-Age=${maxAgeSegundos}; HttpOnly; Secure; SameSite=Strict`;
+  const idade = maxAgeSegundos === null ? "" : ` Max-Age=${maxAgeSegundos};`;
+  return `${nome}=${valor}; Path=/;${idade} HttpOnly; Secure; SameSite=Strict`;
 }
 
 export function apagarCookie(nome: string): string {

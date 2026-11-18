@@ -24,8 +24,11 @@ import_map = "./functions/deno.json"
 # convida o sócio (passo 1).
 [auth]
 enable_signup = false
+# Regras da senha (tela aprovada): 12 caracteres ou mais e fora das listas de senhas vazadas
+# (conferida pela API antes de salvar). Sem exigir maiúscula, número ou símbolo, como
+# recomenda o NIST SP 800-63B: a tela mostra só as duas regras.
 minimum_password_length = 12
-password_requirements = "lower_upper_letters_digits"
+password_requirements = ""
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
@@ -38,7 +41,7 @@ enable_confirmations = true
 double_confirm_changes = true
 # Trocar a senha logado pede reautenticação recente.
 secure_password_change = true
-# Link de recuperação vale 1 hora e é de uso único; um pedido novo invalida o anterior.
+# Link de recuperação e convite valem 1 hora (decisão da Carol, 18/11) e são de uso único; um pedido novo invalida o anterior.
 otp_expiry = 3600
 max_frequency = "60s"
 
@@ -67,3 +70,6 @@ sign_in_sign_ups = 30
 # {{ .RedirectTo }}?token_hash={{ .TokenHash }}
 # O modelo do e-mail de convite (passo 1) segue a mesma forma e leva a /criar-senha do app
 # de destino (PORTAL_URL para o sócio e a equipe do escritório, CONSOLE_URL para a equipe T3jus).
+# O modelo do link de acesso (Magic Link) usa a mesma forma: {{ .RedirectTo }}?token_hash={{ .TokenHash }}.
+# O RedirectTo é /entrar/link (manter conectado) ou /entrar/link/sessao (até fechar o navegador).
+# Os dois endereços de cada app entram na lista de redirecionamentos permitidos do Auth.

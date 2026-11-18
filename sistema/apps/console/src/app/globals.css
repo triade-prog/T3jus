@@ -1,3 +1,4 @@
 @import "tailwindcss";
 @import "@t3jus/ui/tema.css";
+@import "@t3jus/ui/acesso.css";
 @source "../../../../packages/ui/src";

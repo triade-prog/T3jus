@@ -16,7 +16,7 @@ export const TEXTOS_ERRO: Record<CodigoErro, string> = {
   INVALID_TRANSITION: "Esta mudança não vale na situação atual. Atualize a página para ver como está agora.",
   TOKEN_INVALID: "Este link já foi usado ou venceu. Peça um novo.",
   MFA_INVALID: "Código do autenticador não confere. Confira o aplicativo e tente de novo.",
-  PASSWORD_WEAK: "Escolha uma senha mais forte: 12 caracteres ou mais, sem sequências comuns.",
+  PASSWORD_WEAK: "Esta senha não serve: ela aparece em listas de senhas vazadas ou é igual à anterior. Escolha outra.",
   RATE_LIMITED: "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.",
   INTERNAL_ERROR: "Algo deu errado do nosso lado. Tente de novo em instantes.",
   UPSTREAM_UNAVAILABLE: "O serviço está fora do ar agora. Tente de novo em instantes.",
@@ -25,6 +25,10 @@ export const TEXTOS_ERRO: Record<CodigoErro, string> = {
 /** Resposta da recuperação de senha: a mesma para conta que existe e para a que não existe (PT-08). */
 export const TEXTO_RECUPERACAO_ENVIADA =
   "Se este e-mail tiver acesso ao T3jus, enviamos um link para criar uma senha nova. O link vale por uma hora e só pode ser usado uma vez.";
+
+/** Resposta do pedido de link de acesso: a mesma exista a conta ou não (PT-08). */
+export const TEXTO_LINK_ENVIADO =
+  "Se este e-mail tiver acesso, enviamos um link para entrar. Ele vale por uma hora e só pode ser usado uma vez.";
 
 /** Motivo de uma recusa do banco (detalhes.motivo), dito para quem usa o Console. */
 export const TEXTOS_MOTIVO: Record<string, string> = {
