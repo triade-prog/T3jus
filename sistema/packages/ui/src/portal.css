@@ -7,7 +7,7 @@
 .pt .escritorio strong{display:block;font-family:var(--serifa);font-weight:600;font-size:16px;line-height:1.15}
 .pt .escritorio small{font-size:12px;color:var(--ambar-3)}
 .pt .marca{padding-bottom:18px}
-.pt .marca-palavra{font-size:24px}
+.pt .marca-palavra .logo{height:36px}
 .pt .conteudo{gap:24px}
 .pt .hero{display:grid;grid-template-columns:1fr 360px;border-radius:var(--raio-g);overflow:hidden;box-shadow:var(--sombra);min-height:250px}
 .pt .hero .esq{padding:30px 36px 30px}

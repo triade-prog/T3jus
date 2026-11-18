@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_CONSOLE, type FuncaoConsole } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
+import { LogoCompacto } from "../Marca.tsx";
 import { iniciais } from "./tempo.ts";
 
 export interface SessaoConsole {
@@ -133,9 +134,7 @@ export function MolduraConsole({
             <Icone nome="menu" className="ico" />
           </button>
           <a className="marca-cel" href={CARTEIRA}>
-            <b>
-              T<i>3</i>jus
-            </b>
+            <LogoCompacto tom="sobre-vinho" className="logo" titulo="T3jus" />
             <span>Console</span>
             <span className="sr">, carteira de escritórios</span>
           </a>
@@ -147,7 +146,7 @@ export function MolduraConsole({
           </button>
           <div className="marca">
             <a className="marca-palavra" href={CARTEIRA} aria-label="T3jus, carteira de escritórios">
-              T<b>3</b>jus
+              <LogoCompacto tom="sobre-vinho" className="logo" />
             </a>
             <span className="marca-sub">Console</span>
           </div>

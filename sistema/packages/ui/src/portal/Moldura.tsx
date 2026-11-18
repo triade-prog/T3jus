@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AREAS_PORTAL, type AreaPortal } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
+import { LogoCompacto } from "../Marca.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { ICONE_AREA, ORDEM_AREAS, rotaArea, SECOES_AREA } from "./areas.ts";
 
@@ -149,9 +150,7 @@ export function MolduraPortal({
       <div className="app">
         <header className="barra-cel">
           <a className="marca-cel" href={ROTAS_PORTAL.inicio}>
-            <b>
-              T<i>3</i>jus
-            </b>
+            <LogoCompacto tom="sobre-vinho" className="logo" titulo="T3jus" />
             <span>Portal</span>
             <span className="sr">, início</span>
           </a>
@@ -159,7 +158,7 @@ export function MolduraPortal({
         <aside className="trilho" id="trilho" aria-label="Portal do advogado">
           <div className="marca">
             <a className="marca-palavra" href={ROTAS_PORTAL.inicio} aria-label="T3jus, início">
-              T<b>3</b>jus
+              <LogoCompacto tom="sobre-vinho" className="logo" />
             </a>
           </div>
           <a className="escritorio" href={ROTAS_PORTAL.escritorio}>

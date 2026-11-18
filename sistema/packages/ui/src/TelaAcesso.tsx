@@ -3,6 +3,7 @@
 
 import type { ReactNode } from "react";
 import { Icone, type NomeIcone } from "./Icone.tsx";
+import { LogoCompleto, Selo } from "./Marca.tsx";
 
 export interface TextosAcesso {
   /** Sobretítulo do cartão: "Portal do advogado" ou "Console T3jus". */
@@ -33,7 +34,7 @@ export function TelaAcesso({ textos, denso = false, children }: { textos: Textos
 
       <div className="ac-marca-lado">
         <a className="ac-marca" href="https://t3jus.pro" aria-label="T3jus, site">
-          T<b>3</b>jus
+          <LogoCompleto tom="sobre-vinho" className="ac-logo" />
         </a>
         <section className="ac-frase" aria-label="Sobre o T3jus">
           <p className="ac-sobre">{f.sobre}</p>
@@ -85,22 +86,7 @@ export function TelaAcesso({ textos, denso = false, children }: { textos: Textos
         </div>
       </div>
 
-      <svg className="ac-selo" viewBox="0 0 140 140" aria-hidden="true">
-        <defs>
-          <path id="ac-circ" d="M70 70m-52 0a52 52 0 1 1 104 0a52 52 0 1 1-104 0" />
-        </defs>
-        <circle cx="70" cy="70" r="68" fill="#87335B" />
-        <circle cx="70" cy="70" r="64" fill="none" stroke="#E9AE90" strokeOpacity=".6" />
-        <text fontFamily="Poppins" fontSize="10" fontWeight="500" fill="#F2CDB3">
-          <textPath href="#ac-circ" textLength="318" lengthAdjust="spacing">
-            GESTÃO JURÍDICA • T3JUS • ESCRITÓRIO EM ORDEM •
-          </textPath>
-        </text>
-        <circle cx="70" cy="70" r="34" fill="#692746" stroke="#DD9760" strokeWidth="1.4" />
-        <text x="70" y="81" textAnchor="middle" fontFamily="Alegreya" fontWeight="600" fontSize="30" fill="#FFFFFF">
-          T<tspan fill="#DD9760">3</tspan>
-        </text>
-      </svg>
+      <Selo className="ac-selo" />
     </div>
   );
 }

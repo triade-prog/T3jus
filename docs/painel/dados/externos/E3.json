@@ -4,6 +4,7 @@
   "quem": "Carol",
   "precisa_em": "F1",
   "refs": [],
-  "status": "pendente",
-  "ordem": 30
+  "status": "feito",
+  "ordem": 30,
+  "evidencia": "Carol enviou o logo em 18/11/2026; originais em docs/marca/originais"
 }
