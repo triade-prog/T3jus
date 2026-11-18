@@ -1,4 +1,4 @@
-# CI do T3 Just (sistema/ e o painel de execução), passo 0 (F0.9, PT-18):
+# CI do T3jus (sistema/ e o painel de execução), passo 0 (F0.9, PT-18):
 # Qualidade (lint, tipos, Vitest, Deno) · Banco (pgTAP no PostgreSQL 17, o mesmo do Supabase)
 # · Ponta a ponta (Playwright + axe no celular e no computador) · Painel · Varredura de segredos.
 name: CI

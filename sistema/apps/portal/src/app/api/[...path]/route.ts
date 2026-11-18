@@ -1,5 +1,5 @@
 // Repasse /api → Edge Function api-portal (F0.8). A sessão é um cookie de primeira parte.
-import { criarRepasse, opcoesPortal } from "@t3just/servidor/repasse";
+import { criarRepasse, opcoesPortal } from "@t3jus/servidor/repasse";
 
 export const dynamic = "force-dynamic";
 

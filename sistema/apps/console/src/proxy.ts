@@ -1,7 +1,7 @@
 // Proxy (antigo middleware): gera um nonce por requisição e grava a CSP e os cabeçalhos de
 // segurança (F0.8). O nonce exige renderização dinâmica das páginas.
 import { NextResponse, type NextRequest } from "next/server";
-import { cabecalhosSeguranca, gerarNonce, montarCsp } from "@t3just/servidor/cabecalhos";
+import { cabecalhosSeguranca, gerarNonce, montarCsp } from "@t3jus/servidor/cabecalhos";
 
 export function proxy(request: NextRequest) {
   const nonce = gerarNonce();

@@ -1,5 +1,5 @@
 // Log das funções (PT-13): uma linha JSON, já sem senha, token nem dado pessoal.
-import { linhaDeLog } from "@t3just/domain";
+import { linhaDeLog } from "@t3jus/domain";
 
 export function registrar(nivel: "info" | "aviso" | "erro", dados: Record<string, unknown>): void {
   const linha = linhaDeLog(nivel, dados);

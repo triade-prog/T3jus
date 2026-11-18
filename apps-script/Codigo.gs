@@ -1,7 +1,7 @@
 /**
- * T3 Just — recebe as respostas da prévia e grava na planilha.
+ * T3jus — recebe as respostas da prévia e grava na planilha.
  *
- * Como usar: na planilha "T3 Just – Respostas da prévia", abra
+ * Como usar: na planilha "T3jus – Respostas da prévia", abra
  * Extensões → Apps Script, cole este arquivo e implante como "App da Web"
  * (passo a passo em apps-script/LEIA-ME.md).
  *
@@ -68,7 +68,7 @@ function doPost(e) {
 }
 
 function doGet() {
-  return resposta({ ok: true, servico: 'T3 Just — respostas da prévia' });
+  return resposta({ ok: true, servico: 'T3jus — respostas da prévia' });
 }
 
 function obterAba() {

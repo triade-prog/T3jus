@@ -1,4 +1,4 @@
-import { Marca } from "@t3just/ui";
+import { Marca } from "@t3jus/ui";
 
 // Página inicial provisória: a fundação (passo 0) não tem telas. As telas chegam depois
 // das regras, a partir do passo 1 (DC7).

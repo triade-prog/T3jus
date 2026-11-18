@@ -1,4 +1,4 @@
-// Console T3 Just (passo 1): funções internas, carteira, ficha e convites.
+// Console T3jus (passo 1): funções internas, carteira, ficha e convites.
 // Os mesmos valores estão no banco (0060_console_clientes.sql); os testes conferem os dois.
 
 import { z } from "zod";

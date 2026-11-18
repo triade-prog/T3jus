@@ -6,7 +6,7 @@ export const COOKIES_PORTAL = {
   sessao: "__Host-portal",
 } as const;
 
-/** Console T3 Just: sessão da equipe, em aal1 até o código do autenticador. */
+/** Console T3jus: sessão da equipe, em aal1 até o código do autenticador. */
 export const COOKIES_CONSOLE = {
   sessao: "__Host-console",
 } as const;

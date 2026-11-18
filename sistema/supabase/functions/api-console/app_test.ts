@@ -1,11 +1,11 @@
-// F0.6 no Console T3 Just: só a equipe ativa, sempre com o autenticador (PT-08).
+// F0.6 no Console T3jus: só a equipe ativa, sempre com o autenticador (PT-08).
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiConsole } from "./app.ts";
 import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, limitesFalsos, pedido, TOKEN_RECUPERACAO, type UsuarioFalso } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const SOCIO = "1c8d4a1f-6e2b-4d3c-8f9a-2b3c4d5e6f7a";
-const ENTRAR = { email: "carol@t3just.exemplo", senha: "senha-forte-da-equipe" };
+const ENTRAR = { email: "carol@t3jus.exemplo", senha: "senha-forte-da-equipe" };
 
 function montar(opcoes: { equipe?: Set<string>; usuarios?: UsuarioFalso[] } = {}) {
   const equipe = opcoes.equipe ?? new Set([CAROLINA]);

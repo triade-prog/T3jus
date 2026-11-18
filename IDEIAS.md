@@ -1,8 +1,8 @@
-# T3 Just — todas as ideias
+# T3jus — todas as ideias
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3 Just, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -97,7 +97,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | PT-08 | Login com e-mail verificado, recuperação por token de uso único, autenticador obrigatório para a equipe interna, sessões revogáveis. Resposta neutra na recuperação; senha e token nunca aparecem no histórico | [BASE] |
 | PT-09 | Valores em dinheiro exatos (nunca ponto flutuante), com moeda explícita | [BASE] |
 | PT-10 | Acessibilidade WCAG 2.2 AA, uso no celular, estados vazio, erro e carregando | [BASE] |
-| PT-11 | LGPD e sigilo profissional: cadastro mínimo, finalidade por campo, retenção e exclusão; o escritório é o controlador e o T3 Just o operador. Inventário por tipo de dado | [BASE] |
+| PT-11 | LGPD e sigilo profissional: cadastro mínimo, finalidade por campo, retenção e exclusão; o escritório é o controlador e o T3jus o operador. Inventário por tipo de dado | [BASE] |
 | PT-12 | Cópias de segurança cifradas, com restauração testada; monitoramento e alertas com responsável | [BASE] |
 | PT-13 | Logs sem senhas, tokens nem conteúdo pessoal desnecessário | [BASE] |
 | PT-14 | Ambientes separados; dados fictícios em desenvolvimento | [BASE] |
@@ -119,11 +119,11 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | SC-01 | Site comercial em `t3jus.pro`: início, como funciona, para quem é e contato, para divulgar o sistema e atrair escritórios | [V1] |
 | SC-02 | Pedido de demonstração pelo site entra sozinho no Console como interessado, com data, origem e a autorização LGPD que a pessoa marcou | [V1] |
 | SC-03 | Oferta honesta: o site diz o que já existe e o que é planejado, sem prometer o que o sistema ainda não faz | [V1] |
-| SC-04 | Termos de uso e política de privacidade do T3 Just, com o escritório como controlador e o T3 Just como operador dos dados | [V1] |
+| SC-04 | Termos de uso e política de privacidade do T3jus, com o escritório como controlador e o T3jus como operador dos dados | [V1] |
 | SC-05 | Console comercial: interessados com responsável, próximo passo e data, do pedido de demonstração até virar escritório cliente sem redigitar | [V1] |
 | SC-06 | Site rápido e encontrável: carrega bem no celular, com título, descrição e prévia de compartilhamento em cada página | [V1] |
 
-## 10. Console T3 Just
+## 10. Console T3jus
 
 | Código | Ideia | Etiquetas |
 |---|---|---|
@@ -145,5 +145,5 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 7. A validar com os pilotos | 7 |
 | 8. Princípios técnicos e de qualidade | 24 |
 | 9. Site comercial e entrada de clientes | 6 |
-| 10. Console T3 Just | 4 |
+| 10. Console T3jus | 4 |
 | **Total** | **76** |

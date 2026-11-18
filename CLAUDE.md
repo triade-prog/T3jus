@@ -1,4 +1,4 @@
-# Instruções para quem for construir o T3 Just
+# Instruções para quem for construir o T3jus
 
 - Comece lendo `docs/CONTEXTO.md` (decisões fechadas e situação).
 - O sistema nasce em `sistema/`. Antes de escrever código, leia o `sistema/README.md` (como a base funciona e o passo a passo de tabela nova) e o `IDEIAS.md`.

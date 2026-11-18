@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Portal do advogado · T3 Just", template: "%s · Portal do advogado" },
+  title: { default: "Portal do advogado · T3jus", template: "%s · Portal do advogado" },
   robots: { index: false, follow: false },
 };
 

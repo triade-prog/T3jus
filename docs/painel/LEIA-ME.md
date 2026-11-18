@@ -1,6 +1,6 @@
 # Painel de execução
 
-O painel mostra tudo o que vai ser construído no T3 Just, com o status de cada entrega, teste, item de publicação, dependência externa e decisão, e o histórico. O formato veio do TRÍADE Condo (DC4): os dados ficam em arquivos pequenos, um por registro, e o painel é montado por script. Assim, dois PRs quase nunca mexem no mesmo arquivo.
+O painel mostra tudo o que vai ser construído no T3jus, com o status de cada entrega, teste, item de publicação, dependência externa e decisão, e o histórico. O formato veio do TRÍADE Condo (DC4): os dados ficam em arquivos pequenos, um por registro, e o painel é montado por script. Assim, dois PRs quase nunca mexem no mesmo arquivo.
 
 Nada gerado vai para o Git.
 

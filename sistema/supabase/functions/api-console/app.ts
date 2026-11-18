@@ -1,4 +1,4 @@
-// API do Console T3 Just. Só a equipe ativa, sempre com o autenticador (F0.6, PT-08).
+// API do Console T3jus. Só a equipe ativa, sempre com o autenticador (F0.6, PT-08).
 // Passo 1: carteira, ficha, convite do sócio, notas internas, histórico e equipe.
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PT-24); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
@@ -17,7 +17,7 @@ import {
   funcoesSchema,
   notaSchema,
   versaoSchema,
-} from "@t3just/domain";
+} from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";

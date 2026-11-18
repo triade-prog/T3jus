@@ -1,4 +1,4 @@
--- 0060 · Console T3 Just: equipe, carteira, ficha, convite do sócio, notas internas e
+-- 0060 · Console T3jus: equipe, carteira, ficha, convite do sócio, notas internas e
 -- histórico administrativo (passo 1; CO-01 a CO-04, PT-20, PT-24). Veio da 0060 do TRÍADE
 -- Condo, sem o cenário do prédio e o número de WhatsApp; a ficha ganhou o CNPJ.
 --
@@ -522,7 +522,7 @@ declare v jsonb;
 begin
   perform definir_pessoa(p_pessoa);
   if not contexto_equipe() then
-    raise exception 'Só a equipe T3 Just' using errcode = 'TC401';
+    raise exception 'Só a equipe T3jus' using errcode = 'TC401';
   end if;
   select jsonb_build_object(
     'pessoaId', p.id,
@@ -550,7 +550,7 @@ declare
 begin
   perform definir_pessoa(p_pessoa);
   if not contexto_equipe() then
-    raise exception 'Só a equipe T3 Just' using errcode = 'TC401';
+    raise exception 'Só a equipe T3jus' using errcode = 'TC401';
   end if;
   -- A lista sai inteira antes do laço: entrar em cada cliente troca o contexto.
   select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'funcoes', x.funcoes) order by x.nome, x.id), '[]'::jsonb)

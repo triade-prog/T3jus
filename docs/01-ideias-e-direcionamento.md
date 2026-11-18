@@ -1,4 +1,4 @@
-# T3 Just — Ideias e direcionamento do SaaS jurídico
+# T3jus — Ideias e direcionamento do SaaS jurídico
 
 **Data:** 6 de novembro de 2026  
 **Versão:** 1.0  
@@ -6,7 +6,7 @@
 
 ## 1. Objetivo deste documento
 
-Consolidar as ideias discutidas para o T3 Just: proposta de valor, público inicial, funcionalidades, experiência de uso, prioridades, modelo comercial, riscos e validação. O documento reúne as duas recomendações apresentadas na conversa e o mapa de categorias recuperado da pesquisa anterior.
+Consolidar as ideias discutidas para o T3jus: proposta de valor, público inicial, funcionalidades, experiência de uso, prioridades, modelo comercial, riscos e validação. O documento reúne as duas recomendações apresentadas na conversa e o mapa de categorias recuperado da pesquisa anterior.
 
 As recomendações abaixo não representam funcionalidades já implementadas nem decisões definitivas da fundadora. A lista de mercado é uma referência para evolução; não é uma obrigação de desenvolver tudo no lançamento. Não foram definidos orçamento, prazo de desenvolvimento, preço ou tecnologia.
 
@@ -26,7 +26,7 @@ A visão é ampla, mas a primeira entrega deve resolver uma rotina específica d
 
 Reduzir oportunidades, recebimentos e entregas que ficam sem acompanhamento: propostas esquecidas, cobranças pendentes, contratos desconectados das tarefas e demandas paradas sem responsável claro.
 
-A hipótese é que o escritório pagaria pelo T3 Just ao perceber valor no controle comercial e financeiro, mesmo que já utilize outro sistema para acompanhar processos. Essa disposição de pagamento precisa ser demonstrada nos pilotos.
+A hipótese é que o escritório pagaria pelo T3jus ao perceber valor no controle comercial e financeiro, mesmo que já utilize outro sistema para acompanhar processos. Essa disposição de pagamento precisa ser demonstrada nos pilotos.
 
 ## 3. Leitura do mercado e oportunidade
 
@@ -38,7 +38,7 @@ Reunir funcionalidades em um só sistema já é uma proposta presente no mercado
 | Astrea | Clientes, processos, prazos, tarefas, cobranças e financeiro |
 | Projuris ADV | Rotina jurídica, financeiro e relacionamento com clientes |
 
-Essas páginas comerciais demonstram ofertas declaradas pelos fornecedores, mas não comprovam a profundidade, facilidade ou qualidade das integrações. Não se deve anunciar que algum recurso do T3 Just é exclusivo sem investigação específica.
+Essas páginas comerciais demonstram ofertas declaradas pelos fornecedores, mas não comprovam a profundidade, facilidade ou qualidade das integrações. Não se deve anunciar que algum recurso do T3jus é exclusivo sem investigação específica.
 
 ### Referências da pesquisa anterior
 
@@ -89,7 +89,7 @@ O objetivo é evitar recadastrar o mesmo cliente ou repetir condições do contr
 
 ## 6. Situações práticas que o produto deve resolver
 
-| Situação | Resposta proposta do T3 Just |
+| Situação | Resposta proposta do T3jus |
 | --- | --- |
 | Proposta enviada sem retorno | Lembrar o responsável e organizar o próximo contato |
 | Contrato parcelado fechado | Criar programação de recebimentos e tarefas vinculadas |
@@ -113,7 +113,7 @@ O objetivo é evitar recadastrar o mesmo cliente ou repetir condições do contr
 
 ## 8. Experiência principal: painel do dia
 
-Ao abrir o T3 Just, o usuário deve entender **o que cobrar, o que acompanhar e o que entregar**.
+Ao abrir o T3jus, o usuário deve entender **o que cobrar, o que acompanhar e o que entregar**.
 
 ### Conteúdo sugerido
 
@@ -182,7 +182,7 @@ O escopo inicial considera cadastro e gestão da rotina. Monitoramento automáti
 - Exportação de dados.
 - Importação de dados para facilitar a entrada.
 
-Esses itens são requisitos propostos para o T3 Just, não alegações de conformidade já alcançada.
+Esses itens são requisitos propostos para o T3jus, não alegações de conformidade já alcançada.
 
 ## 10. Mapa amplo de funcionalidades para evolução
 
@@ -338,7 +338,7 @@ Essas questões não impedem o desenho do protótipo. Elas orientam as entrevist
 
 ## 19. Direção recomendada consolidada
 
-Desenvolver o T3 Just como gestão comercial e financeira conectada à execução jurídica. Começar por pequenos escritórios com honorários fixos e parcelados e concentrar a experiência em três necessidades: **acompanhar oportunidades, controlar recebimentos e garantir continuidade do trabalho**.
+Desenvolver o T3jus como gestão comercial e financeira conectada à execução jurídica. Começar por pequenos escritórios com honorários fixos e parcelados e concentrar a experiência em três necessidades: **acompanhar oportunidades, controlar recebimentos e garantir continuidade do trabalho**.
 
 O principal teste de valor é verificar se o escritório consegue responder diariamente: “o que devo cobrar, o que preciso entregar e o que está impedindo o andamento?”. A expansão para uma plataforma jurídica mais ampla deve aproveitar esse fluxo e responder a necessidades comprovadas.
 
@@ -346,7 +346,7 @@ O principal teste de valor é verificar se o escritório consegue responder diar
 
 ### Base da conversa
 
-- Análise inicial da ideia do SaaS jurídico T3 Just.
+- Análise inicial da ideia do SaaS jurídico T3jus.
 - Recomendação posterior de foco em dinheiro e trabalho sem acompanhamento.
 - Resumo recuperado da pesquisa anterior de sistemas nacionais e internacionais.
 

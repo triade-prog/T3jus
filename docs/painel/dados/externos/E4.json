@@ -1,6 +1,6 @@
 {
   "id": "E4",
-  "texto": "Subdomínios do Portal e do Console e o DNS do t3jus.pro apontando para a Vercel",
+  "texto": "DNS do t3jus.pro (site), app.t3jus.pro (Portal) e console.t3jus.pro (Console) apontando para a Vercel",
   "quem": "Carol",
   "precisa_em": "F2",
   "refs": [],

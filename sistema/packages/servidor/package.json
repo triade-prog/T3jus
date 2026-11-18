@@ -1,5 +1,5 @@
 {
-  "name": "@t3just/servidor",
+  "name": "@t3jus/servidor",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,6 +11,6 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@t3just/domain": "workspace:*"
+    "@t3jus/domain": "workspace:*"
   }
 }

@@ -6,7 +6,7 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
 PGBIN="${PGBIN:-$(pg_config --bindir 2>/dev/null || ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)}"
 PORTA="${PGPORT_TESTE:-54339}"
-DADOS="$(mktemp -d /tmp/t3just-pg.XXXXXX)"
+DADOS="$(mktemp -d /tmp/t3jus-pg.XXXXXX)"
 
 como_pg() { if [ "$(id -u)" = 0 ]; then runuser -u postgres -- "$@"; else "$@"; fi; }
 [ "$(id -u)" = 0 ] && chown postgres "$DADOS"

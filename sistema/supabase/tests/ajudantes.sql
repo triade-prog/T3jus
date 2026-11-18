@@ -115,7 +115,7 @@ exception when others then
   return jsonb_build_object('codigo', v_codigo, 'detalhe', nullif(v_detalhe, '')::jsonb);
 end $$;
 
--- Pessoa da equipe T3 Just, ativa, com as funções internas dadas (passo 1).
+-- Pessoa da equipe T3jus, ativa, com as funções internas dadas (passo 1).
 create function teste.equipe(p_nome text, variadic p_funcoes text[]) returns uuid
 language plpgsql
 as $$

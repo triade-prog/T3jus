@@ -1,13 +1,13 @@
-// Passo 1 no Console T3 Just: as rotas validam a entrada, deixam a permissão para o banco
+// Passo 1 no Console T3jus: as rotas validam a entrada, deixam a permissão para o banco
 // (PT-24) e só convidam pelo Auth depois de o banco confirmar quem pode (PT-20).
 import { assert, assertEquals } from "@std/assert";
-import { FUNCOES_CONSOLE, SITUACOES, UFS } from "@t3just/domain";
+import { FUNCOES_CONSOLE, SITUACOES, UFS } from "@t3jus/domain";
 import { criarApiConsole } from "./app.ts";
 import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
-const ENTRAR = { email: "carol@t3just.exemplo", senha: "senha-forte-da-equipe" };
+const ENTRAR = { email: "carol@t3jus.exemplo", senha: "senha-forte-da-equipe" };
 
 function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>; handlers?: Record<string, (a: Record<string, unknown>) => unknown> } = {}) {
   const falso = authFalso([

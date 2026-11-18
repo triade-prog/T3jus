@@ -1,4 +1,4 @@
--- Passo 1 (F1): Console T3 Just. Funções internas só nos clientes atribuídos (PT-24), carteira
+-- Passo 1 (F1): Console T3jus. Funções internas só nos clientes atribuídos (PT-24), carteira
 -- com estágio (CO-01), ficha com CNPJ (CO-02), convite do sócio (PT-20), notas internas (CO-03)
 -- e histórico administrativo (CO-04).
 begin;

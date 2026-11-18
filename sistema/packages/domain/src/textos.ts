@@ -24,7 +24,7 @@ export const TEXTOS_ERRO: Record<CodigoErro, string> = {
 
 /** Resposta da recuperação de senha: a mesma para conta que existe e para a que não existe (PT-08). */
 export const TEXTO_RECUPERACAO_ENVIADA =
-  "Se este e-mail tiver acesso ao T3 Just, enviamos um link para criar uma senha nova. O link vale por uma hora e só pode ser usado uma vez.";
+  "Se este e-mail tiver acesso ao T3jus, enviamos um link para criar uma senha nova. O link vale por uma hora e só pode ser usado uma vez.";
 
 /** Motivo de uma recusa do banco (detalhes.motivo), dito para quem usa o Console. */
 export const TEXTOS_MOTIVO: Record<string, string> = {
@@ -40,6 +40,6 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
 export const TEXTO_CONVITE_CONTA_EXISTENTE =
-  "Esta pessoa já tem conta no T3 Just. O novo acesso aparece para ela na próxima vez que entrar.";
+  "Esta pessoa já tem conta no T3jus. O novo acesso aparece para ela na próxima vez que entrar.";
 export const TEXTO_CONVITE_ENVIADO =
   "Convite enviado. A pessoa recebe um e-mail para criar a senha; o link vale por um dia e só pode ser usado uma vez.";

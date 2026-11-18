@@ -20,7 +20,7 @@ create table pessoas (
   criado_em timestamptz not null default app_now()
 );
 
--- Equipe T3 Just: entra no Console, sempre com o autenticador (PT-08). Quais escritórios
+-- Equipe T3jus: entra no Console, sempre com o autenticador (PT-08). Quais escritórios
 -- cada pessoa da equipe atende vem dos vínculos, como para todo mundo (PT-24, passo 1).
 create table equipe_t3 (
   pessoa_id     uuid primary key references pessoas (id) on delete restrict,
@@ -29,7 +29,7 @@ create table equipe_t3 (
   desativada_em timestamptz
 );
 
--- Funções de um vínculo (sócio, estagiário, implantação do T3 Just...). Cada uma entra com a
+-- Funções de um vínculo (sócio, estagiário, implantação do T3jus...). Cada uma entra com a
 -- funcionalidade que a usa; aqui só o sócio, que o passo 1 convida.
 create table funcoes (
   codigo  text primary key check (codigo ~ '^[A-Z][A-Z_]{1,39}$'),
@@ -135,7 +135,7 @@ insert into tabelas_sem_escritorio (tabela, motivo) values
   ('escritorios', 'É o próprio escritório: aparece o do contexto e os que a pessoa tem vínculo ativo'),
   ('pessoas', 'Uma pessoa pode ter vínculo com vários escritórios (PT-22); aparece a própria e as do escritório do contexto'),
   ('vinculos', 'Liga a pessoa ao escritório; aparecem os do escritório do contexto e os da própria pessoa'),
-  ('equipe_t3', 'Equipe interna do T3 Just; os escritórios que cada um atende vêm dos vínculos'),
+  ('equipe_t3', 'Equipe interna do T3jus; os escritórios que cada um atende vêm dos vínculos'),
   ('sessoes_escritorio', 'Escolha do escritório por sessão; cada pessoa vê só as próprias');
 call proteger_tabela_global('funcoes', 'Lista de funções, igual para todos os escritórios');
 call proteger_tabela_global('funcao_acoes', 'O que cada função pode fazer, igual para todos os escritórios');
@@ -225,7 +225,7 @@ begin
                   where v.pessoa_id = p_pessoa and v.revogado_em is null and f.sistema = 'PORTAL');
 end $$;
 
--- A pessoa é da equipe T3 Just e está ativa: pode entrar no Console (sempre com autenticador).
+-- A pessoa é da equipe T3jus e está ativa: pode entrar no Console (sempre com autenticador).
 create function acesso_console(p_pessoa uuid) returns boolean
 language plpgsql
 security definer

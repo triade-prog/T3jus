@@ -2,7 +2,7 @@
 // a Edge Function do sistema no servidor, com o segredo de repasse e o IP real, e devolve a
 // resposta. Os cookies de sessão são de primeira parte (__Host-). Nenhuma regra de negócio aqui.
 
-import { COOKIES_CONSOLE, COOKIES_PORTAL, ErroDominio, type CodigoErro } from "@t3just/domain";
+import { COOKIES_CONSOLE, COOKIES_PORTAL, ErroDominio, type CodigoErro } from "@t3jus/domain";
 
 export interface OpcoesRepasse {
   /** URL da função, ex.: https://<projeto>.supabase.co/functions/v1/api-portal */
@@ -23,7 +23,7 @@ export function opcoesPortal(env: Ambiente): OpcoesRepasse {
   return { destino: `${env.SUPABASE_FUNCTIONS_URL ?? ""}/api-portal`, segredo: env.REPASSE_SEGREDO ?? "", cookies: Object.values(COOKIES_PORTAL) };
 }
 
-/** Console T3 Just → api-console. */
+/** Console T3jus → api-console. */
 export function opcoesConsole(env: Ambiente): OpcoesRepasse {
   return { destino: `${env.SUPABASE_FUNCTIONS_URL ?? ""}/api-console`, segredo: env.REPASSE_SEGREDO ?? "", cookies: Object.values(COOKIES_CONSOLE) };
 }

@@ -2,7 +2,7 @@
 // padrão, nada em cache e log sem dado sensível.
 
 import { Hono, type Env } from "hono";
-import { ErroDominio } from "@t3just/domain";
+import { ErroDominio } from "@t3jus/domain";
 import { CABECALHO_SEGREDO, segredoConfere } from "./repasse.ts";
 import { ErroBanco, traduzirErroBanco } from "./banco.ts";
 import { registrar } from "./registro.ts";

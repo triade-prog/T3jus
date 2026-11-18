@@ -1,6 +1,6 @@
-# Sistema T3 Just
+# Sistema T3jus
 
-Código do T3 Just (DC1): o **Portal do advogado** e o **Console T3 Just** (equipe interna). O site comercial entra no passo 2, em `apps/site`. As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
+Código do T3jus (DC1): o **Portal do advogado** e o **Console T3jus** (equipe interna). O site comercial entra no passo 2, em `apps/site`. As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
 
 A base veio da fundação (passo 0) do TRÍADE Condo, que por sua vez veio do T-shirt Club (DC5, DC6): só as peças genéricas, com "condomínio" trocado por "escritório".
 
@@ -8,7 +8,7 @@ A base veio da fundação (passo 0) do TRÍADE Condo, que por sua vez veio do T-
 
 ```
 apps/portal     Portal do advogado (Next.js 16, porta 3000)
-apps/console        Console T3 Just (Next.js 16, porta 3001)
+apps/console        Console T3jus (Next.js 16, porta 3001)
 packages/domain     regras puras em TypeScript: dinheiro, erros, textos, esquemas, logs limpos
                     (roda no Node e no Deno)
 packages/ui         tema (DC10) e componentes React
@@ -63,7 +63,7 @@ Se a tabela não tiver escritório, ela precisa de um motivo em `tabelas_sem_esc
 
 A migration `0060_console_clientes.sql` e a `api-console` trazem o Console no servidor. As telas ainda não existem (F1.5 no painel).
 
-- **Equipe interna (PT-24).** Quem é da equipe T3 Just está em `equipe_t3`, com as funções em `equipe_funcoes`: ADMINISTRACAO, IMPLANTACAO, FINANCEIRO e SUPORTE. Cada pessoa só vê os escritórios atribuídos a ela, e só enquanto tem a função da atribuição. Sempre sobra alguém com administração.
+- **Equipe interna (PT-24).** Quem é da equipe T3jus está em `equipe_t3`, com as funções em `equipe_funcoes`: ADMINISTRACAO, IMPLANTACAO, FINANCEIRO e SUPORTE. Cada pessoa só vê os escritórios atribuídos a ela, e só enquanto tem a função da atribuição. Sempre sobra alguém com administração.
 - **Carteira (CO-01).** Cada escritório cliente tem um estágio (em implantação ou ativo) e as situações a tratar, calculadas da ficha: sem sócio, sem contato, sem contrato. Para ficar ativo, o escritório precisa ter o sócio convidado.
 - **Ficha (CO-02).** Nome, cidade, UF, endereço, CNPJ (conferido e único) e contatos. A ficha é do escritório, que vai vê-la e editá-la no Portal; a referência do contrato fica na carteira e só a administração muda.
 - **Interno (CO-03).** A carteira (`clientes`) e as notas (`notas_internas`) passam por `proteger_tabela_interna`: o escritório nunca as vê. As notas são só de inserção.

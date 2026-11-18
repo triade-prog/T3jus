@@ -5,7 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 const APPS = [
   { nome: "Portal do advogado", url: "http://localhost:3000" },
-  { nome: "Console T3 Just", url: "http://localhost:3001" },
+  { nome: "Console T3jus", url: "http://localhost:3001" },
 ];
 
 for (const app of APPS) {

@@ -32,7 +32,7 @@
       "npm:zod@^4.1.0"
     ],
     "links": {
-      "npm:@t3just/domain@0.1.0": {
+      "npm:@t3jus/domain@0.1.0": {
         "dependencies": [
           "npm:zod@^4.1.0"
         ]

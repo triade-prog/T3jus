@@ -2,7 +2,7 @@
 // o navegador nunca manda o escritório nas chamadas; ele vem da sessão, conferida no banco.
 
 import type { MiddlewareHandler } from "hono";
-import { COOKIES_PORTAL, ErroDominio, escolherEscritorioSchema } from "@t3just/domain";
+import { COOKIES_PORTAL, ErroDominio, escolherEscritorioSchema } from "@t3jus/domain";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";

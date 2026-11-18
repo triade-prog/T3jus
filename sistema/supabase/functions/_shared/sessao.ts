@@ -1,5 +1,5 @@
 // Login e sessão dos dois sistemas (F0.6, PT-08), com as diferenças de cada um:
-// - Console T3 Just: só a equipe ativa, sempre com o autenticador (aal2).
+// - Console T3jus: só a equipe ativa, sempre com o autenticador (aal2).
 // - Portal do advogado: quem tem vínculo ativo; o autenticador é pedido de quem o cadastrou.
 // Senha errada e conta sem acesso respondem igual. Tentativas contadas por e-mail + IP em
 // hash. A recuperação responde sempre a mesma coisa, exista a conta ou não.
@@ -12,7 +12,7 @@ import {
   recuperarSenhaSchema,
   redefinirSenhaSchema,
   TEXTO_RECUPERACAO_ENVIADA,
-} from "@t3just/domain";
+} from "@t3jus/domain";
 import type { Portador, ProvedorAuth, SessaoAuth } from "./auth.ts";
 import type { Banco } from "./banco.ts";
 import { apagarCookie, gravarCookie, lerCookie } from "./cookies.ts";
