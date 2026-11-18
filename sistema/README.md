@@ -126,3 +126,14 @@ Regras da senha: 12 caracteres ou mais e fora das listas de senhas vazadas. A AP
 | `/clientes/[id]/{ficha,contrato,equipe,notas,historico}` | Ainda sem tela aprovada: mostram o aviso. |
 
 O que o desenho mostra e ainda não tem dado: busca global e avisos no topo, plano do cliente, OAB e WhatsApp do sócio, "e-mail aberto" no caminho do convite, link do convite para copiar e prazo de implantação em dias.
+
+### Contrato e documentos do cliente (CO-05)
+
+O arquivo vai direto do navegador para o Storage, num bucket privado (`documentos-console`, PDF, JPG ou PNG até 10 MB), sem passar pela API nem pela Vercel. A tabela `documentos_cliente` é interna (o escritório não vê) e só recebe inserção; nada se apaga.
+
+1. `POST /v1/clientes/:id/documentos` registra o anexo (categoria, nome, tipo, tamanho) e devolve um endereço de envio de uso único. O caminho no Storage é `<escritório>/<documento>`, montado no servidor.
+2. O navegador manda o arquivo (`PUT`) para esse endereço. A CSP do Console aceita a origem do Storage pela variável `ARQUIVOS_ORIGEM`.
+3. `POST /v1/clientes/:id/documentos/:doc/concluir` confere no Storage se o arquivo chegou com o tamanho e o tipo registrados e só então o anexo aparece na lista (`GET`).
+4. `POST /v1/clientes/:id/documentos/:doc/abrir` devolve um link de 60 segundos e registra a abertura no histórico interno.
+
+A conferência com o Storage de verdade fica para quando o projeto Supabase existir (E1); os testes usam um Storage falso.

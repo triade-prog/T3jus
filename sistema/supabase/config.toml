@@ -20,6 +20,16 @@ import_map = "./functions/deno.json"
 verify_jwt = false
 import_map = "./functions/deno.json"
 
+# Contrato e documentos do cliente no Console (CO-05): bucket privado, sem acesso público e
+# sem política para usuário; só a Edge Function, com a chave de serviço, assina envio e leitura.
+[storage]
+file_size_limit = "10MiB"
+
+[storage.buckets.documentos-console]
+public = false
+file_size_limit = "10MiB"
+allowed_mime_types = ["application/pdf", "image/jpeg", "image/png"]
+
 # Login (F0.6, PT-08). Ninguém se cadastra sozinho: a equipe T3jus cria o escritório e
 # convida o sócio (passo 1).
 [auth]
@@ -66,6 +76,8 @@ sign_in_sign_ups = 30
 # Segredos das funções (supabase secrets set ...): REPASSE_SEGREDO (o mesmo dos apps, 32+
 # caracteres), PORTAL_URL e CONSOLE_URL (para o link de redefinir senha).
 # SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o Supabase já entrega.
+# No Console (Vercel), ARQUIVOS_ORIGEM é a origem do Supabase (https://<ref>.supabase.co): entra
+# no connect-src da CSP para o navegador mandar o anexo direto ao Storage.
 # O modelo do e-mail de recuperação leva ao app com o token:
 # {{ .RedirectTo }}?token_hash={{ .TokenHash }}
 # O modelo do e-mail de convite (passo 1) segue a mesma forma e leva a /criar-senha do app

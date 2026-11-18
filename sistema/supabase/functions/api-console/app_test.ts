@@ -2,6 +2,7 @@
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiConsole } from "./app.ts";
 import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, limitesFalsos, pedido, TOKEN_LINK, TOKEN_RECUPERACAO, type UsuarioFalso } from "../_shared/teste_util.ts";
+import { arquivosFalsos } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const SOCIO = "1c8d4a1f-6e2b-4d3c-8f9a-2b3c4d5e6f7a";
@@ -21,7 +22,7 @@ function montar(opcoes: { equipe?: Set<string>; usuarios?: UsuarioFalso[] } = {}
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3 }),
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo",
+    banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo", arquivos: arquivosFalsos().arquivos,
   });
   return { pedir: pedido(app, "api-console"), equipe, ...falso, ...db };
 }

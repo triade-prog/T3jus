@@ -3,7 +3,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { FUNCOES_CONSOLE, SITUACOES, UFS } from "@t3jus/domain";
 import { criarApiConsole } from "./app.ts";
-import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE } from "../_shared/teste_util.ts";
+import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -17,6 +17,7 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
     { id: "9f0a1b2c-3d4e-4f50-8a6b-7c8d9e0f1a2b", email: "convidada@exemplo.invalid", senha: "x", emailVerificado: false },
   ]);
   const convites = adminFalso(opcoes.contas);
+  const storage = arquivosFalsos();
   const db = bancoFalso({
     acesso_console: () => true,
     registrar_acesso: () => 1,
@@ -36,9 +37,9 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
     ...opcoes.handlers,
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, admin: convites.admin, urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo",
+    banco: db.banco, auth: falso.auth, admin: convites.admin, urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo", arquivos: storage.arquivos,
   });
-  return { pedir: pedido(app, "api-console"), ...falso, ...db, ...convites };
+  return { pedir: pedido(app, "api-console"), ...falso, ...db, ...convites, ...storage };
 }
 
 async function entrar(m: ReturnType<typeof montar>): Promise<string> {
@@ -180,6 +181,58 @@ Deno.test("CO-02: a ficha traz o e-mail dos sócios, pego no Auth", async () => 
   });
   const r = await m.pedir(`/v1/clientes/${IPE}`, { cookie: await entrar(m) });
   assertEquals((await r.json()).socios[0].email, "ana@exemplo.invalid");
+});
+
+const DOC = "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f";
+
+Deno.test("CO-05: anexar documento: registra, devolve o endereço de envio e só conclui com o arquivo certo no Storage", async () => {
+  const m = montar({ handlers: {
+    console_documento_iniciar: () => DOC,
+    console_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 2048 }],
+    console_documento_concluir: () => null,
+  } });
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/clientes/${IPE}/documentos`, { cookie, corpo: { categoria: "CONTRATO_ASSINADO", nome: "contrato.pdf", tipo: "application/pdf", tamanho: 2048 } });
+  assertEquals(r.status, 201);
+  assertEquals((await r.json()).enderecoDeEnvio, `https://storage.exemplo/envio/${IPE}/${DOC}?token=uso-unico`);
+  assertEquals(m.pedidosDeEnvio, [`${IPE}/${DOC}`]);
+
+  // Ainda não chegou: não conclui.
+  const antes = await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/concluir`, { cookie, corpo: {} });
+  assertEquals((await erro(antes)).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  // Chegou com outro tamanho: não conclui.
+  m.guardados.set(`${IPE}/${DOC}`, { tamanho: 999, tipo: "application/pdf" });
+  assertEquals((await erro(await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/concluir`, { cookie, corpo: {} }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.guardados.set(`${IPE}/${DOC}`, { tamanho: 2048, tipo: "application/pdf" });
+  assertEquals((await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/concluir`, { cookie, corpo: {} })).status, 200);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "console_documento_concluir").length, 1);
+});
+
+Deno.test("CO-05: tipo fora de PDF, JPG e PNG ou acima de 10 MB nem chega ao banco", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  for (const corpo of [
+    { categoria: "OUTRO", nome: "a.exe", tipo: "application/x-msdownload", tamanho: 10 },
+    { categoria: "OUTRO", nome: "a.pdf", tipo: "application/pdf", tamanho: 10 * 1024 * 1024 + 1 },
+    { categoria: "OUTRO", nome: "../a.pdf", tipo: "application/pdf", tamanho: 10 },
+  ]) {
+    assertEquals((await erro(await m.pedir(`/v1/clientes/${IPE}/documentos`, { cookie, corpo }))).codigo, "VALIDATION_ERROR");
+  }
+  assertEquals(m.chamadas.filter((c) => c.funcao === "console_documento_iniciar").length, 0);
+  assertEquals(m.pedidosDeEnvio, []);
+});
+
+Deno.test("CO-05: abrir dá um link de 60 segundos com o nome do arquivo; sem permissão, nada", async () => {
+  const m = montar({ handlers: { console_documento_abrir: () => "contrato.pdf" } });
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/abrir`, { cookie, corpo: {} });
+  assertEquals(await r.json(), { url: `https://storage.exemplo/ler/${IPE}/${DOC}?token=curto`, validadeSegundos: 60 });
+  assertEquals(m.leituras, [{ caminho: `${IPE}/${DOC}`, segundos: 60, nome: "contrato.pdf" }]);
+
+  const sem = montar({ handlers: { console_documento_abrir: () => erroBanco("TC401") } });
+  const r2 = await sem.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/abrir`, { cookie: await entrar(sem), corpo: {} });
+  assertEquals((await erro(r2)).codigo, "FORBIDDEN");
+  assertEquals(sem.leituras, []);
 });
 
 Deno.test("convites têm limite por pessoa da equipe", async () => {

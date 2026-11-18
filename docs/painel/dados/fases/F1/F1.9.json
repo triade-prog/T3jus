@@ -1,0 +1,12 @@
+{
+  "id": "F1.9",
+  "texto": "Anexos do cliente no Console, no servidor: registro, envio direto ao Storage privado, conferência do arquivo e link temporário para abrir",
+  "peca": "C1",
+  "refs": [
+    "CO-05",
+    "PT-01"
+  ],
+  "status": "feito",
+  "ordem": 38,
+  "evidencia": "Migration 0120 (documentos_cliente interna, só de inserção e ENVIANDO → PRONTO; ações console.documentos.ver e .enviar; histórico interno ao anexar e ao abrir) e pgTAP 012; bucket privado documentos-console no config.toml (PDF, JPG, PNG, até 10 MB); _shared/arquivos.ts com testes; rotas GET/POST /v1/clientes/:id/documentos, /concluir (confere tamanho e tipo no Storage) e /abrir (link de 60 s) com testes Deno; CSP do Console aceita a origem do Storage (ARQUIVOS_ORIGEM) com teste."
+}

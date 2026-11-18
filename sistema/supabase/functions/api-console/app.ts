@@ -12,6 +12,7 @@ import {
   COOKIES_CONSOLE,
   criarEscritorioSchema,
   ErroDominio,
+  iniciarDocumentoSchema,
   estagioSchema,
   fichaSchema,
   funcoesSchema,
@@ -20,6 +21,7 @@ import {
   type SocioCliente,
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
+import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
@@ -30,6 +32,8 @@ export interface DepsConsole extends DepsSessao {
   urlApp: string;
   /** Endereço do Portal (convite do sócio). */
   urlPortal: string;
+  /** Storage dos anexos do cliente (CO-05). */
+  arquivos: Arquivos;
 }
 
 interface LinhaCarteira {
@@ -200,6 +204,48 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const email = await deps.admin.emailDe(convidado);
     if (!email) throw new ErroDominio("NOT_FOUND");
     return c.json({ enviado: await deps.admin.reenviarConvite(email, `${deps.urlPortal}/criar-senha`) });
+  });
+
+  // Contrato e documentos do cliente (CO-05). O arquivo vai direto do navegador para o
+  // Storage; aqui só se registra, confere e assina. O caminho é <escritório>/<documento>,
+  // montado no servidor: o navegador nunca escolhe onde grava.
+  app.get("/v1/clientes/:id/documentos", async (c) => {
+    const linhas = await rpc<{ id: string; categoria: string; nome: string; tipo: string; tamanho: number; enviado_por: string; enviado_por_nome: string | null; concluido_em: string }[]>(
+      "console_documentos", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") });
+    return c.json({
+      documentos: linhas.map((d) => ({
+        id: d.id, categoria: d.categoria, nome: d.nome, tipo: d.tipo, tamanho: d.tamanho,
+        enviadoPor: { id: d.enviado_por, nome: d.enviado_por_nome }, enviadoEm: d.concluido_em,
+      })),
+    });
+  });
+
+  app.post("/v1/clientes/:id/documentos", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, iniciarDocumentoSchema);
+    const documento = await rpc<string>("console_documento_iniciar", {
+      p_pessoa: pessoa(c), p_escritorio: id, p_categoria: d.categoria, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    return c.json({ id: documento, enderecoDeEnvio: await deps.arquivos.enderecoDeEnvio(`${id}/${documento}`) }, 201);
+  });
+
+  app.post("/v1/clientes/:id/documentos/:doc/concluir", async (c) => {
+    const id = idDaRota(c, "id");
+    const doc = idDaRota(c, "doc");
+    const [registro] = await rpc<{ tipo: string; tamanho: number }[]>("console_documento_para_concluir", { p_pessoa: pessoa(c), p_escritorio: id, p_documento: doc });
+    const chegou = await deps.arquivos.info(`${id}/${doc}`);
+    if (!registro || !chegou || chegou.tamanho !== registro.tamanho || chegou.tipo !== registro.tipo) {
+      throw new ErroDominio("VALIDATION_ERROR", { campos: ["arquivo"], motivo: "ARQUIVO_NAO_CHEGOU" });
+    }
+    await rpc("console_documento_concluir", { p_pessoa: pessoa(c), p_escritorio: id, p_documento: doc });
+    return c.json({ ok: true });
+  });
+
+  app.post("/v1/clientes/:id/documentos/:doc/abrir", async (c) => {
+    const id = idDaRota(c, "id");
+    const doc = idDaRota(c, "doc");
+    const nome = await rpc<string>("console_documento_abrir", { p_pessoa: pessoa(c), p_escritorio: id, p_documento: doc });
+    return c.json({ url: await deps.arquivos.enderecoDeLeitura(`${id}/${doc}`, VALIDADE_LEITURA_S, nome), validadeSegundos: VALIDADE_LEITURA_S });
   });
 
   // Notas internas (CO-03).

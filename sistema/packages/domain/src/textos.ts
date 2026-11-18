@@ -36,6 +36,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   MESMO_ESTAGIO: "O cliente já está neste estágio.",
   JA_SOCIO: "Esta pessoa já é sócia deste escritório.",
   JA_ENTROU: "Esta pessoa já criou a senha e entrou no Portal. Não há convite a reenviar.",
+  ARQUIVO_NAO_CHEGOU: "O arquivo não chegou inteiro. Envie de novo.",
   JA_NA_EQUIPE: "Esta pessoa já está na equipe.",
   JA_ATRIBUIDO: "Esta pessoa já atende o cliente com esta função.",
   FUNCAO_NAO_ATRIBUIDA: "Esta pessoa não tem esta função na equipe. Reveja as funções dela antes.",

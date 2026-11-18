@@ -159,3 +159,23 @@ export function etapasImplantacao(c: { situacoes: readonly string[]; socios: rea
   const lista = (Object.keys(ETAPAS_IMPLANTACAO) as EtapaImplantacao[]).map((chave) => ({ chave, nome: ETAPAS_IMPLANTACAO[chave], feita: feitas[chave] }));
   return { lista, feitas: lista.filter((e) => e.feita).length, total: lista.length, proxima: lista.find((e) => !e.feita)?.chave ?? null };
 }
+
+/** Contrato e documentos do cliente (CO-05): categorias, tipos aceitos e o limite. */
+export const CATEGORIAS_DOCUMENTO = {
+  CONTRATO_ASSINADO: "Contrato assinado",
+  PROPOSTA: "Proposta",
+  DOCUMENTO_ESCRITORIO: "Documento do escritório",
+  OUTRO: "Outro",
+} as const;
+export type CategoriaDocumento = keyof typeof CATEGORIAS_DOCUMENTO;
+
+export const TIPOS_DOCUMENTO = { "application/pdf": "PDF", "image/jpeg": "JPG", "image/png": "PNG" } as const;
+export type TipoDocumento = keyof typeof TIPOS_DOCUMENTO;
+export const TAMANHO_MAXIMO_DOCUMENTO = 10 * 1024 * 1024;
+
+export const iniciarDocumentoSchema = z.object({
+  categoria: z.enum(chaves(CATEGORIAS_DOCUMENTO)),
+  nome: z.string().trim().min(1).max(200).refine((n) => !/[/\\]/.test(n), { message: "Nome de arquivo inválido" }),
+  tipo: z.enum(chaves(TIPOS_DOCUMENTO)),
+  tamanho: z.number().int().min(1).max(TAMANHO_MAXIMO_DOCUMENTO),
+});

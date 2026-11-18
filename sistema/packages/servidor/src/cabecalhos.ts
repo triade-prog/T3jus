@@ -6,6 +6,19 @@ export type App = "portal" | "console";
 export interface OpcoesCsp {
   nonce: string;
   dev?: boolean;
+  /** Origens a mais em connect-src (o Storage, para o envio direto de anexos no Console). */
+  conectar?: string[];
+}
+
+/** Só uma origem https exata (sem caminho nem curinga) entra na CSP; o resto é ignorado. */
+export function origemSegura(valor: string | undefined): string | null {
+  if (!valor) return null;
+  try {
+    const u = new URL(valor);
+    return u.protocol === "https:" && !u.username && !u.password && !u.hostname.includes("*") ? u.origin : null;
+  } catch {
+    return null;
+  }
 }
 
 export function gerarNonce(): string {
@@ -14,7 +27,7 @@ export function gerarNonce(): string {
   return btoa(String.fromCharCode(...bytes));
 }
 
-export function montarCsp({ nonce, dev = false }: OpcoesCsp): string {
+export function montarCsp({ nonce, dev = false, conectar = [] }: OpcoesCsp): string {
   const diretivas: Record<string, string[]> = {
     "default-src": ["'self'"],
     "script-src": ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...(dev ? ["'unsafe-eval'"] : [])],
@@ -23,7 +36,7 @@ export function montarCsp({ nonce, dev = false }: OpcoesCsp): string {
     "style-src-attr": ["'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:"],
     "font-src": ["'self'"],
-    "connect-src": ["'self'", ...(dev ? ["ws:"] : [])],
+    "connect-src": ["'self'", ...conectar.flatMap((o) => origemSegura(o) ?? []), ...(dev ? ["ws:"] : [])],
     "frame-src": ["'none'"],
     "worker-src": ["'self'", "blob:"],
     "manifest-src": ["'self'"],
