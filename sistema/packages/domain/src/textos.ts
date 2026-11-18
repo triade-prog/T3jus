@@ -16,7 +16,7 @@ export const TEXTOS_ERRO: Record<CodigoErro, string> = {
   INVALID_TRANSITION: "Esta mudança não vale na situação atual. Atualize a página para ver como está agora.",
   TOKEN_INVALID: "Este link já foi usado ou venceu. Peça um novo.",
   MFA_INVALID: "Código do autenticador não confere. Confira o aplicativo e tente de novo.",
-  PASSWORD_WEAK: "Escolha uma senha mais forte: 12 caracteres ou mais, sem sequências comuns.",
+  PASSWORD_WEAK: "Esta senha não serve: ela aparece em listas de senhas vazadas ou é igual à anterior. Escolha outra.",
   RATE_LIMITED: "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.",
   INTERNAL_ERROR: "Algo deu errado do nosso lado. Tente de novo em instantes.",
   UPSTREAM_UNAVAILABLE: "O serviço está fora do ar agora. Tente de novo em instantes.",

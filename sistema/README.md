@@ -101,6 +101,15 @@ pnpm build && pnpm e2e                     # Playwright com axe (PW_CHROMIUM_PAT
 
 Para publicar, falta o projeto Supabase de desenvolvimento em São Paulo (E1) e os projetos na Vercel (E2). Os segredos das funções estão listados no fim do `supabase/config.toml`. O login foi testado com um Auth falso; a conferência com o Supabase Auth de verdade fica para quando o projeto existir.
 
-### Tela de entrar (F1.4)
+### Telas de acesso (F1.4)
 
-`packages/ui` traz a moldura (`TelaAcesso`), o formulário (`Entrar`) e o estilo (`acesso.css`) da tela aprovada em `docs/design/aprovadas/entrar.html`. Cada app só passa os textos (`apps/*/src/acesso.ts`). Rotas: `/entrar` e `/entrar/link` (volta do link de acesso; `/entrar/link/sessao` quando "manter conectado" foi desmarcado). As fontes vêm do pacote `@fontsource`, servidas pelo próprio app, porque a CSP só aceita fonte de `'self'`.
+`packages/ui` traz a moldura (`TelaAcesso`), os cartões (`Entrar`, `NovaSenha`, `CriarSenha`, `EscolherEscritorio`), as peças comuns (`pecas.tsx`) e o estilo (`acesso.css`) das telas aprovadas em `docs/design/aprovadas/entrar.html` e `docs/design/aprovadas/acesso/`. Cada app só passa os textos (`apps/*/src/acesso.ts`). As fontes vêm do pacote `@fontsource`, servidas pelo próprio app, porque a CSP só aceita fonte de `'self'`.
+
+| Rota | O que faz |
+|---|---|
+| `/entrar`, `/entrar/link` | Senha ou link de acesso por e-mail; `/entrar/link/sessao` quando "manter conectado" foi desmarcado. No Portal, depois de entrar, vai para `/escritorio`. |
+| `/redefinir` | Volta do "Esqueci a senha". A tela abre o link (`POST /v1/auth/redefinir/abrir`), o servidor guarda num cookie próprio de 1 hora (`__Host-*-link`) e a senha nova vai sem o token (`POST /v1/auth/redefinir`). Ao salvar, sai da conta em todos os aparelhos. |
+| `/criar-senha` | Volta do convite. Mostra quem convidou (`dados_convite`), pede nome, senha e aceite dos Termos (`aceitar_convite` grava no histórico). No Portal já entra; no Console segue para o autenticador. |
+| `/escritorio` (Portal) | Escolha do escritório quando há mais de um (`escritorios_para_escolher`), do último usado ao mais antigo. Com um só, escolhe direto. |
+
+Regras da senha: 12 caracteres ou mais e fora das listas de senhas vazadas. A API confere a lista pelo Have I Been Pwned por k-anonimato (`_shared/senha.ts`): só os 5 primeiros caracteres do SHA-1 saem do servidor. Se o serviço cair, a troca segue. O `config.toml` não exige maiúscula, número ou símbolo.

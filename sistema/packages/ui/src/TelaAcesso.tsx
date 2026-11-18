@@ -18,7 +18,8 @@ export interface TextosAcesso {
 const FITA = ["#692746", "#87335B", "#AC3F6B", "#AC788D", "#DD9760", "#E9AE90", "#F2CDB3", "#F1E6DF", "#F2ECE8"];
 const FUNDO_AREAS = ["var(--ac-ambar)", "var(--ac-ambar-2)", "var(--ac-ambar-3)", "var(--ac-sal)"];
 
-export function TelaAcesso({ textos, children }: { textos: TextosAcesso; children: ReactNode }) {
+/** denso: cartão um pouco mais apertado (convite), para caber em 900 px de altura. */
+export function TelaAcesso({ textos, denso = false, children }: { textos: TextosAcesso; denso?: boolean; children: ReactNode }) {
   const f = textos.frase;
   return (
     <div className="ac-tela">
@@ -66,7 +67,7 @@ export function TelaAcesso({ textos, children }: { textos: TextosAcesso; childre
         <div className="ac-folhas">
           <div className="ac-f-ambar" aria-hidden="true" />
           <div className="ac-f-timbre" aria-hidden="true" />
-          <main className="ac-cartao" id="conteudo">
+          <main className={denso ? "ac-cartao ac-cartao-denso" : "ac-cartao"} id="conteudo">
             <p className="ac-sobre">{textos.sistema}</p>
             {children}
           </main>

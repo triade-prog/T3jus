@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Entrar" };
 export default function Pagina() {
   return (
     <TelaAcesso textos={TEXTOS_ACESSO}>
-      <Entrar textos={TEXTOS_ENTRAR} />
+      <Entrar textos={TEXTOS_ENTRAR} destino="/escritorio" />
     </TelaAcesso>
   );
 }

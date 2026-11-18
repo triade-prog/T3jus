@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Entrar" };
 export default function Pagina() {
   return (
     <TelaAcesso textos={TEXTOS_ACESSO}>
-      <Entrar textos={TEXTOS_ENTRAR} comLink />
+      <Entrar textos={TEXTOS_ENTRAR} comLink destino="/escritorio" />
     </TelaAcesso>
   );
 }

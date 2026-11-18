@@ -45,8 +45,8 @@ describe("F0.8: repasse /api", () => {
 
   it("cada app fala só com a sua função e só com o seu cookie", () => {
     const env = { SUPABASE_FUNCTIONS_URL: "https://fn.exemplo/functions/v1", REPASSE_SEGREDO: "s" };
-    expect(opcoesPortal(env)).toEqual({ destino: "https://fn.exemplo/functions/v1/api-portal", segredo: "s", cookies: ["__Host-portal"] });
-    expect(opcoesConsole(env)).toEqual({ destino: "https://fn.exemplo/functions/v1/api-console", segredo: "s", cookies: ["__Host-console"] });
+    expect(opcoesPortal(env)).toEqual({ destino: "https://fn.exemplo/functions/v1/api-portal", segredo: "s", cookies: ["__Host-portal", "__Host-portal-link"] });
+    expect(opcoesConsole(env)).toEqual({ destino: "https://fn.exemplo/functions/v1/api-console", segredo: "s", cookies: ["__Host-console", "__Host-console-link"] });
   });
 
   it("o cookie do Console nunca passa pelo repasse do Portal", async () => {

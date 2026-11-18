@@ -6,7 +6,9 @@
 
 import type { Context, Hono, MiddlewareHandler } from "hono";
 import {
+  abrirLinkSenhaSchema,
   codigoAutenticadorSchema,
+  criarSenhaSchema,
   entrarSchema,
   ErroDominio,
   pedirLinkAcessoSchema,
@@ -23,14 +25,19 @@ import { base64url, deBase64url, sha256Hex } from "./cripto.ts";
 import { ipDaChamada } from "./repasse.ts";
 import { claimsJwt } from "./jwt.ts";
 import { registrar } from "./registro.ts";
+import type { ConferirVazada } from "./senha.ts";
 import { lerCorpo } from "./validar.ts";
 
 /** Igual ao timebox das sessões no config.toml (12 h). */
 const SESSAO_SEGUNDOS = 12 * 60 * 60;
+/** Link de nova senha e convite: 1 hora, igual ao otp_expiry do config.toml. */
+const LINK_SEGUNDOS = 60 * 60;
 
 export interface ConfigSistema {
   sistema: "portal" | "console";
   cookie: string;
+  /** Link de nova senha ou convite aberto pela tela, até a senha nova ser salva. */
+  cookieLink: string;
   /** Console: sempre. Portal: só de quem cadastrou um autenticador. */
   autenticadorObrigatorio: boolean;
   /** Função do banco que diz se a pessoa entra neste sistema. */
@@ -42,15 +49,20 @@ export interface ConfigSistema {
 export interface DepsSessao {
   banco: Banco;
   auth: ProvedorAuth;
+  /** Senha nova em lista de senhas vazadas. Sem ela, só o Auth confere. */
+  senhaVazada?: ConferirVazada;
 }
 
 export interface Sessao {
   pessoaId: string;
+  email: string;
   sessaoId: string;
   accessToken: string;
 }
 
 export type VarsSessao = { Variables: { sessao: Sessao } };
+
+type TipoLink = "recovery" | "invite";
 
 /** Qualquer app cujas variáveis incluem a sessão (o Portal soma o escritório). */
 type ComSessao = { Variables: VarsSessao["Variables"] };
@@ -107,7 +119,7 @@ export function criarSessao(cfg: ConfigSistema, deps: DepsSessao) {
     if ((cfg.autenticadorObrigatorio || s.temAutenticador) && s.aal !== "aal2") throw new ErroDominio("MFA_REQUIRED");
     // Conferido a cada chamada: vínculo revogado ou equipe desativada param na hora (PT-21).
     if (!(await deps.banco.rpc<boolean>(cfg.funcaoAcesso, { p_pessoa: s.userId }))) throw new ErroDominio("FORBIDDEN");
-    c.set("sessao", { pessoaId: s.userId, sessaoId: s.sessaoId, accessToken: s.accessToken });
+    c.set("sessao", { pessoaId: s.userId, email: s.email, sessaoId: s.sessaoId, accessToken: s.accessToken });
     await next();
   };
 
@@ -230,7 +242,7 @@ export function criarSessao(cfg: ConfigSistema, deps: DepsSessao) {
     // A sessão que o link do e-mail dá. Com token_hash, o servidor troca pelo Auth (uso único).
     // Com o access_token do modelo padrão do Supabase, só vale se o Auth ainda aceita o token e
     // se ele nasceu do mesmo tipo de link (amr: recovery ou invite), nunca de um login comum.
-    async function sessaoDoLink(tokenHash: string | undefined, accessToken: string | undefined, tipo: "recovery" | "invite"): Promise<SessaoAuth | null> {
+    async function sessaoDoLink(tokenHash: string | undefined, accessToken: string | undefined, tipo: TipoLink): Promise<SessaoAuth | null> {
       if (tokenHash) return tipo === "recovery" ? await deps.auth.usarRecuperacao(tokenHash) : await deps.auth.usarConvite(tokenHash);
       if (!accessToken) return null;
       let metodos: unknown[] = [];
@@ -245,35 +257,91 @@ export function criarSessao(cfg: ConfigSistema, deps: DepsSessao) {
       return p ? { accessToken, refreshToken: "", expiraEm: 0, userId: p.userId } : null;
     }
 
-    app.post("/v1/auth/redefinir", async (c) => {
-      const { tokenHash, accessToken, novaSenha } = await lerCorpo(c, redefinirSenhaSchema);
-      const s = await sessaoDoLink(tokenHash, accessToken, "recovery");
-      if (!s) throw new ErroDominio("TOKEN_INVALID");
-      if ((await deps.auth.trocarSenha(s.accessToken, novaSenha)) === "FRACA") {
-        await deps.auth.sair(s.accessToken).catch(() => undefined);
-        throw new ErroDominio("PASSWORD_WEAK");
+    // A tela abre o link (o token é de uso único) e guarda a sessão dele num cookie de 1 hora,
+    // separado da sessão de entrar: com ele a pessoa só salva a senha nova.
+    function guardarLink(c: Context, r: SessaoAuth, tipo: TipoLink): void {
+      const valor = `v1.${base64url(JSON.stringify({ a: r.accessToken, r: r.refreshToken, t: tipo }))}`;
+      c.header("set-cookie", gravarCookie(cfg.cookieLink, valor, LINK_SEGUNDOS), { append: true });
+    }
+
+    async function linkDoCookie(c: Context, tipo: TipoLink): Promise<(SessaoAuth & { email: string }) | null> {
+      const valor = lerCookie(c.req.raw.headers, cfg.cookieLink);
+      if (!valor?.startsWith("v1.")) return null;
+      let v: { a?: unknown; r?: unknown; t?: unknown };
+      try {
+        v = JSON.parse(deBase64url(valor.slice(3)));
+      } catch {
+        return null;
       }
-      // Depois de redefinir, as sessões antigas caem (inclusive a desta troca): entra de novo.
+      if (typeof v.a !== "string" || typeof v.r !== "string" || v.t !== tipo) return null;
+      const p = await deps.auth.portador(v.a);
+      return p ? { accessToken: v.a, refreshToken: v.r, expiraEm: 0, userId: p.userId, email: p.email } : null;
+    }
+
+    /** O link do corpo (chamada direta) ou o da tela (cookie). */
+    async function sessaoDaTroca(c: Context, d: { tokenHash?: string; accessToken?: string }, tipo: TipoLink) {
+      const s = d.tokenHash || d.accessToken ? await sessaoDoLink(d.tokenHash, d.accessToken, tipo) : await linkDoCookie(c, tipo);
+      if (!s) throw new ErroDominio("TOKEN_INVALID");
+      return s;
+    }
+
+    async function trocarSenha(s: SessaoAuth, novaSenha: string): Promise<void> {
+      const vazada = (await deps.senhaVazada?.(novaSenha)) ?? false;
+      if (vazada || (await deps.auth.trocarSenha(s.accessToken, novaSenha)) === "FRACA") throw new ErroDominio("PASSWORD_WEAK");
+    }
+
+    app.post("/v1/auth/redefinir/abrir", async (c) => {
+      const { tokenHash } = await lerCorpo(c, abrirLinkSenhaSchema);
+      const r = await deps.auth.usarRecuperacao(tokenHash);
+      if (!r) throw new ErroDominio("TOKEN_INVALID");
+      const p = await deps.auth.portador(r.accessToken);
+      if (!p) throw new ErroDominio("TOKEN_INVALID");
+      guardarLink(c, r, "recovery");
+      return c.json({ email: p.email });
+    });
+
+    app.post("/v1/auth/redefinir", async (c) => {
+      const d = await lerCorpo(c, redefinirSenhaSchema);
+      const s = await sessaoDaTroca(c, d, "recovery");
+      await trocarSenha(s, d.novaSenha);
+      // Depois de redefinir, as sessões antigas caem em todos os aparelhos (inclusive a
+      // desta troca): entra de novo com a senha nova.
       await deps.auth.sairDeTodas(s.accessToken);
       await acesso(deps, cfg, s.userId, "acesso.senha_redefinida");
       c.header("set-cookie", apagarCookie(cfg.cookie), { append: true });
+      c.header("set-cookie", apagarCookie(cfg.cookieLink), { append: true });
       return c.json({ ok: true });
     });
 
-    // Convite aceito (PT-20): a pessoa convidada cria a própria senha pelo link do e-mail e
-    // entra depois pelo login normal (no Console, com o autenticador).
+    // Convite (PT-20): a tela mostra quem convidou e para onde antes de a pessoa criar a senha.
+    app.post("/v1/auth/criar-senha/abrir", async (c) => {
+      const { tokenHash } = await lerCorpo(c, abrirLinkSenhaSchema);
+      const r = await deps.auth.usarConvite(tokenHash);
+      if (!r) throw new ErroDominio("TOKEN_INVALID");
+      const p = await deps.auth.portador(r.accessToken);
+      if (!p) throw new ErroDominio("TOKEN_INVALID");
+      guardarLink(c, r, "invite");
+      const dados = await deps.banco
+        .rpc<Record<string, unknown>>("dados_convite", { p_pessoa: r.userId, p_sistema: cfg.sistema.toUpperCase() })
+        .catch(() => ({}));
+      return c.json({ email: p.email, ...dados });
+    });
+
+    // Convite aceito: a pessoa cria a própria senha, confirma o nome e aceita os Termos. Com
+    // acesso a este sistema, já entra (no Console, segue para cadastrar o autenticador).
     app.post("/v1/auth/criar-senha", async (c) => {
-      const { tokenHash, accessToken, novaSenha } = await lerCorpo(c, redefinirSenhaSchema);
-      const s = await sessaoDoLink(tokenHash, accessToken, "invite");
-      if (!s) throw new ErroDominio("TOKEN_INVALID");
-      if ((await deps.auth.trocarSenha(s.accessToken, novaSenha)) === "FRACA") {
+      const d = await lerCorpo(c, criarSenhaSchema);
+      const s = await sessaoDaTroca(c, d, "invite");
+      await trocarSenha(s, d.novaSenha);
+      await deps.banco.rpc("aceitar_convite", { p_pessoa: s.userId, p_nome: d.nome, p_sistema: cfg.sistema.toUpperCase() });
+      c.header("set-cookie", apagarCookie(cfg.cookieLink), { append: true });
+      const temAcesso = s.refreshToken !== "" && (await deps.banco.rpc<boolean>(cfg.funcaoAcesso, { p_pessoa: s.userId }));
+      if (!temAcesso) {
         await deps.auth.sair(s.accessToken).catch(() => undefined);
-        throw new ErroDominio("PASSWORD_WEAK");
+        c.header("set-cookie", apagarCookie(cfg.cookie), { append: true });
+        return c.json({ etapa: "ENTRAR" });
       }
-      await deps.auth.sairDeTodas(s.accessToken);
-      await acesso(deps, cfg, s.userId, "acesso.convite_aceito");
-      c.header("set-cookie", apagarCookie(cfg.cookie), { append: true });
-      return c.json({ ok: true });
+      return c.json({ etapa: await abrirSessao(c, s, true, "acesso.senha_conferida") });
     });
   }
 

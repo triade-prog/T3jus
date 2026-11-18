@@ -78,6 +78,27 @@ const DESENHOS = {
       <path d="M3 20.5h18" />
     </>
   ),
+  xis: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
+  busca: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m15.5 15.5 5 5" />
+    </>
+  ),
+  seta: <path d="m9 5 7 7-7 7" />,
+  sair: (
+    <>
+      <path d="M13.5 4.5h-9v15h9" />
+      <path d="M9.5 12h11" />
+      <path d="m17 8.5 3.5 3.5-3.5 3.5" />
+    </>
+  ),
+  relogio: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
   ajuda: (
     <>
       <circle cx="12" cy="12" r="8.5" />

@@ -51,6 +51,10 @@
   outline-offset: 2px;
   border-radius: 6px;
 }
+/* O título recebe o foco só para o leitor de tela anunciar a etapa nova; não é um controle. */
+.ac-tela h1[tabindex="-1"]:focus {
+  outline: none;
+}
 .ac-tela h1,
 .ac-tela h2 {
   font-family: var(--ac-serifa);
@@ -664,3 +668,96 @@
     justify-content: center;
   }
 }
+
+/* ---------------------------------------------------------------------------------------
+   Nova senha, convite e escolha do escritório (telas aprovadas em 18/11/2026:
+   docs/design/aprovadas/acesso/). Mesma moldura da tela de entrar; só o cartão muda.
+   --------------------------------------------------------------------------------------- */
+.ac-ico-g{width:28px;height:28px}
+/* Erro preso ao campo (aria-describedby) */
+.ac-erro-campo{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.5;font-weight:500;color:var(--ac-vinho-3)}
+.ac-erro-campo .ac-ico{width:16px;height:16px;margin-top:1px}
+.ac-entrada[readonly]{background:var(--ac-sal-2);border-color:var(--ac-sal);color:var(--ac-tinta)}
+/* Regras da senha, sempre à vista */
+.ac-regras{list-style:none;margin:-4px 0 0;padding:0;display:grid;gap:6px;font-size:13px}
+.ac-regra{display:flex;align-items:flex-start;gap:10px;line-height:1.45}
+.ac-regra-marca{flex:none;width:20px;height:20px;margin-top:0;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--ac-vinho-4);background:var(--ac-papel)}
+.ac-regra-marca .ac-ico{width:12px;height:12px;stroke-width:2.4;display:none}
+.ac-regra-info{color:var(--ac-tinta-2);white-space:nowrap}
+.ac-regra-info:not(:empty)::before{content:"· "}
+.ac-regra[data-estado="ok"] .ac-regra-marca{background:var(--ac-vinho);border-color:var(--ac-vinho);color:var(--ac-papel)}
+.ac-regra[data-estado="ok"] .i-ok{display:block}
+.ac-regra[data-estado="erro"]{color:var(--ac-vinho-3);font-weight:500}
+.ac-regra[data-estado="erro"] .ac-regra-info{color:var(--ac-vinho-3)}
+.ac-regra[data-estado="erro"] .ac-regra-marca{background:var(--ac-vinho-3);border-color:var(--ac-vinho-3);color:var(--ac-papel)}
+.ac-regra[data-estado="erro"] .i-erro{display:block}
+.ac-regra[data-estado="conferindo"] .ac-regra-marca{border-style:dashed;border-color:var(--ac-vinho-2)}
+@media (prefers-reduced-motion:no-preference){.ac-regra[data-estado="conferindo"] .ac-regra-marca{animation:ac-giro 1.2s linear infinite}}
+@keyframes ac-giro{to{transform:rotate(360deg)}}
+/* Convite: quem convidou e para onde */
+.ac-convite{margin-top:18px;display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:var(--ac-raio);background:var(--ac-sal-2);border-left:3px solid var(--ac-ambar)}
+.ac-convite > .ac-ico{color:var(--ac-vinho);margin-top:2px}
+.ac-convite p{font-size:13px;color:var(--ac-tinta-2);line-height:1.45}
+.ac-convite strong{font-weight:600;color:var(--ac-tinta)}
+.ac-convite .ac-onde{font-family:var(--ac-serifa);font-weight:500;font-size:22px;line-height:1.15;color:var(--ac-vinho);margin:2px 0 3px}
+/* Etapas do Console: 1 senha, 2 autenticador */
+.ac-etapas{display:flex;align-items:center;gap:10px;list-style:none;margin:16px 0 0;padding:0;font-size:12px;font-weight:500;color:var(--ac-tinta-2)}
+.ac-etapas li{display:flex;align-items:center;gap:8px}
+.ac-etapas li+li::before{content:"";width:28px;height:1px;background:var(--ac-vinho-4);margin-right:2px}
+.ac-etapas .ac-n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-family:var(--ac-serifa);font-weight:600;font-size:14px;line-height:1;border:1.5px solid var(--ac-vinho-4);color:var(--ac-vinho)}
+.ac-etapas [aria-current] {color:var(--ac-vinho)}
+.ac-etapas [aria-current] .ac-n{background:var(--ac-vinho);border-color:var(--ac-vinho);color:var(--ac-papel)}
+.ac-etapas .ac-feita .ac-n{background:var(--ac-ambar-3);border-color:var(--ac-ambar-3)}
+.ac-etapas .ac-feita .ac-ico{width:14px;height:14px;stroke-width:2.2}
+/* Aceite dos Termos */
+.ac-aceite{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding-top:2px;font-size:13px;line-height:1.5;cursor:pointer}
+.ac-aceite input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--ac-vinho)}
+.ac-aceite input[aria-invalid="true"]{outline:2px solid var(--ac-vinho-3);outline-offset:1px}
+.ac-aceite a{color:var(--ac-vinho);font-weight:500;padding:2px 0;text-decoration:underline;text-underline-offset:2px}
+.ac-aceite a:hover{color:var(--ac-vinho-2)}
+/* Concluído: disco com o sinal */
+.ac-disco{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--ac-ambar-3);color:var(--ac-vinho);margin-bottom:18px}
+.ac-disco .ac-ico{width:30px;height:30px;stroke-width:1.8}
+.ac-disco-alerta{background:var(--ac-sal-2);color:var(--ac-vinho-3)}
+.ac-cartao .ac-disco{margin:20px 0 4px}
+.ac-acoes{display:flex;flex-direction:column;gap:12px}
+.ac-acoes .ac-link{align-self:center}
+a.ac-btn{box-sizing:border-box}
+/* Escolha do escritório */
+.ac-busca{position:relative}
+.ac-busca .ac-ico{position:absolute;left:14px;top:14px;color:var(--ac-tinta-2);pointer-events:none}
+.ac-busca .ac-entrada{padding-left:44px}
+.ac-total{font-size:12px;color:var(--ac-tinta-2)}
+.ac-escritorios{list-style:none;margin:0;padding:0 2px 2px 0;display:grid;gap:8px}
+.ac-rolagem{max-height:max(200px,calc(100dvh - 600px));overflow-y:auto;margin:0 -6px;padding:4px 6px;scrollbar-width:thin;scrollbar-color:var(--ac-vinho-4) transparent}
+.ac-esc{width:100%;display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 14px 10px 16px;border:1px solid var(--ac-sal);border-radius:var(--ac-raio);background:var(--ac-papel);font:inherit;color:var(--ac-tinta);text-align:left;cursor:pointer}
+.ac-esc:hover{border-color:var(--ac-vinho-4);background:var(--ac-sal-2)}
+.ac-esc:active{background:var(--ac-sal)}
+.ac-esc-texto{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ac-esc-nome{font-family:var(--ac-serifa);font-weight:500;font-size:20px;line-height:1.2;color:var(--ac-vinho)}
+.ac-esc-meta{font-size:12px;line-height:1.5;color:var(--ac-tinta-2)}
+.ac-esc > .ac-ico{color:var(--ac-vinho)}
+.ac-esc-atual{border:1.5px solid var(--ac-vinho);background:var(--ac-papel);box-shadow:inset 4px 0 0 var(--ac-vinho)}
+.ac-esc-atual:hover{border-color:var(--ac-vinho);background:var(--ac-sal-2)}
+.ac-selo-p{align-self:flex-start;display:inline-flex;align-items:center;height:22px;padding:0 9px;margin-bottom:3px;border-radius:999px;background:var(--ac-ambar-3);color:var(--ac-vinho-escuro);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.ac-vazio{padding:18px 16px;border:1px dashed var(--ac-vinho-4);border-radius:var(--ac-raio);font-size:13px;color:var(--ac-tinta-2)}
+.ac-vazio strong{display:block;color:var(--ac-tinta);font-weight:600;font-size:14px;margin-bottom:2px}
+.ac-sessao{margin-top:auto;padding-top:14px;border-top:1px solid var(--ac-sal);display:flex;align-items:center;justify-content:space-between;gap:4px 12px;font-size:12px;color:var(--ac-tinta-2)}
+.ac-sessao strong{color:var(--ac-tinta);font-weight:500;word-break:break-all}
+.ac-sair{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;margin-right:-10px;border:0;background:none;border-radius:8px;font:inherit;font-size:13px;font-weight:500;color:var(--ac-vinho);cursor:pointer}
+.ac-sair:hover{background:var(--ac-ambar-3)}
+.ac-cartao-denso .ac-form{gap:11px;margin:16px 0 0}
+.ac-cartao-denso .ac-acoes{margin-bottom:20px}
+.ac-cartao-denso .ac-convite{margin-top:14px}
+.ac-cartao-denso .ac-etapas{margin-top:12px}
+.ac-cartao-denso{padding-top:34px;padding-bottom:30px}
+@media (max-width:1023px){
+.ac-rolagem{max-height:none;min-height:0;overflow:visible}
+.ac-convite .ac-onde{font-size:20px}
+.ac-cartao-denso{padding-top:28px}
+.ac-esc{padding:10px 12px 10px 14px}
+}
+
+.ac-centro{align-self:center}
+.ac-pergunta{margin:4px 0 0}
+.ac-escolha{margin-bottom:18px}

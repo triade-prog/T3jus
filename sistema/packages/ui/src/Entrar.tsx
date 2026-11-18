@@ -6,9 +6,10 @@
 // - "Esqueci a senha", no mesmo cartão.
 // O escritório nunca vai do navegador: a sessão fica num cookie do servidor.
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { chamarApi, textoDoErro, type ErroApi } from "./api.ts";
 import { Icone } from "./Icone.tsx";
+import { Aviso } from "./pecas.tsx";
 
 type Etapa = "SENHA" | "CODIGO" | "CADASTRAR_AUTENTICADOR" | "RECUPERAR" | "ENVIADO" | "LINK";
 type Proxima = "CODIGO" | "CADASTRAR_AUTENTICADOR" | "PRONTO";
@@ -40,15 +41,6 @@ export function lerLinkDoEndereco(endereco: { pathname: string; search: string }
     tokenHash: new URLSearchParams(endereco.search).get("token_hash"),
     manterConectado: !endereco.pathname.replace(/\/$/, "").endsWith("/sessao"),
   };
-}
-
-function Aviso({ tom, children }: { tom: "erro" | "info"; children: ReactNode }) {
-  return (
-    <div className={tom === "erro" ? "ac-aviso ac-aviso-erro" : "ac-aviso"} role={tom === "erro" ? "alert" : "status"}>
-      <Icone nome={tom === "erro" ? "alerta" : "check"} />
-      <p>{children}</p>
-    </div>
-  );
 }
 
 export function Entrar({ textos, comLink = false, destino = "/" }: { textos: TextosEntrar; comLink?: boolean; destino?: string }) {

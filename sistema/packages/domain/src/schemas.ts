@@ -27,17 +27,34 @@ export const usarLinkAcessoSchema = z.object({
   manterConectado: z.boolean().optional(),
 });
 
+const tokenHash = z.string().min(16).max(200).regex(/^[A-Za-z0-9_-]+$/);
+
+/** A tela de nova senha ou do convite abre o link do e-mail (token_hash, de uso único). */
+export const abrirLinkSenhaSchema = z.object({ tokenHash });
+
 /**
- * Senha nova pelo link do e-mail: o token_hash (modelo de e-mail próprio) ou o access_token que
- * o modelo padrão do Supabase devolve depois do # no endereço. Um dos dois, nunca os dois.
+ * Senha nova pelo link do e-mail. Pela tela, o link já foi aberto e fica num cookie do
+ * servidor; o token_hash ou o access_token (modelo padrão do Supabase, depois do # no
+ * endereço) ainda valem no corpo. Nunca os dois.
  */
 export const redefinirSenhaSchema = z
   .object({
-    tokenHash: z.string().min(16).max(200).regex(/^[A-Za-z0-9_-]+$/).optional(),
+    tokenHash: tokenHash.optional(),
     accessToken: z.string().max(4000).regex(/^[\w-]+\.[\w-]+\.[\w-]+$/).optional(),
     novaSenha: z.string().min(12).max(200),
   })
-  .refine((d) => !d.tokenHash !== !d.accessToken, { message: "Link incompleto", path: ["tokenHash"] });
+  .refine((d) => !(d.tokenHash && d.accessToken), { message: "Link duplicado", path: ["tokenHash"] });
+
+/** Convite aceito (PT-20): senha, o nome confirmado e o aceite dos Termos. */
+export const criarSenhaSchema = z
+  .object({
+    tokenHash: tokenHash.optional(),
+    accessToken: z.string().max(4000).regex(/^[\w-]+\.[\w-]+\.[\w-]+$/).optional(),
+    novaSenha: z.string().min(12).max(200),
+    nome: z.string().trim().min(1).max(120),
+    aceiteTermos: z.literal(true),
+  })
+  .refine((d) => !(d.tokenHash && d.accessToken), { message: "Link duplicado", path: ["tokenHash"] });
 
 export const escolherEscritorioSchema = z.object({
   escritorioId: z.string().uuid(),

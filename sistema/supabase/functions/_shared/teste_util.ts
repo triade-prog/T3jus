@@ -67,6 +67,7 @@ export function authFalso(usuarios: UsuarioFalso[]) {
       const u = porId(t.userId);
       return Promise.resolve({
         userId: u.id,
+        email: u.email,
         aal: t.aal,
         emailVerificado: u.emailVerificado !== false,
         temAutenticador: (u.fatores ?? []).some((f) => f.verificado),
@@ -111,6 +112,8 @@ export function authFalso(usuarios: UsuarioFalso[]) {
     usarConvite(tokenHash) {
       if (tokenHash !== TOKEN_CONVITE || recuperacaoUsada.has(tokenHash)) return Promise.resolve(null);
       recuperacaoUsada.add(tokenHash);
+      // Como no Auth: abrir o convite confirma o e-mail.
+      usuarios.at(-1)!.emailVerificado = true;
       return Promise.resolve(emitir(usuarios.at(-1)!.id));
     },
     trocarSenha(token, novaSenha) {
@@ -175,6 +178,12 @@ export function pedido(app: { request: (url: string, init?: RequestInit) => Resp
 }
 
 /** O cookie de sessão gravado na resposta, pronto para a próxima chamada. */
+/** Um cookie pelo nome, entre os que a resposta gravou ("nome=valor"; vazio se apagado). */
+export function cookieChamado(r: Response, nome: string): string | null {
+  const c = r.headers.getSetCookie().find((x) => x.startsWith(`${nome}=`));
+  return c ? c.split(";")[0]! : null;
+}
+
 export function cookieDe(r: Response): string {
   const set = r.headers.get("set-cookie") ?? "";
   return set.split(";")[0]!;

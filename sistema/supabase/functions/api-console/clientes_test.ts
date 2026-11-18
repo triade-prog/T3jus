@@ -3,7 +3,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { FUNCOES_CONSOLE, SITUACOES, UFS } from "@t3jus/domain";
 import { criarApiConsole } from "./app.ts";
-import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE } from "../_shared/teste_util.ts";
+import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -29,6 +29,8 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
     console_editar_ficha: (a) => Number(a.p_versao) + 1,
     console_equipe: () => [],
     console_cadastrar_membro: () => null,
+    dados_convite: () => ({ nome: "Inês" }),
+    aceitar_convite: () => null,
     ...opcoes.handlers,
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
@@ -125,7 +127,7 @@ Deno.test("PT-20: convite do sócio cria a conta e manda o link para o Portal", 
   const r = await m.pedir(`/v1/clientes/${IPE}/socios`, { cookie: await entrar(m), corpo: { nome: "Ana Souza", email: "Ana@Exemplo.invalid" } });
   assertEquals(r.status, 201);
   assertEquals((await r.json()).contaNova, true);
-  assertEquals(m.enviados, [{ email: "ana@exemplo.invalid", voltarPara: "https://portal.exemplo/convite" }]);
+  assertEquals(m.enviados, [{ email: "ana@exemplo.invalid", voltarPara: "https://portal.exemplo/criar-senha" }]);
   const args = m.chamadas.find((c) => c.funcao === "console_vincular_socio")!.args;
   assertEquals(args.p_convidado, m.contas["ana@exemplo.invalid"]);
   assertEquals(args.p_nome, "Ana Souza");
@@ -169,7 +171,7 @@ Deno.test("PT-24: equipe nova recebe o convite para o Console, depois de o banco
   const cookie = await entrar(m);
   const r = await m.pedir("/v1/equipe", { cookie, corpo: { nome: "Inês", email: "ines@triade.exemplo", funcoes: ["IMPLANTACAO"] } });
   assertEquals(r.status, 201);
-  assertEquals(m.enviados, [{ email: "ines@triade.exemplo", voltarPara: "https://console.exemplo/convite" }]);
+  assertEquals(m.enviados, [{ email: "ines@triade.exemplo", voltarPara: "https://console.exemplo/criar-senha" }]);
   const ordem = m.chamadas.map((c) => c.funcao).filter((f) => f.startsWith("console_"));
   assertEquals(ordem, ["console_equipe", "console_cadastrar_membro"]);
 
@@ -179,12 +181,17 @@ Deno.test("PT-24: equipe nova recebe o convite para o Console, depois de o banco
   assertEquals(sem.enviados, []);
 });
 
-Deno.test("PT-20: quem foi convidado cria a senha pelo link de uso único", async () => {
+Deno.test("PT-20: quem foi convidado cria a senha pelo link de uso único e segue para o autenticador", async () => {
   const m = montar();
-  const r = await m.pedir("/v1/auth/criar-senha", { corpo: { tokenHash: TOKEN_CONVITE, novaSenha: "senha-nova-bem-forte" } });
-  assertEquals(r.status, 200);
-  assert(m.acessos().includes("acesso.convite_aceito"));
-  const deNovo = await m.pedir("/v1/auth/criar-senha", { corpo: { tokenHash: TOKEN_CONVITE, novaSenha: "senha-nova-bem-forte" } });
+  const aberto = await m.pedir("/v1/auth/criar-senha/abrir", { corpo: { tokenHash: TOKEN_CONVITE } });
+  assertEquals(await aberto.json(), { email: "convidada@exemplo.invalid", nome: "Inês" });
+  const link = cookieChamado(aberto, "__Host-console-link")!;
+  const r = await m.pedir("/v1/auth/criar-senha", { cookie: link, corpo: { novaSenha: "senha-nova-bem-forte", nome: "Inês", aceiteTermos: true } });
+  assertEquals(await r.json(), { etapa: "CADASTRAR_AUTENTICADOR" });
+  assertEquals(m.chamadas.find((c) => c.funcao === "aceitar_convite")?.args.p_sistema, "CONSOLE");
+  // Sem o autenticador, a sessão ainda não abre o Console.
+  assertEquals((await erro(await m.pedir("/v1/sessao", { cookie: cookieChamado(r, "__Host-console")! }))).codigo, "MFA_REQUIRED");
+  const deNovo = await m.pedir("/v1/auth/criar-senha/abrir", { corpo: { tokenHash: TOKEN_CONVITE } });
   assertEquals((await erro(deNovo)).codigo, "TOKEN_INVALID");
 });
 

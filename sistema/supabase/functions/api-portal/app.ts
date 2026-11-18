@@ -15,10 +15,18 @@ interface EscritorioDaPessoa {
   funcoes: string[];
 }
 
+interface LinhaEscolha {
+  escritorio_id: string;
+  nome: string;
+  cidade: string | null;
+  uf: string | null;
+  ultima_entrada: string | null;
+}
+
 export function criarApiPortal(segredo: string | undefined, deps: DepsSessao & { urlApp: string }) {
   const app = criarApp<VarsPortal>("api-portal", segredo);
   const sessao = criarSessao(
-    { sistema: "portal", cookie: COOKIES_PORTAL.sessao, autenticadorObrigatorio: false, funcaoAcesso: "acesso_portal", urlApp: deps.urlApp },
+    { sistema: "portal", cookie: COOKIES_PORTAL.sessao, cookieLink: COOKIES_PORTAL.link, autenticadorObrigatorio: false, funcaoAcesso: "acesso_portal", urlApp: deps.urlApp },
     deps,
   );
 
@@ -36,6 +44,16 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsSessao & {
       pessoaId: s.pessoaId,
       escritorioAtual: atual,
       escritorios: escritorios.map((x) => ({ id: x.escritorio_id, nome: x.nome, funcoes: x.funcoes })),
+    });
+  });
+
+  // Escolha do escritório (tela aprovada): do último usado ao mais antigo, com a cidade.
+  app.get("/v1/sessao/escolha", async (c) => {
+    const s = c.get("sessao");
+    const linhas = await deps.banco.rpc<LinhaEscolha[]>("escritorios_para_escolher", { p_pessoa: s.pessoaId });
+    return c.json({
+      email: s.email,
+      escritorios: linhas.map((x) => ({ id: x.escritorio_id, nome: x.nome, cidade: x.cidade, uf: x.uf, ultimaEntrada: x.ultima_entrada })),
     });
   });
 

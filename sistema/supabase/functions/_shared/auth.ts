@@ -26,6 +26,7 @@ export interface CadastroTotp {
 
 export interface Portador {
   userId: string;
+  email: string;
   /** "aal1" depois da senha; "aal2" depois do código do autenticador. */
   aal: "aal1" | "aal2";
   emailVerificado: boolean;
@@ -139,11 +140,12 @@ export function authGoTrue(url: string, apiKey: string, buscar: typeof fetch = f
     async portador(token) {
       const r = await chamar("/user", { token });
       if (r.status === 401 || r.status === 403) return null;
-      const u = (await exigirOk(r)) as { id: string; email_confirmed_at?: string | null; factors?: { factor_type: string; status: string }[] };
+      const u = (await exigirOk(r)) as { id: string; email?: string; email_confirmed_at?: string | null; factors?: { factor_type: string; status: string }[] };
       const claims = claimsJwt(token);
       if (typeof claims.session_id !== "string") return null;
       return {
         userId: u.id,
+        email: u.email ?? "",
         aal: claims.aal === "aal2" ? "aal2" : "aal1",
         emailVerificado: Boolean(u.email_confirmed_at),
         temAutenticador: (u.factors ?? []).some((f) => f.factor_type === "totp" && f.status === "verified"),
