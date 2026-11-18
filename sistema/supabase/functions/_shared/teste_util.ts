@@ -8,6 +8,7 @@ export const SEGREDO = "segredo-de-repasse-de-teste";
 export const CODIGO_CERTO = "123456";
 export const TOKEN_RECUPERACAO = "token-de-recuperacao-valido";
 export const TOKEN_CONVITE = "token-de-convite-valido-0001";
+export const TOKEN_LINK = "token-de-link-de-acesso-0001";
 
 export interface UsuarioFalso {
   id: string;
@@ -25,6 +26,7 @@ export function authFalso(usuarios: UsuarioFalso[]) {
   const tokens = new Map<string, { userId: string; sessaoId: string; aal: "aal1" | "aal2" }>();
   const refresh = new Map<string, { userId: string; sessaoId: string; aal: "aal1" | "aal2" }>();
   const recuperacoes: string[] = [];
+  const links: { email: string; voltarPara: string }[] = [];
   const recuperacaoUsada = new Set<string>();
   const senhasTrocadas: string[] = [];
 
@@ -97,6 +99,15 @@ export function authFalso(usuarios: UsuarioFalso[]) {
       recuperacaoUsada.add(tokenHash);
       return Promise.resolve(emitir(usuarios[0]!.id));
     },
+    pedirLinkAcesso(email, voltarPara) {
+      links.push({ email, voltarPara });
+      return Promise.resolve();
+    },
+    usarLinkAcesso(tokenHash) {
+      if (tokenHash !== TOKEN_LINK || recuperacaoUsada.has(tokenHash)) return Promise.resolve(null);
+      recuperacaoUsada.add(tokenHash);
+      return Promise.resolve(emitir(usuarios[0]!.id));
+    },
     usarConvite(tokenHash) {
       if (tokenHash !== TOKEN_CONVITE || recuperacaoUsada.has(tokenHash)) return Promise.resolve(null);
       recuperacaoUsada.add(tokenHash);
@@ -108,7 +119,7 @@ export function authFalso(usuarios: UsuarioFalso[]) {
       return Promise.resolve("OK" as const);
     },
   };
-  return { auth, recuperacoes, senhasTrocadas, tokens };
+  return { auth, recuperacoes, links, senhasTrocadas, tokens };
 }
 
 type Handler = (args: Record<string, unknown>) => unknown;

@@ -1,0 +1,10 @@
+{
+  "data": "18/11/2026",
+  "inicio": "11:06",
+  "fim": "11:24",
+  "texto": "Tela de entrar do Portal e do Console programada a partir da tela aprovada (conceito Gabinete): senha com manter conectado, link de acesso por e-mail, código e cadastro do autenticador e esqueci a senha no mesmo cartão. A API ganhou o link de acesso e o manter conectado. Fontes Alegreya e Poppins servidas pelo próprio app. Versão de celular adaptada, aguardando aprovação.",
+  "refs": [
+    "PT-08",
+    "PT-10"
+  ]
+}

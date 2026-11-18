@@ -26,6 +26,10 @@ export const TEXTOS_ERRO: Record<CodigoErro, string> = {
 export const TEXTO_RECUPERACAO_ENVIADA =
   "Se este e-mail tiver acesso ao T3jus, enviamos um link para criar uma senha nova. O link vale por uma hora e só pode ser usado uma vez.";
 
+/** Resposta do pedido de link de acesso: a mesma exista a conta ou não (PT-08). */
+export const TEXTO_LINK_ENVIADO =
+  "Se este e-mail tiver acesso, enviamos um link para entrar. Ele vale por uma hora e só pode ser usado uma vez.";
+
 /** Motivo de uma recusa do banco (detalhes.motivo), dito para quem usa o Console. */
 export const TEXTOS_MOTIVO: Record<string, string> = {
   SEM_SOCIO: "Convide o sócio antes de concluir a implantação.",

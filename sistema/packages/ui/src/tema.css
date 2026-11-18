@@ -8,9 +8,24 @@
    Os nomes antigos (lilas, console, portal) continuam e apontam para a paleta nova.
    Contrastes conferidos para WCAG 2.2 AA no claro e no escuro. */
 
+/* Fontes servidas pelo próprio app (a CSP só aceita fonte de 'self'): Alegreya nos títulos e
+   números, Poppins no texto (conceito Gabinete, docs/design/conceito-gabinete.md). */
+@import "@fontsource/alegreya/latin-500.css";
+@import "@fontsource/alegreya/latin-ext-500.css";
+@import "@fontsource/alegreya/latin-600.css";
+@import "@fontsource/alegreya/latin-ext-600.css";
+@import "@fontsource/alegreya/latin-500-italic.css";
+@import "@fontsource/alegreya/latin-ext-500-italic.css";
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-ext-400.css";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/poppins/latin-ext-500.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-ext-600.css";
+
 @theme {
   --font-sans: Poppins, "Segoe UI", system-ui, sans-serif;
-  --font-titulo: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --font-titulo: Alegreya, "Iowan Old Style", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   --color-vinho: #692746;

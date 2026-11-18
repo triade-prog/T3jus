@@ -1,7 +1,7 @@
 // F0.6 no Console T3jus: só a equipe ativa, sempre com o autenticador (PT-08).
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiConsole } from "./app.ts";
-import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, limitesFalsos, pedido, TOKEN_RECUPERACAO, type UsuarioFalso } from "../_shared/teste_util.ts";
+import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, limitesFalsos, pedido, TOKEN_LINK, TOKEN_RECUPERACAO, type UsuarioFalso } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const SOCIO = "1c8d4a1f-6e2b-4d3c-8f9a-2b3c4d5e6f7a";
@@ -161,4 +161,11 @@ Deno.test("senha nova fraca ou curta é recusada", async () => {
   const m = montar();
   assertEquals((await erro(await m.pedir("/v1/auth/redefinir", { corpo: { tokenHash: TOKEN_RECUPERACAO, novaSenha: "curta" } }))).codigo, "VALIDATION_ERROR");
   assertEquals((await erro(await m.pedir("/v1/auth/redefinir", { corpo: { tokenHash: TOKEN_RECUPERACAO, novaSenha: "senha-vazada-conhecida" } }))).codigo, "PASSWORD_WEAK");
+});
+
+Deno.test("PT-08: o link de acesso não pula o autenticador da equipe", async () => {
+  const m = montar();
+  const r = await m.pedir("/v1/auth/link/usar", { corpo: { tokenHash: TOKEN_LINK } });
+  assertEquals(await r.json(), { etapa: "CADASTRAR_AUTENTICADOR" });
+  assertEquals((await erro(await m.pedir("/v1/sessao", { cookie: cookieDe(r) }))).codigo, "MFA_REQUIRED");
 });

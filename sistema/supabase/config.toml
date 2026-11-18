@@ -67,3 +67,6 @@ sign_in_sign_ups = 30
 # {{ .RedirectTo }}?token_hash={{ .TokenHash }}
 # O modelo do e-mail de convite (passo 1) segue a mesma forma e leva a /criar-senha do app
 # de destino (PORTAL_URL para o sócio e a equipe do escritório, CONSOLE_URL para a equipe T3jus).
+# O modelo do link de acesso (Magic Link) usa a mesma forma: {{ .RedirectTo }}?token_hash={{ .TokenHash }}.
+# O RedirectTo é /entrar/link (manter conectado) ou /entrar/link/sessao (até fechar o navegador).
+# Os dois endereços de cada app entram na lista de redirecionamentos permitidos do Auth.

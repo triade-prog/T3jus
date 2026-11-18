@@ -1,7 +1,7 @@
 // F0.6 e F0.3 no Portal do advogado: quem tem vínculo entra; o escritório vem da sessão.
-import { assertEquals, assertMatch } from "@std/assert";
+import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
-import { authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
+import { authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_LINK } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -115,4 +115,44 @@ Deno.test("PT-15: a exportação sai do escritório da sessão, nunca de um id d
   assertEquals((await r.json()).formato, "t3jus.exportacao.v1");
   const chamada = m.chamadas.find((c) => c.funcao === "exportar_escritorio")!;
   assertEquals(chamada.args, { p_pessoa: ANA, p_escritorio: AURORA });
+});
+
+Deno.test("manter conectado: marcado, o cookie tem prazo; desmarcado, some ao fechar o navegador", async () => {
+  const m = montar();
+  const com = (await m.pedir("/v1/auth/entrar", { corpo: ENTRAR })).headers.get("set-cookie") ?? "";
+  assertMatch(com, /Max-Age=43200/);
+  const sem = await m.pedir("/v1/auth/entrar", { corpo: { ...ENTRAR, manterConectado: false } });
+  const cookie = sem.headers.get("set-cookie") ?? "";
+  assert(!/Max-Age/.test(cookie), "cookie de sessão não leva Max-Age");
+  assertMatch(cookie, /HttpOnly; Secure; SameSite=Strict/);
+  assertEquals((await m.pedir("/v1/sessao", { cookie: cookieDe(sem) })).status, 200);
+});
+
+Deno.test("link de acesso: a resposta é a mesma exista a conta ou não, e o link volta para a tela de entrar", async () => {
+  const m = montar();
+  const a = await (await m.pedir("/v1/auth/link", { corpo: { email: ENTRAR.email } })).json();
+  const b = await (await m.pedir("/v1/auth/link", { corpo: { email: "ninguem@exemplo.invalid", manterConectado: false } })).json();
+  assertEquals(a, b);
+  assertEquals(m.links.map((l) => l.voltarPara), ["https://portal.exemplo/entrar/link", "https://portal.exemplo/entrar/link/sessao"]);
+});
+
+Deno.test("link de acesso: o token vira sessão uma vez só", async () => {
+  const m = montar();
+  const r = await m.pedir("/v1/auth/link/usar", { corpo: { tokenHash: TOKEN_LINK } });
+  assertEquals(await r.json(), { etapa: "PRONTO" });
+  assertEquals((await m.pedir("/v1/sessao", { cookie: cookieDe(r) })).status, 200);
+  assertEquals((await erro(await m.pedir("/v1/auth/link/usar", { corpo: { tokenHash: TOKEN_LINK } }))).codigo, "TOKEN_INVALID");
+});
+
+Deno.test("link de acesso: quem tem autenticador ainda passa pelo código", async () => {
+  const m = montar({ comAutenticador: true });
+  const r = await m.pedir("/v1/auth/link/usar", { corpo: { tokenHash: TOKEN_LINK } });
+  assertEquals(await r.json(), { etapa: "CODIGO" });
+  assertEquals((await erro(await m.pedir("/v1/sessao", { cookie: cookieDe(r) }))).codigo, "MFA_REQUIRED");
+});
+
+Deno.test("link de acesso: conta sem vínculo recebe a mesma recusa de link vencido", async () => {
+  const m = montar();
+  m.vinculos.clear();
+  assertEquals((await erro(await m.pedir("/v1/auth/link/usar", { corpo: { tokenHash: TOKEN_LINK } }))).codigo, "TOKEN_INVALID");
 });

@@ -100,3 +100,7 @@ pnpm build && pnpm e2e                     # Playwright com axe (PW_CHROMIUM_PAT
 ## Ainda não ligado
 
 Para publicar, falta o projeto Supabase de desenvolvimento em São Paulo (E1) e os projetos na Vercel (E2). Os segredos das funções estão listados no fim do `supabase/config.toml`. O login foi testado com um Auth falso; a conferência com o Supabase Auth de verdade fica para quando o projeto existir.
+
+### Tela de entrar (F1.4)
+
+`packages/ui` traz a moldura (`TelaAcesso`), o formulário (`Entrar`) e o estilo (`acesso.css`) da tela aprovada em `docs/design/aprovadas/entrar.html`. Cada app só passa os textos (`apps/*/src/acesso.ts`). Rotas: `/entrar` e `/entrar/link` (volta do link de acesso; `/entrar/link/sessao` quando "manter conectado" foi desmarcado). As fontes vêm do pacote `@fontsource`, servidas pelo próprio app, porque a CSP só aceita fonte de `'self'`.

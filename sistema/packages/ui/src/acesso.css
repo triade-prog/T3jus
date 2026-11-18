@@ -1,0 +1,666 @@
+/* Tela de entrar do Portal e do Console, a partir da tela aprovada pela Carol
+   (docs/design/aprovadas/entrar.html, conceito Gabinete). No computador segue o desenho
+   aprovado: lado vinho com a frase, corte diagonal e o cartão de entrar sobre duas folhas.
+   Em tela estreita o lado vinho vira uma faixa no topo e o cartão ocupa a largura.
+   As cores ficam aqui, em variáveis próprias da tela, até o design system (D2) ser aprovado. */
+
+.ac-tela {
+  --ac-vinho: #692746;
+  --ac-vinho-2: #87335b;
+  --ac-vinho-3: #ac3f6b;
+  --ac-vinho-4: #ac788d;
+  --ac-ambar: #dd9760;
+  --ac-ambar-2: #e9ae90;
+  --ac-ambar-3: #f2cdb3;
+  --ac-sal: #f1e6df;
+  --ac-sal-2: #f2ece8;
+  --ac-tinta: #2a1a22;
+  --ac-tinta-2: #6e5562;
+  --ac-vinho-escuro: #4f1d35;
+  --ac-papel: #ffffff;
+  --ac-raio: 10px;
+  --ac-serifa: Alegreya, "Iowan Old Style", Georgia, serif;
+  --ac-grao: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27200%27%20height%3D%27200%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%27.85%27%20numOctaves%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27200%27%20height%3D%27200%27%20filter%3D%27url%28%23n%29%27%20opacity%3D%27.6%27%2F%3E%3C%2Fsvg%3E");
+  --ac-padrao: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20fill%3D%22none%22%20stroke%3D%22%23692746%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22square%22%3E%3Cg%20transform%3D%22translate%2812%2012%29%22%3E%3Cpath%20d%3D%22M12%203.5v16M7.5%2020.5h9M4.5%207h15%22%2F%3E%3Cpath%20d%3D%22M4.5%207%202%2013h5ZM19.5%207%2017%2013h5Z%22%2F%3E%3Cpath%20d%3D%22M2%2013a2.5%202.5%200%200%200%205%200M17%2013a2.5%202.5%200%200%200%205%200%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2872%2018%29%22%3E%3Cpath%20d%3D%22M4%204h16l-1.5%202.5h-13Z%22%2F%3E%3Cpath%20d%3D%22M7%206.5v11M10.3%206.5v11M13.7%206.5v11M17%206.5v11%22%2F%3E%3Cpath%20d%3D%22M5.5%2017.5h13L20%2020H4Z%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2842%2070%29%22%3E%3Cpath%20d%3D%22M20%204C12%204%207.5%209%206.5%2016.5L5%2021%22%2F%3E%3Cpath%20d%3D%22M20%204c0%207.5-5%2011.5-12.5%2012.5%22%2F%3E%3Cpath%20d%3D%22M9.5%2011h6M8%2014h4.5%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 560px);
+  background: var(--ac-sal);
+  color: var(--ac-tinta);
+  font-family: Poppins, "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.57;
+  color-scheme: light;
+}
+.ac-tela::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+  background-image: var(--ac-grao);
+  pointer-events: none;
+}
+.ac-tela :focus-visible {
+  outline: 3px solid var(--ac-vinho-3);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.ac-tela h1,
+.ac-tela h2 {
+  font-family: var(--ac-serifa);
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.ac-tela p {
+  margin: 0;
+}
+.ac-ico {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+.ac-ico-p {
+  width: 16px;
+  height: 16px;
+}
+.ac-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Lado vinho com grão, cortado na diagonal */
+.ac-lado {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: var(--ac-vinho);
+  clip-path: polygon(0 0, 61% 0, 49% 100%, 0 100%);
+}
+.ac-lado::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+  background-image: var(--ac-grao);
+}
+.ac-coluna {
+  position: absolute;
+  z-index: -1;
+  left: 34.7%;
+  top: 46%;
+  width: min(330px, 23vw);
+  height: min(330px, 23vw);
+  color: var(--ac-vinho-2);
+  stroke-width: 0.9;
+}
+.ac-fita {
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  bottom: 0;
+  width: 61%;
+  height: 10px;
+  display: flex;
+}
+.ac-fita i {
+  flex: 1;
+}
+
+/* Frase da marca */
+.ac-marca-lado {
+  display: flex;
+  flex-direction: column;
+  padding: 56px 72px 40px;
+  color: var(--ac-sal);
+  min-width: 0;
+}
+.ac-marca {
+  font-family: var(--ac-serifa);
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--ac-papel);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  width: max-content;
+}
+.ac-marca b {
+  color: var(--ac-ambar);
+  font-weight: 600;
+}
+.ac-frase {
+  margin-top: auto;
+  margin-bottom: auto;
+  width: 100%;
+  max-width: 660px;
+  padding-top: 72px;
+}
+.ac-sobre {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.ac-frase .ac-sobre {
+  color: var(--ac-ambar-2);
+}
+.ac-frase h2 {
+  color: var(--ac-papel);
+  font-size: clamp(44px, 5.2vw, 74px);
+  line-height: 1.04;
+  margin-top: 20px;
+  letter-spacing: -0.015em;
+}
+.ac-circ {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+.ac-circ::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -0.16em;
+  top: 50%;
+  width: 1.02em;
+  height: 1.02em;
+  border-radius: 50%;
+  transform: translateY(-52%);
+  background: var(--ac-vinho-2);
+}
+.ac-frase h2 i {
+  font-style: italic;
+  color: var(--ac-ambar-3);
+}
+.ac-fio {
+  display: block;
+  width: 56px;
+  height: 2px;
+  background: var(--ac-ambar);
+  margin-top: 16px;
+}
+.ac-frase .ac-fio {
+  width: 72px;
+  margin-top: 28px;
+}
+.ac-frase p:not(.ac-sobre) {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-top: 22px;
+  max-width: 44ch;
+}
+.ac-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 34px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-areas li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ac-ambar-2);
+}
+.ac-bola {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--ac-vinho);
+}
+.ac-bola .ac-ico {
+  width: 24px;
+  height: 24px;
+}
+.ac-rodape-m {
+  font-size: 12px;
+  color: var(--ac-ambar-2);
+  margin-top: 40px;
+}
+
+/* Lado claro: aviso no topo, folhas com o cartão e o rodapé */
+.ac-lado-claro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 56px 22px 0;
+  min-width: 0;
+}
+.ac-topo {
+  align-self: flex-end;
+  font-size: 13px;
+  color: var(--ac-tinta-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ac-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ac-vinho);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.ac-link:hover {
+  color: var(--ac-vinho-2);
+}
+.ac-folhas {
+  position: relative;
+  margin: 12px 0 18px;
+  flex: 1;
+  max-width: 470px;
+  width: 100%;
+  align-self: flex-start;
+}
+.ac-f-ambar {
+  position: absolute;
+  inset: 18px -6px 30px 10px;
+  border-radius: 16px;
+  transform: rotate(-7deg);
+  background: var(--ac-ambar);
+  box-shadow: 0 30px 60px -30px rgba(42, 26, 34, 0.55);
+  overflow: hidden;
+  isolation: isolate;
+}
+.ac-f-ambar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--ac-padrao);
+  background-size: 132px 132px;
+  opacity: 0.75;
+}
+.ac-f-timbre {
+  position: absolute;
+  inset: 10px 0 20px 4px;
+  border-radius: 16px;
+  background: var(--ac-papel);
+  transform: rotate(3.5deg);
+  box-shadow: 0 20px 50px -30px rgba(42, 26, 34, 0.5);
+  overflow: hidden;
+}
+.ac-f-timbre::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 140px;
+  height: 10px;
+  background: var(--ac-vinho);
+}
+.ac-f-timbre::after {
+  content: "";
+  position: absolute;
+  right: 140px;
+  top: 0;
+  width: 46px;
+  height: 10px;
+  background: var(--ac-ambar);
+}
+.ac-cartao {
+  position: relative;
+  background: var(--ac-papel);
+  border-radius: 16px;
+  padding: 44px 48px 36px;
+  box-shadow: 0 24px 60px -28px rgba(105, 39, 70, 0.55);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.ac-cartao .ac-sobre {
+  color: var(--ac-vinho-2);
+}
+.ac-cartao h1 {
+  font-size: 48px;
+  line-height: 1;
+  margin-top: 8px;
+  color: var(--ac-vinho);
+}
+.ac-lede {
+  color: var(--ac-tinta-2);
+  margin-top: 14px;
+  font-size: 14px;
+  max-width: 62ch;
+}
+.ac-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 26px 0 24px;
+}
+.ac-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ac-campo label {
+  font-size: 13px;
+  font-weight: 500;
+}
+.ac-ajuda {
+  font-size: 12px;
+  color: var(--ac-tinta-2);
+}
+.ac-entrada {
+  min-height: 48px;
+  border: 1px solid var(--ac-vinho-4);
+  border-radius: var(--ac-raio);
+  padding: 0 14px;
+  font: inherit;
+  color: var(--ac-tinta);
+  background: var(--ac-papel);
+  width: 100%;
+}
+.ac-entrada:hover {
+  border-color: var(--ac-vinho-2);
+}
+.ac-entrada::placeholder {
+  color: var(--ac-tinta-2);
+}
+.ac-entrada[aria-invalid="true"] {
+  border-color: var(--ac-vinho-3);
+  box-shadow: 0 0 0 1px var(--ac-vinho-3);
+}
+.ac-codigo {
+  font-size: 22px;
+  letter-spacing: 0.4em;
+  font-variant-numeric: tabular-nums;
+}
+.ac-senha {
+  position: relative;
+}
+.ac-senha .ac-entrada {
+  padding-right: 104px;
+}
+.ac-senha button {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  height: 44px;
+  min-width: 96px;
+  border: 0;
+  background: transparent;
+  color: var(--ac-vinho);
+  font: inherit;
+  font-weight: 500;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.ac-senha button:hover {
+  background: var(--ac-ambar-3);
+}
+.ac-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.ac-lembrar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ac-lembrar input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--ac-vinho);
+  margin: 0;
+}
+.ac-botao-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+}
+.ac-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  width: 100%;
+  padding: 0 18px;
+  border-radius: var(--ac-raio);
+  font: inherit;
+  font-weight: 500;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.ac-btn:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+.ac-btn-pri {
+  background: var(--ac-vinho);
+  color: var(--ac-papel);
+  box-shadow: inset 0 -2px 0 var(--ac-vinho-escuro);
+}
+.ac-btn-pri:hover:not(:disabled) {
+  background: var(--ac-vinho-2);
+}
+.ac-btn-pri:active:not(:disabled) {
+  background: var(--ac-vinho-escuro);
+}
+.ac-btn-sec {
+  background: var(--ac-papel);
+  color: var(--ac-vinho);
+  border-color: var(--ac-vinho-4);
+}
+.ac-btn-sec:hover:not(:disabled) {
+  background: var(--ac-ambar-3);
+  border-color: var(--ac-vinho-2);
+}
+.ac-ou {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ac-tinta-2);
+}
+.ac-ou::before,
+.ac-ou::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--ac-sal);
+}
+.ac-aviso {
+  padding: 12px 14px;
+  border-radius: var(--ac-raio);
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  border-left: 3px solid var(--ac-vinho);
+  background: var(--ac-sal-2);
+}
+.ac-aviso .ac-ico {
+  margin-top: 1px;
+  color: var(--ac-vinho);
+}
+.ac-aviso-erro {
+  border-left-color: var(--ac-vinho-3);
+  background: #fbeef3;
+}
+.ac-aviso-erro .ac-ico {
+  color: var(--ac-vinho-3);
+}
+.ac-primeiro {
+  margin-top: auto;
+  padding: 14px 16px;
+  border-radius: var(--ac-raio);
+  background: var(--ac-ambar-3);
+  display: flex;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--ac-tinta);
+}
+.ac-primeiro .ac-ico {
+  color: var(--ac-vinho);
+  margin-top: 2px;
+}
+.ac-primeiro strong {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ac-vinho);
+}
+.ac-qr {
+  justify-self: center;
+  align-self: center;
+  border: 1px solid var(--ac-sal);
+  border-radius: var(--ac-raio);
+  padding: 8px;
+  background: var(--ac-papel);
+}
+.ac-chave {
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+  color: var(--ac-tinta);
+}
+.ac-selo {
+  position: absolute;
+  left: 49%;
+  top: 71%;
+  width: 150px;
+  height: 150px;
+  filter: drop-shadow(0 12px 18px rgba(42, 26, 34, 0.35));
+  pointer-events: none;
+}
+.ac-pe {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 12px;
+  color: var(--ac-tinta-2);
+}
+.ac-pe nav {
+  display: flex;
+}
+.ac-pe a {
+  color: var(--ac-tinta-2);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+}
+.ac-seguro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ac-seguro .ac-ico {
+  color: var(--ac-vinho-4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ac-btn,
+  .ac-entrada {
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+}
+
+/* Tela estreita: faixa vinho no topo, cartão na largura, sem as folhas e o selo. */
+@media (max-width: 1023px) {
+  .ac-tela {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+  }
+  .ac-lado {
+    clip-path: none;
+    bottom: auto;
+    height: var(--ac-faixa, 260px);
+  }
+  .ac-coluna,
+  .ac-fita,
+  .ac-selo,
+  .ac-f-ambar,
+  .ac-f-timbre,
+  .ac-frase p,
+  .ac-areas,
+  .ac-rodape-m {
+    display: none;
+  }
+  .ac-marca-lado {
+    padding: 24px 16px 0;
+    min-height: var(--ac-faixa, 260px);
+  }
+  .ac-marca {
+    font-size: 32px;
+  }
+  .ac-frase {
+    padding-top: 28px;
+    margin-bottom: 72px;
+  }
+  .ac-frase h2 {
+    font-size: 34px;
+    margin-top: 10px;
+  }
+  .ac-lado-claro {
+    padding: 0 16px 16px;
+    margin-top: -56px;
+  }
+  .ac-topo {
+    order: 3;
+    align-self: center;
+    justify-content: center;
+  }
+  .ac-folhas {
+    max-width: none;
+    margin: 0 0 8px;
+  }
+  .ac-cartao {
+    padding: 28px 20px 24px;
+  }
+  .ac-cartao h1 {
+    font-size: 40px;
+  }
+  .ac-btn {
+    font-size: 14px;
+  }
+  .ac-pe {
+    order: 4;
+    justify-content: center;
+  }
+}
