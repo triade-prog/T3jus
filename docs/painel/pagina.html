@@ -473,16 +473,30 @@ html,body{overflow-x:clip}
   document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#fase-"]');if(a)abrir(a.getAttribute('href'));});
   window.addEventListener('hashchange',()=>abrir(location.hash));abrir(location.hash);
 
-  // Ideias
-  ideias.forEach(a=>{
-    const fases=[...new Set([...a.itens,...a.falta].map(i=>i.fase).filter(Boolean))];
-    const status=a.itens.length?st(a.status):el('span',{class:'st pendente'},el('span',{class:'ic','aria-hidden':'true',text:STATUS.pendente.icone}),'Não iniciada');
-    const publicar=a.status==='feito'&&a.falta.length?el('span',{class:'suave',text:` · pronta, falta publicar (${a.falta.map(i=>i.id).join(', ')})`}):null;
-    $('tIdeias').append(el('tr',{id:'ideia-'+a.id},
-      el('td',{},el('span',{class:'mono',text:a.id})),
-      el('td',{},...fases.flatMap((f,k)=>[k?', ':'',linkFase(f)])),
-      el('td',{class:'mono',text:`${a.c.feito}/${a.itens.length}`}),
-      el('td',{},status,publicar)));
+  // Ideias, divididas pelas áreas do IDEIAS.md (as partes numeradas). Cada área abre com a sua conta.
+  const porId=Object.fromEntries(ideias.map(a=>[a.id,a]));
+  const areas=(D.meta.areas_ideias&&D.meta.areas_ideias.length)?D.meta.areas_ideias:[{numero:'',nome:'Todas',ideias:ideias.map(a=>({id:a.id}))}];
+  const atalhos=el('p',{class:'sub',id:'areasIdeias'},'Áreas: ');
+  areas.forEach((ar,k)=>{if(ar.ideias.some(i=>porId[i.id]))atalhos.append(atalhos.childNodes.length>1?' · ':'',el('a',{href:'#area-'+(ar.numero||'todas'),text:`${ar.nome} (${ar.ideias.filter(i=>porId[i.id]).length})`}));});
+  $('tIdeias').closest('.tbl').before(atalhos);
+  areas.forEach(ar=>{
+    const lista=ar.ideias.map(i=>porId[i.id]?{...porId[i.id],texto:i.texto,etiqueta:i.etiqueta}:null).filter(Boolean);
+    if(!lista.length)return;
+    const ca=conta(lista), slug='area-'+(ar.numero||'todas');
+    $('tIdeias').append(el('tr',{id:slug,class:'area-ideias'},
+      el('th',{colspan:'4',scope:'colgroup',style:'text-align:left;padding-top:20px;border-bottom:2px solid currentColor'},
+        `${ar.numero?ar.numero+'. ':''}${ar.nome}`,
+        el('span',{class:'suave',style:'font-weight:normal',text:` · ${ca.feito} de ${lista.length} atendidas, ${lista.filter(a=>a.itens.length).length} com alguma entrega ou teste`}))));
+    lista.forEach(a=>{
+      const fases=[...new Set([...a.itens,...a.falta].map(i=>i.fase).filter(Boolean))];
+      const status=a.itens.length?st(a.status):el('span',{class:'st pendente'},el('span',{class:'ic','aria-hidden':'true',text:STATUS.pendente.icone}),'Não iniciada');
+      const publicar=a.status==='feito'&&a.falta.length?el('span',{class:'suave',text:` · pronta, falta publicar (${a.falta.map(i=>i.id).join(', ')})`}):null;
+      $('tIdeias').append(el('tr',{id:'ideia-'+a.id},
+        el('td',{},el('span',{class:'mono',text:a.id}),a.texto?el('div',{class:'suave',text:a.texto+(a.etiqueta?' '+a.etiqueta:'')}):null),
+        el('td',{},...fases.flatMap((f,k)=>[k?', ':'',linkFase(f)])),
+        el('td',{class:'mono',text:`${a.c.feito}/${a.itens.length}`}),
+        el('td',{},status,publicar)));
+    });
   });
   $('nFora').append(`As ${fora.size} ideias fora do software (serviços fora do sistema, negócio e preço, empresa e marca, material antigo) não entram na conta: `,
     ...[...fora].flatMap((id,k)=>[k?', ':'',el('span',{class:'mono',id:'ideia-'+id,text:id})]),'.');

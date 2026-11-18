@@ -87,6 +87,22 @@ def codigos_do_ideias() -> list:
     return codigos
 
 
+def areas_do_ideias() -> list:
+    """As partes numeradas do IDEIAS.md como áreas, cada uma com as ideias, o texto e a etiqueta."""
+    areas, atual = [], None
+    for linha in IDEIAS.read_text(encoding="utf-8").split("\n"):
+        if linha.startswith("## "):
+            m = re.match(r"## (\d+)\. (.+)", linha)
+            atual = {"numero": int(m.group(1)), "nome": m.group(2).strip(), "ideias": []} if m else None
+            if atual:
+                areas.append(atual)
+            continue
+        m = re.match(r"^\| ([A-Z]{1,3}-\d{2,3}[a-z]?) \| (.+?) \| (\[[A-Z0-9]+\](?: \[[A-Z0-9]+\])*) \|$", linha)
+        if atual and m:
+            atual["ideias"].append({"id": m.group(1), "texto": m.group(2).strip(), "etiqueta": m.group(3)})
+    return areas
+
+
 def data_iso(data: str) -> str:
     d, m, a = data.split("/")
     return f"{a}-{m}-{d}"
@@ -141,6 +157,7 @@ def carregar() -> dict:
             "situacao": situacao["texto"],
             "fase_atual": meta.get("fase_atual"),
             "codigos_ideias": codigos,
+            "areas_ideias": areas_do_ideias(),
             "fora_do_software": meta.get("fora_do_software", []),
         },
         "proximos": proximos,
@@ -179,6 +196,10 @@ def conferir(silencioso=False) -> bool:
     codigos = set(d["meta"]["codigos_ideias"])
     if len(codigos) != len(d["meta"]["codigos_ideias"]):
         erros.append("IDEIAS.md tem código de ideia repetido")
+    nas_areas = [i["id"] for ar in d["meta"]["areas_ideias"] for i in ar["ideias"]]
+    if nas_areas != d["meta"]["codigos_ideias"]:
+        falta = [c for c in d["meta"]["codigos_ideias"] if c not in nas_areas]
+        erros.append(f"IDEIAS.md: linha de ideia fora do formato | código | texto | [etiqueta] |: {', '.join(falta) or 'ordem diferente'}")
     ids_fase = {f["id"] for f in d["fases"]}
     vistos = {}
 
