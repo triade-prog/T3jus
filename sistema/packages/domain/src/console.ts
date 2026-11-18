@@ -119,3 +119,43 @@ export const atribuirSchema = z.object({
 
 export const versaoSchema = z.object({ versao });
 
+
+/** Sócio na carteira e na ficha, com o caminho do convite (PT-20). */
+export interface SocioCliente {
+  vinculoId: string;
+  pessoaId: string;
+  nome: string;
+  /** Quando o convite saiu (o vínculo nasceu). */
+  desde: string;
+  convidadoPor: string | null;
+  /** Quando o último convite saiu (o primeiro ou um reenvio): o link vale 1 hora a partir daí. */
+  conviteEnviadoEm: string;
+  /** Quando criou a senha pelo convite; null enquanto não criou. */
+  senhaCriadaEm: string | null;
+  /** E-mail da conta, só na ficha (vem do Auth). */
+  email?: string | null;
+}
+
+/** As quatro etapas da implantação, na ordem da tela aprovada (CO-01). */
+export const ETAPAS_IMPLANTACAO = {
+  FICHA: "Ficha",
+  CONTRATO: "Contrato",
+  EQUIPE: "Equipe",
+  SOCIO_NO_PORTAL: "Sócio no Portal",
+} as const;
+export type EtapaImplantacao = keyof typeof ETAPAS_IMPLANTACAO;
+
+/**
+ * Quais etapas da implantação estão feitas: ficha com contato, referência do contrato,
+ * alguém da equipe atendendo e um sócio que já criou a senha.
+ */
+export function etapasImplantacao(c: { situacoes: readonly string[]; socios: readonly Pick<SocioCliente, "senhaCriadaEm">[]; equipe: readonly unknown[] }) {
+  const feitas: Record<EtapaImplantacao, boolean> = {
+    FICHA: !c.situacoes.includes("SEM_CONTATO"),
+    CONTRATO: !c.situacoes.includes("SEM_CONTRATO"),
+    EQUIPE: c.equipe.length > 0,
+    SOCIO_NO_PORTAL: c.socios.some((s) => s.senhaCriadaEm),
+  };
+  const lista = (Object.keys(ETAPAS_IMPLANTACAO) as EtapaImplantacao[]).map((chave) => ({ chave, nome: ETAPAS_IMPLANTACAO[chave], feita: feitas[chave] }));
+  return { lista, feitas: lista.filter((e) => e.feita).length, total: lista.length, proxima: lista.find((e) => !e.feita)?.chave ?? null };
+}

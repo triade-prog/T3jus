@@ -106,6 +106,40 @@ const DESENHOS = {
       <path d="M12 16.6v.8" />
     </>
   ),
+  inicio: (
+    <>
+      <path d="M3 10 12 4l9 6" />
+      <path d="M5 9.5V20h14V9.5" />
+      <path d="M10 20v-5h4v5" />
+    </>
+  ),
+  moeda: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M14.8 9.2c-.5-.9-1.6-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 2.9 5.8 1.4 5.8 4.3 0 1.3-1.3 2.2-3 2.2-1.3 0-2.5-.6-3-1.6M12 6v1.8M12 16.4v1.6" />
+    </>
+  ),
+  cracha: (
+    <>
+      <path d="M5 3.5h14v17H5Z" />
+      <circle cx="12" cy="10" r="2.6" />
+      <path d="M8 17a4 4 0 0 1 8 0" />
+    </>
+  ),
+  ajustes: (
+    <>
+      <path d="M4 7h9M18 7h2M4 17h3M11 17h9" />
+      <path d="M13 5h5v4h-5ZM7 15h4v4H7Z" />
+    </>
+  ),
+  esquerda: <path d="m15 6-6 6 6 6" />,
+  mais: <path d="M12 5v14M5 12h14" />,
+  reenviar: (
+    <>
+      <path d="M20 12a8 8 0 1 1-2.3-5.6" />
+      <path d="M20 4v5h-5" />
+    </>
+  ),
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

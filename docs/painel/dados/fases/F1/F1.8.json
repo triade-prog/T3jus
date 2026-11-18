@@ -1,0 +1,16 @@
+{
+  "id": "F1.8",
+  "texto": "Telas do Console que faltam: cadastrar escritório, abas Ficha, Contrato e documentos, Equipe T3jus, Notas internas e Histórico, equipe interna e moldura de celular",
+  "peca": "C1",
+  "refs": [
+    "CO-01",
+    "CO-02",
+    "CO-03",
+    "CO-04",
+    "PT-24",
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 37,
+  "proximo": "Desenhos com a especialista de telas; depois vão para a Carol aprovar e só então para o código"
+}

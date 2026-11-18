@@ -17,6 +17,7 @@ import {
   funcoesSchema,
   notaSchema,
   versaoSchema,
+  type SocioCliente,
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
@@ -40,6 +41,9 @@ interface LinhaCarteira {
   funcoes: string[];
   situacoes: string[];
   criado_em: string;
+  socios: SocioCliente[];
+  equipe: { pessoaId: string; nome: string; funcoes: string[] }[];
+  ultima_atividade: string;
 }
 
 interface LinhaHistorico {
@@ -122,6 +126,9 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
         funcoes: l.funcoes,
         situacoes: l.situacoes,
         criadoEm: l.criado_em,
+        socios: l.socios,
+        equipe: l.equipe,
+        ultimaAtividade: l.ultima_atividade,
       })),
     });
   });
@@ -134,9 +141,12 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json({ id }, 201);
   });
 
-  // Ficha (CO-02).
-  app.get("/v1/clientes/:id", async (c) =>
-    c.json(await rpc("console_ficha", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") })));
+  // Ficha (CO-02). O e-mail dos sócios vem do Auth (o banco só guarda o nome).
+  app.get("/v1/clientes/:id", async (c) => {
+    const ficha = await rpc<{ socios: SocioCliente[] }>("console_ficha", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") });
+    const socios = await Promise.all(ficha.socios.map(async (s) => ({ ...s, email: await deps.admin.emailDe(s.pessoaId) })));
+    return c.json({ ...ficha, socios });
+  });
 
   app.put("/v1/clientes/:id/ficha", async (c) => {
     const id = idDaRota(c, "id");
@@ -178,6 +188,18 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
       p_pessoa: pessoa(c), p_escritorio: id, p_convidado: conta.userId, p_nome: d.nome,
     });
     return c.json({ vinculoId, contaNova: conta.contaNova }, 201);
+  });
+
+  // Reenviar o convite do sócio que ainda não criou a senha (PT-20). O banco confere a
+  // permissão e o vínculo; quem já tem conta com senha não recebe e-mail.
+  app.post("/v1/clientes/:id/socios/:vinculo/reenviar", async (c) => {
+    const id = idDaRota(c, "id");
+    const vinculo = idDaRota(c, "vinculo");
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: pessoa(c) }))) throw new ErroDominio("RATE_LIMITED");
+    const convidado = await rpc<string>("console_reenviar_convite", { p_pessoa: pessoa(c), p_escritorio: id, p_vinculo: vinculo });
+    const email = await deps.admin.emailDe(convidado);
+    if (!email) throw new ErroDominio("NOT_FOUND");
+    return c.json({ enviado: await deps.admin.reenviarConvite(email, `${deps.urlPortal}/criar-senha`) });
   });
 
   // Notas internas (CO-03).

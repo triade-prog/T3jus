@@ -7,6 +7,8 @@ import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieD
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
+const RENATA = "6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e";
+const VINCULO = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
 const ENTRAR = { email: "carol@t3jus.exemplo", senha: "senha-forte-da-equipe" };
 
 function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>; handlers?: Record<string, (a: Record<string, unknown>) => unknown> } = {}) {
@@ -19,7 +21,7 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
     acesso_console: () => true,
     registrar_acesso: () => 1,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
-    console_ficha: () => ({ escritorio: { id: IPE }, permissoes: opcoes.permissoes ?? ["console.ficha.ver", "console.socios.convidar"] }),
+    console_ficha: () => ({ escritorio: { id: IPE }, socios: [], permissoes: opcoes.permissoes ?? ["console.ficha.ver", "console.socios.convidar"] }),
     console_vincular_socio: () => "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9",
     console_criar_escritorio: () => IPE,
     console_carteira: () => [{
@@ -153,6 +155,31 @@ Deno.test("PT-24: cliente não atribuído não chega nem ao convite", async () =
   const r = await m.pedir(`/v1/clientes/${IPE}/socios`, { cookie: await entrar(m), corpo: { nome: "Ana", email: "ana@exemplo.invalid" } });
   assertEquals((await erro(r)).codigo, "FORBIDDEN");
   assertEquals(m.enviados, []);
+});
+
+Deno.test("PT-20: reenviar o convite manda o link de novo para o e-mail da conta", async () => {
+  const m = montar({ contas: { "ana@exemplo.invalid": RENATA }, handlers: { console_reenviar_convite: () => RENATA } });
+  const r = await m.pedir(`/v1/clientes/${IPE}/socios/${VINCULO}/reenviar`, { cookie: await entrar(m), corpo: {} });
+  assertEquals(await r.json(), { enviado: true });
+  assertEquals(m.enviados, [{ email: "ana@exemplo.invalid", voltarPara: "https://portal.exemplo/criar-senha" }]);
+  const args = m.chamadas.find((c) => c.funcao === "console_reenviar_convite")!.args;
+  assertEquals(args.p_vinculo, VINCULO);
+});
+
+Deno.test("PT-20: sem a permissão (o banco recusa), nenhum convite é reenviado", async () => {
+  const m = montar({ contas: { "ana@exemplo.invalid": RENATA }, handlers: { console_reenviar_convite: () => erroBanco("TC401") } });
+  const r = await m.pedir(`/v1/clientes/${IPE}/socios/${VINCULO}/reenviar`, { cookie: await entrar(m), corpo: {} });
+  assertEquals((await erro(r)).codigo, "FORBIDDEN");
+  assertEquals(m.enviados, []);
+});
+
+Deno.test("CO-02: a ficha traz o e-mail dos sócios, pego no Auth", async () => {
+  const m = montar({
+    contas: { "ana@exemplo.invalid": RENATA },
+    handlers: { console_ficha: () => ({ escritorio: { id: IPE }, permissoes: [], socios: [{ vinculoId: VINCULO, pessoaId: RENATA, nome: "Ana" }] }) },
+  });
+  const r = await m.pedir(`/v1/clientes/${IPE}`, { cookie: await entrar(m) });
+  assertEquals((await r.json()).socios[0].email, "ana@exemplo.invalid");
 });
 
 Deno.test("convites têm limite por pessoa da equipe", async () => {
