@@ -8,9 +8,10 @@ const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
 const BELA_VISTA = "4f1a7d4c-9b5e-4a6f-9c2d-5e6f7a8b9c0d";
 const LARA = "5a2b8e5d-0c6f-4b7a-8d3e-6f7a8b9c0d1e";
 const VL_LARA = "6b3c9f6e-1d7a-4c8b-9e4f-7a8b9c0d1e2f";
+const CLIENTE = "7c4d0a7f-2e8b-4d9c-8f5a-8b9c0d1e2f3a";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
 
-function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean } = {}) {
+function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
@@ -56,6 +57,16 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { versao: 2, passouPara: a.p_passar_para };
     },
     portal_historico_equipe: () => [{ id: 7, ocorrido_em: "2026-11-18T10:00:00-03:00", autor_id: ANA, autor_nome: "Ana", acao: "equipe.retirada", entidade_id: VL_LARA, dados: {}, pessoa_nome: "Lara", para_nome: "Ana" }],
+    portal_clientes: (a) => ({ comercial: true, clientes: [{ id: CLIENTE, nome: "Helena Prado", termo: a.p_termo }] }),
+    portal_clientes_duplicados: () => [{ id: CLIENTE, nome: "Helena Prado", situacao: "ATIVO", desde: "2026-11-01", por: "DOCUMENTO" }],
+    portal_cliente_cadastrar: () => ({ id: CLIENTE, versao: 1 }),
+    portal_cliente_editar: (a) => ({ id: a.p_cliente, versao: Number(a.p_versao) + 1 }),
+    portal_cliente: (a) => ({ id: a.p_cliente, nome: "Helena Prado", rep_nome: null, estado_civil: "CASADO", criado_em: "2026-11-01", contatos: [{ nome: "Helena", e_principal: true }] }),
+    portal_cliente_inativar: () => 3,
+    portal_cliente_reativar: () => 4,
+    portal_atendimentos: () => { if (opcoes.semComercial) erroBanco("TC401", { motivo: "AREA_NAO_LIBERADA" }); return []; },
+    portal_registrar_atendimento: () => "9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+    portal_pessoas_escritorio: () => [{ id: ANA, nome: "Ana" }],
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
   });
   const app = criarApiPortal("segredo-de-repasse-de-teste", {
@@ -334,4 +345,98 @@ Deno.test("PA-02: as áreas do domínio são as mesmas do banco", async () => {
   const sql = await Deno.readTextFile(new URL("../../migrations/0140_portal_equipe.sql", import.meta.url));
   const doBanco = /area in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z]+)'/g)?.map((s) => s.slice(1, -1));
   assertEquals(doBanco, Object.keys(AREAS_PORTAL));
+});
+
+// ------------------------------------------------------------------- Clientes (AP-01, AP-02)
+
+const HELENA = {
+  tipo: "PF", nome: " Helena Prado ", documento: "529.982.247-25", cep: "01310-100", estadoCivil: "CASADO", rg: "",
+  contatos: [{ nome: "Helena", telefone: "(11) 98888-7777", principal: true }, { nome: "Bia", papel: "filha", email: "BIA@exemplo.invalid", principal: false }],
+};
+
+Deno.test("AP-01: cadastrar confere os dados e manda ao banco com os nomes dele, no escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/clientes", { metodo: "POST", corpo: { ...HELENA, escritorioId: BELA_VISTA }, cookie });
+  assertEquals(r.status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_cliente_cadastrar")!;
+  assertEquals(ch.args.p_escritorio, AURORA);
+  const d = ch.args.p_dados as Record<string, unknown>;
+  assertEquals([d.nome, d.documento, d.cep, d.estado_civil, d.rg, d.escritorio_id], ["Helena Prado", "52998224725", "01310100", "CASADO", null, undefined]);
+  assertEquals((d.contatos as { telefone: string; email: string }[]).map((x) => x.telefone ?? x.email), ["+5511988887777", "bia@exemplo.invalid"]);
+});
+
+Deno.test("AP-01: CPF errado, contato sem telefone nem e-mail ou sem principal não chegam ao banco", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  for (const [corpo, campo] of [
+    [{ ...HELENA, documento: "529.982.247-24" }, "documento"],
+    [{ ...HELENA, contatos: [{ nome: "Helena", principal: true }] }, "contatos"],
+    [{ ...HELENA, contatos: [{ nome: "Helena", telefone: "11988887777", principal: false }] }, "contatos"],
+    [{ ...HELENA, tipo: "PJ", documento: "11222333000180" }, "documento"],
+  ] as const) {
+    const r = await m.pedir("/v1/escritorio/clientes", { metodo: "POST", corpo, cookie });
+    assertEquals((await erro(r)).detalhes?.campos, [campo]);
+  }
+  assert(!m.chamadas.some((c) => c.funcao === "portal_cliente_cadastrar"));
+});
+
+Deno.test("AP-01: a busca vai ao banco com o termo, e o filtro errado volta como campo", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/clientes?q=Prado&vencidos=1", { cookie });
+  assertEquals((await r.json()).clientes[0].nome, "Helena Prado");
+  const ch = m.chamadas.find((c) => c.funcao === "portal_clientes")!;
+  assertEquals([ch.args.p_termo, ch.args.p_situacao, ch.args.p_vencidos], ["Prado", "ATIVO", true]);
+  const e = await m.pedir("/v1/escritorio/clientes?situacao=APAGADO", { cookie });
+  assertEquals((await erro(e)).detalhes?.campos, ["situacao"]);
+});
+
+Deno.test("AP-01: a ficha chega com os nomes da API; id fora do formato é não encontrado", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const f = await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}`, { cookie })).json();
+  assertEquals([f.estadoCivil, f.repNome, f.criadoEm], ["CASADO", null, "2026-11-01"]);
+  assertEquals((await m.pedir("/v1/escritorio/clientes/abc", { cookie })).status, 404);
+});
+
+Deno.test("PT-19: editar leva a versão lida; inativar pede motivo", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}`, { metodo: "PUT", corpo: { ...HELENA, versao: 2 }, cookie });
+  assertEquals(await r.json(), { id: CLIENTE, versao: 3 });
+  const sem = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/inativar`, { metodo: "POST", corpo: { versao: 3, motivo: " " }, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["motivo"]);
+  const com = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/inativar`, { metodo: "POST", corpo: { versao: 3, motivo: "Desistiu" }, cookie });
+  assertEquals(await com.json(), { versao: 3 });
+  const re = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/reativar`, { metodo: "POST", corpo: { versao: 3 }, cookie });
+  assertEquals(await re.json(), { versao: 4 });
+});
+
+Deno.test("AP-02: sem a área Comercial os atendimentos são recusados com o motivo", async () => {
+  const m = montar({ semComercial: true });
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/atendimentos`, { cookie });
+  assertEquals(r.status, 403);
+  assertEquals((await erro(r)).detalhes?.motivo, "AREA_NAO_LIBERADA");
+});
+
+Deno.test("AP-06: o próximo contato vai inteiro ou não vai", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const meio = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/atendimentos`, { metodo: "POST", corpo: { canal: "WHATSAPP", resumo: "Oi", proxEm: "2026-11-20" }, cookie });
+  assertEquals((await erro(meio)).detalhes?.campos, ["proxResponsavel", "proxOque"]);
+  const ok = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/atendimentos`, {
+    metodo: "POST", corpo: { canal: "WHATSAPP", resumo: "Oi", proxEm: "2026-11-20", proxResponsavel: ANA, proxOque: "Ligar" }, cookie,
+  });
+  assertEquals(ok.status, 201);
+});
+
+Deno.test("AP-01: os valores do domínio são os mesmos do banco", async () => {
+  const { ORIGENS, CANAIS, ESTADOS_CIVIS } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0160_portal_clientes.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
+  assertEquals(lista(/origem\s+text check \(origem in \(([^)]+)\)/), Object.keys(ORIGENS));
+  assertEquals(lista(/canal\s+text not null check \(canal in \(([^)]+)\)/), Object.keys(CANAIS));
+  assertEquals(lista(/estado_civil\s+text check \(estado_civil in \(([^)]+)\)/), Object.keys(ESTADOS_CIVIS));
 });

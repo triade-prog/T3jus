@@ -231,6 +231,7 @@ const DESENHOS = {
       <path d="M8 4.5v4M14 10v4M6 15.5v4" />
     </>
   ),
+  pasta: <path d="M3 6h7l2 2.5h9V19H3Z" />,
   dir: (
     <>
       <path d="m9 6 6 6-6 6" />

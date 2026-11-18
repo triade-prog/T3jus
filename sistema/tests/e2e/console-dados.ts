@@ -54,6 +54,10 @@ export async function semViolacoes(page: Page) {
   // A barra do celular é fixa no topo: rolada, ela cobre parte do que passa por baixo e o axe
   // acusa alvo pequeno. Confere com a página no topo, como ela abre.
   await page.evaluate(() => window.scrollTo(0, 0));
+  // A janela abre com uma animação curta de opacidade: o axe mede a cor só depois que ela acaba.
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished.catch(() => null))),
+  );
   const axe = await new AxeBuilder({ page }).withTags(TAGS).analyze();
   expect(axe.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

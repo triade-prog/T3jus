@@ -51,5 +51,14 @@ export function traduzirErroBanco(e: ErroBanco): ErroDominio | null {
       // detalhe sem JSON: segue sem detalhes
     }
   }
+  // Na recusa de permissão, só o motivo passa (ex.: AREA_NAO_LIBERADA), para a tela explicar.
+  if (codigo === "FORBIDDEN" && e.detalhe) {
+    try {
+      const motivo = JSON.parse(e.detalhe)?.motivo;
+      if (typeof motivo === "string" && /^[A-Z_]{1,40}$/.test(motivo)) return new ErroDominio(codigo, { motivo });
+    } catch {
+      // sem motivo
+    }
+  }
   return new ErroDominio(codigo);
 }

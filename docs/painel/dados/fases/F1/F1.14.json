@@ -1,0 +1,12 @@
+{
+  "id": "F1.14",
+  "texto": "Próximo contato vencido avisa no Início de quem é o responsável",
+  "peca": "S1",
+  "refs": [
+    "AP-06"
+  ],
+  "status": "pendente",
+  "ordem": 63,
+  "nota": "A lista de Clientes e a ficha já mostram o vencido e o filtro Contato vencido. Falta o aviso no Início, que ainda não tem dados.",
+  "proximo": "Quando o Início do Portal tiver dados, listar os próximos contatos vencidos e os de hoje do responsável"
+}

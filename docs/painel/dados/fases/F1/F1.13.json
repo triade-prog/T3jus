@@ -1,0 +1,14 @@
+{
+  "id": "F1.13",
+  "texto": "Clientes do Portal: cadastro único com contatos e qualificação, histórico de atendimento, origem e próximo contato",
+  "peca": "S2",
+  "refs": [
+    "AP-01",
+    "AP-02",
+    "AP-04",
+    "AP-06"
+  ],
+  "status": "feito",
+  "ordem": 62,
+  "evidencia": "Portal › Clientes (/clientes, /clientes/novo, /clientes/<id>), tela aprovada em docs/design/aprovadas/portal-clientes com as 5 recomendações da Carol (18/11/2026): busca por nome, contato e só os dígitos de CPF, CNPJ e telefone; filtros Ativos, Inativos e Contato vencido; cadastro com CPF e CNPJ conferidos e aviso de possível duplicado; qualificação para procuração com o que falta; vários contatos com um principal; atendimentos que não se editam nem se apagam, com o próximo contato; inativar e reativar com motivo, só pelo Comercial; sem a área Comercial, a lista e a ficha vêm sem origem, próximo contato e atendimentos. Migration 0160, rotas /v1/escritorio/clientes da api-portal, pgTAP 016, Deno app_test.ts, vitest clientes.test.ts e e2e portal-clientes.spec.ts"
+}

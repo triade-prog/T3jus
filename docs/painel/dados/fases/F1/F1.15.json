@@ -1,0 +1,12 @@
+{
+  "id": "F1.15",
+  "texto": "Pedido de exclusão do titular (LGPD): a sócia dona anonimiza nome, documento, contatos e resumos do cliente e guarda só o que a lei obriga",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 64,
+  "nota": "Decisão 5 da Carol (18/11/2026): fica fora da entrega de Clientes. Até lá, o pedido é tratado com o suporte T3jus; no Portal só existe inativar.",
+  "proximo": "Desenhar o fluxo de exclusão com a especialista e levar para a Carol aprovar"
+}

@@ -118,7 +118,10 @@ test.describe("Portal v1: Equipe do escritório (PA-02)", () => {
     await j.getByLabel("Nome completo").fill("Diego A.");
     await j.getByRole("button", { name: "Enviar convite" }).click();
     await expect(j.getByText("Diego Almeida já está na equipe com este e-mail.", { exact: false })).toBeVisible();
+    // O foco vai para o e-mail no quadro seguinte; espera antes de escrever em outro campo.
+    await expect(j.getByLabel("E-mail")).toBeFocused();
     await j.getByLabel("Nome completo").fill("Gustavo Lima");
+    await expect(j.getByLabel("Nome completo")).toHaveValue("Gustavo Lima");
     await j.getByLabel("E-mail").fill("Gustavo@RibeiroMatos.adv.br");
     await j.getByRole("checkbox", { name: /Jurídico/ }).check();
     await j.getByRole("button", { name: "Enviar convite" }).click();
