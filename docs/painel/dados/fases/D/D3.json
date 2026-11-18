@@ -8,6 +8,6 @@
   "status": "andamento",
   "nota": "Desenho de base: a proposta dos três sistemas (https://claude.ai/artifact/S4zdJhHiYR8bpVdDqkYmpw). As ideias das áreas (CO-12, PA-06) entram no IDEIAS.md depois da aprovação da Carol.",
   "ordem": 30,
-  "proximo": "Aprovação da moldura junto com as telas do D4",
-  "evidencia": "Conceito Gabinete (lateral vinho, campo âmbar com padrão, nove cores em hierarquia): docs/design/conceito-gabinete.md"
+  "evidencia": "Moldura do conceito Gabinete aprovada no computador, com as telas do Console e do Portal (docs/design/aprovadas/)",
+  "proximo": "Desenhar a versão de celular da moldura com o especialista"
 }

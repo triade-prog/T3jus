@@ -81,10 +81,10 @@ A moldura vinho com grão (o "couro da pasta") envolve um campo de trabalho em s
 | Campo âmbar com padrão vinho (envelopes) | Cabeçalho da carteira; metade "Implantação" da ficha; "Atalhos" do Portal; cartão "No Portal"; folha de trás no entrar. O padrão sai com máscara em degradê e nunca fica atrás de texto. |
 | Corte entre campos (papelaria) | Diagonal vinho/âmbar no cabeçalho da ficha e na abertura do Portal; diagonal vinho/sal no entrar. |
 | Sobreposição de planos | O resumo da carteira entra por cima do campo âmbar; no entrar, o cartão branco fica sobre a folha timbrada e a folha âmbar giradas. |
-| Círculo atrás da inicial ou número (personalidade) | Números da carteira; dias dos prazos (âmbar quando é hoje); números do dia no Portal (#87335B sobre vinho); o "O" do título no entrar; monogramas. |
-| Selo circular | Selo do escritório na ficha (nome em volta, inicial no centro); selo T3jus atravessando o corte no entrar. |
+| Círculo atrás da inicial ou número (personalidade) | Na tela de entrar, o "O" do título. Nas telas de trabalho, o número fica **inteiro dentro do círculo**, centralizado (componente `Disco`): contadores da carteira, dias dos prazos (âmbar quando é hoje), números do dia no Portal (#87335B sobre vinho) e a sequência 1-2-3 de "Pedem você agora". |
+| Selo circular | Só o selo T3jus atravessando o corte no entrar. Os escritórios clientes não ganham selo nem avatar: o nome em serifa basta. |
 | Estátua tom sobre tom | Ícone gigante (coluna ou balança) em #87335B sobre o vinho na ficha, no Portal e no entrar. |
-| Sequência de tons | Barra "Carteira por estágio"; barra e colunas de recebimentos; legenda da agenda por tipo; fita com as 9 cores no pé do entrar. |
+| Sequência de tons | Barra e colunas de recebimentos; legenda da agenda por tipo; fita com as 9 cores no pé do entrar. A carteira dispensou a barra por estágio: os quatro números já dizem tudo. |
 | Padrão de ícones na moldura | Tom sobre tom (#87335B) no rodapé do trilho. |
 
 **Alternativas consideradas.** "Mármore" (tudo claro) foi descartada porque a Carol já rejeitou esse caminho. "Envelope" (tudo vinho) foi descartada porque tabelas densas no escuro cansam. O "Gabinete" fica com a moldura vinho e traz o âmbar como campo em pontos escolhidos.
@@ -124,7 +124,7 @@ A moldura vinho com grão (o "couro da pasta") envolve um campo de trabalho em s
    - **as semânticas:** `--moldura`, `--fundo`, `--rebaixado`, `--acao`, `--acao-hover`, `--foco`, `--borda-campo`, `--divisor` e as séries de gráfico.
 
    Os componentes só usam a camada semântica.
-2. **Recursos visuais como utilitários:** `campo-ambar` (padrão e grão), `campo-vinho`, `circ` (círculo atrás de número), `<Selo texto inicial>`, `<Tons valores>` e `<Legenda>`.
+2. **Recursos visuais como utilitários:** `campo-ambar` (padrão e grão), `campo-vinho`, `<Disco>` (número inteiro e centralizado num círculo, com ajuste óptico para a Alegreya), `<Tons valores>` e `<Legenda>`.
 3. **Componentes, nesta ordem:**
    - `Moldura` (Console e Portal) e `ItemNav`;
    - `CabecalhoCampo` (âmbar ou vinho, com corte diagonal opcional);
