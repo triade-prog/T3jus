@@ -1,6 +1,6 @@
 # O que os dois TCCs trazem para o T3jus
 
-Análise de 18/11/2026. Pesquisa de consulta, como os docs 01 a 03. As ideias aprovadas pela Carol em 18/11/2026 estão no `IDEIAS.md` (CH-06 a CH-08, FI-07 a FI-11, EX-06 a EX-08, IN-07 e IN-08).
+Análise de 18/11/2026. Pesquisa de consulta, como os docs 01 a 03. As ideias aprovadas pela Carol em 18/11/2026 estão no `IDEIAS.md` (CH-06 a CH-08, FI-07 a FI-11, EX-06 a EX-09, IN-07 e IN-08).
 
 ## Os dois trabalhos
 
@@ -57,13 +57,14 @@ Cada processo era dividido conforme a participação de cada sócio na data em q
 
 ### O que não serve
 - **Tecnologia**: Next.js, Express, Prisma e login por token guardado uma semana. A base do T3jus (Supabase, isolamento verificado no servidor, RLS, convites, auditoria) já é mais forte. Nada a copiar.
-- **Gerador de petições e banco de teses com estatística de vitória**: é produção jurídica, outra categoria de produto (Looplex, Projuris). Fica fora da V1.
+- **Gerador de petições**: a recomendação inicial era deixar de fora (é produção jurídica, outra categoria de produto, como Looplex e Projuris), mas a Carol decidiu incluir em 18/11/2026 como EX-09, a validar com a advogada parceira.
+- **Banco de teses com estatística de vitória**: produção jurídica; fica de fora.
 - **Comparativo de concorrentes**: superficial e com erros (diz, por exemplo, que o Astrea não tem agenda de audiências). Usar a nossa pesquisa (`docs/02-pesquisa-12-sistemas.md`).
 - **Fases fixas do processo** (protocolo, contestação, impugnação, interlocutória, sentença): servem a um tipo de ação só. O T3jus deve deixar o escritório definir as etapas.
 
 ## Ideias novas sugeridas para o `IDEIAS.md`
 
-Incluídas no `IDEIAS.md` em 18/11/2026, junto com EX-07, EX-08 e IN-08, que saíram do Juris Tantum.
+Incluídas no `IDEIAS.md` em 18/11/2026, junto com EX-07, EX-08, EX-09 e IN-08, que saíram do Juris Tantum.
 
 | Código | Ideia | Etiqueta | De onde |
 |---|---|---|---|
@@ -80,6 +81,7 @@ Incluídas no `IDEIAS.md` em 18/11/2026, junto com EX-07, EX-08 e IN-08, que sa�
 | EX-07 | Etapas do caso definidas pelo escritório; a lista mostra número, cliente e etapa | [V1] | TCC 2 |
 | EX-08 | Na etapa final, o sistema pede o resultado, que alimenta a cobrança do êxito e os indicadores | [V1] | TCC 2 |
 | IN-08 | Carga de cada advogado e casos por etapa | [V1] | TCC 2 |
+| EX-09 | Gerador de petições com modelos do escritório e dados do cadastro, em arquivo editável | [VAL] | TCC 2 (Carol pediu) |
 
 Perguntas que valem levar à advogada parceira, saídas do TCC 1:
 1. Quais desses tipos de honorário ela usa hoje?

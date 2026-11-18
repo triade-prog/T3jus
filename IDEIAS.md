@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As ideias CH-06 a CH-08, FI-07 a FI-11, EX-06 a EX-08, IN-07 e IN-08 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As ideias CH-06 a CH-08, FI-07 a FI-11, EX-06 a EX-09, IN-07 e IN-08 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -70,6 +70,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | EX-06 | Audiências como compromisso na agenda, com visão de mês, semana e dia, criadas clicando no dia; as próximas aparecem na tela inicial | [V1] |
 | EX-07 | Etapas do caso definidas pelo escritório (não uma lista fixa); a lista de casos mostra número, cliente e etapa sem precisar abrir | [V1] |
 | EX-08 | Ao chegar à etapa final, o sistema pede o resultado (ganho, perda, acordo), que alimenta a cobrança do êxito (CH-07) e os indicadores | [V1] |
+| EX-09 | Gerador de petições: modelos do escritório preenchidos com os dados do cliente, do caso e dos advogados, mais um breve formulário (endereçamento, valor da causa), gerando arquivo editável | [VAL] |
 
 ## 6. Indicadores
 
@@ -153,10 +154,10 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 2. Atendimento e propostas | 6 |
 | 3. Contratos e honorários | 8 |
 | 4. Financeiro e repasses | 11 |
-| 5. Execução jurídica | 8 |
+| 5. Execução jurídica | 9 |
 | 6. Indicadores | 8 |
 | 7. A validar com os pilotos | 7 |
 | 8. Princípios técnicos e de qualidade | 24 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 4 |
-| **Total** | **89** |
+| **Total** | **90** |
