@@ -136,18 +136,15 @@
   min-width: 0;
 }
 .ac-marca {
-  font-family: var(--ac-serifa);
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 1;
-  color: var(--ac-papel);
-  letter-spacing: -0.01em;
+  display: block;
+  line-height: 0;
   text-decoration: none;
   width: max-content;
 }
-.ac-marca b {
-  color: var(--ac-ambar);
-  font-weight: 600;
+.ac-logo {
+  display: block;
+  height: 76px;
+  width: auto;
 }
 .ac-frase {
   margin-top: auto;
@@ -630,8 +627,8 @@
     padding: 24px 16px 0;
     min-height: var(--ac-faixa, 260px);
   }
-  .ac-marca {
-    font-size: 32px;
+  .ac-logo {
+    height: 52px;
   }
   .ac-frase {
     padding-top: 28px;

@@ -344,8 +344,8 @@
   background-image:var(--padrao-tom);background-size:120px 120px;
   -webkit-mask-image:linear-gradient(to top,#000 15%,transparent);mask-image:linear-gradient(to top,#000 15%,transparent)}
 .co .marca{display:flex;flex-direction:column;gap:2px;padding:0 12px 22px}
-.co .marca-palavra{font-family:var(--serifa);font-weight:600;font-size:30px;line-height:1;color:var(--papel);letter-spacing:-.01em;text-decoration:none;display:inline-flex;align-items:center}
-.co .marca-palavra b{color:var(--ambar);font-weight:600}
+.co .marca-palavra{line-height:0;text-decoration:none;display:inline-flex;align-items:center;width:max-content;border-radius:var(--raio)}
+.co .marca-palavra .logo{height:40px;width:auto;display:block}
 .co .marca-sub{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ambar-2);margin-top:8px;display:flex;align-items:center;gap:8px}
 .co .marca-sub::before{content:"";width:18px;height:1.5px;background:var(--ambar)}
 .co .trilho nav{display:flex;flex-direction:column;gap:2px}
@@ -814,8 +814,7 @@
 .co .barra-cel .bb:focus-visible,.co .trilho :focus-visible{outline-color:var(--ambar-3)}
 .co .barra-cel .bb .ponto{border-color:var(--vinho);top:9px;right:10px}
 .co .barra-cel .marca-cel{display:flex;align-items:baseline;gap:8px;text-decoration:none;margin-left:4px;margin-right:auto;min-height:44px;align-items:center}
-.co .barra-cel .marca-cel b{font-family:var(--serifa);font-weight:600;font-size:23px;color:var(--papel)}
-.co .barra-cel .marca-cel b i{font-style:normal;color:var(--ambar)}
+.co .barra-cel .marca-cel .logo{height:28px;width:auto;display:block;flex:none}
 .co .barra-cel .marca-cel span{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ambar-2)}
 .co .trilho{position:fixed;inset:0 auto 0 0;width:min(304px,86vw);z-index:70;transform:translateX(-102%);visibility:hidden;transition:transform var(--dur-media) var(--curva),visibility 0s linear var(--dur-media);overflow-y:auto;padding-top:14px}
 .co .app.gaveta .trilho{transform:none;visibility:visible;transition:transform var(--dur-media) var(--curva)}

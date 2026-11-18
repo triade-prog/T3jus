@@ -1,6 +1,6 @@
 # Identidade visual do T3jus
 
-Escolhida pela Carol em 17/11/2026 (DC10, D1 no painel). A referência que ela trouxe é o manual de marca de um escritório de advocacia, com vinho, âmbar e areia, ícones de traço e títulos em serifa. Do manual vêm a **paleta, a tipografia, o estilo dos ícones e a personalidade**. O monograma, as estátuas e as peças daquele escritório não entram: o logo do T3jus é próprio e ainda está em aberto (E3).
+Escolhida pela Carol em 17/11/2026 (DC10, D1 no painel). A referência que ela trouxe é o manual de marca de um escritório de advocacia, com vinho, âmbar e areia, ícones de traço e títulos em serifa. Do manual vêm a **paleta, a tipografia, o estilo dos ícones e a personalidade**. O monograma, as estátuas e as peças daquele escritório não entram: o logo do T3jus é próprio (veja "Logo" abaixo).
 
 ## Personalidade
 
@@ -39,7 +39,17 @@ Os tokens ficam em `sistema/packages/ui/src/tema.css`.
 
 Ícones de traço, com espessura uniforme, cantos retos e sem preenchimento: maleta, pena, balança, coluna, envelope, martelo, espada, escudo, pessoa e celular. Na interface, os ícones seguem o mesmo traço, em tinta ou vinho. O âmbar fica para os ícones grandes e decorativos.
 
+## Logo
+
+Definido pela Carol em 18/11/2026 (E3): a coluna em forma de T em âmbar, o fio vertical e "T3jus" em serifa vinho, com "Sistema jurídico" e a linha embaixo. Os arquivos dela estão em `docs/marca/originais` e o vetor, contornado deles sem redesenho, em `docs/marca` (veja o `LEIA-ME.md` de lá).
+
+- **Cores do logo:** âmbar `#DE6A00` e vinho `#510116`, as do arquivo dela. São mais fortes que o âmbar e o vinho da interface e valem só para o logo.
+- **Sobre fundo claro:** versão em cor (símbolo âmbar, letras vinho) ou toda em vinho.
+- **Sobre o vinho:** toda em sal `#FEFAF4`, como a versão dela sobre vinho.
+- **Completo** (com "Sistema jurídico"): telas de acesso, site, documentos. **Compacto** (símbolo e "T3jus"): moldura do Console e do Portal. **Ícone** (símbolo em sal no quadrado vinho): aba do navegador e celular.
+- **Selo** "Gestão jurídica · T3jus · Escritório em ordem": disco vinho, ouro `#FCAE01` e letras em sal, como no arquivo dela. Vai na tela de entrar.
+- No código: `LogoCompleto`, `LogoCompacto`, `Simbolo` e `Selo` em `sistema/packages/ui/src/Marca.tsx`.
+
 ## O que ainda falta
 
-- Logo do T3jus (E3).
 - Design system completo, com componentes, estados e versão de celular (D2).
