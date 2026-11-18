@@ -5,6 +5,7 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
-  "ordem": 110
+  "status": "feito",
+  "ordem": 110,
+  "evidencia": "Migration 0070 (inventario_dados: toda tabela com o que guarda, finalidade, base legal, controlador, prazo e destino); pgTAP 008; prazos aprovados pela Carol na migration 0090"
 }

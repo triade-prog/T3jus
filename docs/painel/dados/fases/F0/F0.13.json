@@ -1,0 +1,11 @@
+{
+  "id": "F0.13",
+  "texto": "Rotina noturna que aplica os prazos aprovados do inventário (apaga ou anonimiza o que passou do prazo e registra a contagem no histórico)",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "feito",
+  "ordem": 130,
+  "evidencia": "Migration 0080 (aplicar_prazos, pg_cron às 3h de Brasília, só prazos APROVADO; sessões, contadores e entradas no histórico; contagem em dados.prazos_aplicados); pgTAP 009"
+}

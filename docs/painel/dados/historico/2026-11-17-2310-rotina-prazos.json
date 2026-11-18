@@ -1,0 +1,10 @@
+{
+  "data": "17/11/2026",
+  "inicio": "23:10",
+  "fim": "23:12",
+  "texto": "Rotina noturna dos prazos (F0.13): aplicar_prazos roda às 3h de Brasília e só age em prazo aprovado; apaga sessões antigas, contadores de tentativas e entradas no sistema com mais de 6 meses, e registra a contagem no histórico. Os prazos ainda estão em proposta, então nada é apagado até a Carol aprovar. Prazos ligados ao fim do contrato e à saída da pessoa ficaram como F0.14.",
+  "refs": [
+    "PT-11",
+    "PT-03"
+  ]
+}

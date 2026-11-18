@@ -1,60 +1,84 @@
-/* Tema provisório do T3jus (DC10): herdado da fundação do TRÍADE Condo só para as telas
-   provisórias funcionarem. Troca inteiro quando a identidade do T3jus for definida (E3). */
+/* Identidade do T3jus (D1, aprovada pela Carol em 17/11/2026): vinho (Purple Potion,
+   PANTONE 19-2430), âmbar (Apricot Tan, PANTONE 15-1237) e areia (Sea Salt, PANTONE 11-1302).
+   Regras de uso:
+   - o vinho é a cor de ação e de destaque (texto branco sobre ele: 10,6:1);
+   - o âmbar é só decorativo (marca, ícones, filetes, selos com texto escuro). Âmbar não leva
+     texto branco (2,4:1) nem vira texto sobre fundo claro;
+   - a areia é o fundo da lateral e das áreas de apoio; o conteúdo fica sobre branco.
+   Os nomes antigos (lilas, console, portal) continuam e apontam para a paleta nova.
+   Contrastes conferidos para WCAG 2.2 AA no claro e no escuro. */
 
 @theme {
-  --font-sans: Inter, "Segoe UI", system-ui, sans-serif;
+  --font-sans: Poppins, "Segoe UI", system-ui, sans-serif;
+  --font-titulo: "Libre Caslon Text", Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-vinho: #692746;
+  --color-vinho-2: #87335b;
+  --color-vinho-3: #ac3f6b;
+  --color-vinho-bruma: #f3e7ec;
+  --color-ambar: #dd9760;
+  --color-ambar-2: #e9ae90;
+  --color-ambar-3: #f2cdb3;
+  --color-ambar-tinta: #6b3a14;
+  --color-areia: #f1e6df;
+  --color-areia-2: #f7f1ec;
 
   --color-papel: #ffffff;
   --color-superficie: #ffffff;
-  --color-superficie-2: #eff2f8;
-  --color-tinta: #1b1f3a;
-  --color-tinta-suave: #495073;
-  --color-linha: #dbe2ee;
-  --color-lilas: #8576f3;
-  --color-lilas-bruma: #f1f0ff;
-  --color-foco: #196dca;
+  --color-superficie-2: #f7f1ec;
+  --color-tinta: #2a1a22;
+  --color-tinta-suave: #5e4a54;
+  --color-linha: #e6d9d1;
+  --color-lilas: #dd9760;
+  --color-lilas-bruma: #f3e7ec;
+  --color-foco: #87335b;
 
-  --color-portal: #007773;
-  --color-portal-press: #005e5b;
-  --color-portal-bruma: #e3f5f1;
-  --color-console: #6d44ef;
-  --color-console-press: #5530c0;
-  --color-console-bruma: #f1f0ff;
+  --color-portal: #692746;
+  --color-portal-press: #4f1d35;
+  --color-portal-bruma: #f3e7ec;
+  --color-console: #692746;
+  --color-console-press: #4f1d35;
+  --color-console-bruma: #f3e7ec;
 
   --color-ok: #165f59;
   --color-ok-fundo: #e6faf3;
   --color-ok-borda: #86e6d0;
-  --color-atencao: #8b440f;
-  --color-atencao-fundo: #fbf3c9;
-  --color-atencao-borda: #fcc44c;
-  --color-erro: #bd383f;
+  --color-atencao: #6b3a14;
+  --color-atencao-fundo: #fbeee3;
+  --color-atencao-borda: #e9ae90;
+  --color-erro: #b3263a;
   --color-erro-fundo: #ffeded;
   --color-erro-borda: #febab6;
-  --color-info: #196dca;
+  --color-info: #1e5f9e;
   --color-info-fundo: #e8f3ff;
   --color-info-borda: #a9d2fe;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-papel: #141729;
-    --color-superficie: #1e2239;
-    --color-superficie-2: #292e49;
-    --color-tinta: #eceefa;
-    --color-tinta-suave: #afb7d0;
-    --color-linha: #373f5c;
-    --color-lilas-bruma: #393052;
-    --color-portal: #65d7bf;
-    --color-portal-press: #8de8d4;
-    --color-portal-bruma: #203e3c;
-    --color-console: #bca2ff;
-    --color-console-press: #d2beff;
-    --color-console-bruma: #393052;
+    --color-vinho: #e9ae90;
+    --color-vinho-bruma: #3a2430;
+    --color-areia: #2a1d23;
+    --color-areia-2: #24181e;
+    --color-papel: #1e1418;
+    --color-superficie: #2a1d23;
+    --color-superficie-2: #34242c;
+    --color-tinta: #f3eae5;
+    --color-tinta-suave: #c9a9b6;
+    --color-linha: #4a3540;
+    --color-lilas-bruma: #3a2430;
+    --color-foco: #f2cdb3;
+    --color-portal: #e9ae90;
+    --color-portal-press: #f2cdb3;
+    --color-portal-bruma: #3a2430;
+    --color-console: #e9ae90;
+    --color-console-press: #f2cdb3;
+    --color-console-bruma: #3a2430;
     --color-ok: #7ed5a2;
     --color-ok-fundo: #203c31;
-    --color-atencao: #f1c37b;
-    --color-atencao-fundo: #483921;
+    --color-atencao: #f2cdb3;
+    --color-atencao-fundo: #4a3324;
     --color-erro: #ffabb1;
     --color-erro-fundo: #492c38;
     --color-info: #a5caff;

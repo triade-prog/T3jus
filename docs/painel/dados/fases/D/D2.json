@@ -1,0 +1,11 @@
+{
+  "id": "D2",
+  "texto": "Design system: tokens claro e escuro, componentes base (campos, botões, selos, avisos, janela), estados vazio, erro e carregando, acessibilidade WCAG 2.2 AA",
+  "peca": "B4",
+  "refs": [
+    "PT-10"
+  ],
+  "status": "pendente",
+  "nota": "Os componentes base vêm do TRÍADE Condo (packages/ui) e seguem a identidade da DC10 (docs/IDENTIDADE.md). As fontes serão servidas pelo próprio app.",
+  "ordem": 20
+}

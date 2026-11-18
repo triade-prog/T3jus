@@ -47,13 +47,24 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsSessao & {
   });
 
   // O escritório em que a pessoa está agora: o escolhido na sessão, ainda com vínculo ativo.
-  app.use("/v1/escritorio", exigirEscritorio(deps));
+  for (const rota of ["/v1/escritorio", "/v1/escritorio/*"]) app.use(rota, exigirEscritorio(deps));
   app.get("/v1/escritorio", async (c) => {
     const id = c.get("escritorioId");
     const escritorios = await deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: c.get("sessao").pessoaId });
     const atual = escritorios.find((x) => x.escritorio_id === id);
     if (!atual) throw new ErroDominio("ESCRITORIO_REQUIRED");
     return c.json({ id, nome: atual.nome, funcoes: atual.funcoes });
+  });
+
+  // Exportação completa do escritório (PT-15): só o sócio, só o escritório da sessão. O que
+  // sai é o que o inventário de dados marca para exportar (PT-11); a exportação fica no histórico.
+  app.post("/v1/escritorio/exportacao", async (c) => {
+    const id = c.get("escritorioId");
+    const dados = await deps.banco.rpc<Record<string, unknown>>("exportar_escritorio", { p_pessoa: c.get("sessao").pessoaId, p_escritorio: id });
+    const dia = String(dados.geradoEm ?? "").slice(0, 10) || "dados";
+    c.header("Content-Disposition", `attachment; filename="t3jus-exportacao-${dia}.json"`);
+    c.header("Cache-Control", "no-store");
+    return c.json(dados);
   });
 
   return app;

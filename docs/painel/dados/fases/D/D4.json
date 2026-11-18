@@ -1,0 +1,16 @@
+{
+  "id": "D4",
+  "texto": "Cada tela desenhada pelo especialista de frontend, aprovada pela Carol e só depois programada, começando pelo Console: entrar, carteira, cadastrar escritório e ficha do cliente",
+  "peca": "C1",
+  "refs": [
+    "CO-01",
+    "CO-02",
+    "CO-03",
+    "CO-04",
+    "PT-10"
+  ],
+  "status": "andamento",
+  "ordem": 40,
+  "evidencia": "Conceito Gabinete (docs/design/conceito-gabinete.md). Aprovadas pela Carol em 17/11/2026: entrar, carteira e ficha do Console e Início do Portal (docs/design/aprovadas/)",
+  "proximo": "Desenhar com o especialista as telas que faltam do Console (cadastrar escritório e as outras abas da ficha) e programar as aprovadas (F1.5)"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "D1",
+  "texto": "Identidade do T3jus: logo, paleta, tipografia e tom de voz",
+  "peca": "B5",
+  "refs": [],
+  "status": "andamento",
+  "ordem": 10,
+  "evidencia": "docs/IDENTIDADE.md e tokens novos em packages/ui/src/tema.css, com contraste conferido",
+  "proximo": "Logo do T3jus (E3, Carol)"
+}

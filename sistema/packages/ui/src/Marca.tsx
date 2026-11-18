@@ -1,4 +1,4 @@
-// Marca provisória (o logo oficial está pendente, E3): símbolo triangular e o nome.
+// Marca provisória: o logo do T3jus está em aberto (E3). Símbolo em âmbar e o nome (DC10).
 
 export function Marca({ sistema }: { sistema: string }) {
   return (
