@@ -152,3 +152,17 @@ Telas aprovadas em `docs/design/aprovadas/console-v1/`, programadas em `packages
 | `/equipe` | Equipe T3jus, só para a Administração: e-mail (do Auth) e convite pendente (`senha_criada_em` vazio), cadastrar, mudar funções, desativar e reativar (com as funções em branco), e o histórico da equipe. |
 
 Ainda sem dado: busca global e avisos no topo, e a contagem de documentos nas abas.
+
+### Equipe do escritório no Portal (F1.6, servidor)
+
+Sem funções fixas (PA-02): o sócio dono convida e marca as áreas de cada pessoa (Comercial, Contratos, Financeiro, Jurídico). Quem entra pela equipe tem vínculo com a função `EQUIPE`; as áreas ficam em `areas_liberadas` (migration `0140`), ligadas ao vínculo, e nada se apaga. O sócio vê tudo. Toda rota de área futura entra por `entrar_area(pessoa, escritório, área)`, que recusa com `AREA_NAO_LIBERADA`.
+
+| Rota | O que faz |
+|---|---|
+| `GET /v1/escritorio` | Ficha do escritório (só leitura), `dono`, `areas` da pessoa, quantos outros escritórios ela tem e, para o dono, a última exportação. |
+| `GET /v1/escritorio/equipe` | Só o dono: pessoas com e-mail (do Auth), áreas, convite pendente e quando saiu. |
+| `POST /v1/escritorio/equipe` | Convidar (nome, e-mail, áreas). A permissão é conferida antes de a conta nascer no Auth. |
+| `PUT /v1/escritorio/equipe/:vinculo/areas` | Mudar as áreas; vale na próxima página que a pessoa abrir. |
+| `POST /v1/escritorio/equipe/:vinculo/reenviar` | Novo convite para quem ainda não criou a senha. |
+| `POST /v1/escritorio/equipe/:vinculo/retirar` | Retira (versão lida). Quem já entrou exige `passarPara`, alguém que continua na equipe (EX-10); convite pendente só é cancelado. |
+| `GET /v1/escritorio/equipe/historico` | Convites, áreas, retiradas e exportações, de 50 em 50 (`antes`, `limite`). |

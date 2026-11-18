@@ -31,7 +31,7 @@ Os tokens ficam em `sistema/packages/ui/src/tema.css`.
 
 ## Tipografia
 
-- **Títulos:** serifa clássica, Libre Caslon Text (Google Fonts). Se não carregar, cai em Georgia.
+- **Títulos:** serifa clássica, Alegreya (Carol confirmou em 18/11/2026; é a do design system D2 e das telas aprovadas, no lugar da Libre Caslon Text da primeira proposta). Se não carregar, cai em Georgia.
 - **Texto e interface:** Poppins, em 14 px no corpo, com pesos 400, 500 e 600.
 - As fontes vão ser servidas pelo próprio app (sem chamada ao Google em produção). Isso entra com o design system (D2).
 

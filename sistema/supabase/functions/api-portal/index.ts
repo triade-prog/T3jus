@@ -1,7 +1,7 @@
 // Entrada da Edge Function api-portal. As dependências reais ficam aqui; os testes montam o
 // mesmo app com dependências falsas.
 
-import { authGoTrue } from "../_shared/auth.ts";
+import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
 import { conferirVazadaHibp } from "../_shared/senha.ts";
 import { criarApiPortal } from "./app.ts";
@@ -18,6 +18,7 @@ const app = criarApiPortal(Deno.env.get("REPASSE_SEGREDO"), {
   auth: authGoTrue(url, exigir("SUPABASE_ANON_KEY")),
   senhaVazada: conferirVazadaHibp(),
   urlApp: exigir("PORTAL_URL"),
+  admin: adminGoTrue(url, exigir("SUPABASE_SERVICE_ROLE_KEY")),
 });
 
 Deno.serve(app.fetch);

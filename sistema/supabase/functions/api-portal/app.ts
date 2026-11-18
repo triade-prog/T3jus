@@ -2,7 +2,9 @@
 // o navegador nunca manda o escritório nas chamadas; ele vem da sessão, conferida no banco.
 
 import type { MiddlewareHandler } from "hono";
-import { COOKIES_PORTAL, ErroDominio, escolherEscritorioSchema } from "@t3jus/domain";
+import { areasSchema, convidarEquipeSchema, COOKIES_PORTAL, ErroDominio, escolherEscritorioSchema, retirarEquipeSchema, type PessoaEquipePortal } from "@t3jus/domain";
+import type { Context } from "hono";
+import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
@@ -23,7 +25,35 @@ interface LinhaEscolha {
   ultima_entrada: string | null;
 }
 
-export function criarApiPortal(segredo: string | undefined, deps: DepsSessao & { urlApp: string }) {
+export interface DepsPortal extends DepsSessao {
+  /** Endereço do Portal (links de senha e convite da equipe). */
+  urlApp: string;
+  /** Convites da equipe do escritório (PA-02): conta própria no Auth, e-mail só lá. */
+  admin: AdminAuth;
+}
+
+interface LinhaHistoricoEquipe {
+  id: number;
+  ocorrido_em: string;
+  autor_id: string | null;
+  autor_nome: string | null;
+  acao: string;
+  entidade_id: string | null;
+  dados: Record<string, unknown>;
+  pessoa_nome: string | null;
+  para_nome: string | null;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Id de rota: fora do formato, responde como não encontrado. */
+function idDaRota(c: Context, nome: string): string {
+  const id = c.req.param(nome);
+  if (!id || !UUID.test(id)) throw new ErroDominio("NOT_FOUND");
+  return id.toLowerCase();
+}
+
+export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   const app = criarApp<VarsPortal>("api-portal", segredo);
   const sessao = criarSessao(
     { sistema: "portal", cookie: COOKIES_PORTAL.sessao, cookieLink: COOKIES_PORTAL.link, autenticadorObrigatorio: false, funcaoAcesso: "acesso_portal", urlApp: deps.urlApp },
@@ -66,12 +96,76 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsSessao & {
 
   // O escritório em que a pessoa está agora: o escolhido na sessão, ainda com vínculo ativo.
   for (const rota of ["/v1/escritorio", "/v1/escritorio/*"]) app.use(rota, exigirEscritorio(deps));
+  // O escritório da sessão, com o que a moldura precisa: as áreas da pessoa e se ela é o
+  // sócio dono (PA-01, PA-02), e a ficha só para leitura.
   app.get("/v1/escritorio", async (c) => {
     const id = c.get("escritorioId");
-    const escritorios = await deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: c.get("sessao").pessoaId });
+    const pessoaId = c.get("sessao").pessoaId;
+    const escritorios = await deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: pessoaId });
     const atual = escritorios.find((x) => x.escritorio_id === id);
     if (!atual) throw new ErroDominio("ESCRITORIO_REQUIRED");
-    return c.json({ id, nome: atual.nome, funcoes: atual.funcoes });
+    const dados = await deps.banco.rpc<Record<string, unknown>>("portal_escritorio", { p_pessoa: pessoaId, p_escritorio: id });
+    return c.json({ ...dados, id, nome: atual.nome, funcoes: atual.funcoes, outrosEscritorios: escritorios.length - 1 });
+  });
+
+  // Equipe do escritório (PA-02): só o sócio dono. O banco confere em cada chamada.
+  const quem = (c: Context<VarsPortal>) => ({ p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") });
+
+  app.get("/v1/escritorio/equipe", async (c) => {
+    const pessoas = await deps.banco.rpc<Omit<PessoaEquipePortal, "email">[]>("portal_equipe", quem(c));
+    const comEmail: PessoaEquipePortal[] = await Promise.all(pessoas.map(async (p) => ({ ...p, email: await deps.admin.emailDe(p.pessoaId) })));
+    return c.json({ pessoas: comEmail });
+  });
+
+  // Convidar (PT-20): a permissão é conferida antes de a conta nascer no Auth.
+  app.post("/v1/escritorio/equipe", async (c) => {
+    const d = await lerCorpo(c, convidarEquipeSchema);
+    await deps.banco.rpc("portal_equipe", quem(c));
+    if (!(await deps.banco.rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: c.get("sessao").pessoaId }))) throw new ErroDominio("RATE_LIMITED");
+    const conta = await deps.admin.convidar(d.email, `${deps.urlApp}/criar-senha`);
+    const vinculoId = await deps.banco.rpc<string>("portal_convidar", { ...quem(c), p_convidado: conta.userId, p_nome: d.nome, p_areas: d.areas });
+    return c.json({ vinculoId, contaNova: conta.contaNova }, 201);
+  });
+
+  app.put("/v1/escritorio/equipe/:vinculo/areas", async (c) => {
+    const d = await lerCorpo(c, areasSchema);
+    const areas = await deps.banco.rpc<string[]>("portal_mudar_areas", { ...quem(c), p_vinculo: idDaRota(c, "vinculo"), p_areas: d.areas });
+    return c.json({ areas });
+  });
+
+  // Reenviar o convite de quem ainda não criou a senha: o link antigo deixa de valer.
+  app.post("/v1/escritorio/equipe/:vinculo/reenviar", async (c) => {
+    const vinculo = idDaRota(c, "vinculo");
+    if (!(await deps.banco.rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: c.get("sessao").pessoaId }))) throw new ErroDominio("RATE_LIMITED");
+    const membro = await deps.banco.rpc<string>("portal_reenviar_convite", { ...quem(c), p_vinculo: vinculo });
+    const email = await deps.admin.emailDe(membro);
+    if (!email) throw new ErroDominio("NOT_FOUND");
+    return c.json({ enviado: await deps.admin.reenviarConvite(email, `${deps.urlApp}/criar-senha`) });
+  });
+
+  // Retirar (PT-21, EX-10): quem já entrou passa o que era dela para alguém da equipe.
+  app.post("/v1/escritorio/equipe/:vinculo/retirar", async (c) => {
+    const d = await lerCorpo(c, retirarEquipeSchema);
+    const r = await deps.banco.rpc<{ versao: number; passouPara?: string }>("portal_retirar", {
+      ...quem(c), p_vinculo: idDaRota(c, "vinculo"), p_versao: d.versao, p_passar_para: d.passarPara,
+    });
+    return c.json(r);
+  });
+
+  app.get("/v1/escritorio/equipe/historico", async (c) => {
+    const antes = Number(c.req.query("antes"));
+    const limite = Number(c.req.query("limite"));
+    const linhas = await deps.banco.rpc<LinhaHistoricoEquipe[]>("portal_historico_equipe", {
+      ...quem(c),
+      p_antes: Number.isInteger(antes) && antes > 0 ? antes : null,
+      p_limite: Number.isInteger(limite) && limite > 0 ? Math.min(limite, 200) : 50,
+    });
+    return c.json({
+      eventos: linhas.map((l) => ({
+        id: l.id, ocorridoEm: l.ocorrido_em, autor: l.autor_id ? { id: l.autor_id, nome: l.autor_nome } : null,
+        acao: l.acao, entidadeId: l.entidade_id, dados: l.dados, pessoa: l.pessoa_nome, passouPara: l.para_nome,
+      })),
+    });
   });
 
   // Exportação completa do escritório (PT-15): só o sócio, só o escritório da sessão. O que
