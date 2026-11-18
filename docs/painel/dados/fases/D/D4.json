@@ -9,6 +9,8 @@
     "CO-04",
     "PT-10"
   ],
-  "status": "pendente",
-  "ordem": 40
+  "status": "andamento",
+  "ordem": 40,
+  "evidencia": "Entrar, carteira, cadastrar escritório, ficha e aba Sócio desenhados: https://claude.ai/artifact/LD42qZSqdnEFfxhJjVtb7M",
+  "proximo": "Carol aprovar as telas de Clientes do Console antes do código (F1.5)"
 }
