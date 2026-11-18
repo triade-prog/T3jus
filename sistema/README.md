@@ -201,3 +201,14 @@ Tela aprovada pela Carol em 18/11/2026, em `docs/design/aprovadas/console-suport
 - **Atalho:** a aba Sócio da ficha do cliente mostra "Suporte de acesso" para quem tem a ação.
 - **Testes:** pgTAP `015_suporte_acesso_test.sql`, Deno `api-console/suporte_test.ts`, vitest `console/suporte.test.ts` e e2e `tests/e2e/console-suporte.spec.ts` (celular e computador, com axe).
 - **Pendente (F1.12):** o e-mail de aviso quando o suporte tira o autenticador e a data da última troca de senha.
+
+### Clientes do Portal (F1.13; AP-01, AP-02, AP-04, AP-06)
+
+Tela aprovada em `docs/design/aprovadas/portal-clientes`, com as cinco recomendações da Carol (18/11/2026).
+
+- **Banco (migration 0160):** `clientes_escritorio` (o nome `clientes` já é a carteira do Console) guarda o cliente, a qualificação para procuração e contrato e os contatos em `jsonb` (1 a 10, um principal, telefone no formato internacional). `atendimentos` é só de inserção: não se edita nem se apaga (decisão 3). O próximo contato não fica no cliente: vem do atendimento mais novo desde a última inativação (`prox_contato`), o que evita conflito de versão com quem edita a ficha.
+- **Quem vê o quê (decisões 1 e 2):** todos da equipe abrem a lista e a ficha, cadastram e editam. Só quem tem a área Comercial (o sócio dono tem todas) recebe origem, próximo contato e atendimentos, filtra vencidos, inativa e reativa. O banco tira os campos; a tela só não mostra o que não veio.
+- **Origem (decisão 4):** lista fixa em `ORIGENS` (domínio) e no `check` da tabela; um teste Deno confere os dois.
+- **Histórico:** `cliente.cadastrado`, `cliente.editado` (só os nomes dos campos), `cliente.atendimento_registrado`; inativar e reativar passam pelo guardião com o motivo.
+- **API:** `/v1/escritorio/clientes` (GET com `q`, `situacao`, `vencidos`; POST), `/clientes/duplicados`, `/clientes/:id` (GET e PUT com `versao`), `/clientes/:id/inativar`, `/reativar`, `/clientes/:id/atendimentos` (GET e POST) e `/v1/escritorio/pessoas`. Na recusa por área, a API devolve só o `motivo` (`AREA_NAO_LIBERADA`).
+- **Pendentes:** aviso do vencido no Início (F1.14) e pedido de exclusão do titular pela LGPD (F1.15, decisão 5).

@@ -1,0 +1,12 @@
+{
+  "data": "18/11/2026",
+  "inicio": "20:00",
+  "fim": "20:35",
+  "texto": "Clientes do Portal programados (F1.13): banco com clientes, contatos e atendimentos, API, lista, cadastro, ficha, atendimentos, inativar e reativar, com as 5 decisões da Carol. Pendentes: aviso no Início (F1.14) e exclusão LGPD (F1.15).",
+  "refs": [
+    "AP-01",
+    "AP-02",
+    "AP-04",
+    "AP-06"
+  ]
+}

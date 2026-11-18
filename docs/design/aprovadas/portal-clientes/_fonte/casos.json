@@ -1,0 +1,130 @@
+[
+ {
+  "nome": "lista",
+  "url": "clientes.html?estado=lista"
+ },
+ {
+  "nome": "busca",
+  "url": "clientes.html?estado=busca"
+ },
+ {
+  "nome": "busca-cpf",
+  "url": "clientes.html?estado=busca-cpf"
+ },
+ {
+  "nome": "vencidos",
+  "url": "clientes.html?estado=vencidos"
+ },
+ {
+  "nome": "inativos",
+  "url": "clientes.html?estado=inativos"
+ },
+ {
+  "nome": "sem-resultado",
+  "url": "clientes.html?estado=sem-resultado"
+ },
+ {
+  "nome": "vazio",
+  "url": "clientes.html?estado=vazio"
+ },
+ {
+  "nome": "carregando",
+  "url": "clientes.html?estado=carregando"
+ },
+ {
+  "nome": "erro",
+  "url": "clientes.html?estado=erro"
+ },
+ {
+  "nome": "lista-sem-comercial",
+  "url": "clientes.html?estado=lista-sem-comercial"
+ },
+ {
+  "nome": "novo",
+  "url": "clientes.html?estado=novo"
+ },
+ {
+  "nome": "novo-qualificacao",
+  "url": "clientes.html?estado=novo-qualificacao"
+ },
+ {
+  "nome": "novo-erros",
+  "url": "clientes.html?estado=novo-erros"
+ },
+ {
+  "nome": "novo-duplicado",
+  "url": "clientes.html?estado=novo-duplicado"
+ },
+ {
+  "nome": "novo-pj",
+  "url": "clientes.html?estado=novo-pj"
+ },
+ {
+  "nome": "cadastrado",
+  "url": "clientes.html?estado=cadastrado"
+ },
+ {
+  "nome": "ficha",
+  "url": "clientes.html?estado=ficha"
+ },
+ {
+  "nome": "atendimentos",
+  "url": "clientes.html?estado=atendimentos"
+ },
+ {
+  "nome": "registrar",
+  "url": "clientes.html?estado=registrar"
+ },
+ {
+  "nome": "registrar-erros",
+  "url": "clientes.html?estado=registrar-erros"
+ },
+ {
+  "nome": "registrado",
+  "url": "clientes.html?estado=registrado"
+ },
+ {
+  "nome": "editar",
+  "url": "clientes.html?estado=editar"
+ },
+ {
+  "nome": "conflito",
+  "url": "clientes.html?estado=conflito"
+ },
+ {
+  "nome": "ficha-pj",
+  "url": "clientes.html?estado=ficha-pj"
+ },
+ {
+  "nome": "ficha-sem-comercial",
+  "url": "clientes.html?estado=ficha-sem-comercial"
+ },
+ {
+  "nome": "ficha-carregando",
+  "url": "clientes.html?estado=ficha-carregando"
+ },
+ {
+  "nome": "ficha-erro",
+  "url": "clientes.html?estado=ficha-erro"
+ },
+ {
+  "nome": "inativar",
+  "url": "clientes.html?estado=inativar"
+ },
+ {
+  "nome": "inativar-erro",
+  "url": "clientes.html?estado=inativar-erro"
+ },
+ {
+  "nome": "inativo",
+  "url": "clientes.html?estado=inativo"
+ },
+ {
+  "nome": "reativar",
+  "url": "clientes.html?estado=reativar"
+ },
+ {
+  "nome": "reativado",
+  "url": "clientes.html?estado=reativado"
+ }
+]

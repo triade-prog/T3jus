@@ -2,7 +2,11 @@
 // o navegador nunca manda o escritório nas chamadas; ele vem da sessão, conferida no banco.
 
 import type { MiddlewareHandler } from "hono";
-import { areasSchema, convidarEquipeSchema, COOKIES_PORTAL, ErroDominio, escolherEscritorioSchema, retirarEquipeSchema, type PessoaEquipePortal } from "@t3jus/domain";
+import {
+  areasSchema, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
+  escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
+  type Atendimento, type DadosCliente, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
+} from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
@@ -179,6 +183,80 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(dados);
   });
 
+  // ---------------------------------------------------------------------------------------
+  // Clientes (AP-01, AP-02, AP-04, AP-06). Todos da equipe abrem a lista e a ficha; o banco
+  // tira a origem, o próximo contato e os atendimentos de quem não tem a área Comercial.
+
+  app.get("/v1/escritorio/clientes", async (c) => {
+    const r = buscaClientesSchema.safeParse({ q: c.req.query("q"), situacao: c.req.query("situacao") || undefined, vencidos: c.req.query("vencidos") });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    const lista = await deps.banco.rpc<ListaClientes>("portal_clientes", {
+      ...quem(c), p_termo: r.data.q || null, p_situacao: r.data.situacao, p_vencidos: r.data.vencidos,
+    });
+    return c.json(lista);
+  });
+
+  // Possível duplicado: mesmo CPF, CNPJ ou telefone. É aviso, não bloqueio.
+  app.get("/v1/escritorio/clientes/duplicados", async (c) => {
+    const ignorar = c.req.query("ignorar");
+    const duplicados = await deps.banco.rpc<PossivelDuplicado[]>("portal_clientes_duplicados", {
+      ...quem(c),
+      p_documento: (c.req.query("documento") ?? "").slice(0, 30) || null,
+      p_telefone: (c.req.query("telefone") ?? "").slice(0, 30) || null,
+      p_ignorar: ignorar && UUID.test(ignorar) ? ignorar.toLowerCase() : null,
+    });
+    return c.json({ duplicados });
+  });
+
+  app.post("/v1/escritorio/clientes", async (c) => {
+    const d = await lerCorpo(c, cadastrarClienteSchema);
+    const r = await deps.banco.rpc<{ id: string; versao: number }>("portal_cliente_cadastrar", { ...quem(c), p_dados: clienteParaBanco(d) });
+    return c.json(r, 201);
+  });
+
+  app.get("/v1/escritorio/clientes/:id", async (c) => {
+    const f = await deps.banco.rpc<Record<string, unknown>>("portal_cliente", { ...quem(c), p_cliente: idDaRota(c, "id") });
+    return c.json(camelCase(f) as unknown as FichaCliente);
+  });
+
+  app.put("/v1/escritorio/clientes/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarClienteSchema);
+    const r = await deps.banco.rpc<{ id: string; versao: number }>("portal_cliente_editar", {
+      ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: versao, p_dados: clienteParaBanco(d),
+    });
+    return c.json(r);
+  });
+
+  // Inativar e reativar: só quem tem a área Comercial (decisão 2); nada é apagado.
+  app.post("/v1/escritorio/clientes/:id/inativar", async (c) => {
+    const d = await lerCorpo(c, inativarClienteSchema);
+    const versao = await deps.banco.rpc<number>("portal_cliente_inativar", { ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo });
+    return c.json({ versao });
+  });
+
+  app.post("/v1/escritorio/clientes/:id/reativar", async (c) => {
+    const d = await lerCorpo(c, reativarClienteSchema);
+    const versao = await deps.banco.rpc<number>("portal_cliente_reativar", { ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo });
+    return c.json({ versao });
+  });
+
+  // Atendimentos (AP-02, AP-06): só o Comercial; não se editam nem se apagam (decisão 3).
+  app.get("/v1/escritorio/clientes/:id/atendimentos", async (c) => {
+    const atendimentos = await deps.banco.rpc<Atendimento[]>("portal_atendimentos", { ...quem(c), p_cliente: idDaRota(c, "id") });
+    return c.json({ atendimentos });
+  });
+
+  app.post("/v1/escritorio/clientes/:id/atendimentos", async (c) => {
+    const d = await lerCorpo(c, registrarAtendimentoSchema);
+    const id = await deps.banco.rpc<string>("portal_registrar_atendimento", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d });
+    return c.json({ id }, 201);
+  });
+
+  // Quem pode ser responsável pelo próximo contato ou ter atendido.
+  app.get("/v1/escritorio/pessoas", async (c) => {
+    return c.json({ pessoas: await deps.banco.rpc<{ id: string; nome: string }[]>("portal_pessoas_escritorio", quem(c)) });
+  });
+
   return app;
 }
 
@@ -191,4 +269,16 @@ export function exigirEscritorio(deps: DepsSessao): MiddlewareHandler<VarsPortal
     c.set("escritorioId", escritorio);
     await next();
   };
+}
+
+/** Os campos do cliente com os nomes do banco. */
+function clienteParaBanco(d: Partial<DadosCliente>): Record<string, unknown> {
+  const r: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(d)) if (CAMPOS_CLIENTE_BANCO[k]) r[CAMPOS_CLIENTE_BANCO[k]] = v;
+  return r;
+}
+
+/** rep_nome vira repNome (só o primeiro nível). */
+function camelCase(o: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(o).map(([k, v]) => [k.replace(/_([a-z])/g, (_, l: string) => l.toUpperCase()), v]));
 }

@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { PaginaComumPortal } from "@t3jus/ui";
+import { ListaClientesPortal } from "@t3jus/ui";
 
-// Clientes do Portal: por enquanto, a moldura e o que vem (PA-01).
+// Clientes do escritório (AP-01, AP-04, AP-06), tela aprovada em docs/design/aprovadas/portal-clientes.
+// Todos da equipe abrem; a API tira o que é da área Comercial de quem não a tem.
 export const metadata: Metadata = { title: "Clientes" };
 
-export default function Pagina() {
-  return <PaginaComumPortal lugar="clientes" />;
+export default async function Pagina({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const q = await searchParams;
+  const termo = typeof q.q === "string" ? q.q.slice(0, 120) : "";
+  const filtro = q.filtro === "inativos" || q.filtro === "vencidos" ? q.filtro : "ativos";
+  return <ListaClientesPortal termoInicial={termo} filtroInicial={filtro} />;
 }

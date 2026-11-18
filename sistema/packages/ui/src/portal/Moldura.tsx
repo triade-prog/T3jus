@@ -55,6 +55,9 @@ function ir(destino: string) {
   window.location.assign(destino);
 }
 
+/** Vai para outra página do Portal com recarga completa (depois de cadastrar, por exemplo). */
+export const irPara = ir;
+
 /**
  * Chamada do Portal: sessão vencida (401) volta para entrar; sem escritório escolhido na
  * sessão, vai para a escolha. O resto segue para a tela tratar.

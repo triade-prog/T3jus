@@ -201,3 +201,157 @@
 .pt .prazo .lado{grid-column:2;flex-direction:row!important;flex-wrap:wrap;align-items:center!important}
 .pt .data .disco{--d:44px!important;--f:21px!important}
 }
+
+/* Desenho aprovado em docs/design/aprovadas/portal-clientes (Carol, 18/11/2026). */
+/* ==========================================================================
+   Portal · Clientes (AP-01, AP-02, AP-04, AP-06). Prefixo cl- nas peças novas.
+   ========================================================================== */
+.cl{display:flex;flex-direction:column;gap:24px;min-width:0}
+.cl-grade{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+.cl-col{display:flex;flex-direction:column;gap:24px;min-width:0}
+.cl-cab-lista{align-items:flex-end}
+
+/* Lista */
+.cl-ferr{display:flex;align-items:center;gap:12px;padding:16px 24px;flex-wrap:wrap}
+.cl-ferr .campo-busca{position:relative;flex:1 1 380px;max-width:460px}
+.cl-ferr .campo-busca .ico{position:absolute;left:14px;top:12px;color:var(--vinho-4);pointer-events:none}
+.cl-ferr .campo-busca input{padding-left:44px}
+.cl-ferr .chips{margin-left:auto}
+.cl-cont{padding:0 24px 12px;font-size:13px;color:var(--texto-2)}
+.cl-cont b{color:var(--texto);font-weight:500}
+.cl-tab td{vertical-align:middle}
+.cl-tab .esc a{display:inline-flex;align-items:center;min-height:44px;margin:-10px 0 -12px}
+.cl-tab .esc small{margin-top:0}
+.cl-ct strong{display:block;font-weight:500;font-size:14px}
+.cl-ct small{display:block;font-size:12px;color:var(--texto-2)}
+.cl-prox{display:grid;gap:4px;justify-items:start}
+.cl-prox b{font-weight:500}
+.cl-prox small{font-size:12px;color:var(--texto-2)}
+.cl-sem{font-size:13px;color:var(--texto-2)}
+.cl-tab tr.cl-venc td{background:#FCF6F2}
+.cl-tab tr.cl-venc td:first-child{box-shadow:inset 3px 0 0 var(--vinho-3)}
+.cl-tab tr.cl-off td{color:var(--texto-2)}
+.cl-tab tr.cl-off .av-p{background:var(--sal-2);color:var(--texto-2)}
+mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1px}
+.cartao.cl-venc{border-color:var(--vinho-3);box-shadow:inset 3px 0 0 var(--vinho-3)}
+
+/* Formulário: tipo, mínimo e qualificação */
+.cl-tipo{grid-column:1/-1;border:0;margin:0;padding:0;min-width:0}
+.cl-tipo legend{font-weight:500;font-size:14px;margin-bottom:6px;padding:0}
+.cl-tipo .cl-ops{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cl-tipo .opcao{border:1px solid var(--borda-folha);border-radius:var(--raio);padding:12px 14px;margin:0;background:var(--papel)}
+.cl-tipo .opcao:has(input:checked){border-color:var(--vinho);background:var(--ambar-3)}
+.cl-sec{grid-column:1/-1;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--divisor);margin-top:4px}
+.cl-sec h3{font-size:19px;font-weight:600;color:var(--vinho)}
+.cl-sec small{font-size:12px;color:var(--texto-2)}
+.cl-sec.cl-primeira{border-top:0;padding-top:0;margin-top:0}
+.cl-uso{display:inline-flex;align-items:center;height:20px;padding:0 8px;margin-left:8px;border-radius:10px;background:var(--sal-2);color:var(--vinho);font-size:11px;font-weight:500;vertical-align:1px;white-space:nowrap}
+.cl-qualif{grid-column:1/-1;border:1px solid var(--borda-folha);border-radius:var(--raio-g);background:var(--papel)}
+.cl-qualif>summary{list-style:none;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;min-height:64px;padding:12px 16px;cursor:pointer;border-radius:var(--raio-g)}
+.cl-qualif>summary::-webkit-details-marker{display:none}
+.cl-qualif>summary:hover{background:#FCF8F5}
+.cl-qualif>summary .cl-ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.cl-qualif>summary strong{display:block;font-family:var(--serifa);font-size:19px;font-weight:600;color:var(--vinho);line-height:1.25}
+.cl-qualif>summary small{display:block;font-size:12px;color:var(--texto-2)}
+.cl-qualif>summary .cl-abre{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--vinho);white-space:nowrap}
+.cl-qualif>summary .cl-abre .ico{transition:transform var(--dur-media) var(--curva)}
+.cl-qualif[open]>summary .cl-abre .ico{transform:rotate(180deg)}
+.cl-qualif[open]>summary{border-bottom:1px solid var(--divisor);border-radius:var(--raio-g) var(--raio-g) 0 0}
+.cl-qualif .cl-q-corpo{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px 20px;padding:16px}
+.cl-qualif .c6{grid-column:span 6}.cl-qualif .c4{grid-column:span 4}.cl-qualif .c3{grid-column:span 3}.cl-qualif .c2{grid-column:span 2}
+.cl-lgpd{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.cl-lgpd .ico{color:var(--vinho-4);margin-top:1px;flex:none}
+.cl-ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--vinho-2);margin-top:6px}
+.cl-ok .ico{width:16px;height:16px}
+.cl-dup .aviso-acoes a{font-weight:500}
+
+/* Ficha */
+.ficha-cab .esq .meta .selo-ativo{background:var(--ambar-3);color:var(--vinho)}
+.ficha-cab .esq .meta .selo-neutro{background:var(--sal);color:var(--vinho)}
+.cl-grade .explica{padding-bottom:84px}
+.cl .contato-edit{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px}
+.cl .contato-edit .remover{grid-column:3;grid-row:1}
+.cl .cartao .c-dados{grid-template-columns:auto minmax(0,1fr)}
+.cl-dir-linha{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dir .cl-oque{font-size:13px;color:var(--tinta);line-height:1.45}
+.dir .cl-oque b{font-weight:600}
+.dir .btn{align-self:flex-start}
+.cl-proc{list-style:none;margin:0;padding:0 24px 8px}
+.cl-proc li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--divisor);font-size:13px;align-items:start}
+.cl-proc li:first-child{border-top:0}
+.cl-proc .ico{width:18px;height:18px;color:var(--vinho);margin-top:1px}
+.cl-proc li.cl-falta{color:var(--texto-2)}
+.cl-proc li.cl-falta .ico{color:var(--vinho-3)}
+.cl-proc li.cl-falta b{color:var(--vinho-3);font-weight:600}
+.cl-proc-num{display:flex;align-items:baseline;gap:8px;padding:0 24px 10px}
+.cl-proc-num strong{font-family:var(--serifa);font-size:34px;line-height:1;color:var(--vinho);font-weight:500}
+.cl-proc-num span{font-size:13px;color:var(--texto-2)}
+.cl-folha-acao{padding:4px 24px 20px;display:grid;gap:10px}
+.cl-folha-acao>p{font-size:13px;color:var(--texto-2);line-height:1.5}
+.cl-reserva{margin:4px 24px 20px;padding:16px;border:1.5px dashed var(--vinho-4);border-radius:var(--raio);display:grid;gap:10px;font-size:13px;color:var(--texto-2);line-height:1.5}
+.cl-reserva div{display:flex;align-items:flex-start;gap:10px}
+.cl-reserva .ico{color:var(--vinho-4);flex:none;margin-top:1px}
+.cl-reserva b{color:var(--texto);font-weight:500}
+.cl .contato a{min-height:44px}
+.cl .contato .cl-papel{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cl-falta-dd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cl-falta-dd .selo{font-style:normal}
+.cl-origem{margin:0;padding:0 24px 18px;display:grid;gap:10px}
+.cl-origem div{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding-top:10px;border-top:1px solid var(--divisor)}
+.cl-origem div:first-child{border-top:0;padding-top:0}
+.cl-origem dt{color:var(--texto-2)}
+.cl-origem dd{margin:0;font-weight:500;text-align:right}
+.cl-sit{padding:0 24px 20px;display:grid;gap:12px}
+.cl-sit p{font-size:13px;color:var(--texto-2);line-height:1.5}
+
+/* Histórico de atendimento */
+.cl-resumo{display:block;margin-top:6px;font-family:var(--serifa);font-style:italic;font-size:16px;line-height:1.45;color:var(--vinho);padding-left:12px;border-left:2px solid var(--ambar)}
+.cl-pc{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--texto-2)}
+.cl-pc .ico{width:16px;height:16px;color:var(--vinho-4)}
+.cl-pc b{font-weight:500;color:var(--texto)}
+.eventos li.cl-novo{background:#FCF8F5;border-radius:var(--raio);margin:0 -10px;padding-left:10px;padding-right:10px}
+.eventos .selo{margin-left:6px}
+.cl-venc-aviso{margin:0 24px 8px}
+.cl-dois{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cl-prox-grupo{border:0;margin:0;padding:14px 16px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:14px;min-width:0}
+.cl-prox-grupo legend{float:left;width:100%;padding:0;font-family:var(--serifa);font-size:19px;font-weight:600;color:var(--vinho)}
+.cl-prox-grupo legend small{font-family:var(--sans);font-size:12px;font-weight:400;color:var(--texto-2);margin-left:8px}
+.cl-prox-grupo .opcao{margin:0 -8px}
+.janela .cl-lgpd{background:var(--sal-2)}
+
+/* Inativo */
+.cl-inativo-faixa{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
+
+@media (max-width:760px){
+  .cl{gap:16px}
+  .cl-grade{grid-template-columns:minmax(0,1fr);gap:16px}
+  .cl-col{gap:16px}
+  .cl-cab-lista{flex-direction:column;align-items:stretch}
+  .cl-cab-lista .btn{width:100%}
+  .cabeca-ambar{padding:22px 16px 20px}
+  .cabeca-ambar h1{font-size:34px}
+  .cl-ferr{padding:16px;gap:10px}
+  .cl-ferr .campo-busca{flex-basis:100%;max-width:none}
+  .cl-ferr .chips{margin-left:0}
+  .cl-cont{padding:0 16px 10px}
+  .cl-tipo .cl-ops{grid-template-columns:1fr}
+  .cl-qualif>summary{grid-template-columns:40px minmax(0,1fr);padding:12px}
+  .cl-qualif>summary .cl-abre{grid-column:2}
+  .cl-qualif .cl-q-corpo{grid-template-columns:1fr;padding:14px 12px}
+  .cl-qualif .c6,.cl-qualif .c4,.cl-qualif .c3,.cl-qualif .c2{grid-column:1/-1}
+  .cl-proc,.cl-proc-num{padding-left:16px;padding-right:16px}
+  .cl-folha-acao{padding:4px 16px 16px}
+  .cl-folha-acao .btn{width:100%}
+  .cl-reserva{margin:4px 16px 16px}
+  .cl-origem,.cl-sit{padding-left:16px;padding-right:16px}
+  .cl-sit .btn{width:100%}
+  .cl-venc-aviso{margin:0 16px 8px}
+  .cl-dois{grid-template-columns:1fr}
+  .cl .contato-edit{grid-template-columns:1fr 44px}
+  .cl .contato-edit .remover{grid-column:2}
+  .dir .btn{align-self:stretch}
+  .ficha-cab .esq .ident h1{font-size:30px!important}
+  .eventos li.cl-novo{margin:0 -8px;padding-left:8px;padding-right:8px}
+  .cl-inativo-faixa{grid-template-columns:auto minmax(0,1fr)}
+  .cl-inativo-faixa .btn{grid-column:1/-1}
+}
