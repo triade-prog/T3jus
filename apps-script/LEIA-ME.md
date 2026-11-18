@@ -1,6 +1,6 @@
 # Envio automático das respostas para a planilha
 
-A prévia publicada no GitHub Pages envia as respostas sozinha para a planilha **"T3 Just – Respostas da prévia"** no Google Drive da Carol. Não usa banco de dados: o script do Google recebe as respostas e escreve uma linha por pessoa.
+A prévia publicada no GitHub Pages envia as respostas sozinha para a planilha **"T3jus – Respostas da prévia"** no Google Drive da Carol. Não usa banco de dados: o script do Google recebe as respostas e escreve uma linha por pessoa.
 
 - Cada pessoa que responde vira **uma linha**. Enquanto ela responde, a mesma linha é atualizada (cerca de 2 segundos depois de cada mudança).
 - Cada pergunta tem a sua coluna. A coluna `texto_completo` traz tudo em texto corrido.
@@ -9,7 +9,7 @@ A prévia publicada no GitHub Pages envia as respostas sozinha para a planilha *
 ## Ativar (uma vez, cerca de 5 minutos)
 
 ### 1. Colocar o script na planilha
-1. Abra a planilha [T3 Just – Respostas da prévia](https://docs.google.com/spreadsheets/d/1Vrf3UX7dNDJl13Vk3oh_il_i7wmErq9SXe_uawgHBd4/edit).
+1. Abra a planilha [T3jus – Respostas da prévia](https://docs.google.com/spreadsheets/d/1Vrf3UX7dNDJl13Vk3oh_il_i7wmErq9SXe_uawgHBd4/edit).
 2. Menu **Extensões → Apps Script**.
 3. Apague o que estiver no editor e cole todo o conteúdo de [`Codigo.gs`](Codigo.gs).
 4. Clique no ícone de disquete (**Salvar**).

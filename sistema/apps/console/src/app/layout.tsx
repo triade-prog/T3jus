@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Console T3 Just · T3 Just", template: "%s · Console T3 Just" },
+  title: { default: "Console T3jus · T3jus", template: "%s · Console T3jus" },
   robots: { index: false, follow: false },
 };
 

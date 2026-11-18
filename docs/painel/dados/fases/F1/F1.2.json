@@ -1,11 +1,12 @@
 {
   "id": "F1.2",
-  "texto": "Convite do sócio pelo Console e da equipe pelo sócio, com a senha criada pelo link do convite",
+  "texto": "Convite do sócio pelo Console, com a senha criada pelo link de uso único do convite; quem já tem conta só ganha o vínculo",
   "peca": "B1",
   "refs": [
     "PT-20",
-    "PT-02"
+    "PT-22"
   ],
-  "status": "pendente",
+  "status": "feito",
+  "evidencia": "console_vincular_socio na 0060, POST /v1/clientes/:id/socios e /v1/auth/criar-senha; testes PT-20 e PT-22 em api-console/clientes_test.ts e pgTAP 007",
   "ordem": 20
 }

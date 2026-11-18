@@ -1,6 +1,6 @@
 # Painel de execução
 
-O painel mostra tudo o que vai ser construído no T3 Just, com o status de cada entrega, teste, item de publicação, dependência externa e decisão, e o histórico. O formato veio do TRÍADE Condo (DC4): os dados ficam em arquivos pequenos, um por registro, e o painel é montado por script. Assim, dois PRs quase nunca mexem no mesmo arquivo.
+O painel mostra tudo o que vai ser construído no T3jus, com o status de cada entrega, teste, item de publicação, dependência externa e decisão, e o histórico. O formato veio do TRÍADE Condo (DC4): os dados ficam em arquivos pequenos, um por registro, e o painel é montado por script. Assim, dois PRs quase nunca mexem no mesmo arquivo.
 
 Nada gerado vai para o Git.
 
@@ -20,7 +20,7 @@ O script calcula o resto sozinho:
 - a data de atualização é a da linha mais nova do histórico;
 - o total e os códigos das ideias saem das tabelas das seções numeradas do `IDEIAS.md`.
 
-As peças (`peca`) são: S1 Painel do dia, S2 Atendimento e propostas, S3 Contratos e honorários, S4 Financeiro e repasses, S5 Casos, tarefas e prazos, S6 Documentos, S7 Configurações; C1 Carteira de escritórios, C2 Implantação, C3 Equipe interna; B1 Segurança e acesso, B2 Dados e histórico, B3 Motor de mensagens, B4 Infraestrutura e qualidade, B5 Princípios do produto. A lista fica no `PECAS` da `pagina.html`.
+As peças (`peca`) são: S1 Painel do dia, S2 Atendimento e propostas, S3 Contratos e honorários, S4 Financeiro e repasses, S5 Casos, tarefas e prazos, S6 Documentos, S7 Configurações; C1 Carteira de escritórios, C2 Implantação, C3 Equipe interna, C4 Comercial; W1 Site comercial; B1 Segurança e acesso, B2 Dados e histórico, B3 Motor de mensagens, B4 Infraestrutura e qualidade, B5 Princípios do produto. A lista fica no `PECAS` da `pagina.html`.
 
 ## A cada entrega, no mesmo commit do código
 
@@ -45,6 +45,8 @@ As peças (`peca`) são: S1 Painel do dia, S2 Atendimento e propostas, S3 Contra
    O commit só sai com 0 erro. Os avisos são para ler.
 
 ## Ver o painel
+
+O painel publicado fica em https://claude.ai/artifact/S3Xf82PijknQxUqaEbx4si. Para republicar, monte a partir do main e publique no mesmo link.
 
 ```
 python3 docs/painel/painel.py montar /tmp/painel

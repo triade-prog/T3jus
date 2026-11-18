@@ -1,0 +1,10 @@
+{
+  "data": "17/11/2026",
+  "inicio": "20:15",
+  "fim": "21:01",
+  "texto": "Passo 1 no servidor: o Console cadastra o escritório (com CNPJ conferido), mantém a carteira, as notas e o histórico, organiza a equipe interna e convida o sócio; testado localmente.",
+  "refs": [
+    "F1.1",
+    "F1.2"
+  ]
+}

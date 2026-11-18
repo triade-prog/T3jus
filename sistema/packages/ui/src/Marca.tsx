@@ -7,7 +7,7 @@ export function Marca({ sistema }: { sistema: string }) {
         <path d="M16 3 29 27H3Z" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
       </svg>
       <span>
-        T3 Just
+        T3jus
         <small className="block text-[10px] font-medium tracking-widest text-tinta-suave uppercase">{sistema}</small>
       </span>
     </span>

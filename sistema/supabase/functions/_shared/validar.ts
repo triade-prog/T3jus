@@ -2,7 +2,7 @@
 
 import type { Context } from "hono";
 import type { z } from "zod";
-import { ErroDominio } from "@t3just/domain";
+import { ErroDominio } from "@t3jus/domain";
 
 export async function lerCorpo<S extends z.ZodType>(c: Context, schema: S): Promise<z.output<S>> {
   if (!(c.req.header("content-type") ?? "").startsWith("application/json")) throw new ErroDominio("VALIDATION_ERROR");

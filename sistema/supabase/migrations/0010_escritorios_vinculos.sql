@@ -20,7 +20,7 @@ create table pessoas (
   criado_em timestamptz not null default app_now()
 );
 
--- Equipe T3 Just: entra no Console, sempre com o autenticador (PT-08). Quais escritórios
+-- Equipe T3jus: entra no Console, sempre com o autenticador (PT-08). Quais escritórios
 -- cada pessoa da equipe atende vem dos vínculos, como para todo mundo (PT-24, passo 1).
 create table equipe_t3 (
   pessoa_id     uuid primary key references pessoas (id) on delete restrict,
@@ -29,14 +29,14 @@ create table equipe_t3 (
   desativada_em timestamptz
 );
 
--- Funções de um vínculo (sócio, estagiário, implantação do T3 Just...). Cada uma entra com a
+-- Funções de um vínculo (sócio, estagiário, implantação do T3jus...). Cada uma entra com a
 -- funcionalidade que a usa; aqui só o sócio, que o passo 1 convida.
 create table funcoes (
   codigo  text primary key check (codigo ~ '^[A-Z][A-Z_]{1,39}$'),
   nome    text not null,
-  sistema text not null check (sistema in ('PLATAFORMA', 'CONSOLE'))
+  sistema text not null check (sistema in ('PORTAL', 'CONSOLE'))
 );
-insert into funcoes (codigo, nome, sistema) values ('SOCIO', 'Sócio', 'PLATAFORMA');
+insert into funcoes (codigo, nome, sistema) values ('SOCIO', 'Sócio', 'PORTAL');
 
 -- O que cada função pode fazer. Ação no formato recurso.verbo (ex.: casos.editar).
 create table funcao_acoes (
@@ -135,7 +135,7 @@ insert into tabelas_sem_escritorio (tabela, motivo) values
   ('escritorios', 'É o próprio escritório: aparece o do contexto e os que a pessoa tem vínculo ativo'),
   ('pessoas', 'Uma pessoa pode ter vínculo com vários escritórios (PT-22); aparece a própria e as do escritório do contexto'),
   ('vinculos', 'Liga a pessoa ao escritório; aparecem os do escritório do contexto e os da própria pessoa'),
-  ('equipe_t3', 'Equipe interna do T3 Just; os escritórios que cada um atende vêm dos vínculos'),
+  ('equipe_t3', 'Equipe interna do T3jus; os escritórios que cada um atende vêm dos vínculos'),
   ('sessoes_escritorio', 'Escolha do escritório por sessão; cada pessoa vê só as próprias');
 call proteger_tabela_global('funcoes', 'Lista de funções, igual para todos os escritórios');
 call proteger_tabela_global('funcao_acoes', 'O que cada função pode fazer, igual para todos os escritórios');
@@ -213,8 +213,8 @@ end $$;
 -- ---------------------------------------------------------------------------------------
 -- Funções chamadas pela API (security definer).
 
--- A pessoa existe e pode entrar na Plataforma: tem ao menos um vínculo ativo de função da Plataforma.
-create function acesso_plataforma(p_pessoa uuid) returns boolean
+-- A pessoa existe e pode entrar no Portal: tem ao menos um vínculo ativo de função do Portal.
+create function acesso_portal(p_pessoa uuid) returns boolean
 language plpgsql
 security definer
 set search_path = public
@@ -222,10 +222,10 @@ as $$
 begin
   if not tentar_definir_pessoa(p_pessoa) then return false; end if;
   return exists (select 1 from vinculos v join funcoes f on f.codigo = v.funcao
-                  where v.pessoa_id = p_pessoa and v.revogado_em is null and f.sistema = 'PLATAFORMA');
+                  where v.pessoa_id = p_pessoa and v.revogado_em is null and f.sistema = 'PORTAL');
 end $$;
 
--- A pessoa é da equipe T3 Just e está ativa: pode entrar no Console (sempre com autenticador).
+-- A pessoa é da equipe T3jus e está ativa: pode entrar no Console (sempre com autenticador).
 create function acesso_console(p_pessoa uuid) returns boolean
 language plpgsql
 security definer
@@ -237,7 +237,7 @@ begin
 end $$;
 
 -- Escritórios em que a pessoa tem vínculo ativo, com as funções (advogado que atende mais de um escritório, PT-22).
-create function meus_escritorios(p_pessoa uuid, p_sistema text default 'PLATAFORMA')
+create function meus_escritorios(p_pessoa uuid, p_sistema text default 'PORTAL')
 returns table (escritorio_id uuid, nome text, funcoes text[])
 language plpgsql
 security definer

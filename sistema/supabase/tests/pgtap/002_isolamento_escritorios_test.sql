@@ -38,8 +38,8 @@ select results_eq($$ select exemplo_listar(pmulti, a) from ids $$, array['Prazo 
 select results_eq($$ select exemplo_listar(pmulti, b) from ids $$, array['Audiência do Bela Vista'], 'advogado que atende mais de um escritório no B vê só o B');
 select results_eq($$ select nome from ids, meus_escritorios(pmulti) $$, array['Aurora Advocacia', 'Bela Vista Advogados'], 'lista os dois escritórios dele');
 select results_eq($$ select nome from ids, meus_escritorios(pa) $$, array['Aurora Advocacia'], 'a sócia do A só vê o A');
-select ok((select acesso_plataforma(pa) from ids), 'quem tem vínculo entra na Plataforma');
-select ok(not (select acesso_plataforma(psem) from ids), 'quem não tem vínculo não entra');
+select ok((select acesso_portal(pa) from ids), 'quem tem vínculo entra no Portal');
+select ok(not (select acesso_portal(psem) from ids), 'quem não tem vínculo não entra');
 
 -- O RLS direto, como o papel dono das tabelas, sem nenhuma função no caminho.
 select set_config('app.pessoa_id', (select pa::text from ids), true), set_config('app.escritorio_id', (select a::text from ids), true);
@@ -66,13 +66,14 @@ select throws_ok($$ select escolher_escritorio(pb, sessao, b) from ids $$, null,
 -- Negar por padrão (PT-02): ação sem permissão cadastrada não passa.
 select throws_ok($$ select entrar_escritorio(pa, a, 'exemplos.apagar') from ids $$, 'TC401', null, 'ação não cadastrada é negada');
 
--- Só três funções gravam o contexto da transação.
+-- Só quatro funções gravam o contexto da transação (pessoa, equipe e escritório). A quarta,
+-- abrir_escritorio_novo, é o cadastro de escritório no Console (passo 1).
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and (p.prosrc ~ 'app\.pessoa_id''' or p.prosrc ~ 'app\.escritorio_id''')
+    where n.nspname = 'public' and p.prosrc ~ 'app\.(pessoa_id|escritorio_id|equipe)'
       and p.prosrc ~ 'set_config'),
-  array['entrar_escritorio', 'limpar_contexto', 'tentar_definir_pessoa'],
-  'só limpar_contexto, tentar_definir_pessoa e entrar_escritorio gravam o contexto');
+  array['abrir_escritorio_novo', 'entrar_escritorio', 'limpar_contexto', 'tentar_definir_pessoa'],
+  'só limpar_contexto, tentar_definir_pessoa, entrar_escritorio e abrir_escritorio_novo gravam o contexto');
 
 select * from finish();
 rollback;

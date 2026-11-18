@@ -1,0 +1,11 @@
+{
+  "id": "F1.6",
+  "texto": "O sócio convida a equipe do escritório pelo Portal, com função para cada pessoa",
+  "peca": "S7",
+  "refs": [
+    "PT-20",
+    "PT-02"
+  ],
+  "status": "pendente",
+  "ordem": 45
+}

@@ -1,6 +1,6 @@
 // Dependências falsas para os testes das APIs: o Auth e o banco em memória, sem rede.
 
-import type { CadastroTotp, Fator, Portador, ProvedorAuth, ResultadoSenha, SessaoAuth } from "./auth.ts";
+import type { AdminAuth, CadastroTotp, Fator, Portador, ProvedorAuth, ResultadoSenha, SessaoAuth } from "./auth.ts";
 import { ErroBanco, type Banco } from "./banco.ts";
 import { base64url } from "./cripto.ts";
 
@@ -171,4 +171,20 @@ export function cookieDe(r: Response): string {
 
 export async function erro(r: Response): Promise<{ codigo: string; detalhes?: Record<string, unknown> }> {
   return ((await r.json()) as { erro: { codigo: string; detalhes?: Record<string, unknown> } }).erro;
+}
+
+/** Convites em memória: e-mail já cadastrado devolve a mesma conta, sem e-mail novo. */
+export function adminFalso(contas: Record<string, string> = {}) {
+  const enviados: { email: string; voltarPara: string }[] = [];
+  const admin: AdminAuth = {
+    convidar(email, voltarPara) {
+      if (contas[email]) return Promise.resolve({ userId: contas[email]!, contaNova: false });
+      contas[email] = crypto.randomUUID();
+      enviados.push({ email, voltarPara });
+      return Promise.resolve({ userId: contas[email]!, contaNova: true });
+    },
+    emailDe: () => Promise.resolve(null),
+    removerAutenticadores: () => Promise.resolve(0),
+  };
+  return { admin, enviados, contas };
 }

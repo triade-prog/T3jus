@@ -1,13 +1,13 @@
-// API da Plataforma do escritório. Login (F0.6) e escolha do escritório na sessão (F0.3):
+// API do Portal do advogado. Login (F0.6) e escolha do escritório na sessão (F0.3):
 // o navegador nunca manda o escritório nas chamadas; ele vem da sessão, conferida no banco.
 
 import type { MiddlewareHandler } from "hono";
-import { COOKIES_PLATAFORMA, ErroDominio, escolherEscritorioSchema } from "@t3just/domain";
+import { COOKIES_PORTAL, ErroDominio, escolherEscritorioSchema } from "@t3jus/domain";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 
-export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { escritorioId: string } };
+export type VarsPortal = { Variables: VarsSessao["Variables"] & { escritorioId: string } };
 
 interface EscritorioDaPessoa {
   escritorio_id: string;
@@ -15,14 +15,14 @@ interface EscritorioDaPessoa {
   funcoes: string[];
 }
 
-export function criarApiPlataforma(segredo: string | undefined, deps: DepsSessao & { urlApp: string }) {
-  const app = criarApp<VarsPlataforma>("api-plataforma", segredo);
+export function criarApiPortal(segredo: string | undefined, deps: DepsSessao & { urlApp: string }) {
+  const app = criarApp<VarsPortal>("api-portal", segredo);
   const sessao = criarSessao(
-    { sistema: "plataforma", cookie: COOKIES_PLATAFORMA.sessao, autenticadorObrigatorio: false, funcaoAcesso: "acesso_plataforma", urlApp: deps.urlApp },
+    { sistema: "portal", cookie: COOKIES_PORTAL.sessao, autenticadorObrigatorio: false, funcaoAcesso: "acesso_portal", urlApp: deps.urlApp },
     deps,
   );
 
-  app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-plataforma" }));
+  app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-portal" }));
   sessao.rotas(app);
 
   for (const rota of ["/v1/sessao", "/v1/sessao/*", "/v1/escritorio", "/v1/escritorio/*"]) app.use(rota, sessao.exigirSessao);
@@ -60,7 +60,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsSessao
 }
 
 /** Rotas de dado de escritório: sessão completa e o escritório escolhido, ainda com vínculo ativo. */
-export function exigirEscritorio(deps: DepsSessao): MiddlewareHandler<VarsPlataforma> {
+export function exigirEscritorio(deps: DepsSessao): MiddlewareHandler<VarsPortal> {
   return async (c, next) => {
     const s = c.get("sessao");
     const escritorio = await deps.banco.rpc<string | null>("escritorio_da_sessao", { p_pessoa: s.pessoaId, p_sessao: s.sessaoId });

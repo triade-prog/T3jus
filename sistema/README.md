@@ -1,14 +1,14 @@
-# Sistema T3 Just
+# Sistema T3jus
 
-Código dos dois sistemas do T3 Just (DC1): a **Plataforma do escritório** e o **Console T3 Just** (equipe interna). As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
+Código do T3jus (DC1): o **Portal do advogado** e o **Console T3jus** (equipe interna). O site comercial entra no passo 2, em `apps/site`. As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
 
 A base veio da fundação (passo 0) do TRÍADE Condo, que por sua vez veio do T-shirt Club (DC5, DC6): só as peças genéricas, com "condomínio" trocado por "escritório".
 
 ## Estrutura
 
 ```
-apps/plataforma     Plataforma do escritório (Next.js 16, porta 3000)
-apps/console        Console T3 Just (Next.js 16, porta 3001)
+apps/portal     Portal do advogado (Next.js 16, porta 3000)
+apps/console        Console T3jus (Next.js 16, porta 3001)
 packages/domain     regras puras em TypeScript: dinheiro, erros, textos, esquemas, logs limpos
                     (roda no Node e no Deno)
 packages/ui         tema (DC10) e componentes React
@@ -27,7 +27,7 @@ scripts/            banco de teste e Deno
 - **O escritório é o dono de todo dado (PT-01).**
   - Toda tabela de dado de escritório tem `escritorio_id` e a política `isolamento_escritorio`. Só aparece o que é do escritório que está no contexto da transação.
   - O contexto é gravado por `entrar_escritorio`, e só depois de conferir o vínculo e a permissão.
-  - Na Plataforma, o escritório vem da sessão no servidor (`escolher_escritorio`), nunca do que o navegador manda.
+  - No Portal, o escritório vem da sessão no servidor (`escolher_escritorio`), nunca do que o navegador manda.
 - **A permissão é dada por pessoa + função + escritório + ação, e nega por padrão (PT-02).**
   - Quem pode o quê fica em `funcao_acoes`.
   - Cada linha entra junto com a funcionalidade que a usa (DC8).
@@ -59,14 +59,25 @@ scripts/            banco de teste e Deno
 
 Se a tabela não tiver escritório, ela precisa de um motivo em `tabelas_sem_escritorio`. Sem o motivo, o teste `001_acesso_rls_test.sql` falha.
 
+## Console: escritório e acesso (passo 1)
+
+A migration `0060_console_clientes.sql` e a `api-console` trazem o Console no servidor. As telas ainda não existem (F1.5 no painel).
+
+- **Equipe interna (PT-24).** Quem é da equipe T3jus está em `equipe_t3`, com as funções em `equipe_funcoes`: ADMINISTRACAO, IMPLANTACAO, FINANCEIRO e SUPORTE. Cada pessoa só vê os escritórios atribuídos a ela, e só enquanto tem a função da atribuição. Sempre sobra alguém com administração.
+- **Carteira (CO-01).** Cada escritório cliente tem um estágio (em implantação ou ativo) e as situações a tratar, calculadas da ficha: sem sócio, sem contato, sem contrato. Para ficar ativo, o escritório precisa ter o sócio convidado.
+- **Ficha (CO-02).** Nome, cidade, UF, endereço, CNPJ (conferido e único) e contatos. A ficha é do escritório, que vai vê-la e editá-la no Portal; a referência do contrato fica na carteira e só a administração muda.
+- **Interno (CO-03).** A carteira (`clientes`) e as notas (`notas_internas`) passam por `proteger_tabela_interna`: o escritório nunca as vê. As notas são só de inserção.
+- **Histórico administrativo (CO-04).** Os eventos internos vão para o histórico com a marca de interno e não aparecem para o escritório.
+- **Convites (PT-20, PT-22).** O convite do sócio e da equipe interna sai pelo Supabase Auth (`AdminAuth` em `_shared`). A pessoa cria a senha pelo link de uso único em `/criar-senha` do app de destino. Quem já tem conta não recebe e-mail novo, só o vínculo.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).
 
 ```bash
 pnpm install
-cp .env.example apps/plataforma/.env.local   # e apps/console/.env.local
-pnpm dev:plataforma   # http://localhost:3000
+cp .env.example apps/portal/.env.local   # e apps/console/.env.local
+pnpm dev:portal   # http://localhost:3000
 pnpm dev:console      # http://localhost:3001
 ```
 

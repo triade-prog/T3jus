@@ -6,7 +6,7 @@
 <style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
 </head>
 <body>
-<title>Prévia T3 Just</title>
+<title>Prévia T3jus</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -155,7 +155,7 @@ pre.out{white-space:pre-wrap;word-break:break-word;background:var(--sunk);border
   <div class="hero">
     <span class="pill acc" style="align-self:flex-start">Para a advogada que acompanha o projeto</span>
     <h1>Do primeiro atendimento ao honorário recebido, sem perder o controle do trabalho.</h1>
-    <p>Esta é uma prévia do T3 Just, um sistema de gestão para escritórios de advocacia pequenos. Nada aqui funciona de verdade ainda: as telas mostram a ideia, e os clientes, processos e valores são inventados.</p>
+    <p>Esta é uma prévia do T3jus, um sistema de gestão para escritórios de advocacia pequenos. Nada aqui funciona de verdade ainda: as telas mostram a ideia, e os clientes, processos e valores são inventados.</p>
     <p>O que mais ajuda agora é a sua experiência. Em cada tela há perguntas no quadro amarelo. Responda do seu jeito, com exemplos reais do dia a dia (sem nomes de clientes). Leva uns 15 a 20 minutos.</p>
     <div class="steps">
       <div class="step"><b>1. Veja a tela</b>Imagine o seu escritório usando aquilo numa segunda-feira de manhã.</div>
@@ -259,7 +259,7 @@ pre.out{white-space:pre-wrap;word-break:break-word;background:var(--sunk);border
         </div>
       </div>
       <div class="box">
-        <h3>Ao salvar um contrato, o T3 Just cria sozinho:</h3>
+        <h3>Ao salvar um contrato, o T3jus cria sozinho:</h3>
         <ul class="check">
           <li><span class="bx on"></span>As parcelas no financeiro, com vencimento e lembrete</li>
           <li><span class="bx on"></span>O caso ligado ao contrato, com o responsável</li>
@@ -515,7 +515,7 @@ function show(){
 window.addEventListener("hashchange",show);
 
 function renderOut(){
-  const lines = ["Respostas sobre a prévia do T3 Just", A.nome? "De: "+A.nome : "", ""];
+  const lines = ["Respostas sobre a prévia do T3jus", A.nome? "De: "+A.nome : "", ""];
   QORDER.forEach(v=>{
     const s = QS[v];
     lines.push("== "+document.querySelector('[data-view="'+v+'"]').dataset.title.toUpperCase()+" ==");
@@ -535,7 +535,7 @@ function buildJSON(){
     const respostas = s.items.filter(q=>q.id!=="nome").map(q=>({id:q.id, pergunta:q.t, resposta: Array.isArray(A[q.id]) ? A[q.id] : (A[q.id]||"").trim()}));
     telas[v] = {tela: document.querySelector('[data-view="'+v+'"]').dataset.title, respostas, anotacoes:(A["notas_"+v]||"").trim()};
   });
-  return JSON.stringify({projeto:"T3 Just", documento:"Respostas da prévia", versao_previa:3, gerado_em:new Date().toISOString(), nome:(A.nome||"").trim(), telas}, null, 2);
+  return JSON.stringify({projeto:"T3jus", documento:"Respostas da prévia", versao_previa:3, gerado_em:new Date().toISOString(), nome:(A.nome||"").trim(), telas}, null, 2);
 }
 (async()=>{
   const jb = document.getElementById("jsonbtn"), msg = document.getElementById("copymsg");
@@ -544,7 +544,7 @@ function buildJSON(){
   if(!dl){ jb.hidden = true; return; }
   jb.addEventListener("click", async()=>{
     const nome = (A.nome||"advogada").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "advogada";
-    try { await dl.save({filename:"t3-just-respostas-"+nome+".json", data:buildJSON()}); msg.textContent = "Arquivo salvo. Agora é só anexar na conversa com a Carol no WhatsApp."; }
+    try { await dl.save({filename:"t3jus-respostas-"+nome+".json", data:buildJSON()}); msg.textContent = "Arquivo salvo. Agora é só anexar na conversa com a Carol no WhatsApp."; }
     catch(e){ msg.textContent = e && e.code==="declined" ? "O arquivo não foi salvo. Você pode tentar de novo ou usar o botão do WhatsApp." : "Não foi possível salvar o arquivo aqui. Use o botão do WhatsApp ou copie o texto."; }
   });
 })();

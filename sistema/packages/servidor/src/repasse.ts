@@ -2,28 +2,28 @@
 // a Edge Function do sistema no servidor, com o segredo de repasse e o IP real, e devolve a
 // resposta. Os cookies de sessão são de primeira parte (__Host-). Nenhuma regra de negócio aqui.
 
-import { COOKIES_CONSOLE, COOKIES_PLATAFORMA, ErroDominio, type CodigoErro } from "@t3just/domain";
+import { COOKIES_CONSOLE, COOKIES_PORTAL, ErroDominio, type CodigoErro } from "@t3jus/domain";
 
 export interface OpcoesRepasse {
-  /** URL da função, ex.: https://<projeto>.supabase.co/functions/v1/api-plataforma */
+  /** URL da função, ex.: https://<projeto>.supabase.co/functions/v1/api-portal */
   destino: string;
   segredo: string;
   /** Cookies que podem ir e voltar. Todos precisam começar com __Host-. */
   cookies: readonly string[];
   tempoLimiteMs?: number;
   maxCorpoBytes?: number;
-  /** fetch da plataforma; os testes passam um falso, sem rede. */
+  /** fetch do ambiente; os testes passam um falso, sem rede. */
   buscar?: (url: URL, init: RequestInit) => Promise<Response>;
 }
 
 type Ambiente = Record<string, string | undefined>;
 
-/** Plataforma do escritório → api-plataforma. */
-export function opcoesPlataforma(env: Ambiente): OpcoesRepasse {
-  return { destino: `${env.SUPABASE_FUNCTIONS_URL ?? ""}/api-plataforma`, segredo: env.REPASSE_SEGREDO ?? "", cookies: Object.values(COOKIES_PLATAFORMA) };
+/** Portal do advogado → api-portal. */
+export function opcoesPortal(env: Ambiente): OpcoesRepasse {
+  return { destino: `${env.SUPABASE_FUNCTIONS_URL ?? ""}/api-portal`, segredo: env.REPASSE_SEGREDO ?? "", cookies: Object.values(COOKIES_PORTAL) };
 }
 
-/** Console T3 Just → api-console. */
+/** Console T3jus → api-console. */
 export function opcoesConsole(env: Ambiente): OpcoesRepasse {
   return { destino: `${env.SUPABASE_FUNCTIONS_URL ?? ""}/api-console`, segredo: env.REPASSE_SEGREDO ?? "", cookies: Object.values(COOKIES_CONSOLE) };
 }
@@ -39,7 +39,7 @@ function erro(codigo: CodigoErro): Response {
   });
 }
 
-/** IP real de quem chamou. Na Vercel, x-real-ip e x-forwarded-for são gravados pela própria plataforma. */
+/** IP real de quem chamou. Na Vercel, x-real-ip e x-forwarded-for são gravados pela própria Vercel. */
 export function ipReal(headers: Headers): string | null {
   const ip = headers.get("x-real-ip") ?? headers.get("x-forwarded-for")?.split(",")[0];
   const limpo = ip?.trim();

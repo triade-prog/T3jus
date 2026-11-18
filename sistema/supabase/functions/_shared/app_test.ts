@@ -1,6 +1,6 @@
 // Erros padronizados (PT-17), tradução dos erros do banco e logs sem dado sensível (PT-13).
 import { assert, assertEquals } from "@std/assert";
-import { ErroDominio } from "@t3just/domain";
+import { ErroDominio } from "@t3jus/domain";
 import { criarApp } from "./app.ts";
 import { erroBanco, pedido } from "./teste_util.ts";
 

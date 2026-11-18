@@ -1,5 +1,5 @@
 {
-  "name": "t3just-sistema",
+  "name": "t3jus-sistema",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -7,8 +7,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev:plataforma": "pnpm --filter @t3just/plataforma dev",
-    "dev:console": "pnpm --filter @t3just/console dev",
+    "dev:portal": "pnpm --filter @t3jus/portal dev",
+    "dev:console": "pnpm --filter @t3jus/console dev",
     "build": "pnpm -r --filter \"./apps/*\" build",
     "lint": "eslint .",
     "typecheck": "pnpm -r typecheck",

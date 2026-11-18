@@ -116,7 +116,7 @@ export function authGoTrue(url: string, apiKey: string, buscar: typeof fetch = f
           await chamar(`/factors/${encodeURIComponent(f.id)}`, { method: "DELETE", token });
         }
       }
-      const nome = `T3 Just ${new Date().toISOString().slice(0, 19).replace("T", " ")} ${crypto.randomUUID().slice(0, 4)}`;
+      const nome = `T3jus ${new Date().toISOString().slice(0, 19).replace("T", " ")} ${crypto.randomUUID().slice(0, 4)}`;
       const f = (await exigirOk(await chamar("/factors", { token, corpo: { factor_type: "totp", friendly_name: nome } }))) as {
         id: string;
         totp: { qr_code: string; secret: string };

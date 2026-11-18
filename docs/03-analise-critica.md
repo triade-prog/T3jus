@@ -1,11 +1,11 @@
-# T3 Just: análise crítica da ideia
+# T3jus: análise crítica da ideia
 
 **Data:** 10 de novembro de 2026
 **Natureza:** opinião e hipóteses para validação. Os preços foram conferidos nas fontes citadas. Todo o resto é hipótese até ser testado com escritórios.
 
 ## Resumo
 
-Vale seguir, mas não como "gestão completa para advogados". O problema (comercial + financeiro + execução conectados) é real. Como produto genérico, porém, o T3 Just competiria com sistemas baratos e maduros.
+Vale seguir, mas não como "gestão completa para advogados". O problema (comercial + financeiro + execução conectados) é real. Como produto genérico, porém, o T3jus competiria com sistemas baratos e maduros.
 
 ## 1. Mercado: real, mas lotado e barato
 
@@ -17,9 +17,9 @@ Vale seguir, mas não como "gestão completa para advogados". O problema (comerc
 
 ## 2. Discordâncias com a análise anterior
 
-- **Entrar "ao lado" de outro sistema é fraco.** O escritório pequeno não quer duas assinaturas nem cadastro duplicado. O T3 Just precisa substituir o sistema atual ou se integrar a ele de verdade.
+- **Entrar "ao lado" de outro sistema é fraco.** O escritório pequeno não quer duas assinaturas nem cadastro duplicado. O T3jus precisa substituir o sistema atual ou se integrar a ele de verdade.
 - **Honorário fixo/parcelado talvez não seja o melhor começo.** Parcela fixa qualquer planilha controla. O dinheiro que escapa está em êxito, alvarás, RPV/precatório e repasses ao cliente (por exemplo, no previdenciário e no trabalhista). É uma hipótese a testar.
-- **Monitoramento de publicações é o mínimo esperado** no Brasil. Sem ele, o T3 Just não é o sistema principal do escritório.
+- **Monitoramento de publicações é o mínimo esperado** no Brasil. Sem ele, o T3jus não é o sistema principal do escritório.
 
 ## 3. Lacunas
 

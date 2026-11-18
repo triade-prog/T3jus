@@ -1,11 +1,15 @@
 {
   "id": "F1.1",
-  "texto": "Console: carteira de escritórios, equipe interna com funções e o escritório atribuído a cada pessoa",
+  "texto": "Console no servidor: carteira de escritórios com estágio e situações, ficha com CNPJ, notas internas, histórico administrativo, equipe interna com funções e o escritório atribuído a cada pessoa",
   "peca": "C1",
   "refs": [
+    "CO-01",
+    "CO-02",
+    "CO-03",
+    "CO-04",
     "PT-24"
   ],
-  "status": "pendente",
-  "ordem": 10,
-  "proximo": "Carol: tornar o repositório privado (P3) e criar o projeto Supabase de desenvolvimento (E1) antes do passo 1"
+  "status": "feito",
+  "evidencia": "sistema/supabase/migrations/0060_console_clientes.sql, rotas em api-console/app.ts; testes pgTAP 007 (50), api-console/clientes_test.ts (15) e domain/console.test.ts, rodados localmente em 18/11/2026",
+  "ordem": 10
 }

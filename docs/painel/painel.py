@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Painel de execução do T3 Just: dados em arquivos pequenos, painel montado por script.
+"""Painel de execução do T3jus: dados em arquivos pequenos, painel montado por script.
 
 Os dados ficam em docs/painel/dados/, um arquivo JSON por registro, para que dois PRs
 quase nunca mexam no mesmo arquivo (fim dos conflitos de merge). Nada gerado vai para o Git.

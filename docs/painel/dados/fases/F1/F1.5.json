@@ -1,0 +1,16 @@
+{
+  "id": "F1.5",
+  "texto": "Telas do Console: carteira, cadastro e ficha do escritório, notas, histórico e equipe interna",
+  "peca": "C1",
+  "refs": [
+    "CO-01",
+    "CO-02",
+    "CO-03",
+    "CO-04",
+    "PT-24",
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 35,
+  "proximo": "Telas do Console sobre a API pronta, seguindo as telas do passo 1 do TRÍADE Condo"
+}

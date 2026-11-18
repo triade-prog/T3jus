@@ -17,7 +17,7 @@ export default defineConfig({
     { name: "computador", use: { ...devices["Desktop Chrome"], ...chromiumLocal } },
   ],
   webServer: [
-    { command: "pnpm --filter @t3just/plataforma start", url: "http://localhost:3000", reuseExistingServer: !process.env.CI },
-    { command: "pnpm --filter @t3just/console start", url: "http://localhost:3001", reuseExistingServer: !process.env.CI },
+    { command: "pnpm --filter @t3jus/portal start", url: "http://localhost:3000", reuseExistingServer: !process.env.CI },
+    { command: "pnpm --filter @t3jus/console start", url: "http://localhost:3001", reuseExistingServer: !process.env.CI },
   ],
 });

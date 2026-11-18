@@ -1,7 +1,7 @@
 // Acesso ao banco: só chamadas de funções (RPC do PostgREST com a chave de serviço). A regra
 // que não pode falhar fica no banco; a chave de serviço não lê nenhuma tabela direto (0002).
 
-import { ErroDominio, ERROS_BANCO } from "@t3just/domain";
+import { ErroDominio, ERROS_BANCO } from "@t3jus/domain";
 
 export class ErroBanco extends Error {
   constructor(readonly codigo: string, mensagem: string, readonly detalhe?: string) {

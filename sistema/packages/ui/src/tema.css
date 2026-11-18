@@ -1,5 +1,5 @@
-/* Tema provisório do T3 Just (DC10): herdado da fundação do TRÍADE Condo só para as telas
-   provisórias funcionarem. Troca inteiro quando a identidade do T3 Just for definida (E3). */
+/* Tema provisório do T3jus (DC10): herdado da fundação do TRÍADE Condo só para as telas
+   provisórias funcionarem. Troca inteiro quando a identidade do T3jus for definida (E3). */
 
 @theme {
   --font-sans: Inter, "Segoe UI", system-ui, sans-serif;
@@ -15,9 +15,9 @@
   --color-lilas-bruma: #f1f0ff;
   --color-foco: #196dca;
 
-  --color-plataforma: #007773;
-  --color-plataforma-press: #005e5b;
-  --color-plataforma-bruma: #e3f5f1;
+  --color-portal: #007773;
+  --color-portal-press: #005e5b;
+  --color-portal-bruma: #e3f5f1;
   --color-console: #6d44ef;
   --color-console-press: #5530c0;
   --color-console-bruma: #f1f0ff;
@@ -45,9 +45,9 @@
     --color-tinta-suave: #afb7d0;
     --color-linha: #373f5c;
     --color-lilas-bruma: #393052;
-    --color-plataforma: #65d7bf;
-    --color-plataforma-press: #8de8d4;
-    --color-plataforma-bruma: #203e3c;
+    --color-portal: #65d7bf;
+    --color-portal-press: #8de8d4;
+    --color-portal-bruma: #203e3c;
     --color-console: #bca2ff;
     --color-console-press: #d2beff;
     --color-console-bruma: #393052;

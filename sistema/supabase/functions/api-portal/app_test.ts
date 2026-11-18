@@ -1,6 +1,6 @@
-// F0.6 e F0.3 na Plataforma do escritório: quem tem vínculo entra; o escritório vem da sessão.
+// F0.6 e F0.3 no Portal do advogado: quem tem vínculo entra; o escritório vem da sessão.
 import { assertEquals, assertMatch } from "@std/assert";
-import { criarApiPlataforma } from "./app.ts";
+import { criarApiPortal } from "./app.ts";
 import { authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -15,7 +15,7 @@ function montar(opcoes: { comAutenticador?: boolean } = {}) {
     { id: ANA, email: ENTRAR.email, senha: ENTRAR.senha, fatores: opcoes.comAutenticador ? [{ id: crypto.randomUUID(), verificado: true }] : [] },
   ]);
   const db = bancoFalso({
-    acesso_plataforma: (a) => a.p_pessoa === ANA && vinculos.size > 0,
+    acesso_portal: (a) => a.p_pessoa === ANA && vinculos.size > 0,
     registrar_acesso: () => 1,
     meus_escritorios: () => [...vinculos].map((id) => ({ escritorio_id: id, nome: id === AURORA ? "Aurora Advocacia" : "Bela Vista Advogados", funcoes: ["SOCIO"] })),
     escolher_escritorio: (a) => {
@@ -29,15 +29,15 @@ function montar(opcoes: { comAutenticador?: boolean } = {}) {
     },
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3 }),
   });
-  const app = criarApiPlataforma("segredo-de-repasse-de-teste", { banco: db.banco, auth: falso.auth, urlApp: "https://plataforma.exemplo" });
-  return { pedir: pedido(app, "api-plataforma"), vinculos, ...falso, ...db };
+  const app = criarApiPortal("segredo-de-repasse-de-teste", { banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo" });
+  return { pedir: pedido(app, "api-portal"), vinculos, ...falso, ...db };
 }
 
 Deno.test("sócio sem autenticador entra só com a senha (o autenticador é obrigatório só para a equipe)", async () => {
   const m = montar();
   const r = await m.pedir("/v1/auth/entrar", { corpo: ENTRAR });
   assertEquals(await r.json(), { etapa: "PRONTO" });
-  assertMatch(r.headers.get("set-cookie") ?? "", /^__Host-plataforma=v1\./);
+  assertMatch(r.headers.get("set-cookie") ?? "", /^__Host-portal=v1\./);
   const s = await m.pedir("/v1/sessao", { cookie: cookieDe(r) });
   assertEquals(await s.json(), {
     pessoaId: ANA,
@@ -93,8 +93,8 @@ Deno.test("PT-21: vínculo revogado para na chamada seguinte", async () => {
   assertEquals((await erro(await m.pedir("/v1/escritorio", { cookie }))).codigo, "FORBIDDEN");
 });
 
-Deno.test("o cookie do Console não abre a Plataforma", async () => {
+Deno.test("o cookie do Console não abre o Portal", async () => {
   const m = montar();
-  const deLa = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR })).replace("__Host-plataforma", "__Host-console");
+  const deLa = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR })).replace("__Host-portal", "__Host-console");
   assertEquals((await erro(await m.pedir("/v1/sessao", { cookie: deLa }))).codigo, "UNAUTHORIZED");
 });

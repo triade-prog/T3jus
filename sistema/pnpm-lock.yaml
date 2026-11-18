@@ -41,13 +41,13 @@ importers:
 
   apps/console:
     dependencies:
-      '@t3just/domain':
+      '@t3jus/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@t3just/servidor':
+      '@t3jus/servidor':
         specifier: workspace:*
         version: link:../../packages/servidor
-      '@t3just/ui':
+      '@t3jus/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       next:
@@ -76,15 +76,15 @@ importers:
         specifier: ^4.3.3
         version: 4.3.5
 
-  apps/plataforma:
+  apps/portal:
     dependencies:
-      '@t3just/domain':
+      '@t3jus/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@t3just/servidor':
+      '@t3jus/servidor':
         specifier: workspace:*
         version: link:../../packages/servidor
-      '@t3just/ui':
+      '@t3jus/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       next:
@@ -121,7 +121,7 @@ importers:
 
   packages/servidor:
     dependencies:
-      '@t3just/domain':
+      '@t3jus/domain':
         specifier: workspace:*
         version: link:../domain
 

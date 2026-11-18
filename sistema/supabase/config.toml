@@ -1,7 +1,7 @@
-# Projeto Supabase do T3 Just (DC5): criar em sa-east-1 (São Paulo, PT-16) e ligar com
+# Projeto Supabase do T3jus (DC5): criar em sa-east-1 (São Paulo, PT-16) e ligar com
 # `supabase link --project-ref <ref>`. Um projeto por ambiente: desenvolvimento, teste e
 # produção (PT-14). Migrations em supabase/migrations, aplicadas em ordem.
-project_id = "t3just"
+project_id = "t3jus"
 
 [db]
 major_version = 17
@@ -12,7 +12,7 @@ major_version = 17
 schemas = ["public"]
 
 # As funções não usam o JWT do Supabase na entrada: só aceitam o segredo de repasse (F0.8).
-[functions.api-plataforma]
+[functions.api-portal]
 verify_jwt = false
 import_map = "./functions/deno.json"
 
@@ -20,7 +20,7 @@ import_map = "./functions/deno.json"
 verify_jwt = false
 import_map = "./functions/deno.json"
 
-# Login (F0.6, PT-08). Ninguém se cadastra sozinho: a equipe T3 Just cria o escritório e
+# Login (F0.6, PT-08). Ninguém se cadastra sozinho: a equipe T3jus cria o escritório e
 # convida o sócio (passo 1).
 [auth]
 enable_signup = false
@@ -61,7 +61,9 @@ token_verifications = 30
 sign_in_sign_ups = 30
 
 # Segredos das funções (supabase secrets set ...): REPASSE_SEGREDO (o mesmo dos apps, 32+
-# caracteres), PLATAFORMA_URL e CONSOLE_URL (para o link de redefinir senha).
+# caracteres), PORTAL_URL e CONSOLE_URL (para o link de redefinir senha).
 # SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o Supabase já entrega.
 # O modelo do e-mail de recuperação leva ao app com o token:
 # {{ .RedirectTo }}?token_hash={{ .TokenHash }}
+# O modelo do e-mail de convite (passo 1) segue a mesma forma e leva a /criar-senha do app
+# de destino (PORTAL_URL para o sócio e a equipe do escritório, CONSOLE_URL para a equipe T3jus).
