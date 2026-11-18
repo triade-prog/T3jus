@@ -3,10 +3,12 @@
 import { assert, assertEquals } from "@std/assert";
 import { FUNCOES_CONSOLE, SITUACOES, UFS } from "@t3jus/domain";
 import { criarApiConsole } from "./app.ts";
-import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE } from "../_shared/teste_util.ts";
+import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
+const RENATA = "6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e";
+const VINCULO = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
 const ENTRAR = { email: "carol@t3jus.exemplo", senha: "senha-forte-da-equipe" };
 
 function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>; handlers?: Record<string, (a: Record<string, unknown>) => unknown> } = {}) {
@@ -15,11 +17,12 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
     { id: "9f0a1b2c-3d4e-4f50-8a6b-7c8d9e0f1a2b", email: "convidada@exemplo.invalid", senha: "x", emailVerificado: false },
   ]);
   const convites = adminFalso(opcoes.contas);
+  const storage = arquivosFalsos();
   const db = bancoFalso({
     acesso_console: () => true,
     registrar_acesso: () => 1,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
-    console_ficha: () => ({ escritorio: { id: IPE }, permissoes: opcoes.permissoes ?? ["console.ficha.ver", "console.socios.convidar"] }),
+    console_ficha: () => ({ escritorio: { id: IPE }, socios: [], permissoes: opcoes.permissoes ?? ["console.ficha.ver", "console.socios.convidar"] }),
     console_vincular_socio: () => "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9",
     console_criar_escritorio: () => IPE,
     console_carteira: () => [{
@@ -34,9 +37,9 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
     ...opcoes.handlers,
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, admin: convites.admin, urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo",
+    banco: db.banco, auth: falso.auth, admin: convites.admin, urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo", arquivos: storage.arquivos,
   });
-  return { pedir: pedido(app, "api-console"), ...falso, ...db, ...convites };
+  return { pedir: pedido(app, "api-console"), ...falso, ...db, ...convites, ...storage };
 }
 
 async function entrar(m: ReturnType<typeof montar>): Promise<string> {
@@ -117,9 +120,16 @@ Deno.test("PT-19 e CO-02: conflito e CNPJ repetido chegam com os detalhes do ban
 
 Deno.test("CO-01: ativo não volta para implantação (transição proibida)", async () => {
   const m = montar({ handlers: { console_mudar_estagio: () => erroBanco("TC023") } });
-  const r = await m.pedir(`/v1/clientes/${IPE}/estagio`, { metodo: "PUT", cookie: await entrar(m), corpo: { versao: 3, estagio: "IMPLANTACAO" } });
+  const r = await m.pedir(`/v1/clientes/${IPE}/estagio`, { metodo: "PUT", cookie: await entrar(m), corpo: { versao: 3, estagio: "IMPLANTACAO", motivo: "Voltar" } });
   assertEquals(r.status, 409);
   assertEquals((await erro(r)).codigo, "INVALID_TRANSITION");
+});
+
+Deno.test("CO-01: sem motivo, o estágio não muda", async () => {
+  const m = montar();
+  const r = await m.pedir(`/v1/clientes/${IPE}/estagio`, { metodo: "PUT", cookie: await entrar(m), corpo: { versao: 3, estagio: "ATIVO", motivo: " " } });
+  assertEquals(r.status, 400);
+  assertEquals(m.chamadas.some((c) => c.funcao === "console_mudar_estagio"), false);
 });
 
 Deno.test("PT-20: convite do sócio cria a conta e manda o link para o Portal", async () => {
@@ -153,6 +163,83 @@ Deno.test("PT-24: cliente não atribuído não chega nem ao convite", async () =
   const r = await m.pedir(`/v1/clientes/${IPE}/socios`, { cookie: await entrar(m), corpo: { nome: "Ana", email: "ana@exemplo.invalid" } });
   assertEquals((await erro(r)).codigo, "FORBIDDEN");
   assertEquals(m.enviados, []);
+});
+
+Deno.test("PT-20: reenviar o convite manda o link de novo para o e-mail da conta", async () => {
+  const m = montar({ contas: { "ana@exemplo.invalid": RENATA }, handlers: { console_reenviar_convite: () => RENATA } });
+  const r = await m.pedir(`/v1/clientes/${IPE}/socios/${VINCULO}/reenviar`, { cookie: await entrar(m), corpo: {} });
+  assertEquals(await r.json(), { enviado: true });
+  assertEquals(m.enviados, [{ email: "ana@exemplo.invalid", voltarPara: "https://portal.exemplo/criar-senha" }]);
+  const args = m.chamadas.find((c) => c.funcao === "console_reenviar_convite")!.args;
+  assertEquals(args.p_vinculo, VINCULO);
+});
+
+Deno.test("PT-20: sem a permissão (o banco recusa), nenhum convite é reenviado", async () => {
+  const m = montar({ contas: { "ana@exemplo.invalid": RENATA }, handlers: { console_reenviar_convite: () => erroBanco("TC401") } });
+  const r = await m.pedir(`/v1/clientes/${IPE}/socios/${VINCULO}/reenviar`, { cookie: await entrar(m), corpo: {} });
+  assertEquals((await erro(r)).codigo, "FORBIDDEN");
+  assertEquals(m.enviados, []);
+});
+
+Deno.test("CO-02: a ficha traz o e-mail dos sócios, pego no Auth", async () => {
+  const m = montar({
+    contas: { "ana@exemplo.invalid": RENATA },
+    handlers: { console_ficha: () => ({ escritorio: { id: IPE }, permissoes: [], socios: [{ vinculoId: VINCULO, pessoaId: RENATA, nome: "Ana" }] }) },
+  });
+  const r = await m.pedir(`/v1/clientes/${IPE}`, { cookie: await entrar(m) });
+  assertEquals((await r.json()).socios[0].email, "ana@exemplo.invalid");
+});
+
+const DOC = "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f";
+
+Deno.test("CO-05: anexar documento: registra, devolve o endereço de envio e só conclui com o arquivo certo no Storage", async () => {
+  const m = montar({ handlers: {
+    console_documento_iniciar: () => DOC,
+    console_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 2048 }],
+    console_documento_concluir: () => null,
+  } });
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/clientes/${IPE}/documentos`, { cookie, corpo: { categoria: "CONTRATO_ASSINADO", nome: "contrato.pdf", tipo: "application/pdf", tamanho: 2048 } });
+  assertEquals(r.status, 201);
+  assertEquals((await r.json()).enderecoDeEnvio, `https://storage.exemplo/envio/${IPE}/${DOC}?token=uso-unico`);
+  assertEquals(m.pedidosDeEnvio, [`${IPE}/${DOC}`]);
+
+  // Ainda não chegou: não conclui.
+  const antes = await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/concluir`, { cookie, corpo: {} });
+  assertEquals((await erro(antes)).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  // Chegou com outro tamanho: não conclui.
+  m.guardados.set(`${IPE}/${DOC}`, { tamanho: 999, tipo: "application/pdf" });
+  assertEquals((await erro(await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/concluir`, { cookie, corpo: {} }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.guardados.set(`${IPE}/${DOC}`, { tamanho: 2048, tipo: "application/pdf" });
+  assertEquals((await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/concluir`, { cookie, corpo: {} })).status, 200);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "console_documento_concluir").length, 1);
+});
+
+Deno.test("CO-05: tipo fora de PDF, JPG e PNG ou acima de 10 MB nem chega ao banco", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  for (const corpo of [
+    { categoria: "OUTRO", nome: "a.exe", tipo: "application/x-msdownload", tamanho: 10 },
+    { categoria: "OUTRO", nome: "a.pdf", tipo: "application/pdf", tamanho: 10 * 1024 * 1024 + 1 },
+    { categoria: "OUTRO", nome: "../a.pdf", tipo: "application/pdf", tamanho: 10 },
+  ]) {
+    assertEquals((await erro(await m.pedir(`/v1/clientes/${IPE}/documentos`, { cookie, corpo }))).codigo, "VALIDATION_ERROR");
+  }
+  assertEquals(m.chamadas.filter((c) => c.funcao === "console_documento_iniciar").length, 0);
+  assertEquals(m.pedidosDeEnvio, []);
+});
+
+Deno.test("CO-05: abrir dá um link de 60 segundos com o nome do arquivo; sem permissão, nada", async () => {
+  const m = montar({ handlers: { console_documento_abrir: () => "contrato.pdf" } });
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/abrir`, { cookie, corpo: {} });
+  assertEquals(await r.json(), { url: `https://storage.exemplo/ler/${IPE}/${DOC}?token=curto`, validadeSegundos: 60 });
+  assertEquals(m.leituras, [{ caminho: `${IPE}/${DOC}`, segundos: 60, nome: "contrato.pdf" }]);
+
+  const sem = montar({ handlers: { console_documento_abrir: () => erroBanco("TC401") } });
+  const r2 = await sem.pedir(`/v1/clientes/${IPE}/documentos/${DOC}/abrir`, { cookie: await entrar(sem), corpo: {} });
+  assertEquals((await erro(r2)).codigo, "FORBIDDEN");
+  assertEquals(sem.leituras, []);
 });
 
 Deno.test("convites têm limite por pessoa da equipe", async () => {
@@ -200,4 +287,17 @@ Deno.test("as listas do domínio (funções, situações, UFs) são as mesmas do
   for (const f of Object.keys(FUNCOES_CONSOLE)) assert(migration.includes(`('${f}', '`), f);
   for (const s of Object.keys(SITUACOES)) assert(migration.includes(`'${s}'`), s);
   for (const uf of UFS) assert(migration.includes(`'${uf}'`), uf);
+});
+
+Deno.test("PT-24: a Equipe T3jus traz o e-mail do Auth e o convite pendente", async () => {
+  const m = montar({
+    contas: { "helena@triade.exemplo": RENATA },
+    handlers: {
+      console_equipe: () => [{ pessoa_id: RENATA, nome: "Helena Prado", ativa: true, funcoes: ["SUPORTE"], desde: "2026-11-18T10:00:00Z", senha_criada_em: null }],
+    },
+  });
+  const r = await m.pedir("/v1/equipe", { cookie: await entrar(m) });
+  assertEquals(await r.json(), {
+    pessoas: [{ id: RENATA, nome: "Helena Prado", ativa: true, funcoes: ["SUPORTE"], desde: "2026-11-18T10:00:00Z", email: "helena@triade.exemplo", convitePendente: true }],
+  });
 });

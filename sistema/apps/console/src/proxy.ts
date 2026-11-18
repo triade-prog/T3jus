@@ -5,7 +5,8 @@ import { cabecalhosSeguranca, gerarNonce, montarCsp } from "@t3jus/servidor/cabe
 
 export function proxy(request: NextRequest) {
   const nonce = gerarNonce();
-  const csp = montarCsp({ nonce, dev: process.env.NODE_ENV === "development" });
+  // O anexo (CO-05) vai direto do navegador para o Storage do Supabase.
+  const csp = montarCsp({ nonce, dev: process.env.NODE_ENV === "development", conectar: [process.env.ARQUIVOS_ORIGEM ?? ""] });
 
   const headers = new Headers(request.headers);
   headers.set("x-nonce", nonce);

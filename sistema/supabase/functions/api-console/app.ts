@@ -12,13 +12,16 @@ import {
   COOKIES_CONSOLE,
   criarEscritorioSchema,
   ErroDominio,
+  iniciarDocumentoSchema,
   estagioSchema,
   fichaSchema,
   funcoesSchema,
   notaSchema,
   versaoSchema,
+  type SocioCliente,
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
+import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
@@ -29,6 +32,8 @@ export interface DepsConsole extends DepsSessao {
   urlApp: string;
   /** Endereço do Portal (convite do sócio). */
   urlPortal: string;
+  /** Storage dos anexos do cliente (CO-05). */
+  arquivos: Arquivos;
 }
 
 interface LinhaCarteira {
@@ -40,6 +45,9 @@ interface LinhaCarteira {
   funcoes: string[];
   situacoes: string[];
   criado_em: string;
+  socios: SocioCliente[];
+  equipe: { pessoaId: string; nome: string; funcoes: string[] }[];
+  ultima_atividade: string;
 }
 
 interface LinhaHistorico {
@@ -122,6 +130,9 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
         funcoes: l.funcoes,
         situacoes: l.situacoes,
         criadoEm: l.criado_em,
+        socios: l.socios,
+        equipe: l.equipe,
+        ultimaAtividade: l.ultima_atividade,
       })),
     });
   });
@@ -134,9 +145,12 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json({ id }, 201);
   });
 
-  // Ficha (CO-02).
-  app.get("/v1/clientes/:id", async (c) =>
-    c.json(await rpc("console_ficha", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") })));
+  // Ficha (CO-02). O e-mail dos sócios vem do Auth (o banco só guarda o nome).
+  app.get("/v1/clientes/:id", async (c) => {
+    const ficha = await rpc<{ socios: SocioCliente[] }>("console_ficha", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") });
+    const socios = await Promise.all(ficha.socios.map(async (s) => ({ ...s, email: await deps.admin.emailDe(s.pessoaId) })));
+    return c.json({ ...ficha, socios });
+  });
 
   app.put("/v1/clientes/:id/ficha", async (c) => {
     const id = idDaRota(c, "id");
@@ -180,6 +194,60 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json({ vinculoId, contaNova: conta.contaNova }, 201);
   });
 
+  // Reenviar o convite do sócio que ainda não criou a senha (PT-20). O banco confere a
+  // permissão e o vínculo; quem já tem conta com senha não recebe e-mail.
+  app.post("/v1/clientes/:id/socios/:vinculo/reenviar", async (c) => {
+    const id = idDaRota(c, "id");
+    const vinculo = idDaRota(c, "vinculo");
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: pessoa(c) }))) throw new ErroDominio("RATE_LIMITED");
+    const convidado = await rpc<string>("console_reenviar_convite", { p_pessoa: pessoa(c), p_escritorio: id, p_vinculo: vinculo });
+    const email = await deps.admin.emailDe(convidado);
+    if (!email) throw new ErroDominio("NOT_FOUND");
+    return c.json({ enviado: await deps.admin.reenviarConvite(email, `${deps.urlPortal}/criar-senha`) });
+  });
+
+  // Contrato e documentos do cliente (CO-05). O arquivo vai direto do navegador para o
+  // Storage; aqui só se registra, confere e assina. O caminho é <escritório>/<documento>,
+  // montado no servidor: o navegador nunca escolhe onde grava.
+  app.get("/v1/clientes/:id/documentos", async (c) => {
+    const linhas = await rpc<{ id: string; categoria: string; nome: string; tipo: string; tamanho: number; enviado_por: string; enviado_por_nome: string | null; concluido_em: string }[]>(
+      "console_documentos", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") });
+    return c.json({
+      documentos: linhas.map((d) => ({
+        id: d.id, categoria: d.categoria, nome: d.nome, tipo: d.tipo, tamanho: d.tamanho,
+        enviadoPor: { id: d.enviado_por, nome: d.enviado_por_nome }, enviadoEm: d.concluido_em,
+      })),
+    });
+  });
+
+  app.post("/v1/clientes/:id/documentos", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, iniciarDocumentoSchema);
+    const documento = await rpc<string>("console_documento_iniciar", {
+      p_pessoa: pessoa(c), p_escritorio: id, p_categoria: d.categoria, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    return c.json({ id: documento, enderecoDeEnvio: await deps.arquivos.enderecoDeEnvio(`${id}/${documento}`) }, 201);
+  });
+
+  app.post("/v1/clientes/:id/documentos/:doc/concluir", async (c) => {
+    const id = idDaRota(c, "id");
+    const doc = idDaRota(c, "doc");
+    const [registro] = await rpc<{ tipo: string; tamanho: number }[]>("console_documento_para_concluir", { p_pessoa: pessoa(c), p_escritorio: id, p_documento: doc });
+    const chegou = await deps.arquivos.info(`${id}/${doc}`);
+    if (!registro || !chegou || chegou.tamanho !== registro.tamanho || chegou.tipo !== registro.tipo) {
+      throw new ErroDominio("VALIDATION_ERROR", { campos: ["arquivo"], motivo: "ARQUIVO_NAO_CHEGOU" });
+    }
+    await rpc("console_documento_concluir", { p_pessoa: pessoa(c), p_escritorio: id, p_documento: doc });
+    return c.json({ ok: true });
+  });
+
+  app.post("/v1/clientes/:id/documentos/:doc/abrir", async (c) => {
+    const id = idDaRota(c, "id");
+    const doc = idDaRota(c, "doc");
+    const nome = await rpc<string>("console_documento_abrir", { p_pessoa: pessoa(c), p_escritorio: id, p_documento: doc });
+    return c.json({ url: await deps.arquivos.enderecoDeLeitura(`${id}/${doc}`, VALIDADE_LEITURA_S, nome), validadeSegundos: VALIDADE_LEITURA_S });
+  });
+
   // Notas internas (CO-03).
   app.get("/v1/clientes/:id/notas", async (c) => {
     const linhas = await rpc<{ id: string; texto: string; criado_em: string; autor_id: string; autor_nome: string | null }[]>(
@@ -217,9 +285,14 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Equipe (PT-24): só administração.
   app.get("/v1/equipe", async (c) => {
-    const linhas = await rpc<{ pessoa_id: string; nome: string; ativa: boolean; funcoes: string[]; desde: string }[]>(
+    const linhas = await rpc<{ pessoa_id: string; nome: string; ativa: boolean; funcoes: string[]; desde: string; senha_criada_em: string | null }[]>(
       "console_equipe", { p_pessoa: pessoa(c) });
-    return c.json({ pessoas: linhas.map((l) => ({ id: l.pessoa_id, nome: l.nome, ativa: l.ativa, funcoes: l.funcoes, desde: l.desde })) });
+    // O e-mail vem do Auth (o banco só guarda o nome); convite pendente = ainda sem senha.
+    const pessoas = await Promise.all(linhas.map(async (l) => ({
+      id: l.pessoa_id, nome: l.nome, ativa: l.ativa, funcoes: l.funcoes, desde: l.desde,
+      email: await deps.admin.emailDe(l.pessoa_id), convitePendente: l.senha_criada_em === null,
+    })));
+    return c.json({ pessoas });
   });
 
   app.post("/v1/equipe", async (c) => {

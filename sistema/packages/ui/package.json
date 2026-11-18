@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./tema.css": "./src/tema.css",
-    "./acesso.css": "./src/acesso.css"
+    "./acesso.css": "./src/acesso.css",
+    "./console.css": "./src/console.css"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

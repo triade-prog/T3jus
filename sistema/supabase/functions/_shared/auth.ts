@@ -214,6 +214,11 @@ export function authGoTrue(url: string, apiKey: string, buscar: typeof fetch = f
  */
 export interface AdminAuth {
   convidar(email: string, voltarPara: string): Promise<{ userId: string; contaNova: boolean }>;
+  /**
+   * Manda o convite de novo para a conta que ainda não criou a senha (o link anterior deixa de
+   * valer). Conta que já tem senha não recebe nada: devolve false.
+   */
+  reenviarConvite(email: string, voltarPara: string): Promise<boolean>;
   /** E-mail já cadastrado da conta (suporte de acesso, PT-23): nunca muda por aqui. */
   emailDe(userId: string): Promise<string | null>;
   /** Tira os autenticadores da conta (autenticador perdido, PT-23). Devolve quantos saíram. */
@@ -250,6 +255,12 @@ export function adminGoTrue(url: string, chaveServico: string, buscar: typeof fe
       if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
       const u = (await r.json()) as { id: string };
       return { userId: u.id, contaNova: true };
+    },
+    async reenviarConvite(email, voltarPara) {
+      const r = await chamar(`/invite?redirect_to=${encodeURIComponent(voltarPara)}`, { email });
+      if (r.status === 422) return false;
+      if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
+      return true;
     },
     async emailDe(userId) {
       const r = await chamar(`/admin/users/${encodeURIComponent(userId)}`);

@@ -91,7 +91,7 @@ select is((select console_mudar_estagio(impl, ipe, 2, 'ATIVO', 'Sócia fez o pri
   'CO-01: com sócio, a implantação conclui');
 select is((select interno from historico where acao = 'estado.mudou' and entidade = 'clientes' and dados ->> 'para' = 'ATIVO'), true,
   'a mudança de estágio entra no histórico como interna');
-select throws_ok($$ select console_mudar_estagio(adm, ipe, 3, 'IMPLANTACAO', null) from ids, c $$, 'TC023', null,
+select throws_ok($$ select console_mudar_estagio(adm, ipe, 3, 'IMPLANTACAO', 'Voltar') from ids, c $$, 'TC023', null,
   'de ativo não volta para implantação');
 
 -- Notas internas (CO-03).

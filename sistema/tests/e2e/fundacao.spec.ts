@@ -4,8 +4,9 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const APPS = [
-  { nome: "Portal do advogado", url: "http://localhost:3000" },
-  { nome: "Console T3jus", url: "http://localhost:3001" },
+  { nome: "Portal do advogado", url: "http://localhost:3000", titulo: "Portal do advogado" },
+  // A página inicial do Console é a carteira (F1.5); aqui, sem a API, ela abre com o aviso.
+  { nome: "Console T3jus", url: "http://localhost:3001", titulo: "Carteira de escritórios" },
 ];
 
 for (const app of APPS) {
@@ -13,7 +14,8 @@ for (const app of APPS) {
     test("cabeçalhos de segurança e CSP com nonce", async ({ page }) => {
       // Script ou estilo barrado pela CSP aparece como erro no console.
       const erros: string[] = [];
-      page.on("console", (m) => { if (m.type() === "error") erros.push(m.text()); });
+      // O 503 do repasse sem configuração (último teste abaixo) não é erro de CSP.
+      page.on("console", (m) => { if (m.type() === "error" && !m.text().includes("status of 503")) erros.push(m.text()); });
       const resposta = await page.goto(app.url);
       await page.waitForLoadState("networkidle");
       expect(resposta?.status()).toBe(200);
@@ -24,7 +26,7 @@ for (const app of APPS) {
       expect(h["x-content-type-options"]).toBe("nosniff");
       expect(h["x-robots-tag"]).toBe("noindex, nofollow");
       expect(h["x-powered-by"]).toBeUndefined();
-      await expect(page.getByRole("heading", { level: 1, name: app.nome })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: app.titulo })).toBeVisible();
       expect(erros).toEqual([]);
     });
 

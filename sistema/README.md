@@ -68,7 +68,7 @@ Se a tabela não tiver escritório, ela precisa de um motivo em `tabelas_sem_esc
 
 ## Console: escritório e acesso (passo 1)
 
-A migration `0060_console_clientes.sql` e a `api-console` trazem o Console no servidor. As telas ainda não existem (F1.5 no painel).
+A migration `0060_console_clientes.sql` e a `api-console` trazem o Console no servidor. A carteira e a ficha (aba Sócio) já têm tela (veja "Telas do Console" abaixo); as outras telas esperam aprovação.
 
 - **Equipe interna (PT-24).** Quem é da equipe T3jus está em `equipe_t3`, com as funções em `equipe_funcoes`: ADMINISTRACAO, IMPLANTACAO, FINANCEIRO e SUPORTE. Cada pessoa só vê os escritórios atribuídos a ela, e só enquanto tem a função da atribuição. Sempre sobra alguém com administração.
 - **Carteira (CO-01).** Cada escritório cliente tem um estágio (em implantação ou ativo) e as situações a tratar, calculadas da ficha: sem sócio, sem contato, sem contrato. Para ficar ativo, o escritório precisa ter o sócio convidado.
@@ -113,3 +113,42 @@ Para publicar, falta o projeto Supabase de desenvolvimento em São Paulo (E1) e 
 | `/escritorio` (Portal) | Escolha do escritório quando há mais de um (`escritorios_para_escolher`), do último usado ao mais antigo. Com um só, escolhe direto. |
 
 Regras da senha: 12 caracteres ou mais e fora das listas de senhas vazadas. A API confere a lista pelo Have I Been Pwned por k-anonimato (`_shared/senha.ts`): só os 5 primeiros caracteres do SHA-1 saem do servidor. Se o serviço cair, a troca segue. O `config.toml` não exige maiúscula, número ou símbolo.
+
+### Telas do Console (F1.5)
+
+`packages/ui/src/console/` traz a moldura (`MolduraConsole`), a carteira (`Carteira`) e a ficha (`FichaCliente`) das telas aprovadas em `docs/design/aprovadas/console-carteira.html` e `console-ficha.html`. O estilo é `console.css`, copiado do desenho com escopo `.co`; até 760px vale a moldura de celular (barra no topo e menu em gaveta) e a tabela vira cartões. As regras da carteira (pendências, "Pedem você agora", busca e ordem) ficam em `carteira.ts`, com testes.
+
+| Rota | O que faz |
+|---|---|
+| `/` | Carteira (`GET /v1/clientes`): só os clientes atribuídos a quem entrou, com estágio, etapas da implantação, pendências, sócio, equipe e última atividade (`console_carteira`, migration `0110`). |
+| `/clientes/[id]` | Abre a ficha na aba Sócio. |
+| `/clientes/[id]/socio` | Cabeçalho com a implantação (Ficha, Contrato, Equipe, Sócio no Portal) e "Passar para ativo" quando as quatro estão feitas. Caminho do convite de cada sócio (enviado, senha criada em `pessoas.senha_criada_em`), reenviar (`POST /v1/clientes/:id/socios/:vinculo/reenviar`) e convidar outro sócio. O e-mail do sócio vem do Auth, nunca do banco. |
+| `/clientes/[id]/{ficha,contrato,equipe,notas,historico}` | Abas do Console v1, abaixo. |
+
+O que o desenho mostra e ainda não tem dado: busca global e avisos no topo, plano do cliente, OAB e WhatsApp do sócio, "e-mail aberto" no caminho do convite, link do convite para copiar e prazo de implantação em dias.
+
+### Contrato e documentos do cliente (CO-05)
+
+O arquivo vai direto do navegador para o Storage, num bucket privado (`documentos-console`, PDF, JPG ou PNG até 10 MB), sem passar pela API nem pela Vercel. A tabela `documentos_cliente` é interna (o escritório não vê) e só recebe inserção; nada se apaga.
+
+1. `POST /v1/clientes/:id/documentos` registra o anexo (categoria, nome, tipo, tamanho) e devolve um endereço de envio de uso único. O caminho no Storage é `<escritório>/<documento>`, montado no servidor.
+2. O navegador manda o arquivo (`PUT`) para esse endereço. A CSP do Console aceita a origem do Storage pela variável `ARQUIVOS_ORIGEM`.
+3. `POST /v1/clientes/:id/documentos/:doc/concluir` confere no Storage se o arquivo chegou com o tamanho e o tipo registrados e só então o anexo aparece na lista (`GET`).
+4. `POST /v1/clientes/:id/documentos/:doc/abrir` devolve um link de 60 segundos e registra a abertura no histórico interno.
+
+A conferência com o Storage de verdade fica para quando o projeto Supabase existir (E1); os testes usam um Storage falso.
+
+### Console v1 (F1.8)
+
+Telas aprovadas em `docs/design/aprovadas/console-v1/`, programadas em `packages/ui/src/console/`. As peças comuns (aviso, estado vazio e de erro, janela, erro preso ao campo, carregando) ficam em `pecas.tsx`.
+
+| Rota | O que faz |
+|---|---|
+| `/` | Carteira com "Cadastrar escritório" (só quem tem `console.escritorios.criar`); ao cadastrar, abre a ficha nova. |
+| `/clientes/[id]/ficha` | Ver e editar a ficha (`AbaFicha.tsx`, regras em `ficha.ts`). Erros presos aos campos e resumo no topo. No conflito (409) mostra quem salvou antes e a hora (`fichaAlteradaPor`/`fichaAlteradaEm`, migration `0130`) e os campos que mudaram. |
+| `/clientes/[id]/contrato` | Referência do contrato (só Administração), documentos (envio direto ao Storage com progresso, fila, abrir e baixar) e estágio. Passar para ativo pede as 4 etapas e um motivo, obrigatório também no servidor. `?mudar=1` abre a janela do estágio. |
+| `/clientes/[id]/equipe` | Quem atende o cliente; a Administração atribui (só funções que a pessoa tem) e retira. |
+| `/clientes/[id]/notas` e `/historico` | Notas internas (até 2.000 caracteres) e histórico em frases, por dia, de 20 em 20. |
+| `/equipe` | Equipe T3jus, só para a Administração: e-mail (do Auth) e convite pendente (`senha_criada_em` vazio), cadastrar, mudar funções, desativar e reativar (com as funções em branco), e o histórico da equipe. |
+
+Ainda sem dado: busca global e avisos no topo, e a contagem de documentos nas abas.

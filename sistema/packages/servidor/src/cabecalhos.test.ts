@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cabecalhosSeguranca, gerarNonce, montarCsp } from "./cabecalhos.ts";
+import { cabecalhosSeguranca, gerarNonce, montarCsp, origemSegura } from "./cabecalhos.ts";
 
 describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
   it("o nonce muda a cada requisição", () => {
@@ -17,6 +17,16 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
     expect(csp).not.toContain("unsafe-eval");
     expect(csp).not.toMatch(/https?:\/\//);
     expect(csp).toContain("upgrade-insecure-requests");
+  });
+
+  it("CO-05: o Storage entra em connect-src só como origem https exata", () => {
+    const csp = montarCsp({ nonce: "abc", conectar: ["https://proj.supabase.co/storage/v1"] });
+    expect(csp).toContain("connect-src 'self' https://proj.supabase.co;");
+    expect(csp).not.toMatch(/script-src[^;]*supabase/);
+    for (const ruim of ["http://proj.supabase.co", "https://*.supabase.co", "javascript:alert(1)", "", "https://a:b@x.co"]) {
+      expect(origemSegura(ruim)).toBeNull();
+    }
+    expect(montarCsp({ nonce: "abc", conectar: [""] })).toContain("connect-src 'self';");
   });
 
   it("em desenvolvimento libera só o necessário para o recarregamento", () => {

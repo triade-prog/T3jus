@@ -1,0 +1,18 @@
+{
+  "id": "F1.8",
+  "texto": "Telas do Console que faltam: cadastrar escritório, abas Ficha, Contrato e documentos (com os anexos), Equipe T3jus, Notas internas e Histórico, equipe interna e moldura de celular",
+  "peca": "C1",
+  "refs": [
+    "CO-01",
+    "CO-02",
+    "CO-03",
+    "CO-04",
+    "CO-05",
+    "PT-24",
+    "PT-10",
+    "PT-19"
+  ],
+  "status": "feito",
+  "ordem": 37,
+  "evidencia": "Telas aprovadas pela Carol em 18/11 (docs/design/aprovadas/console-v1) programadas no Console: cadastrar escritório na carteira; abas Ficha (ver, editar com erros presos aos campos e conflito de edição com quem salvou e a hora), Contrato e documentos (referência, envio de PDF e imagem com progresso, abrir e baixar, estágio com motivo obrigatório), Equipe T3jus (atribuir e retirar), Notas internas e Histórico (paginado); página /equipe (pessoas com e-mail e convite pendente, cadastrar, funções, desativar e reativar com funções em branco, histórico); moldura de celular com menu em gaveta. Migration 0130 (autor e hora da última alteração da ficha, motivo obrigatório ao mudar estágio, senha_criada_em na equipe) e pgTAP 013; Deno api-console (motivo, e-mail e convite na equipe); e2e console-v1.spec.ts e console.spec.ts (celular e computador, axe WCAG 2.2 AA, 114 passando)."
+}

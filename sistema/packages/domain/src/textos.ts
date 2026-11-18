@@ -35,6 +35,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   SEM_SOCIO: "Convide o sócio antes de concluir a implantação.",
   MESMO_ESTAGIO: "O cliente já está neste estágio.",
   JA_SOCIO: "Esta pessoa já é sócia deste escritório.",
+  JA_ENTROU: "Esta pessoa já criou a senha e entrou no Portal. Não há convite a reenviar.",
+  ARQUIVO_NAO_CHEGOU: "O arquivo não chegou inteiro. Envie de novo.",
   JA_NA_EQUIPE: "Esta pessoa já está na equipe.",
   JA_ATRIBUIDO: "Esta pessoa já atende o cliente com esta função.",
   FUNCAO_NAO_ATRIBUIDA: "Esta pessoa não tem esta função na equipe. Reveja as funções dela antes.",
@@ -46,4 +48,4 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
 export const TEXTO_CONVITE_CONTA_EXISTENTE =
   "Esta pessoa já tem conta no T3jus. O novo acesso aparece para ela na próxima vez que entrar.";
 export const TEXTO_CONVITE_ENVIADO =
-  "Convite enviado. A pessoa recebe um e-mail para criar a senha; o link vale por um dia e só pode ser usado uma vez.";
+  "Convite enviado. A pessoa recebe um e-mail para criar a senha; o link vale por uma hora e só pode ser usado uma vez.";

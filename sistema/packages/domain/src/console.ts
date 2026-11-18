@@ -96,7 +96,8 @@ export const contratoSchema = z.object({ versao, referenciaContrato: textoOpcion
 export const estagioSchema = z.object({
   versao,
   estagio: z.enum(chaves(ESTAGIOS)),
-  motivo: textoOpcional(300),
+  /** Obrigatório: vai para o histórico do cliente (decisão da Carol, 18/11/2026). */
+  motivo: z.string().trim().min(1).max(300),
 });
 
 export const convidarPessoaSchema = z.object({
@@ -119,3 +120,63 @@ export const atribuirSchema = z.object({
 
 export const versaoSchema = z.object({ versao });
 
+
+/** Sócio na carteira e na ficha, com o caminho do convite (PT-20). */
+export interface SocioCliente {
+  vinculoId: string;
+  pessoaId: string;
+  nome: string;
+  /** Quando o convite saiu (o vínculo nasceu). */
+  desde: string;
+  convidadoPor: string | null;
+  /** Quando o último convite saiu (o primeiro ou um reenvio): o link vale 1 hora a partir daí. */
+  conviteEnviadoEm: string;
+  /** Quando criou a senha pelo convite; null enquanto não criou. */
+  senhaCriadaEm: string | null;
+  /** E-mail da conta, só na ficha (vem do Auth). */
+  email?: string | null;
+}
+
+/** As quatro etapas da implantação, na ordem da tela aprovada (CO-01). */
+export const ETAPAS_IMPLANTACAO = {
+  FICHA: "Ficha",
+  CONTRATO: "Contrato",
+  EQUIPE: "Equipe",
+  SOCIO_NO_PORTAL: "Sócio no Portal",
+} as const;
+export type EtapaImplantacao = keyof typeof ETAPAS_IMPLANTACAO;
+
+/**
+ * Quais etapas da implantação estão feitas: ficha com contato, referência do contrato,
+ * alguém da equipe atendendo e um sócio que já criou a senha.
+ */
+export function etapasImplantacao(c: { situacoes: readonly string[]; socios: readonly Pick<SocioCliente, "senhaCriadaEm">[]; equipe: readonly unknown[] }) {
+  const feitas: Record<EtapaImplantacao, boolean> = {
+    FICHA: !c.situacoes.includes("SEM_CONTATO"),
+    CONTRATO: !c.situacoes.includes("SEM_CONTRATO"),
+    EQUIPE: c.equipe.length > 0,
+    SOCIO_NO_PORTAL: c.socios.some((s) => s.senhaCriadaEm),
+  };
+  const lista = (Object.keys(ETAPAS_IMPLANTACAO) as EtapaImplantacao[]).map((chave) => ({ chave, nome: ETAPAS_IMPLANTACAO[chave], feita: feitas[chave] }));
+  return { lista, feitas: lista.filter((e) => e.feita).length, total: lista.length, proxima: lista.find((e) => !e.feita)?.chave ?? null };
+}
+
+/** Contrato e documentos do cliente (CO-05): categorias, tipos aceitos e o limite. */
+export const CATEGORIAS_DOCUMENTO = {
+  CONTRATO_ASSINADO: "Contrato assinado",
+  PROPOSTA: "Proposta",
+  DOCUMENTO_ESCRITORIO: "Documento do escritório",
+  OUTRO: "Outro",
+} as const;
+export type CategoriaDocumento = keyof typeof CATEGORIAS_DOCUMENTO;
+
+export const TIPOS_DOCUMENTO = { "application/pdf": "PDF", "image/jpeg": "JPG", "image/png": "PNG" } as const;
+export type TipoDocumento = keyof typeof TIPOS_DOCUMENTO;
+export const TAMANHO_MAXIMO_DOCUMENTO = 10 * 1024 * 1024;
+
+export const iniciarDocumentoSchema = z.object({
+  categoria: z.enum(chaves(CATEGORIAS_DOCUMENTO)),
+  nome: z.string().trim().min(1).max(200).refine((n) => !/[/\\]/.test(n), { message: "Nome de arquivo inválido" }),
+  tipo: z.enum(chaves(TIPOS_DOCUMENTO)),
+  tamanho: z.number().int().min(1).max(TAMANHO_MAXIMO_DOCUMENTO),
+});

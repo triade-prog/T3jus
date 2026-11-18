@@ -3,6 +3,7 @@
 import type { AdminAuth, CadastroTotp, Fator, Portador, ProvedorAuth, ResultadoSenha, SessaoAuth } from "./auth.ts";
 import { ErroBanco, type Banco } from "./banco.ts";
 import { base64url } from "./cripto.ts";
+import type { Arquivos } from "./arquivos.ts";
 
 export const SEGREDO = "segredo-de-repasse-de-teste";
 export const CODIGO_CERTO = "123456";
@@ -194,7 +195,7 @@ export async function erro(r: Response): Promise<{ codigo: string; detalhes?: Re
 }
 
 /** Convites em memória: e-mail já cadastrado devolve a mesma conta, sem e-mail novo. */
-export function adminFalso(contas: Record<string, string> = {}) {
+export function adminFalso(contas: Record<string, string> = {}, comSenha = new Set<string>()) {
   const enviados: { email: string; voltarPara: string }[] = [];
   const admin: AdminAuth = {
     convidar(email, voltarPara) {
@@ -203,8 +204,32 @@ export function adminFalso(contas: Record<string, string> = {}) {
       enviados.push({ email, voltarPara });
       return Promise.resolve({ userId: contas[email]!, contaNova: true });
     },
-    emailDe: () => Promise.resolve(null),
+    reenviarConvite(email, voltarPara) {
+      if (comSenha.has(email)) return Promise.resolve(false);
+      enviados.push({ email, voltarPara });
+      return Promise.resolve(true);
+    },
+    emailDe: (id) => Promise.resolve(Object.entries(contas).find(([, v]) => v === id)?.[0] ?? null),
     removerAutenticadores: () => Promise.resolve(0),
   };
-  return { admin, enviados, contas };
+  return { admin, enviados, contas, comSenha };
+}
+
+/** Storage em memória: o "envio" é marcar o caminho com tamanho e tipo. */
+export function arquivosFalsos() {
+  const guardados = new Map<string, { tamanho: number; tipo: string }>();
+  const pedidosDeEnvio: string[] = [];
+  const leituras: { caminho: string; segundos: number; nome: string }[] = [];
+  const arquivos: Arquivos = {
+    enderecoDeEnvio: (caminho) => {
+      pedidosDeEnvio.push(caminho);
+      return Promise.resolve(`https://storage.exemplo/envio/${caminho}?token=uso-unico`);
+    },
+    info: (caminho) => Promise.resolve(guardados.get(caminho) ?? null),
+    enderecoDeLeitura: (caminho, segundos, nome) => {
+      leituras.push({ caminho, segundos, nome });
+      return Promise.resolve(`https://storage.exemplo/ler/${caminho}?token=curto`);
+    },
+  };
+  return { arquivos, guardados, pedidosDeEnvio, leituras };
 }

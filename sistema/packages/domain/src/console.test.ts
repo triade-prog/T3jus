@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cadastrarMembroSchema,
   cnpjValido,
+  etapasImplantacao,
   contatoSchema,
   criarEscritorioSchema,
   fichaSchema,
@@ -43,5 +44,22 @@ describe("contratos do Console (passo 1)", () => {
     expect(cadastrarMembroSchema.safeParse({ nome: "Bia", email: "bia@exemplo.invalid", funcoes: [] }).success).toBe(false);
     expect(cadastrarMembroSchema.safeParse({ nome: "Bia", email: "bia@exemplo.invalid", funcoes: ["DONO"] }).success).toBe(false);
     expect(cadastrarMembroSchema.parse({ nome: "Bia", email: "bia@exemplo.invalid", funcoes: ["SUPORTE"] }).funcoes).toEqual(["SUPORTE"]);
+  });
+});
+
+describe("etapas da implantação (CO-01)", () => {
+  it("conta as quatro etapas na ordem da tela", () => {
+    const nada = etapasImplantacao({ situacoes: ["SEM_SOCIO", "SEM_CONTATO", "SEM_CONTRATO"], socios: [], equipe: [{}] });
+    expect(nada.feitas).toBe(1);
+    expect(nada.proxima).toBe("FICHA");
+    expect(nada.lista.map((e) => e.nome)).toEqual(["Ficha", "Contrato", "Equipe", "Sócio no Portal"]);
+  });
+  it("sócio só conta depois de criar a senha", () => {
+    const convidado = etapasImplantacao({ situacoes: [], socios: [{ senhaCriadaEm: null }], equipe: [{}] });
+    expect(convidado.feitas).toBe(3);
+    expect(convidado.proxima).toBe("SOCIO_NO_PORTAL");
+    const entrou = etapasImplantacao({ situacoes: [], socios: [{ senhaCriadaEm: "2026-11-18T12:00:00Z" }], equipe: [{}] });
+    expect(entrou.feitas).toBe(4);
+    expect(entrou.proxima).toBeNull();
   });
 });
