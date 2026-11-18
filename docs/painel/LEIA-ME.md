@@ -19,6 +19,7 @@ Nada gerado vai para o Git.
 O script calcula o resto sozinho:
 - a data de atualização é a da linha mais nova do histórico;
 - o total e os códigos das ideias saem das tabelas das seções numeradas do `IDEIAS.md`.
+- as áreas da seção "Ideias atendidas" são as próprias seções numeradas do `IDEIAS.md` (Painel do dia, Atendimento e propostas, Contratos e honorários...), com o texto e a etiqueta de cada ideia. Área nova é seção nova no `IDEIAS.md`; o `conferir` acusa linha de ideia fora do formato `| código | texto | [etiqueta] |`.
 
 As peças (`peca`) são: S1 Painel do dia, S2 Atendimento e propostas, S3 Contratos e honorários, S4 Financeiro e repasses, S5 Casos, tarefas e prazos, S6 Documentos, S7 Configurações; C1 Carteira de escritórios, C2 Implantação, C3 Equipe interna, C4 Comercial; W1 Site comercial; B1 Segurança e acesso, B2 Dados e histórico, B3 Motor de mensagens, B4 Infraestrutura e qualidade, B5 Princípios do produto. A lista fica no `PECAS` da `pagina.html`.
 

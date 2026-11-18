@@ -9,6 +9,7 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 | Visão, público, primeira versão e plano de validação | `docs/01-ideias-e-direcionamento.md` |
 | Funcionalidades de 12 sistemas jurídicos | `docs/02-pesquisa-12-sistemas.md` |
 | Análise crítica, preços de concorrentes e próximos passos | `docs/03-analise-critica.md` |
+| O que dois TCCs sobre escritórios de advocacia trazem ao T3jus | `docs/04-analise-tccs.md` |
 | Todas as ideias, com código por seção | `IDEIAS.md` |
 | Painel de execução (fases, entregas, testes, publicação, dependências, decisões, histórico) | `docs/painel/dados/` (montado por `docs/painel/painel.py`; ver `docs/painel/LEIA-ME.md`) |
 | Código do sistema (como rodar, como a base funciona, tabela nova passo a passo) | `sistema/` e o `README.md` dele |
