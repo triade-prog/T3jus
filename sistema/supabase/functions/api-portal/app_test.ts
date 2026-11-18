@@ -328,3 +328,10 @@ Deno.test("PA-02: histórico da equipe com nomes e paginação", async () => {
   const h = m.chamadas.find((c) => c.funcao === "portal_historico_equipe")!;
   assertEquals([h.args.p_antes, h.args.p_limite], [10, 20]);
 });
+
+Deno.test("PA-02: as áreas do domínio são as mesmas do banco", async () => {
+  const { AREAS_PORTAL } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0140_portal_equipe.sql", import.meta.url));
+  const doBanco = /area in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z]+)'/g)?.map((s) => s.slice(1, -1));
+  assertEquals(doBanco, Object.keys(AREAS_PORTAL));
+});

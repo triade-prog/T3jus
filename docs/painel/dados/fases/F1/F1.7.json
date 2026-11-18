@@ -1,11 +1,11 @@
 {
   "id": "F1.7",
-  "texto": "Botão \"Exportar os dados do escritório\" para o sócio no Portal (área Escritório) e API de integração quando houver parceiro",
+  "texto": "Botão \"Exportar os dados do escritório\" para o sócio dono no Portal (área Escritório)",
   "peca": "S7",
   "refs": [
     "PT-15"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 50,
-  "proximo": "Especialista desenhando a área Escritório do Portal, com o botão de exportar; depois aprovação da Carol e código"
+  "evidencia": "Tela aprovada pela Carol em 18/11/2026 (docs/design/aprovadas/portal-v1/escritorio.html) e programada em packages/ui/src/portal/Escritorio.tsx: dados do escritório só para leitura, Seus escritórios, exportação com confirmação, gerando, sucesso com Salvar de novo (sem nova exportação) e erro; quem não é o dono vê Quem cuida. Rota /meu-escritorio; última exportação vem de GET /v1/escritorio. e2e em tests/e2e/portal-v1.spec.ts. A API de integração fica na F1.11."
 }

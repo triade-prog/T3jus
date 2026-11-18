@@ -1,0 +1,10 @@
+{
+  "id": "F1.11",
+  "texto": "API de integração para parceiros, quando houver parceiro",
+  "peca": "S7",
+  "refs": [
+    "PT-15"
+  ],
+  "status": "pendente",
+  "ordem": 60
+}

@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./tema.css": "./src/tema.css",
     "./acesso.css": "./src/acesso.css",
-    "./console.css": "./src/console.css"
+    "./console.css": "./src/console.css",
+    "./portal.css": "./src/portal.css"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

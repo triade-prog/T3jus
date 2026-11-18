@@ -153,7 +153,7 @@ Telas aprovadas em `docs/design/aprovadas/console-v1/`, programadas em `packages
 
 Ainda sem dado: busca global e avisos no topo, e a contagem de documentos nas abas.
 
-### Equipe do escritório no Portal (F1.6, servidor)
+### Equipe do escritório no Portal (F1.6)
 
 Sem funções fixas (PA-02): o sócio dono convida e marca as áreas de cada pessoa (Comercial, Contratos, Financeiro, Jurídico). Quem entra pela equipe tem vínculo com a função `EQUIPE`; as áreas ficam em `areas_liberadas` (migration `0140`), ligadas ao vínculo, e nada se apaga. O sócio vê tudo. Toda rota de área futura entra por `entrar_area(pessoa, escritório, área)`, que recusa com `AREA_NAO_LIBERADA`.
 
@@ -166,3 +166,18 @@ Sem funções fixas (PA-02): o sócio dono convida e marca as áreas de cada pes
 | `POST /v1/escritorio/equipe/:vinculo/reenviar` | Novo convite para quem ainda não criou a senha. |
 | `POST /v1/escritorio/equipe/:vinculo/retirar` | Retira (versão lida). Quem já entrou exige `passarPara`, alguém que continua na equipe (EX-10); convite pendente só é cancelado. |
 | `GET /v1/escritorio/equipe/historico` | Convites, áreas, retiradas e exportações, de 50 em 50 (`antes`, `limite`). |
+
+A troca real do responsável das tarefas, prazos, cobranças e atendimentos de quem saiu entra com essas tabelas (F1.10). Até lá, a escolha fica no histórico.
+
+### Telas do Portal v1 (F1.6, F1.7, D3)
+
+Telas aprovadas pela Carol em 18/11/2026, em `docs/design/aprovadas/portal-v1/`. O código fica em `packages/ui/src/portal/`, e o CSS do Portal em `packages/ui/src/portal.css`, sob a classe `.pt`, por cima do `console.css`.
+
+- **Moldura** (`Moldura.tsx`): o trilho mostra só as áreas que a pessoa tem, a Equipe só para o sócio dono, e Escritório e Ajuda embaixo. Cada área tem uma barra de seções (`areas.ts`). No celular, uma barra fixa embaixo leva a Início, Conversas e Agenda; o Mais abre o resto numa folha. A moldura lê `GET /v1/escritorio`. Uma resposta 401 volta para `/entrar`, e `ESCRITORIO_REQUIRED` leva para a escolha do escritório.
+- **Rotas:**
+  - `/`, `/conversas`, `/clientes`, `/agenda` e `/ajuda` mostram o que vem.
+  - Cada área tem a própria pasta: `/comercial`, `/contratos`, `/financeiro` e `/juridico`, com a seção opcional (`/juridico/prazos`). Seção que não existe dá 404. Uma área não liberada diz quem libera.
+  - `/equipe` (com `?aba=historico`) é a Equipe do escritório.
+  - `/meu-escritorio` é a área Escritório. O `/escritorio` continua sendo a escolha do escritório depois de entrar.
+- **Exportar:** o arquivo JSON fica na memória da página. "Salvar de novo" não gera outra exportação.
+- **Testes:** `tests/e2e/portal-v1.spec.ts` roda no celular e no computador, com axe. `packages/ui/src/portal/portal.test.ts` testa as regras de tela (convite vencido, frases do histórico, nome do arquivo).

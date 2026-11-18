@@ -151,7 +151,7 @@ begin
   return (
     select jsonb_build_object(
       'id', e.id, 'nome', e.nome, 'cnpj', e.cnpj, 'cidade', e.cidade, 'uf', e.uf, 'endereco', e.endereco,
-      'contatos', e.contatos, 'dono', v_dono, 'areas', to_jsonb(areas_da_pessoa(p_pessoa, p_escritorio)),
+      'contatos', e.contatos, 'dono', v_dono, 'pessoa', (select nome from pessoas where id = p_pessoa), 'areas', to_jsonb(areas_da_pessoa(p_pessoa, p_escritorio)),
       'socios', (select coalesce(jsonb_agg(p.nome order by v.criado_em), '[]'::jsonb)
                    from vinculos v join pessoas p on p.id = v.pessoa_id
                   where v.escritorio_id = e.id and v.funcao = 'SOCIO' and v.revogado_em is null),

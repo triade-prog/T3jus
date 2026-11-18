@@ -9,7 +9,7 @@
     "PT-21",
     "EX-10"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 45,
-  "proximo": "Servidor pronto (migration 0140, rotas /v1/escritorio/equipe); falta a tela, depois da aprovação dos ajustes da Carol (barra embaixo no celular e passar para quem ao retirar)"
+  "evidencia": "Servidor: migration 0140 (areas_liberadas, função EQUIPE, sócio dono, convidar, mudar áreas, reenviar, retirar com passar_para, histórico da equipe) e pgTAP 014; rotas /v1/escritorio/equipe com testes Deno. Tela aprovada pela Carol em 18/11/2026 (docs/design/aprovadas/portal-v1/equipe.html) e programada em packages/ui/src/portal/Equipe.tsx: lista com convite pendente e vencido, convidar, áreas, reenviar, cancelar convite, retirar escolhendo para quem passa o que era da pessoa, histórico da equipe; e2e tests/e2e/portal-v1.spec.ts no celular e no computador, com axe. A troca real do responsável fica na F1.10."
 }

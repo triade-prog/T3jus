@@ -1,7 +1,7 @@
 -- Equipe do escritório no Portal (F1.6): áreas por pessoa, convite, mudar áreas, reenviar,
 -- retirar passando para alguém e o histórico (PA-01, PA-02, PT-20, PT-21, EX-10).
 begin;
-select plan(25);
+select plan(26);
 
 create temp table ids as select
   teste.pessoa('Marina Ribeiro') as socia,
@@ -17,6 +17,7 @@ select teste.vincular(intrusa, outro, 'SOCIO') from ids;
 select is((select portal_escritorio(socia, rm) -> 'areas' from ids), '["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"]'::jsonb,
   'PA-02: o sócio dono vê as quatro áreas');
 select is((select (portal_escritorio(socia, rm) ->> 'dono')::boolean from ids), true, 'o sócio é o dono');
+select is((select portal_escritorio(socia, rm) ->> 'pessoa' from ids), 'Marina Ribeiro', 'a moldura mostra quem está usando');
 
 -- Convidar com áreas.
 create temp table conv as select portal_convidar(socia, rm, larissa, 'Larissa Costa', array['JURIDICO', 'JURIDICO']) as vl from ids;

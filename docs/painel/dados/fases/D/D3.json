@@ -6,9 +6,8 @@
     "PT-10",
     "PA-01"
   ],
-  "status": "andamento",
+  "status": "feito",
   "nota": "Desenho de base: a proposta dos três sistemas (https://claude.ai/artifact/S4zdJhHiYR8bpVdDqkYmpw). As ideias das áreas (CO-12, PA-06) entram no IDEIAS.md depois da aprovação da Carol.",
   "ordem": 30,
-  "evidencia": "Moldura do conceito Gabinete aprovada no computador (docs/design/aprovadas/). Moldura do Console em celular aprovada e programada (docs/design/aprovadas/console-v1)",
-  "proximo": "Especialista desenhando a moldura do Portal em áreas, no computador e no celular"
+  "evidencia": "Moldura do conceito Gabinete aprovada no computador (docs/design/aprovadas/). Moldura do Console em celular aprovada e programada (docs/design/aprovadas/console-v1). Moldura do Portal em áreas aprovada pela Carol em 18/11/2026 (docs/design/aprovadas/portal-v1/moldura.html) e programada em packages/ui/src/portal/Moldura.tsx: áreas só para quem tem a área, barra de seções, área não liberada, barra embaixo no celular com a folha Mais; e2e com axe."
 }
