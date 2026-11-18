@@ -1,0 +1,14 @@
+{
+  "id": "D4",
+  "texto": "Telas de cada passo desenhadas e aprovadas antes do código da tela, começando pelo Console: entrar, carteira, cadastrar escritório e ficha do cliente",
+  "peca": "C1",
+  "refs": [
+    "CO-01",
+    "CO-02",
+    "CO-03",
+    "CO-04",
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 40
+}

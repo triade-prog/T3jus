@@ -1,0 +1,6 @@
+{
+  "id": "D",
+  "nome": "Design do frontend",
+  "objetivo": "Identidade, design system, moldura em áreas e textos aprovados antes das telas de verdade: cada tela é desenhada e aprovada pela Carol antes do código (regras antes, tela depois).",
+  "ordem": 5
+}

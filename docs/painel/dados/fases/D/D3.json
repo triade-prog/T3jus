@@ -1,0 +1,12 @@
+{
+  "id": "D3",
+  "texto": "Moldura em áreas do Console e do Portal: lateral estreita com as partes comuns no alto, as áreas no meio e conta e ajuda embaixo; barra de seções em cada área; versão de celular",
+  "peca": "B4",
+  "refs": [
+    "PT-10"
+  ],
+  "status": "pendente",
+  "nota": "Desenho de base: a proposta dos três sistemas (https://claude.ai/artifact/S4zdJhHiYR8bpVdDqkYmpw). As ideias das áreas (CO-12, PA-06) entram no IDEIAS.md depois da aprovação da Carol.",
+  "ordem": 30,
+  "proximo": "Desenhar a moldura do Console e as telas de Clientes (carteira, cadastro, ficha com abas) para a Carol aprovar antes do código"
+}
