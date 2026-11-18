@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As ideias CH-06 a CH-08, FI-07 a FI-11, EX-06 a EX-09, IN-07 e IN-08 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As ideias CH-06 a CH-08, FI-07 a FI-16, EX-06 a EX-11 e IN-07 a IN-11 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -22,7 +22,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 
 | Código | Ideia | Etiquetas |
 |---|---|---|
-| AP-01 | Cadastro único de clientes e contatos | [V1] |
+| AP-01 | Cadastro único de clientes e contatos, com a qualificação usada nos documentos (CPF, RG, estado civil, profissão, endereço) | [V1] |
 | AP-02 | Histórico de atendimento | [V1] |
 | AP-03 | Funil simples de atendimentos e propostas | [V1] |
 | AP-04 | Origem dos contatos | [V1] |
@@ -38,7 +38,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CH-03 | Responsáveis pelo contrato | [V1] |
 | CH-04 | Programação dos recebimentos | [V1] |
 | CH-05 | Contrato ligado às demandas e tarefas | [V1] |
-| CH-06 | Vários tipos de honorário no mesmo contrato: fixo, parcelado, mensal, êxito em percentual, sucumbência, por ato ou consulta e percentual recorrente | [V1] |
+| CH-06 | Vários tipos de honorário no mesmo contrato: fixo, parcelado, mensal, êxito em percentual, sucumbência, por ato ou consulta e percentual recorrente, inclusive sobre uma base que muda todo mês (ex.: contracheque), com lembrete para pedir a base | [V1] |
 | CH-07 | Uma etapa do caso gera a cobrança e avisa o financeiro (ex.: requisição expedida vira valor a receber com data prevista) | [V1] |
 | CH-08 | Procuração e contrato de honorários gerados com os dados do cadastro, em arquivo editável para o escritório pôr o timbre | [VAL] |
 
@@ -47,30 +47,37 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | Código | Ideia | Etiquetas |
 |---|---|---|
 | FI-01 | Contas a receber e a pagar | [V1] |
-| FI-02 | Recebimentos, despesas e baixas | [V1] |
+| FI-02 | Recebimentos, despesas e baixas; cada recebimento baixa a parcela e o mês a que se refere, mesmo pago com atraso | [V1] |
 | FI-03 | Parcelas e vencimentos | [V1] |
 | FI-04 | Pendências e atrasos | [V1] |
-| FI-05 | Registro e acompanhamento de repasses | [V1] |
+| FI-05 | Registro e acompanhamento de repasses ao cliente, ao perito e ao escritório parceiro | [V1] |
 | FI-06 | Separação entre dinheiro próprio e valores de terceiros | [V1] |
 | FI-07 | Despesa adiantada pelo escritório (custas, sucumbência) vira valor a reembolsar, por cliente e por caso | [V1] |
 | FI-08 | Fechamento financeiro do caso: só encerra com tudo recebido e tudo repassado | [V1] |
 | FI-09 | Previsão de caixa, prevista contra realizada, incluindo precatórios e RPVs com data estimada | [V1] |
 | FI-10 | Aprovação de pagamentos pelo sócio (lista da semana) e separação entre quem lança e quem paga | [VAL] |
 | FI-11 | Divisão de honorários entre sócios ou advogados por caso, com adiantamento e acerto | [VAL] |
+| FI-12 | Prestação de contas ao cliente gerada no recebimento: valor levantado, honorários, custas reembolsadas, repasses e o que fica para ele, enviada pelo WhatsApp | [V1] |
+| FI-13 | Contas recorrentes previsíveis (aluguel, folha, impostos) lançadas sozinhas todo mês | [V1] |
+| FI-14 | Recibo gerado a cada pagamento recebido | [V1] |
+| FI-15 | Valor de precatório ou RPV atualizado entre a requisição e o pagamento, com a diferença entre o previsto e o recebido | [VAL] |
+| FI-16 | Conferência com o extrato do banco, apontando o que saiu sem lançamento ou sem aprovação | [VAL] |
 
 ## 5. Execução jurídica
 
 | Código | Ideia | Etiquetas |
 |---|---|---|
-| EX-01 | Cadastro de casos e processos | [V1] |
+| EX-01 | Cadastro de casos e processos, com área, parte contrária e tribunal; um processo pode ter vários clientes, cada um com os próprios honorários | [V1] |
 | EX-02 | Tarefas e responsáveis | [V1] |
 | EX-03 | Etapas e pendências | [V1] |
 | EX-04 | Prazos cadastrados à mão (monitoramento de tribunais é integração posterior) | [V1] |
 | EX-05 | Documentos ligados ao caso e documentos que faltam | [V1] |
-| EX-06 | Audiências como compromisso na agenda, com visão de mês, semana e dia, criadas clicando no dia; as próximas aparecem na tela inicial | [V1] |
+| EX-06 | Audiências como compromisso na agenda, com visão de mês, semana e dia, com modalidade (presencial ou virtual) e link da sala, criadas clicando no dia; as próximas aparecem na tela inicial | [V1] |
 | EX-07 | Etapas do caso definidas pelo escritório (não uma lista fixa); a lista de casos mostra número, cliente e etapa sem precisar abrir | [V1] |
 | EX-08 | Ao chegar à etapa final, o sistema pede o resultado (ganho, perda, acordo), que alimenta a cobrança do êxito (CH-07) e os indicadores | [V1] |
 | EX-09 | Gerador de petições: modelos do escritório preenchidos com os dados do cliente, do caso e dos advogados, mais um breve formulário (endereçamento, valor da causa), gerando arquivo editável | [VAL] |
+| EX-10 | Quando alguém sai da equipe, as tarefas e cobranças dessa pessoa passam para um responsável; nada fica sem dono | [V1] |
+| EX-11 | Lembrete da audiência para o cliente pelo WhatsApp (faltar à conciliação pode gerar multa, CPC art. 334, § 8º) | [V1] |
 
 ## 6. Indicadores
 
@@ -84,6 +91,9 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | IN-06 | Tarefas, entregas e bloqueios que pedem ação | [V1] |
 | IN-07 | Receita por tipo de honorário e atrasos por idade (até 30, 60 e 90 dias) | [V1] |
 | IN-08 | Carga de cada advogado (casos por responsável) e casos por etapa, para ver onde o trabalho para | [V1] |
+| IN-09 | Comparação com os meses anteriores e com a meta, com alerta quando um tipo de receita cai de repente | [V1] |
+| IN-10 | Quanto das despesas fixas é coberto pela receita recorrente (mensalidades e parcelas) | [V1] |
+| IN-11 | Recebido e repassado por escritório parceiro ou correspondente | [VAL] |
 
 ## 7. A validar com os pilotos
 
@@ -153,11 +163,11 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 1. Painel do dia | 7 |
 | 2. Atendimento e propostas | 6 |
 | 3. Contratos e honorários | 8 |
-| 4. Financeiro e repasses | 11 |
-| 5. Execução jurídica | 9 |
-| 6. Indicadores | 8 |
+| 4. Financeiro e repasses | 16 |
+| 5. Execução jurídica | 11 |
+| 6. Indicadores | 11 |
 | 7. A validar com os pilotos | 7 |
 | 8. Princípios técnicos e de qualidade | 24 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 4 |
-| **Total** | **90** |
+| **Total** | **100** |

@@ -88,3 +88,38 @@ Perguntas que valem levar à advogada parceira, saídas do TCC 1:
 2. Ela adianta custas pelo cliente? Como lembra de cobrar depois?
 3. Quem avisa que chegou a hora de cobrar o êxito?
 4. Como os honorários são divididos entre quem trabalhou no caso?
+
+## Segunda leitura (18/11/2026)
+
+A Carol pediu uma nova revisão dos dois PDFs para achar o que tinha passado, incluindo os quadros e telas que só aparecem como imagem. O resultado entrou no `IDEIAS.md`.
+
+### Ideias que já existiam e ficaram mais precisas
+
+| Código | O que mudou | Por quê |
+|---|---|---|
+| AP-01 | O cadastro guarda a qualificação usada nos documentos (CPF, RG, estado civil, profissão, endereço) | O modelo de dados do Juris Tantum mostra que procuração e petição dependem desses campos |
+| CH-06 | O percentual recorrente pode incidir sobre uma base que muda todo mês, com lembrete para pedir a base | No TCC 1, a cobrança sobre o contracheque era esquecida porque o valor mudava e alguém precisava pedir o documento todo mês |
+| FI-02 | Cada recebimento baixa a parcela e o mês a que se refere, mesmo pago com atraso | No TCC 1, o pagamento atrasado de uma mensalidade aparecia como receita do mês em que entrou, escondendo quem estava em atraso |
+| FI-05 | Os repasses têm beneficiário definido: cliente, perito ou escritório parceiro | Os três apareciam com controles separados no TCC 1 |
+| EX-01 | Processo com área, parte contrária e tribunal; vários clientes no mesmo processo, cada um com os próprios honorários | A "ordem de faturamento" do TCC 1 lista vários clientes por processo, cada um com seus honorários; o Juris Tantum guarda área, parte contrária e sistema |
+| EX-06 | Audiência com modalidade (presencial ou virtual) e link da sala | Campos do modelo de dados do Juris Tantum |
+
+### Ideias novas
+
+| Código | Ideia | Etiqueta | De onde |
+|---|---|---|---|
+| FI-12 | Prestação de contas ao cliente gerada no recebimento, enviada pelo WhatsApp | [V1] | TCC 1: a assistente montava à mão um "documento explicativo" com honorários, custas, repasses e o valor do cliente |
+| FI-13 | Contas recorrentes previsíveis lançadas sozinhas todo mês | [V1] | TCC 1: contas guardadas numa pasta por vencimento, sem registro |
+| FI-14 | Recibo gerado a cada pagamento recebido | [V1] | TCC 1: recibo manual a cada parcela em dinheiro ou cheque |
+| FI-15 | Precatório ou RPV atualizado entre a requisição e o pagamento | [VAL] | TCC 1: correção monetária mensal sobre o valor requisitado |
+| FI-16 | Conferência com o extrato do banco | [VAL] | TCC 1: sem cruzar pagamentos com extrato, o desvio só aparecia quando os comprovantes voltavam |
+| EX-10 | Quem sai da equipe passa tarefas e cobranças para um responsável | [V1] | TCC 1: a troca de funcionário fazia a cobrança ser esquecida |
+| EX-11 | Lembrete da audiência para o cliente pelo WhatsApp | [V1] | TCC 2: faltar à conciliação gera multa de até 2% (CPC art. 334, § 8º) e, no juizado, revelia (Lei 9.099, art. 20) |
+| IN-09 | Comparação com meses anteriores e com a meta, com alerta de queda | [V1] | TCC 1: o sócio usava a comparação para achar falhas e fraudes |
+| IN-10 | Quanto das despesas fixas a receita recorrente cobre | [V1] | TCC 1: o sócio media sua margem de segurança assim |
+| IN-11 | Recebido e repassado por parceiro ou correspondente | [VAL] | TCC 1: avaliar se a parceria compensa |
+
+### Conferido e deixado de fora
+- Filiais e envio de movimento por planilha (fora do público de 3 a 10 pessoas).
+- Plano de contas, DRE por competência e custo do processo no ativo (trabalho do contador).
+- Números de processos, advogados e teses na tela inicial "para dar sensação de crescimento" (não ajuda a decidir nada; o Painel do dia já cobre o que importa).
