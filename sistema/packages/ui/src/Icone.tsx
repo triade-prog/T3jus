@@ -140,6 +140,76 @@ const DESENHOS = {
       <path d="M20 4v5h-5" />
     </>
   ),
+  doc: (
+    <>
+      <path d="M5.5 3h9l4 4v14h-13Z" /><path d="M14.5 3v4h4M8.5 12h7M8.5 15.5h7" />
+    </>
+  ),
+  imagem: (
+    <>
+      <path d="M4 5h16v14H4Z" /><circle cx="9" cy="10" r="1.8" /><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5" />
+    </>
+  ),
+  baixar: (
+    <>
+      <path d="M12 4v11M7 10.5l5 5 5-5" /><path d="M4.5 19.5h15" />
+    </>
+  ),
+  enviar: (
+    <>
+      <path d="M12 15.5V4.5M7 9l5-5 5 5" /><path d="M4.5 14v5.5h15V14" />
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </>
+  ),
+  lapis: (
+    <>
+      <path d="M4 20h4L19.5 8.5l-4-4L4 16Z" /><path d="m13.5 6.5 4 4" />
+    </>
+  ),
+  telefone: (
+    <>
+      <path d="M5 4h4l1.5 4.5-2.5 1.5a11 11 0 0 0 6 6l1.5-2.5L20 15v4a1.5 1.5 0 0 1-1.5 1.5A16 16 0 0 1 3.5 5.5 1.5 1.5 0 0 1 5 4Z" />
+    </>
+  ),
+  pessoaMais: (
+    <>
+      <circle cx="9.5" cy="8" r="3.5" /><path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h4a4.5 4.5 0 0 1 4.5 4.5V20" /><path d="M19 8v6M16 11h6" />
+    </>
+  ),
+  pessoaMenos: (
+    <>
+      <circle cx="9.5" cy="8" r="3.5" /><path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h4a4.5 4.5 0 0 1 4.5 4.5V20" /><path d="M16 11h6" />
+    </>
+  ),
+  historico: (
+    <>
+      <path d="M4 12a8 8 0 1 0 2.3-5.6" /><path d="M4 4v4.5h4.5" /><path d="M12 8v4.5l3 2" />
+    </>
+  ),
+  pessoas: (
+    <>
+      <circle cx="9" cy="8" r="3.2" /><path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h3a4.5 4.5 0 0 1 4.5 4.5V20" /><path d="M15 4.9a3.2 3.2 0 0 1 0 6.2" /><path d="M18 14.2a4.5 4.5 0 0 1 3 4.3V20" />
+    </>
+  ),
+  sino: (
+    <>
+      <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z" /><path d="M10 21h4" />
+    </>
+  ),
+  baixo: (
+    <>
+      <path d="m6 9 6 6 6-6" />
+    </>
+  ),
+  dir: (
+    <>
+      <path d="m9 6 6 6-6 6" />
+    </>
+  ),
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

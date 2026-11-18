@@ -4,7 +4,7 @@
 // usando (o banco filtra): resumo por estágio, o que pede a pessoa agora e a lista.
 
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ESTAGIOS } from "@t3jus/domain";
+import { criarEscritorioSchema, ESTAGIOS, UFS } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import {
@@ -21,6 +21,7 @@ import {
   type Ordem,
 } from "./carteira.ts";
 import { CARTEIRA, chamarConsole, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
+import { Aviso, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
 import { haQuanto, iniciais } from "./tempo.ts";
 
 const POR_PAGINA = 20;
@@ -79,6 +80,105 @@ function Pendencias({ c }: { c: ClienteCarteira }) {
   );
 }
 
+/**
+ * Cadastrar escritório (passo 1), janela aprovada em docs/design/aprovadas/console-v1
+ * (carteira.html?estado=cadastrar): nome, cidade e UF; o resto se completa na ficha.
+ */
+function JanelaCadastrar({ aberta, aoFechar }: { aberta: boolean; aoFechar: () => void }) {
+  const ids = useId();
+  const corpo = useRef<HTMLDivElement>(null);
+  const [nome, setNome] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [uf, setUf] = useState("");
+  const [erros, setErros] = useState<{ nome?: string; cidade?: string; uf?: string }>({});
+  const [falhou, setFalhou] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function cadastrar() {
+    if (enviando) return;
+    setFalhou(null);
+    const v = criarEscritorioSchema.safeParse({ nome, cidade, uf });
+    if (!v.success) {
+      const campos = new Set(v.error.issues.map((i) => String(i.path[0])));
+      setErros({
+        nome: campos.has("nome") ? "Escreva o nome do escritório." : undefined,
+        cidade: campos.has("cidade") ? "O nome da cidade precisa de ao menos 2 letras." : undefined,
+        uf: campos.has("uf") ? "Escolha a UF." : undefined,
+      });
+      return focarPrimeiroErro(corpo.current);
+    }
+    setErros({});
+    setEnviando(true);
+    const r = await chamarConsole<{ id: string }>("/v1/clientes", { corpo: v.data });
+    if (!r.ok) {
+      setEnviando(false);
+      return setFalhou(r.erro);
+    }
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a ficha nova abre do zero, com o aviso de cadastrado
+    window.location.assign(`/clientes/${r.dados.id}/ficha?cadastrado=1`);
+  }
+
+  const n = Object.values(erros).filter(Boolean).length;
+  const campoTexto = (k: "nome" | "cidade", rotulo: string, valor: string, mudar: (v: string) => void, auto: string, foco?: boolean) => (
+    <div className="campo">
+      <label htmlFor={`${ids}-${k}`}>{rotulo}</label>
+      <input className="entrada" id={`${ids}-${k}`} value={valor} autoComplete={auto} data-foco={foco || undefined}
+        onChange={(e) => mudar(e.target.value)} aria-invalid={erros[k] ? true : undefined}
+        aria-describedby={erros[k] ? `${ids}-${k}-erro` : undefined} />
+      {erros[k] ? <ErroCampo id={`${ids}-${k}-erro`}>{erros[k]}</ErroCampo> : null}
+    </div>
+  );
+
+  return (
+    <Janela id={`${ids}-j`} aberta={aberta} aoFechar={() => { if (!enviando) aoFechar(); }} sobretitulo="Clientes" titulo="Cadastrar escritório"
+      descricao={`${ids}-d`} aoEnviar={() => void cadastrar()}
+      pe={
+        <>
+          <button className="btn btn-fantasma" type="button" disabled={enviando} onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button className="btn btn-pri" type="submit" aria-busy={enviando || undefined} aria-disabled={enviando || undefined}>
+            {enviando ? "Cadastrando…" : (
+              <>
+                <Icone nome="mais" className="ico" />
+                Cadastrar escritório
+              </>
+            )}
+          </button>
+        </>
+      }>
+      <div ref={corpo} style={{ display: "contents" }}>
+        <p id={`${ids}-d`}>Comece pelo básico. CNPJ, endereço e contatos você completa depois, na ficha.</p>
+        {n ? <Aviso tom="urgencia" titulo={faltaAcertar(n)}>O escritório ainda não foi cadastrado.</Aviso> : null}
+        {falhou ? (
+          <Aviso tom="urgencia" titulo="Não deu para cadastrar agora.">
+            {falhou.codigo === "FORBIDDEN" ? textoDoErro(falhou) : "O servidor não respondeu. O que você escreveu continua aqui: tente de novo."}
+          </Aviso>
+        ) : null}
+        {campoTexto("nome", "Nome do escritório", nome, setNome, "organization", true)}
+        <div className="duas">
+          {campoTexto("cidade", "Cidade", cidade, setCidade, "address-level2")}
+          <div className="campo">
+            <label htmlFor={`${ids}-uf`}>UF</label>
+            <select className="entrada" id={`${ids}-uf`} value={uf} onChange={(e) => setUf(e.target.value)}
+              aria-invalid={erros.uf ? true : undefined} aria-describedby={erros.uf ? `${ids}-uf-erro` : undefined}>
+              <option value="">Escolha</option>
+              {UFS.map((u) => (
+                <option key={u}>{u}</option>
+              ))}
+            </select>
+            {erros.uf ? <ErroCampo id={`${ids}-uf-erro`}>{erros.uf}</ErroCampo> : null}
+          </div>
+        </div>
+        <p className="permissao">
+          <Icone nome="pessoas" className="ico" />
+          O escritório entra “Em implantação” e você fica atribuída a ele como Administração.
+        </p>
+      </div>
+    </Janela>
+  );
+}
+
 export function Carteira() {
   const sessao = useSessaoConsole();
   const [lista, setLista] = useState<ClienteCarteira[] | null>(null);
@@ -88,7 +188,9 @@ export function Carteira() {
   const [ordem, setOrdem] = useState<Ordem>("PENDENCIAS");
   const [pagina, setPagina] = useState(1);
   const [agora, setAgora] = useState(() => new Date());
+  const [cadastrar, setCadastrar] = useState(false);
   const ids = useId();
+  const podeCadastrar = sessao?.acoes.includes("console.escritorios.criar") ?? false;
   const carregado = useRef(false);
 
   useEffect(() => {
@@ -119,6 +221,12 @@ export function Carteira() {
             <span className="fio" aria-hidden="true" />
             <p className="lede">Os escritórios que contrataram o T3jus e que você atende, da implantação ao uso diário.</p>
           </div>
+          {podeCadastrar ? (
+            <button className="btn btn-escuro" type="button" style={{ marginBottom: 6 }} onClick={() => setCadastrar(true)}>
+              <Icone nome="mais" className="ico" />
+              Cadastrar escritório
+            </button>
+          ) : null}
         </div>
 
         <div className="folha resumo" role="group" aria-label="Filtrar a carteira por estágio">
@@ -204,7 +312,7 @@ export function Carteira() {
           </div>
         ) : (
           <div className="tabela">
-            <table>
+            <table className="so-pc">
               <thead>
                 <tr>
                   <th scope="col">Escritório</th>
@@ -272,6 +380,86 @@ export function Carteira() {
                 })}
               </tbody>
             </table>
+            <ul className="cartoes so-cel" aria-label="Escritórios">
+              {daPagina.map((c) => {
+                const socio = situacaoSocio(c, agora);
+                const e = etapasDoCliente(c);
+                const lista = pendencias(c);
+                return (
+                  <li key={c.id} className="cartao">
+                    <div className="c-topo">
+                      <span className={`mono ${c.estagio === "ATIVO" ? "m-ativo" : "m-impl"}`} aria-hidden="true">
+                        {iniciais(c.nome).slice(0, 1)}
+                      </span>
+                      <div>
+                        <a className="c-nome" href={`/clientes/${c.id}`}>
+                          {c.nome}
+                        </a>
+                        <small>{c.cidade ? `${c.cidade}${c.uf ? `, ${c.uf}` : ""}` : "Cidade não informada"}</small>
+                      </div>
+                      <Icone nome="dir" className="ico c-ir" />
+                    </div>
+                    <div className="c-selos">
+                      {c.estagio === "ATIVO" ? (
+                        <span className="selo selo-ativo">
+                          <span className="bolinha" aria-hidden="true" />
+                          {ESTAGIOS.ATIVO}
+                        </span>
+                      ) : (
+                        <span className="selo selo-implant">{ESTAGIOS.IMPLANTACAO}</span>
+                      )}
+                      {lista.length ? (
+                        lista.map((p) => (
+                          <span key={p} className="selo selo-atencao">
+                            {TEXTOS_PENDENCIA[p]}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="selo selo-ok">
+                          <Icone nome="check" className="ico" />
+                          Em dia
+                        </span>
+                      )}
+                    </div>
+                    {c.estagio !== "ATIVO" ? (
+                      <span className="lin" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span className={`trilho-etapas e${e.feitas}`} aria-hidden="true">
+                          <i />
+                          <i />
+                          <i />
+                          <i />
+                        </span>
+                        <small style={{ fontSize: 12, color: "var(--texto-2)" }}>
+                          {e.feitas} de {e.total} etapas{e.proxima === null ? " · pronto" : ""}
+                        </small>
+                      </span>
+                    ) : null}
+                    <dl className="c-dados">
+                      <dt>Sócio dono</dt>
+                      <dd>
+                        {socio.nome ?? socio.detalhe}
+                        {socio.nome ? (
+                          <small style={{ display: "block", fontWeight: 400, fontSize: 12, color: "var(--texto-2)" }}>{socio.detalhe}</small>
+                        ) : null}
+                      </dd>
+                      <dt>Atividade</dt>
+                      <dd>{haQuanto(c.ultimaAtividade, agora)}</dd>
+                      <dt>Equipe</dt>
+                      <dd>
+                        <span className="avs" aria-hidden="true" style={{ justifyContent: "flex-end" }}>
+                          {c.equipe.map((p, i) => (
+                            <span key={p.pessoaId} className={i % 2 ? "b" : undefined} title={p.nome}>
+                              {iniciais(p.nome)}
+                            </span>
+                          ))}
+                        </span>
+                        <span className="sr">{c.equipe.map((p) => p.nome).join(", ")}</span>
+                      </dd>
+                    </dl>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
 
@@ -296,6 +484,7 @@ export function Carteira() {
           </div>
         ) : null}
       </section>
+      <JanelaCadastrar aberta={cadastrar} aoFechar={() => setCadastrar(false)} />
     </MolduraConsole>
   );
 }

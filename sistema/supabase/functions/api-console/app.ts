@@ -285,9 +285,14 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Equipe (PT-24): só administração.
   app.get("/v1/equipe", async (c) => {
-    const linhas = await rpc<{ pessoa_id: string; nome: string; ativa: boolean; funcoes: string[]; desde: string }[]>(
+    const linhas = await rpc<{ pessoa_id: string; nome: string; ativa: boolean; funcoes: string[]; desde: string; senha_criada_em: string | null }[]>(
       "console_equipe", { p_pessoa: pessoa(c) });
-    return c.json({ pessoas: linhas.map((l) => ({ id: l.pessoa_id, nome: l.nome, ativa: l.ativa, funcoes: l.funcoes, desde: l.desde })) });
+    // O e-mail vem do Auth (o banco só guarda o nome); convite pendente = ainda sem senha.
+    const pessoas = await Promise.all(linhas.map(async (l) => ({
+      id: l.pessoa_id, nome: l.nome, ativa: l.ativa, funcoes: l.funcoes, desde: l.desde,
+      email: await deps.admin.emailDe(l.pessoa_id), convitePendente: l.senha_criada_em === null,
+    })));
+    return c.json({ pessoas });
   });
 
   app.post("/v1/equipe", async (c) => {

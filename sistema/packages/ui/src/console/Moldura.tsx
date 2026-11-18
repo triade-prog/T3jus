@@ -1,9 +1,10 @@
 "use client";
-// Moldura do Console (tela aprovada em docs/design/aprovadas/console-carteira.html): menu
-// lateral vinho com as áreas, barra do topo com o caminho e, no pé, quem está usando.
-// As áreas que ainda não têm tela aparecem apagadas, sem link.
+// Moldura do Console (telas aprovadas em docs/design/aprovadas/console-carteira.html e
+// console-v1): menu lateral vinho com as áreas, barra do topo com o caminho e, no pé, quem
+// está usando. As áreas que ainda não têm tela aparecem apagadas, sem link. No celular
+// (até 760 px), a lateral vira gaveta, aberta pela barra vinho do topo; fecha com Esc.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_CONSOLE, type FuncaoConsole } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
@@ -50,7 +51,10 @@ export function useSessaoConsole(): SessaoConsole | null {
   return sessao;
 }
 
-type Area = "inicio" | "clientes";
+type Area = "inicio" | "clientes" | "equipe";
+
+/** Página da Equipe T3jus (só Administração). */
+export const EQUIPE = "/equipe";
 
 const ITENS: { chave: Area | null; nome: string; icone: NomeIcone; href?: string }[] = [
   { chave: "inicio", nome: "Início", icone: "inicio" },
@@ -60,10 +64,6 @@ const AREAS: { nome: string; icone: NomeIcone }[] = [
   { nome: "Comercial", icone: "maleta" },
   { nome: "Financeiro", icone: "moeda" },
   { nome: "Suporte", icone: "escudo" },
-];
-const ADMINISTRACAO: { nome: string; icone: NomeIcone }[] = [
-  { nome: "Equipe", icone: "cracha" },
-  { nome: "Sistema", icone: "ajustes" },
 ];
 
 function ItemApagado({ nome, icone }: { nome: string; icone: NomeIcone }) {
@@ -94,6 +94,24 @@ export function MolduraConsole({
   children: ReactNode;
 }) {
   const [saindo, setSaindo] = useState(false);
+  const [gaveta, setGaveta] = useState(false);
+  const abrir = useRef<HTMLButtonElement>(null);
+  const fechar = useRef<HTMLButtonElement>(null);
+
+  function mudarGaveta(aberta: boolean) {
+    setGaveta(aberta);
+    // O foco vai para dentro da gaveta ao abrir e volta para o Menu ao fechar.
+    requestAnimationFrame(() => (aberta ? fechar.current : abrir.current)?.focus());
+  }
+
+  useEffect(() => {
+    if (!gaveta) return;
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === "Escape") mudarGaveta(false);
+    };
+    document.addEventListener("keydown", aoTeclar);
+    return () => document.removeEventListener("keydown", aoTeclar);
+  }, [gaveta]);
 
   async function sair() {
     setSaindo(true);
@@ -102,13 +120,31 @@ export function MolduraConsole({
   }
 
   const funcao = sessao?.funcoes[0];
+  const administra = sessao?.funcoes.includes("ADMINISTRACAO") ?? false;
   return (
     <div className={`co ${pagina}`}>
       <a className="pular" href="#conteudo">
         Pular para o conteúdo
       </a>
-      <div className="app">
-        <aside className="trilho" aria-label="Console T3jus">
+      <div className={gaveta ? "app gaveta" : "app"}>
+        <header className="barra-cel">
+          <button ref={abrir} className="bb" type="button" aria-controls="trilho" aria-expanded={gaveta} aria-label="Abrir menu"
+            onClick={() => mudarGaveta(true)}>
+            <Icone nome="menu" className="ico" />
+          </button>
+          <a className="marca-cel" href={CARTEIRA}>
+            <b>
+              T<i>3</i>jus
+            </b>
+            <span>Console</span>
+            <span className="sr">, carteira de escritórios</span>
+          </a>
+        </header>
+        <div className="veu-gaveta" onClick={() => mudarGaveta(false)} />
+        <aside className="trilho" id="trilho" aria-label="Console T3jus">
+          <button ref={fechar} className="fechar-menu" type="button" aria-label="Fechar menu" onClick={() => mudarGaveta(false)}>
+            <Icone nome="xis" className="ico" />
+          </button>
           <div className="marca">
             <a className="marca-palavra" href={CARTEIRA} aria-label="T3jus, carteira de escritórios">
               T<b>3</b>jus
@@ -137,18 +173,22 @@ export function MolduraConsole({
             ))}
           </nav>
           <div className="trilho-pe">
-            <nav aria-label="Administração">
-              {ADMINISTRACAO.map((a) => (
-                <ItemApagado key={a.nome} {...a} />
-              ))}
-            </nav>
+            {administra ? (
+              <nav aria-label="Administração">
+                <a className="item" href={EQUIPE} aria-current={atual === "equipe" ? "page" : undefined}>
+                  <Icone nome="cracha" className="ico" />
+                  Equipe
+                </a>
+                <ItemApagado nome="Sistema" icone="ajustes" />
+              </nav>
+            ) : null}
             <div className="quem">
               <span className="av" aria-hidden="true">
                 {sessao ? iniciais(sessao.nome).slice(0, 1) : ""}
               </span>
               <span>
-                <strong>{sessao?.nome ?? " "}</strong>
-                <small>{funcao ? FUNCOES_CONSOLE[funcao] : " "}</small>
+                <strong>{sessao?.nome ?? " "}</strong>
+                <small>{funcao ? FUNCOES_CONSOLE[funcao] : " "}</small>
               </span>
               <button className="sair" type="button" onClick={sair} disabled={saindo} aria-label="Sair do Console">
                 <Icone nome="sair" className="ico" />

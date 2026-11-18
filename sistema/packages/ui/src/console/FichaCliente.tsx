@@ -1,10 +1,9 @@
 "use client";
-// Ficha do cliente no Console (CO-02, PT-20), tela aprovada em
-// docs/design/aprovadas/console-ficha.html: cabeçalho com a implantação e as abas. A aba
-// Sócio mostra o caminho do convite e convida; as outras abas chegam quando as telas delas
-// forem aprovadas.
+// Ficha do cliente no Console (CO-01..05, PT-20, PT-24), telas aprovadas em
+// docs/design/aprovadas/console-ficha.html (aba Sócio) e docs/design/aprovadas/console-v1
+// (as outras abas): a abertura com a implantação, as abas e a área de baixo de cada uma.
 
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import {
   convidarPessoaSchema,
   ESTAGIOS,
@@ -14,49 +13,31 @@ import {
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
+import { AbaContrato } from "./AbaContrato.tsx";
+import { AbaEquipe } from "./AbaEquipe.tsx";
+import { AbaFichaDados } from "./AbaFicha.tsx";
+import { AbaHistorico, AbaNotas } from "./AbaNotasHistorico.tsx";
 import { ABAS_FICHA, type AbaFicha } from "./abas.ts";
 import { conviteVencido, VALIDADE_CONVITE_MS } from "./carteira.ts";
+import { formatarCnpj, type FichaDoCliente, type Nota } from "./ficha.ts";
 import { CARTEIRA, chamarConsole, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
+import { Aviso as AvisoD2 } from "./pecas.tsx";
 import { dataHora, dataLonga, esperando, hora, iniciais } from "./tempo.ts";
 
+export { formatarCnpj, type FichaDoCliente } from "./ficha.ts";
 
-export interface FichaDoCliente {
-  escritorio: { id: string; nome: string; cidade: string | null; uf: string | null; cnpj: string | null; criadoEm: string; versao: number };
-  cliente: { estagio: "IMPLANTACAO" | "ATIVO"; referenciaContrato: string | null; versao: number };
-  socios: SocioCliente[];
-  equipe: { vinculoId: string; pessoaId: string; nome: string; funcao: string }[];
-  situacoes: string[];
-  ultimaAtividade: string;
-  permissoes: string[];
+/** Aviso curto da aba Sócio (aprovada antes do D2): erro, sucesso ou informação. */
+function Aviso({ tom, children }: { tom: "erro" | "ok" | "info"; children: string }) {
+  return <AvisoD2 tom={tom === "erro" ? "urgencia" : tom === "ok" ? "sucesso" : "info"}>{children}</AvisoD2>;
 }
 
-interface Nota {
-  id: string;
-  texto: string;
-  criadoEm: string;
-  autor: { id: string; nome: string | null };
-}
-
-/** "22.914.870/0001-66". */
-export function formatarCnpj(d: string): string {
-  return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
-}
-
-function Aviso({ tom, children }: { tom: "erro" | "ok" | "info"; children: ReactNode }) {
-  return (
-    <div className={`aviso aviso-${tom}`} role={tom === "erro" ? "alert" : "status"}>
-      <Icone nome={tom === "erro" ? "alerta" : "check"} className="ico" />
-      <p>{children}</p>
-    </div>
-  );
-}
-
-function Cabecalho({ f, aoAtivar, ativando, erro }: { f: FichaDoCliente; aoAtivar: () => void; ativando: boolean; erro: ErroApi | null }) {
+function Cabecalho({ f }: { f: FichaDoCliente }) {
   const ids = useId();
   const e = etapasImplantacao({ situacoes: f.situacoes, socios: f.socios, equipe: f.equipe });
   const pode = f.permissoes.includes("console.estagio.mudar");
   const pronta = e.proxima === null;
-  const onde = [f.escritorio.cidade && `${f.escritorio.cidade}${f.escritorio.uf ? `, ${f.escritorio.uf}` : ""}`].filter(Boolean)[0];
+  const onde = f.escritorio.cidade ? `${f.escritorio.cidade}${f.escritorio.uf ? `, ${f.escritorio.uf}` : ""}` : null;
+  const falta = e.lista.filter((x) => !x.feita).map((x) => x.nome);
   return (
     <div className="ficha-cab">
       <div className="esq campo-vinho">
@@ -70,86 +51,114 @@ function Cabecalho({ f, aoAtivar, ativando, erro }: { f: FichaDoCliente; aoAtiva
             <p className="sobretitulo">Escritório</p>
             <h1>{f.escritorio.nome}</h1>
             <p className="meta">
-              <span className={f.cliente.estagio === "ATIVO" ? "selo selo-ativo" : "selo selo-implant"}>{ESTAGIOS[f.cliente.estagio]}</span>
+              {f.cliente.estagio === "ATIVO" ? (
+                <span className="selo selo-ativo">
+                  <span className="bolinha" aria-hidden="true" />
+                  {ESTAGIOS.ATIVO}
+                </span>
+              ) : (
+                <span className="selo selo-implant">{ESTAGIOS.IMPLANTACAO}</span>
+              )}
               {onde ? <span>{onde}</span> : null}
-              {f.escritorio.cnpj ? (
-                <>
-                  <span className="sep" aria-hidden="true" />
-                  <span className="num">{formatarCnpj(f.escritorio.cnpj)}</span>
-                </>
-              ) : null}
+              <span className="sep" aria-hidden="true" />
+              {f.escritorio.cnpj ? <span className="num">{formatarCnpj(f.escritorio.cnpj)}</span> : <span>CNPJ não informado</span>}
               <span className="sep" aria-hidden="true" />
               <span>desde {dataLonga(f.escritorio.criadoEm)}</span>
             </p>
           </div>
         </div>
       </div>
-      <section className="dir campo-ambar" aria-labelledby={`${ids}-impl`}>
-        <p className="sobretitulo" id={`${ids}-impl`}>
-          Implantação
-        </p>
-        {f.cliente.estagio === "ATIVO" ? (
-          <>
-            <p className="grande">
-              Concluída<small>o escritório já usa o Portal</small>
-            </p>
-            <ol className="etapas">
-              {e.lista.map((x) => (
-                <li key={x.chave}>
-                  <span className="b" aria-hidden="true" />
-                  {x.nome}
-                </li>
-              ))}
-            </ol>
-          </>
-        ) : (
-          <>
-            <p className="grande">
-              {e.feitas} de {e.total}
-              <small>etapas</small>
-            </p>
-            <ol className="etapas">
-              {e.lista.map((x) => (
-                <li key={x.chave} className={x.chave === e.proxima ? "agora" : x.feita ? undefined : "falta"}
-                  aria-current={x.chave === e.proxima ? "step" : undefined}>
-                  <span className="b" aria-hidden="true" />
-                  {x.nome}
-                  <span className="sr">{x.feita ? ", feita" : ", falta"}</span>
-                </li>
-              ))}
-            </ol>
-            {pode ? (
+      {f.cliente.estagio === "ATIVO" ? (
+        <section className="dir campo-ambar" aria-labelledby={`${ids}-impl`}>
+          <p className="sobretitulo" id={`${ids}-impl`}>
+            Cliente ativo
+          </p>
+          <p className="grande">
+            Ativo<small>implantação concluída</small>
+          </p>
+          <p className="dica" style={{ fontSize: 13 }}>
+            O escritório já usa o Portal. O motivo da mudança está no histórico.
+          </p>
+        </section>
+      ) : (
+        <section className="dir campo-ambar" aria-labelledby={`${ids}-impl`}>
+          <p className="sobretitulo" id={`${ids}-impl`}>
+            Implantação
+          </p>
+          <p className="grande">
+            {e.feitas} de {e.total}
+            <small>etapas</small>
+          </p>
+          <ol className="etapas">
+            {e.lista.map((x) => (
+              <li key={x.chave} className={x.chave === e.proxima ? "agora" : x.feita ? undefined : "falta"}
+                aria-current={x.chave === e.proxima ? "step" : undefined}>
+                <span className="b" aria-hidden="true" />
+                {x.nome}
+                <span className="sr">{x.feita ? ": resolvido" : ": falta"}</span>
+              </li>
+            ))}
+          </ol>
+          {pode ? (
+            pronta ? (
               <>
-                <button className={pronta ? "btn btn-pri" : "btn btn-sec"} type="button" onClick={aoAtivar}
-                  aria-disabled={!pronta || ativando} aria-describedby={`${ids}-porque`}
-                  disabled={ativando}>
-                  {ativando ? "Passando…" : "Passar para ativo"}
+                <a className="btn btn-sec" href={`/clientes/${f.escritorio.id}/contrato?mudar=1`} style={{ alignSelf: "flex-start" }}>
+                  Passar para ativo
+                </a>
+                <p className="dica">Tudo pronto. Pode concluir a implantação.</p>
+              </>
+            ) : (
+              <>
+                <button className="btn btn-sec" type="button" aria-disabled="true" aria-describedby={`${ids}-porque`}>
+                  Passar para ativo
                 </button>
                 <p className="dica" id={`${ids}-porque`}>
-                  {pronta
-                    ? "Tudo pronto: o escritório passa a contar como ativo na carteira."
-                    : `Libera quando as ${e.total} etapas estiverem feitas. Falta: ${e.lista.filter((x) => !x.feita).map((x) => x.nome).join(", ")}.`}
+                  {falta.length === 1 && e.proxima === "SOCIO_NO_PORTAL"
+                    ? "Libera quando o sócio entrar no Portal."
+                    : `Libera quando as ${e.total} etapas estiverem feitas. Falta: ${falta.join(", ")}.`}
                 </p>
               </>
-            ) : null}
-            {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
-          </>
-        )}
-      </section>
+            )
+          ) : null}
+        </section>
+      )}
     </div>
   );
 }
 
-function Abas({ id, aba, f }: { id: string; aba: AbaFicha; f: FichaDoCliente }) {
+const NOMES_CURTOS: Partial<Record<AbaFicha, [string, string]>> = {
+  contrato: ["Contrato", " e documentos"],
+  equipe: ["Equipe", " T3jus"],
+  notas: ["Notas", " internas"],
+};
+
+function Abas({ id, aba, f, notas }: { id: string; aba: AbaFicha; f: FichaDoCliente; notas: number | null }) {
   const semSocioNoPortal = !f.socios.some((s) => s.senhaCriadaEm);
+  const abas = (Object.keys(ABAS_FICHA) as AbaFicha[]).filter((a) => a !== "historico" || f.permissoes.includes("console.historico.ver"));
   return (
     <nav className="abas" aria-label="Seções do escritório">
-      {(Object.keys(ABAS_FICHA) as AbaFicha[]).map((a) => (
-        <a key={a} href={`/clientes/${id}/${a}`} aria-current={a === aba ? "page" : undefined}>
-          {ABAS_FICHA[a]}
-          {a === "socio" && semSocioNoPortal ? <span className="alerta" role="img" aria-label="tem pendência" /> : null}
-        </a>
-      ))}
+      {abas.map((a) => {
+        const curto = NOMES_CURTOS[a];
+        return (
+          <a key={a} href={`/clientes/${id}/${a}`} aria-current={a === aba ? "page" : undefined}>
+            {curto ? (
+              <span>
+                {curto[0]}
+                <span className="so-pc-i">{curto[1]}</span>
+              </span>
+            ) : (
+              ABAS_FICHA[a]
+            )}
+            {a === "notas" && notas ? <span className="q">{notas}</span> : null}
+            {a === "socio" && semSocioNoPortal ? (
+              <>
+                <span className="alerta" aria-hidden="true" />
+                <span className="sr">, tem pendência</span>
+              </>
+            ) : null}
+          </a>
+        );
+      })}
     </nav>
   );
 }
@@ -438,17 +447,25 @@ function Lateral({ f, nota }: { f: FichaDoCliente; nota: Nota | null }) {
   );
 }
 
-export function FichaCliente({ id, aba }: { id: string; aba: AbaFicha }) {
+export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
+  id: string;
+  aba: AbaFicha;
+  /** Abrir a aba Ficha já editando (atalho de "Sem contato"). */
+  editar?: boolean;
+  /** Abrir a janela de mudar o estágio (atalho do cabeçalho). */
+  mudar?: boolean;
+  /** Escritório recém-cadastrado: mostra o aviso uma vez. */
+  cadastrado?: boolean;
+}) {
   const sessao = useSessaoConsole();
   const [f, setF] = useState<FichaDoCliente | null>(null);
-  const [nota, setNota] = useState<Nota | null>(null);
+  const [notas, setNotas] = useState<Nota[] | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
-  const [erroEstagio, setErroEstagio] = useState<ErroApi | null>(null);
-  const [ativando, setAtivando] = useState(false);
   const [agora, setAgora] = useState(() => new Date());
   const carregado = useRef(false);
 
   const carregar = useCallback(async () => {
+    setErro(null);
     const r = await chamarConsole<FichaDoCliente>(`/v1/clientes/${id}`);
     setAgora(new Date());
     if (!r.ok) {
@@ -456,11 +473,11 @@ export function FichaCliente({ id, aba }: { id: string; aba: AbaFicha }) {
       return;
     }
     setF(r.dados);
-    if (r.dados.permissoes.includes("console.notas.ver")) {
+    if (r.dados.permissoes.includes("console.notas.ver") && aba !== "notas") {
       const n = await chamarConsole<{ notas: Nota[] }>(`/v1/clientes/${id}/notas`);
-      if (n.ok) setNota(n.dados.notas[0] ?? null);
+      if (n.ok) setNotas(n.dados.notas);
     }
-  }, [id]);
+  }, [id, aba]);
 
   useEffect(() => {
     if (carregado.current) return;
@@ -468,17 +485,8 @@ export function FichaCliente({ id, aba }: { id: string; aba: AbaFicha }) {
     void carregar();
   }, [carregar]);
 
-  async function ativar() {
-    if (!f) return;
-    const e = etapasImplantacao({ situacoes: f.situacoes, socios: f.socios, equipe: f.equipe });
-    if (e.proxima !== null) return;
-    setAtivando(true);
-    setErroEstagio(null);
-    const r = await chamarConsole(`/v1/clientes/${id}/estagio`, { metodo: "PUT", corpo: { versao: f.cliente.versao, estagio: "ATIVO" } });
-    setAtivando(false);
-    if (!r.ok) return setErroEstagio(r.erro);
-    await carregar();
-  }
+  const recarregar = useCallback(() => carregar(), [carregar]);
+  const nota = notas?.[0] ?? null;
 
   const trilha = [
     { nome: "Console", href: CARTEIRA },
@@ -494,18 +502,54 @@ export function FichaCliente({ id, aba }: { id: string; aba: AbaFicha }) {
             <Icone nome="esquerda" className="ico ico-s" />
             Carteira de escritórios
           </a>
-          <Aviso tom="erro">
-            {erro.codigo === "NOT_FOUND" || erro.codigo === "FORBIDDEN"
-              ? "Este escritório não está na sua carteira, ou o endereço está errado."
-              : textoDoErro(erro)}
-          </Aviso>
+          {erro.codigo === "NOT_FOUND" || erro.codigo === "FORBIDDEN" ? (
+            <AvisoD2 tom="urgencia" titulo="Este escritório não está na sua carteira.">
+              Ou o endereço está errado. Volte para a carteira e abra o escritório por lá.
+            </AvisoD2>
+          ) : (
+            <div className="estado estado-erro" role="alert">
+              <span className="icone-estado">
+                <Icone nome="alerta" className="ico" />
+              </span>
+              <h1>Não deu para abrir a ficha</h1>
+              <p>O servidor não respondeu. Nada do que estava salvo se perdeu. Tente de novo em instantes.</p>
+              <div className="acoes">
+                <button className="btn btn-pri" type="button" onClick={() => void carregar()}>
+                  <Icone nome="reenviar" className="ico" />
+                  Tentar de novo
+                </button>
+                <a className="btn btn-sec" href={CARTEIRA}>
+                  Voltar para a carteira
+                </a>
+              </div>
+            </div>
+          )}
         </>
       ) : f === null ? (
-        <div className="carregando" aria-busy="true" />
+        <div aria-busy="true">
+          <p className="sr" role="status">
+            Carregando a ficha do escritório…
+          </p>
+          <div className="ficha-cab" aria-hidden="true">
+            <div className="esq campo-vinho cab-esq">
+              <span className="esqueleto esq-linha" style={{ width: 180, opacity: 0.35 }} />
+              <span className="esqueleto esq-linha" style={{ width: "60%", height: 40, opacity: 0.35 }} />
+            </div>
+            <div className="dir campo-ambar cab-esq">
+              <span className="esqueleto esq-linha" style={{ width: "40%", opacity: 0.5 }} />
+              <span className="esqueleto esq-linha" style={{ width: "50%", height: 34, opacity: 0.5 }} />
+            </div>
+          </div>
+        </div>
       ) : (
         <>
-          <Cabecalho f={f} aoAtivar={ativar} ativando={ativando} erro={erroEstagio} />
-          <Abas id={id} aba={aba} f={f} />
+          <Cabecalho f={f} />
+          <Abas id={id} aba={aba} f={f} notas={notas ? notas.length : null} />
+          {cadastrado ? (
+            <AvisoD2 tom="sucesso" className="toast" titulo="Escritório cadastrado.">
+              Você está atribuída como Administração. Complete a ficha quando puder.
+            </AvisoD2>
+          ) : null}
           {aba === "socio" ? (
             <div className="grade">
               <div className="col lista-socios">
@@ -522,11 +566,20 @@ export function FichaCliente({ id, aba }: { id: string; aba: AbaFicha }) {
               </div>
               <Lateral f={f} nota={nota} />
             </div>
+          ) : aba === "ficha" ? (
+            <AbaFichaDados f={f} nota={nota} recarregar={recarregar} editarAoAbrir={editar} />
+          ) : aba === "contrato" ? (
+            <AbaContrato f={f} recarregar={recarregar} mudarAoEntrar={mudar} />
+          ) : aba === "equipe" ? (
+            <AbaEquipe f={f} eu={sessao?.pessoaId ?? null} recarregar={recarregar} />
+          ) : aba === "notas" ? (
+            <AbaNotas f={f} aoCarregar={setNotas} />
+          ) : f.permissoes.includes("console.historico.ver") ? (
+            <AbaHistorico f={f} />
           ) : (
-            <section className="folha em-breve" aria-labelledby="aba-em-breve">
-              <h2 id="aba-em-breve">{ABAS_FICHA[aba]}</h2>
-              <p>A tela desta aba está sendo desenhada e chega depois da aprovação. Por enquanto, a aba Sócio já funciona.</p>
-            </section>
+            <AvisoD2 tom="info" titulo="O histórico é da Implantação e da Administração.">
+              Sua função vê a ficha, os documentos e as notas deste cliente.
+            </AvisoD2>
           )}
         </>
       )}

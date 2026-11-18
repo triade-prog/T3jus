@@ -96,7 +96,8 @@ export const contratoSchema = z.object({ versao, referenciaContrato: textoOpcion
 export const estagioSchema = z.object({
   versao,
   estagio: z.enum(chaves(ESTAGIOS)),
-  motivo: textoOpcional(300),
+  /** Obrigatório: vai para o histórico do cliente (decisão da Carol, 18/11/2026). */
+  motivo: z.string().trim().min(1).max(300),
 });
 
 export const convidarPessoaSchema = z.object({

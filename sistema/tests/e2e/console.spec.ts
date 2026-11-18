@@ -1,63 +1,10 @@
 // Console: carteira de escritórios e ficha do cliente, aba Sócio (telas aprovadas:
 // docs/design/aprovadas/console-carteira.html e console-ficha.html). A API é simulada
 // (page.route): aqui se testa a tela, a acessibilidade e o que ela manda para o servidor. As
-// regras de quem vê o quê estão nos testes do banco e das APIs.
-import { expect, test, type Page } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
-
-const C = "http://localhost:3001";
-const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-const agora = Date.now();
-const h = (n: number) => new Date(agora - n * 3600e3).toISOString();
-const d = (n: number) => h(n * 24);
-const id = (n: number) => `e0000000-0000-4000-8000-00000000000${n}`;
-const CA = { pessoaId: "c0000000-0000-4000-8000-000000000001", nome: "Carol Andrade", funcoes: ["ADMINISTRACAO"] };
-const IN = { pessoaId: "c0000000-0000-4000-8000-000000000002", nome: "Inês Nogueira", funcoes: ["IMPLANTACAO"] };
-const socio = (n: number, nome: string, desde: string, senha: string | null) => ({
-  vinculoId: `f0000000-0000-4000-8000-00000000000${n}`, pessoaId: `a0000000-0000-4000-8000-00000000000${n}`, nome, desde,
-  conviteEnviadoEm: desde, convidadoPor: "Carol Andrade", senhaCriadaEm: senha,
-});
-const base = { cidade: "Recife", uf: "PE", funcoes: ["ADMINISTRACAO"], equipe: [CA] };
-const CLIENTES = [
-  { ...base, id: id(1), nome: "Jatobá Advogados", estagio: "IMPLANTACAO", situacoes: ["SEM_SOCIO", "SEM_CONTATO", "SEM_CONTRATO"], criadoEm: d(3), socios: [], ultimaAtividade: d(3) },
-  { ...base, id: id(2), nome: "Cedro & Lima Advocacia", estagio: "IMPLANTACAO", situacoes: [], criadoEm: d(14), socios: [socio(2, "Renata Lima", d(6), null)], equipe: [CA, IN], ultimaAtividade: d(4) },
-  { ...base, id: id(3), nome: "Ribeiro & Matos Advocacia", cidade: "São Paulo", uf: "SP", estagio: "IMPLANTACAO", situacoes: [], criadoEm: d(20), socios: [socio(3, "Marina Ribeiro", d(12), d(11))], ultimaAtividade: h(3) },
-  { ...base, id: id(4), nome: "Aroeira Sociedade de Advogados", cidade: "Belo Horizonte", uf: "MG", estagio: "ATIVO", situacoes: [], criadoEm: d(90), socios: [socio(4, "Paulo Aroeira", d(80), d(77))], ultimaAtividade: d(1) },
-];
-const SESSAO = { pessoaId: CA.pessoaId, nome: "Carol Andrade", funcoes: ["ADMINISTRACAO"], acoes: [] };
-const PERMISSOES = ["console.estagio.mudar", "console.ficha.ver", "console.notas.ver", "console.socios.convidar"];
-
-function ficha(c: (typeof CLIENTES)[number], permissoes = PERMISSOES) {
-  return {
-    escritorio: { id: c.id, nome: c.nome, cidade: c.cidade, uf: c.uf, cnpj: "22914870000166", criadoEm: c.criadoEm, versao: 3 },
-    cliente: { estagio: c.estagio, referenciaContrato: "Contrato 2026/031", versao: 2 },
-    socios: c.socios.map((s) => ({ ...s, email: "renata@cedroelima.adv.br" })),
-    equipe: c.equipe.map((p) => ({ vinculoId: p.pessoaId, pessoaId: p.pessoaId, nome: p.nome, funcao: p.funcoes[0] })),
-    situacoes: c.situacoes, ultimaAtividade: c.ultimaAtividade, permissoes,
-  };
-}
-
-type Resposta = { status?: number; corpo: unknown };
-async function simular(page: Page, rotas: Record<string, Resposta | Resposta[]>, pedidos: { metodo: string; caminho: string; corpo: unknown }[] = []) {
-  await page.route("**/api/v1/**", async (rota) => {
-    const url = new URL(rota.request().url());
-    const caminho = url.pathname.replace(/^\/api/, "");
-    const metodo = rota.request().method();
-    pedidos.push({ metodo, caminho, corpo: rota.request().postDataJSON() });
-    const r = rotas[`${metodo} ${caminho}`] ?? rotas[caminho];
-    const lista = Array.isArray(r) ? r : r ? [r] : [{ status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } }];
-    const vez = pedidos.filter((p) => p.caminho === caminho && p.metodo === metodo).length - 1;
-    const x = lista[Math.min(vez, lista.length - 1)]!;
-    await rota.fulfill({ status: x.status ?? 200, contentType: "application/json", body: JSON.stringify(x.corpo) });
-  });
-  return pedidos;
-}
-
-async function semViolacoes(page: Page) {
-  const axe = await new AxeBuilder({ page }).withTags(TAGS).analyze();
-  expect(axe.violations).toEqual([]);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-}
+// regras de quem vê o quê estão nos testes do banco e das APIs. As outras telas do Console v1
+// estão em console-v1.spec.ts. No celular, a tabela da carteira vira cartões.
+import { expect, test } from "@playwright/test";
+import { C, CLIENTES, d, ficha, id, IN, SESSAO, semViolacoes, simular } from "./console-dados.ts";
 
 test.describe("Console: carteira de escritórios", () => {
   test("mostra só a carteira da pessoa, com resumo, o que pede agora, filtro e busca", async ({ page }) => {
@@ -72,11 +19,11 @@ test.describe("Console: carteira de escritórios", () => {
     await expect(pedem.getByRole("link").first()).toContainText("Passar para ativo");
     await expect(pedem.getByRole("link").first()).toHaveAttribute("href", `/clientes/${id(3)}/socio`);
     // Pendências primeiro: Jatobá (3) vem antes.
-    const linhas = page.locator("tbody tr");
+    const linhas = page.locator("tbody tr:visible, .cartoes > li:visible");
     await expect(linhas).toHaveCount(4);
     await expect(linhas.first()).toContainText("Jatobá Advogados");
     await expect(linhas.first()).toContainText("Ainda não convidado");
-    await expect(page.locator("tbody tr", { hasText: "Cedro" })).toContainText("Link do convite venceu");
+    await expect(page.locator("tbody tr:visible, .cartoes > li:visible", { hasText: "Cedro" })).toContainText("Link do convite venceu");
     await semViolacoes(page);
 
     await page.getByRole("button", { name: /Ativos/ }).click();
@@ -156,29 +103,37 @@ test.describe("Console: ficha do cliente, aba Sócio", () => {
     expect(pedidos.find((p) => p.metodo === "POST")?.corpo).toEqual({ nome: "Marcos Jatobá", email: "marcos@jatoba.adv.br" });
   });
 
-  test("implantação pronta: passar para ativo manda a versão lida", async ({ page }) => {
+  test("implantação pronta: o cabeçalho leva para mudar o estágio, com o motivo obrigatório", async ({ page }) => {
     const c = CLIENTES[2]!;
     const pedidos = await simular(page, {
       "/v1/sessao": { corpo: SESSAO },
-      [`/v1/clientes/${c.id}`]: [{ corpo: ficha(c) }, { corpo: { ...ficha(c), cliente: { estagio: "ATIVO", referenciaContrato: "Contrato 2026/031", versao: 3 } } }],
+      [`/v1/clientes/${c.id}`]: [{ corpo: ficha(c) }, { corpo: ficha(c) }, { corpo: { ...ficha(c), cliente: { estagio: "ATIVO", referenciaContrato: "Contrato 2026/031", versao: 3 } } }],
       [`/v1/clientes/${c.id}/notas`]: { corpo: { notas: [] } },
+      [`/v1/clientes/${c.id}/documentos`]: { corpo: { documentos: [] } },
       [`PUT /v1/clientes/${c.id}/estagio`]: { corpo: { versao: 3 } },
     });
     await page.goto(`${C}/clientes/${c.id}/socio`);
     await expect(page.getByText("4 de 4")).toBeVisible();
     await expect(page.getByText("Entrou no Portal")).toBeVisible();
-    await page.getByRole("button", { name: "Passar para ativo" }).click();
-    await expect(page.getByText("Concluída")).toBeVisible();
-    expect(pedidos.find((p) => p.metodo === "PUT")?.corpo).toEqual({ versao: 2, estagio: "ATIVO" });
+    await page.getByRole("link", { name: "Passar para ativo" }).click();
+    await expect(page).toHaveURL(`${C}/clientes/${c.id}/contrato?mudar=1`);
+    const janela = page.getByRole("dialog", { name: `Passar ${c.nome} para Ativo?` });
+    await expect(janela).toBeVisible();
+    await expect(janela.getByLabel("Motivo")).toBeFocused();
+    await janela.getByRole("button", { name: "Passar para ativo" }).click();
+    await expect(janela.getByText("Escreva o motivo da mudança. Ele fica no histórico.")).toBeVisible();
+    await expect(janela.getByLabel("Motivo")).toHaveAttribute("aria-invalid", "true");
+    expect(pedidos.filter((p) => p.metodo === "PUT")).toEqual([]);
+    await semViolacoes(page);
+    await janela.getByLabel("Motivo").fill("Sócia entrou no Portal e o contrato está assinado.");
+    await janela.getByRole("button", { name: "Passar para ativo" }).click();
+    await expect(page.getByText(`${c.nome} agora está Ativo.`)).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "PUT")?.corpo).toEqual({ versao: 2, estagio: "ATIVO", motivo: "Sócia entrou no Portal e o contrato está assinado." });
   });
 
-  test("abas sem tela aprovada avisam; aba inexistente não existe", async ({ page }) => {
+  test("aba inexistente não existe", async ({ page }) => {
     const c = CLIENTES[3]!;
-    await simular(page, { "/v1/sessao": { corpo: SESSAO }, [`/v1/clientes/${c.id}`]: { corpo: ficha(c, ["console.ficha.ver"]) } });
-    await page.goto(`${C}/clientes/${c.id}/historico`);
-    await expect(page.getByRole("heading", { level: 2, name: "Histórico" })).toBeVisible();
-    await expect(page.getByText(/chega depois da aprovação/)).toBeVisible();
-    await semViolacoes(page);
+    await simular(page, { "/v1/sessao": { corpo: SESSAO } });
     const r = await page.goto(`${C}/clientes/${c.id}/qualquer`);
     expect(r?.status()).toBe(404);
   });
@@ -186,6 +141,6 @@ test.describe("Console: ficha do cliente, aba Sócio", () => {
   test("cliente fora da carteira: aviso sem detalhes", async ({ page }) => {
     await simular(page, { "/v1/sessao": { corpo: SESSAO }, [`/v1/clientes/${id(9)}`]: { status: 403, corpo: { erro: { codigo: "FORBIDDEN" } } } });
     await page.goto(`${C}/clientes/${id(9)}/socio`);
-    await expect(page.getByText("Este escritório não está na sua carteira, ou o endereço está errado.")).toBeVisible();
+    await expect(page.getByText("Este escritório não está na sua carteira.")).toBeVisible();
   });
 });

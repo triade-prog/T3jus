@@ -120,9 +120,16 @@ Deno.test("PT-19 e CO-02: conflito e CNPJ repetido chegam com os detalhes do ban
 
 Deno.test("CO-01: ativo não volta para implantação (transição proibida)", async () => {
   const m = montar({ handlers: { console_mudar_estagio: () => erroBanco("TC023") } });
-  const r = await m.pedir(`/v1/clientes/${IPE}/estagio`, { metodo: "PUT", cookie: await entrar(m), corpo: { versao: 3, estagio: "IMPLANTACAO" } });
+  const r = await m.pedir(`/v1/clientes/${IPE}/estagio`, { metodo: "PUT", cookie: await entrar(m), corpo: { versao: 3, estagio: "IMPLANTACAO", motivo: "Voltar" } });
   assertEquals(r.status, 409);
   assertEquals((await erro(r)).codigo, "INVALID_TRANSITION");
+});
+
+Deno.test("CO-01: sem motivo, o estágio não muda", async () => {
+  const m = montar();
+  const r = await m.pedir(`/v1/clientes/${IPE}/estagio`, { metodo: "PUT", cookie: await entrar(m), corpo: { versao: 3, estagio: "ATIVO", motivo: " " } });
+  assertEquals(r.status, 400);
+  assertEquals(m.chamadas.some((c) => c.funcao === "console_mudar_estagio"), false);
 });
 
 Deno.test("PT-20: convite do sócio cria a conta e manda o link para o Portal", async () => {
@@ -280,4 +287,17 @@ Deno.test("as listas do domínio (funções, situações, UFs) são as mesmas do
   for (const f of Object.keys(FUNCOES_CONSOLE)) assert(migration.includes(`('${f}', '`), f);
   for (const s of Object.keys(SITUACOES)) assert(migration.includes(`'${s}'`), s);
   for (const uf of UFS) assert(migration.includes(`'${uf}'`), uf);
+});
+
+Deno.test("PT-24: a Equipe T3jus traz o e-mail do Auth e o convite pendente", async () => {
+  const m = montar({
+    contas: { "helena@triade.exemplo": RENATA },
+    handlers: {
+      console_equipe: () => [{ pessoa_id: RENATA, nome: "Helena Prado", ativa: true, funcoes: ["SUPORTE"], desde: "2026-11-18T10:00:00Z", senha_criada_em: null }],
+    },
+  });
+  const r = await m.pedir("/v1/equipe", { cookie: await entrar(m) });
+  assertEquals(await r.json(), {
+    pessoas: [{ id: RENATA, nome: "Helena Prado", ativa: true, funcoes: ["SUPORTE"], desde: "2026-11-18T10:00:00Z", email: "helena@triade.exemplo", convitePendente: true }],
+  });
 });

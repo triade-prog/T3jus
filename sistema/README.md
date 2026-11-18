@@ -116,14 +116,14 @@ Regras da senha: 12 caracteres ou mais e fora das listas de senhas vazadas. A AP
 
 ### Telas do Console (F1.5)
 
-`packages/ui/src/console/` traz a moldura (`MolduraConsole`), a carteira (`Carteira`) e a ficha (`FichaCliente`) das telas aprovadas em `docs/design/aprovadas/console-carteira.html` e `console-ficha.html`. O estilo é `console.css`, copiado do desenho com escopo `.co`; em tela estreita o menu vira faixa no topo e a tabela vira cartões, até a moldura de celular ser aprovada. As regras da carteira (pendências, "Pedem você agora", busca e ordem) ficam em `carteira.ts`, com testes.
+`packages/ui/src/console/` traz a moldura (`MolduraConsole`), a carteira (`Carteira`) e a ficha (`FichaCliente`) das telas aprovadas em `docs/design/aprovadas/console-carteira.html` e `console-ficha.html`. O estilo é `console.css`, copiado do desenho com escopo `.co`; até 760px vale a moldura de celular (barra no topo e menu em gaveta) e a tabela vira cartões. As regras da carteira (pendências, "Pedem você agora", busca e ordem) ficam em `carteira.ts`, com testes.
 
 | Rota | O que faz |
 |---|---|
 | `/` | Carteira (`GET /v1/clientes`): só os clientes atribuídos a quem entrou, com estágio, etapas da implantação, pendências, sócio, equipe e última atividade (`console_carteira`, migration `0110`). |
 | `/clientes/[id]` | Abre a ficha na aba Sócio. |
 | `/clientes/[id]/socio` | Cabeçalho com a implantação (Ficha, Contrato, Equipe, Sócio no Portal) e "Passar para ativo" quando as quatro estão feitas. Caminho do convite de cada sócio (enviado, senha criada em `pessoas.senha_criada_em`), reenviar (`POST /v1/clientes/:id/socios/:vinculo/reenviar`) e convidar outro sócio. O e-mail do sócio vem do Auth, nunca do banco. |
-| `/clientes/[id]/{ficha,contrato,equipe,notas,historico}` | Ainda sem tela aprovada: mostram o aviso. |
+| `/clientes/[id]/{ficha,contrato,equipe,notas,historico}` | Abas do Console v1, abaixo. |
 
 O que o desenho mostra e ainda não tem dado: busca global e avisos no topo, plano do cliente, OAB e WhatsApp do sócio, "e-mail aberto" no caminho do convite, link do convite para copiar e prazo de implantação em dias.
 
@@ -137,3 +137,18 @@ O arquivo vai direto do navegador para o Storage, num bucket privado (`documento
 4. `POST /v1/clientes/:id/documentos/:doc/abrir` devolve um link de 60 segundos e registra a abertura no histórico interno.
 
 A conferência com o Storage de verdade fica para quando o projeto Supabase existir (E1); os testes usam um Storage falso.
+
+### Console v1 (F1.8)
+
+Telas aprovadas em `docs/design/aprovadas/console-v1/`, programadas em `packages/ui/src/console/`. As peças comuns (aviso, estado vazio e de erro, janela, erro preso ao campo, carregando) ficam em `pecas.tsx`.
+
+| Rota | O que faz |
+|---|---|
+| `/` | Carteira com "Cadastrar escritório" (só quem tem `console.escritorios.criar`); ao cadastrar, abre a ficha nova. |
+| `/clientes/[id]/ficha` | Ver e editar a ficha (`AbaFicha.tsx`, regras em `ficha.ts`). Erros presos aos campos e resumo no topo. No conflito (409) mostra quem salvou antes e a hora (`fichaAlteradaPor`/`fichaAlteradaEm`, migration `0130`) e os campos que mudaram. |
+| `/clientes/[id]/contrato` | Referência do contrato (só Administração), documentos (envio direto ao Storage com progresso, fila, abrir e baixar) e estágio. Passar para ativo pede as 4 etapas e um motivo, obrigatório também no servidor. `?mudar=1` abre a janela do estágio. |
+| `/clientes/[id]/equipe` | Quem atende o cliente; a Administração atribui (só funções que a pessoa tem) e retira. |
+| `/clientes/[id]/notas` e `/historico` | Notas internas (até 2.000 caracteres) e histórico em frases, por dia, de 20 em 20. |
+| `/equipe` | Equipe T3jus, só para a Administração: e-mail (do Auth) e convite pendente (`senha_criada_em` vazio), cadastrar, mudar funções, desativar e reativar (com as funções em branco), e o histórico da equipe. |
+
+Ainda sem dado: busca global e avisos no topo, e a contagem de documentos nas abas.
