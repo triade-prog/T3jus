@@ -337,7 +337,8 @@ begin
       left join pessoas t on t.id = (h.dados ->> 'passou_para')::uuid
      where h.escritorio_id = p_escritorio and not h.interno
        and h.acao in ('equipe.convidada', 'equipe.areas_mudadas', 'equipe.convite_reenviado', 'equipe.convite_cancelado',
-                      'equipe.retirada', 'socio.convidado', 'escritorio.exportado')
+                      'equipe.retirada', 'socio.convidado', 'socio.convite_reenviado', 'escritorio.exportado',
+                      'suporte.link_senha', 'suporte.desconectou', 'suporte.tirou_autenticador')
        and (p_antes is null or h.id < p_antes)
      order by h.id desc
      limit least(greatest(coalesce(p_limite, 50), 1), 200);

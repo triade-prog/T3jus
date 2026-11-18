@@ -181,3 +181,23 @@ Telas aprovadas pela Carol em 18/11/2026, em `docs/design/aprovadas/portal-v1/`.
   - `/meu-escritorio` é a área Escritório. O `/escritorio` continua sendo a escolha do escritório depois de entrar.
 - **Exportar:** o arquivo JSON fica na memória da página. "Salvar de novo" não gera outra exportação.
 - **Testes:** `tests/e2e/portal-v1.spec.ts` roda no celular e no computador, com axe. `packages/ui/src/portal/portal.test.ts` testa as regras de tela (convite vencido, frases do histórico, nome do arquivo).
+
+### Suporte de acesso do Console (F1.3, PT-23)
+
+Tela aprovada pela Carol em 18/11/2026, em `docs/design/aprovadas/console-suporte/`. O código fica em `packages/ui/src/console/Suporte.tsx` (regras em `suporte.ts`), na rota `/suporte` do Console.
+
+- **Quem vê:** Suporte e Administração (`console.suporte.ver` e `console.suporte.agir`, migration `0150`). O item Suporte do menu só aparece para quem tem a ação. A busca e a ficha só mostram pessoas dos escritórios em que quem busca tem vínculo (PT-24). Uma pessoa fora deles responde como inexistente.
+- **Rotas da api-console:**
+  - `GET /v1/suporte/pessoas?q=` busca por nome ou e-mail;
+  - `GET /v1/suporte/pessoas/:id` monta a ficha: o banco dá os escritórios e os aparelhos, e o Auth dá o e-mail, a última entrada e o autenticador;
+  - `GET /v1/suporte/pessoas/:id/historico`;
+  - `POST .../link-senha`, `.../desconectar`, `.../tirar-autenticador` (com `identidadeConferida: true`) e `.../reenviar-convite`, todas com `motivo`.
+- **Regras:**
+  - a senha e o link nunca passam pelo Console; o link vai pelo Auth só para o e-mail cadastrado, com o mesmo limite de 3 por hora da recuperação;
+  - o e-mail nunca muda por esta tela;
+  - o motivo fica só no histórico interno; o histórico da equipe do Portal recebe o evento sem o motivo, para o sócio dono saber;
+  - desconectar apaga as linhas de `auth.sessions` da pessoa (o Auth recusa o token de uma sessão apagada). Por isso o papel `dominio` lê `auth.users` (id e e-mail) e lê e apaga `auth.sessions`;
+  - nas janelas, o e-mail aparece mascarado (`ma***@dominio`).
+- **Atalho:** a aba Sócio da ficha do cliente mostra "Suporte de acesso" para quem tem a ação.
+- **Testes:** pgTAP `015_suporte_acesso_test.sql`, Deno `api-console/suporte_test.ts`, vitest `console/suporte.test.ts` e e2e `tests/e2e/console-suporte.spec.ts` (celular e computador, com axe).
+- **Pendente (F1.12):** o e-mail de aviso quando o suporte tira o autenticador e a data da última troca de senha.

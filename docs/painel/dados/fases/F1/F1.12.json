@@ -1,0 +1,12 @@
+{
+  "id": "F1.12",
+  "texto": "Suporte de acesso: e-mail de aviso à pessoa quando o suporte tira o autenticador, e a data da última troca de senha na ficha de acesso",
+  "peca": "C3",
+  "refs": [
+    "PT-23"
+  ],
+  "status": "pendente",
+  "ordem": 32,
+  "nota": "A ação já fica no histórico interno e no da equipe do Portal (decisão 3 da Carol). O aviso por e-mail pede um remetente de e-mails do sistema, que ainda não existe; a última troca de senha pede gravar o evento acesso.senha_trocada.",
+  "proximo": "Quando houver o envio de e-mails do sistema, mandar o aviso de autenticador tirado e gravar acesso.senha_trocada para mostrar a última troca"
+}

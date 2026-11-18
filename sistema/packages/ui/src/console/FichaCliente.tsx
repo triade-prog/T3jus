@@ -12,6 +12,7 @@ import {
   type SocioCliente,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
+import { enderecoPessoa } from "./suporte.ts";
 import { Icone } from "../Icone.tsx";
 import { AbaContrato } from "./AbaContrato.tsx";
 import { AbaEquipe } from "./AbaEquipe.tsx";
@@ -198,6 +199,13 @@ function CartaoSocio({ s, f, agora, aoReenviar }: { s: SocioCliente; f: FichaDoC
           <p className="sobretitulo">Sócio dono · {entrou ? "no Portal" : "convidado"}</p>
           <h2 id={`${ids}-nome`}>{s.nome}</h2>
         </div>
+        {f.permissoes.includes("console.suporte.ver") ? (
+          <a className="btn btn-sec atalho-suporte" href={enderecoPessoa(s.pessoaId)}>
+            <Icone nome="escudo" className="ico" />
+            Suporte de acesso
+            <span className="sr"> de {s.nome}</span>
+          </a>
+        ) : null}
         {entrou ? (
           <span className="selo selo-ativo">
             <Icone nome="check" className="ico" />

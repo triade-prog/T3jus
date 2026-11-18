@@ -5,6 +5,7 @@
   "refs": [
     "PT-23"
   ],
-  "status": "pendente",
-  "ordem": 30
+  "status": "feito",
+  "ordem": 30,
+  "evidencia": "Console › Suporte de acesso (/suporte), tela aprovada em docs/design/aprovadas/console-suporte: busca por nome ou e-mail só nos escritórios atendidos (PT-24), ficha de acesso (e-mail, convite, senha, autenticador, última entrada e número de aparelhos), link de nova senha só para o e-mail cadastrado (mesmo limite de 3 por hora), desconectar de todos os aparelhos (apaga as sessões no Auth), tirar o autenticador com identidade conferida e reenviar convite; motivo obrigatório no histórico interno e o evento sem motivo no histórico da equipe do Portal. Migration 0150, rotas /v1/suporte da api-console, pgTAP 015, Deno suporte_test.ts e e2e console-suporte.spec.ts"
 }

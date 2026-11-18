@@ -9,6 +9,8 @@ export { EscolherEscritorio, filtrarEscritorios, metaEscritorio, quandoEntrou, t
 export { estadoTamanho, textoFaltam } from "./pecas.tsx";
 export { MolduraConsole, useSessaoConsole, chamarConsole, EQUIPE, type SessaoConsole } from "./console/Moldura.tsx";
 export { EquipeT3jus } from "./console/Equipe.tsx";
+export { SuporteAcesso } from "./console/Suporte.tsx";
+export * from "./console/suporte.ts";
 export { Carteira } from "./console/Carteira.tsx";
 export { FichaCliente } from "./console/FichaCliente.tsx";
 export * from "./console/ficha.ts";

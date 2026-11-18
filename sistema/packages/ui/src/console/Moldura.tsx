@@ -51,7 +51,7 @@ export function useSessaoConsole(): SessaoConsole | null {
   return sessao;
 }
 
-type Area = "inicio" | "clientes" | "equipe";
+type Area = "inicio" | "clientes" | "equipe" | "suporte";
 
 /** Página da Equipe T3jus (só Administração). */
 export const EQUIPE = "/equipe";
@@ -63,8 +63,10 @@ const ITENS: { chave: Area | null; nome: string; icone: NomeIcone; href?: string
 const AREAS: { nome: string; icone: NomeIcone }[] = [
   { nome: "Comercial", icone: "maleta" },
   { nome: "Financeiro", icone: "moeda" },
-  { nome: "Suporte", icone: "escudo" },
 ];
+
+/** Suporte de acesso (F1.3): só aparece para quem tem Suporte ou Administração. */
+const SUPORTE_HREF = "/suporte";
 
 function ItemApagado({ nome, icone }: { nome: string; icone: NomeIcone }) {
   return (
@@ -171,6 +173,12 @@ export function MolduraConsole({
             {AREAS.map((a) => (
               <ItemApagado key={a.nome} {...a} />
             ))}
+            {sessao?.acoes.includes("console.suporte.ver") ? (
+              <a className="item" href={SUPORTE_HREF} aria-current={atual === "suporte" ? "page" : undefined}>
+                <Icone nome="escudo" className="ico" />
+                Suporte
+              </a>
+            ) : null}
           </nav>
           <div className="trilho-pe">
             {administra ? (

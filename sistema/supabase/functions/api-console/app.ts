@@ -12,7 +12,13 @@ import {
   COOKIES_CONSOLE,
   criarEscritorioSchema,
   ErroDominio,
+  buscaSuporteSchema,
   iniciarDocumentoSchema,
+  mascararEmail,
+  motivoSuporteSchema,
+  tirarAutenticadorSchema,
+  type FichaAcesso,
+  type PessoaSuporte,
   estagioSchema,
   fichaSchema,
   funcoesSchema,
@@ -25,6 +31,7 @@ import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { sha256Hex } from "../_shared/cripto.ts";
 
 export interface DepsConsole extends DepsSessao {
   admin: AdminAuth;
@@ -111,7 +118,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-console" }));
   sessao.rotas(app);
 
-  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*"]) app.use(rota, sessao.exigirSessao);
+  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -319,6 +326,100 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.get("/v1/equipe/historico", async (c) => {
     const linhas = await rpc<LinhaHistorico[]>("console_historico_equipe", { p_pessoa: pessoa(c), ...paginacao(c) });
     return c.json({ eventos: linhas.map(historico) });
+  });
+
+  // Suporte de acesso (F1.3, PT-23). A busca e a ficha só mostram pessoas dos escritórios que
+  // quem pergunta atende (PT-24); o banco decide. A senha e o link nunca passam por aqui: o
+  // link vai pelo Auth só para o e-mail já cadastrado, e o e-mail nunca muda por esta tela.
+  app.get("/v1/suporte/pessoas", async (c) => {
+    const busca = buscaSuporteSchema.safeParse({ q: c.req.query("q") ?? "" });
+    if (!busca.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["q"] });
+    return c.json({ pessoas: await rpc<PessoaSuporte[]>("console_suporte_buscar", { p_pessoa: pessoa(c), p_termo: busca.data.q }) });
+  });
+
+  /** A ficha de acesso: o banco confere quem pode ver; o Auth diz e-mail, entrada e autenticador. */
+  async function fichaAcesso(c: Context<VarsSessao>, alvo: string): Promise<FichaAcesso> {
+    const ficha = await rpc<Omit<FichaAcesso, "emailConfirmado" | "ultimaEntrada" | "autenticadorDesde">>(
+      "console_suporte_pessoa", { p_pessoa: pessoa(c), p_alvo: alvo });
+    const conta = await deps.admin.conta(alvo);
+    if (!conta) throw new ErroDominio("NOT_FOUND");
+    return { ...ficha, email: conta.email, emailConfirmado: conta.emailConfirmado, ultimaEntrada: conta.ultimaEntrada, autenticadorDesde: conta.autenticadorDesde };
+  }
+
+  /** Para agir: a ficha, com a permissão de agir e o e-mail cadastrado. */
+  async function fichaParaAgir(c: Context<VarsSessao>, alvo: string): Promise<FichaAcesso & { email: string }> {
+    const ficha = await fichaAcesso(c, alvo);
+    if (!ficha.podeAgir) throw new ErroDominio("FORBIDDEN");
+    if (!ficha.email) throw new ErroDominio("NOT_FOUND");
+    return { ...ficha, email: ficha.email };
+  }
+
+  app.get("/v1/suporte/pessoas/:id", async (c) => c.json(await fichaAcesso(c, idDaRota(c, "id"))));
+
+  app.get("/v1/suporte/pessoas/:id/historico", async (c) => {
+    const linhas = await rpc<{ ocorrido_em: string; autor_id: string | null; autor_nome: string | null; acao: string; dados: Record<string, unknown> }[]>(
+      "console_suporte_historico", { p_pessoa: pessoa(c), p_alvo: idDaRota(c, "id") });
+    return c.json({
+      eventos: linhas.map((l) => ({ ocorridoEm: l.ocorrido_em, autor: l.autor_id ? { id: l.autor_id, nome: l.autor_nome } : null, acao: l.acao, dados: l.dados })),
+    });
+  });
+
+  // Link de nova senha: mesmo limite da recuperação que a própria pessoa pede (3 por hora).
+  // Só registra depois de o Auth aceitar o pedido: se falhar, nada foi enviado.
+  app.post("/v1/suporte/pessoas/:id/link-senha", async (c) => {
+    const alvo = idDaRota(c, "id");
+    const { motivo } = await lerCorpo(c, motivoSuporteSchema);
+    const ficha = await fichaParaAgir(c, alvo);
+    if (!ficha.senhaCriadaEm) throw new ErroDominio("VALIDATION_ERROR", { motivo: "SEM_SENHA" });
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: "recuperacao", p_chave: await sha256Hex(ficha.email) }))) throw new ErroDominio("RATE_LIMITED");
+    try {
+      await deps.auth.pedirRecuperacao(ficha.email, `${deps.urlPortal}/redefinir`);
+    } catch {
+      throw new ErroDominio("UPSTREAM_UNAVAILABLE");
+    }
+    await rpc("console_suporte_registrar", { p_pessoa: pessoa(c), p_alvo: alvo, p_acao: "suporte.link_senha", p_motivo: motivo });
+    return c.json({ email: mascararEmail(ficha.email) });
+  });
+
+  // Desconectar de todos os aparelhos: o banco registra e apaga as sessões no mesmo passo.
+  app.post("/v1/suporte/pessoas/:id/desconectar", async (c) => {
+    const alvo = idDaRota(c, "id");
+    const { motivo } = await lerCorpo(c, motivoSuporteSchema);
+    return c.json({ aparelhos: await rpc<number>("console_suporte_desconectar", { p_pessoa: pessoa(c), p_alvo: alvo, p_motivo: motivo }) });
+  });
+
+  // Tirar o autenticador (decisão 2): identidade conferida pelo telefone, motivo e histórico.
+  // Também desconecta, para quem está com o aparelho perdido não continuar dentro.
+  app.post("/v1/suporte/pessoas/:id/tirar-autenticador", async (c) => {
+    const alvo = idDaRota(c, "id");
+    const { motivo } = await lerCorpo(c, tirarAutenticadorSchema);
+    const ficha = await fichaParaAgir(c, alvo);
+    if (!ficha.autenticadorDesde) throw new ErroDominio("VALIDATION_ERROR", { motivo: "SEM_AUTENTICADOR" });
+    try {
+      await deps.admin.removerAutenticadores(alvo);
+    } catch {
+      throw new ErroDominio("UPSTREAM_UNAVAILABLE");
+    }
+    const aparelhos = await rpc<number>("console_suporte_desconectar", { p_pessoa: pessoa(c), p_alvo: alvo, p_motivo: motivo, p_tirar_autenticador: true });
+    return c.json({ aparelhos });
+  });
+
+  // Reenviar o convite de quem ainda não criou a senha (o link anterior deixa de valer).
+  app.post("/v1/suporte/pessoas/:id/reenviar-convite", async (c) => {
+    const alvo = idDaRota(c, "id");
+    const { motivo } = await lerCorpo(c, motivoSuporteSchema);
+    const ficha = await fichaParaAgir(c, alvo);
+    if (ficha.senhaCriadaEm) throw new ErroDominio("VALIDATION_ERROR", { motivo: "JA_ENTROU" });
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: pessoa(c) }))) throw new ErroDominio("RATE_LIMITED");
+    let enviado: boolean;
+    try {
+      enviado = await deps.admin.reenviarConvite(ficha.email, `${deps.urlPortal}/criar-senha`);
+    } catch {
+      throw new ErroDominio("UPSTREAM_UNAVAILABLE");
+    }
+    if (!enviado) throw new ErroDominio("VALIDATION_ERROR", { motivo: "JA_ENTROU" });
+    await rpc("console_suporte_registrar", { p_pessoa: pessoa(c), p_alvo: alvo, p_acao: "suporte.reenviou_convite", p_motivo: motivo });
+    return c.json({ email: mascararEmail(ficha.email) });
   });
 
   return app;
