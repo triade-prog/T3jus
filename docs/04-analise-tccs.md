@@ -123,3 +123,45 @@ A Carol pediu uma nova revisão dos dois PDFs para achar o que tinha passado, in
 - Filiais e envio de movimento por planilha (fora do público de 3 a 10 pessoas).
 - Plano de contas, DRE por competência e custo do processo no ativo (trabalho do contador).
 - Números de processos, advogados e teses na tela inicial "para dar sensação de crescimento" (não ajuda a decidir nada; o Painel do dia já cobre o que importa).
+
+## Terceira leitura (18/11/2026), página por página
+
+A Carol pediu para não deixar nada passar. Desta vez cada página dos dois PDFs foi conferida, incluindo todas as imagens (quadros 1 a 9 do TCC 1; figuras 1 a 29 do TCC 2), e cada ponto foi comparado com as ideias existentes.
+
+### Ideias ajustadas
+
+| Código | O que mudou | De onde |
+|---|---|---|
+| AP-01 | Guarda também a situação do cliente (ativo ou inativo) | Modelo de dados do Juris Tantum |
+| CH-08 | Usa os dados dos advogados (nome, OAB), a declaração de hipossuficiência e o papel timbrado do escritório | TCC 2, tela do cliente e texto da procuração |
+| FI-04 | Registra o motivo do atraso e a próxima ação de cobrança | TCC 1: "identificar o motivo da inadimplência para agir" |
+| FI-08 | O caso mostra quanto entrou, quanto foi repassado e quanto falta destinar | TCC 1, Quadro 1, item g ("90% já destinados, 10% a destinar") |
+| FI-10 | Pedidos urgentes do dia (custas) entram na mesma aprovação | TCC 1: custas só eram conhecidas no próprio dia, até as 10h |
+| FI-11 | A divisão segue a participação de cada sócio na data de entrada do caso | TCC 1, Quadros 2, 2.1 e 3 |
+| EX-01 | Guarda também o sistema do tribunal (ex.: PJe) | Modelo de dados do Juris Tantum |
+
+### Ideias novas
+
+| Código | Ideia | Etiqueta | De onde |
+|---|---|---|---|
+| CH-09 | Assinatura eletrônica do contrato e da procuração | [VAL] | TCC 2, recursos da Looplex |
+| FI-17 | Cobrança por Pix ou boleto com baixa automática; forma de pagamento de cada parcela | [V1] | TCC 2 (boletos do Astrea); TCC 1 (cheque pré-datado, débito em conta, dinheiro) |
+| FI-18 | Comprovante, nota ou guia anexados a cada lançamento | [V1] | TCC 1: notas arquivadas com a ordem de faturamento; comprovantes que voltam do banco |
+| FI-19 | Acompanhamento do levantamento: documentos, situação da conta judicial, liberação | [VAL] | TCC 1: consulta diária ao banco sobre contas bloqueadas ou liberadas |
+| FI-20 | Categorias simples de entradas e saídas | [V1] | TCC 1, Quadro 6 (fluxo de caixa diário) |
+| FI-21 | Exportação mensal para o contador | [V1] | TCC 1: o contador terceirizado recebia tudo em papel |
+| EX-12 | Ficha do advogado com OAB e UF | [V1] | TCC 2, módulo de advogados |
+| EX-13 | Agenda sincronizada com Google Agenda ou Outlook | [VAL] | TCC 2, Quadro 1 (conexão com o Google Calendar) |
+| EX-14 | Aviso ao cliente pelo WhatsApp quando o caso muda de etapa, em linguagem simples | [V1] | TCC 2: futuras atualizações e a "tradução de andamentos" do Astrea |
+| IN-12 | Receita e casos por área e por responsável | [V1] | TCC 2 (processos por especialidade); TCC 1 (resultado por unidade) |
+| IN-13 | Esforço por cliente de mensalidade comparado ao valor pago | [VAL] | TCC 1: comparar o recebido dos sindicatos com o esforço, para reajuste |
+| IN-14 | Volume do período: clientes que receberam e quanto foi repassado | [V1] | TCC 1: usado para decidir se a equipe precisa crescer |
+| VA-08 | Modelo de preço (por módulo, por volume, período grátis) | [VAL] | TCC 2: Projuris por módulos, ADVBOX cobra por processos, Astrea com 1 ano grátis, Looplex de R$ 5 mil a R$ 45 mil |
+| PT-25 | Padrão único de telas, com trilha de navegação e edição já preenchida | [BASE] | TCC 2, heurísticas de Nielsen aplicadas |
+| PT-26 | Entrar com a conta Google | [VAL] | TCC 2, futuras atualizações |
+
+### Conferido e sem ideia nova
+- Teoria contábil (capítulo 2 do TCC 1) e referencial do PJe, do PBDoc e do maisJuridico (TCC 2): contexto, nada a construir.
+- Caixa pequeno das filiais (Quadro 7): fora do público.
+- Login com token guardado por uma semana, foto do advogado, tela de configurações (trocar e-mail, senha, sair): já cobertos por PT-08 e pela fundação.
+- Lição de método do TCC 2: o projeto planejado para seis meses atrasou três semanas na modelagem do banco e nas bibliotecas de calendário e gráfico. Vale lembrar ao estimar a agenda (EX-06) e os indicadores.
