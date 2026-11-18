@@ -1,11 +1,13 @@
 {
   "id": "F1.6",
-  "texto": "O sócio convida a equipe do escritório pelo Portal, com função para cada pessoa",
+  "texto": "O sócio convida a equipe do escritório pelo Portal e marca as áreas que cada pessoa acessa",
   "peca": "S7",
   "refs": [
+    "PA-02",
     "PT-20",
-    "PT-02"
+    "PT-21"
   ],
   "status": "pendente",
-  "ordem": 45
+  "ordem": 45,
+  "proximo": "Especialista desenhando a área Equipe do Portal; depois aprovação da Carol e código"
 }

@@ -11,6 +11,6 @@
   ],
   "status": "andamento",
   "ordem": 40,
-  "evidencia": "Conceito Gabinete (docs/design/conceito-gabinete.md). Aprovadas pela Carol em 17/11/2026: entrar, carteira e ficha do Console e Início do Portal (docs/design/aprovadas/)",
-  "proximo": "Desenhar com o especialista as telas que faltam do Console (cadastrar escritório e as outras abas da ficha) e programar as aprovadas (F1.5)"
+  "evidencia": "Conceito Gabinete (docs/design/conceito-gabinete.md). Aprovadas pela Carol: entrar, carteira e ficha do Console e Início do Portal (17/11/2026); telas de acesso e Console v1 (18/11/2026), todas em docs/design/aprovadas/ e programadas",
+  "proximo": "Especialista desenhando as telas do Portal que fecham a F1: Equipe do escritório e área Escritório"
 }

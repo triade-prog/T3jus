@@ -3,11 +3,12 @@
   "texto": "Moldura em áreas do Console e do Portal: lateral estreita com as partes comuns no alto, as áreas no meio e conta e ajuda embaixo; barra de seções em cada área; versão de celular",
   "peca": "B4",
   "refs": [
-    "PT-10"
+    "PT-10",
+    "PA-01"
   ],
   "status": "andamento",
   "nota": "Desenho de base: a proposta dos três sistemas (https://claude.ai/artifact/S4zdJhHiYR8bpVdDqkYmpw). As ideias das áreas (CO-12, PA-06) entram no IDEIAS.md depois da aprovação da Carol.",
   "ordem": 30,
-  "evidencia": "Moldura do conceito Gabinete aprovada no computador, com as telas do Console e do Portal (docs/design/aprovadas/)",
-  "proximo": "Desenhar a versão de celular da moldura com o especialista"
+  "evidencia": "Moldura do conceito Gabinete aprovada no computador (docs/design/aprovadas/). Moldura do Console em celular aprovada e programada (docs/design/aprovadas/console-v1)",
+  "proximo": "Especialista desenhando a moldura do Portal em áreas, no computador e no celular"
 }
