@@ -1,11 +1,15 @@
 {
   "id": "F1.6",
-  "texto": "O sócio convida a equipe do escritório pelo Portal, com função para cada pessoa",
+  "texto": "O sócio convida a equipe do escritório pelo Portal e marca as áreas que cada pessoa acessa",
   "peca": "S7",
   "refs": [
+    "PA-01",
+    "PA-02",
     "PT-20",
-    "PT-02"
+    "PT-21",
+    "EX-10"
   ],
-  "status": "pendente",
-  "ordem": 45
+  "status": "feito",
+  "ordem": 45,
+  "evidencia": "Servidor: migration 0140 (areas_liberadas, função EQUIPE, sócio dono, convidar, mudar áreas, reenviar, retirar com passar_para, histórico da equipe) e pgTAP 014; rotas /v1/escritorio/equipe com testes Deno. Tela aprovada pela Carol em 18/11/2026 (docs/design/aprovadas/portal-v1/equipe.html) e programada em packages/ui/src/portal/Equipe.tsx: lista com convite pendente e vencido, convidar, áreas, reenviar, cancelar convite, retirar escolhendo para quem passa o que era da pessoa, histórico da equipe; e2e tests/e2e/portal-v1.spec.ts no celular e no computador, com axe. A troca real do responsável fica na F1.10."
 }

@@ -17,3 +17,11 @@ export * from "./console/historico.ts";
 export { ABAS_FICHA, ehAbaFicha, type AbaFicha } from "./console/abas.ts";
 export * from "./console/carteira.ts";
 export { haQuanto, esperando, dataCurta, dataHora, iniciais } from "./console/tempo.ts";
+export {
+  MolduraPortal, chamarPortal, useEscritorioPortal, papelNoEscritorio, ROTAS_PORTAL, type EscritorioPortal, type LugarPortal,
+} from "./portal/Moldura.tsx";
+export * from "./portal/areas.ts";
+export { EquipePortal } from "./portal/Equipe.tsx";
+export { EscritorioDoPortal, nomeArquivoExportacao } from "./portal/Escritorio.tsx";
+export { PaginaComumPortal, PaginaAreaPortal } from "./portal/Paginas.tsx";
+export * from "./portal/equipe.ts";

@@ -2,3 +2,5 @@
 @import "@t3jus/ui/tema.css";
 @import "@t3jus/ui/acesso.css";
 @source "../../../../packages/ui/src";
+@import "@t3jus/ui/console.css";
+@import "@t3jus/ui/portal.css";

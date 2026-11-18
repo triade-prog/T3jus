@@ -1,14 +1,17 @@
 // F0.6 e F0.3 no Portal do advogado: quem tem vínculo entra; o escritório vem da sessão.
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
-import { authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
+import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
 const BELA_VISTA = "4f1a7d4c-9b5e-4a6f-9c2d-5e6f7a8b9c0d";
+const LARA = "5a2b8e5d-0c6f-4b7a-8d3e-6f7a8b9c0d1e";
+const VL_LARA = "6b3c9f6e-1d7a-4c8b-9e4f-7a8b9c0d1e2f";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
 
-function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[] } = {}) {
+function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean } = {}) {
+  const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
   const falso = authFalso([
@@ -37,13 +40,29 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[] } = {}) 
     ],
     dados_convite: () => ({ nome: "Ana", escritorio: "Aurora Advocacia", quem: "Ricardo Almeida", papel: "ESCRITORIO" }),
     aceitar_convite: () => null,
-    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3 }),
+    portal_escritorio: (a) => {
+      if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
+      return { id: a.p_escritorio, nome: "Aurora Advocacia", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"] };
+    },
+    portal_equipe: (a) => {
+      if (opcoes.naoDono) erroBanco("TC401");
+      return [{ vinculoId: VL_LARA, pessoaId: LARA, nome: "Lara", dono: false, areas: ["JURIDICO"], desde: "2026-11-18", versao: 1, senhaCriadaEm: null, conviteEnviadoEm: "2026-11-18", escritorio: a.p_escritorio }];
+    },
+    portal_convidar: () => VL_LARA,
+    portal_mudar_areas: (a) => a.p_areas,
+    portal_reenviar_convite: () => LARA,
+    portal_retirar: (a) => {
+      if (a.p_passar_para === null) erroBanco("TC422", { campos: ["passarPara"] });
+      return { versao: 2, passouPara: a.p_passar_para };
+    },
+    portal_historico_equipe: () => [{ id: 7, ocorrido_em: "2026-11-18T10:00:00-03:00", autor_id: ANA, autor_nome: "Ana", acao: "equipe.retirada", entidade_id: VL_LARA, dados: {}, pessoa_nome: "Lara", para_nome: "Ana" }],
+    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
   });
   const app = criarApiPortal("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo",
+    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo", admin,
     senhaVazada: (senha) => Promise.resolve((opcoes.vazadas ?? []).includes(senha)),
   });
-  return { pedir: pedido(app, "api-portal"), vinculos, ...falso, ...db };
+  return { pedir: pedido(app, "api-portal"), vinculos, enviados, contas, ...falso, ...db };
 }
 
 Deno.test("sócio sem autenticador entra só com a senha (o autenticador é obrigatório só para a equipe)", async () => {
@@ -87,7 +106,10 @@ Deno.test("PT-01: o escritório fica na sessão do servidor; o navegador não o 
   assertEquals(typeof escolha.args.p_sessao, "string");
 
   const r = await m.pedir("/v1/escritorio", { cookie });
-  assertEquals(await r.json(), { id: AURORA, nome: "Aurora Advocacia", funcoes: ["SOCIO"] });
+  assertEquals(await r.json(), {
+    id: AURORA, nome: "Aurora Advocacia", funcoes: ["SOCIO"], dono: true,
+    areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"], outrosEscritorios: 0,
+  });
 });
 
 Deno.test("PT-01: escolher escritório sem vínculo é recusado", async () => {
@@ -235,4 +257,81 @@ Deno.test("escolha do escritório: a lista vem do banco, do último usado ao mai
   });
   assertEquals(m.chamadas.find((c) => c.funcao === "escritorios_para_escolher")?.args, { p_pessoa: ANA });
   assertEquals((await erro(await m.pedir("/v1/sessao/escolha"))).codigo, "UNAUTHORIZED");
+});
+
+async function noEscritorio(m: ReturnType<typeof montar>) {
+  const cookie = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR }));
+  await m.pedir("/v1/sessao/escritorio", { metodo: "PUT", corpo: { escritorioId: AURORA }, cookie });
+  return cookie;
+}
+
+Deno.test("PA-02: a equipe vem com o e-mail do Auth, e o escritório da sessão vai para o banco", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/equipe", { cookie });
+  const corpo = await r.json();
+  assertEquals(corpo.pessoas[0].email, "lara@aurora.adv.br");
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_equipe")?.args.p_escritorio, AURORA);
+});
+
+Deno.test("PA-02: quem não é sócio dono não convida, e a conta nem nasce no Auth", async () => {
+  const m = montar({ naoDono: true });
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/equipe", { metodo: "POST", corpo: { nome: "Novo", email: "novo@aurora.adv.br", areas: [] }, cookie });
+  assertEquals(r.status, 403);
+  assertEquals(m.contas["novo@aurora.adv.br"], undefined);
+  assert(!m.chamadas.some((c) => c.funcao === "portal_convidar"));
+});
+
+Deno.test("PA-02: convidar cria a conta, manda o link do Portal e grava as áreas", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/equipe", { metodo: "POST", corpo: { nome: "Bia", email: "BIA@aurora.adv.br", areas: ["FINANCEIRO", "FINANCEIRO"] }, cookie });
+  assertEquals(r.status, 201);
+  assertEquals(m.enviados, [{ email: "bia@aurora.adv.br", voltarPara: "https://portal.exemplo/criar-senha" }]);
+  const conv = m.chamadas.find((c) => c.funcao === "portal_convidar")!;
+  assertEquals(conv.args.p_areas, ["FINANCEIRO"]);
+  assertEquals(conv.args.p_escritorio, AURORA);
+});
+
+Deno.test("PA-02: área desconhecida não chega ao banco", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/equipe/${VL_LARA}/areas`, { metodo: "PUT", corpo: { areas: ["RH"] }, cookie });
+  assertEquals(r.status, 400);
+  assert(!m.chamadas.some((c) => c.funcao === "portal_mudar_areas"));
+});
+
+Deno.test("PT-20: reenviar o convite manda o link de novo para o e-mail do Auth", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/equipe/${VL_LARA}/reenviar`, { metodo: "POST", cookie });
+  assertEquals(await r.json(), { enviado: true });
+  assertEquals(m.enviados.at(-1)?.email, "lara@aurora.adv.br");
+});
+
+Deno.test("EX-10: retirar sem para quem passar volta o campo; com alguém, passa", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const sem = await m.pedir(`/v1/escritorio/equipe/${VL_LARA}/retirar`, { metodo: "POST", corpo: { versao: 1 }, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["passarPara"]);
+  const com = await m.pedir(`/v1/escritorio/equipe/${VL_LARA}/retirar`, { metodo: "POST", corpo: { versao: 1, passarPara: ANA }, cookie });
+  assertEquals(await com.json(), { versao: 2, passouPara: ANA });
+});
+
+Deno.test("PA-02: histórico da equipe com nomes e paginação", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/equipe/historico?antes=10&limite=20", { cookie });
+  const corpo = await r.json();
+  assertEquals(corpo.eventos[0].passouPara, "Ana");
+  const h = m.chamadas.find((c) => c.funcao === "portal_historico_equipe")!;
+  assertEquals([h.args.p_antes, h.args.p_limite], [10, 20]);
+});
+
+Deno.test("PA-02: as áreas do domínio são as mesmas do banco", async () => {
+  const { AREAS_PORTAL } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0140_portal_equipe.sql", import.meta.url));
+  const doBanco = /area in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z]+)'/g)?.map((s) => s.slice(1, -1));
+  assertEquals(doBanco, Object.keys(AREAS_PORTAL));
 });

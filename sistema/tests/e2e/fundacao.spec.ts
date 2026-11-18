@@ -4,7 +4,8 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const APPS = [
-  { nome: "Portal do advogado", url: "http://localhost:3000", titulo: "Portal do advogado" },
+  // O Início do Portal (PA-01) abre na moldura; sem a API, com o aviso e o que vem.
+  { nome: "Portal do advogado", url: "http://localhost:3000", titulo: "O Início está sendo preparado" },
   // A página inicial do Console é a carteira (F1.5); aqui, sem a API, ela abre com o aviso.
   { nome: "Console T3jus", url: "http://localhost:3001", titulo: "Carteira de escritórios" },
 ];

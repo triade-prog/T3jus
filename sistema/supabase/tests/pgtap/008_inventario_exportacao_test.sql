@@ -39,7 +39,7 @@ create temp table exp as select exportar_escritorio(ana, a) as j from ids;
 
 select is((select j ->> 'formato' from exp), 't3jus.exportacao.v1', 'PT-15: a exportação diz o formato');
 select is((select j -> 'escritorio' ->> 'nome' from exp), 'Ipê Advocacia', 'PT-15: leva a ficha do escritório');
-select is((select array_agg(k order by k) from exp, jsonb_object_keys(j -> 'tabelas') k), array['historico', 'vinculos'],
+select is((select array_agg(k order by k) from exp, jsonb_object_keys(j -> 'tabelas') k), array['areas_liberadas', 'historico', 'vinculos'],
   'PT-15: leva as tabelas marcadas no inventário (sem sessões nem tabelas internas)');
 select is((select array_agg(p ->> 'nome' order by p ->> 'nome') from exp, jsonb_array_elements(j -> 'pessoas') p),
   array['Estagiária Carla', 'Sócia Ana'], 'PT-15: leva as pessoas do escritório, não a equipe T3jus');

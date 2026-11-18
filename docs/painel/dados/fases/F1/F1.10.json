@@ -1,0 +1,13 @@
+{
+  "id": "F1.10",
+  "texto": "Ao retirar alguém da equipe, as tarefas, prazos, cobranças e atendimentos da pessoa passam de fato para quem o sócio escolheu; e as rotas de dado de cada área recusam quem não tem a área liberada",
+  "peca": "S7",
+  "refs": [
+    "EX-10",
+    "PA-01"
+  ],
+  "status": "pendente",
+  "ordem": 55,
+  "nota": "A escolha de para quem passa já é obrigatória e fica no histórico (equipe.retirada, passou_para). A recusa por área já existe no banco (entrar_area). Falta usar as duas quando as tabelas de tarefas, prazos, cobranças e atendimentos existirem.",
+  "proximo": "Quando Tarefas, Prazos, Cobranças e Atendimentos tiverem responsável, trocar o responsável na retirada e chamar entrar_area nas rotas de cada área"
+}

@@ -205,6 +205,32 @@ const DESENHOS = {
       <path d="m6 9 6 6 6-6" />
     </>
   ),
+  conversas: (
+    <>
+      <path d="M3.5 4.5h17v12h-9l-4.5 3.5v-3.5H3.5Z" />
+      <path d="M8 9h8M8 12.5h5" />
+    </>
+  ),
+  agenda: (
+    <>
+      <path d="M4 5.5h16v15H4Z" />
+      <path d="M4 10h16M8.5 3v4.5M15.5 3v4.5" />
+      <path d="M8 13.5h3v3H8Z" />
+    </>
+  ),
+  pontos: <path d="M6 12h.01M12 12h.01M18 12h.01" strokeWidth="3" strokeLinecap="round" />,
+  trocar: (
+    <>
+      <path d="M4 8h14l-3.5-3.5" />
+      <path d="M20 16H6l3.5 3.5" />
+    </>
+  ),
+  funcoes: (
+    <>
+      <path d="M4 6.5h4M12 6.5h8M4 12h10M18 12h2M4 17.5h2M10 17.5h10" />
+      <path d="M8 4.5v4M14 10v4M6 15.5v4" />
+    </>
+  ),
   dir: (
     <>
       <path d="m9 6 6 6-6 6" />
