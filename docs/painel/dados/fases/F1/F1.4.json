@@ -7,6 +7,6 @@
   ],
   "status": "andamento",
   "ordem": 40,
-  "evidencia": "Tela de entrar do Portal e do Console (/entrar e /entrar/link) a partir da tela aprovada: senha, manter conectado, link de acesso por e-mail, código e cadastro do autenticador, esqueci a senha; e2e entrar.spec.ts (celular e computador, axe WCAG 2.2 AA)",
-  "proximo": "Carol aprovar a versão de celular da tela de entrar; especialista desenha convite, nova senha e escolha do escritório para aprovação"
+  "evidencia": "Tela de entrar do Portal e do Console (/entrar e /entrar/link) a partir da tela aprovada: senha, manter conectado, link de acesso por e-mail, código e cadastro do autenticador, esqueci a senha; e2e entrar.spec.ts (celular e computador, axe WCAG 2.2 AA); versão de celular aprovada pela Carol em 18/11 (docs/design/aprovadas/entrar-celular-*.png)",
+  "proximo": "Especialista desenha convite, nova senha e escolha do escritório para a Carol aprovar"
 }
