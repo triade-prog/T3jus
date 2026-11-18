@@ -260,4 +260,31 @@ begin
      limit 100;
 end $$;
 
+-- O histórico da equipe do Portal passa a mostrar o convite reenviado do sócio e os
+-- atendimentos de suporte, sem o motivo (decisão 3 da Carol).
+create or replace function portal_historico_equipe(p_pessoa uuid, p_escritorio uuid, p_antes bigint default null, p_limite integer default 50)
+returns table (id bigint, ocorrido_em timestamptz, autor_id uuid, autor_nome text, acao text, entidade_id text,
+               dados jsonb, pessoa_nome text, para_nome text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+#variable_conflict use_column
+begin
+  perform entrar_escritorio(p_pessoa, p_escritorio, 'escritorio.equipe.gerenciar');
+  return query
+    select h.id, h.ocorrido_em, h.autor_id, a.nome, h.acao, h.entidade_id, h.dados, m.nome, t.nome
+      from historico h
+      left join pessoas a on a.id = h.autor_id
+      left join pessoas m on m.id = (h.dados ->> 'pessoa_id')::uuid
+      left join pessoas t on t.id = (h.dados ->> 'passou_para')::uuid
+     where h.escritorio_id = p_escritorio and not h.interno
+       and h.acao in ('equipe.convidada', 'equipe.areas_mudadas', 'equipe.convite_reenviado', 'equipe.convite_cancelado',
+                      'equipe.retirada', 'socio.convidado', 'socio.convite_reenviado', 'escritorio.exportado',
+                      'suporte.link_senha', 'suporte.desconectou', 'suporte.tirou_autenticador')
+       and (p_antes is null or h.id < p_antes)
+     order by h.id desc
+     limit least(greatest(coalesce(p_limite, 50), 1), 200);
+end $$;
+
 call fechar_acesso();
