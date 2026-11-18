@@ -134,7 +134,7 @@ export function MolduraConsole({
             <Icone nome="menu" className="ico" />
           </button>
           <a className="marca-cel" href={CARTEIRA}>
-            <LogoCompacto tom="sal" className="logo" titulo="T3jus" />
+            <LogoCompacto tom="sobre-vinho" className="logo" titulo="T3jus" />
             <span>Console</span>
             <span className="sr">, carteira de escritórios</span>
           </a>
@@ -146,7 +146,7 @@ export function MolduraConsole({
           </button>
           <div className="marca">
             <a className="marca-palavra" href={CARTEIRA} aria-label="T3jus, carteira de escritórios">
-              <LogoCompacto tom="sal" className="logo" />
+              <LogoCompacto tom="sobre-vinho" className="logo" />
             </a>
             <span className="marca-sub">Console</span>
           </div>

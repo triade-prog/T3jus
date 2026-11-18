@@ -1,19 +1,23 @@
 // Logo oficial do T3jus (definido pela Carol em 18/11/2026). O desenho vem de logo-desenho.ts,
 // contornado dos arquivos dela; aqui só se escolhe a forma e as cores.
 //
-// Cores do logo (as do arquivo dela): âmbar #DE6A00 e vinho #510116. Sobre o vinho da moldura,
-// a versão dela é toda em sal (#FEFAF4).
+// Cores do Gabinete, aprovadas pela Carol em 18/11/2026 (opção A): coluna e fios em âmbar #DD9760,
+// letras em vinho #692746 no claro e em sal #F1E6DF sobre o vinho. Selo com disco #4F1D35.
 
 import type { ReactNode } from "react";
 import { COMPACTO, COMPLETO, PALAVRA, SELO, SIMBOLO } from "./logo-desenho.ts";
 
-export const LOGO_CORES = { ambar: "#DE6A00", vinho: "#510116", sal: "#FEFAF4" } as const;
+export const LOGO_CORES = { ambar: "#DD9760", vinho: "#692746", sal: "#F1E6DF" } as const;
 
-/** "cor": símbolo âmbar e letras vinho (fundo claro). "sal": tudo em sal (fundo vinho). "vinho": tudo em vinho. */
-export type TomLogo = "cor" | "sal" | "vinho";
+/**
+ * "cor": coluna âmbar e letras vinho (fundo claro). "sobre-vinho": coluna âmbar e letras sal (fundo vinho).
+ * "sal": tudo em sal. "vinho": tudo em vinho (uma cor, ou tamanho pequeno no claro).
+ */
+export type TomLogo = "cor" | "sobre-vinho" | "sal" | "vinho";
 
 function cores(tom: TomLogo) {
   if (tom === "cor") return { simbolo: LOGO_CORES.ambar, letras: LOGO_CORES.vinho };
+  if (tom === "sobre-vinho") return { simbolo: LOGO_CORES.ambar, letras: LOGO_CORES.sal };
   const c = LOGO_CORES[tom];
   return { simbolo: c, letras: c };
 }
@@ -66,7 +70,7 @@ export function Simbolo({ tom = "cor", className, titulo }: Props) {
   );
 }
 
-/** Selo "Gestão jurídica · T3jus · Escritório em ordem", nas cores do arquivo da Carol. */
+/** Selo "Gestão jurídica · T3jus · Escritório em ordem": disco #4F1D35, anéis e coluna âmbar, letras sal. */
 export function Selo({ className, titulo }: { className?: string; titulo?: string }) {
   return (
     <Svg w={SELO.lado} h={SELO.lado} titulo={titulo} className={className}>

@@ -43,11 +43,12 @@ Os tokens ficam em `sistema/packages/ui/src/tema.css`.
 
 Definido pela Carol em 18/11/2026 (E3): a coluna em forma de T em âmbar, o fio vertical e "T3jus" em serifa vinho, com "Sistema jurídico" e a linha embaixo. Os arquivos dela estão em `docs/marca/originais` e o vetor, contornado deles sem redesenho, em `docs/marca` (veja o `LEIA-ME.md` de lá).
 
-- **Cores do logo:** âmbar `#DE6A00` e vinho `#510116`, as do arquivo dela. São mais fortes que o âmbar e o vinho da interface e valem só para o logo.
-- **Sobre fundo claro:** versão em cor (símbolo âmbar, letras vinho) ou toda em vinho.
-- **Sobre o vinho:** toda em sal `#FEFAF4`, como a versão dela sobre vinho.
+- **Cores do logo:** as do Gabinete, aprovadas pela Carol em 18/11/2026 (opção A). O desenho é o dela; só as cores mudaram.
+- **Sobre fundo claro:** coluna, fio e linha em âmbar `#DD9760`, letras em vinho `#692746`. Abaixo de 32 px de altura da coluna, ou na impressão, use a versão toda em vinho.
+- **Sobre o vinho:** coluna e fios em âmbar, letras em sal `#F1E6DF`.
+- **Ícone:** coluna em sal no degradê `#87335B` → `#692746` → `#4F1D35`.
+- **Selo:** disco `#4F1D35`, anéis, pontos e coluna em âmbar e letras em sal. Vai na tela de entrar.
 - **Completo** (com "Sistema jurídico"): telas de acesso, site, documentos. **Compacto** (símbolo e "T3jus"): moldura do Console e do Portal. **Ícone** (símbolo em sal no quadrado vinho): aba do navegador e celular.
-- **Selo** "Gestão jurídica · T3jus · Escritório em ordem": disco vinho, ouro `#FCAE01` e letras em sal, como no arquivo dela. Vai na tela de entrar.
 - No código: `LogoCompleto`, `LogoCompacto`, `Simbolo` e `Selo` em `sistema/packages/ui/src/Marca.tsx`.
 
 ## O que ainda falta

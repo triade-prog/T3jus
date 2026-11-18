@@ -150,7 +150,7 @@ export function MolduraPortal({
       <div className="app">
         <header className="barra-cel">
           <a className="marca-cel" href={ROTAS_PORTAL.inicio}>
-            <LogoCompacto tom="sal" className="logo" titulo="T3jus" />
+            <LogoCompacto tom="sobre-vinho" className="logo" titulo="T3jus" />
             <span>Portal</span>
             <span className="sr">, início</span>
           </a>
@@ -158,7 +158,7 @@ export function MolduraPortal({
         <aside className="trilho" id="trilho" aria-label="Portal do advogado">
           <div className="marca">
             <a className="marca-palavra" href={ROTAS_PORTAL.inicio} aria-label="T3jus, início">
-              <LogoCompacto tom="sal" className="logo" />
+              <LogoCompacto tom="sobre-vinho" className="logo" />
             </a>
           </div>
           <a className="escritorio" href={ROTAS_PORTAL.escritorio}>

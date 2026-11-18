@@ -34,7 +34,7 @@ export function TelaAcesso({ textos, denso = false, children }: { textos: Textos
 
       <div className="ac-marca-lado">
         <a className="ac-marca" href="https://t3jus.pro" aria-label="T3jus, site">
-          <LogoCompleto tom="sal" className="ac-logo" />
+          <LogoCompleto tom="sobre-vinho" className="ac-logo" />
         </a>
         <section className="ac-frase" aria-label="Sobre o T3jus">
           <p className="ac-sobre">{f.sobre}</p>
