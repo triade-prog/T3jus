@@ -1,0 +1,11 @@
+{
+  "id": "F0.14",
+  "texto": "Prazos que dependem do fim do contrato ou da saída da pessoa (escritórios, notas internas, pessoas e entrada no Supabase Auth, equipe, eventos do escritório no histórico)",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "proximo": "Carol aprovar os prazos do inventário; registrar o fim do contrato no Console e a saída da pessoa, e ligar esses gatilhos à rotina da F0.13",
+  "ordem": 140
+}

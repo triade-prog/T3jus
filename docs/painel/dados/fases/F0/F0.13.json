@@ -5,7 +5,7 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
-  "proximo": "Carol aprovar os prazos propostos no inventário (F0.11); depois, construir a rotina",
-  "ordem": 130
+  "status": "feito",
+  "ordem": 130,
+  "evidencia": "Migration 0080 (aplicar_prazos, pg_cron às 3h de Brasília, só prazos APROVADO; sessões, contadores e entradas no histórico; contagem em dados.prazos_aplicados); pgTAP 009"
 }
