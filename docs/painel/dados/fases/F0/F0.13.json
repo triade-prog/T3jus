@@ -1,0 +1,11 @@
+{
+  "id": "F0.13",
+  "texto": "Rotina noturna que aplica os prazos aprovados do inventário (apaga ou anonimiza o que passou do prazo e registra a contagem no histórico)",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "proximo": "Carol aprovar os prazos propostos no inventário (F0.11); depois, construir a rotina",
+  "ordem": 130
+}

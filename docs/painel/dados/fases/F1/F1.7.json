@@ -1,0 +1,10 @@
+{
+  "id": "F1.7",
+  "texto": "Botão \"Exportar os dados do escritório\" para o sócio no Portal (área Escritório) e API de integração quando houver parceiro",
+  "peca": "S7",
+  "refs": [
+    "PT-15"
+  ],
+  "status": "pendente",
+  "ordem": 50
+}

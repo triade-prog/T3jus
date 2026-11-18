@@ -27,6 +27,10 @@ function montar(opcoes: { comAutenticador?: boolean } = {}) {
       const c = sessoes.get(String(a.p_sessao));
       return c && vinculos.has(c) ? c : null;
     },
+    exportar_escritorio: (a) => {
+      if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
+      return { formato: "t3jus.exportacao.v1", geradoEm: "2026-11-18T10:00:00-03:00", escritorio: { id: a.p_escritorio }, pessoas: [], tabelas: {} };
+    },
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3 }),
   });
   const app = criarApiPortal("segredo-de-repasse-de-teste", { banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo" });
@@ -97,4 +101,18 @@ Deno.test("o cookie do Console não abre o Portal", async () => {
   const m = montar();
   const deLa = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR })).replace("__Host-portal", "__Host-console");
   assertEquals((await erro(await m.pedir("/v1/sessao", { cookie: deLa }))).codigo, "UNAUTHORIZED");
+});
+
+Deno.test("PT-15: a exportação sai do escritório da sessão, nunca de um id do navegador", async () => {
+  const m = montar();
+  const cookie = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR }));
+  assertEquals((await erro(await m.pedir("/v1/escritorio/exportacao", { metodo: "POST", corpo: {}, cookie }))).codigo, "ESCRITORIO_REQUIRED");
+  await m.pedir("/v1/sessao/escritorio", { metodo: "PUT", corpo: { escritorioId: AURORA }, cookie });
+  const r = await m.pedir("/v1/escritorio/exportacao", { metodo: "POST", corpo: { escritorioId: BELA_VISTA }, cookie });
+  assertEquals(r.status, 200);
+  assertEquals(r.headers.get("content-disposition"), 'attachment; filename="t3jus-exportacao-2026-11-18.json"');
+  assertEquals(r.headers.get("cache-control"), "no-store");
+  assertEquals((await r.json()).formato, "t3jus.exportacao.v1");
+  const chamada = m.chamadas.find((c) => c.funcao === "exportar_escritorio")!;
+  assertEquals(chamada.args, { p_pessoa: ANA, p_escritorio: AURORA });
 });

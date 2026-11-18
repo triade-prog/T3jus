@@ -5,6 +5,7 @@
   "refs": [
     "PT-15"
   ],
-  "status": "pendente",
-  "ordem": 120
+  "status": "feito",
+  "ordem": 120,
+  "evidencia": "Migration 0070 (exportar_escritorio, só o sócio, lê o inventário); POST /v1/escritorio/exportacao na api-portal; pgTAP 008 e Deno app_test"
 }
