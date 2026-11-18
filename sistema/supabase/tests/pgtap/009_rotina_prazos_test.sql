@@ -18,14 +18,15 @@ insert into historico (ocorrido_em, escritorio_id, autor_tipo, autor_id, acao, e
   union all select app_now() - interval '1 month', null::uuid, 'PESSOA', ana, 'acesso.entrou', 'acesso', ana::text from ids
   union all select app_now() - interval '3 years', a, 'PESSOA', ana, 'caso.criado', 'caso', null::text from ids;
 
--- Regra 1: com os prazos ainda em proposta, nada sai.
+-- Regra 1: com o prazo em proposta, nada sai (volta para proposta só neste teste).
+update inventario_dados set situacao = 'PROPOSTA' where dado_pessoal;
 create temp table r1 as select aplicar_prazos() as j;
 select is((select j -> 'apagados' from r1), '{}'::jsonb, 'PT-11: prazo em proposta não apaga nada');
 select is((select j -> 'aguardando_aprovacao' from r1), '["sessoes_escritorio", "limites_uso", "historico"]'::jsonb,
   'PT-11: o resultado diz quais prazos esperam aprovação');
 select is((select count(*)::int from sessoes_escritorio), 2, 'sessões continuam enquanto o prazo não for aprovado');
 
--- A Carol aprova (numa migration de verdade; aqui, direto no teste).
+-- Aprovado, como na migration 0090.
 update inventario_dados set situacao = 'APROVADO' where dado_pessoal;
 
 create temp table r2 as select aplicar_prazos() as j;

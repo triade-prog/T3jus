@@ -6,6 +6,6 @@
     "PT-11"
   ],
   "status": "pendente",
-  "proximo": "Carol aprovar os prazos do inventário; registrar o fim do contrato no Console e a saída da pessoa, e ligar esses gatilhos à rotina da F0.13",
+  "proximo": "Registrar o fim do contrato no Console e a saída da pessoa, e ligar esses gatilhos à rotina da F0.13 (prazos já aprovados na migration 0090)",
   "ordem": 140
 }

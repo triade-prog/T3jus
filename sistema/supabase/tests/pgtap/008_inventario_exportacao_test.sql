@@ -15,8 +15,8 @@ select is(
   null, 'PT-11: o inventário não cita tabela que não existe');
 select throws_ok($$ insert into inventario_dados (tabela, dado_pessoal, o_que) values ('teste_x', true, 'Algo pessoal') $$,
   '23514', null, 'PT-11: dado pessoal sem finalidade, base, prazo e destino é recusado');
-select is((select count(*)::int from inventario_dados where dado_pessoal and situacao = 'PROPOSTA'),
-  (select count(*)::int from inventario_dados where dado_pessoal), 'os prazos nascem como proposta, até a Carol aprovar');
+select is((select count(*)::int from inventario_dados where dado_pessoal and situacao = 'APROVADO'),
+  (select count(*)::int from inventario_dados where dado_pessoal), 'os prazos estão aprovados pela Carol (migration 0090)');
 select ok(not exists (select 1 from inventario_dados i join tabelas_internas t using (tabela) where i.exportar),
   'tabela interna do T3jus nunca é marcada para exportar');
 
