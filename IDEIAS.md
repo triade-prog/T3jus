@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As ideias CH-06 a CH-08, FI-07 a FI-11, EX-06 a EX-08, IN-07 e IN-08 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -38,6 +38,9 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CH-03 | Responsáveis pelo contrato | [V1] |
 | CH-04 | Programação dos recebimentos | [V1] |
 | CH-05 | Contrato ligado às demandas e tarefas | [V1] |
+| CH-06 | Vários tipos de honorário no mesmo contrato: fixo, parcelado, mensal, êxito em percentual, sucumbência, por ato ou consulta e percentual recorrente | [V1] |
+| CH-07 | Uma etapa do caso gera a cobrança e avisa o financeiro (ex.: requisição expedida vira valor a receber com data prevista) | [V1] |
+| CH-08 | Procuração e contrato de honorários gerados com os dados do cadastro, em arquivo editável para o escritório pôr o timbre | [VAL] |
 
 ## 4. Financeiro e repasses
 
@@ -49,6 +52,11 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | FI-04 | Pendências e atrasos | [V1] |
 | FI-05 | Registro e acompanhamento de repasses | [V1] |
 | FI-06 | Separação entre dinheiro próprio e valores de terceiros | [V1] |
+| FI-07 | Despesa adiantada pelo escritório (custas, sucumbência) vira valor a reembolsar, por cliente e por caso | [V1] |
+| FI-08 | Fechamento financeiro do caso: só encerra com tudo recebido e tudo repassado | [V1] |
+| FI-09 | Previsão de caixa, prevista contra realizada, incluindo precatórios e RPVs com data estimada | [V1] |
+| FI-10 | Aprovação de pagamentos pelo sócio (lista da semana) e separação entre quem lança e quem paga | [VAL] |
+| FI-11 | Divisão de honorários entre sócios ou advogados por caso, com adiantamento e acerto | [VAL] |
 
 ## 5. Execução jurídica
 
@@ -59,6 +67,9 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | EX-03 | Etapas e pendências | [V1] |
 | EX-04 | Prazos cadastrados à mão (monitoramento de tribunais é integração posterior) | [V1] |
 | EX-05 | Documentos ligados ao caso e documentos que faltam | [V1] |
+| EX-06 | Audiências como compromisso na agenda, com visão de mês, semana e dia, criadas clicando no dia; as próximas aparecem na tela inicial | [V1] |
+| EX-07 | Etapas do caso definidas pelo escritório (não uma lista fixa); a lista de casos mostra número, cliente e etapa sem precisar abrir | [V1] |
+| EX-08 | Ao chegar à etapa final, o sistema pede o resultado (ganho, perda, acordo), que alimenta a cobrança do êxito (CH-07) e os indicadores | [V1] |
 
 ## 6. Indicadores
 
@@ -70,6 +81,8 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | IN-04 | Valores vencidos e pendentes | [V1] |
 | IN-05 | Próximas obrigações e recebimentos previstos | [V1] |
 | IN-06 | Tarefas, entregas e bloqueios que pedem ação | [V1] |
+| IN-07 | Receita por tipo de honorário e atrasos por idade (até 30, 60 e 90 dias) | [V1] |
+| IN-08 | Carga de cada advogado (casos por responsável) e casos por etapa, para ver onde o trabalho para | [V1] |
 
 ## 7. A validar com os pilotos
 
@@ -138,12 +151,12 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 |---|---|
 | 1. Painel do dia | 7 |
 | 2. Atendimento e propostas | 6 |
-| 3. Contratos e honorários | 5 |
-| 4. Financeiro e repasses | 6 |
-| 5. Execução jurídica | 5 |
-| 6. Indicadores | 6 |
+| 3. Contratos e honorários | 8 |
+| 4. Financeiro e repasses | 11 |
+| 5. Execução jurídica | 8 |
+| 6. Indicadores | 8 |
 | 7. A validar com os pilotos | 7 |
 | 8. Princípios técnicos e de qualidade | 24 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 4 |
-| **Total** | **76** |
+| **Total** | **89** |
