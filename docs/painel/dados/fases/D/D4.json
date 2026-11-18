@@ -1,6 +1,6 @@
 {
   "id": "D4",
-  "texto": "Telas de cada passo desenhadas e aprovadas antes do código da tela, começando pelo Console: entrar, carteira, cadastrar escritório e ficha do cliente",
+  "texto": "Cada tela desenhada pelo especialista de frontend, aprovada pela Carol e só depois programada, começando pelo Console: entrar, carteira, cadastrar escritório e ficha do cliente",
   "peca": "C1",
   "refs": [
     "CO-01",
@@ -11,6 +11,6 @@
   ],
   "status": "andamento",
   "ordem": 40,
-  "evidencia": "Entrar, carteira, cadastrar escritório, ficha e aba Sócio desenhados: https://claude.ai/artifact/LD42qZSqdnEFfxhJjVtb7M",
-  "proximo": "Carol aprovar as telas de Clientes do Console antes do código (F1.5)"
+  "evidencia": "Conceito Gabinete (docs/design/conceito-gabinete.md). Entrar aprovada pela Carol em 17/11/2026 (docs/design/aprovadas/entrar.html)",
+  "proximo": "Carol escolher entre a primeira versão e a das nove cores para carteira, ficha e Início do Portal: https://claude.ai/artifact/T2SZi8PEitN2GtSsYGpfBx"
 }
