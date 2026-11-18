@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3 Just, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -123,6 +123,15 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | SC-05 | Console comercial: interessados com responsável, próximo passo e data, do pedido de demonstração até virar escritório cliente sem redigitar | [V1] |
 | SC-06 | Site rápido e encontrável: carrega bem no celular, com título, descrição e prévia de compartilhamento em cada página | [V1] |
 
+## 10. Console T3 Just
+
+| Código | Ideia | Etiquetas |
+|---|---|---|
+| CO-01 | Carteira de escritórios clientes, com estágio (em implantação ou ativo; ativo só com o sócio convidado) e as situações a tratar de cada um (sem sócio, sem contato, sem contrato) | [V1] |
+| CO-02 | Ficha do escritório: nome, cidade, UF, endereço, CNPJ conferido e contatos; a referência do contrato só a administração muda | [V1] |
+| CO-03 | Carteira e notas internas que o escritório nunca vê | [V1] |
+| CO-04 | Histórico administrativo de cada cliente e da equipe interna, com quem fez o quê e quando | [V1] |
+
 ## Contagem
 
 | Seção | Ideias |
@@ -136,4 +145,5 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 7. A validar com os pilotos | 7 |
 | 8. Princípios técnicos e de qualidade | 24 |
 | 9. Site comercial e entrada de clientes | 6 |
-| **Total** | **72** |
+| 10. Console T3 Just | 4 |
+| **Total** | **76** |

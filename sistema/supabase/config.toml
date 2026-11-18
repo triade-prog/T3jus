@@ -65,3 +65,5 @@ sign_in_sign_ups = 30
 # SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o Supabase já entrega.
 # O modelo do e-mail de recuperação leva ao app com o token:
 # {{ .RedirectTo }}?token_hash={{ .TokenHash }}
+# O modelo do e-mail de convite (passo 1) segue a mesma forma e leva a /criar-senha do app
+# de destino (PORTAL_URL para o sócio e a equipe do escritório, CONSOLE_URL para a equipe T3 Just).

@@ -66,13 +66,14 @@ select throws_ok($$ select escolher_escritorio(pb, sessao, b) from ids $$, null,
 -- Negar por padrão (PT-02): ação sem permissão cadastrada não passa.
 select throws_ok($$ select entrar_escritorio(pa, a, 'exemplos.apagar') from ids $$, 'TC401', null, 'ação não cadastrada é negada');
 
--- Só três funções gravam o contexto da transação.
+-- Só quatro funções gravam o contexto da transação (pessoa, equipe e escritório). A quarta,
+-- abrir_escritorio_novo, é o cadastro de escritório no Console (passo 1).
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and (p.prosrc ~ 'app\.pessoa_id''' or p.prosrc ~ 'app\.escritorio_id''')
+    where n.nspname = 'public' and p.prosrc ~ 'app\.(pessoa_id|escritorio_id|equipe)'
       and p.prosrc ~ 'set_config'),
-  array['entrar_escritorio', 'limpar_contexto', 'tentar_definir_pessoa'],
-  'só limpar_contexto, tentar_definir_pessoa e entrar_escritorio gravam o contexto');
+  array['abrir_escritorio_novo', 'entrar_escritorio', 'limpar_contexto', 'tentar_definir_pessoa'],
+  'só limpar_contexto, tentar_definir_pessoa, entrar_escritorio e abrir_escritorio_novo gravam o contexto');
 
 select * from finish();
 rollback;

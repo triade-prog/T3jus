@@ -25,3 +25,21 @@ export const TEXTOS_ERRO: Record<CodigoErro, string> = {
 /** Resposta da recuperação de senha: a mesma para conta que existe e para a que não existe (PT-08). */
 export const TEXTO_RECUPERACAO_ENVIADA =
   "Se este e-mail tiver acesso ao T3 Just, enviamos um link para criar uma senha nova. O link vale por uma hora e só pode ser usado uma vez.";
+
+/** Motivo de uma recusa do banco (detalhes.motivo), dito para quem usa o Console. */
+export const TEXTOS_MOTIVO: Record<string, string> = {
+  SEM_SOCIO: "Convide o sócio antes de concluir a implantação.",
+  MESMO_ESTAGIO: "O cliente já está neste estágio.",
+  JA_SOCIO: "Esta pessoa já é sócia deste escritório.",
+  JA_NA_EQUIPE: "Esta pessoa já está na equipe.",
+  JA_ATRIBUIDO: "Esta pessoa já atende o cliente com esta função.",
+  FUNCAO_NAO_ATRIBUIDA: "Esta pessoa não tem esta função na equipe. Reveja as funções dela antes.",
+  ULTIMA_ADMINISTRACAO: "Sempre precisa sobrar alguém com administração.",
+  PROPRIA_CONTA: "Você não pode desativar a sua própria conta.",
+};
+
+/** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
+export const TEXTO_CONVITE_CONTA_EXISTENTE =
+  "Esta pessoa já tem conta no T3 Just. O novo acesso aparece para ela na próxima vez que entrar.";
+export const TEXTO_CONVITE_ENVIADO =
+  "Convite enviado. A pessoa recebe um e-mail para criar a senha; o link vale por um dia e só pode ser usado uma vez.";

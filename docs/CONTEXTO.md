@@ -1,6 +1,6 @@
 # Contexto do projeto — T3 Just
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 17/11/2026 (horário de Brasília), com o passo 0 (fundação) construído.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 17/11/2026 (horário de Brasília), com o passo 0 (fundação) construído e o passo 1 começado pelo servidor do Console.
 
 ## Onde está cada coisa
 
@@ -46,3 +46,5 @@ As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer 
 ## Situação
 
 **17/11/2026.** O passo 0 (fundação) está construído e testado localmente: lint, tipos, Vitest, Deno, pgTAP, edição simultânea e ponta a ponta passando. Ainda não há projeto no Supabase nem na Vercel.
+
+**17/11/2026, noite.** O passo 1 começou pelo servidor do Console: cadastro e ficha do escritório com CNPJ, carteira com estágio e situações, notas e histórico internos, equipe interna com funções e convite do sócio (ideias CO-01 a CO-04 no `IDEIAS.md`). Testado localmente. Faltam as telas do Console e do login (F1.4 e F1.5), o convite da equipe pelo sócio no Portal (F1.6) e o suporte de acesso (F1.3).
