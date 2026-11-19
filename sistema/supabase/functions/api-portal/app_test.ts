@@ -11,7 +11,7 @@ const VL_LARA = "6b3c9f6e-1d7a-4c8b-9e4f-7a8b9c0d1e2f";
 const CLIENTE = "7c4d0a7f-2e8b-4d9c-8f5a-8b9c0d1e2f3a";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
 
-function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean } = {}) {
+function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
@@ -49,6 +49,11 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (opcoes.naoDono) erroBanco("TC401");
       return [{ vinculoId: VL_LARA, pessoaId: LARA, nome: "Lara", dono: false, areas: ["JURIDICO"], desde: "2026-11-18", versao: 1, senhaCriadaEm: null, conviteEnviadoEm: "2026-11-18", escritorio: a.p_escritorio }];
     },
+    portal_exigir_escrita: () => {
+      if (opcoes.soConsulta) erroBanco("TC401", { motivo: "CONTRATO_ENCERRADO" });
+      return null;
+    },
+    portal_equipe_retiradas: () => [{ vinculoId: VL_LARA, pessoaId: LARA, nome: "Lara", retiradaEm: "2026-11-18", saida: { entradaApagaEm: "2027-02-16" } }],
     portal_convidar: () => VL_LARA,
     portal_mudar_areas: (a) => a.p_areas,
     portal_reenviar_convite: () => LARA,
@@ -331,6 +336,24 @@ Deno.test("PA-02: quem não é sócio dono não convida, e a conta nem nasce no 
   assertEquals(r.status, 403);
   assertEquals(m.contas["novo@aurora.adv.br"], undefined);
   assert(!m.chamadas.some((c) => c.funcao === "portal_convidar"));
+});
+
+Deno.test("F0.14: nos 30 dias só de consulta, o convite não cria a conta no Auth", async () => {
+  const m = montar({ soConsulta: true });
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/equipe", { metodo: "POST", corpo: { nome: "Novo", email: "novo@aurora.adv.br", areas: [] }, cookie });
+  assertEquals(r.status, 403);
+  assertEquals((await r.json()).erro.detalhes, { motivo: "CONTRATO_ENCERRADO" });
+  assertEquals(m.contas["novo@aurora.adv.br"], undefined);
+});
+
+Deno.test("F0.14: a Equipe lista quem foi retirado, com a data em que a entrada some", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/equipe/retiradas", { cookie });
+  const p = (await r.json()).pessoas[0];
+  assertEquals(p.saida, { entradaApagaEm: "2027-02-16" });
+  assert("email" in p);
 });
 
 Deno.test("PA-02: convidar cria a conta, manda o link do Portal e grava as áreas", async () => {
@@ -658,7 +681,7 @@ Deno.test("FI-01 a FI-04, FI-14: A receber, ficha de parcelas, registrar recebim
 
 Deno.test("FI-17: as formas de pagamento do domínio são as mesmas do banco", async () => {
   const { FORMAS_PAGAMENTO } = await import("@t3jus/domain");
-  const sql = await Deno.readTextFile(new URL("../../migrations/0210_portal_financeiro_receber.sql", import.meta.url));
+  const sql = await Deno.readTextFile(new URL("../../migrations/0220_portal_financeiro_receber.sql", import.meta.url));
   const formas = /select p in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
   assertEquals(formas, Object.keys(FORMAS_PAGAMENTO));
 });

@@ -730,7 +730,7 @@ export function AgendaPortal({ ver = "semana", dia: diaPedido, pessoa = null, ma
         <span className="fio" aria-hidden="true" />
         <p className="lede">{lede}</p>
       </div>
-      <button className="btn btn-pri" type="button" onClick={() => abrirNovo(vis === "semana" && !(dia >= p.de && dia <= p.ate) ? p.de : dia)}>
+      <button data-muda className="btn btn-pri" type="button" onClick={() => abrirNovo(vis === "semana" && !(dia >= p.de && dia <= p.ate) ? p.de : dia)}>
         <Icone nome="mais" className="ico" />
         Novo compromisso
       </button>
@@ -762,7 +762,7 @@ export function AgendaPortal({ ver = "semana", dia: diaPedido, pessoa = null, ma
           <div className="ag-col2">
             <Estado icone="agenda" titulo="A agenda do escritório começa aqui" moldura
               acoes={
-                <button className="btn btn-pri" type="button" onClick={() => abrirNovo(hoje)}>
+                <button data-muda className="btn btn-pri" type="button" onClick={() => abrirNovo(hoje)}>
                   <Icone nome="mais" className="ico" />
                   Marcar o primeiro compromisso
                 </button>

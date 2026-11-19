@@ -3,7 +3,7 @@
 // última nota interna. Cada aba escolhe as suas.
 
 import { useId } from "react";
-import { ESTAGIOS } from "@t3jus/domain";
+import { ESTAGIOS_CARTEIRA } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
 import type { FichaDoCliente, Nota } from "./ficha.ts";
 import { dataHora, dataLonga } from "./tempo.ts";
@@ -75,7 +75,7 @@ export function LateralResumo({ f }: { f: FichaDoCliente }) {
       <dl className="resumo">
         <div>
           <dt>Estágio</dt>
-          <dd>{ESTAGIOS[f.cliente.estagio]}</dd>
+          <dd>{ESTAGIOS_CARTEIRA[f.cliente.estagio]}</dd>
         </div>
         <div>
           <dt>Contrato</dt>

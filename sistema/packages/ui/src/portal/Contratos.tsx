@@ -28,7 +28,7 @@ function CabContratos() {
     <CabAmbar sobre="Contratos de honorários" titulo="Contratos"
       lede="Cada contrato liga o cliente aos casos, diz quem responde por ele e o que se combinou de honorários. Das condições sai a programação dos recebimentos que o Financeiro acompanha."
       acao={
-        <a className="btn btn-escuro" href={ROTAS_CONTRATOS.novo} style={{ marginBottom: 6 }}>
+        <a data-muda className="btn btn-escuro" href={ROTAS_CONTRATOS.novo} style={{ marginBottom: 6 }}>
           <Icone nome="mais" className="ico" />
           Novo contrato
         </a>
@@ -58,7 +58,7 @@ function ContratosConteudo() {
             acoes={
               <>
                 <a className="btn btn-sec" href={ROTAS_COMERCIAL.propostas}><Icone nome="maleta" className="ico" />Ver propostas aceitas</a>
-                <a className="btn btn-pri" href={ROTAS_CONTRATOS.novo}><Icone nome="mais" className="ico" />Criar o primeiro contrato</a>
+                <a data-muda className="btn btn-pri" href={ROTAS_CONTRATOS.novo}><Icone nome="mais" className="ico" />Criar o primeiro contrato</a>
               </>
             }>
             Um contrato nasce de uma proposta aceita, com as condições já preenchidas, ou direto aqui. Escolha o cliente e os honorários: a programação dos recebimentos sai sozinha.
@@ -300,7 +300,7 @@ function HonorariosConteudo() {
                         {b.parada ? <Selo tom="urgente" icone="alerta">cobrança de {diaCurto(b.vencimento)} parada</Selo> : <Selo tom="atencao" icone="relogio">cobrar em {diaCurto(b.vencimento)}</Selo>}
                         {b.parada ? <small style={{ marginTop: 6 }}>há {contar(atraso, "dia", "dias")}</small> : null}
                       </div>
-                      <button className="btn btn-pri btn-compacto" type="button" onClick={() => setAberta(b)}>
+                      <button data-muda className="btn btn-pri btn-compacto" type="button" onClick={() => setAberta(b)}>
                         <Icone nome="moeda" className="ico" />
                         Informar a base<span className="sr"> de {b.cliente}</span>
                       </button>

@@ -102,7 +102,7 @@ function Hero({
       </div>
       <div className="dir campo-ambar">
         <p className="sobretitulo">Atalhos</p>
-        <a className="btn btn-escuro" href={`${ROTAS_PORTAL.clientes}/novo`}>
+        <a data-muda className="btn btn-escuro" href={`${ROTAS_PORTAL.clientes}/novo`}>
           <Icone nome="pessoaMais" className="ico" />
           Novo cliente
         </a>

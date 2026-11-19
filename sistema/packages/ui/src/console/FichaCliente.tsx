@@ -20,6 +20,7 @@ import { AbaFichaDados } from "./AbaFicha.tsx";
 import { AbaHistorico, AbaNotas } from "./AbaNotasHistorico.tsx";
 import { ABAS_FICHA, type AbaFicha } from "./abas.ts";
 import { conviteVencido, VALIDADE_CONVITE_MS } from "./carteira.ts";
+import { FaixaContrato, LadoEncerramento, soLeitura } from "./FimContrato.tsx";
 import { formatarCnpj, type FichaDoCliente, type Nota } from "./ficha.ts";
 import { CARTEIRA, chamarConsole, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso as AvisoD2 } from "./pecas.tsx";
@@ -30,6 +31,13 @@ export { formatarCnpj, type FichaDoCliente } from "./ficha.ts";
 /** Aviso curto da aba Sócio (aprovada antes do D2): erro, sucesso ou informação. */
 function Aviso({ tom, children }: { tom: "erro" | "ok" | "info"; children: string }) {
   return <AvisoD2 tom={tom === "erro" ? "urgencia" : tom === "ok" ? "sucesso" : "info"}>{children}</AvisoD2>;
+}
+
+/** Contrato encerrado: a ficha, o contrato, a equipe e os sócios ficam só de leitura (o banco
+ * recusa também). Notas e documentos continuam. */
+const MUDAM_A_FICHA = ["console.ficha.editar", "console.contrato.editar", "console.equipe.atribuir", "console.socios.convidar", "console.estagio.mudar"];
+function fichaParaTela(f: FichaDoCliente): FichaDoCliente {
+  return soLeitura(f) ? { ...f, permissoes: f.permissoes.filter((p) => !MUDAM_A_FICHA.includes(p)) } : f;
 }
 
 function Cabecalho({ f }: { f: FichaDoCliente }) {
@@ -52,7 +60,12 @@ function Cabecalho({ f }: { f: FichaDoCliente }) {
             <p className="sobretitulo">Escritório</p>
             <h1>{f.escritorio.nome}</h1>
             <p className="meta">
-              {f.cliente.estagio === "ATIVO" ? (
+              {f.cliente.estagio === "ENCERRADO" ? (
+                <span className="selo selo-enc">
+                  <Icone nome="cadeado" className="ico" />
+                  Encerrado
+                </span>
+              ) : f.cliente.estagio === "ATIVO" ? (
                 <span className="selo selo-ativo">
                   <span className="bolinha" aria-hidden="true" />
                   {ESTAGIOS.ATIVO}
@@ -69,7 +82,9 @@ function Cabecalho({ f }: { f: FichaDoCliente }) {
           </div>
         </div>
       </div>
-      {f.cliente.estagio === "ATIVO" ? (
+      {f.encerramento ? (
+        <LadoEncerramento e={f.encerramento} />
+      ) : f.cliente.estagio === "ATIVO" ? (
         <section className="dir campo-ambar" aria-labelledby={`${ids}-impl`}>
           <p className="sobretitulo" id={`${ids}-impl`}>
             Cliente ativo
@@ -480,7 +495,7 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
       if (r.status !== 401) setErro(r.erro);
       return;
     }
-    setF(r.dados);
+    setF(fichaParaTela(r.dados));
     if (r.dados.permissoes.includes("console.notas.ver") && aba !== "notas") {
       const n = await chamarConsole<{ notas: Nota[] }>(`/v1/clientes/${id}/notas`);
       if (n.ok) setNotas(n.dados.notas);
@@ -552,6 +567,7 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
       ) : (
         <>
           <Cabecalho f={f} />
+          <FaixaContrato f={f} />
           <Abas id={id} aba={aba} f={f} notas={notas ? notas.length : null} />
           {cadastrado ? (
             <AvisoD2 tom="sucesso" className="toast" titulo="Escritório cadastrado.">

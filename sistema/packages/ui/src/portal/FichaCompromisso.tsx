@@ -270,7 +270,7 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
   const dados = (
     <Folha titulo="Compromisso" sub={`Marcado por ${f.criadoPor?.nome ?? "alguém da equipe"} em ${diaBr(diaDe(f.criadoEm))}`}
       acoes={cancelado ? undefined : (
-        <button className="btn btn-sec" type="button" onClick={() => { setFeito(null); setEditar(true); }}>
+        <button data-muda className="btn btn-sec" type="button" onClick={() => { setFeito(null); setEditar(true); }}>
           <Icone nome="lapis" className="ico" />
           Editar ou remarcar
         </button>
@@ -411,7 +411,7 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
     <Folha titulo="Cancelar" pequena>
       <div className="ag-acoes">
         <p>Cancelar pede o motivo e pode avisar o cliente pelo WhatsApp. O compromisso continua na agenda, riscado.</p>
-        <button className="btn btn-perigo" type="button" onClick={() => setCancelar(true)}>
+        <button data-muda className="btn btn-perigo" type="button" onClick={() => setCancelar(true)}>
           <Icone nome="xis" className="ico" />
           Cancelar compromisso
         </button>

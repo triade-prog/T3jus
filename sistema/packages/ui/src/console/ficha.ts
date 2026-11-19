@@ -1,7 +1,7 @@
 // Dados da ficha do cliente no Console (GET /v1/clientes/:id) e o que as abas calculam deles.
 // Módulo simples (sem "use client"), para os testes e as páginas do servidor usarem.
 
-import { fichaSchema, type SocioCliente } from "@t3jus/domain";
+import { fichaSchema, type EncerramentoConsole, type SocioCliente } from "@t3jus/domain";
 
 export interface ContatoFicha {
   nome: string;
@@ -22,7 +22,9 @@ export interface FichaDoCliente {
     criadoEm: string;
     versao: number;
   };
-  cliente: { estagio: "IMPLANTACAO" | "ATIVO"; referenciaContrato: string | null; versao: number };
+  cliente: { estagio: "IMPLANTACAO" | "ATIVO" | "ENCERRADO"; referenciaContrato: string | null; versao: number };
+  /** Fim do contrato registrado (F0.14); null enquanto não há. */
+  encerramento?: EncerramentoConsole | null;
   socios: SocioCliente[];
   equipe: { vinculoId: string; pessoaId: string; nome: string; funcao: string; desde?: string; versao?: number }[];
   situacoes: string[];

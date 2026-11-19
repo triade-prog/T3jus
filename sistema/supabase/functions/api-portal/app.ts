@@ -13,7 +13,7 @@ import {
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, registrarRecebimentoSchema,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
-  type Atendimento, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
+  type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -30,6 +30,7 @@ interface EscritorioDaPessoa {
 }
 
 interface LinhaEscolha {
+  encerramento: DatasContrato | null;
   escritorio_id: string;
   nome: string;
   cidade: string | null;
@@ -95,7 +96,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const linhas = await deps.banco.rpc<LinhaEscolha[]>("escritorios_para_escolher", { p_pessoa: s.pessoaId });
     return c.json({
       email: s.email,
-      escritorios: linhas.map((x) => ({ id: x.escritorio_id, nome: x.nome, cidade: x.cidade, uf: x.uf, ultimaEntrada: x.ultima_entrada })),
+      escritorios: linhas.map((x) => ({ id: x.escritorio_id, nome: x.nome, cidade: x.cidade, uf: x.uf, ultimaEntrada: x.ultima_entrada, encerramento: x.encerramento })),
     });
   });
 
@@ -133,6 +134,8 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/equipe", async (c) => {
     const d = await lerCorpo(c, convidarEquipeSchema);
     await deps.banco.rpc("portal_equipe", quem(c));
+    // Nos 30 dias só de consulta (F0.14), o convite nem chega a criar a conta no Auth.
+    await deps.banco.rpc("portal_exigir_escrita", quem(c));
     if (!(await deps.banco.rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: c.get("sessao").pessoaId }))) throw new ErroDominio("RATE_LIMITED");
     const conta = await deps.admin.convidar(d.email, `${deps.urlApp}/criar-senha`);
     const vinculoId = await deps.banco.rpc<string>("portal_convidar", { ...quem(c), p_convidado: conta.userId, p_nome: d.nome, p_areas: d.areas });
@@ -148,11 +151,21 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Reenviar o convite de quem ainda não criou a senha: o link antigo deixa de valer.
   app.post("/v1/escritorio/equipe/:vinculo/reenviar", async (c) => {
     const vinculo = idDaRota(c, "vinculo");
+    await deps.banco.rpc("portal_exigir_escrita", quem(c));
     if (!(await deps.banco.rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: c.get("sessao").pessoaId }))) throw new ErroDominio("RATE_LIMITED");
     const membro = await deps.banco.rpc<string>("portal_reenviar_convite", { ...quem(c), p_vinculo: vinculo });
     const email = await deps.admin.emailDe(membro);
     if (!email) throw new ErroDominio("NOT_FOUND");
     return c.json({ enviado: await deps.admin.reenviarConvite(email, `${deps.urlApp}/criar-senha`) });
+  });
+
+  // Quem foi retirado e quando a entrada some (F0.14, filtro "Retiradas" da Equipe).
+  app.get("/v1/escritorio/equipe/retiradas", async (c) => {
+    const pessoas = await deps.banco.rpc<{ pessoaId: string; saida: { entradaApagadaEm?: string } | null }[]>("portal_equipe_retiradas", quem(c));
+    // Entrada apagada (90 dias sem acesso): o e-mail foi junto.
+    return c.json({
+      pessoas: await Promise.all(pessoas.map(async (p) => ({ ...p, email: p.saida?.entradaApagadaEm ? null : await deps.admin.emailDe(p.pessoaId) }))),
+    });
   });
 
   // Retirar (PT-21, EX-10): quem já entrou passa o que era dela para alguém da equipe.

@@ -132,6 +132,24 @@ Deno.test("CO-01: sem motivo, o estágio não muda", async () => {
   assertEquals(m.chamadas.some((c) => c.funcao === "console_mudar_estagio"), false);
 });
 
+Deno.test("F0.14: encerrar leva a data, o motivo e o nome ao banco; sem motivo, nem chega", async () => {
+  const m = montar({ handlers: { console_encerrar_contrato: () => ({ versao: 4, encerramento: { situacao: "CONSULTA" } }) } });
+  const cookie = await entrar(m);
+  const sem = await m.pedir(`/v1/clientes/${IPE}/encerrar`, { metodo: "POST", cookie, corpo: { versao: 3, fimEm: "2026-11-19", motivo: " ", nomeConfirmado: "Ipê" } });
+  assertEquals(sem.status, 400);
+  const r = await m.pedir(`/v1/clientes/${IPE}/encerrar`, { metodo: "POST", cookie, corpo: { versao: 3, fimEm: "2026-11-19", motivo: "Distrato", nomeConfirmado: "Ipê" } });
+  assertEquals(r.status, 200);
+  const ch = m.chamadas.find((c) => c.funcao === "console_encerrar_contrato")!;
+  assertEquals(ch.args.p_dados, { fimEm: "2026-11-19", motivo: "Distrato", nomeConfirmado: "Ipê" });
+  assertEquals(ch.args.p_versao, 3);
+});
+
+Deno.test("F0.14: reabrir pede o motivo e devolve o estágio", async () => {
+  const m = montar({ handlers: { console_reabrir_contrato: () => ({ versao: 5, estagio: "ATIVO" }) } });
+  const r = await m.pedir(`/v1/clientes/${IPE}/reabrir`, { metodo: "POST", cookie: await entrar(m), corpo: { versao: 4, motivo: "Voltou" } });
+  assertEquals(await r.json(), { versao: 5, estagio: "ATIVO" });
+});
+
 Deno.test("PT-20: convite do sócio cria a conta e manda o link para o Portal", async () => {
   const m = montar();
   const r = await m.pedir(`/v1/clientes/${IPE}/socios`, { cookie: await entrar(m), corpo: { nome: "Ana Souza", email: "Ana@Exemplo.invalid" } });

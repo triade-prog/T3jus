@@ -1,6 +1,6 @@
 // Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17): as parcelas que saem dos
 // contratos, o recebimento que baixa a parcela do mês dela e a cobrança com motivo e próxima
-// ação. As regras estão no banco (0210_portal_financeiro_receber.sql); aqui o esquema só
+// ação. As regras estão no banco (0220_portal_financeiro_receber.sql); aqui o esquema só
 // confere a forma do pedido.
 
 import { z } from "zod";

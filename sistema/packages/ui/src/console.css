@@ -1172,3 +1172,171 @@
 @media (max-width:760px){
   .co-ficha .socio-topo .atalho-suporte{order:5;width:100%;margin-left:0}
 }
+
+/* ==========================================================================
+   F0.14 · Fim do contrato e saída da pessoa. Só tokens do D2; prefixo fc-.
+   ========================================================================== */
+.co .selo-enc{background:var(--sal-2);color:var(--vinho);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.co .selo-enc .ico{color:var(--vinho)}
+.co .ficha-cab .meta .selo-enc{background:var(--sal-2)}
+.co .fc-perigo-cheio{background:var(--vinho-3);border-color:var(--vinho-3);color:var(--papel)}
+.co .fc-perigo-cheio:hover{background:var(--vinho-escuro);border-color:var(--vinho-escuro);color:var(--papel)}
+.co .btn[aria-busy="true"]{cursor:progress}
+.co .fc-giro{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;display:inline-block}
+
+/* Faixa de só leitura, logo abaixo da abertura, em todas as abas */
+.co .fc-faixa{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;margin-top:16px;padding:10px 12px 10px 20px;border-radius:var(--raio-g);background:var(--papel);box-shadow:inset 0 0 0 1px var(--borda-folha);position:relative;overflow:hidden}
+.co .fc-faixa::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--vinho)}
+.co .fc-faixa>.ico{color:var(--vinho)}
+.co .fc-faixa p{font-size:13px;line-height:1.5;color:var(--texto)}
+.co .fc-faixa p b{font-weight:600}
+.co .fc-faixa a{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:var(--raio);color:var(--vinho);font-weight:500;font-size:13px;white-space:nowrap}
+.co .fc-faixa a:hover{background:var(--sal-2)}
+.co .fc-faixa.fc-marcada::before{background:var(--ambar)}
+
+/* Trajeto do estágio com 3 passos */
+.co .trajeto.fc-tres{grid-template-columns:repeat(3,1fr)}
+.co .trajeto.fc-tres li:nth-child(2)::after{content:"";position:absolute;left:34px;right:0;top:15px;height:2px;background:var(--sal)}
+.co .trajeto.fc-tres li.feito+li.feito::after{background:var(--ambar)}
+.co .trajeto li.fc-fim .m{border-style:dashed}
+.co .trajeto li.fc-fim.agora .m{border-style:solid;background:var(--sal-2);border-color:var(--vinho);color:var(--vinho)}
+
+/* Ação de encerrar: separada por fio, no pé da folha Estágio */
+.co .fc-acao{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:16px;align-items:center;margin:20px 24px 0;padding-top:18px;border-top:1px solid var(--divisor)}
+.co .fc-acao .fc-ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--sal-2);color:var(--vinho-3)}
+.co .fc-acao strong{display:block;font-weight:600}
+.co .fc-acao p{font-size:13px;color:var(--texto-2);line-height:1.5;margin-top:2px}
+.co .fc-acao .btn{white-space:nowrap}
+.co .fc-acao .permissao{grid-column:2/-1}
+
+/* Linha do tempo do fim do contrato */
+.co .fc-linha{list-style:none;margin:4px 0 0;padding:0 24px 8px}
+.co .fc-linha>li{display:grid;grid-template-columns:132px 32px minmax(0,1fr);gap:14px;padding:12px 0 18px;position:relative}
+.co .fc-linha>li::before{content:"";position:absolute;left:161px;top:44px;bottom:-12px;width:2px;background:var(--sal)}
+.co .fc-linha>li.feito::before{background:var(--ambar)}
+.co .fc-linha>li:last-child::before{display:none}
+.co .fc-quando{font-family:var(--serifa);font-size:18px;line-height:1.2;color:var(--vinho);font-weight:500;padding-top:4px}
+.co .fc-quando small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--texto-2);margin-top:4px;font-weight:500}
+.co .fc-m{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed var(--vinho-4);background:var(--papel);color:var(--vinho-4);position:relative;z-index:1}
+.co .fc-m .ico{width:16px;height:16px;stroke-width:2}
+.co li.feito>.fc-m{background:var(--vinho);border:1.5px solid var(--vinho);color:var(--ambar-3)}
+.co li.agora>.fc-m{background:var(--ambar);border:1.5px solid var(--ambar);color:var(--tinta)}
+.co .fc-oque strong{display:block;font-size:15px;font-weight:600;line-height:1.35}
+.co li.agora .fc-oque strong{color:var(--vinho)}
+.co .fc-oque p{font-size:13px;color:var(--texto-2);line-height:1.55;margin-top:4px}
+.co .fc-oque p b{color:var(--texto);font-weight:500}
+.co .fc-sai,.co .fc-fica{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--texto-2)}
+.co .fc-sai>span:first-child,.co .fc-fica>span:first-child{font-weight:600;color:var(--texto);margin-right:2px;display:inline-flex;align-items:center;gap:4px}
+.co .fc-sai .selo,.co .fc-fica .selo{margin-left:0;height:auto;min-height:24px;padding:3px 10px;line-height:1.3;white-space:normal;font-size:11px}
+.co .fc-chip-sai{background:var(--papel);color:var(--vinho-3);box-shadow:inset 0 0 0 1px var(--vinho-3)}
+.co .fc-chip-fica{background:var(--sal-2);color:var(--texto-2)}
+.co .fc-linha .fc-estado{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:11px;font-size:11px;font-weight:500;margin-left:8px;vertical-align:2px}
+.co .fc-estado.e-feito{background:var(--vinho);color:var(--papel)}
+.co .fc-estado.e-agora{background:var(--ambar-3);color:var(--vinho-escuro)}
+.co .fc-estado.e-previsto{background:transparent;color:var(--vinho-2);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.co .fc-pe-linha{display:flex;align-items:flex-start;gap:10px;margin:0 24px;padding:14px 0 18px;border-top:1px solid var(--divisor);font-size:12px;color:var(--texto-2);line-height:1.5}
+.co .fc-pe-linha .ico{color:var(--vinho-4);flex:none;margin-top:1px}
+
+/* Reabrir */
+.co .fc-reabrir{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:16px;align-items:center;margin:0 24px 20px;padding:16px;border-radius:var(--raio);background:var(--ambar-3)}
+.co .fc-reabrir .fc-ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--papel);color:var(--vinho)}
+.co .fc-reabrir strong{display:block;font-weight:600}
+.co .fc-reabrir p{font-size:13px;color:var(--tinta);line-height:1.5;margin-top:2px}
+.co .fc-reabrir.fc-sem{background:var(--sal-2)}
+.co .fc-reabrir.fc-sem p{color:var(--texto-2)}
+
+/* Janela larga de encerrar */
+.co .janela.fc-larga{width:min(940px,calc(100vw - 32px))}
+.co .fc-duas{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:24px;align-items:start}
+.co .fc-col{display:grid;gap:16px;min-width:0}
+.co .fc-col h3{font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2)}
+.co .fc-mini{list-style:none;margin:0;padding:0;display:grid;gap:0;border-radius:var(--raio);background:var(--sal-2);overflow:hidden}
+.co .fc-mini li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:12px 14px;border-top:1px solid var(--papel);font-size:13px;line-height:1.5}
+.co .fc-mini li:first-child{border-top:0}
+.co .fc-mini .d{font-family:var(--serifa);font-size:16px;color:var(--vinho);font-weight:500;line-height:1.3}
+.co .fc-mini .d small{display:block;font-family:var(--sans);font-size:11px;color:var(--texto-2);font-weight:400}
+.co .fc-mini b{font-weight:600}
+.co .fc-mini li.fc-guarda{background:var(--ambar-3)}
+.co .fc-mini li.fc-guarda .d small{color:var(--tinta)}
+.co .fc-nota{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--texto-2);line-height:1.5}
+.co .fc-nota .ico{width:16px;height:16px;flex:none;color:var(--vinho-4);margin-top:1px}
+.co .fc-confirmar{display:grid;gap:10px;padding:16px;border-radius:var(--raio);box-shadow:inset 0 0 0 1px var(--vinho-3);background:var(--papel)}
+.co .fc-confirmar p{font-size:13px;line-height:1.5;color:var(--texto)}
+.co .fc-confirmar .fc-nome{font-family:var(--serifa);font-size:18px;color:var(--vinho);font-weight:500}
+.co .fc-confere{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--vinho-2)}
+.co .fc-confere .ico{width:16px;height:16px}
+.co .fc-rot{display:flex;align-items:baseline;gap:12px}
+.co .fc-contador{font-size:12px;color:var(--texto-2);margin-left:auto}
+.co .janela .fc-campo-data input{max-width:220px}
+.co .janela textarea.entrada{min-height:96px}
+.co .janela .aviso{box-shadow:none}
+.co .janela .aviso .codigo,.co .fc-codigo{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--texto-2);margin-top:6px}
+.co .fc-compara{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+.co .fc-compara th,.co .fc-compara td{text-align:left;padding:6px 8px;border-top:1px solid var(--borda-folha);vertical-align:top}
+.co .fc-compara th{font-weight:500;color:var(--texto-2);white-space:nowrap}
+.co .fc-passagem{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.co .fc-passagem .selo{margin-left:0}
+
+/* Histórico: motivo e eventos da rotina */
+.co .fc-motivo{display:block;margin-top:4px;font-family:var(--serifa);font-style:italic;font-size:16px;line-height:1.4;color:var(--vinho);padding-left:12px;border-left:2px solid var(--ambar)}
+.co .eventos li.fc-novo{background:#FCF8F5;border-radius:var(--raio);margin:0 -10px;padding-left:10px;padding-right:10px}
+.co .eventos .pto.fc-sis{background:var(--papel);box-shadow:inset 0 0 0 2px var(--vinho-4)}
+.co .fc-contagem{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.co .fc-contagem .selo{margin-left:0}
+.co .fc-futuro{margin:4px 24px 18px;padding:14px 16px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.co .fc-futuro b{font-weight:600}
+.co .fc-futuro ul{margin:6px 0 0;padding-left:18px}
+
+/* Toast com fechar */
+.co .toast .fc-fechar-toast{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;border-radius:var(--raio);color:var(--vinho);cursor:pointer}
+.co .toast .fc-fechar-toast:hover{background:var(--sal-2)}
+
+@media (max-width:760px){
+  .co .fc-faixa{grid-template-columns:auto minmax(0,1fr);padding:10px 12px 6px 18px;margin-top:12px}
+  .co .fc-faixa a{grid-column:1/-1;justify-self:start;margin-left:-12px}
+  .co .trajeto.fc-tres{grid-template-columns:1fr;gap:14px}
+  .co .trajeto.fc-tres li{padding:4px 0 0 44px;min-height:36px}
+  .co .trajeto.fc-tres li::after{display:none!important}
+  .co .fc-acao{grid-template-columns:44px minmax(0,1fr);margin:18px 16px 0;gap:12px}
+  .co .fc-acao>.btn{grid-column:1/-1;width:100%;white-space:normal}
+  .co .fc-acao .permissao{grid-column:1/-1}
+  .co .fc-linha{padding:0 16px 6px}
+  .co .fc-linha>li{grid-template-columns:32px minmax(0,1fr);gap:4px 12px}
+  .co .fc-linha>li>.fc-quando{grid-column:2;grid-row:1}
+  .co .fc-linha>li>.fc-m{grid-column:1;grid-row:1/span 2}
+  .co .fc-linha>li>.fc-oque{grid-column:2}
+  .co .fc-linha>li::before{left:15px}
+  .co .fc-pe-linha{margin:0 16px}
+  .co .fc-reabrir{grid-template-columns:44px minmax(0,1fr);margin:0 16px 16px;gap:12px}
+  .co .fc-reabrir>.btn{grid-column:1/-1;width:100%}
+  .co .fc-duas{grid-template-columns:minmax(0,1fr);gap:18px}
+  .co .fc-mini li{grid-template-columns:84px minmax(0,1fr);gap:10px;padding:10px 12px}
+  .co .janela .fc-campo-data input{max-width:none}
+  .co .fc-futuro{margin:4px 16px 16px}
+  .co .eventos li.fc-novo{margin:0 -8px;padding-left:8px;padding-right:8px}
+}
+
+/* F0.14 · Carteira: quinto número e linhas encerradas */
+.co .resumo.fc-cinco{grid-template-columns:repeat(5,1fr)}
+.co .resumo.fc-cinco a{padding:22px 18px;gap:12px}
+.co .resumo.fc-cinco .disco.fc-disco-enc{--c:var(--sal-2)}
+.co .mono.m-enc{background:var(--sal-2);color:var(--vinho);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.co .fc-sit{display:grid;gap:4px;justify-items:start}
+.co .fc-sit small,.co .fc-pequeno{font-size:12px;color:var(--texto-2);line-height:1.4}
+.co .fc-sit .selo{margin-left:0}
+.co .fc-nota-lista{display:flex;align-items:flex-start;gap:10px;padding:12px 24px 14px;border-top:1px solid var(--divisor);font-size:13px;color:var(--texto-2);line-height:1.5}
+.co .fc-nota-lista .ico{color:var(--vinho-4);flex:none;margin-top:1px}
+/* Equipe: o que acontece com a entrada de quem saiu */
+.co .fc-saida{display:block;font-size:12px;color:var(--texto-2);margin-top:4px;line-height:1.4}
+.co .fc-saida b{font-weight:500;color:var(--texto)}
+.co .selo-apagada{background:var(--papel);color:var(--texto-2);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.co .fc-email-apagado{font-style:italic}
+.co .fc-regra{display:flex;align-items:flex-start;gap:10px;margin:0 24px 18px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.co .fc-regra .ico{color:var(--vinho-4);margin-top:1px;flex:none}
+@media (max-width:760px){
+  .co .resumo.fc-cinco{grid-template-columns:1fr 1fr!important}
+  .co .resumo.fc-cinco a:last-child{grid-column:1/-1;border-left:0!important;border-top:1px solid var(--divisor)}
+  .co .resumo.fc-cinco a{padding:14px 12px!important}
+  .co .fc-nota-lista{padding:12px 16px}
+  .co .fc-regra{margin:0 16px 16px}
+}
