@@ -1,0 +1,66 @@
+[
+ {
+  "nome": "resumo",
+  "url": "financeiro.html?estado=resumo"
+ },
+ {
+  "nome": "resumo-vazio",
+  "url": "financeiro.html?estado=resumo-vazio"
+ },
+ {
+  "nome": "receber",
+  "url": "financeiro.html?estado=receber"
+ },
+ {
+  "nome": "contrato",
+  "url": "financeiro.html?estado=contrato"
+ },
+ {
+  "nome": "registrar",
+  "url": "financeiro.html?estado=registrar"
+ },
+ {
+  "nome": "registrar-erro",
+  "url": "financeiro.html?estado=registrar-erro"
+ },
+ {
+  "nome": "recebido",
+  "url": "financeiro.html?estado=recebido"
+ },
+ {
+  "nome": "pagar",
+  "url": "financeiro.html?estado=pagar"
+ },
+ {
+  "nome": "nova-conta",
+  "url": "financeiro.html?estado=nova-conta"
+ },
+ {
+  "nome": "repasses",
+  "url": "financeiro.html?estado=repasses"
+ },
+ {
+  "nome": "registrar-rpv",
+  "url": "financeiro.html?estado=registrar-rpv"
+ },
+ {
+  "nome": "prestacao",
+  "url": "financeiro.html?estado=prestacao"
+ },
+ {
+  "nome": "repasse",
+  "url": "financeiro.html?estado=repasse"
+ },
+ {
+  "nome": "fechar-bloqueado",
+  "url": "financeiro.html?estado=fechar-bloqueado"
+ },
+ {
+  "nome": "caixa",
+  "url": "financeiro.html?estado=caixa"
+ },
+ {
+  "nome": "exportar",
+  "url": "financeiro.html?estado=exportar"
+ }
+]

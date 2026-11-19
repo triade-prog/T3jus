@@ -1,0 +1,102 @@
+[
+ {
+  "nome": "ag-semana",
+  "url": "agenda.html?estado=semana"
+ },
+ {
+  "nome": "ag-mes",
+  "url": "agenda.html?estado=mes"
+ },
+ {
+  "nome": "ag-dia",
+  "url": "agenda.html?estado=dia"
+ },
+ {
+  "nome": "ag-pessoa",
+  "url": "agenda.html?estado=pessoa"
+ },
+ {
+  "nome": "ag-sem-juridico",
+  "url": "agenda.html?estado=sem-juridico"
+ },
+ {
+  "nome": "ag-vazio",
+  "url": "agenda.html?estado=vazio"
+ },
+ {
+  "nome": "ag-novo",
+  "url": "agenda.html?estado=novo"
+ },
+ {
+  "nome": "ag-novo-erros",
+  "url": "agenda.html?estado=novo-erros"
+ },
+ {
+  "nome": "ag-novo-outro",
+  "url": "agenda.html?estado=novo-outro"
+ },
+ {
+  "nome": "ag-marcado-outro",
+  "url": "agenda.html?estado=marcado-outro"
+ },
+ {
+  "nome": "ag-novo-outro-erro",
+  "url": "agenda.html?estado=novo-outro-erro"
+ },
+ {
+  "nome": "ag-marcado",
+  "url": "agenda.html?estado=marcado"
+ },
+ {
+  "nome": "ag-compromisso",
+  "url": "agenda.html?estado=compromisso"
+ },
+ {
+  "nome": "ag-cancelar",
+  "url": "agenda.html?estado=cancelar"
+ },
+ {
+  "nome": "cv-fila",
+  "url": "conversas.html?estado=fila"
+ },
+ {
+  "nome": "cv-conversa",
+  "url": "conversas.html?estado=conversa"
+ },
+ {
+  "nome": "cv-assumida",
+  "url": "conversas.html?estado=assumida"
+ },
+ {
+  "nome": "cv-devolver",
+  "url": "conversas.html?estado=devolver"
+ },
+ {
+  "nome": "cv-passar",
+  "url": "conversas.html?estado=passar"
+ },
+ {
+  "nome": "cv-resolvida",
+  "url": "conversas.html?estado=resolvida"
+ },
+ {
+  "nome": "cv-novo-contato",
+  "url": "conversas.html?estado=novo-contato"
+ },
+ {
+  "nome": "cv-fila-vazia",
+  "url": "conversas.html?estado=fila-vazia"
+ },
+ {
+  "nome": "cv-avisos",
+  "url": "conversas.html?estado=avisos"
+ },
+ {
+  "nome": "cv-nao-conectado",
+  "url": "conversas.html?estado=nao-conectado"
+ },
+ {
+  "nome": "cv-nao-conectado-equipe",
+  "url": "conversas.html?estado=nao-conectado-equipe"
+ }
+]
