@@ -1,0 +1,11 @@
+{
+  "id": "F3.11",
+  "texto": "Mostrar em Contratos os pedidos de contrato feitos por quem só tem Comercial",
+  "peca": "S2",
+  "refs": [
+    "IN-01"
+  ],
+  "status": "pendente",
+  "ordem": 110,
+  "proximo": "Listar as propostas aceitas com contrato pedido no alto de Contratos, com o link para gerar; hoje o pedido fica na proposta e no histórico"
+}

@@ -132,6 +132,8 @@ export interface Funil {
     enviada: AgoraProposta[];
     negociacao: AgoraProposta[];
     aceita: AgoraProposta[];
+    /** Os 3 contratos mais recentes que vieram de proposta (área Contratos). */
+    contrato?: { id: string; numero: string; clienteId: string; nome: string; em: string; situacao: "ELABORACAO" | "ATIVO" | "ENCERRADO"; valorCerto: number }[];
   };
 }
 export interface AgoraProposta { id: string; numero: string; clienteId: string; nome: string; retorno: { em: string; vencido: boolean } | null; valorCerto: number; condicoes: Condicao[] }

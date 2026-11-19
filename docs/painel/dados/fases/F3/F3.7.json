@@ -6,7 +6,8 @@
     "IN-01",
     "CH-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 70,
-  "proximo": "Na área Contratos, abrir o formulário com as condições da proposta (o botão já leva a /contratos/contratos?proposta=) e mostrar os pedidos de contrato; hoje o pedido fica registrado na proposta e no histórico"
+  "evidencia": "“Gerar o contrato” na proposta aceita abre /contratos/contratos/novo?proposta= com cliente, objeto, responsável e condições; criar o contrato passa a proposta para “Virou contrato” (pgTAP 020 e e2e portal-contratos).",
+  "nota": "O aviso do pedido de contrato dentro da área Contratos ficou no F3.11."
 }

@@ -1,0 +1,16 @@
+{
+  "data": "19/11/2026",
+  "inicio": "02:10",
+  "fim": "02:31",
+  "texto": "Contratos do Portal programados (F3.10): lista, novo contrato da proposta aceita ou direto, ficha com assinatura que gera a programação dos recebimentos, mudar com motivo, encerrar e Honorários com a base do mês. Também fecham F3.7 (gerar o contrato da proposta) e F3.9 (contratos no Funil e valor na Origem). Pendentes F3.11 a F3.16.",
+  "refs": [
+    "CH-01",
+    "CH-02",
+    "CH-03",
+    "CH-04",
+    "CH-06",
+    "IN-01",
+    "AP-03",
+    "AP-04"
+  ]
+}

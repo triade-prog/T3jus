@@ -1,0 +1,11 @@
+{
+  "id": "F3.13",
+  "texto": "Lembrete diário para pedir a base do mês do percentual recorrente, e o pedido opcional ao cliente pelo WhatsApp",
+  "peca": "S2",
+  "refs": [
+    "CH-06"
+  ],
+  "status": "pendente",
+  "ordem": 130,
+  "proximo": "Rotina diária que avisa quem recebe o lembrete no dia de pedir a base; o pedido pelo WhatsApp vem com Conversas. Hoje a base a pedir aparece em Honorários e na lista de Contratos"
+}

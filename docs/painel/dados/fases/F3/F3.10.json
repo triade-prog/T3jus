@@ -1,0 +1,17 @@
+{
+  "id": "F3.10",
+  "texto": "Contratos do Portal: lista com honorários, próximo recebimento e base a pedir; novo contrato em quatro passos com o resumo do que gera; ficha com abas Contrato, Recebimentos e Documentos; registrar a assinatura gera a programação dos recebimentos; mudar condição de contrato ativo com motivo refaz só o futuro; encerrar com motivo sem apagar; Honorários com a base do mês do percentual recorrente",
+  "peca": "S2",
+  "refs": [
+    "CH-01",
+    "CH-02",
+    "CH-03",
+    "CH-04",
+    "CH-06",
+    "IN-01"
+  ],
+  "status": "feito",
+  "ordem": 100,
+  "evidencia": "Migration 0200 (contratos C-AAAA-NNN em elaboração, ativo e encerrado; contrato_advogados; recebimentos_previstos que nascem na assinatura e são cancelados, nunca apagados; bases_mensais), pgTAP 020 (34 testes), rotas /v1/escritorio/contratos e /v1/escritorio/recebimentos/:id/base na api-portal (2 testes Deno novos), regras da tela em packages/ui/src/portal/contratos.ts (4 testes), e2e tests/e2e/portal-contratos.spec.ts (10 testes, celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-comercial-contratos.",
+  "nota": "Quem sai da equipe passa os contratos em elaboração e ativos para quem o sócio escolheu (EX-10). Faltam o arquivo assinado (F3.12), o lembrete diário da base (F3.13), os casos e a etapa que gera cobrança (F3.14), a OAB vinda da Equipe (F3.15) e os documentos gerados (F3.16)."
+}

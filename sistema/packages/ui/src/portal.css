@@ -1159,3 +1159,92 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 .cm-card{min-width:0;grid-template-columns:minmax(0,1fr)}
 .cm-card .selo{white-space:normal;height:auto;min-height:22px;max-width:100%}
 /* <<< Comercial */
+
+/* ==========================================================================
+   >>> Contratos (prefixo ct-, desenho aprovado em docs/design/aprovadas/portal-comercial-contratos)
+   ========================================================================== */
+.ct-casos{list-style:none;margin:0;padding:0 24px 12px}
+.ct-casos li{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--divisor)}
+.ct-casos li:first-child{border-top:0}
+.ct-casos .ct-ci{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--sal-2);color:var(--vinho)}
+.ct-casos a{font-weight:500;color:var(--vinho);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin:-10px 0 -12px}
+.ct-casos a:hover{text-decoration:underline}
+.ct-casos small{display:block;font-size:12px;color:var(--texto-2)}
+.ct-totais{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:0 24px 16px;gap:0}
+.ct-totais>div{padding:0 20px;border-left:1px solid var(--divisor)}
+.ct-totais>div:first-child{border-left:0;padding-left:0}
+.ct-totais p{font-size:13px;color:var(--texto-2)}
+.ct-totais p.hn-res-grande{font-size:28px}
+.ct-aviso{margin:0 24px 14px}
+.ct-lembretes{list-style:none;margin:0;padding:0}
+.ct-lembretes li{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 24px;border-top:1px solid var(--divisor)}
+.ct-lembretes li:first-child{border-top:0}
+.ct-lembretes li.ct-parado{background:#FCF6F2;box-shadow:inset 3px 0 0 var(--vinho-3)}
+.ct-lembretes a.ct-nome{font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin:-10px 0 -10px}
+.ct-lembretes p{font-size:13px;line-height:1.45}
+.ct-lembretes small{display:block;font-size:12px;color:var(--texto-2)}
+.ct-lembretes .ct-calc{font-size:13px}
+.ct-lembretes .ct-calc b{font-weight:500}
+
+/* Documentos e modelos */
+.ct-modelos{list-style:none;margin:0;padding:0 24px 16px}
+.ct-modelos li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--divisor)}
+.ct-modelos li:first-child{border-top:0}
+.ct-modelos .ct-ci{width:44px;height:44px;border-radius:var(--raio);display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.ct-modelos strong{display:block;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);line-height:1.2}
+.ct-modelos small{display:block;font-size:12px;color:var(--texto-2)}
+.ct-modelos .ct-bts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ct-doc-nome{display:flex;align-items:center;gap:10px}
+.ct-doc-nome .ico{color:var(--vinho-4);flex:none}
+.ct-doc-nome b{display:block;font-weight:500}
+
+/* Prévia do documento (papel) */
+.ct-papel-folha{padding:0 24px 24px}
+.ct-papel{background:var(--papel);border:1px solid var(--borda-folha);border-radius:4px;box-shadow:0 10px 24px -16px rgba(42,26,34,.45);padding:22px 22px 26px;font-family:var(--serifa);font-size:14px;line-height:1.6;color:var(--tinta);position:relative}
+.ct-papel::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:var(--vinho);border-radius:4px 4px 0 0}
+.ct-timbre{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:8px;margin-bottom:12px;border-bottom:1px solid var(--ambar-2);font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--vinho-2)}
+.ct-papel h3{font-family:var(--serifa);font-size:20px;font-weight:600;text-align:center;letter-spacing:.12em;color:var(--vinho);margin-bottom:10px}
+.ct-papel p+p{margin-top:8px}
+.ct-papel mark{background:var(--sal-2);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--vinho-4)}
+.ct-papel mark.ct-falta{background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--vinho-3);font-family:var(--sans);font-size:12px;font-weight:500;padding:1px 6px}
+.ct-papel .ct-mais{font-family:var(--sans);font-size:12px;color:var(--texto-2);margin-top:12px}
+.ct-leg{display:flex;flex-wrap:wrap;gap:6px 16px;padding:0 24px 12px;font-size:12px;color:var(--texto-2)}
+.ct-leg span{display:inline-flex;align-items:center;gap:6px}
+.ct-leg i{width:14px;height:10px;border-radius:2px;display:inline-block}
+.ct-arquivos{list-style:none;margin:0;padding:0 24px 8px}
+.ct-arquivos li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--divisor)}
+.ct-arquivos li:first-child{border-top:0}
+.ct-arquivos .ct-ci{width:44px;height:44px;border-radius:var(--raio);display:grid;place-items:center;background:var(--sal-2);color:var(--vinho)}
+.ct-arquivos b{display:block;font-weight:500;overflow-wrap:anywhere}
+.ct-arquivos small{display:block;font-size:12px;color:var(--texto-2)}
+
+.cm-motivos li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--divisor);font-size:13px}
+.cm-motivos li:first-child{border-top:0}
+.cm-motivos b{font-weight:500}
+
+@media (max-width:760px){
+  .cm-motivos{padding:0 16px 14px!important}
+  .ct-casos{padding:0 16px 8px}
+  .ct-casos li{grid-template-columns:40px minmax(0,1fr)}
+  .ct-casos li>.selo{grid-column:2;justify-self:start}
+  .ct-totais{grid-template-columns:1fr;padding:0 16px 14px;gap:12px}
+  .ct-totais>div{border-left:0;padding:12px 0 0;border-top:1px solid var(--divisor)}
+  .ct-totais>div:first-child{border-top:0;padding-top:0}
+  .ct-aviso{margin:0 16px 12px}
+  .ct-lembretes li{grid-template-columns:1fr;gap:8px;padding:14px 16px}
+  .ct-lembretes li .btn{width:100%}
+  .ct-modelos{padding:0 16px 12px}
+  .ct-modelos li{grid-template-columns:44px minmax(0,1fr)}
+  .ct-modelos .ct-bts{grid-column:1/-1;justify-content:stretch}
+  .ct-modelos .ct-bts .btn{flex:1 1 auto}
+  .ct-papel-folha{padding:0 16px 16px}
+  .ct-papel{padding:18px 14px 20px;font-size:13.5px}
+  .ct-leg{padding:0 16px 10px}
+  .ct-arquivos{padding:0 16px 8px}
+  .ct-arquivos li{grid-template-columns:44px minmax(0,1fr)}
+  .ct-arquivos li .btn{grid-column:1/-1;width:100%}
+}
+/* acréscimos da programação */
+.ct-cancelado td{color:var(--texto-2)}
+.ct-cancelado .num{text-decoration:line-through}
+/* <<< Contratos */
