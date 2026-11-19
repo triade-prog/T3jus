@@ -1,0 +1,14 @@
+{
+  "id": "F3.43",
+  "texto": "Repasses: alvará, RPV, precatório e depósito de acordo como valor de terceiros, divisão proposta pelo contrato, cada parte com prazo, feita ou dispensada com motivo, e a prestação de contas ao cliente",
+  "peca": "S3",
+  "refs": [
+    "FI-05",
+    "FI-06",
+    "FI-12"
+  ],
+  "status": "feito",
+  "ordem": 430,
+  "evidencia": "Migration 0280 (levantamentos e destinacoes protegidas, nada se apaga; a soma das partes fecha com o valor levantado, conferida no banco; proposta pelo percentual de êxito do contrato do cliente no caso e pelos reembolsos adiantados com volta no levantamento; prazo de 3 dias úteis; feito com o dia, dispensado com motivo; reembolso feito fecha a conta adiantada em A pagar; prestação de contas marcada como enviada), pgTAP 028 (33 testes), rotas /v1/escritorio/financeiro/repasses, /repasses/proposta, /repasses/:id, /repasses/:id/prestacao, /destinacoes/:id/feito e /destinacoes/:id/dispensar na api-portal (2 testes Deno novos), e2e tests/e2e/portal-financeiro-repasses.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-financeiro.",
+  "nota": "A prestação de contas é montada do registro e vai por enquanto pelo WhatsApp do aparelho (copiar ou abrir); o envio pelo número do escritório, com o \"lida\", fica em F3.44. Encerrar o caso no financeiro fica em F3.45; prazo ajustável e motivo do atraso, em F3.46; comprovante anexado, em F3.22."
+}

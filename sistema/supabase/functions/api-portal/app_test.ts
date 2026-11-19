@@ -146,6 +146,16 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_documento_abrir: () => "peticao.pdf",
     portal_juridico_peticoes: () => ({ minhaResposta: null }),
     portal_juridico_peticoes_responder: (a) => ({ ...(a.p_dados as object), em: "2026-11-19T22:00:00Z" }),
+    portal_financeiro_destinacao_feita: (a) => ({ id: a.p_destinacao, situacao: "FEITO", feitoEm: (a.p_dados as { feitoEm: string }).feitoEm }),
+    portal_financeiro_destinacao_dispensar: (a) => {
+      if (a.p_motivo === null) erroBanco("TC422", { motivo: "MOTIVO_OBRIGATORIO" });
+      return { id: a.p_destinacao, situacao: "DISPENSADO" };
+    },
+    portal_financeiro_levantamento_registrar: () => ({ id: CLIENTE }),
+    portal_financeiro_repasses: () => ({ algum: false, levantamentos: [] }),
+    portal_financeiro_repasse_proposta: () => ({ contrato: null, linhas: [], cliente: 100, falta: 0 }),
+    portal_financeiro_repasse: (a) => ({ id: a.p_levantamento }),
+    portal_financeiro_prestacao_enviada: (a) => ({ id: a.p_levantamento, prestacaoEm: "2026-11-19T22:00:00Z" }),
     portal_financeiro_conta_reembolsada: (a) => ({ id: a.p_conta, reembolsadoEm: (a.p_dados as { reembolsadoEm: string }).reembolsadoEm }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
     portal_compromisso_editar: (a) => {
@@ -745,6 +755,33 @@ Deno.test("FI-01, FI-07, FI-13: A pagar, lançar conta, marcar paga e reembolso;
   assertEquals(fut.detalhes?.motivo, "DATA_NO_FUTURO");
   assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/contas/${CLIENTE}/reembolso`, { corpo: { reembolsadoEm: "2026-11-18" }, cookie })).json()).reembolsadoEm, "2026-11-18");
   assertEquals((await m.pedir("/v1/escritorio/financeiro/contas/nao-e-id/paga", { corpo: {}, cookie })).status, 404);
+});
+
+Deno.test("FI-05, FI-06, FI-12: Repasses, proposta, registrar, feito, dispensar e prestação; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/repasses", { cookie })).status, 200);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/repasses/proposta", { corpo: { casoId: CLIENTE, clienteId: CLIENTE, valor: 100 }, cookie })).status, 200);
+  const r = await m.pedir("/v1/escritorio/financeiro/repasses", {
+    corpo: { tipo: "RPV", casoId: CLIENTE, clienteId: CLIENTE, valor: 100, entrouEm: "2026-11-17", divisao: [{ para: "CLIENTE", valor: 100 }] }, cookie });
+  assertEquals(r.status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_levantamento_registrar")!;
+  assertEquals([ch.args.p_escritorio, (ch.args.p_dados as { divisao: unknown[] }).divisao.length], [AURORA, 1]);
+  assertEquals((await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}`, { cookie })).status, 200);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/repasses/nao-e-id", { cookie })).status, 404);
+  assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/destinacoes/${CLIENTE}/feito`, { corpo: { feitoEm: "2026-11-18" }, cookie })).json()).feitoEm, "2026-11-18");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/financeiro/destinacoes/${CLIENTE}/dispensar`, { corpo: {}, cookie }))).detalhes?.motivo, "MOTIVO_OBRIGATORIO");
+  assertEquals((await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/prestacao`, { corpo: {}, cookie })).status, 200);
+});
+
+Deno.test("FI-05: tipos de levantamento e destinações do domínio são os mesmos do banco", async () => {
+  const { TIPOS_LEVANTAMENTO, PARA_DESTINACAO, PRAZO_REPASSE_DIAS, somarDiasUteis } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0280_portal_financeiro_repasses.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/tipo\s+text not null check \(tipo in \(([^)]+)\)/), Object.keys(TIPOS_LEVANTAMENTO));
+  assertEquals(lista(/para\s+text not null check \(para in \(([^)]+)\)/), Object.keys(PARA_DESTINACAO));
+  assertEquals(/prazo_repasse_dias\(\) returns integer\s+language sql immutable\s+as \$\$ select (\d+)/.exec(sql)?.[1], String(PRAZO_REPASSE_DIAS));
+  assertEquals(somarDiasUteis("2026-11-19", 3), "2026-11-24");
 });
 
 Deno.test("FI-20, FI-07: categorias de saída e formas de reembolso do domínio são as mesmas do banco", async () => {

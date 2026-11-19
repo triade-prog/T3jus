@@ -278,6 +278,17 @@ Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a ár
 - **API:** `GET /v1/escritorio/financeiro/pagar` (`?mostrar=SEMANA|VENCIDAS|MES|RECORRENTES`), `POST /financeiro/contas`, `POST /financeiro/contas/:id/paga` e `/reembolso`.
 - **Tela:** `/financeiro/a-pagar`, com as janelas de lançar conta, marcar paga e registrar o reembolso. A aprovação da sócia (FI-10) tem só o lugar reservado.
 
+### Financeiro do Portal, Repasses (F3.43; FI-05, FI-06, FI-12)
+
+- **Banco (migration 0280):** `levantamentos` (alvará, RPV, precatório ou depósito de acordo, de um cliente do caso, com o valor e o dia em que entrou) e `destinacoes` (para quem vai cada parte: cliente, honorários, reembolso, parceiro, perito ou outro, com o valor e o prazo). Um gatilho adiado confere no fim da transação que a soma das partes fecha com o valor levantado (`DIVISAO_NAO_FECHA`). Os guardiões não deixam apagar nada; a parte só ganha, uma vez, o feito (dia e quem fez) ou a dispensa (motivo, quem e quando). O que é do cliente não se dispensa.
+- **Divisão proposta (FI-05):** `repasse_proposta` tira os honorários do percentual de êxito do contrato do cliente no caso (`caso_clientes.contrato_id`) e põe os reembolsos que o escritório adiantou para esse cliente com volta "no levantamento" (`contas_pagar`, ainda não reembolsados nem destinados). O resto é do cliente. Parcela em atraso nunca é descontada aqui (pergunta 3 do desenho). Perito, parceiro e outros entram à mão na tela.
+- **Prazo:** 3 dias úteis depois que o dinheiro entrou (`somar_dias_uteis`, segunda a sexta; feriados ainda não entram). O domínio tem a mesma conta (`somarDiasUteis`), conferida por um teste Deno.
+- **Terceiros (FI-06):** honorários e reembolsos são do escritório; o resto é de terceiros. Os números da página separam "A repassar" de "Honorários a transferir". Reembolso feito marca a conta adiantada como reembolsada em A pagar.
+- **Prestação de contas (FI-12):** o texto sai do registro (`contaPrestacao` e `textoPrestacaoContas` no domínio) e não se edita na tela. Por enquanto vai pelo WhatsApp do aparelho (copiar ou abrir); `portal_financeiro_prestacao_enviada` guarda quem marcou e quando.
+- **API:** `GET /v1/escritorio/financeiro/repasses`, `POST /financeiro/repasses/proposta`, `POST /financeiro/repasses` (201), `GET /financeiro/repasses/:id`, `POST /financeiro/repasses/:id/prestacao`, `POST /financeiro/destinacoes/:id/feito` e `/dispensar`.
+- **Tela:** `/financeiro/repasses` (um bloco âmbar por valor de terceiros, "Como funciona" e o repassado no mês) e `/financeiro/repasses/:id` (para onde vai cada parte, a prévia da prestação de contas, o fechamento e o histórico), com as janelas de registrar alvará ou RPV, feito, dispensar e prestação de contas.
+- **Falta:** envio pelo WhatsApp do escritório com o "lida" (F3.44), encerrar o caso no financeiro (F3.45), prazo ajustável e motivo do atraso (F3.46) e o comprovante anexado (F3.22).
+
 ### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 
 Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_portal_juridico_casos.sql`, teste `024_portal_juridico_casos_test.sql`, e2e `portal-juridico-casos.spec.ts`.

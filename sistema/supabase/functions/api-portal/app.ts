@@ -11,6 +11,8 @@ import {
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, registrarRecebimentoSchema,
+  propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
+  type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
@@ -541,6 +543,47 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const d = await lerCorpo(c, contaReembolsadaSchema);
     return c.json(await deps.banco.rpc<{ id: string; reembolsadoEm: string }>("portal_financeiro_conta_reembolsada", {
       ...quem(c), p_conta: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  // ------------------------------------------------------------------ Repasses (FI-05, FI-06, FI-12)
+  // Valor de terceiros (alvará, RPV, precatório, acordo): a divisão proposta pelo contrato,
+  // cada parte com prazo, feita ou dispensada com motivo. A soma é conferida no banco.
+  app.get("/v1/escritorio/financeiro/repasses", async (c) => {
+    return c.json(await deps.banco.rpc<ListaRepasses>("portal_financeiro_repasses", quem(c)));
+  });
+
+  app.post("/v1/escritorio/financeiro/repasses/proposta", async (c) => {
+    const d = await lerCorpo(c, propostaRepasseSchema);
+    return c.json(await deps.banco.rpc<PropostaRepasse>("portal_financeiro_repasse_proposta", { ...quem(c), p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/financeiro/repasses", async (c) => {
+    const d = await lerCorpo(c, registrarLevantamentoSchema);
+    return c.json(await deps.banco.rpc<{ id: string }>("portal_financeiro_levantamento_registrar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/financeiro/repasses/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaRepasse>("portal_financeiro_repasse", { ...quem(c), p_levantamento: idDaRota(c, "id") }));
+  });
+
+  app.post("/v1/escritorio/financeiro/repasses/:id/prestacao", async (c) => {
+    return c.json(await deps.banco.rpc<{ id: string; prestacaoEm: string }>("portal_financeiro_prestacao_enviada", {
+      ...quem(c), p_levantamento: idDaRota(c, "id"),
+    }));
+  });
+
+  app.post("/v1/escritorio/financeiro/destinacoes/:id/feito", async (c) => {
+    const d = await lerCorpo(c, destinacaoFeitaSchema);
+    return c.json(await deps.banco.rpc<Destinacao>("portal_financeiro_destinacao_feita", {
+      ...quem(c), p_destinacao: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/financeiro/destinacoes/:id/dispensar", async (c) => {
+    const d = await lerCorpo(c, destinacaoDispensarSchema);
+    return c.json(await deps.banco.rpc<Destinacao>("portal_financeiro_destinacao_dispensar", {
+      ...quem(c), p_destinacao: idDaRota(c, "id"), p_motivo: d.motivo ?? null,
     }));
   });
 

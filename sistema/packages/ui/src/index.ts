@@ -41,6 +41,7 @@ export { ContratosPortal, HonorariosContratosPortal } from "./portal/Contratos.t
 export { FichaContratoPortal } from "./portal/FichaContrato.tsx";
 export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financeiro.tsx";
 export { PagarFinanceiro } from "./portal/FinanceiroPagar.tsx";
+export { RepasseFinanceiro, RepassesFinanceiro } from "./portal/FinanceiroRepasses.tsx";
 export { CasosJuridicoPortal, FichaCasoPortal, NovoCasoPortal } from "./portal/Juridico.tsx";
 export { PrazosJuridicoPortal, TarefasJuridicoPortal } from "./portal/JuridicoPrazos.tsx";
 export { EtapasJuridicoPortal, PeticoesJuridicoPortal } from "./portal/JuridicoEtapas.tsx";

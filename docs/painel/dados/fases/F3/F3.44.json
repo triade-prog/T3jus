@@ -1,0 +1,11 @@
+{
+  "id": "F3.44",
+  "texto": "Prestação de contas enviada pelo WhatsApp do escritório, com a hora em que o cliente leu",
+  "peca": "S6",
+  "refs": [
+    "FI-12"
+  ],
+  "status": "pendente",
+  "ordem": 440,
+  "proximo": "Depende de Conversas (WhatsApp do escritório ligado ao T3jus); até lá a janela mostra a mensagem para copiar ou abrir no WhatsApp do aparelho e marca como enviada"
+}

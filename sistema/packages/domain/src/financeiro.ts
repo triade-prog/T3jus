@@ -210,3 +210,170 @@ export interface ListaPagar {
   adiantados: ContaPagar[];
   categorias: { categoria: CategoriaSaida; valor: number }[];
 }
+
+// ------------------------------------------------------------------ Repasses (FI-05, FI-06, FI-12)
+
+/** De onde veio o dinheiro de terceiros que passou pelo escritório. */
+export const TIPOS_LEVANTAMENTO = {
+  ALVARA: "Alvará",
+  RPV: "RPV",
+  PRECATORIO: "Precatório",
+  ACORDO: "Depósito de acordo",
+} as const;
+export type TipoLevantamento = keyof typeof TIPOS_LEVANTAMENTO;
+
+/** Para quem vai cada parte. Honorários e reembolsos são do escritório; o resto é de terceiros. */
+export const PARA_DESTINACAO = {
+  CLIENTE: "Cliente",
+  HONORARIOS: "Honorários",
+  REEMBOLSO: "Reembolso ao escritório",
+  PARCEIRO: "Advogado parceiro",
+  PERITO: "Perito",
+  OUTRO: "Outro",
+} as const;
+export type ParaDestinacao = keyof typeof PARA_DESTINACAO;
+/** O que se acrescenta à mão na divisão (o cliente, os honorários e os reembolsos vêm do contrato). */
+export const PARA_ACRESCENTAR = ["PARCEIRO", "PERITO", "OUTRO"] as const;
+
+/** Prazo padrão do repasse, em dias úteis depois que o dinheiro entrou (pergunta 2 do desenho). */
+export const PRAZO_REPASSE_DIAS = 3;
+
+export const propostaRepasseSchema = z.object({
+  casoId: txt(40),
+  clienteId: txt(40),
+  valor: z.number().int().nullish(),
+});
+
+export const linhaDivisaoSchema = z.object({
+  para: txt(20),
+  nome: txt(200),
+  regra: txt(300),
+  valor: z.number().int().nullish(),
+  contaId: txt(40),
+});
+export type LinhaDivisao = z.input<typeof linhaDivisaoSchema>;
+
+export const registrarLevantamentoSchema = z.object({
+  tipo: txt(20),
+  casoId: txt(40),
+  clienteId: txt(40),
+  valor: z.number().int().nullish(),
+  entrouEm: txt(20),
+  divisao: z.array(linhaDivisaoSchema).max(20).default([]),
+});
+export type RegistrarLevantamento = z.input<typeof registrarLevantamentoSchema>;
+
+export const destinacaoFeitaSchema = z.object({ feitoEm: txt(20) });
+export const destinacaoDispensarSchema = z.object({ motivo: txt(600) });
+
+export interface PropostaRepasse {
+  contrato: { id: string; numero: string } | null;
+  linhas: { para: "HONORARIOS" | "REEMBOLSO"; nome: string; regra: string; valor: number; contaId?: string }[];
+  cliente: number;
+  falta: number;
+}
+
+export interface Destinacao {
+  id: string;
+  para: ParaDestinacao;
+  nome: string;
+  regra: string | null;
+  valor: number;
+  prazo: string;
+  escritorio: boolean;
+  situacao: "PENDENTE" | "FEITO" | "DISPENSADO";
+  feitoEm: string | null;
+  feitoPor: { id: string; nome: string } | null;
+  dispensa: { motivo: string; em: string; por: { id: string; nome: string } } | null;
+  contaId: string | null;
+}
+
+export interface Levantamento {
+  id: string;
+  tipo: TipoLevantamento;
+  valor: number;
+  entrouEm: string;
+  criadoEm: string;
+  autor: { id: string; nome: string };
+  prestacaoEm: string | null;
+  prestacaoPor: { id: string; nome: string } | null;
+  caso: { id: string; nome: string; parteContraria: string | null; area: string };
+  cliente: { id: string; nome: string; telefone: string | null };
+  feitos: number;
+  total: number;
+  destinacoes: Destinacao[];
+}
+
+export interface ListaRepasses {
+  hoje: string;
+  prazoDias: number;
+  algum: boolean;
+  totais: { aRepassar: number; repassesPendentes: number; honorarios: number; casos: number };
+  repassadoMes: { valor: number; clientes: number };
+  repassados: { levantamentoId: string; cliente: string; tipo: TipoLevantamento; valor: number; feitoEm: string }[];
+  levantamentos: Levantamento[];
+  casos: { id: string; nome: string; parteContraria: string | null; clientes: { id: string; nome: string }[] | null }[];
+}
+
+export interface FichaRepasse extends Levantamento {
+  hoje: string;
+  escritorio: string;
+  historico: { acao: string; em: string; por: { id: string; nome: string } | null; dados: Record<string, unknown> }[];
+}
+
+/** Soma dos dias úteis (segunda a sexta), como o banco faz. Os feriados ainda não entram. */
+export function somarDiasUteis(dia: string, dias: number): string {
+  const d = new Date(`${dia}T12:00:00Z`);
+  let n = 0;
+  while (n < dias) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const s = d.getUTCDay();
+    if (s !== 0 && s !== 6) n += 1;
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+const O_SEU_LEVANTAMENTO: Record<TipoLevantamento, string> = {
+  ALVARA: "O seu alvará foi pago",
+  RPV: "O seu RPV foi pago",
+  PRECATORIO: "O seu precatório foi pago",
+  ACORDO: "O depósito do seu acordo entrou",
+};
+
+/** A conta da prestação de contas (FI-12), montada do registro: os números não se editam ali. */
+export function contaPrestacao(
+  l: Pick<Levantamento, "tipo" | "valor" | "cliente" | "destinacoes">,
+  escritorio: string,
+): { abertura: string; descontos: { rotulo: string; valor: number }[]; fica: number; fecho: string } {
+  const primeiro = l.cliente.nome.split(" ")[0];
+  const doCliente = l.destinacoes.find((d) => d.para === "CLIENTE");
+  const data = (s: string) => s.split("-").reverse().slice(0, 2).join("/");
+  return {
+    abertura: `Olá, ${primeiro}. Aqui é o escritório ${escritorio}. ${O_SEU_LEVANTAMENTO[l.tipo]}, e esta é a conta de como ficou:`,
+    descontos: l.destinacoes
+      .filter((d) => d.para !== "CLIENTE" && d.situacao !== "DISPENSADO")
+      .map((d) => ({ rotulo: d.nome, valor: d.valor })),
+    fica: doCliente?.valor ?? 0,
+    fecho: doCliente?.feitoEm
+      ? `Já transferimos o seu valor em ${data(doCliente.feitoEm)}. Qualquer dúvida, é só responder.`
+      : `Vamos transferir o seu valor até ${data(doCliente?.prazo ?? "")}. Qualquer dúvida, é só responder.`,
+  };
+}
+
+/** O texto da prestação de contas, para copiar ou abrir no WhatsApp. */
+export function textoPrestacaoContas(
+  l: Pick<Levantamento, "tipo" | "valor" | "cliente" | "destinacoes">,
+  escritorio: string,
+): string {
+  const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }).replace(/\u00a0/g, " ");
+  const c = contaPrestacao(l, escritorio);
+  return [
+    c.abertura,
+    "",
+    `Valor recebido: ${brl(l.valor)}`,
+    ...c.descontos.map((d) => `${d.rotulo}: - ${brl(d.valor)}`),
+    `Fica para você: ${brl(c.fica)}`,
+    "",
+    c.fecho,
+  ].join("\n");
+}
