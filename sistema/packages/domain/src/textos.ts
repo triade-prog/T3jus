@@ -56,6 +56,12 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PARCELA_CANCELADA: "Esta parcela foi cancelada no contrato e não recebe mais.",
   CONTA_JA_PAGA: "Esta conta já está paga. Recarregue a página para ver o pagamento.",
   JA_REEMBOLSADA: "Este valor já foi reembolsado. Recarregue a página.",
+  NUMERO_JA_CADASTRADO: "Já existe um caso com este número de processo. Procure por ele na lista.",
+  MESMA_ETAPA: "O caso já está nesta etapa. Escolha outra.",
+  CASO_ENCERRADO: "Este caso já foi encerrado e não muda mais de etapa.",
+  CLIENTE_JA_NO_CASO: "Este cliente já está no caso.",
+  MOTIVO_OBRIGATORIO: "Escreva o motivo da mudança. Ele fica só para a equipe.",
+  RESULTADO_OBRIGATORIO: "Diga como o caso terminou: ganho, perda ou acordo.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

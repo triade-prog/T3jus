@@ -278,6 +278,19 @@ Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a ár
 - **API:** `GET /v1/escritorio/financeiro/pagar` (`?mostrar=SEMANA|VENCIDAS|MES|RECORRENTES`), `POST /financeiro/contas`, `POST /financeiro/contas/:id/paga` e `/reembolso`.
 - **Tela:** `/financeiro/a-pagar`, com as janelas de lançar conta, marcar paga e registrar o reembolso. A aprovação da sócia (FI-10) tem só o lugar reservado.
 
+### Jurídico do Portal, casos (F3.26; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
+
+Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_portal_juridico_casos.sql`, teste `024_portal_juridico_casos_test.sql`, e2e `portal-juridico-casos.spec.ts`.
+
+- **Banco:** `etapas` (lista do escritório, uma só final; as 8 sugeridas nascem no primeiro uso, por `etapas_garantir`), `casos` (número do CNJ só com os 20 dígitos e conferido pelo módulo 97 em `numero_cnj_valido`; um número por escritório), `caso_clientes` (papel e o contrato de cada cliente, do mesmo cliente e não encerrado) e `caso_etapa_mudancas` (só acréscimo: motivo, resultado e o texto do aviso, com `aviso_enviado_em` vazio até Conversas).
+- **Mudar etapa:** `portal_juridico_caso_etapa` pede o motivo, recusa a mesma etapa e caso encerrado, e na etapa final pede o resultado (ganho, perda ou acordo) e encerra. O aviso é montado por `aviso_etapa_texto` (o mesmo de `textoAvisoEtapa` em `@t3jus/domain`) e fica gravado; o meio pode ser ajustado só daquela vez.
+- **Honorários na ficha:** só vêm para quem tem a área Contratos ou Financeiro (`caso_ve_honorarios`); os outros veem o número do contrato e quem vê os valores.
+- **Saída da pessoa (EX-10):** o gatilho `casos_passar_de_quem_saiu` passa os casos em andamento para quem recebeu o que era dela.
+- **Inventário:** as quatro tabelas usam o prazo de guarda de 5 anos; a migration também corrige o prazo das tabelas do Financeiro (0220 e 0230), que tinham nascido com o texto antigo.
+- **API:** `GET /v1/escritorio/juridico/casos` (`?situacao=ANDAMENTO|ENCERRADO&q=&responsavel=&etapa=`), `GET /juridico/opcoes`, `POST /juridico/casos`, `GET` e `PUT /juridico/casos/:id`, `POST /juridico/casos/:id/clientes` e `POST /juridico/casos/:id/etapa`.
+- **Tela:** `/juridico/casos` (lista com a contagem por etapa), `/juridico/casos/novo` e `/juridico/casos/:id` (ficha com as janelas de mudar etapa, editar os dados e adicionar cliente).
+- **Falta:** prazos e tarefas (F3.27), documentos e o que está travando (F3.28), editar as etapas do escritório (F3.29), enviar o aviso pelo WhatsApp (F3.30) e o êxito que vai ao Financeiro com o resultado (F3.14).
+
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
 Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Carol de 19/11/2026 no `NOTAS.md`). Migration `0210_fim_contrato.sql`, teste `021_fim_contrato_test.sql`, e2e `fim-contrato.spec.ts`.

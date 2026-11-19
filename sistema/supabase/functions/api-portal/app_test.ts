@@ -112,6 +112,17 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if ((d.pagaEm ?? "") > "2026-11-18") erroBanco("TC422", { motivo: "DATA_NO_FUTURO", campos: ["pagaEm"] });
       return { id: a.p_conta, pagaEm: d.pagaEm };
     },
+    portal_juridico_casos: (a) => ({ situacao: a.p_situacao, q: a.p_q, escritorio: a.p_escritorio, casos: [] }),
+    portal_juridico_opcoes: () => ({ etapas: [], contratos: [] }),
+    portal_juridico_caso_criar: (a) => ({ id: CLIENTE, versao: 1, numero: (a.p_dados as { numero: string | null }).numero }),
+    portal_juridico_caso: (a) => ({ id: a.p_caso, nome: "Benedito x Metalúrgica" }),
+    portal_juridico_caso_editar: (a) => ({ id: a.p_caso, versao: (a.p_versao as number) + 1 }),
+    portal_juridico_caso_cliente: (a) => ({ id: a.p_caso }),
+    portal_juridico_caso_etapa: (a) => {
+      const d = a.p_dados as { motivo?: string };
+      if (!d.motivo) erroBanco("TC422", { motivo: "MOTIVO_OBRIGATORIO", campos: ["motivo"] });
+      return { id: a.p_caso, versao: (a.p_versao as number) + 1, encerrado: false, aviso: null };
+    },
     portal_financeiro_conta_reembolsada: (a) => ({ id: a.p_conta, reembolsadoEm: (a.p_dados as { reembolsadoEm: string }).reembolsadoEm }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
     portal_compromisso_editar: (a) => {
@@ -718,4 +729,33 @@ Deno.test("FI-20, FI-07: categorias de saída e formas de reembolso do domínio 
   const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
   assertEquals(lista(/categoria_saida_valida\(p text\)[\s\S]*?select p in \(([^)]+)\)/), Object.keys(CATEGORIAS_SAIDA));
   assertEquals(lista(/reembolso_como\s+text check \(reembolso_como in \(([^)]+)\)/), Object.keys(REEMBOLSO_COMO));
+});
+
+Deno.test("EX-01, EX-03: Jurídico, lista, cadastrar com o número só em dígitos, ficha e mudar etapa; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const l = await (await m.pedir("/v1/escritorio/juridico/casos?situacao=encerrado&q=rosa", { cookie })).json();
+  assertEquals([l.situacao, l.q, l.escritorio], ["ENCERRADO", "rosa", AURORA]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/casos?situacao=tudo", { cookie }))).detalhes?.campos, ["situacao"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/casos?etapa=x", { cookie }))).detalhes?.campos, ["filtro"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/opcoes", { cookie })).status, 200);
+  const c = await m.pedir("/v1/escritorio/juridico/casos", {
+    corpo: { nome: "Benedito x Metalúrgica", area: "TRABALHISTA", numero: "1001234-77.2026.5.02.0011", clientes: [{ clienteId: CLIENTE, papel: "AUTOR" }] }, cookie });
+  assertEquals([c.status, (await c.json()).numero], [201, "10012347720265020011"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}`, { cookie })).json()).id, CLIENTE);
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}`, { metodo: "PUT", corpo: { versao: 2, nome: "Novo" }, cookie })).json()).versao, 3);
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/clientes`, { corpo: { clienteId: CLIENTE, papel: "AUTOR" }, cookie })).status, 201);
+  const sem = await erro(await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/etapa`, { corpo: { versao: 1, etapaId: CLIENTE }, cookie }));
+  assertEquals(sem.detalhes?.motivo, "MOTIVO_OBRIGATORIO");
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/etapa`, { corpo: { versao: 1, etapaId: CLIENTE, motivo: "Citação" }, cookie })).json()).versao, 2);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/casos/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("EX-01: áreas do direito e o número do CNJ do domínio batem com o banco", async () => {
+  const { AREAS_DIREITO, numeroCnjValido, formatarCnj } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0240_portal_juridico_casos.sql", import.meta.url));
+  const lista = /area_direito_valida\(p text\)[\s\S]*?select p in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista, Object.keys(AREAS_DIREITO));
+  assertEquals([numeroCnjValido("1001234-77.2026.5.02.0011"), numeroCnjValido("1001234-78.2026.5.02.0011")], [true, false]);
+  assertEquals(formatarCnj("10012347720265020011"), "1001234-77.2026.5.02.0011");
 });

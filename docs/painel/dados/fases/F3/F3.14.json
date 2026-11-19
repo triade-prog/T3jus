@@ -4,9 +4,10 @@
   "peca": "S2",
   "refs": [
     "CH-05",
-    "CH-07"
+    "CH-07",
+    "EX-08"
   ],
   "status": "pendente",
   "ordem": 140,
-  "proximo": "Vem com o Jurídico: casos do cliente no passo 1 e na ficha, e a etapa marcada vira recebimento previsto"
+  "proximo": "O caso já liga cada cliente ao contrato e a etapa final já pede o resultado (F3.26); falta o resultado e a etapa que avisa o Financeiro virarem recebimento previsto do êxito"
 }

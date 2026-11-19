@@ -1,0 +1,13 @@
+{
+  "id": "F3.27",
+  "texto": "Prazos e tarefas do Jurídico: cadastrar prazo à mão com responsável, cumprir, tarefas com responsável e travadas esperando o cliente, na ficha do caso, nas listas Prazos e Tarefas e na lista de casos (próximo prazo)",
+  "peca": "S5",
+  "refs": [
+    "EX-02",
+    "EX-03",
+    "EX-04"
+  ],
+  "status": "pendente",
+  "ordem": 270,
+  "proximo": "Próxima entrega do Jurídico (parte 2)"
+}

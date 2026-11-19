@@ -1,0 +1,11 @@
+{
+  "id": "F3.30",
+  "texto": "Enviar pelo WhatsApp do escritório o aviso de mudança de etapa já preparado na ficha, a cada cliente do caso",
+  "peca": "B3",
+  "refs": [
+    "EX-14"
+  ],
+  "status": "pendente",
+  "ordem": 300,
+  "proximo": "Vem com Conversas; o texto já fica gravado em cada mudança de etapa"
+}
