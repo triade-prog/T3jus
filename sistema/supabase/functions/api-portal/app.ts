@@ -5,6 +5,7 @@ import type { MiddlewareHandler } from "hono";
 import {
   areasSchema, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
+  cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -285,6 +286,44 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Quem pode ser responsável pelo próximo contato ou ter atendido.
   app.get("/v1/escritorio/pessoas", async (c) => {
     return c.json({ pessoas: await deps.banco.rpc<{ id: string; nome: string }[]>("portal_pessoas_escritorio", quem(c)) });
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Agenda (EX-06, EX-11, PD-07): uma só, da equipe toda; todos veem e marcam. Os prazos do
+  // Jurídico só vêm para quem tem a área (o banco decide).
+
+  app.get("/v1/escritorio/agenda", async (c) => {
+    const r = periodoAgendaSchema.safeParse({ de: c.req.query("de"), ate: c.req.query("ate"), pessoa: c.req.query("pessoa") || undefined });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await deps.banco.rpc<Agenda>("portal_agenda", {
+      ...quem(c), p_de: r.data.de, p_ate: r.data.ate, p_de_quem: r.data.pessoa?.toLowerCase() ?? null,
+    }));
+  });
+
+  app.post("/v1/escritorio/compromissos", async (c) => {
+    const d = await lerCorpo(c, dadosCompromissoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_compromisso_marcar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/compromissos/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaCompromisso>("portal_compromisso", { ...quem(c), p_compromisso: idDaRota(c, "id") }));
+  });
+
+  // Editar ou remarcar: segue a versão lida (PT-19); mudar o dia ou a hora pede o motivo.
+  app.put("/v1/escritorio/compromissos/:id", async (c) => {
+    const { versao, motivo, ...d } = await lerCorpo(c, editarCompromissoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_compromisso_editar", {
+      ...quem(c), p_compromisso: idDaRota(c, "id"), p_versao: versao, p_dados: d, p_motivo: motivo ?? null,
+    }));
+  });
+
+  // Cancelar não apaga (PT-03): fica riscado, com o motivo.
+  app.post("/v1/escritorio/compromissos/:id/cancelar", async (c) => {
+    const d = await lerCorpo(c, cancelarCompromissoSchema);
+    const versao = await deps.banco.rpc<number>("portal_compromisso_cancelar", {
+      ...quem(c), p_compromisso: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo, p_avisar: d.avisar,
+    });
+    return c.json({ versao });
   });
 
   return app;

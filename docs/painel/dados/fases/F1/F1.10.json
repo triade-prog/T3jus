@@ -8,6 +8,6 @@
   ],
   "status": "pendente",
   "ordem": 55,
-  "nota": "A escolha de para quem passa já é obrigatória e fica no histórico (equipe.retirada, passou_para). A recusa por área já existe no banco (entrar_area). Falta usar as duas quando as tabelas de tarefas, prazos, cobranças e atendimentos existirem.",
+  "nota": "A escolha de para quem passa já é obrigatória e fica no histórico (equipe.retirada, passou_para). Os compromissos futuros da Agenda já passam para essa pessoa (migration 0180). A recusa por área já existe no banco (entrar_area). Falta usar as duas quando as tabelas de tarefas, prazos, cobranças e atendimentos existirem.",
   "proximo": "Quando Tarefas, Prazos, Cobranças e Atendimentos tiverem responsável, trocar o responsável na retirada e chamar entrar_area nas rotas de cada área"
 }

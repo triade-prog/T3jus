@@ -77,6 +77,14 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
       return { protocolo: "EXC-2026-0001", versao: Number(a.p_versao) + 1, pedido: { id: "p1", estado: "ATENDIDO" } };
     },
+    portal_agenda: (a) => ({ juridico: true, compromissos: [], feriados: [], prazos: [], tiposEscritos: [], de: a.p_de }),
+    portal_compromisso_marcar: () => ({ id: CLIENTE, versao: 1 }),
+    portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
+    portal_compromisso_editar: (a) => {
+      if (a.p_motivo === null) erroBanco("TC422", { campos: ["motivo"] });
+      return { id: a.p_compromisso, versao: Number(a.p_versao) + 1 };
+    },
+    portal_compromisso_cancelar: (a) => Number(a.p_versao) + 1,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
   });
   const app = criarApiPortal("segredo-de-repasse-de-teste", {
@@ -497,4 +505,47 @@ Deno.test("F1.15: os canais do pedido no domínio são os mesmos do banco", asyn
   const sql = await Deno.readTextFile(new URL("../../migrations/0170_clientes_pendencias.sql", import.meta.url));
   const lista = /canal\s+text not null check \(canal in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
   assertEquals(lista, Object.keys(CANAIS_PEDIDO));
+});
+
+Deno.test("EX-06: a agenda pede um período válido e a pessoa do filtro; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/agenda?de=2026-11-16&ate=2026-11-22&pessoa=${LARA.toUpperCase()}`, { cookie });
+  assertEquals(r.status, 200);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_agenda")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_de, ch.args.p_ate, ch.args.p_de_quem], [AURORA, "2026-11-16", "2026-11-22", LARA]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/agenda?de=16/11&ate=2026-11-22", { cookie }))).detalhes?.campos, ["de"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/agenda?de=2026-11-16&ate=2026-11-22&pessoa=x", { cookie }))).detalhes?.campos, ["pessoa"]);
+});
+
+Deno.test("EX-06, PT-03: marcar, remarcar com motivo e cancelar com motivo", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const dados = {
+    tipo: "AUDIENCIA", titulo: "Conciliação", inicio: "2026-11-19T16:00:00-03:00", fim: "2026-11-19T17:00:00-03:00",
+    modalidade: "VIRTUAL", linkSala: "https://sala.exemplo/1", responsavelId: ANA, lembrete: true,
+  };
+  const novo = await m.pedir("/v1/escritorio/compromissos", { corpo: dados, cookie });
+  assertEquals(novo.status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_compromisso_marcar")!;
+  assertEquals((ch.args.p_dados as Record<string, unknown>).tambemVai, []);
+  const sem = await m.pedir(`/v1/escritorio/compromissos/${CLIENTE}`, { metodo: "PUT", corpo: { ...dados, versao: 1 }, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["motivo"]);
+  const com = await m.pedir(`/v1/escritorio/compromissos/${CLIENTE}`, { metodo: "PUT", corpo: { ...dados, versao: 1, motivo: "redesignada" }, cookie });
+  assertEquals((await com.json()).versao, 2);
+  const ed = m.chamadas.findLast((c) => c.funcao === "portal_compromisso_editar")!;
+  assertEquals([(ed.args.p_dados as Record<string, unknown>).versao, ed.args.p_motivo], [undefined, "redesignada"]);
+  const vazio = await m.pedir(`/v1/escritorio/compromissos/${CLIENTE}/cancelar`, { corpo: { versao: 2, motivo: " " }, cookie });
+  assertEquals((await erro(vazio)).detalhes?.campos, ["motivo"]);
+  const ok = await m.pedir(`/v1/escritorio/compromissos/${CLIENTE}/cancelar`, { corpo: { versao: 2, motivo: "acordo", avisar: true }, cookie });
+  assertEquals((await ok.json()).versao, 3);
+  assertEquals((await m.pedir("/v1/escritorio/compromissos/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("EX-06: os tipos de compromisso no domínio são os mesmos do banco", async () => {
+  const { TIPOS_COMPROMISSO, MODALIDADES } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0180_portal_agenda.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
+  assertEquals(lista(/tipo\s+text not null check \(tipo in \(([^)]+)\)/), Object.keys(TIPOS_COMPROMISSO));
+  assertEquals(lista(/modalidade\s+text not null check \(modalidade in \(([^)]+)\)/), Object.keys(MODALIDADES));
 });

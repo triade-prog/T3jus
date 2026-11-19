@@ -31,3 +31,6 @@ export { ListaClientesPortal, type FiltroClientes } from "./portal/Clientes.tsx"
 export { NovoClientePortal } from "./portal/NovoCliente.tsx";
 export { FichaClientePortal, type AbaCliente } from "./portal/FichaCliente.tsx";
 export { InicioPortal } from "./portal/Inicio.tsx";
+export { AgendaPortal } from "./portal/Agenda.tsx";
+export { FichaCompromissoPortal } from "./portal/FichaCompromisso.tsx";
+export * as regrasAgenda from "./portal/agenda.ts";
