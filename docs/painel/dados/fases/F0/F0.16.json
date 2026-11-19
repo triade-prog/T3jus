@@ -1,0 +1,11 @@
+{
+  "id": "F0.16",
+  "texto": "Aviso por e-mail à sócia dona no fim do contrato: no dia do fim e 3 dias antes de o acesso fechar, com o prazo para baixar os dados",
+  "peca": "B3",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "proximo": "Mandar os dois e-mails pela rotina da noite; falta o e-mail de contato real do T3jus (o provisório é atendimento@exemplo.com.br)",
+  "ordem": 160
+}

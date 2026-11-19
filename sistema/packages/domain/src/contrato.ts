@@ -4,6 +4,7 @@
 // guarda de 5 anos, reabrir com motivo, só a Administração, entrada apagada aos 90 dias.
 
 import { z } from "zod";
+import { somarMeses } from "./honorarios.ts";
 
 /** Contato do T3jus para o escritório pedir a cópia dos dados. Provisório: a Carol ainda vai
  * mandar o endereço real (19/11/2026). */
@@ -73,13 +74,6 @@ export function dataDigitada(texto: string): string | null {
 export function somarDias(iso: string, dias: number): string {
   const [a, m, d] = iso.split("-").map(Number) as [number, number, number];
   return new Date(Date.UTC(a, m - 1, d + dias)).toISOString().slice(0, 10);
-}
-
-/** Soma meses a uma data "aaaa-mm-dd"; no mês mais curto, fica no último dia. */
-export function somarMeses(iso: string, meses: number): string {
-  const [a, m, d] = iso.split("-").map(Number) as [number, number, number];
-  const ultimo = new Date(Date.UTC(a, m - 1 + meses + 1, 0)).getUTCDate();
-  return new Date(Date.UTC(a, m - 1 + meses, Math.min(d, ultimo))).toISOString().slice(0, 10);
 }
 
 /** As datas do quadro da janela de encerrar, iguais às do banco (30 dias, 90 dias, 5 anos). */

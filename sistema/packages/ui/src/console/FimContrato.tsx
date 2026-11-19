@@ -422,7 +422,8 @@ export function FolhaFim({ f, recarregar }: { f: FichaDoCliente; recarregar: () 
   const e = f.encerramento;
   const [aberta, setAberta] = useState(false);
   const [feito, setFeito] = useState<string | null>(null);
-  if (!e) return null;
+  // Depois de reabrir ou desmarcar, a ficha volta sem o encerramento: fica só o aviso de feito.
+  if (!e) return feito ? <Aviso tom="sucesso" titulo={feito}>O motivo ficou no histórico do cliente, com seu nome e a data.</Aviso> : null;
   const marcado = e.situacao === "MARCADO";
   const pode = f.permissoes.includes(PODE_ENCERRAR);
   const passos = passosDoFim(f, e, hojeIso());

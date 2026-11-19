@@ -2,7 +2,7 @@
 -- 19/11/2026: 30 dias só de consulta, guarda de 5 anos, reabrir com motivo, só a
 -- Administração, e a entrada apagada aos 90 dias sem acesso.
 begin;
-select plan(50);
+select plan(51);
 
 create temp table ids as select
   teste.equipe('Carol', 'ADMINISTRACAO') as adm,
@@ -126,6 +126,11 @@ select ajustar_relogio(interval '123 days' + interval '5 years');
 select ok((select (console_ficha(adm, cedro) -> 'encerramento' ->> 'guardaAte')::date <= hoje_brasilia() from ids, c), 'a guarda terminou');
 select is((teste.erro($$ select console_reabrir_contrato(adm, cedro, pg_temp.versao(), 'Voltou') from ids, c $$)) -> 'detalhe' ->> 'motivo',
   'PRAZO_TERMINOU', 'decisão 3: reabrir só enquanto os dados existem');
+
+-- Toda tabela de escritório (a agenda e o comercial também) fica só de consulta nos 30 dias.
+select is((select count(*) from pg_policy p where p.polname = 'isolamento_escritorio'
+            and not exists (select 1 from pg_trigger g where g.tgrelid = p.polrelid and g.tgname = 'contrato_aceita_escrita')),
+          0::bigint, 'toda tabela isolada por escritório tem a trava de só consulta');
 
 select * from finish();
 rollback;

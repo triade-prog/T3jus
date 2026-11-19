@@ -57,10 +57,11 @@ insert into configuracoes (chave, valor, descricao) values
   ('prazo_entrada_dias',  '90', 'Dias sem nenhum acesso até a entrada (e-mail e senha) ser apagada (inventário: pessoas)'),
   ('prazo_guarda_anos',   '5',  'Anos de guarda dos dados do escritório depois do fim do contrato');
 
--- Decisão 2: os dados dos clientes do escritório seguem a guarda de 5 anos.
+-- Decisão 2: os dados dos clientes do escritório (clientes, atendimentos, pedidos de exclusão,
+-- agenda, comercial...) seguem a guarda de 5 anos e saem todos juntos no fim dela.
 update inventario_dados
    set prazo = 'Enquanto o escritório for cliente do T3jus e 5 anos depois do fim do contrato'
- where tabela in ('clientes_escritorio', 'atendimentos', 'pedidos_exclusao');
+ where prazo = 'Enquanto o escritório for cliente do T3jus';
 
 -- ---------------------------------------------------------------------------------------
 -- Leituras que atravessam escritórios. Com o RLS forçado, nem o dono das tabelas lê fora do
@@ -324,11 +325,16 @@ begin
   return coalesce(new, old);
 end $$;
 
+-- O escritório, os vínculos do Portal e toda tabela que já passou por proteger_tabela_escritorio
+-- (as que têm a política de isolamento: clientes, atendimentos, agenda, comercial...).
 do $$
-declare t text;
+declare t regclass;
 begin
-  foreach t in array array['escritorios', 'vinculos', 'areas_liberadas', 'clientes_escritorio', 'atendimentos', 'pedidos_exclusao'] loop
-    execute format('create trigger contrato_aceita_escrita before insert or update or delete on %I for each row execute function contrato_aceita_escrita()', t);
+  for t in
+    select 'public.escritorios'::regclass union select 'public.vinculos'::regclass
+    union select polrelid::regclass from pg_policy where polname = 'isolamento_escritorio'
+  loop
+    execute format('create trigger contrato_aceita_escrita before insert or update or delete on %s for each row execute function contrato_aceita_escrita()', t);
   end loop;
 end
 $$;
