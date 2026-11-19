@@ -12,6 +12,9 @@ import {
   type FichaContrato, type HonorariosContratos, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, registrarRecebimentoSchema,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
+  criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
+  type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
+  type ListaPrazos, type ListaTarefas, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -536,6 +539,144 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<{ id: string; reembolsadoEm: string }>("portal_financeiro_conta_reembolsada", {
       ...quem(c), p_conta: idDaRota(c, "id"), p_dados: d,
     }));
+  });
+
+  // Jurídico (EX-01, EX-03, EX-07, EX-14): casos, ficha e mudar etapa.
+  app.get("/v1/escritorio/juridico/casos", async (c) => {
+    const f = filtroCasosSchema.safeParse({
+      situacao: (c.req.query("situacao") || "ANDAMENTO").toUpperCase(), q: c.req.query("q") || null,
+      responsavel: c.req.query("responsavel") || null, etapa: c.req.query("etapa") || null,
+    });
+    if (!f.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["situacao"] });
+    const uuid = /^[0-9a-f-]{36}$/i;
+    if ((f.data.responsavel && !uuid.test(f.data.responsavel)) || (f.data.etapa && !uuid.test(f.data.etapa))) {
+      throw new ErroDominio("VALIDATION_ERROR", { campos: ["filtro"] });
+    }
+    return c.json(await deps.banco.rpc<ListaCasos>("portal_juridico_casos", {
+      ...quem(c), p_situacao: f.data.situacao, p_q: f.data.q ?? null, p_responsavel: f.data.responsavel ?? null, p_etapa: f.data.etapa ?? null,
+    }));
+  });
+
+  app.get("/v1/escritorio/juridico/opcoes", async (c) => {
+    return c.json(await deps.banco.rpc<OpcoesCaso>("portal_juridico_opcoes", quem(c)));
+  });
+
+  app.post("/v1/escritorio/juridico/casos", async (c) => {
+    const d = await lerCorpo(c, criarCasoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_juridico_caso_criar", {
+      ...quem(c), p_dados: { ...d, numero: d.numero ? digitosCnj(d.numero) : null },
+    }), 201);
+  });
+
+  app.get("/v1/escritorio/juridico/casos/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaCaso>("portal_juridico_caso", { ...quem(c), p_caso: idDaRota(c, "id") }));
+  });
+
+  app.put("/v1/escritorio/juridico/casos/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarCasoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_juridico_caso_editar", {
+      ...quem(c), p_caso: idDaRota(c, "id"), p_versao: versao, p_dados: { ...d, numero: d.numero ? digitosCnj(d.numero) : null },
+    }));
+  });
+
+  app.post("/v1/escritorio/juridico/casos/:id/clientes", async (c) => {
+    const d = await lerCorpo(c, clienteDoCasoSchema);
+    return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_caso_cliente", { ...quem(c), p_caso: idDaRota(c, "id"), p_dados: d }), 201);
+  });
+
+  app.post("/v1/escritorio/juridico/casos/:id/etapa", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, mudarEtapaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; encerrado: boolean; aviso: string | null }>("portal_juridico_caso_etapa", {
+      ...quem(c), p_caso: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  // Prazos e tarefas (EX-02, EX-04, PD-05, IN-08).
+  const uuidOuNulo = (v: string | undefined, campo: string) => {
+    if (!v) return null;
+    if (!/^[0-9a-f-]{36}$/i.test(v)) throw new ErroDominio("VALIDATION_ERROR", { campos: [campo] });
+    return v;
+  };
+
+  app.get("/v1/escritorio/juridico/prazos", async (c) => {
+    const mostrar = (c.req.query("mostrar") || "ABERTOS").toUpperCase();
+    if (!(MOSTRAR_PRAZOS as readonly string[]).includes(mostrar)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
+    return c.json(await deps.banco.rpc<ListaPrazos>("portal_juridico_prazos", {
+      ...quem(c), p_mostrar: mostrar, p_responsavel: uuidOuNulo(c.req.query("responsavel"), "responsavel"),
+    }));
+  });
+
+  app.post("/v1/escritorio/juridico/prazos", async (c) => {
+    const d = await lerCorpo(c, prazoSchema);
+    return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_prazo_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.post("/v1/escritorio/juridico/prazos/:id/cumprido", async (c) => {
+    return c.json(await deps.banco.rpc<{ id: string; cumpridoEm: string }>("portal_juridico_prazo_cumprido", { ...quem(c), p_prazo: idDaRota(c, "id") }));
+  });
+
+  app.get("/v1/escritorio/juridico/tarefas", async (c) => {
+    const visao = (c.req.query("visao") || "MINHAS").toUpperCase();
+    if (!(VISOES_TAREFAS as readonly string[]).includes(visao)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["visao"] });
+    return c.json(await deps.banco.rpc<ListaTarefas>("portal_juridico_tarefas", {
+      ...quem(c), p_visao: visao, p_responsavel: uuidOuNulo(c.req.query("responsavel"), "responsavel"),
+    }));
+  });
+
+  app.post("/v1/escritorio/juridico/tarefas", async (c) => {
+    const d = await lerCorpo(c, tarefaSchema);
+    return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_tarefa_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.post("/v1/escritorio/juridico/tarefas/:id/concluida", async (c) => {
+    const d = await lerCorpo(c, concluirTarefaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; concluida: boolean }>("portal_juridico_tarefa_concluir", {
+      ...quem(c), p_tarefa: idDaRota(c, "id"), p_concluir: d.concluir,
+    }));
+  });
+
+  app.post("/v1/escritorio/juridico/tarefas/:id/chegou", async (c) => {
+    return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_tarefa_chegou", { ...quem(c), p_tarefa: idDaRota(c, "id") }));
+  });
+
+  // Etapas do escritório (EX-07): todos com a área veem; só a sócia dona escreve (o banco confere).
+  app.get("/v1/escritorio/juridico/etapas", async (c) => {
+    return c.json(await deps.banco.rpc<EtapasEscritorio>("portal_juridico_etapas", quem(c)));
+  });
+
+  app.post("/v1/escritorio/juridico/etapas", async (c) => {
+    const { versao: _v, ...d } = await lerCorpo(c, etapaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_juridico_etapa_salvar", { ...quem(c), p_id: null, p_versao: null, p_dados: d }), 201);
+  });
+
+  app.put("/v1/escritorio/juridico/etapas/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, etapaSchema);
+    if (!versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_juridico_etapa_salvar", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/juridico/etapas/:id/mover", async (c) => {
+    const { direcao } = await lerCorpo(c, moverEtapaSchema);
+    return c.json(await deps.banco.rpc<Etapa[]>("portal_juridico_etapa_mover", { ...quem(c), p_id: idDaRota(c, "id"), p_direcao: direcao }));
+  });
+
+  app.post("/v1/escritorio/juridico/etapas/:id/remover", async (c) => {
+    const { moverPara } = await lerCorpo(c, removerEtapaSchema);
+    return c.json(await deps.banco.rpc<{ casosMovidos: number; para: string | null }>("portal_juridico_etapa_remover", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_mover_para: uuidOuNulo(moverPara ?? undefined, "moverPara"),
+    }));
+  });
+
+  // Petições (EX-09, a validar): só a resposta à pergunta, sem dado de cliente.
+  app.get("/v1/escritorio/juridico/peticoes", async (c) => {
+    return c.json(await deps.banco.rpc<{ minhaResposta: RespostaPeticoes | null }>("portal_juridico_peticoes", quem(c)));
+  });
+
+  app.post("/v1/escritorio/juridico/peticoes", async (c) => {
+    const d = await lerCorpo(c, peticaoSchema);
+    return c.json(await deps.banco.rpc<RespostaPeticoes>("portal_juridico_peticoes_responder", { ...quem(c), p_dados: d }), 201);
   });
 
   return app;

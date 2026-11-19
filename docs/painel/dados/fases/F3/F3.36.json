@@ -1,0 +1,12 @@
+{
+  "id": "F3.36",
+  "texto": "Etapas do escritório: a sócia dona muda nomes, \"o que é\", o texto do aviso ao cliente (com a prévia do WhatsApp) e qual etapa avisa o Financeiro; adiciona antes da final; sobe e desce; tira uma etapa e os casos dela vão para a etapa escolhida, com a mudança no histórico de cada caso; a equipe só vê",
+  "peca": "S5",
+  "refs": [
+    "EX-07"
+  ],
+  "status": "feito",
+  "ordem": 360,
+  "evidencia": "Migration 0260 (portal_juridico_etapas, _etapa_salvar com versão, _etapa_mover, _etapa_remover com mover_para; etapa tirada fica guardada fora da ordem e nenhum caso entra nela; ação juridico.etapas.editar só da sócia), pgTAP 026, rotas /v1/escritorio/juridico/etapas, /etapas/:id, /mover e /remover na api-portal (1 teste Deno novo), e2e tests/e2e/portal-juridico-etapas.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-juridico.",
+  "nota": "A marca \"Avisar o Financeiro\" fica gravada na etapa; o pedido de valor e data ao Financeiro ao entrar nela vem com F3.14."
+}

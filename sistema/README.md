@@ -278,6 +278,45 @@ Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a ár
 - **API:** `GET /v1/escritorio/financeiro/pagar` (`?mostrar=SEMANA|VENCIDAS|MES|RECORRENTES`), `POST /financeiro/contas`, `POST /financeiro/contas/:id/paga` e `/reembolso`.
 - **Tela:** `/financeiro/a-pagar`, com as janelas de lançar conta, marcar paga e registrar o reembolso. A aprovação da sócia (FI-10) tem só o lugar reservado.
 
+### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
+
+Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_portal_juridico_casos.sql`, teste `024_portal_juridico_casos_test.sql`, e2e `portal-juridico-casos.spec.ts`.
+
+- **Banco:** `etapas` (lista do escritório, uma só final; as 8 sugeridas nascem no primeiro uso, por `etapas_garantir`), `casos` (número do CNJ só com os 20 dígitos e conferido pelo módulo 97 em `numero_cnj_valido`; um número por escritório), `caso_clientes` (papel e o contrato de cada cliente, do mesmo cliente e não encerrado) e `caso_etapa_mudancas` (só acréscimo: motivo, resultado e o texto do aviso, com `aviso_enviado_em` vazio até Conversas).
+- **Mudar etapa:** `portal_juridico_caso_etapa` pede o motivo, recusa a mesma etapa e caso encerrado, e na etapa final pede o resultado (ganho, perda ou acordo) e encerra. O aviso é montado por `aviso_etapa_texto` (o mesmo de `textoAvisoEtapa` em `@t3jus/domain`) e fica gravado; o meio pode ser ajustado só daquela vez.
+- **Honorários na ficha:** só vêm para quem tem a área Contratos ou Financeiro (`caso_ve_honorarios`); os outros veem o número do contrato e quem vê os valores.
+- **Saída da pessoa (EX-10):** o gatilho `casos_passar_de_quem_saiu` passa os casos em andamento para quem recebeu o que era dela.
+- **Inventário:** as quatro tabelas usam o prazo de guarda de 5 anos; a migration também corrige o prazo das tabelas do Financeiro (0220 e 0230), que tinham nascido com o texto antigo.
+- **API:** `GET /v1/escritorio/juridico/casos` (`?situacao=ANDAMENTO|ENCERRADO&q=&responsavel=&etapa=`), `GET /juridico/opcoes`, `POST /juridico/casos`, `GET` e `PUT /juridico/casos/:id`, `POST /juridico/casos/:id/clientes` e `POST /juridico/casos/:id/etapa`.
+- **Tela:** `/juridico/casos` (lista com a contagem por etapa), `/juridico/casos/novo` e `/juridico/casos/:id` (ficha com as janelas de mudar etapa, editar os dados e adicionar cliente).
+- **Falta:** documentos (F3.35), editar as etapas do escritório (F3.36), enviar o aviso pelo WhatsApp (F3.37) e o êxito que vai ao Financeiro com o resultado (F3.14).
+
+### Jurídico do Portal, prazos e tarefas (F3.34; EX-02, EX-04, PD-05, IN-08)
+
+Mesmas telas aprovadas (estados prazos, novo-prazo, tarefas, tarefas-equipe e a ficha). Migration `0250_portal_juridico_prazos_tarefas.sql`, teste `025_portal_juridico_prazos_tarefas_test.sql`, e2e `portal-juridico-prazos.spec.ts`.
+
+- **Banco:** `prazos` (o que é, prazo final, "fazer até" no prazo final ou antes, intimação de hoje ou antes, responsável, `lembrar`, quem cumpriu e quando) e `tarefas` (título, vencimento, responsável, o que ela espera e desde quando, quem concluiu). As duas passam por `proteger_tabela_escritorio`, entram no inventário com a guarda de 5 anos e só aceitam caso em andamento do mesmo escritório. Cumprir vale uma vez (`PRAZO_JA_CUMPRIDO`) e fica no histórico do caso; tarefa concluída pode ser reaberta.
+- **Lista de casos e ficha:** `caso_linha` ganhou `proximoPrazo` e `pendencias` (tarefas abertas esperando alguém); a lista vem pelo prazo mais próximo e traz `hoje` e `totais.prazoHoje`; a ficha traz `prazos` e `tarefas` (abertos primeiro, feitos nos últimos 30 dias depois).
+- **Carga da equipe (IN-08):** na visão da equipe, `carga` traz por pessoa os casos em andamento, as tarefas abertas e as atrasadas.
+- **Saída da pessoa (EX-10):** o gatilho `prazos_tarefas_passar_de_quem_saiu` passa os prazos e as tarefas abertas para quem recebeu o que era dela.
+- **API:** `GET /v1/escritorio/juridico/prazos` (`?mostrar=ABERTOS|MEUS|CUMPRIDOS&responsavel=`), `POST /juridico/prazos`, `POST /juridico/prazos/:id/cumprido`, `GET /juridico/tarefas` (`?visao=MINHAS|EQUIPE&responsavel=`), `POST /juridico/tarefas`, `POST /juridico/tarefas/:id/concluida` (`{ concluir }`) e `POST /juridico/tarefas/:id/chegou`.
+- **Tela:** `/juridico/prazos` (agrupados em Vencidos, Hoje, Amanhã, Até sexta e Depois, com a urgência escrita), `/juridico/tarefas` (Minhas e Da equipe, com a carga), a seção "Prazos e tarefas" e o quadro "O que está travando" na ficha, e as colunas Próximo prazo e Pendências na lista de casos. As regras de urgência e de grupos ficam em `packages/ui/src/portal/juridico.ts`.
+- **Falta:** o lembrete 2 dias antes no Início e no sino (F3.38) e editar prazo e tarefa, inclusive trocar o responsável (F3.39). O T3jus não lê publicações nem conta dias úteis; a tela diz isso.
+
+### Jurídico do Portal, etapas do escritório e Petições (F3.36, F3.40; EX-07, EX-09)
+
+Mesmas telas aprovadas (estados etapas e peticoes). Migration `0260_portal_juridico_etapas_peticoes.sql`, teste `026_portal_juridico_etapas_peticoes_test.sql`, e2e `portal-juridico-etapas.spec.ts`.
+
+- **Quem edita:** a ação `juridico.etapas.editar` é só da função SOCIO (a sócia dona). A equipe com a área Jurídico vê a lista (`podeEditar: false`).
+- **Editar e adicionar:** `portal_juridico_etapa_salvar` (sem id, entra logo antes da final; com id, pede a versão). Nome único no escritório, sem contar acento. A final aceita texto novo, mas não "avisar o Financeiro" (ela pede o resultado).
+- **Ordem:** `portal_juridico_etapa_mover` troca com a vizinha (`SOBE` ou `DESCE`) num só comando; a final e a vizinha dela não trocam (`ETAPA_FINAL_FIXA`).
+- **Tirar:** `portal_juridico_etapa_remover` pede `moverPara` quando há casos (não pode ser a final). Cada caso ganha uma linha em `caso_etapa_mudancas`, sem aviso ao cliente. A etapa não é apagada: ganha `removida_em`, sai da ordem (vai para 1001 em diante) e some de `etapas_lista`; o gatilho `casos_etapa_viva` impede qualquer caso de entrar nela.
+- **Histórico:** `juridico.etapa_criada`, `etapa_editada` (antes e depois), `etapa_movida` e `etapa_removida`. O histórico recusa a chave `nome`, por isso o nome da etapa vai como `etapa`.
+- **Petições (EX-09, a validar):** `peticao_interesse` guarda só quem respondeu, a resposta (`SEMANA`, `AS_VEZES` ou `NAO`) e como faz hoje. A página mostra a última resposta da pessoa e deixa mudar.
+- **API:** `GET` e `POST /v1/escritorio/juridico/etapas`, `PUT /juridico/etapas/:id`, `POST /juridico/etapas/:id/mover`, `POST /juridico/etapas/:id/remover`, `GET` e `POST /juridico/peticoes`.
+- **Tela:** `/juridico/casos/etapas` (o botão "Etapas do escritório" aparece na lista de casos só para a sócia dona) e `/juridico/peticoes`.
+- **Falta:** as respostas de Petições no Console e o gerador (F3.41); o pedido ao Financeiro ao entrar na etapa marcada (F3.14).
+
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
 Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Carol de 19/11/2026 no `NOTAS.md`). Migration `0210_fim_contrato.sql`, teste `021_fim_contrato_test.sql`, e2e `fim-contrato.spec.ts`.

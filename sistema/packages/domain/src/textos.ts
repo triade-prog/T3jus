@@ -56,6 +56,20 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PARCELA_CANCELADA: "Esta parcela foi cancelada no contrato e não recebe mais.",
   CONTA_JA_PAGA: "Esta conta já está paga. Recarregue a página para ver o pagamento.",
   JA_REEMBOLSADA: "Este valor já foi reembolsado. Recarregue a página.",
+  NUMERO_JA_CADASTRADO: "Já existe um caso com este número de processo. Procure por ele na lista.",
+  MESMA_ETAPA: "O caso já está nesta etapa. Escolha outra.",
+  CASO_ENCERRADO: "Este caso já foi encerrado e não muda mais de etapa.",
+  CLIENTE_JA_NO_CASO: "Este cliente já está no caso.",
+  MOTIVO_OBRIGATORIO: "Escreva o motivo da mudança. Ele fica só para a equipe.",
+  PRAZO_JA_CUMPRIDO: "Este prazo já foi marcado como cumprido. Recarregue a página.",
+  TAREFA_JA_CONCLUIDA: "Esta tarefa já foi concluída. Recarregue a página.",
+  TAREFA_ABERTA: "Esta tarefa já está aberta. Recarregue a página.",
+  TAREFA_NAO_ESPERA: "Esta tarefa não está esperando ninguém. Recarregue a página.",
+  ETAPA_NOME_REPETIDO: "Já existe uma etapa com esse nome. Escolha outro.",
+  ETAPA_FINAL_FIXA: "A última etapa é sempre a final: ela não muda de lugar nem sai da lista.",
+  ETAPAS_DEMAIS: "O escritório pode ter até 30 etapas.",
+  ETAPAS_DE_MENOS: "O escritório precisa de pelo menos uma etapa além da final.",
+  RESULTADO_OBRIGATORIO: "Diga como o caso terminou: ganho, perda ou acordo.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

@@ -34,15 +34,15 @@ const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
 test.describe("Portal v1: moldura em áreas (PA-01)", () => {
   test("o sócio dono vê as quatro áreas e a Equipe; no celular, a barra embaixo e o Mais", async ({ page }) => {
     await simular(page, { "/v1/escritorio": { corpo: ESCRITORIO } });
-    await page.goto(`${P}/juridico/prazos`);
-    await expect(page.getByRole("heading", { level: 1, name: "O Jurídico está sendo preparado" })).toBeVisible();
-    const secoes = page.getByRole("navigation", { name: "Seções do Jurídico" });
-    await expect(secoes.getByRole("link", { name: "Prazos" })).toHaveAttribute("aria-current", "page");
+    await page.goto(`${P}/financeiro/caixa`);
+    await expect(page.getByRole("heading", { level: 1, name: "O Financeiro está sendo preparado" })).toBeVisible();
+    const secoes = page.getByRole("navigation", { name: "Seções do Financeiro" });
+    await expect(secoes.getByRole("link", { name: "Caixa" })).toHaveAttribute("aria-current", "page");
     await semViolacoes(page);
     if (!ehCelular(page)) {
       const nav = page.getByRole("navigation", { name: "Navegação principal" });
       for (const a of ["Comercial", "Contratos", "Financeiro", "Jurídico"]) await expect(nav.getByRole("link", { name: a })).toBeVisible();
-      await expect(nav.getByRole("link", { name: "Jurídico" })).toHaveAttribute("aria-current", "true");
+      await expect(nav.getByRole("link", { name: "Financeiro" })).toHaveAttribute("aria-current", "true");
       await expect(page.getByRole("navigation", { name: "Escritório" }).getByRole("link", { name: "Equipe" })).toBeVisible();
       await expect(page.getByRole("navigation", { name: "Navegação do celular" })).toBeHidden();
       return;
@@ -54,7 +54,7 @@ test.describe("Portal v1: moldura em áreas (PA-01)", () => {
     const folha = page.getByRole("dialog", { name: "Mais" });
     await expect(folha).toBeVisible();
     await expect(folha.getByRole("button", { name: "Fechar" })).toBeFocused();
-    await expect(folha.getByRole("link", { name: "Jurídico" })).toHaveAttribute("aria-current", "true");
+    await expect(folha.getByRole("link", { name: "Financeiro" })).toHaveAttribute("aria-current", "true");
     await expect(folha.getByRole("link", { name: "Equipe" })).toBeVisible();
     await semViolacoes(page);
     await page.keyboard.press("Escape");

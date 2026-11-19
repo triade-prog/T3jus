@@ -1657,3 +1657,199 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .fi .hn-ferr>select.entrada{flex:1 1 100%}
 }
 /* <<< Financeiro */
+/* >>> Jurídico, parte 1: casos, ficha e mudar etapa */
+.jr-trilha{display:flex;gap:4px;margin:5px 0 3px}
+.jr-trilha i{display:block;width:14px;height:5px;border-radius:3px;background:var(--sal-2)}
+.jr-trilha i.feita{background:var(--vinho)}
+.jr-trilha i.atual{background:var(--ambar)}
+.jr-trilha-g{gap:6px;margin:8px 0 10px}
+.jr-trilha-g i{flex:1 1 0;width:auto;height:6px;background:rgba(255,255,255,.45);border:1px solid var(--vinho-escuro)}
+.jr-trilha-g i.feita{background:var(--vinho-escuro)}
+.jr-trilha-g i.atual{background:var(--vinho-escuro)}
+.dir .jr-grande{font-size:30px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.dir .jr-grande .num{font-size:30px}
+.jr-onde{padding:0 24px 8px}
+.jr-onde h3{margin:4px 0 10px;font-size:12px}
+.jr-onde ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.jr-onde button{width:100%;min-height:56px;display:grid;justify-items:start;gap:2px;padding:8px 12px;border:1px solid var(--divisor);border-radius:var(--raio);background:var(--papel);color:var(--texto);font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.jr-onde button b{font-family:var(--serifa);font-size:20px;color:var(--vinho)}
+.jr-onde button[aria-pressed="true"]{border-color:var(--vinho);background:var(--ambar-3)}
+.jr-onde button:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.jr-lista .hn-ferr>select.entrada{flex:0 1 230px;width:auto;min-width:0}
+.jr-tab .jr-nome{font-family:var(--serifa);font-size:18px}
+.jr-tab small,.jr-tab .jr-etapa small{display:block;font-size:12px;color:var(--texto-2)}
+.jr-tab .jr-sem{color:var(--vinho-3)}
+.jr-cli{font-weight:500}
+.jr-etapa b{color:var(--vinho);font-weight:500}
+.jr-resp{display:inline-flex;align-items:center;gap:8px}
+.jr-resp .av-p{width:28px;height:28px;font-size:11px}
+.jr-clientes{display:grid;gap:12px}
+.jr-cli-linha{border:1px solid var(--divisor);border-radius:var(--raio);background:var(--sal);padding:14px 16px;margin:0;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,1.3fr) auto;gap:12px;align-items:start}
+.jr-tirar{margin-top:26px}
+.jr-agora{margin:0;padding:12px 16px;border-radius:var(--raio);background:var(--sal);font-size:14px}
+.jr-agora b{color:var(--vinho)}
+.jr-opcoes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.jr-opcoes-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.jr-op{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 14px;border:1px solid var(--divisor);border-radius:var(--raio);background:var(--papel);cursor:pointer;color:var(--texto)}
+.jr-op small{display:block;font-size:12px;color:var(--texto-2)}
+.jr-op-n{font-family:var(--serifa);color:var(--vinho);min-width:12px}
+.jr-op-sel{border-color:var(--vinho);background:var(--ambar-3)}
+.co .jr-op .marcar:checked{background:var(--vinho);border-color:var(--vinho)}
+.jr-op-atual{background:var(--sal);cursor:not-allowed;color:var(--texto-2)}
+.jr-op:has(input:focus-visible){outline:2px solid var(--foco);outline-offset:2px}
+.jr-aviso-t{margin:0 0 8px;font-weight:500}
+.jr-aviso-t small{font-weight:400;font-size:12px;color:var(--texto-2);margin-left:6px}
+.jr-aviso-caixa{border:1px solid var(--divisor);border-radius:var(--raio);padding:12px 16px;display:grid;gap:10px}
+.jr-previa-t{margin:0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--texto-2)}
+.jr-previa{margin:0;padding:12px 16px;border-radius:var(--raio);background:var(--sal);font-size:14px;line-height:1.5;white-space:pre-wrap}
+.jr-link{border:0;background:none;padding:0;font:inherit;color:var(--vinho);text-decoration:underline;cursor:pointer;min-height:24px}
+.jr-janela{max-width:760px}
+.co .dados-ficha.jr-dados{grid-template-columns:repeat(3,minmax(0,1fr))}
+.co .jr-dados>div:nth-child(odd){border-right:0}
+.co .jr-dados>div{border-right:1px solid var(--divisor)}
+.co .jr-dados>div:nth-child(3n){border-right:0}
+.jr-clis{list-style:none;margin:0;padding:0}
+.jr-clis li{display:grid;grid-template-columns:auto minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:center;padding:14px 24px;border-top:1px solid var(--divisor)}
+.jr-clis .jr-nome{font-family:var(--serifa);font-size:18px}
+.jr-clis small{display:block;font-size:12px;color:var(--texto-2)}
+.jr-tel{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.jr-contratos{list-style:none;margin:0;padding:0 24px 16px;display:grid;gap:10px}
+.jr-contratos li{display:flex;gap:10px;align-items:flex-start;padding-top:10px;border-top:1px solid var(--divisor)}
+.jr-contratos li:first-child{border-top:0;padding-top:0}
+.jr-contratos small{display:block;font-size:12px;color:var(--texto-2)}
+.jr-ligado{display:flex;align-items:center;gap:6px;font-weight:500}
+.jr-mudancas{list-style:none;margin:0;padding:0 24px 18px;display:grid;gap:12px}
+.jr-mudancas li{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;padding-top:12px;border-top:1px solid var(--divisor)}
+.jr-mudancas li:first-child{border-top:0;padding-top:0}
+.jr-mudancas time{font-size:12px;color:var(--texto-2)}
+.jr-mudancas p{margin:0;font-size:14px}
+.jr-mudancas .jr-motivo{font-family:var(--serifa);font-style:italic;color:var(--vinho);margin:2px 0 6px}
+.jr-mudancas .jr-previa{margin:8px 0}
+@media (max-width:760px){
+  .jr-lista .hn-ferr>select.entrada{flex:1 1 100%}
+  .jr-onde{padding:0 16px 8px}
+  .jr-onde ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .jr-cli-linha{grid-template-columns:1fr}
+  .jr-tirar{margin-top:0;justify-self:end}
+  .jr-opcoes,.jr-opcoes-3{grid-template-columns:1fr}
+  .co .dados-ficha.jr-dados{grid-template-columns:1fr}
+  .co .jr-dados>div{border-right:0}
+  .jr-clis li{grid-template-columns:auto minmax(0,1fr);padding:14px 16px}
+  .jr-clis .jr-tel,.jr-clis .jr-hon{grid-column:2}
+  .jr-mudancas,.jr-contratos{padding-left:16px;padding-right:16px}
+}
+.form-folha .ajuda a{text-decoration:underline;text-underline-offset:2px}
+/* Jurídico, parte 2: prazos e tarefas */
+.jr-ferr{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:0 24px 8px}
+.jr-ferr .campo{flex:0 1 230px;min-width:0}
+.jr-ferr .chips{margin-left:auto}
+.jr-grupo{padding:14px 0 0}
+.jr-grupo>h3{margin:0;padding:0 24px 6px;font-size:12px;display:flex;align-items:center;gap:8px}
+.jr-grupo>h3,.jr-sub h3,.jr-onde h3{font-family:var(--fonte-texto)}
+.jr-n{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:11px;background:var(--sal);color:var(--vinho);font-size:12px;letter-spacing:0}
+.jr-pzs,.jr-tfs,.jr-fpz,.jr-carga,.jr-trava{list-style:none;margin:0;padding:0}
+.jr-pz{display:grid;grid-template-columns:64px minmax(0,1fr) auto auto;gap:16px;align-items:center;padding:14px 24px;border-top:1px solid var(--divisor)}
+.jr-grupo>ul>li:first-child{border-top:0}
+.jr-dia{display:grid;justify-items:center;gap:4px}
+.jr-dia b{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;font-family:var(--serifa);font-size:22px;color:var(--vinho);background:var(--papel);border:1px solid var(--divisor)}
+.jr-dia small{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--texto-2)}
+.jr-dia-urgente b{background:var(--ambar);border-color:var(--ambar);color:var(--vinho-escuro)}
+.jr-dia-atencao b{background:var(--ambar-3);border-color:var(--ambar-3)}
+.jr-dia-feito b{background:var(--sal);color:var(--texto-2)}
+.jr-pz-t{margin:0;font-weight:500}
+.jr-pz-t a{color:inherit}
+.jr-pz-oque small,.jr-tf-oque small{display:block;margin-top:4px;font-size:13px;color:var(--texto-2)}
+.jr-pz-oque small b{color:var(--texto);font-weight:500}
+.jr-pz-quem{display:grid;justify-items:end;gap:6px;text-align:right;font-size:13px}
+.jr-data{display:inline-block;padding:4px 10px;border-radius:14px;background:var(--sal);font-size:13px;color:var(--texto);white-space:nowrap}
+.jr-tf{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:start;padding:14px 24px;border-top:1px solid var(--divisor)}
+.jr-tf .marcar{margin-top:2px}
+.jr-tf-t{display:block;margin:0;font-weight:500;cursor:pointer}
+.jr-tf-caso{display:inline-block;margin-top:4px;font-size:13px;color:var(--vinho)}
+.jr-tf-feita .jr-tf-t{text-decoration:line-through;color:var(--texto-2)}
+.jr-espera{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:8px 0 0;font-size:13px}
+.jr-espera>span{display:inline-flex;align-items:flex-start;gap:6px;padding:4px 10px;border-radius:6px;background:var(--ambar-3);color:var(--vinho)}
+.jr-espera .ico{flex:none;margin-top:3px}
+.jr-espera .jr-link{font-size:13px}
+.jr-sub{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px 4px;border-top:1px solid var(--divisor)}
+.jr-sub h3{margin:0;font-size:12px}
+.jr-fpz li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;border-top:1px solid var(--divisor)}
+.jr-fpz li:first-child{border-top:0}
+.jr-fpz li small{display:block;font-size:12px;color:var(--texto-2)}
+.jr-fpz li.feito{color:var(--texto-2)}
+.jr-fpz-acao{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.jr-tfs-ficha .jr-tf{padding:10px 24px}
+.jr-tfs-ficha .jr-tf:first-child{border-top:0}
+.jr-vazio{margin:0;padding:6px 24px 14px;font-size:14px;color:var(--texto-2)}
+.jr-rot{margin:0 0 6px;font-weight:500}
+.jr-nota{display:flex;gap:10px;align-items:flex-start;margin:0;padding:12px 16px;border-radius:var(--raio);background:var(--sal);font-size:14px}
+.jr-carga{padding:0 24px}
+.jr-carga li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--divisor)}
+.jr-carga li:first-child{border-top:0}
+.jr-carga small{display:block;font-size:13px;color:var(--texto-2)}
+.jr-carga .av-p{width:36px;height:36px;font-size:12px}
+.jr-barras{display:flex;gap:4px;margin-top:6px;height:6px}
+.jr-barras i,.jr-legenda i{display:block;height:6px;border-radius:3px;min-width:6px}
+.jr-barras .c,.jr-legenda .c{background:var(--vinho-3)}
+.jr-barras .t,.jr-legenda .t{background:var(--ambar)}
+.jr-legenda{display:flex;align-items:center;gap:6px;margin:0;padding:4px 24px 12px;font-size:13px;color:var(--texto-2)}
+.jr-legenda i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.jr-legenda .t{margin-left:12px}
+.jr-trava{padding:0 20px 18px;display:grid;gap:10px}
+.jr-trava li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px 14px;border-radius:var(--raio);background:var(--ambar-3);color:var(--vinho-escuro);font-size:14px}
+.jr-trava p{margin:0}
+.jr-trava .ico{margin-top:3px}
+.jr-tab tr.jr-hoje td:first-child{box-shadow:inset 3px 0 0 var(--vinho-3)}
+.jr-prox small{display:block;margin-top:4px;font-size:12px;color:var(--texto-2)}
+.jr-pend{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+@media (max-width:760px){
+  .jr-ferr{padding:0 16px 8px}
+  .jr-ferr .campo{flex:1 1 100%}
+  .jr-ferr .chips{margin-left:0}
+  .jr-grupo>h3{padding:0 16px 6px}
+  .jr-pz{grid-template-columns:52px minmax(0,1fr);gap:10px 12px;padding:14px 16px}
+  .jr-dia b{width:44px;height:44px;font-size:18px}
+  .jr-pz-quem{grid-column:2;justify-items:start;text-align:left;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .jr-pz>.btn{grid-column:2;justify-self:start}
+  .jr-tf{grid-template-columns:auto minmax(0,1fr);padding:14px 16px}
+  .jr-tf .jr-pz-quem{grid-column:2}
+  .jr-sub,.jr-fpz li,.jr-tfs-ficha .jr-tf,.jr-vazio,.jr-legenda{padding-left:16px;padding-right:16px}
+  .jr-fpz li{flex-wrap:wrap}
+  .jr-carga{padding:0 16px}
+  .jr-trava{padding:0 16px 16px}
+}
+/* Jurídico, parte 3a: etapas do escritório e petições */
+.jr-cab-acoes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.jr-ets-cab>.btn{flex:none;white-space:nowrap}
+.jr-voltar{display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;font-size:14px;color:var(--vinho)}
+.jr-ets{list-style:none;margin:0;padding:0}
+.jr-et{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 24px;border-top:1px solid var(--divisor)}
+.jr-et-ed{align-items:start;background:var(--sal)}
+.jr-et-n{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--ambar-3);font-family:var(--serifa);font-size:18px;color:var(--vinho-escuro)}
+.jr-et-oque h3{margin:0;font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.jr-et-oque h3 .selo{font-family:var(--fonte-texto)}
+.jr-et-oque small{display:block;margin-top:2px;font-size:13px;color:var(--texto-2)}
+.jr-et-txt{margin:6px 0 0;font-size:14px}
+.jr-et-acoes{display:flex;align-items:center;gap:6px}
+.jr-seta{display:grid;place-items:center;width:44px;height:44px;border:1px solid transparent;border-radius:var(--raio);background:none;color:var(--vinho);cursor:pointer}
+.jr-seta:hover:not(:disabled){background:var(--sal)}
+.jr-seta:disabled{border:1px dashed var(--divisor);color:var(--texto-2);cursor:not-allowed;opacity:.7}
+.jr-seta:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.jr-seta-sobe .ico{transform:rotate(180deg)}
+.jr-et-form{display:grid;gap:14px;grid-column:2 / -1}
+.jr-et-pe{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap}
+.jr-tirar-et{margin-right:auto}
+.jr-pt{padding:0 24px 24px;display:grid;gap:20px}
+.jr-estudo{border:1px dashed var(--vinho-3);border-radius:var(--raio);padding:16px 20px;display:grid;gap:12px}
+.jr-estudo p{margin:0;display:flex;gap:12px;align-items:flex-start}
+.jr-estudo .ico{flex:none;margin-top:3px;color:var(--vinho)}
+.jr-pt-op{border:0;margin:0;padding:0;display:grid;gap:8px}
+.jr-pt-op legend{font-weight:500;margin-bottom:8px;padding:0}
+.jr-pt-ok{display:grid;gap:12px;justify-items:start}
+@media (max-width:760px){
+  .jr-et{grid-template-columns:40px minmax(0,1fr);padding:14px 16px;gap:12px}
+  .jr-et-acoes{grid-column:2}
+  .jr-et-form{grid-column:1 / -1}
+  .jr-pt{padding:0 16px 16px}
+}
+/* <<< Jurídico */

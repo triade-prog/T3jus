@@ -1,0 +1,12 @@
+{
+  "id": "F3.40",
+  "texto": "Petições: o lugar reservado no Jurídico, com o gerador em estudo explicado e a pergunta \"você usaria?\" (toda semana, às vezes ou não, e como faz hoje), sem dado de cliente",
+  "peca": "S5",
+  "refs": [
+    "EX-09"
+  ],
+  "status": "feito",
+  "ordem": 400,
+  "evidencia": "Migration 0260 (peticao_interesse protegida e no inventário, portal_juridico_peticoes e _responder), pgTAP 026, rotas GET e POST /v1/escritorio/juridico/peticoes, e2e em portal-juridico-etapas.spec.ts. Desenho aprovado em docs/design/aprovadas/portal-juridico (decisão 11).",
+  "nota": "Só a pergunta: o gerador em si continua a validar (F3.41)."
+}
