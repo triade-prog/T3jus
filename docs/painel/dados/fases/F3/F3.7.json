@@ -1,0 +1,12 @@
+{
+  "id": "F3.7",
+  "texto": "Gerar o contrato a partir da proposta aceita, com as mesmas condições de honorário, e avisar quem tem Contratos quando alguém pede o contrato",
+  "peca": "S2",
+  "refs": [
+    "IN-01",
+    "CH-06"
+  ],
+  "status": "pendente",
+  "ordem": 70,
+  "proximo": "Na área Contratos, abrir o formulário com as condições da proposta (o botão já leva a /contratos/contratos?proposta=) e mostrar os pedidos de contrato; hoje o pedido fica registrado na proposta e no histórico"
+}

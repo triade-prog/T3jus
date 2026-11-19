@@ -44,6 +44,11 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PROPRIA_CONTA: "Você não pode desativar a sua própria conta.",
   SEM_SENHA: "Esta pessoa ainda não criou a senha. Reenvie o convite.",
   SEM_AUTENTICADOR: "Esta pessoa não tem autenticador cadastrado.",
+  PROPOSTA_RESPONDIDA: "Esta proposta já foi respondida e não muda mais. Se o cliente quer outra coisa, escreva uma proposta nova.",
+  JA_ENVIADA: "Esta proposta já estava marcada como enviada.",
+  PROPOSTA_INCOMPLETA: "Complete a proposta antes de marcar como enviada: falta o que está incluído, as condições ou o retorno.",
+  PROPOSTA_NAO_ENVIADA: "Marque a proposta como enviada antes de registrar a resposta.",
+  PROPOSTA_NAO_ACEITA: "Só a proposta aceita pede o contrato.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

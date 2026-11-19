@@ -1,0 +1,11 @@
+{
+  "id": "F3.8",
+  "texto": "Marcar por que o primeiro contato não recebeu proposta (o escritório não pegou o caso, ou não voltou)",
+  "peca": "S2",
+  "refs": [
+    "AP-03"
+  ],
+  "status": "pendente",
+  "ordem": 80,
+  "proximo": "O banco já guarda o motivo (funil_motivo) e o Funil já conta; falta desenhar e aprovar onde a pessoa marca, provavelmente na ficha do cliente"
+}

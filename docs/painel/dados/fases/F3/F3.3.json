@@ -1,0 +1,12 @@
+{
+  "id": "F3.3",
+  "texto": "O lembrete da audiência (1 dia e 2 horas antes) e o aviso de cancelamento saem de fato pelo WhatsApp do escritório",
+  "peca": "B3",
+  "refs": [
+    "EX-11"
+  ],
+  "status": "pendente",
+  "ordem": 30,
+  "nota": "Hoje o lembrete fica marcado e a tela diz que ainda não sai, porque o WhatsApp do escritório não está ligado.",
+  "proximo": "Quando o motor de mensagens e o número do escritório estiverem ligados, enviar os lembretes marcados e os avisos de cancelamento"
+}

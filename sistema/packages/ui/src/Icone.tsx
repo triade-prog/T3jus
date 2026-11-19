@@ -273,6 +273,38 @@ const DESENHOS = {
       <path d="m9 6 6 6-6 6" />
     </>
   ),
+  video: (
+    <>
+      <path d="M3 6.5h12v11H3Z" />
+      <path d="m15 10.5 6-3.5v10l-6-3.5" />
+    </>
+  ),
+  local: (
+    <>
+      <path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11Z" />
+      <path d="M12 7.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z" />
+    </>
+  ),
+  whats: (
+    <>
+      <path d="M4.5 20 5.6 16A8.5 8.5 0 1 1 8.3 18.7Z" />
+      <path d="M9 9.5c.3 2.3 2.2 4.3 4.5 5" />
+    </>
+  ),
+  copiar: (
+    <>
+      <path d="M8.5 8.5h11v11h-11Z" />
+      <path d="M15.5 8.5v-4h-11v11h4" />
+    </>
+  ),
+  sincronia: (
+    <>
+      <path d="M20 12a8 8 0 0 1-14.3 4.9" />
+      <path d="M4 12a8 8 0 0 1 14.3-4.9" />
+      <path d="M18.5 3v4.2h-4.2" />
+      <path d="M5.5 21v-4.2h4.2" />
+    </>
+  ),
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

@@ -1,0 +1,12 @@
+{
+  "id": "F3.4",
+  "texto": "Prazos do Jurídico na Agenda (faixa no alto do dia) e processo e parte contrária no compromisso",
+  "peca": "S5",
+  "refs": [
+    "EX-06"
+  ],
+  "status": "pendente",
+  "ordem": 40,
+  "nota": "A Agenda já devolve a lista de prazos (vazia) para quem tem o Jurídico e esconde a faixa de quem não tem.",
+  "proximo": "Quando o Jurídico for programado, preencher os prazos na portal_agenda e pôr o processo na janela do compromisso"
+}

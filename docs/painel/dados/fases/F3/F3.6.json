@@ -1,0 +1,11 @@
+{
+  "id": "F3.6",
+  "texto": "Baixar a proposta em .docx no timbrado do escritório",
+  "peca": "S2",
+  "refs": [
+    "AP-05"
+  ],
+  "status": "pendente",
+  "ordem": 60,
+  "proximo": "Gerar o arquivo da proposta (serviço, o que está incluído, condições e validade) com o timbrado do escritório e pôr o botão na ficha"
+}

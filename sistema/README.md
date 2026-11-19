@@ -222,3 +222,25 @@ Tela aprovada em `docs/design/aprovadas/portal-clientes-pendencias`, com as deci
 - **Exclusão:** numa transação, o cliente passa a `EXCLUIDO` (sem volta), perde nome, documento, qualificação, representante, contatos e quem indicou; nos atendimentos saem com quem se falou e o próximo contato, e ficam data, canal, quem atendeu e o resumo (decisão 3). O gatilho dos atendimentos continua só de inserção, com uma única exceção conferida pelos dados: limpar esses campos de cliente já excluído. Cliente excluído não se edita, reativa nem recebe atendimento (`CLIENTE_EXCLUIDO`) e aparece só em Inativos, com a data e o protocolo (decisão 4).
 - **API:** `GET /v1/escritorio/inicio/contatos?de=MEUS|EQUIPE`, `POST /clientes/:id/exclusao/pedido`, `POST /clientes/:id/exclusao/recusar` e `POST /clientes/:id/exclusao` (com `versao`, `conferido` e `nomeConfirmado`).
 - **Pendente:** com contrato ou processo, o pedido só arquiva (decisão 5), em F1.16.
+
+### Agenda do Portal (F3.1; EX-06, EX-11)
+
+Tela aprovada em `docs/design/aprovadas/portal-agenda-conversas` (Carol, 19/11/2026). Todos da equipe usam a Agenda; ela não depende de área liberada.
+
+- **Banco (migration 0180):** `compromissos` (tipo AUDIENCIA, CLIENTE, ASSINATURA, INTERNO ou OUTRO com `tipo_escrito`; presencial com endereço opcional ou virtual com link `https`; cliente, responsável, quem também vai, lembrete ao cliente e observações) e `feriados` (tabela global, nacionais de 2026 a 2028). Estados MARCADO e CANCELADO pelo guardião; nada se apaga.
+- **Histórico:** `compromisso.marcado`, `compromisso.editado` (só os nomes dos campos), `compromisso.remarcado` (de, para e o motivo, obrigatório quando muda dia ou hora) e `estado.mudou` no cancelamento, com o motivo. Na retirada de alguém da equipe (`equipe.retirada`), os compromissos futuros da pessoa passam para quem o sócio escolheu (`compromisso.responsavel_passado`, parte de EX-10).
+- **Prazos:** `portal_agenda` devolve `prazos` como lista (hoje vazia) para quem tem o Jurídico e `null` para quem não tem; a tela esconde a faixa e diz quem libera. Os prazos de verdade entram com o Jurídico (F3.4).
+- **Lembrete:** fica marcado no compromisso; a ficha mostra os dois envios previstos (1 dia e 2 horas antes) como "Ainda não sai" até o WhatsApp do escritório estar ligado (F3.3).
+- **API:** `GET /v1/escritorio/agenda?de&ate&pessoa` (até 62 dias), `POST /v1/escritorio/compromissos`, `GET` e `PUT /compromissos/:id` (com `versao` e `motivo`) e `POST /compromissos/:id/cancelar` (com `versao`, `motivo` e `avisar`).
+- **Telas:** `AgendaPortal` (`/agenda?ver=mes|semana|dia&dia&pessoa`) e `FichaCompromissoPortal` (`/agenda/:id`); as regras de data, grade e texto ficam em `packages/ui/src/portal/agenda.ts`, com testes.
+
+### Comercial do Portal (F3.5; AP-02 a AP-06, IN-01, PD-02, CH-06)
+
+Telas aprovadas em `docs/design/aprovadas/portal-comercial-contratos` (Carol, 19/11/2026). Só quem tem a área Comercial abre; cada rota confere a área de novo (`entrar_area`).
+
+- **Banco (migration 0190):** `retornos_cliente` (o retorno marcado na proposta; `prox_contato` passa a pegar o mais novo entre o último atendimento e o último retorno), `propostas` (número P-AAAA-NNN; estados RASCUNHO, ENVIADA, NEGOCIACAO, ACEITA, CONTRATO e RECUSADA pelo guardião; nada se apaga) e `honorario_condicoes` (uma linha por tipo, dona PROPOSTA ou CONTRATO, para Contratos usar as mesmas peças). `clientes_escritorio` ganhou `funil_motivo` (ainda sem tela, F3.8).
+- **Condições de honorário:** os sete tipos de CH-06 conferidos no servidor (`honorario_erros_lista` devolve `c1.valor`, `c2.etapa`...), com as mesmas regras em `packages/domain/src/honorarios.ts` (leitura, "Gera:", divisão das parcelas em centavos e valor certo).
+- **Resposta:** aceitou, pediu mudança (o retorno passa para hoje) ou recusou com motivo; grava também o atendimento do cliente. Quem não tem Contratos pede o contrato: o pedido fica na proposta e no histórico (o aviso e o gerar contrato vêm com Contratos, F3.7).
+- **API:** `GET /v1/escritorio/comercial/retornos?responsavel`, `GET` e `POST /v1/escritorio/propostas` (`?mostrar&q`), `GET` e `PUT /propostas/:id` (com `versao`), `POST /propostas/:id/enviada`, `/resposta` e `/pedir-contrato`, `GET /comercial/funil?periodo` e `/comercial/origem?periodo` (30, 90 ou 12).
+- **Telas:** `/comercial/atendimentos`, `/comercial/propostas`, `/comercial/propostas/nova?cliente=`, `/comercial/propostas/:id`, `/comercial/propostas/:id/editar`, `/comercial/funil` e `/comercial/origem`. As peças de honorário (`Honorarios.tsx`, `honorarios.ts`) servem também ao contrato.
+- **Quem sai da equipe:** as propostas em andamento e os retornos dela passam para quem o sócio escolheu (`proposta.responsavel_passado`, EX-10).
