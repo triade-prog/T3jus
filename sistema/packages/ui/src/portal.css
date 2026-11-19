@@ -1656,6 +1656,41 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .fi-cob-sem{padding:0 16px 16px}
   .fi .hn-ferr>select.entrada{flex:1 1 100%}
 }
+/* Repasses (FI-05, FI-06, FI-12): peças da programação */
+.rp-acoes{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.mais .rp-acoes{justify-content:flex-start}
+.rp-div{border:0;margin:0;padding:0;display:grid;gap:12px;min-width:0}
+.rp-div legend{font-size:13px;font-weight:500;color:var(--texto);padding:0;margin-bottom:8px}
+.rp-tab td{vertical-align:middle}
+.rp-manual{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px}
+.rp-valor .rp-valor-in{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:nowrap}
+.rp-valor .entrada{width:120px;text-align:right}
+.rp-tab tr.rp-cliente td{background:#FCFAF8}
+.fi-ref.rp-ruim{border-color:var(--vinho-3)}
+.fi-ref.rp-ruim .ico{color:var(--vinho-3)}
+.fi-dest td{vertical-align:top}
+.fi-linhas .fi-linha.rp-linha{grid-template-columns:minmax(0,1fr) auto}
+.rp-zap{margin:0 24px 24px;min-width:0}
+.rp-zap .fi-balao{min-width:0;max-width:min(440px,100%);overflow-wrap:anywhere}
+.rp-total b{white-space:nowrap}
+.fi-balao tr{border:0!important;background:transparent!important;box-shadow:none!important}
+.fi-balao td{padding:2px 0!important;border:0!important;height:auto!important}
+.fi-balao tr.fi-fica td{border-top:1px solid var(--divisor)!important;padding-top:6px!important}
+@media (max-width:760px){
+  .rp-tab colgroup,.rp-tab thead{display:none}
+  .rp-tab,.rp-tab tbody{display:block;width:100%}
+  .rp-tab tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--divisor)}
+  .rp-tab td{display:block;padding:0!important;border:0!important;background:transparent!important}
+  .rp-tab td:first-child{grid-column:1/-1}
+  .rp-tab tr.rp-cliente{background:#FCFAF8;padding:12px 10px}
+  .rp-manual{grid-template-columns:1fr}
+  .rp-valor .entrada{width:110px}
+  .mais .rp-acoes{width:100%}
+  .rp-zap{margin:0 16px 16px}
+  .fi-linhas .fi-linha.rp-linha{grid-template-columns:minmax(0,1fr);gap:8px}
+  .fi-linha.rp-linha .fi-lado{grid-column:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;text-align:left}
+  .rp-linha .rp-acoes{justify-content:flex-start}
+}
 /* <<< Financeiro */
 /* >>> Jurídico, parte 1: casos, ficha e mudar etapa */
 .jr-trilha{display:flex;gap:4px;margin:5px 0 3px}

@@ -1,0 +1,11 @@
+{
+  "id": "F3.45",
+  "texto": "Encerrar o caso no financeiro: só com tudo recebido e tudo repassado, e a janela diz o que falta",
+  "peca": "S3",
+  "refs": [
+    "FI-08"
+  ],
+  "status": "pendente",
+  "ordem": 450,
+  "proximo": "Juntar na ficha do repasse as parcelas do contrato do cliente no caso e o botão de encerrar (com o alertdialog do estado fechar-bloqueado); hoje a ficha já mostra entrou, pago e o que falta pagar"
+}

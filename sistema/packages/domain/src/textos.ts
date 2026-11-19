@@ -71,6 +71,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ETAPAS_DE_MENOS: "O escritório precisa de pelo menos uma etapa além da final.",
   RESULTADO_OBRIGATORIO: "Diga como o caso terminou: ganho, perda ou acordo.",
   DOCUMENTO_JA_CHEGOU: "Este documento já chegou. Recarregue a página.",
+  DIVISAO_NAO_FECHA: "A soma da divisão precisa ser igual ao valor levantado.",
+  REPASSE_JA_RESOLVIDO: "Este repasse já foi feito ou dispensado. Recarregue a página.",
+  CLIENTE_NAO_DISPENSA: "O que é do cliente não se dispensa: registre o repasse quando ele for feito.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

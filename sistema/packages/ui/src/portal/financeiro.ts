@@ -10,6 +10,8 @@ export const ROTAS_FINANCEIRO = {
   receber: "/financeiro/a-receber",
   pagar: "/financeiro/a-pagar",
   contrato: (id: string) => `/financeiro/a-receber/contratos/${id}`,
+  repasses: "/financeiro/repasses",
+  repasse: (id: string) => `/financeiro/repasses/${id}`,
 };
 
 /** O mês a que a parcela se refere: "outubro", ou "janeiro de 2027" fora do ano corrente. */
