@@ -3,7 +3,7 @@
 
 import type { ReactNode } from "react";
 import { Icone, type NomeIcone } from "./Icone.tsx";
-import { LogoCompleto, Selo } from "./Marca.tsx";
+import { LogoCompleto, Selo, Simbolo } from "./Marca.tsx";
 
 export interface TextosAcesso {
   /** Sobretítulo do cartão: "Portal do advogado" ou "Console T3jus". */
@@ -25,7 +25,8 @@ export function TelaAcesso({ textos, denso = false, children }: { textos: Textos
   return (
     <div className="ac-tela">
       <div className="ac-lado" aria-hidden="true" />
-      <Icone nome="coluna" className="ac-ico ac-coluna" />
+      {/* Marca d'água: o símbolo do logo oficial em vinho suave (Carol, 19/11/2026). */}
+      <Simbolo cor="currentColor" className="ac-coluna" />
       <div className="ac-fita" aria-hidden="true">
         {FITA.map((cor) => (
           <i key={cor} style={{ background: cor }} />
