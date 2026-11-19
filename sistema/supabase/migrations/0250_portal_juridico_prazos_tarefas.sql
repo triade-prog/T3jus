@@ -10,7 +10,7 @@
 -- - A lista de casos ganha o próximo prazo e as pendências (tarefas esperando alguém), e passa
 --   a vir pelo prazo mais próximo.
 -- - Quem sai da equipe passa os prazos e as tarefas abertas (EX-10).
--- Ficam para depois: o lembrete no Início e no sino (F3.31) e editar prazo e tarefa (F3.32).
+-- Ficam para depois: o lembrete no Início e no sino (F3.38) e editar prazo e tarefa (F3.39).
 
 create table prazos (
   id             uuid primary key default gen_random_uuid(),

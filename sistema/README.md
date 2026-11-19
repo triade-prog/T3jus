@@ -278,7 +278,7 @@ Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a ár
 - **API:** `GET /v1/escritorio/financeiro/pagar` (`?mostrar=SEMANA|VENCIDAS|MES|RECORRENTES`), `POST /financeiro/contas`, `POST /financeiro/contas/:id/paga` e `/reembolso`.
 - **Tela:** `/financeiro/a-pagar`, com as janelas de lançar conta, marcar paga e registrar o reembolso. A aprovação da sócia (FI-10) tem só o lugar reservado.
 
-### Jurídico do Portal, casos (F3.26; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
+### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 
 Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_portal_juridico_casos.sql`, teste `024_portal_juridico_casos_test.sql`, e2e `portal-juridico-casos.spec.ts`.
 
@@ -289,9 +289,9 @@ Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_port
 - **Inventário:** as quatro tabelas usam o prazo de guarda de 5 anos; a migration também corrige o prazo das tabelas do Financeiro (0220 e 0230), que tinham nascido com o texto antigo.
 - **API:** `GET /v1/escritorio/juridico/casos` (`?situacao=ANDAMENTO|ENCERRADO&q=&responsavel=&etapa=`), `GET /juridico/opcoes`, `POST /juridico/casos`, `GET` e `PUT /juridico/casos/:id`, `POST /juridico/casos/:id/clientes` e `POST /juridico/casos/:id/etapa`.
 - **Tela:** `/juridico/casos` (lista com a contagem por etapa), `/juridico/casos/novo` e `/juridico/casos/:id` (ficha com as janelas de mudar etapa, editar os dados e adicionar cliente).
-- **Falta:** documentos (F3.28), editar as etapas do escritório (F3.29), enviar o aviso pelo WhatsApp (F3.30) e o êxito que vai ao Financeiro com o resultado (F3.14).
+- **Falta:** documentos (F3.35), editar as etapas do escritório (F3.36), enviar o aviso pelo WhatsApp (F3.37) e o êxito que vai ao Financeiro com o resultado (F3.14).
 
-### Jurídico do Portal, prazos e tarefas (F3.27; EX-02, EX-04, PD-05, IN-08)
+### Jurídico do Portal, prazos e tarefas (F3.34; EX-02, EX-04, PD-05, IN-08)
 
 Mesmas telas aprovadas (estados prazos, novo-prazo, tarefas, tarefas-equipe e a ficha). Migration `0250_portal_juridico_prazos_tarefas.sql`, teste `025_portal_juridico_prazos_tarefas_test.sql`, e2e `portal-juridico-prazos.spec.ts`.
 
@@ -301,7 +301,7 @@ Mesmas telas aprovadas (estados prazos, novo-prazo, tarefas, tarefas-equipe e a 
 - **Saída da pessoa (EX-10):** o gatilho `prazos_tarefas_passar_de_quem_saiu` passa os prazos e as tarefas abertas para quem recebeu o que era dela.
 - **API:** `GET /v1/escritorio/juridico/prazos` (`?mostrar=ABERTOS|MEUS|CUMPRIDOS&responsavel=`), `POST /juridico/prazos`, `POST /juridico/prazos/:id/cumprido`, `GET /juridico/tarefas` (`?visao=MINHAS|EQUIPE&responsavel=`), `POST /juridico/tarefas`, `POST /juridico/tarefas/:id/concluida` (`{ concluir }`) e `POST /juridico/tarefas/:id/chegou`.
 - **Tela:** `/juridico/prazos` (agrupados em Vencidos, Hoje, Amanhã, Até sexta e Depois, com a urgência escrita), `/juridico/tarefas` (Minhas e Da equipe, com a carga), a seção "Prazos e tarefas" e o quadro "O que está travando" na ficha, e as colunas Próximo prazo e Pendências na lista de casos. As regras de urgência e de grupos ficam em `packages/ui/src/portal/juridico.ts`.
-- **Falta:** o lembrete 2 dias antes no Início e no sino (F3.31) e editar prazo e tarefa, inclusive trocar o responsável (F3.32). O T3jus não lê publicações nem conta dias úteis; a tela diz isso.
+- **Falta:** o lembrete 2 dias antes no Início e no sino (F3.38) e editar prazo e tarefa, inclusive trocar o responsável (F3.39). O T3jus não lê publicações nem conta dias úteis; a tela diz isso.
 
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
