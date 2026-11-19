@@ -10,7 +10,7 @@ import {
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type ListaContratos, type PropostaParaContrato,
-  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, registrarRecebimentoSchema,
+  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, registrarRecebimentoSchema,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
@@ -507,6 +507,35 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<{ id: string }>("portal_financeiro_cobranca_anotar", {
       ...quem(c), p_parcela: idDaRota(c, "id"), p_dados: d,
     }), 201);
+  });
+
+  // ------------------------------------------------------------------ A pagar (FI-01, FI-02, FI-07, FI-13, FI-20)
+  // Abrir a lista lança as contas recorrentes do mês que faltarem (uma vez só).
+  app.get("/v1/escritorio/financeiro/pagar", async (c) => {
+    const mostrar = (c.req.query("mostrar") || "SEMANA").toUpperCase();
+    if (!(MOSTRAR_PAGAR as readonly string[]).includes(mostrar)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
+    return c.json(await deps.banco.rpc<ListaPagar>("portal_financeiro_pagar", { ...quem(c), p_mostrar: mostrar }));
+  });
+
+  app.post("/v1/escritorio/financeiro/contas", async (c) => {
+    const d = await lerCorpo(c, lancarContaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; recorrenteId: string | null }>("portal_financeiro_conta_lancar", {
+      ...quem(c), p_dados: d,
+    }), 201);
+  });
+
+  app.post("/v1/escritorio/financeiro/contas/:id/paga", async (c) => {
+    const d = await lerCorpo(c, contaPagaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; pagaEm: string }>("portal_financeiro_conta_paga", {
+      ...quem(c), p_conta: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/financeiro/contas/:id/reembolso", async (c) => {
+    const d = await lerCorpo(c, contaReembolsadaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; reembolsadoEm: string }>("portal_financeiro_conta_reembolsada", {
+      ...quem(c), p_conta: idDaRota(c, "id"), p_dados: d,
+    }));
   });
 
   return app;

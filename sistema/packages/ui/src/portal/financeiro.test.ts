@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ParcelaLinha } from "@t3jus/domain";
-import { gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, seloParcela } from "./financeiro.ts";
+import { gruposPorCliente, gruposPorVencimento, mesReferencia, origemConta, quandoAcao, quandoConta, seloParcela } from "./financeiro.ts";
 
 const parc = (vencimento: string, falta: number, contrato = "c1", cliente = "Hélio"): ParcelaLinha => ({
   id: vencimento + contrato, tipo: "PARCELADO", descricao: "Parcela 1 de 6", vencimento, valor: falta, recebido: 0, falta, forma: null,
@@ -36,5 +36,21 @@ describe("Financeiro, A receber (FI-01 a FI-04)", () => {
   it("por cliente: um grupo por contrato, da maior soma para a menor", () => {
     const g = gruposPorCliente([parc("2026-11-20", 100, "c1", "Hélio"), parc("2026-11-25", 500, "c2", "Irene"), parc("2026-12-20", 100, "c1", "Hélio")]);
     expect(g.map((x) => [x.titulo.split(" · ")[0], x.total])).toEqual([["Irene", 500], ["Hélio", 200]]);
+  });
+});
+
+describe("A pagar", () => {
+  const hoje = "2026-11-18";
+  it("quandoConta: hoje, amanhã, dia da semana, atraso e ano", () => {
+    expect([quandoConta("2026-11-18", hoje), quandoConta("2026-11-19", hoje), quandoConta("2026-11-20", hoje)]).toEqual(["hoje", "amanhã", "sexta"]);
+    expect([quandoConta("2026-11-17", hoje), quandoConta("2026-11-10", hoje), quandoConta("2026-12-20", hoje)]).toEqual(["ontem", "há 8 dias", "2026"]);
+  });
+  it("origemConta: recorrente, adiantada e à mão", () => {
+    const base = { recorrente: null, adiantada: null, forma: null } as const;
+    expect(origemConta({ ...base, recorrente: { dia: 20, mes: "2026-11-01", lancadaSozinha: true } }))
+      .toEqual({ titulo: "Recorrente · todo dia 20", detalhe: "Lançada sozinha em 01/11", repete: true });
+    expect(origemConta({ ...base, adiantada: { cliente: { id: "c", nome: "Daniela Rocha Mendes" }, como: "LEVANTAMENTO", reembolsadoEm: null } }).detalhe)
+      .toBe("Vira reembolso de Daniela");
+    expect(origemConta({ ...base, forma: "PIX" })).toEqual({ titulo: "Lançada à mão", detalhe: "Pix", repete: false });
   });
 });

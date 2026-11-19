@@ -1,0 +1,11 @@
+{
+  "id": "F3.25",
+  "texto": "Categorias das entradas: honorários por tipo, valores de terceiros e reembolso de custas",
+  "peca": "S3",
+  "refs": [
+    "FI-20"
+  ],
+  "status": "pendente",
+  "ordem": 250,
+  "proximo": "Vem com o Resumo e os Repasses; as saídas já usam as categorias"
+}

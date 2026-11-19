@@ -1,13 +1,14 @@
 // Peças puras do Financeiro do Portal (desenho aprovado em docs/design/aprovadas/portal-financeiro):
 // endereços, mês de referência, situação da parcela em palavras e os grupos de A receber.
 
-import { reais, type CobrancaAtual, type ParcelaLinha } from "@t3jus/domain";
+import { reais, REEMBOLSO_COMO, FORMAS_PAGAMENTO, type CobrancaAtual, type ContaPagar, type ParcelaLinha } from "@t3jus/domain";
 import { DIAS_SEMANA, diaCurto, diaDaSemana, nomeDoMes, somarDias } from "./agenda.ts";
 import { diasEntre } from "./comercial.ts";
 
 export const ROTAS_FINANCEIRO = {
   resumo: "/financeiro",
   receber: "/financeiro/a-receber",
+  pagar: "/financeiro/a-pagar",
   contrato: (id: string) => `/financeiro/a-receber/contratos/${id}`,
 };
 
@@ -97,3 +98,32 @@ export function gruposPorCliente(lista: ParcelaLinha[]): GrupoParcelas[] {
   }
   return [...m.values()].sort((a, b) => b.total - a.total || a.titulo.localeCompare(b.titulo, "pt-BR"));
 }
+
+/** Quando vence a conta, por extenso perto de hoje: "hoje", "amanhã", "sexta"; longe, o ano. */
+export function quandoConta(d: string, hoje: string): string {
+  if (d === hoje) return "hoje";
+  if (d === somarDias(hoje, 1)) return "amanhã";
+  if (d === somarDias(hoje, -1)) return "ontem";
+  if (d > hoje && d <= somarDias(hoje, 6)) return DIAS_SEMANA[diaDaSemana(d)]!;
+  if (d < hoje) {
+    const n = diasEntre(d, hoje);
+    return `há ${n} dias`;
+  }
+  return d.slice(0, 4);
+}
+
+/** A origem da conta (decisão 8): recorrente, adiantada para um cliente, ou lançada à mão. */
+export function origemConta(c: Pick<ContaPagar, "recorrente" | "adiantada" | "forma">): { titulo: string; detalhe: string; repete: boolean } {
+  if (c.adiantada) {
+    const nome = c.adiantada.cliente.nome.split(" ")[0]!;
+    return { titulo: "Adiantada pelo escritório", detalhe: `Vira reembolso de ${nome}`, repete: false };
+  }
+  if (c.recorrente) {
+    const r = c.recorrente;
+    const quando = r.lancadaSozinha ? `Lançada sozinha em ${diaCurto(r.mes)}` : "Primeiro mês, lançada à mão";
+    return { titulo: `Recorrente · todo dia ${r.dia}`, detalhe: quando, repete: true };
+  }
+  return { titulo: "Lançada à mão", detalhe: c.forma ? FORMAS_PAGAMENTO[c.forma] : "Forma a definir", repete: false };
+}
+
+export const nomeReembolso = (c: keyof typeof REEMBOLSO_COMO) => REEMBOLSO_COMO[c];

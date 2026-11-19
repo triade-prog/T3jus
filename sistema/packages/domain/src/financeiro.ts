@@ -134,3 +134,79 @@ export interface RecebimentoRegistrado { id: string; paga: boolean; falta: numbe
 export function numeroRecibo(r: { numero: number }): string {
   return String(r.numero).padStart(4, "0");
 }
+
+// ---------------------------------------------------------------------------------------
+// A pagar (FI-01, FI-02, FI-07, FI-13, FI-20). Regras em 0230_portal_financeiro_pagar.sql.
+
+/** As categorias de saída (FI-20), as mesmas da exportação para o contador. */
+export const CATEGORIAS_SAIDA = {
+  RETIRADAS: "Retiradas dos sócios",
+  PESSOAL: "Pessoal",
+  ALUGUEL: "Aluguel e condomínio",
+  IMPOSTOS: "Impostos",
+  CUSTAS: "Custas adiantadas",
+  FORNECEDORES: "Fornecedores e sistemas",
+  TAXAS: "Taxas bancárias",
+  OUTRAS: "Outras despesas",
+} as const;
+export type CategoriaSaida = keyof typeof CATEGORIAS_SAIDA;
+
+/** Como volta o que o escritório adiantou para o cliente (FI-07). */
+export const REEMBOLSO_COMO = {
+  PROXIMA_PARCELA: "Cobrar junto com a próxima parcela",
+  LEVANTAMENTO: "Descontar do valor levantado",
+  A_PARTE: "Cobrar à parte",
+} as const;
+export type ReembolsoComo = keyof typeof REEMBOLSO_COMO;
+
+export const MOSTRAR_PAGAR = ["SEMANA", "VENCIDAS", "MES", "RECORRENTES"] as const;
+export type MostrarPagar = (typeof MOSTRAR_PAGAR)[number];
+
+export const lancarContaSchema = z.object({
+  descricao: txt(200),
+  fornecedor: txt(200),
+  categoria: txt(30),
+  valor: z.number().int().nullish(),
+  vencimento: txt(20),
+  forma: txt(30),
+  repete: z.boolean().default(false),
+  adiantada: z.boolean().default(false),
+  clienteId: txt(40),
+  reembolsoComo: txt(30),
+});
+export type LancarConta = z.input<typeof lancarContaSchema>;
+
+export const contaPagaSchema = z.object({ valor: z.number().int().nullish(), pagaEm: txt(20) });
+export type ContaPaga = z.input<typeof contaPagaSchema>;
+
+export const contaReembolsadaSchema = z.object({ reembolsadoEm: txt(20) });
+
+export interface ContaPagar {
+  id: string;
+  descricao: string;
+  fornecedor: string | null;
+  categoria: CategoriaSaida;
+  valor: number;
+  valorPago: number | null;
+  vencimento: string;
+  forma: FormaPagamento | null;
+  pagaEm: string | null;
+  situacao: "A_VENCER" | "VENCIDA" | "PAGA";
+  recorrente: { dia: number; mes: string; lancadaSozinha: boolean } | null;
+  adiantada: { cliente: { id: string; nome: string }; como: ReembolsoComo; reembolsadoEm: string | null } | null;
+}
+
+export interface ListaPagar {
+  algum: boolean;
+  mes: string;
+  totais: {
+    semana: { valor: number; contas: number };
+    vencidas: { valor: number; contas: number };
+    recorrentes: { contas: number; sozinhas: number };
+    reembolsar: { valor: number; clientes: number };
+  };
+  contas: ContaPagar[];
+  depois: { contas: number; valor: number; ate: string } | null;
+  adiantados: ContaPagar[];
+  categorias: { categoria: CategoriaSaida; valor: number }[];
+}

@@ -1,0 +1,11 @@
+{
+  "id": "F3.24",
+  "texto": "Parar ou mudar o valor de uma conta recorrente",
+  "peca": "S3",
+  "refs": [
+    "FI-13"
+  ],
+  "status": "pendente",
+  "ordem": 240,
+  "proximo": "Ação na conta recorrente para encerrar (a tabela já aceita o fim) ou mudar o valor dos próximos meses; hoje o valor do mês se escreve ao marcar como paga"
+}
