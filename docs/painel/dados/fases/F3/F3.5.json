@@ -1,0 +1,19 @@
+{
+  "id": "F3.5",
+  "texto": "Comercial do Portal: Atendimentos com os retornos do escritório inteiro e filtro por responsável; Propostas com situação, responsável, retorno e condições de honorário (os sete tipos, mais de um por proposta); registrar resposta (aceitou, pediu mudança, recusou com motivo); Funil sem arrastar e Origem dos contatos com as notas da OAB",
+  "peca": "S2",
+  "refs": [
+    "AP-02",
+    "AP-03",
+    "AP-04",
+    "AP-05",
+    "AP-06",
+    "IN-01",
+    "PD-02",
+    "CH-06"
+  ],
+  "status": "feito",
+  "ordem": 50,
+  "evidencia": "Migration 0190 (retornos_cliente, propostas, honorario_condicoes, conferência das condições no servidor, funil e origem), pgTAP 019 (41 testes), rotas /v1/escritorio/propostas e /v1/escritorio/comercial na api-portal (2 testes Deno novos), regras de honorário em packages/domain/src/honorarios.ts (6 testes) e da tela em packages/ui/src/portal/comercial.ts e honorarios.ts (9 testes), e2e tests/e2e/portal-comercial.spec.ts (15 testes, celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-comercial-contratos.",
+  "nota": "Quem sai da equipe passa as propostas em andamento e os retornos para quem o sócio escolheu (EX-10). VA-07 só tem as notas na tela: não é citada como atendida."
+}

@@ -233,3 +233,14 @@ Tela aprovada em `docs/design/aprovadas/portal-agenda-conversas` (Carol, 19/11/2
 - **Lembrete:** fica marcado no compromisso; a ficha mostra os dois envios previstos (1 dia e 2 horas antes) como "Ainda não sai" até o WhatsApp do escritório estar ligado (F3.3).
 - **API:** `GET /v1/escritorio/agenda?de&ate&pessoa` (até 62 dias), `POST /v1/escritorio/compromissos`, `GET` e `PUT /compromissos/:id` (com `versao` e `motivo`) e `POST /compromissos/:id/cancelar` (com `versao`, `motivo` e `avisar`).
 - **Telas:** `AgendaPortal` (`/agenda?ver=mes|semana|dia&dia&pessoa`) e `FichaCompromissoPortal` (`/agenda/:id`); as regras de data, grade e texto ficam em `packages/ui/src/portal/agenda.ts`, com testes.
+
+### Comercial do Portal (F3.5; AP-02 a AP-06, IN-01, PD-02, CH-06)
+
+Telas aprovadas em `docs/design/aprovadas/portal-comercial-contratos` (Carol, 19/11/2026). Só quem tem a área Comercial abre; cada rota confere a área de novo (`entrar_area`).
+
+- **Banco (migration 0190):** `retornos_cliente` (o retorno marcado na proposta; `prox_contato` passa a pegar o mais novo entre o último atendimento e o último retorno), `propostas` (número P-AAAA-NNN; estados RASCUNHO, ENVIADA, NEGOCIACAO, ACEITA, CONTRATO e RECUSADA pelo guardião; nada se apaga) e `honorario_condicoes` (uma linha por tipo, dona PROPOSTA ou CONTRATO, para Contratos usar as mesmas peças). `clientes_escritorio` ganhou `funil_motivo` (ainda sem tela, F3.8).
+- **Condições de honorário:** os sete tipos de CH-06 conferidos no servidor (`honorario_erros_lista` devolve `c1.valor`, `c2.etapa`...), com as mesmas regras em `packages/domain/src/honorarios.ts` (leitura, "Gera:", divisão das parcelas em centavos e valor certo).
+- **Resposta:** aceitou, pediu mudança (o retorno passa para hoje) ou recusou com motivo; grava também o atendimento do cliente. Quem não tem Contratos pede o contrato: o pedido fica na proposta e no histórico (o aviso e o gerar contrato vêm com Contratos, F3.7).
+- **API:** `GET /v1/escritorio/comercial/retornos?responsavel`, `GET` e `POST /v1/escritorio/propostas` (`?mostrar&q`), `GET` e `PUT /propostas/:id` (com `versao`), `POST /propostas/:id/enviada`, `/resposta` e `/pedir-contrato`, `GET /comercial/funil?periodo` e `/comercial/origem?periodo` (30, 90 ou 12).
+- **Telas:** `/comercial/atendimentos`, `/comercial/propostas`, `/comercial/propostas/nova?cliente=`, `/comercial/propostas/:id`, `/comercial/propostas/:id/editar`, `/comercial/funil` e `/comercial/origem`. As peças de honorário (`Honorarios.tsx`, `honorarios.ts`) servem também ao contrato.
+- **Quem sai da equipe:** as propostas em andamento e os retornos dela passam para quem o sócio escolheu (`proposta.responsavel_passado`, EX-10).

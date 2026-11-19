@@ -79,6 +79,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_agenda: (a) => ({ juridico: true, compromissos: [], feriados: [], prazos: [], tiposEscritos: [], de: a.p_de }),
     portal_compromisso_marcar: () => ({ id: CLIENTE, versao: 1 }),
+    portal_comercial_retornos: () => ({ algum: false }),
+    portal_propostas: () => ({ propostas: [], contagem: { andamento: 0, contrato: 0, recusadas: 0 }, algum: false }),
+    portal_proposta_criar: () => ({ id: CLIENTE, numero: "P-2026-001", versao: 1 }),
+    portal_proposta_resposta: () => ({ id: CLIENTE, versao: 4, situacao: "RECUSADA" }),
+    portal_proposta_enviada: () => 3,
+    portal_comercial_funil: (a) => ({ periodo: a.p_periodo }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
     portal_compromisso_editar: (a) => {
       if (a.p_motivo === null) erroBanco("TC422", { campos: ["motivo"] });
@@ -548,4 +554,35 @@ Deno.test("EX-06: os tipos de compromisso no domínio são os mesmos do banco", 
   const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
   assertEquals(lista(/tipo\s+text not null check \(tipo in \(([^)]+)\)/), Object.keys(TIPOS_COMPROMISSO));
   assertEquals(lista(/modalidade\s+text not null check \(modalidade in \(([^)]+)\)/), Object.keys(MODALIDADES));
+});
+
+Deno.test("AP-05, IN-01: proposta com condições, marcar como enviada e registrar a resposta; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const dados = {
+    clienteId: CLIENTE, servico: "Divórcio consensual", escopo: "Petição e partilha.", responsavelId: ANA, validaAte: "2026-11-30",
+    condicoes: [{ tipo: "PARCELADO", total: 400000, parcelas: 4, primeiro: "2026-12-15" }], retorno: { em: "2026-11-25", responsavelId: ANA },
+  };
+  const novo = await m.pedir("/v1/escritorio/propostas", { corpo: dados, cookie });
+  assertEquals(novo.status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_proposta_criar")!;
+  assertEquals([ch.args.p_escritorio, (ch.args.p_dados as { condicoes: unknown[] }).condicoes, (ch.args.p_dados as { rascunho: boolean }).rascunho],
+    [AURORA, dados.condicoes, false]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/propostas/${CLIENTE}/enviada`, { corpo: { versao: 2 }, cookie })).json()).versao, 3);
+  const r = await m.pedir(`/v1/escritorio/propostas/${CLIENTE}/resposta`, { corpo: { versao: 3, resposta: "RECUSOU", em: "2026-11-18", canal: "WHATSAPP", motivo: "VALOR_ALTO" }, cookie });
+  assertEquals((await r.json()).situacao, "RECUSADA");
+  const rs = m.chamadas.find((c) => c.funcao === "portal_proposta_resposta")!;
+  assertEquals([rs.args.p_versao, (rs.args.p_dados as Record<string, unknown>).versao], [3, undefined]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/propostas?mostrar=todas", { cookie }))).detalhes?.campos, ["mostrar"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/comercial/funil?periodo=7", { cookie }))).detalhes?.campos, ["periodo"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/comercial/funil?periodo=12", { cookie })).json()).periodo, "12");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/comercial/retornos?responsavel=x", { cookie }))).detalhes?.campos, ["responsavel"]);
+});
+
+Deno.test("AP-05, CH-06: situações, motivos e tipos de honorário no domínio são os mesmos do banco", async () => {
+  const { MOTIVOS_RECUSA, TIPOS_HONORARIO } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0190_portal_comercial.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
+  assertEquals(lista(/motivo_recusa\s+text check \(motivo_recusa in \(([^)]+)\)/), Object.keys(MOTIVOS_RECUSA));
+  assertEquals(lista(/tipo\s+text not null check \(tipo in \(([^)]+)\)/), Object.keys(TIPOS_HONORARIO));
 });
