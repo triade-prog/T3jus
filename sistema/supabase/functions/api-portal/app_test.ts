@@ -90,6 +90,14 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_proposta_resposta: () => ({ id: CLIENTE, versao: 4, situacao: "RECUSADA" }),
     portal_proposta_enviada: () => 3,
     portal_comercial_funil: (a) => ({ periodo: a.p_periodo }),
+    portal_contratos: (a) => ({ algum: false, contagem: { ativos: 0, elaboracao: 0, encerrados: 0, base: 0 }, contratos: [], mostrar: a.p_mostrar }),
+    portal_contrato_criar: () => ({ id: CLIENTE, numero: "C-2026-001", versao: 1 }),
+    portal_contrato_condicoes: (a) => {
+      if (a.p_dados && !(a.p_dados as Record<string, unknown>).motivo) erroBanco("TC422", { campos: ["motivo"] });
+      return { id: a.p_contrato, versao: Number(a.p_versao) + 1, cancelados: 2, novos: 2 };
+    },
+    portal_contrato_assinatura: (a) => ({ id: a.p_contrato, versao: Number(a.p_versao) + 1, recebimentos: 3, em: a.p_assinado_em }),
+    portal_contrato_base: (a) => ({ id: a.p_recebimento, valor: 63540, vencimento: "2026-12-15" }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
     portal_compromisso_editar: (a) => {
       if (a.p_motivo === null) erroBanco("TC422", { campos: ["motivo"] });
@@ -608,4 +616,37 @@ Deno.test("AP-05, CH-06: situações, motivos e tipos de honorário no domínio 
   const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
   assertEquals(lista(/motivo_recusa\s+text check \(motivo_recusa in \(([^)]+)\)/), Object.keys(MOTIVOS_RECUSA));
   assertEquals(lista(/tipo\s+text not null check \(tipo in \(([^)]+)\)/), Object.keys(TIPOS_HONORARIO));
+});
+
+Deno.test("CH-01, CH-04, IN-01: criar o contrato da proposta, registrar a assinatura, mudar com motivo e informar a base; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const dados = {
+    clienteId: CLIENTE, propostaId: CLIENTE, objeto: "Aposentadoria por idade", responsavelId: ANA, advogados: [ANA],
+    condicoes: [{ tipo: "PARCELADO", total: 200000, parcelas: 3, primeiro: "2026-12-10" }],
+  };
+  const novo = await m.pedir("/v1/escritorio/contratos", { corpo: dados, cookie });
+  assertEquals(novo.status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_contrato_criar")!;
+  assertEquals([ch.args.p_escritorio, (ch.args.p_dados as { advogados: string[] }).advogados], [AURORA, [ANA]]);
+  const a = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/assinatura`, { corpo: { versao: 1, assinadoEm: "2026-11-18" }, cookie })).json();
+  assertEquals([a.versao, a.recebimentos, a.em], [2, 3, "2026-11-18"]);
+  const sem = await erro(await m.pedir(`/v1/escritorio/contratos/${CLIENTE}`, { metodo: "PUT", corpo: { versao: 2, ...dados }, cookie }));
+  assertEquals(sem.detalhes?.campos, ["motivo"]);
+  const ed = m.chamadas.find((c) => c.funcao === "portal_contrato_condicoes")!;
+  assertEquals([ed.args.p_versao, (ed.args.p_dados as Record<string, unknown>).versao, (ed.args.p_dados as Record<string, unknown>).clienteId], [2, undefined, undefined]);
+  const b = await (await m.pedir(`/v1/escritorio/recebimentos/${CLIENTE}/base`, { corpo: { valor: 211800, fonte: "EXTRATO", vencimento: "2026-12-15" }, cookie })).json();
+  assertEquals(b.valor, 63540);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/contratos?mostrar=todos", { cookie }))).detalhes?.campos, ["mostrar"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/contratos?mostrar=base", { cookie })).json()).mostrar, "BASE");
+  assertEquals((await m.pedir("/v1/escritorio/contratos/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("CH-01: situações do contrato e fontes da base no domínio são as mesmas do banco", async () => {
+  const { SITUACOES_CONTRATO, FONTES_BASE } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0200_portal_contratos.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
+  assertEquals(lista(/fonte\s+text not null check \(fonte in \(([^)]+)\)/), Object.keys(FONTES_BASE));
+  assertEquals([...new Set(lista(/transicoes_permitidas \(tabela, de, para\) values\s+(\('contratos'[\s\S]*?);/)?.filter((x) => x !== "contratos"))].sort(),
+    Object.keys(SITUACOES_CONTRATO).sort());
 });

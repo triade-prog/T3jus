@@ -56,7 +56,7 @@ export function rascunhoDe(c: Condicao): RascunhoCondicao {
   }
 }
 
-function centavos(t: string): number | null {
+export function centavos(t: string): number | null {
   if (!t.trim()) return null;
   try {
     const d = lerReais(t);

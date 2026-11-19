@@ -250,7 +250,7 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await j.getByLabel("Aceitou com as condições da proposta").check();
     await j.getByLabel("Por onde").selectOption({ label: "Presencial" });
     await j.getByRole("button", { name: "Registrar e gerar o contrato" }).click();
-    await page.waitForURL(`**/contratos/contratos?proposta=${prop(16)}`);
+    await page.waitForURL(`**/contratos/contratos/novo?proposta=${prop(16)}`);
     expect(pedidos.find((p) => p.caminho.endsWith("/resposta"))?.corpo).toMatchObject({ resposta: "ACEITOU", canal: "PRESENCIAL", motivo: null });
   });
 
@@ -276,7 +276,7 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
   test("Quem tem Contratos gera o contrato da proposta aceita", async ({ page }) => {
     await simular(page, comuns());
     await page.goto(`${P}/comercial/propostas/${prop(14)}`);
-    await expect(page.getByRole("link", { name: "Gerar o contrato" })).toHaveAttribute("href", `/contratos/contratos?proposta=${prop(14)}`);
+    await expect(page.getByRole("link", { name: "Gerar o contrato" })).toHaveAttribute("href", `/contratos/contratos/novo?proposta=${prop(14)}`);
     await expect(page.locator(".dir")).toContainText(`Colher a assinatura do contrato em ${curto(2)}, com Diego Almeida.`);
   });
 

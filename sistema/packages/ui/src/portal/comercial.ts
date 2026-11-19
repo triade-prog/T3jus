@@ -15,7 +15,8 @@ export const ROTAS_COMERCIAL = {
   ficha: (clienteId: string) => `/clientes/${clienteId}`,
   atendimentosCliente: (clienteId: string) => `/clientes/${clienteId}?aba=atendimentos`,
   /** O formulário de contrato da área Contratos, já com a proposta (IN-01). */
-  gerarContrato: (id: string) => `/contratos/contratos?proposta=${id}`,
+  contrato: (id: string) => `/contratos/contratos/${id}`,
+  gerarContrato: (id: string) => `/contratos/contratos/novo?proposta=${id}`,
 };
 
 /** Dias entre duas datas aaaa-mm-dd (b - a). */

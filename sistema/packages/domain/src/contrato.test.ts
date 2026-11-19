@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dataDigitada, datasDoFim, encerrarContratoSchema, somarDias } from "./contrato.ts";
+import { dataDigitada, datasDoFim, encerrarContratoT3jusSchema, somarDias } from "./contrato.ts";
 
 describe("fim do contrato (F0.14)", () => {
   it("as datas do exemplo aprovado: fim em 19/11/2026", () => {
@@ -21,7 +21,7 @@ describe("fim do contrato (F0.14)", () => {
     expect(somarDias("2026-12-31", 1)).toBe("2027-01-01");
   });
   it("o pedido de encerrar exige data, motivo e o nome", () => {
-    expect(encerrarContratoSchema.safeParse({ versao: 1, fimEm: "2026-11-19", motivo: " ", nomeConfirmado: "x" }).success).toBe(false);
-    expect(encerrarContratoSchema.safeParse({ versao: 1, fimEm: "2026-11-19", motivo: "Distrato", nomeConfirmado: "Cedro" }).success).toBe(true);
+    expect(encerrarContratoT3jusSchema.safeParse({ versao: 1, fimEm: "2026-11-19", motivo: " ", nomeConfirmado: "x" }).success).toBe(false);
+    expect(encerrarContratoT3jusSchema.safeParse({ versao: 1, fimEm: "2026-11-19", motivo: "Distrato", nomeConfirmado: "Cedro" }).success).toBe(true);
   });
 });

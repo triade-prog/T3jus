@@ -6,7 +6,7 @@
     "AP-03",
     "AP-04"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 90,
-  "proximo": "Quando a área Contratos existir, contar o contrato criado da proposta (situação Virou contrato), listar os 3 mais recentes no Funil e somar o valor certo por origem"
+  "evidencia": "portal_comercial_funil lista os 3 contratos mais recentes vindos de proposta e portal_comercial_origem soma o valor certo dos contratos por origem (migration 0200, pgTAP 020)."
 }

@@ -21,7 +21,7 @@ import { MolduraArea } from "./MolduraArea.tsx";
 
 type Carga<T> = T | null | "erro";
 
-function useCarga<T>(caminho: string): { dados: Carga<T>; recarregar: () => void } {
+export function useCarga<T>(caminho: string): { dados: Carga<T>; recarregar: () => void } {
   const [dados, setDados] = useState<Carga<T>>(null);
   const [vez, setVez] = useState(0);
   useEffect(() => {
@@ -59,7 +59,7 @@ export function SeloRetorno({ r, hoje, prefixo = "", semData = "—" }: { r: { e
   return <span className={prefixo ? "hn-sem" : "num"}>{prefixo ? `${prefixo}em ${diaCurto(r.em)}` : q === diaCurto(r.em) ? q : `${diaCurto(r.em)} · ${q}`}</span>;
 }
 
-function Chips({ rotulo, opcoes, atual, aoEscolher }: { rotulo: string; opcoes: { v: string; t: string }[]; atual: string; aoEscolher: (v: string) => void }) {
+export function Chips({ rotulo, opcoes, atual, aoEscolher }: { rotulo: string; opcoes: { v: string; t: string }[]; atual: string; aoEscolher: (v: string) => void }) {
   return (
     <div className="chips" role="group" aria-label={rotulo}>
       {opcoes.map((o) => (
@@ -69,7 +69,7 @@ function Chips({ rotulo, opcoes, atual, aoEscolher }: { rotulo: string; opcoes: 
   );
 }
 
-function Busca({ id, rotulo, dica, valor, aoMudar, children }: { id: string; rotulo: string; dica: string; valor: string; aoMudar: (v: string) => void; children?: ReactNode }) {
+export function Busca({ id, rotulo, dica, valor, aoMudar, children }: { id: string; rotulo: string; dica: string; valor: string; aoMudar: (v: string) => void; children?: ReactNode }) {
   return (
     <form className="hn-ferr" role="search" onSubmit={(e) => e.preventDefault()}>
       <div className="campo-busca">
@@ -82,7 +82,7 @@ function Busca({ id, rotulo, dica, valor, aoMudar, children }: { id: string; rot
   );
 }
 
-function CabAmbar({ sobre, titulo, lede, acao }: { sobre: string; titulo: string; lede: string; acao?: ReactNode }) {
+export function CabAmbar({ sobre, titulo, lede, acao }: { sobre: string; titulo: string; lede: string; acao?: ReactNode }) {
   return (
     <div className="cabeca-ambar campo-ambar cabeca-equipe hn-cab-ambar">
       <div>
@@ -572,7 +572,11 @@ function FunilConteudo() {
           <Coluna titulo="Em negociação" n={d.agora.negociacao.length} desc="O cliente pediu mudança.">{d.agora.negociacao.map((p) => card(p))}</Coluna>
           <Coluna titulo="Aceita" n={d.agora.aceita.length} desc="Falta criar ou assinar o contrato.">{d.agora.aceita.map((p) => card(p, "falta o contrato"))}</Coluna>
           <Coluna titulo="Contrato no período" n={d.contratos} desc="Os 3 mais recentes." fim>
-            {d.contratos ? null : <li className="cm-card"><small>Nenhum contrato no período. Eles aparecem aqui quando a proposta aceita vira contrato.</small></li>}
+            {d.agora.contrato?.length ? d.agora.contrato.map((x) => (
+              <Cartao key={x.id} href={ROTAS_COMERCIAL.contrato(x.id)} nome={x.nome}
+                sub={`${x.numero} · ${x.valorCerto ? reais(x.valorCerto) : `criado em ${diaCurto(x.em)}`}`}
+                selo={x.situacao === "ELABORACAO" ? <Selo tom="neutro">Em elaboração</Selo> : undefined} />
+            )) : d.contratos ? null : <li className="cm-card"><small>Nenhum contrato no período. Eles aparecem aqui quando a proposta aceita vira contrato.</small></li>}
           </Coluna>
         </div>
       </section>

@@ -1,5 +1,5 @@
 // Fim do contrato do escritório e saída da pessoa (F0.14, PT-11). Os prazos estão no banco
-// (0200_fim_contrato.sql, em configuracoes); aqui ficam os tipos do que o servidor manda e os
+// (0210_fim_contrato.sql, em configuracoes); aqui ficam os tipos do que o servidor manda e os
 // esquemas do que a tela envia. Decisões da Carol de 19/11/2026: 30 dias só de consulta,
 // guarda de 5 anos, reabrir com motivo, só a Administração, entrada apagada aos 90 dias.
 
@@ -11,17 +11,17 @@ import { somarMeses } from "./honorarios.ts";
 export const CONTATO_T3JUS = "atendimento@exemplo.com.br";
 
 /** ABERTO não aparece: sem fim registrado, o servidor manda null. */
-export const SITUACOES_CONTRATO = {
+export const SITUACOES_CONTRATO_T3JUS = {
   MARCADO: "Encerramento marcado",
   CONSULTA: "Só consulta",
   FECHADO: "Acesso fechado",
 } as const;
-export type SituacaoContrato = keyof typeof SITUACOES_CONTRATO;
+export type SituacaoContratoT3jus = keyof typeof SITUACOES_CONTRATO_T3JUS;
 
 /** As datas que as telas mostram, calculadas pelo banco a partir da data do fim. */
 export interface DatasContrato {
   fimEm: string;
-  situacao: SituacaoContrato;
+  situacao: SituacaoContratoT3jus;
   /** Último dia só de consulta (fim + 29). */
   consultaAte: string;
   /** Dia em que o acesso fecha (fim + 30). */
@@ -52,7 +52,7 @@ export interface SaidaPessoa {
 const dataIso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const motivo = z.string().trim().min(1).max(300);
 
-export const encerrarContratoSchema = z.object({
+export const encerrarContratoT3jusSchema = z.object({
   versao: z.number().int().min(1),
   fimEm: dataIso,
   motivo,

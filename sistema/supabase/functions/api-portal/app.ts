@@ -8,6 +8,8 @@ import {
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
+  assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
+  type FichaContrato, type HonorariosContratos, type ListaContratos, type PropostaParaContrato,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -405,6 +407,66 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const periodo = c.req.query("periodo") || "90";
     if (!(periodo in PERIODOS_COMERCIAL)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["periodo"] });
     return c.json(await deps.banco.rpc<OrigemContatos>("portal_comercial_origem", { ...quem(c), p_periodo: periodo }));
+  });
+
+  // ------------------------------------------------------------------ Contratos (CH-01 a CH-06, IN-01)
+  // Só com a área Contratos: o banco recusa com AREA_NAO_LIBERADA.
+
+  app.get("/v1/escritorio/contratos", async (c) => {
+    const mostrar = (c.req.query("mostrar") || "ATIVOS").toUpperCase();
+    if (!(MOSTRAR_CONTRATOS as readonly string[]).includes(mostrar)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
+    const q = c.req.query("q") ?? null;
+    if (q && q.length > 120) throw new ErroDominio("VALIDATION_ERROR", { campos: ["q"] });
+    return c.json(await deps.banco.rpc<ListaContratos>("portal_contratos", { ...quem(c), p_mostrar: mostrar, p_q: q }));
+  });
+
+  // O formulário do contrato a partir da proposta aceita, sem redigitar (IN-01).
+  app.get("/v1/escritorio/contratos/da-proposta/:id", async (c) => {
+    return c.json(await deps.banco.rpc<PropostaParaContrato>("portal_contrato_da_proposta", { ...quem(c), p_proposta: idDaRota(c, "id") }));
+  });
+
+  app.get("/v1/escritorio/contratos/honorarios", async (c) => {
+    return c.json(await deps.banco.rpc<HonorariosContratos>("portal_contratos_honorarios", quem(c)));
+  });
+
+  app.post("/v1/escritorio/contratos", async (c) => {
+    const d = await lerCorpo(c, dadosContratoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_contrato_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/contratos/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaContrato>("portal_contrato", { ...quem(c), p_contrato: idDaRota(c, "id") }));
+  });
+
+  // Mudar condições, objeto e pessoas (PT-19). Contrato ativo pede motivo e refaz só o futuro.
+  app.put("/v1/escritorio/contratos/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarContratoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number; novos: number }>("portal_contrato_condicoes", {
+      ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  // Registrar a assinatura ativa o contrato e cria a programação dos recebimentos.
+  app.post("/v1/escritorio/contratos/:id/assinatura", async (c) => {
+    const d = await lerCorpo(c, assinaturaContratoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; recebimentos: number }>("portal_contrato_assinatura", {
+      ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: d.versao, p_assinado_em: d.assinadoEm ?? null,
+    }));
+  });
+
+  app.post("/v1/escritorio/contratos/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, encerrarContratoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number }>("portal_contrato_encerrar", {
+      ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo ?? null,
+    }));
+  });
+
+  // A base do mês do percentual recorrente: o valor da cobrança sai do percentual.
+  app.post("/v1/escritorio/recebimentos/:id/base", async (c) => {
+    const d = await lerCorpo(c, baseMesSchema);
+    return c.json(await deps.banco.rpc<{ id: string; valor: number; vencimento: string }>("portal_contrato_base", {
+      ...quem(c), p_recebimento: idDaRota(c, "id"), p_dados: d,
+    }));
   });
 
   return app;

@@ -48,7 +48,10 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   JA_ENVIADA: "Esta proposta já estava marcada como enviada.",
   PROPOSTA_INCOMPLETA: "Complete a proposta antes de marcar como enviada: falta o que está incluído, as condições ou o retorno.",
   PROPOSTA_NAO_ENVIADA: "Marque a proposta como enviada antes de registrar a resposta.",
-  PROPOSTA_NAO_ACEITA: "Só a proposta aceita pede o contrato.",
+  PROPOSTA_NAO_ACEITA: "Só a proposta aceita vira contrato. Esta já virou contrato ou ainda não foi aceita.",
+  CONTRATO_NAO_ELABORACAO: "A assinatura deste contrato já foi registrada.",
+  CONTRATO_ENCERRADO: "Este contrato está encerrado e não muda mais.",
+  MES_JA_INFORMADO: "A base deste mês já foi informada por outra pessoa. Recarregue a página para ver o valor.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

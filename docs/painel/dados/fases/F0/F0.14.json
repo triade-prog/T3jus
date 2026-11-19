@@ -7,5 +7,5 @@
   ],
   "status": "feito",
   "ordem": 140,
-  "evidencia": "Migration 0200 (encerrar e reabrir com motivo, só a Administração; 30 dias só para consulta com trava de escrita em toda tabela do escritório; acesso fecha no 30º dia; entrada da pessoa apagada aos 90 dias sem acesso; guarda de 5 anos no inventário); pgTAP 020; API do Console e do Portal; telas aprovadas em docs/design/aprovadas/console-fim-contrato; e2e fim-contrato.spec.ts"
+  "evidencia": "Migration 0210 (encerrar e reabrir com motivo, só a Administração; 30 dias só para consulta com trava de escrita em toda tabela do escritório; acesso fecha no 30º dia; entrada da pessoa apagada aos 90 dias sem acesso; guarda de 5 anos no inventário); pgTAP 021; API do Console e do Portal; telas aprovadas em docs/design/aprovadas/console-fim-contrato; e2e fim-contrato.spec.ts"
 }

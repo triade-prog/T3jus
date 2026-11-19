@@ -1,0 +1,11 @@
+{
+  "id": "F3.15",
+  "texto": "OAB e UF de cada advogado na Equipe, mostradas no contrato",
+  "peca": "S2",
+  "refs": [
+    "EX-12"
+  ],
+  "status": "pendente",
+  "ordem": 150,
+  "proximo": "Desenho em aprovação com a Carol (pasta telas/portal-equipe-oab); depois, programar a Equipe e mostrar a OAB nos advogados do contrato"
+}

@@ -245,9 +245,22 @@ Telas aprovadas em `docs/design/aprovadas/portal-comercial-contratos` (Carol, 19
 - **Telas:** `/comercial/atendimentos`, `/comercial/propostas`, `/comercial/propostas/nova?cliente=`, `/comercial/propostas/:id`, `/comercial/propostas/:id/editar`, `/comercial/funil` e `/comercial/origem`. As peças de honorário (`Honorarios.tsx`, `honorarios.ts`) servem também ao contrato.
 - **Quem sai da equipe:** as propostas em andamento e os retornos dela passam para quem o sócio escolheu (`proposta.responsavel_passado`, EX-10).
 
+### Contratos do Portal (F3.10; CH-01 a CH-04, CH-06, IN-01)
+
+Telas aprovadas em `docs/design/aprovadas/portal-comercial-contratos`. Só quem tem a área Contratos abre; cada rota confere a área de novo.
+
+- **Banco (migration 0200):** `contratos` (número C-AAAA-NNN; ELABORACAO → ATIVO → ENCERRADO pelo guardião, e ELABORACAO → ENCERRADO; sem DELETE), `contrato_advogados`, `recebimentos_previstos` e `bases_mensais`. As condições ficam em `honorario_condicoes` com dona CONTRATO.
+- **Da proposta (IN-01):** `portal_contrato_da_proposta` devolve o que preenche o formulário; criar com `propostaId` exige a proposta ACEITA do mesmo cliente e a passa para CONTRATO.
+- **Programação (CH-04):** nasce ao registrar a assinatura (`contrato_programar`, só o que vence de hoje em diante). Parcelas divididas em centavos exatos, com o resto nas primeiras. Mensal sem prazo programa 12 meses. Percentual recorrente com data gera os meses sem valor, e a base informada (`portal_contrato_base`) faz o valor. Nada se apaga: mudar ou encerrar cancela o que ia vencer, com o motivo.
+- **Mudar (decisão 20):** contrato ativo pede motivo, aceita data passada só na condição que não mudou e refaz só os tipos que mudaram.
+- **API:** `GET` e `POST /v1/escritorio/contratos` (`?mostrar=ATIVOS|ENCERRADOS|BASE&q`), `GET /contratos/da-proposta/:id`, `GET /contratos/honorarios`, `GET` e `PUT /contratos/:id` (com `versao` e `motivo`), `POST /contratos/:id/assinatura` e `/encerrar`, `POST /recebimentos/:id/base`.
+- **Telas:** `/contratos/contratos`, `/contratos/contratos/novo?proposta=`, `/contratos/contratos/:id?aba=contrato|recebimentos|documentos`, `/contratos/contratos/:id/mudar` e `/contratos/honorarios`. Procurações e modelos (CH-08) ainda em preparo.
+- **Comercial:** o Funil lista os contratos vindos de proposta e a Origem soma o valor certo contratado (F3.9).
+- **Quem sai da equipe:** os contratos em elaboração e ativos passam para quem o sócio escolheu (`contrato.responsavel_passado`, EX-10).
+
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
-Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Carol de 19/11/2026 no `NOTAS.md`). Migration `0200_fim_contrato.sql`, teste `020_fim_contrato_test.sql`, e2e `fim-contrato.spec.ts`.
+Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Carol de 19/11/2026 no `NOTAS.md`). Migration `0210_fim_contrato.sql`, teste `021_fim_contrato_test.sql`, e2e `fim-contrato.spec.ts`.
 
 - **Encerrar e reabrir** (`console_encerrar_contrato`, `console_reabrir_contrato`, ação `console.contrato.encerrar`, só a Administração). Pede data do fim (hoje ou depois), motivo e o nome do escritório. Data futura fica "marcada" e a rotina encerra no dia; desmarcar e reabrir pedem motivo. Reabrir vale até o fim da guarda de 5 anos e volta ao estágio de antes.
 - **Os prazos** ficam em `configuracoes`: `prazo_consulta_dias` (30), `prazo_entrada_dias` (90) e `prazo_guarda_anos` (5). As datas que as telas mostram saem de `datas_do_contrato()` e, no navegador, de `datasDoFim()` (`@t3jus/domain`).

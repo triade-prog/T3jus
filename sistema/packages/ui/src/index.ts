@@ -37,3 +37,6 @@ export * as regrasAgenda from "./portal/agenda.ts";
 export { AtendimentosComercial, PropostasComercial, FunilComercial, OrigemComercial } from "./portal/Comercial.tsx";
 export { FichaPropostaPortal } from "./portal/FichaProposta.tsx";
 export { NovaPropostaPortal, EditarPropostaPortal } from "./portal/FormProposta.tsx";
+export { ContratosPortal, HonorariosContratosPortal } from "./portal/Contratos.tsx";
+export { FichaContratoPortal } from "./portal/FichaContrato.tsx";
+export { NovoContratoPortal, MudarContratoPortal } from "./portal/FormContrato.tsx";

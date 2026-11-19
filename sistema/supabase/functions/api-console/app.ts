@@ -8,7 +8,7 @@ import {
   atribuirSchema,
   cadastrarMembroSchema,
   contratoSchema,
-  encerrarContratoSchema,
+  encerrarContratoT3jusSchema,
   reabrirContratoSchema,
   type DatasContrato,
   type SaidaPessoa,
@@ -197,7 +197,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   // nome do escritório; reabrir (ou desmarcar o fim que não chegou) pede o motivo.
   app.post("/v1/clientes/:id/encerrar", async (c) => {
     const id = idDaRota(c, "id");
-    const d = await lerCorpo(c, encerrarContratoSchema);
+    const d = await lerCorpo(c, encerrarContratoT3jusSchema);
     return c.json(await rpc("console_encerrar_contrato", {
       p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao,
       p_dados: { fimEm: d.fimEm, motivo: d.motivo, nomeConfirmado: d.nomeConfirmado },
