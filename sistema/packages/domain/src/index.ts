@@ -11,3 +11,4 @@ export * from "./clientes.ts";
 export * from "./agenda.ts";
 export * from "./honorarios.ts";
 export * from "./comercial.ts";
+export * from "./contratos.ts";

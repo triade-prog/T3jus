@@ -1,0 +1,12 @@
+{
+  "id": "F3.14",
+  "texto": "Ligar casos ao contrato e gerar a cobrança quando o caso chega à etapa",
+  "peca": "S2",
+  "refs": [
+    "CH-05",
+    "CH-07"
+  ],
+  "status": "pendente",
+  "ordem": 140,
+  "proximo": "Vem com o Jurídico: casos do cliente no passo 1 e na ficha, e a etapa marcada vira recebimento previsto"
+}

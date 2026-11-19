@@ -1,0 +1,11 @@
+{
+  "id": "F3.12",
+  "texto": "Anexar o arquivo assinado ao registrar a assinatura do contrato",
+  "peca": "S2",
+  "refs": [
+    "CH-01"
+  ],
+  "status": "pendente",
+  "ordem": 120,
+  "proximo": "Upload de arquivo no Portal (privado, aberto por link temporário), ligado ao contrato; hoje a assinatura registra só a data"
+}
