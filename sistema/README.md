@@ -222,3 +222,14 @@ Tela aprovada em `docs/design/aprovadas/portal-clientes-pendencias`, com as deci
 - **Exclusão:** numa transação, o cliente passa a `EXCLUIDO` (sem volta), perde nome, documento, qualificação, representante, contatos e quem indicou; nos atendimentos saem com quem se falou e o próximo contato, e ficam data, canal, quem atendeu e o resumo (decisão 3). O gatilho dos atendimentos continua só de inserção, com uma única exceção conferida pelos dados: limpar esses campos de cliente já excluído. Cliente excluído não se edita, reativa nem recebe atendimento (`CLIENTE_EXCLUIDO`) e aparece só em Inativos, com a data e o protocolo (decisão 4).
 - **API:** `GET /v1/escritorio/inicio/contatos?de=MEUS|EQUIPE`, `POST /clientes/:id/exclusao/pedido`, `POST /clientes/:id/exclusao/recusar` e `POST /clientes/:id/exclusao` (com `versao`, `conferido` e `nomeConfirmado`).
 - **Pendente:** com contrato ou processo, o pedido só arquiva (decisão 5), em F1.16.
+
+### Agenda do Portal (F3.1; EX-06, EX-11)
+
+Tela aprovada em `docs/design/aprovadas/portal-agenda-conversas` (Carol, 19/11/2026). Todos da equipe usam a Agenda; ela não depende de área liberada.
+
+- **Banco (migration 0180):** `compromissos` (tipo AUDIENCIA, CLIENTE, ASSINATURA, INTERNO ou OUTRO com `tipo_escrito`; presencial com endereço opcional ou virtual com link `https`; cliente, responsável, quem também vai, lembrete ao cliente e observações) e `feriados` (tabela global, nacionais de 2026 a 2028). Estados MARCADO e CANCELADO pelo guardião; nada se apaga.
+- **Histórico:** `compromisso.marcado`, `compromisso.editado` (só os nomes dos campos), `compromisso.remarcado` (de, para e o motivo, obrigatório quando muda dia ou hora) e `estado.mudou` no cancelamento, com o motivo. Na retirada de alguém da equipe (`equipe.retirada`), os compromissos futuros da pessoa passam para quem o sócio escolheu (`compromisso.responsavel_passado`, parte de EX-10).
+- **Prazos:** `portal_agenda` devolve `prazos` como lista (hoje vazia) para quem tem o Jurídico e `null` para quem não tem; a tela esconde a faixa e diz quem libera. Os prazos de verdade entram com o Jurídico (F3.4).
+- **Lembrete:** fica marcado no compromisso; a ficha mostra os dois envios previstos (1 dia e 2 horas antes) como "Ainda não sai" até o WhatsApp do escritório estar ligado (F3.3).
+- **API:** `GET /v1/escritorio/agenda?de&ate&pessoa` (até 62 dias), `POST /v1/escritorio/compromissos`, `GET` e `PUT /compromissos/:id` (com `versao` e `motivo`) e `POST /compromissos/:id/cancelar` (com `versao`, `motivo` e `avisar`).
+- **Telas:** `AgendaPortal` (`/agenda?ver=mes|semana|dia&dia&pessoa`) e `FichaCompromissoPortal` (`/agenda/:id`); as regras de data, grade e texto ficam em `packages/ui/src/portal/agenda.ts`, com testes.

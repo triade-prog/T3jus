@@ -1,0 +1,11 @@
+{
+  "id": "F3.2",
+  "texto": "As próximas audiências aparecem na tela inicial do Portal",
+  "peca": "S1",
+  "refs": [
+    "EX-06"
+  ],
+  "status": "pendente",
+  "ordem": 20,
+  "proximo": "Ligar o bloco de audiências do Início à agenda (portal_agenda dos próximos dias)"
+}

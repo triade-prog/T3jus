@@ -1,0 +1,13 @@
+{
+  "id": "F3.1",
+  "texto": "Agenda do Portal: mês, semana e dia da equipe toda com filtro por pessoa; marcar clicando no dia; audiência presencial ou virtual com link da sala; tipo escrito no Outro; feriados nacionais; remarcar pede motivo; cancelar pede motivo e não apaga; lembrete ao cliente marcado na ficha",
+  "peca": "S5",
+  "refs": [
+    "EX-06",
+    "EX-11"
+  ],
+  "status": "feito",
+  "ordem": 10,
+  "evidencia": "Migration 0180 (compromissos, feriados, guardião de estado, histórico), pgTAP 018 (31 testes), rotas /v1/escritorio/agenda e /v1/escritorio/compromissos na api-portal (3 testes Deno), regras em packages/ui/src/portal/agenda.ts (13 testes) e e2e tests/e2e/portal-agenda.spec.ts (18 testes, celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-agenda-conversas.",
+  "nota": "Quem sai da equipe já passa os compromissos futuros para quem o sócio escolheu (EX-10, parte de F1.10)."
+}
