@@ -1,0 +1,106 @@
+[
+ {
+  "nome": "atendimentos",
+  "url": "comercial.html?estado=atendimentos"
+ },
+ {
+  "nome": "atendimentos-vazio",
+  "url": "comercial.html?estado=atendimentos-vazio"
+ },
+ {
+  "nome": "propostas",
+  "url": "comercial.html?estado=propostas"
+ },
+ {
+  "nome": "propostas-vazio",
+  "url": "comercial.html?estado=propostas-vazio"
+ },
+ {
+  "nome": "proposta",
+  "url": "comercial.html?estado=proposta"
+ },
+ {
+  "nome": "resposta",
+  "url": "comercial.html?estado=resposta"
+ },
+ {
+  "nome": "resposta-erro",
+  "url": "comercial.html?estado=resposta-erro"
+ },
+ {
+  "nome": "proposta-aceita",
+  "url": "comercial.html?estado=proposta-aceita"
+ },
+ {
+  "nome": "proposta-sem-contratos",
+  "url": "comercial.html?estado=proposta-sem-contratos"
+ },
+ {
+  "nome": "proposta-nova",
+  "url": "comercial.html?estado=proposta-nova"
+ },
+ {
+  "nome": "funil",
+  "url": "comercial.html?estado=funil"
+ },
+ {
+  "nome": "origem",
+  "url": "comercial.html?estado=origem"
+ },
+ {
+  "nome": "contratos",
+  "url": "contratos.html?estado=contratos"
+ },
+ {
+  "nome": "contratos-vazio",
+  "url": "contratos.html?estado=contratos-vazio"
+ },
+ {
+  "nome": "novo",
+  "url": "contratos.html?estado=novo"
+ },
+ {
+  "nome": "novo-tipos",
+  "url": "contratos.html?estado=novo-tipos"
+ },
+ {
+  "nome": "novo-erros",
+  "url": "contratos.html?estado=novo-erros"
+ },
+ {
+  "nome": "criado",
+  "url": "contratos.html?estado=criado"
+ },
+ {
+  "nome": "contrato",
+  "url": "contratos.html?estado=contrato"
+ },
+ {
+  "nome": "contrato-recebimentos",
+  "url": "contratos.html?estado=contrato-recebimentos"
+ },
+ {
+  "nome": "contrato-sem-financeiro",
+  "url": "contratos.html?estado=contrato-sem-financeiro"
+ },
+ {
+  "nome": "honorarios",
+  "url": "contratos.html?estado=honorarios"
+ },
+ {
+  "nome": "base",
+  "url": "contratos.html?estado=base"
+ },
+ {
+  "nome": "procuracoes",
+  "url": "contratos.html?estado=procuracoes"
+ },
+ {
+  "nome": "gerar",
+  "url": "contratos.html?estado=gerar"
+ },
+ {
+  "nome": "gerado",
+  "url": "contratos.html?estado=gerado"
+ }
+]

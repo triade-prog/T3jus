@@ -1,0 +1,82 @@
+[
+ {
+  "nome": "casos",
+  "url": "juridico.html?estado=casos",
+  "alto": 0
+ },
+ {
+  "nome": "casos-larissa",
+  "url": "juridico.html?estado=casos-larissa",
+  "alto": 0
+ },
+ {
+  "nome": "casos-vazio",
+  "url": "juridico.html?estado=casos-vazio",
+  "alto": 0
+ },
+ {
+  "nome": "novo-caso",
+  "url": "juridico.html?estado=novo-caso",
+  "alto": 0
+ },
+ {
+  "nome": "ficha",
+  "url": "juridico.html?estado=ficha",
+  "alto": 0
+ },
+ {
+  "nome": "mudar-etapa",
+  "url": "juridico.html?estado=mudar-etapa",
+  "alto": 1500
+ },
+ {
+  "nome": "mudar-etapa-erro",
+  "url": "juridico.html?estado=mudar-etapa-erro",
+  "alto": 1500
+ },
+ {
+  "nome": "etapa-mudada",
+  "url": "juridico.html?estado=etapa-mudada",
+  "alto": 0
+ },
+ {
+  "nome": "etapa-final",
+  "url": "juridico.html?estado=etapa-final",
+  "alto": 1960
+ },
+ {
+  "nome": "ficha-sem-financeiro",
+  "url": "juridico.html?estado=ficha-sem-financeiro",
+  "alto": 0
+ },
+ {
+  "nome": "etapas",
+  "url": "juridico.html?estado=etapas",
+  "alto": 0
+ },
+ {
+  "nome": "prazos",
+  "url": "juridico.html?estado=prazos",
+  "alto": 0
+ },
+ {
+  "nome": "novo-prazo",
+  "url": "juridico.html?estado=novo-prazo",
+  "alto": 1200
+ },
+ {
+  "nome": "tarefas",
+  "url": "juridico.html?estado=tarefas",
+  "alto": 0
+ },
+ {
+  "nome": "tarefas-equipe",
+  "url": "juridico.html?estado=tarefas-equipe",
+  "alto": 0
+ },
+ {
+  "nome": "peticoes",
+  "url": "juridico.html?estado=peticoes",
+  "alto": 0
+ }
+]
