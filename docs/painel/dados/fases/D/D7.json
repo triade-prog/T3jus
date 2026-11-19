@@ -1,0 +1,11 @@
+{
+  "id": "D7",
+  "texto": "Desenho da ligação do WhatsApp do escritório e das regras da IA que atende os clientes, em Escritório",
+  "peca": "B3",
+  "refs": [
+    "PA-04"
+  ],
+  "status": "andamento",
+  "ordem": 56,
+  "proximo": "Carol aprovar o desenho da ligação do WhatsApp e da IA (D7) e responder as perguntas do NOTAS.md"
+}
