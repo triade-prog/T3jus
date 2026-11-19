@@ -1,0 +1,11 @@
+{
+  "id": "F3.22",
+  "texto": "Nota, guia ou boleto anexados a cada conta e a cada recebimento",
+  "peca": "S3",
+  "refs": [
+    "FI-18"
+  ],
+  "status": "pendente",
+  "ordem": 220,
+  "proximo": "Vem com o envio de arquivos do Portal (o mesmo do F3.12); a conta sem nota ganha o selo de atenção e a exportação aponta a falta"
+}

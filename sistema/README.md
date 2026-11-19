@@ -258,6 +258,26 @@ Telas aprovadas em `docs/design/aprovadas/portal-comercial-contratos`. Só quem 
 - **Comercial:** o Funil lista os contratos vindos de proposta e a Origem soma o valor certo contratado (F3.9).
 - **Quem sai da equipe:** os contratos em elaboração e ativos passam para quem o sócio escolheu (`contrato.responsavel_passado`, EX-10).
 
+### Financeiro do Portal, A receber (F3.17; FI-01 a FI-04, FI-14, FI-17)
+
+Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a área Financeiro abre (`financeiro.ver`; registrar e anotar pedem `financeiro.editar`).
+
+- **Banco (migration 0220):** `pagamentos_recebidos` (valor, multa e juros, dia em que o dinheiro entrou, forma, caixa do escritório ou de terceiros), `recibos` (número por escritório e ano, tirado com trava) e `cobranca_eventos` (ligação, mensagem, anotação ou passada, com motivo e próxima ação). As três só acrescentam: o guardião `financeiro_so_acrescenta` recusa UPDATE e DELETE. A parcela ganhou `forma`.
+- **Situação da parcela:** sai dos pagamentos (`parcela_situacao`): cancelada, paga, vencida, parcial ou a vencer. Cancelar o futuro de um contrato não toca parcela que já recebeu algum pagamento.
+- **Registrar (FI-02):** `portal_financeiro_receber_registrar` recusa parcela cancelada ou já paga, valor acima do que falta (devolve `falta`) e data no futuro. O pagamento atrasado baixa a parcela do mês a que ela se refere; no caixa, entra no dia em que o dinheiro entrou.
+- **Cobrança (FI-04):** `portal_financeiro_cobranca_anotar` pede o motivo do atraso na primeira anotação de parcela vencida e sempre a próxima ação (dia, o que fazer, quem faz). Quem sai da equipe passa as próximas ações para quem o sócio escolheu (evento PASSADA, EX-10).
+- **API:** `GET /v1/escritorio/financeiro/receber` (`?mostrar=ABERTO|VENCIDAS|SETE_DIAS|RECEBIDO_MES&q&responsavel&forma`), `GET /financeiro/contratos/:id`, `POST /financeiro/parcelas/:id/recebimentos` e `/cobranca`.
+- **Telas:** `/financeiro/a-receber` e `/financeiro/a-receber/contratos/:id`. Resumo, Repasses e Caixa ainda mostram a área em preparo.
+
+### Financeiro do Portal, A pagar (F3.18; FI-01, FI-02, FI-07, FI-13, FI-20)
+
+- **Banco (migration 0230):** `contas_pagar` (categoria da FI-20, forma, pagamento e, se adiantada para um cliente, como o dinheiro volta e o reembolso) e `contas_recorrentes` (o modelo, com o dia e o primeiro mês que nasce sozinho). O guardião deixa a conta ganhar só o pagamento e o reembolso, uma vez cada; nada se apaga.
+- **Recorrentes (FI-13):** `lancar_recorrentes` lança, uma vez só, todo mês que faltar desde o início, com o vencimento no dia da conta (ou no último dia de um mês mais curto). A lista de A pagar chama a peça ao abrir, então não depende de rotina agendada. Com o contrato encerrado, nada se lança.
+- **Pagar (FI-02):** `portal_financeiro_conta_paga` guarda o dia e o valor que saiu (o imposto que muda todo mês sai com o valor do mês); recusa data no futuro e conta já paga.
+- **Adiantada (FI-07):** pede o cliente do escritório e como volta (na próxima parcela, no levantamento ou à parte); `portal_financeiro_conta_reembolsada` tira do "Adiantado por cliente".
+- **API:** `GET /v1/escritorio/financeiro/pagar` (`?mostrar=SEMANA|VENCIDAS|MES|RECORRENTES`), `POST /financeiro/contas`, `POST /financeiro/contas/:id/paga` e `/reembolso`.
+- **Tela:** `/financeiro/a-pagar`, com as janelas de lançar conta, marcar paga e registrar o reembolso. A aprovação da sócia (FI-10) tem só o lugar reservado.
+
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
 Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Carol de 19/11/2026 no `NOTAS.md`). Migration `0210_fim_contrato.sql`, teste `021_fim_contrato_test.sql`, e2e `fim-contrato.spec.ts`.

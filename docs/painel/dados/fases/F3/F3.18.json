@@ -1,0 +1,16 @@
+{
+  "id": "F3.18",
+  "texto": "Financeiro do Portal, A pagar: os quatro números do alto que filtram (vencem esta semana, vencidas, recorrentes do mês, a reembolsar); contas com categoria e origem; lançar conta que repete todo mês e nasce sozinha no dia 1º, ou adiantada para um cliente com o jeito de o dinheiro voltar; marcar paga com o valor que saiu; registrar o reembolso; saídas do mês por categoria",
+  "peca": "S3",
+  "refs": [
+    "FI-01",
+    "FI-02",
+    "FI-07",
+    "FI-13",
+    "FI-20"
+  ],
+  "status": "feito",
+  "ordem": 180,
+  "evidencia": "Migration 0230 (contas_pagar e contas_recorrentes; a conta só ganha o pagamento e o reembolso, nada se apaga; a lista lança as recorrentes do mês que faltarem, uma vez só), pgTAP 023 (26 testes), rotas /v1/escritorio/financeiro/pagar e /contas, /contas/:id/paga e /reembolso na api-portal (2 testes Deno novos), regras da tela em packages/ui/src/portal/financeiro.ts (2 testes novos), e2e tests/e2e/portal-financeiro-pagar.spec.ts (10 testes, celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-financeiro.",
+  "nota": "Faltam a nota ou guia anexada (F3.22), o caso do reembolso e a volta na parcela (F3.23), parar ou mudar a recorrência (F3.24) e as categorias das entradas (F3.25). A aprovação da sócia (FI-10) fica com o lugar reservado, porque ainda está em validação."
+}

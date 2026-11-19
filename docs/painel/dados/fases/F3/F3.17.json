@@ -1,0 +1,17 @@
+{
+  "id": "F3.17",
+  "texto": "Financeiro do Portal, A receber: números do alto que filtram (em aberto, vencidas, 7 dias, recebido no mês), parcelas por vencimento ou por cliente com filtros de responsável e forma; registrar recebimento que baixa a parcela e o mês de referência, mesmo pago com atraso, com multa e juros e número de recibo; parcelas do contrato com totais, pagamentos e histórico de cobrança; motivo do atraso e próxima ação obrigatórios",
+  "peca": "S3",
+  "refs": [
+    "FI-01",
+    "FI-02",
+    "FI-03",
+    "FI-04",
+    "FI-14",
+    "FI-17"
+  ],
+  "status": "feito",
+  "ordem": 170,
+  "evidencia": "Migration 0220 (pagamentos_recebidos, recibos numerados por ano e cobranca_eventos, só acrescentam; forma de pagamento na parcela; quem sai da equipe passa a cobrança), pgTAP 022 (32 testes), rotas /v1/escritorio/financeiro/receber, /contratos/:id e /parcelas/:id/recebimentos e /cobranca na api-portal (2 testes Deno novos), regras da tela em packages/ui/src/portal/financeiro.ts (4 testes), e2e tests/e2e/portal-financeiro.spec.ts (12 testes, celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-financeiro.",
+  "nota": "Contas a pagar e despesas (F3.18), recibo em PDF (F3.19), Pix e boleto com baixa automática (F3.20) e o aviso da próxima ação no Início (F3.21) ficam para as próximas entregas. A janela do Console e do Portal passou a abrir no centro da tela no computador."
+}

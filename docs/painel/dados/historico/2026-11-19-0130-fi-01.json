@@ -1,0 +1,15 @@
+{
+  "data": "19/11/2026",
+  "inicio": "01:30",
+  "fim": "02:56",
+  "texto": "Financeiro do Portal, A receber: lista de parcelas com filtros, registrar recebimento com recibo numerado, parcelas do contrato e histórico de cobrança com motivo e próxima ação (F3.17). FI-22 (DRE no formato do CPC 51) registrada no IDEIAS.md.",
+  "refs": [
+    "FI-01",
+    "FI-02",
+    "FI-03",
+    "FI-04",
+    "FI-14",
+    "FI-17",
+    "FI-22"
+  ]
+}

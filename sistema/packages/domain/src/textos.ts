@@ -52,6 +52,10 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   CONTRATO_NAO_ELABORACAO: "A assinatura deste contrato já foi registrada.",
   CONTRATO_ENCERRADO: "Este contrato está encerrado e não muda mais.",
   MES_JA_INFORMADO: "A base deste mês já foi informada por outra pessoa. Recarregue a página para ver o valor.",
+  PARCELA_JA_PAGA: "Esta parcela já está paga. Recarregue a página para ver o recebimento.",
+  PARCELA_CANCELADA: "Esta parcela foi cancelada no contrato e não recebe mais.",
+  CONTA_JA_PAGA: "Esta conta já está paga. Recarregue a página para ver o pagamento.",
+  JA_REEMBOLSADA: "Este valor já foi reembolsado. Recarregue a página.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

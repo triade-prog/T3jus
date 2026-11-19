@@ -1,0 +1,11 @@
+{
+  "id": "F3.21",
+  "texto": "Próxima ação de cobrança no Início de quem é responsável por ela",
+  "peca": "S3",
+  "refs": [
+    "PD-07"
+  ],
+  "status": "pendente",
+  "ordem": 210,
+  "proximo": "Bloco no Início com as cobranças do dia da pessoa, levando às parcelas do contrato"
+}

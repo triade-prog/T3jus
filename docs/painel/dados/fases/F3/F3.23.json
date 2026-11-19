@@ -1,0 +1,11 @@
+{
+  "id": "F3.23",
+  "texto": "Reembolso ligado ao caso e mostrado na próxima parcela do cliente",
+  "peca": "S3",
+  "refs": [
+    "FI-07"
+  ],
+  "status": "pendente",
+  "ordem": 230,
+  "proximo": "Vem com o Jurídico: o caso na janela de lançar conta e a parcela seguinte do contrato mostrando o reembolso; hoje o reembolso fica ligado ao cliente"
+}

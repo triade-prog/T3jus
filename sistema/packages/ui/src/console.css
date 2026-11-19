@@ -257,7 +257,7 @@
 .co .aviso-urgencia{--filete:var(--urgencia);--icone:var(--urgencia-texto)}
 .co .aviso-urgencia .aviso-titulo{color:var(--urgencia-texto)}
 .co .aviso-sucesso{--filete:var(--sucesso-filete);--icone:var(--sucesso-icone)}
-.co .janela{width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--borda);border-radius:var(--raio-grande);background:var(--superficie);color:var(--texto);box-shadow:var(--sombra-janela);overflow:auto}
+.co .janela{margin:auto;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--borda);border-radius:var(--raio-grande);background:var(--superficie);color:var(--texto);box-shadow:var(--sombra-janela);overflow:auto}
 .co .janela::backdrop{background:var(--veu)}
 .co .janela[open]{animation:t3-janela var(--dur-media) var(--curva)}
 @keyframes t3-janela{from{opacity:0;transform:translateY(8px) scale(.98)}}

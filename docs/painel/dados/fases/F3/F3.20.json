@@ -1,0 +1,11 @@
+{
+  "id": "F3.20",
+  "texto": "Cobrança por Pix ou boleto emitida pelo sistema, com baixa automática ao pagar",
+  "peca": "S3",
+  "refs": [
+    "FI-17"
+  ],
+  "status": "pendente",
+  "ordem": 200,
+  "proximo": "Escolher o banco ou intermediador e receber o aviso de pagamento; hoje a forma fica guardada na parcela e a baixa é registrada à mão"
+}
