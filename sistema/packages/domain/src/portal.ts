@@ -1,6 +1,7 @@
 // Portal do advogado: áreas e equipe do escritório (PA-01, PA-02).
 // Os mesmos valores estão no banco (0140_portal_equipe.sql); os testes conferem os dois.
 
+import type { SaidaPessoa } from "./contrato.ts";
 import { z } from "zod";
 
 /** Áreas que o sócio dono libera pessoa por pessoa. As partes comuns todo mundo vê. */
@@ -42,4 +43,16 @@ export interface PessoaEquipePortal {
   versao: number;
   senhaCriadaEm: string | null;
   conviteEnviadoEm: string;
+}
+
+/** Quem foi retirado da equipe (F0.14): GET /v1/escritorio/equipe/retiradas. */
+export interface PessoaRetiradaPortal {
+  vinculoId: string;
+  pessoaId: string;
+  nome: string;
+  /** null quando a entrada (e-mail e senha) já foi apagada. */
+  email: string | null;
+  areas: AreaPortal[];
+  retiradaEm: string;
+  saida: SaidaPessoa | null;
 }

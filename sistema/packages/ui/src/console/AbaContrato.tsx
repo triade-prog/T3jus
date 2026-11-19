@@ -5,11 +5,12 @@
 // estágio, que só anda para a frente e pede o motivo.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { CATEGORIAS_DOCUMENTO, ESTAGIOS, etapasImplantacao, type CategoriaDocumento } from "@t3jus/domain";
+import { CATEGORIAS_DOCUMENTO, ESTAGIOS, ESTAGIOS_CARTEIRA, etapasImplantacao, type CategoriaDocumento } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { problemaDoArquivo, tamanhoLegivel, tipoDoArquivo, tipoLegivel, type DocumentoCliente } from "./documentos.ts";
 import type { FichaDoCliente } from "./ficha.ts";
+import { AcaoEncerrar, dataBr, FolhaFim, JanelaEncerrar, soLeitura, TrajetoTres } from "./FimContrato.tsx";
 import { type EventoHistorico } from "./historico.ts";
 import { LateralTratar } from "./Laterais.tsx";
 import { chamarConsole } from "./Moldura.tsx";
@@ -20,7 +21,8 @@ const MAX_REFERENCIA = 120;
 
 function Referencia({ f, recarregar }: { f: FichaDoCliente; recarregar: () => Promise<void> }) {
   const ids = useId();
-  const pode = f.permissoes.includes("console.contrato.editar");
+  const fechada = soLeitura(f);
+  const pode = f.permissoes.includes("console.contrato.editar") && !fechada;
   const ref = f.cliente.referenciaContrato;
   const [editando, setEditando] = useState(false);
   const [valor, setValor] = useState(ref ?? "");
@@ -111,7 +113,7 @@ function Referencia({ f, recarregar }: { f: FichaDoCliente; recarregar: () => Pr
           ) : (
             <p className="permissao" style={{ padding: "8px 24px 18px" }}>
               <Icone nome="cadeado" className="ico" />
-              Só a Administração altera a referência do contrato.
+              {fechada ? "Contrato encerrado: a referência não muda mais." : "Só a Administração altera a referência do contrato."}
             </p>
           )}
         </>
@@ -433,7 +435,10 @@ function Estagio({ f, recarregar, abrirAoEntrar }: { f: FichaDoCliente; recarreg
   const e = etapasImplantacao({ situacoes: f.situacoes, socios: f.socios, equipe: f.equipe });
   const pronta = e.proxima === null;
   const ativo = f.cliente.estagio === "ATIVO";
-  const [aberta, setAberta] = useState(abrirAoEntrar && pode && pronta && !ativo);
+  const encerrado = f.cliente.estagio === "ENCERRADO";
+  const [aberta, setAberta] = useState(abrirAoEntrar && pode && pronta && !ativo && !encerrado);
+  const [encerrar, setEncerrar] = useState(false);
+  const [encerrou, setEncerrou] = useState<string | null>(null);
   const [motivo, setMotivo] = useState("");
   const [erroMotivo, setErroMotivo] = useState(false);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -484,30 +489,22 @@ function Estagio({ f, recarregar, abrirAoEntrar }: { f: FichaDoCliente; recarreg
       {feito ? (
         <Aviso tom="sucesso" titulo={`${f.escritorio.nome} agora está Ativo.`}>O motivo ficou no histórico do cliente, com seu nome e a data.</Aviso>
       ) : null}
+      {encerrou ? <Aviso tom="sucesso" titulo={encerrou}>O motivo ficou no histórico do cliente, com seu nome e a data.</Aviso> : null}
       <section className="folha" aria-labelledby={`${ids}-t`} style={{ paddingBottom: 22 }}>
         <div className="folha-cab">
           <div>
             <h2 id={`${ids}-t`}>Estágio</h2>
-            <p className="sub">O estágio só anda para a frente.</p>
+            <p className="sub">
+              {f.encerramento?.situacao === "MARCADO"
+                ? `Encerramento marcado para ${dataBr(f.encerramento.fimEm)}. Até lá, o cliente segue ${ESTAGIOS_CARTEIRA[f.cliente.estagio]}.`
+                : encerrado && f.encerramento
+                  ? `Encerrado em ${dataBr(f.encerramento.fimEm)}. O estágio não volta, a não ser que a Administração reabra o contrato.`
+                  : "O estágio só anda para a frente. O fim do contrato é o último passo."}
+            </p>
           </div>
         </div>
-        <ol className="trajeto">
-          <li className={ativo ? "feito" : "agora"} aria-current={ativo ? undefined : "step"}>
-            <span className="m">
-              <Icone nome={ativo ? "check" : "relogio"} className="ico" />
-            </span>
-            <strong>{ESTAGIOS.IMPLANTACAO}</strong>
-            desde {dataLonga(f.escritorio.criadoEm)}
-          </li>
-          <li className={ativo ? "feito agora" : undefined} aria-current={ativo ? "step" : undefined}>
-            <span className="m">
-              <Icone nome={ativo ? "check" : "escritorios"} className="ico" />
-            </span>
-            <strong>{ESTAGIOS.ATIVO}</strong>
-            {ativo ? "Implantação concluída" : "Depois da implantação"}
-          </li>
-        </ol>
-        {!ativo && pode ? (
+        <TrajetoTres f={f} desdeImplantacao={dataLonga(f.escritorio.criadoEm)} />
+        {!ativo && !encerrado && pode ? (
           <div className="estagio-acao">
             {!pronta ? (
               <Aviso tom="atencao" titulo={soSocio ? "Falta o sócio para passar para Ativo." : "Faltam etapas para passar para Ativo."}
@@ -537,12 +534,13 @@ function Estagio({ f, recarregar, abrirAoEntrar }: { f: FichaDoCliente; recarreg
             ) : null}
           </div>
         ) : null}
-        {!pode ? (
+        {!pode && !encerrado ? (
           <p className="permissao" style={{ margin: "16px 24px 0" }}>
             <Icone nome="cadeado" className="ico" />
             Quem muda o estágio é a Implantação ou a Administração.
           </p>
         ) : null}
+        {!encerrado && !f.encerramento ? <AcaoEncerrar f={f} aoAbrir={() => setEncerrar(true)} /> : null}
         {mudancas?.length ? (
           <div className="mini-hist">
             <h3>Mudanças de estágio</h3>
@@ -552,7 +550,7 @@ function Estagio({ f, recarregar, abrirAoEntrar }: { f: FichaDoCliente; recarreg
                   <span>{dataLonga(m.ocorridoEm)}</span>
                   {m.acao === "escritorio.cadastrado"
                     ? `Cadastrado em implantação · ${m.autor?.nome ?? "Equipe T3jus"}`
-                    : `Passou para ${ESTAGIOS[(m.dados?.para as "ATIVO") ?? "ATIVO"] ?? "outro estágio"} · ${m.autor?.nome ?? "Equipe T3jus"}${typeof m.dados?.motivo === "string" ? ` · “${m.dados.motivo}”` : ""}`}
+                    : `${m.dados?.para === "ENCERRADO" ? "Contrato encerrado" : m.dados?.de === "ENCERRADO" ? `Reaberto, voltou para ${ESTAGIOS_CARTEIRA[(m.dados?.para as "ATIVO") ?? "ATIVO"] ?? "o estágio de antes"}` : `Passou para ${ESTAGIOS_CARTEIRA[(m.dados?.para as "ATIVO") ?? "ATIVO"] ?? "outro estágio"}`} · ${m.autor?.nome ?? "Equipe T3jus"}${typeof m.dados?.motivo === "string" ? ` · “${m.dados.motivo}”` : ""}`}
                 </li>
               ))}
             </ul>
@@ -593,6 +591,14 @@ function Estagio({ f, recarregar, abrirAoEntrar }: { f: FichaDoCliente; recarreg
           </p>
         </div>
       </Janela>
+      <JanelaEncerrar f={f} aberta={encerrar} aoFechar={() => setEncerrar(false)}
+        aoFeito={async () => {
+          setEncerrar(false);
+          await recarregar();
+          await carregarMudancas();
+          setEncerrou(`Contrato da ${f.escritorio.nome} encerrado.`);
+          document.getElementById("fim-contrato")?.querySelector("h2")?.focus();
+        }} />
     </>
   );
 }
@@ -602,37 +608,63 @@ export function AbaContrato({ f, recarregar, mudarAoEntrar }: { f: FichaDoClient
   return (
     <div className="grade">
       <div className="col">
+        <FolhaFim f={f} recarregar={recarregar} />
         <Referencia f={f} recarregar={recarregar} />
         <Documentos f={f} aoMudar={() => void recarregar()} />
         <Estagio f={f} recarregar={recarregar} abrirAoEntrar={!!mudarAoEntrar} />
       </div>
       <aside className="col" aria-label="Contexto do contrato">
-        <section className="explica campo-ambar" aria-labelledby={`${ids}-como`}>
-          <p className="sobretitulo">Como funciona</p>
-          <h2 id={`${ids}-como`}>Da implantação ao uso diário.</h2>
-          <ul>
-            <li>
-              <Icone nome="seta" className="ico" />
-              <span>O cliente nasce “Em implantação” e passa a “Ativo”. Não há volta pelo Console.</span>
-            </li>
-            <li>
-              <Icone nome="pessoas" className="ico" />
-              <span>Para passar a Ativo, o escritório precisa ter sócio no Portal.</span>
-            </li>
-            <li>
-              <Icone nome="historico" className="ico" />
-              <span>O motivo da mudança fica no histórico.</span>
-            </li>
-            <li>
-              <Icone nome="cadeado" className="ico" />
-              <span>A referência do contrato só a Administração muda. O cliente não vê nada desta aba.</span>
-            </li>
-            <li>
-              <Icone nome="doc" className="ico" />
-              <span>Documentos: PDF, JPG ou PNG, até 10 MB cada. Nada é apagado.</span>
-            </li>
-          </ul>
-        </section>
+        {f.encerramento && f.encerramento.situacao !== "MARCADO" ? (
+          <section className="explica campo-ambar" aria-labelledby={`${ids}-como`}>
+            <p className="sobretitulo">Como funciona</p>
+            <h2 id={`${ids}-como`}>Depois do fim do contrato.</h2>
+            <ul>
+              <li>
+                <Icone nome="olho" className="ico" />
+                <span>Por 30 dias, o escritório consulta e baixa os dados. Ninguém cria nem muda nada.</span>
+              </li>
+              <li>
+                <Icone nome="pessoas" className="ico" />
+                <span>Depois dos 30 dias, o acesso fecha. Os dados dos clientes ficam guardados; o escritório pode pedir uma cópia.</span>
+              </li>
+              <li>
+                <Icone nome="guardar" className="ico" />
+                <span>Tudo fica 5 anos, só para a equipe T3jus. Até lá, dá para reabrir.</span>
+              </li>
+              <li>
+                <Icone nome="historico" className="ico" />
+                <span>Cada passo vai para o histórico, com a contagem.</span>
+              </li>
+            </ul>
+          </section>
+        ) : (
+          <section className="explica campo-ambar" aria-labelledby={`${ids}-como`}>
+            <p className="sobretitulo">Como funciona</p>
+            <h2 id={`${ids}-como`}>Da implantação ao uso diário.</h2>
+            <ul>
+              <li>
+                <Icone nome="seta" className="ico" />
+                <span>O cliente nasce “Em implantação” e passa a “Ativo”. Não há volta pelo Console.</span>
+              </li>
+              <li>
+                <Icone nome="pessoas" className="ico" />
+                <span>Para passar a Ativo, o escritório precisa ter sócio no Portal.</span>
+              </li>
+              <li>
+                <Icone nome="historico" className="ico" />
+                <span>O motivo da mudança fica no histórico.</span>
+              </li>
+              <li>
+                <Icone nome="cadeado" className="ico" />
+                <span>A referência do contrato só a Administração muda. O cliente não vê nada desta aba.</span>
+              </li>
+              <li>
+                <Icone nome="doc" className="ico" />
+                <span>Documentos: PDF, JPG ou PNG, até 10 MB cada. Nada é apagado.</span>
+              </li>
+            </ul>
+          </section>
+        )}
         <LateralTratar f={f} />
       </aside>
     </div>

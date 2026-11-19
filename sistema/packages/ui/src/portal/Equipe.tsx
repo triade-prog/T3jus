@@ -5,7 +5,7 @@
 // da pessoa. Quem não é o dono vê "Esta página é do sócio dono". O servidor decide tudo.
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { AREAS_PORTAL, convidarEquipeSchema, type AreaPortal, type PessoaEquipePortal } from "@t3jus/domain";
+import { AREAS_PORTAL, convidarEquipeSchema, type AreaPortal, type PessoaEquipePortal, type PessoaRetiradaPortal } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -13,11 +13,14 @@ import { hora, iniciais } from "../console/tempo.ts";
 import { agruparEventosPorDia, fraseEquipe, listaAreas, primeiroNome, situacaoNaEquipe, type EventoEquipe } from "./equipe.ts";
 import { VALIDADE_CONVITE_MS } from "../console/carteira.ts";
 import { DESCRICAO_AREA } from "./areas.ts";
-import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
+import { chamarPortal, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 
 const ORDEM = Object.keys(AREAS_PORTAL) as AreaPortal[];
 const EQUIPE_API = "/v1/escritorio/equipe";
-type Filtro = "TODAS" | "ATIVAS" | "CONVITES";
+type Filtro = "TODAS" | "ATIVAS" | "CONVITES" | "RETIRADAS";
+
+const diaBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+const apagada = (p: PessoaRetiradaPortal) => !!p.saida?.entradaApagadaEm;
 
 /** Aviso de sucesso que flutua no canto (no celular, acima da barra de baixo). */
 function Toast({ titulo, texto, aoFechar }: { titulo: string; texto: string; aoFechar: () => void }) {
@@ -67,18 +70,21 @@ function horaDeVencer(): string {
 
 type Feito = { titulo: string; texto: string; destaque?: string };
 
-function JanelaConvidar({ aberta, escritorio, pessoas, aoFechar, aoFeito }: {
+function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito }: {
   aberta: boolean;
   escritorio: string;
   pessoas: PessoaEquipePortal[];
+  /** Convidar de novo quem foi retirado (F0.14): nome e e-mail já escritos, áreas em branco. */
+  deNovo?: PessoaRetiradaPortal | null;
   aoFechar: () => void;
   aoFeito: (f: Feito) => void;
 }) {
   const ids = useId();
   const corpo = useRef<HTMLDivElement>(null);
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
+  const [nome, setNome] = useState(deNovo?.nome ?? "");
+  const [email, setEmail] = useState(deNovo?.email ?? "");
   const [areas, setAreas] = useState<AreaPortal[]>([]);
+  const primeiro = deNovo ? primeiroNome(deNovo.nome) : "";
   const [erros, setErros] = useState<{ nome?: string; email?: string }>({});
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -95,7 +101,11 @@ function JanelaConvidar({ aberta, escritorio, pessoas, aoFechar, aoFeito }: {
     if (!v.success) {
       const campos = new Set(v.error.issues.map((i) => String(i.path[0])));
       if (campos.has("nome")) novos.nome = "Escreva o nome da pessoa.";
-      if (campos.has("email")) novos.email = "Confira o e-mail: falta o @ ou o final do endereço, como .com ou .com.br.";
+      if (campos.has("email")) {
+        novos.email = deNovo && !deNovo.email && !email.trim()
+          ? `Escreva o e-mail de ${primeiro}. O antigo foi apagado com a entrada.`
+          : "Confira o e-mail: falta o @ ou o final do endereço, como .com ou .com.br.";
+      }
     }
     if (v.success && pessoas.some((p) => p.email?.toLowerCase() === v.data.email)) novos.email = jaNaEquipe(v.data.email);
     setErros(novos);
@@ -121,7 +131,7 @@ function JanelaConvidar({ aberta, escritorio, pessoas, aoFechar, aoFeito }: {
   const n = Object.keys(erros).length;
   return (
     <Janela id={`${ids}-j`} aberta={aberta} aoFechar={aoFechar} sobretitulo={`Equipe · ${escritorio}`} descricao={`${ids}-d`}
-      titulo="Convidar pessoa" aoEnviar={() => void enviar()}
+      titulo={deNovo ? `Convidar ${deNovo.nome} de novo` : "Convidar pessoa"} aoEnviar={() => void enviar()}
       pe={
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>
@@ -134,25 +144,35 @@ function JanelaConvidar({ aberta, escritorio, pessoas, aoFechar, aoFeito }: {
         </>
       }>
       <div ref={corpo} style={{ display: "contents" }}>
-        <p id={`${ids}-d`}>Mandamos um convite por e-mail. A pessoa cria a senha e entra no Portal com as áreas que você marcar.</p>
+        <p id={`${ids}-d`}>
+          {deNovo ? `${primeiro} volta só com as áreas que você marcar agora.` : "Mandamos um convite por e-mail. A pessoa cria a senha e entra no Portal com as áreas que você marcar."}
+        </p>
+        {deNovo?.saida?.entradaApagadaEm ? (
+          <Aviso tom="info" titulo={`A entrada de ${primeiro} foi apagada em ${diaBr(deNovo.saida.entradaApagadaEm)}.`}>
+            Por isso volta como pessoa nova: recebe o convite e cria a senha de novo. O que fez antes continua com o nome.
+          </Aviso>
+        ) : deNovo ? (
+          <Aviso tom="info" titulo={`${primeiro} ainda tem a entrada.`}>Recebe o convite no mesmo e-mail e entra com a senha de sempre.</Aviso>
+        ) : null}
         {n ? <Aviso tom="urgencia" titulo={faltaAcertar(n)}>O convite ainda não foi enviado.</Aviso> : null}
         {erro ? <Aviso tom="urgencia" titulo="O convite não foi enviado.">{textoDoErro(erro)}</Aviso> : null}
         <div className="campo">
           <label htmlFor={`${ids}-nome`}>Nome completo</label>
-          <input className="entrada" id={`${ids}-nome`} value={nome} autoComplete="off" data-foco onChange={(e) => setNome(e.target.value)}
+          <input className="entrada" id={`${ids}-nome`} value={nome} autoComplete="off" data-foco={deNovo ? undefined : true} onChange={(e) => setNome(e.target.value)}
             aria-invalid={erros.nome ? true : undefined} aria-describedby={erros.nome ? `${ids}-nome-erro` : undefined} />
           {erros.nome ? <ErroCampo id={`${ids}-nome-erro`}>{erros.nome}</ErroCampo> : null}
         </div>
         <div className="campo">
           <label htmlFor={`${ids}-email`}>E-mail</label>
-          <input className="entrada" id={`${ids}-email`} type="email" value={email} autoComplete="off" onChange={(e) => setEmail(e.target.value)}
+          <input className="entrada" id={`${ids}-email`} type="email" value={email} autoComplete="off" data-foco={deNovo ? true : undefined}
+            onChange={(e) => setEmail(e.target.value)}
             aria-invalid={erros.email ? true : undefined}
             aria-describedby={descritoPor(erros.email ? `${ids}-email-erro` : `${ids}-email-ajuda`)} />
           {erros.email ? (
             <ErroCampo id={`${ids}-email-erro`}>{erros.email}</ErroCampo>
           ) : (
             <p className="ajuda" id={`${ids}-email-ajuda`}>
-              O convite chega neste e-mail e vale 1 hora.
+              {deNovo && !deNovo.email ? "O e-mail antigo foi apagado. " : ""}O convite chega neste e-mail e vale 1 hora.
             </p>
           )}
         </div>
@@ -380,6 +400,120 @@ function Situacao({ p, agora }: { p: PessoaEquipePortal; agora: Date }) {
   );
 }
 
+/** Quem foi retirado (F0.14): a data em que saiu e o que acontece com a entrada. */
+function Retiradas({ lista, consulta, aoConvidar }: { lista: PessoaRetiradaPortal[]; consulta: boolean; aoConvidar: (p: PessoaRetiradaPortal) => void }) {
+  const selo = (p: PessoaRetiradaPortal) =>
+    apagada(p) ? (
+      <span className="selo selo-apagada">
+        <Icone nome="lixeira" className="ico" />
+        Entrada apagada
+      </span>
+    ) : (
+      <span className="selo selo-neutro">Retirado</span>
+    );
+  const saida = (p: PessoaRetiradaPortal, celular: boolean) =>
+    p.saida?.entradaApagadaEm ? (
+      <>{`${celular ? "Retirado" : "retirado"} em ${diaBr(p.retiradaEm)} · ${celular ? "entrada apagada" : "apagada"} em ${diaBr(p.saida.entradaApagadaEm)}`}</>
+    ) : p.saida?.entradaApagaEm ? (
+      <>
+        {`${celular ? "Retirado em" : "em"} ${diaBr(p.retiradaEm)} · e-mail e senha apagados em `}
+        <b>{diaBr(p.saida.entradaApagaEm)}</b>, se não voltar a nenhum escritório
+      </>
+    ) : (
+      <>{`${celular ? "Retirado em" : "em"} ${diaBr(p.retiradaEm)} · ainda tem acesso a outro escritório no T3jus`}</>
+    );
+  const botao = (p: PessoaRetiradaPortal, compacto: boolean) =>
+    consulta ? null : (
+      <button className={`btn btn-sec${compacto ? " btn-compacto" : ""}`} type="button" aria-label={`Convidar de novo: ${p.nome}`} onClick={() => aoConvidar(p)}>
+        <Icone nome="envelope" className="ico ico-s" />
+        Convidar de novo
+      </button>
+    );
+  const email = (p: PessoaRetiradaPortal) => (p.email ? p.email : <i className="fc-email-apagado">e-mail apagado</i>);
+  return (
+    <>
+      <table className="so-pc pt-tabela">
+        <colgroup>
+          <col style={{ width: "28%" }} />
+          <col style={{ width: "22%" }} />
+          <col style={{ width: "30%" }} />
+          <col style={{ width: "20%" }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">Pessoa</th>
+            <th scope="col">Áreas que tinha</th>
+            <th scope="col">Situação</th>
+            <th scope="col">
+              <span className="sr">Ações</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {lista.map((p) => (
+            <tr key={p.vinculoId} className="linha-off">
+              <td>
+                <div className="esc">
+                  <span className="av-p apagado" aria-hidden="true">
+                    {iniciais(p.nome)}
+                  </span>
+                  <div>
+                    <strong style={{ fontWeight: 500 }}>{p.nome}</strong>
+                    <small style={{ display: "block", fontSize: 12, color: "var(--texto-2)", overflowWrap: "anywhere" }}>{email(p)}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div className="pt-areas">
+                  {p.areas.length ? p.areas.map((a) => <span key={a} className="selo selo-neutro">{AREAS_PORTAL[a]}</span>) : <span className="fc-saida">Só as partes comuns</span>}
+                </div>
+              </td>
+              <td>
+                <div className="pt-sit">
+                  {selo(p)}
+                  <span className="fc-saida">{saida(p, false)}</span>
+                </div>
+              </td>
+              <td>
+                <div className="acoes-tab">{botao(p, true)}</div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <ul className="cartoes so-cel" aria-label="Pessoas retiradas">
+        {lista.map((p) => (
+          <li key={p.vinculoId} className="cartao">
+            <div className="c-topo">
+              <span className="av-p apagado" aria-hidden="true">
+                {iniciais(p.nome)}
+              </span>
+              <div>
+                <strong className="c-nome" style={{ fontSize: 18 }}>
+                  {p.nome}
+                </strong>
+                <small>{email(p)}</small>
+                <span className="fc-saida">{saida(p, true)}</span>
+              </div>
+            </div>
+            <div className="c-selos">
+              {selo(p)}
+              <div className="pt-areas">
+                {p.areas.map((a) => (
+                  <span key={a} className="selo selo-neutro">
+                    {AREAS_PORTAL[a]}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {consulta ? null : <div className="c-acoes">{botao(p, false)}</div>}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 function AreasDef() {
   return (
     <section className="folha" aria-labelledby="t-def">
@@ -495,6 +629,8 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("TODAS");
   const [convidar, setConvidar] = useState(false);
+  const [deNovo, setDeNovo] = useState<PessoaRetiradaPortal | null>(null);
+  const [retiradas, setRetiradas] = useState<PessoaRetiradaPortal[] | null>(null);
   const [areasDe, setAreasDe] = useState<PessoaEquipePortal | null>(null);
   const [retirar, setRetirar] = useState<PessoaEquipePortal | null>(null);
   const [cancelar, setCancelar] = useState<PessoaEquipePortal | null>(null);
@@ -517,6 +653,9 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
     setAgora(new Date());
     if (r.ok) setPessoas(r.dados.pessoas);
     else if (r.status !== 401 && r.erro.codigo !== "ESCRITORIO_REQUIRED") setErro(r.erro);
+    // Quem saiu (F0.14): só para o filtro "Retiradas"; se falhar, o filtro fica de fora.
+    const q = await chamarPortal<{ pessoas: PessoaRetiradaPortal[] }>(`${EQUIPE_API}/retiradas`);
+    setRetiradas(q.ok ? q.dados.pessoas : null);
   }, []);
 
   const dono = escritorio?.dono;
@@ -532,6 +671,7 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
 
   async function concluir(f: Feito) {
     setConvidar(false);
+    setDeNovo(null);
     setAreasDe(null);
     setRetirar(null);
     setCancelar(null);
@@ -551,9 +691,19 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
     await concluir({ titulo: `Convite reenviado para ${p.nome}.`, texto: `O link antigo deixou de valer. O novo vale 1 hora, até ${ate}.`, destaque: p.vinculoId });
   }
 
+  const consulta = soConsulta(escritorio);
+  const verRetiradas = filtro === "RETIRADAS" && !!retiradas;
   const acoes = (p: PessoaEquipePortal, compacto: boolean): ReactNode => {
     const c = compacto ? " btn-compacto" : "";
     if (p.dono) return <span className="pt-dono">Sócio dono: não sai da equipe</span>;
+    if (consulta) {
+      return (
+        <span className="fc-leitura">
+          <Icone nome="cadeado" className="ico" />
+          Só consulta
+        </span>
+      );
+    }
     const ativa = !!p.senhaCriadaEm;
     return (
       <>
@@ -627,7 +777,7 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
             <span className="fio" aria-hidden="true" />
             <p className="lede">Quem trabalha no Portal da {nomeEsc} e quais áreas cada pessoa abre. Só você, como sócio dono, vê esta página.</p>
           </div>
-          <button className="btn btn-escuro" type="button" style={{ marginBottom: 6 }} onClick={() => abrir(() => setConvidar(true))}>
+          <button className="btn btn-escuro" type="button" data-muda style={{ marginBottom: 6 }} onClick={() => abrir(() => setConvidar(true))}>
             <Icone nome="pessoaMais" className="ico" />
             Convidar pessoa
           </button>
@@ -662,91 +812,115 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
               <h2 id={`${ids}-t`} className="sr">
                 Pessoas da equipe
               </h2>
-              {pessoas.length > 1 ? (
+              {pessoas.length > 1 || retiradas?.length ? (
                 <>
                   <div className="ferramentas">
                     <div className="chips" role="group" aria-label="Mostrar" style={{ marginLeft: 0 }}>
-                      {([["TODAS", `Todas (${pessoas.length})`], ["ATIVAS", `Ativas (${ativas})`], ["CONVITES", `Convites (${pessoas.length - ativas})`]] as [Filtro, string][]).map(([k, t]) => (
+                      {([["TODAS", `Todas (${pessoas.length})`], ["ATIVAS", `Ativas (${ativas})`], ["CONVITES", `Convites (${pessoas.length - ativas})`],
+                        ...(retiradas?.length ? [["RETIRADAS", `Retiradas (${retiradas.length})`]] : [])] as [Filtro, string][]).map(([k, t]) => (
                         <button key={k} type="button" aria-pressed={filtro === k} onClick={() => setFiltro(k)}>
                           {t}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <table className="so-pc pt-tabela">
-                    <colgroup>
-                      <col style={{ width: "28%" }} />
-                      <col style={{ width: "25%" }} />
-                      <col style={{ width: "19%" }} />
-                      <col style={{ width: "28%" }} />
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th scope="col">Pessoa</th>
-                        <th scope="col">Áreas liberadas</th>
-                        <th scope="col">Situação</th>
-                        <th scope="col">
-                          <span className="sr">Ações</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visiveis.map((p) => (
-                        <tr key={p.vinculoId} className={p.vinculoId === destaque ? "pt-nova" : undefined}>
-                          <td>
-                            <div className="esc">
+                  {verRetiradas ? (
+                    <Retiradas lista={retiradas!} consulta={consulta} aoConvidar={(p) => abrir(() => { setDeNovo(p); setConvidar(true); })} />
+                  ) : (
+                    <>
+                      <table className="so-pc pt-tabela">
+                        <colgroup>
+                          <col style={{ width: "28%" }} />
+                          <col style={{ width: "25%" }} />
+                          <col style={{ width: "19%" }} />
+                          <col style={{ width: "28%" }} />
+                        </colgroup>
+                        <thead>
+                          <tr>
+                            <th scope="col">Pessoa</th>
+                            <th scope="col">Áreas liberadas</th>
+                            <th scope="col">Situação</th>
+                            <th scope="col">
+                              <span className="sr">Ações</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {visiveis.map((p) => (
+                            <tr key={p.vinculoId} className={p.vinculoId === destaque ? "pt-nova" : undefined}>
+                              <td>
+                                <div className="esc">
+                                  <span className={p.senhaCriadaEm ? "av-p forte" : "av-p apagado"} aria-hidden="true">
+                                    {iniciais(p.nome)}
+                                  </span>
+                                  <div>
+                                    <strong style={{ fontWeight: 500 }}>{p.nome}</strong>
+                                    {p.dono ? <span className="voce">você</span> : null}
+                                    <small style={{ display: "block", fontSize: 12, color: "var(--texto-2)", overflowWrap: "anywhere" }}>
+                                      {p.email ?? "E-mail não encontrado"}
+                                    </small>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <AreasDaPessoa p={p} />
+                              </td>
+                              <td>
+                                <Situacao p={p} agora={agora} />
+                              </td>
+                              <td>
+                                <div className="acoes-tab">{acoes(p, true)}</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <ul className="cartoes so-cel" aria-label="Pessoas da equipe">
+                        {visiveis.map((p) => (
+                          <li key={p.vinculoId} className="cartao">
+                            <div className="c-topo">
                               <span className={p.senhaCriadaEm ? "av-p forte" : "av-p apagado"} aria-hidden="true">
                                 {iniciais(p.nome)}
                               </span>
                               <div>
-                                <strong style={{ fontWeight: 500 }}>{p.nome}</strong>
+                                <strong className="c-nome" style={{ fontSize: 18 }}>
+                                  {p.nome}
+                                </strong>
                                 {p.dono ? <span className="voce">você</span> : null}
-                                <small style={{ display: "block", fontSize: 12, color: "var(--texto-2)", overflowWrap: "anywhere" }}>
-                                  {p.email ?? "E-mail não encontrado"}
-                                </small>
+                                <small style={{ overflowWrap: "anywhere" }}>{p.email ?? "E-mail não encontrado"}</small>
                               </div>
                             </div>
-                          </td>
-                          <td>
-                            <AreasDaPessoa p={p} />
-                          </td>
-                          <td>
-                            <Situacao p={p} agora={agora} />
-                          </td>
-                          <td>
-                            <div className="acoes-tab">{acoes(p, true)}</div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <ul className="cartoes so-cel" aria-label="Pessoas da equipe">
-                    {visiveis.map((p) => (
-                      <li key={p.vinculoId} className="cartao">
-                        <div className="c-topo">
-                          <span className={p.senhaCriadaEm ? "av-p forte" : "av-p apagado"} aria-hidden="true">
-                            {iniciais(p.nome)}
-                          </span>
-                          <div>
-                            <strong className="c-nome" style={{ fontSize: 18 }}>
-                              {p.nome}
-                            </strong>
-                            {p.dono ? <span className="voce">você</span> : null}
-                            <small style={{ overflowWrap: "anywhere" }}>{p.email ?? "E-mail não encontrado"}</small>
-                          </div>
-                        </div>
-                        <div className="c-selos">
-                          {p.senhaCriadaEm ? null : <Situacao p={p} agora={agora} />}
-                          <AreasDaPessoa p={p} />
-                        </div>
-                        <div className="c-acoes">{acoes(p, false)}</div>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="pt-pe-folha">
-                    <Icone nome="relogio" className="ico" />
-                    <span>O convite vale 1 hora. Depois disso, use Reenviar: o link antigo deixa de valer e o novo vale mais 1 hora.</span>
-                  </p>
+                            <div className="c-selos">
+                              {p.senhaCriadaEm ? null : <Situacao p={p} agora={agora} />}
+                              <AreasDaPessoa p={p} />
+                            </div>
+                            <div className="c-acoes">{acoes(p, false)}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {consulta && escritorio.encerramento ? (
+                    <p className="fc-regra">
+                      <Icone nome="cadeado" className="ico" />
+                      <span>
+                        {`O contrato terminou em ${diaBr(escritorio.encerramento.fimEm)}. Até ${diaBr(escritorio.encerramento.consultaAte).slice(0, 5)}, a equipe só consulta: não dá para convidar, retirar nem mudar áreas. Convites pendentes deixaram de valer.`}
+                      </span>
+                    </p>
+                  ) : verRetiradas ? (
+                    <p className="fc-regra">
+                      <Icone nome="relogio" className="ico" />
+                      <span>
+                        Quem sai da equipe perde o acesso na hora. Se ficar <b>90 dias sem acesso a nenhum escritório</b> no T3jus, o e-mail e a senha são apagados; o
+                        nome continua em tudo o que a pessoa fez aqui. Para trazer alguém de volta, convide de novo.
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="pt-pe-folha">
+                      <Icone nome="relogio" className="ico" />
+                      <span>O convite vale 1 hora. Depois disso, use Reenviar: o link antigo deixa de valer e o novo vale mais 1 hora.</span>
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
@@ -771,7 +945,7 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
                   </ul>
                   <Estado icone="pessoaMais" titulo="Por enquanto, só você"
                     acoes={
-                      <button className="btn btn-pri" type="button" onClick={() => abrir(() => setConvidar(true))}>
+                      <button className="btn btn-pri" type="button" data-muda onClick={() => abrir(() => setConvidar(true))}>
                         <Icone nome="pessoaMais" className="ico" />
                         Convidar pessoa
                       </button>
@@ -790,7 +964,7 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
 
       {feito ? <Toast titulo={feito.titulo} texto={feito.texto} aoFechar={() => setFeito(null)} /> : null}
 
-      <JanelaConvidar key={`c-${abertura}`} aberta={convidar} escritorio={nomeEsc} pessoas={lista} aoFechar={() => setConvidar(false)}
+      <JanelaConvidar key={`c-${abertura}`} aberta={convidar} escritorio={nomeEsc} pessoas={lista} deNovo={deNovo} aoFechar={() => setConvidar(false)}
         aoFeito={(f) => void concluir(f)} />
       <JanelaAreas key={`a-${abertura}`} pessoa={areasDe} escritorio={nomeEsc} aoFechar={() => setAreasDe(null)} aoFeito={(f) => void concluir(f)} />
       <JanelaRetirar key={`r-${abertura}`} pessoa={retirar} pessoas={lista} escritorio={nomeEsc} aoFechar={() => setRetirar(null)}

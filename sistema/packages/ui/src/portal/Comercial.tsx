@@ -324,7 +324,7 @@ function CabPropostas() {
     <CabAmbar sobre="Comercial" titulo="Propostas"
       lede="O que o escritório ofereceu, para quem, por quanto e quem acompanha. A proposta aceita vira contrato com as mesmas condições, sem redigitar."
       acao={
-        <a className="btn btn-escuro" href={ROTAS_COMERCIAL.nova} style={{ marginBottom: 6 }}>
+        <a data-muda className="btn btn-escuro" href={ROTAS_COMERCIAL.nova} style={{ marginBottom: 6 }}>
           <Icone nome="mais" className="ico" />
           Nova proposta
         </a>
@@ -380,7 +380,7 @@ function PropostasConteudo() {
           <h2 id="t-pl" className="sr">Lista de propostas</h2>
           <Estado icone="pena" titulo="Nenhuma proposta ainda"
             acoes={
-              <a className="btn btn-pri" href={ROTAS_COMERCIAL.nova}>
+              <a data-muda className="btn btn-pri" href={ROTAS_COMERCIAL.nova}>
                 <Icone nome="mais" className="ico" />
                 Escrever a primeira proposta
               </a>

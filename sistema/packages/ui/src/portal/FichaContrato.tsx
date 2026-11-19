@@ -59,7 +59,7 @@ function Dir({ f, aoAssinar }: { f: FichaContrato; aoAssinar: () => void }) {
         <p className="grande" style={{ fontSize: 30 }}>Assinatura</p>
         <p className="hn-oque"><b>Colha a assinatura do contrato.</b><br />Ao registrar a assinatura, a programação vai ao Financeiro.</p>
         <div className="hn-dir-acoes">
-          <button className="btn btn-pri" type="button" onClick={aoAssinar}>
+          <button data-muda className="btn btn-pri" type="button" onClick={aoAssinar}>
             <Icone nome="check" className="ico" />
             Registrar assinatura
           </button>
@@ -160,7 +160,7 @@ function Situacao({ f, aoEncerrar }: { f: FichaContrato; aoEncerrar: () => void 
       <div className="hn-folha-acao">
         <p>{texto}</p>
         {f.situacao !== "ENCERRADO" ? (
-          <button className="btn btn-perigo" type="button" onClick={aoEncerrar}>
+          <button data-muda className="btn btn-perigo" type="button" onClick={aoEncerrar}>
             <Icone nome="pasta" className="ico" />
             Encerrar contrato
           </button>
@@ -420,7 +420,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
   const s = SELO_CONTRATO[f.situacao];
   const vivos = f.recebimentos.filter((r) => !r.cancelado).length;
   const mudar = f.situacao !== "ENCERRADO" ? (
-    <a className="btn btn-sec" href={ROTAS_CONTRATOS.mudar(f.id)}>
+    <a data-muda className="btn btn-sec" href={ROTAS_CONTRATOS.mudar(f.id)}>
       <Icone nome="lapis" className="ico" />
       Mudar condições
     </a>

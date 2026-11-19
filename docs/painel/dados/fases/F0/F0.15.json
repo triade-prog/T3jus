@@ -1,0 +1,11 @@
+{
+  "id": "F0.15",
+  "texto": "Fim da guarda de 5 anos: a rotina apaga o que o T3jus guardou do escritório e dos clientes dele (clientes, atendimentos, pedidos de exclusão, agenda, comercial, contatos, endereço e CNPJ, notas, documentos e arquivos no Storage, histórico do escritório) e deixa só o nome no registro de que a guarda terminou",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "proximo": "Programar a saída de tudo no fim da guarda (a data já aparece nas telas do F0.14); precisa apagar os arquivos do Storage junto",
+  "ordem": 150
+}

@@ -279,7 +279,7 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
           <br />
           Depois de enviar, marque aqui. O retorno vira o próximo contato do cliente.
         </p>
-        <button className="btn btn-pri" type="button" onClick={aoEnviada} disabled={ocupado}>
+        <button data-muda className="btn btn-pri" type="button" onClick={aoEnviada} disabled={ocupado}>
           <Icone nome="enviar" className="ico" />
           Marcar como enviada
         </button>
@@ -296,7 +296,7 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
         <p className="hn-oque">
           {r ? <><b>{r.oque ?? "Falar com o cliente"}</b><br />com {r.responsavel?.nome ?? f.responsavel.nome}</> : "Nenhum retorno marcado. Marque ao editar a proposta."}
         </p>
-        <button className="btn btn-pri" type="button" onClick={aoResponder}>
+        <button data-muda className="btn btn-pri" type="button" onClick={aoResponder}>
           <Icone nome="conversas" className="ico" />
           Registrar resposta
         </button>
@@ -314,7 +314,7 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
               <b>As condições abaixo já entram no contrato.</b>
               {r ? <><br />{r.oque ?? "Próximo contato"} em {diaCurto(r.em)}, com {r.responsavel?.nome ?? f.responsavel.nome}.</> : null}
             </p>
-            <a className="btn btn-pri" href={ROTAS_COMERCIAL.gerarContrato(f.id)}>
+            <a data-muda className="btn btn-pri" href={ROTAS_COMERCIAL.gerarContrato(f.id)}>
               <Icone nome="pena" className="ico" />
               Gerar o contrato
             </a>
@@ -328,7 +328,7 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
             {f.contratoPedidoEm ? (
               <p className="hn-oque"><Icone nome="check" className="ico ico-s" /> Contrato pedido em {diaCurto(diaDoInstante(f.contratoPedidoEm))}, às {horaDoInstante(f.contratoPedidoEm)}.</p>
             ) : nomes.length ? (
-              <button className="btn btn-pri" type="button" onClick={aoPedir} disabled={ocupado}>
+              <button data-muda className="btn btn-pri" type="button" onClick={aoPedir} disabled={ocupado}>
                 <Icone nome="enviar" className="ico" />
                 Pedir o contrato
               </button>
@@ -427,7 +427,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
 
   const editavel = EDITAVEL.has(f.situacao);
   const editar = (
-    <a className="btn btn-sec" href={ROTAS_COMERCIAL.editar(f.id)}>
+    <a data-muda className="btn btn-sec" href={ROTAS_COMERCIAL.editar(f.id)}>
       <Icone nome="lapis" className="ico" />
       Editar
     </a>
@@ -492,7 +492,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
             </dl>
             {editavel ? (
               <div className="hn-folha-acao">
-                <a className="btn btn-sec" href={ROTAS_COMERCIAL.editar(f.id)}>
+                <a data-muda className="btn btn-sec" href={ROTAS_COMERCIAL.editar(f.id)}>
                   <Icone nome="lapis" className="ico" />
                   Editar a proposta
                 </a>

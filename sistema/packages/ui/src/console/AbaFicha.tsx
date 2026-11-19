@@ -4,6 +4,7 @@
 // com um resumo no topo; se outra pessoa salvou antes, a tela diz quem e quando, compara e
 // deixa escolher a versão (PT-19).
 
+import { soLeitura } from "./FimContrato.tsx";
 import { useId, useRef, useState, type ReactNode } from "react";
 import { UFS } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -90,7 +91,7 @@ function Ver({ f, nota, aoEditar }: { f: FichaDoCliente; nota: Nota | null; aoEd
             {!pode ? (
               <p className="permissao" style={{ padding: "12px 24px" }}>
                 <Icone nome="cadeado" className="ico" />
-                Você consulta a ficha. Quem edita é a Implantação ou a Administração.
+                {soLeitura(f) ? "Contrato encerrado: a ficha não muda mais." : "Você consulta a ficha. Quem edita é a Implantação ou a Administração."}
               </p>
             ) : null}
           </section>

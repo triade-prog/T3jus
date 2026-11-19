@@ -5,6 +5,7 @@
 // depois disso, nenhuma chamada manda o escritório pelo navegador.
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { CONTATO_T3JUS, type DatasContrato } from "@t3jus/domain";
 import { chamarApi, textoDoErro, type ErroApi } from "./api.ts";
 import { Icone } from "./Icone.tsx";
 import { Aviso, Cabecalho } from "./pecas.tsx";
@@ -15,6 +16,64 @@ export interface EscritorioParaEscolher {
   cidade: string | null;
   uf: string | null;
   ultimaEntrada: string | null;
+  /** Fim do contrato (F0.14): com o acesso fechado, o escritório aparece sem link, no fim. */
+  encerramento?: DatasContrato | null;
+}
+
+const fechado = (e: EscritorioParaEscolher) => e.encerramento?.situacao === "FECHADO";
+const diaBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+
+/** Só restaram escritórios com o acesso fechado: a tela "O acesso terminou". */
+function AcessoTerminou({ fechados, email, aoSair }: { fechados: EscritorioParaEscolher[]; email: string; aoSair: () => void }) {
+  const titulo = useRef<HTMLHeadingElement>(null);
+  useEffect(() => titulo.current?.focus(), []);
+  const um = fechados.length === 1 ? fechados[0]! : null;
+  const guarda = fechados.map((e) => e.encerramento!.guardaAte).sort().at(-1)!;
+  return (
+    <>
+      <div className="ac-disco ac-disco-alerta">
+        <Icone nome="cadeado" className="ac-ico" />
+      </div>
+      <Cabecalho ref={titulo} titulo="O acesso terminou"
+        lede={um?.encerramento ? (
+          <>
+            O contrato da <b>{um.nome}</b> com o T3jus terminou em {diaBr(um.encerramento.fimEm)}. Os 30 dias só para consulta acabaram em{" "}
+            {diaBr(um.encerramento.consultaAte)}, e o Portal fechou para toda a equipe do escritório.
+          </>
+        ) : (
+          "Os contratos dos seus escritórios com o T3jus terminaram, e os 30 dias só para consulta acabaram. O Portal fechou para a equipe deles."
+        )} />
+      <div className="ac-form fc-ac-lista">
+        <div className="ac-aviso" role="note">
+          <Icone nome="guardar" className="ac-ico" />
+          <p>{`Os dados do escritório ficam guardados pelo T3jus até ${diaBr(guarda)}. Nesse período, o escritório pode pedir uma cópia pelo contato do T3jus.`}</p>
+        </div>
+        <a className="ac-btn ac-btn-sec" href={`mailto:${CONTATO_T3JUS}`}>
+          <Icone nome="envelope" className="ac-ico" />
+          Falar com o T3jus
+        </a>
+        <p className="fc-ac-contato">{CONTATO_T3JUS} · respondemos em até 1 dia útil</p>
+      </div>
+      <div className="ac-primeiro">
+        <Icone nome="pessoas" className="ac-ico" />
+        <p>
+          <strong>Trabalha em outro escritório que usa o T3jus?</strong>
+          Peça o convite ao sócio dele. Você entra com este mesmo e-mail.
+        </p>
+      </div>
+      <div className="ac-sessao">
+        <p>
+          Entrou como
+          <br />
+          <strong>{email}</strong>
+        </p>
+        <button className="ac-sair" type="button" onClick={aoSair}>
+          <Icone nome="sair" className="ac-ico ac-ico-p" />
+          Sair
+        </button>
+      </div>
+    </>
+  );
 }
 
 /** A busca aparece a partir deste número de escritórios. */
@@ -61,6 +120,7 @@ export function filtrarEscritorios(lista: EscritorioParaEscolher[], termo: strin
 
 export function EscolherEscritorio({ destino = "/" }: { destino?: string }) {
   const [lista, setLista] = useState<EscritorioParaEscolher[] | null>(null);
+  const [fechados, setFechados] = useState<EscritorioParaEscolher[]>([]);
   const [email, setEmail] = useState("");
   const [termo, setTermo] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -93,9 +153,11 @@ export function EscolherEscritorio({ destino = "/" }: { destino?: string }) {
         return setLista([]);
       }
       setEmail(r.dados.email);
+      const abertos = r.dados.escritorios.filter((e) => !fechado(e));
+      setFechados(r.dados.escritorios.filter(fechado));
       // Um escritório só: não há o que escolher.
-      if (r.dados.escritorios.length === 1) return void escolher(r.dados.escritorios[0]!.id);
-      setLista(r.dados.escritorios);
+      if (abertos.length === 1) return void escolher(abertos[0]!.id);
+      setLista(abertos);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -110,6 +172,10 @@ export function EscolherEscritorio({ destino = "/" }: { destino?: string }) {
     await chamarApi("/v1/auth/sair", { corpo: {} });
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(TELA_ENTRAR);
+  }
+
+  if (lista && lista.length === 0 && fechados.length > 0 && !erro) {
+    return <AcessoTerminou fechados={fechados} email={email} aoSair={() => void sair()} />;
   }
 
   if (!lista || (lista.length === 1 && !erro)) {
@@ -164,7 +230,24 @@ export function EscolherEscritorio({ destino = "/" }: { destino?: string }) {
               })}
             </ul>
           </div>
-        ) : lista.length > 0 ? (
+        ) : null}
+        {fechados.length > 0 && visiveis.length > 0 ? (
+          fechados.map((e) => (
+            <div key={e.id} className="fc-ac-fechado" role="note">
+              <span className="fc-ac-fechado-t">
+                <span className="fc-ac-selo">
+                  <Icone nome="cadeado" className="ac-ico" />
+                  Acesso encerrado
+                </span>
+                <span className="ac-esc-nome">{e.nome}</span>
+                <span className="ac-esc-meta">
+                  {`O contrato com o T3jus terminou em ${diaBr(e.encerramento!.fimEm)} e o acesso fechou em ${diaBr(e.encerramento!.acessoFechadoEm ?? e.encerramento!.acessoFechaEm).slice(0, 5)}. Os dados ficam guardados até ${diaBr(e.encerramento!.guardaAte)}; para pedir uma cópia: ${CONTATO_T3JUS}.`}
+                </span>
+              </span>
+            </div>
+          ))
+        ) : null}
+        {visiveis.length > 0 ? null : lista.length > 0 ? (
           <div className="ac-vazio">
             <strong>Nenhum escritório com “{termo.trim()}”.</strong>
             Confira a grafia ou busque pela cidade. Se falta um escritório, peça o convite ao sócio dele.

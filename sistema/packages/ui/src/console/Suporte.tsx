@@ -41,6 +41,210 @@ function EmailMascarado({ email }: { email: string | null }) {
   );
 }
 
+/** "2026-11-18…" vira "18/11/2026"; com `curta`, "18/11". */
+function diaBr(iso: string, curta = false): string {
+  const [a, m, d] = iso.slice(0, 10).split("-");
+  return curta ? `${d}/${m}` : `${d}/${m}/${a}`;
+}
+
+/**
+ * Quem saiu de todos os escritórios (F0.14): sem acesso, com a data em que a entrada some, ou
+ * com a entrada já apagada. Nada a fazer pela conta; para voltar, só convite do sócio dono.
+ */
+function FichaSemAcesso({ f, voltar, textoVoltar, eventos }: {
+  f: FichaAcesso; voltar: string; textoVoltar: string; eventos: EventoSuporte[] | null;
+}) {
+  const s = f.saida!;
+  const nome = primeiroNome(f.nome);
+  const ultimo = [...f.escritorios].sort((a, b) => (b.retiradoEm ?? "").localeCompare(a.retiradoEm ?? ""))[0];
+  const ate = ultimo?.retiradoEm ?? s.semAcessoDesde ?? null;
+  const onde = f.escritorios.map((e) => e.nome).join(" e ");
+  const apagadaEm = s.entradaApagadaEm ?? null;
+  const apagaEm = s.entradaApagaEm ?? null;
+  const agora = new Date();
+  const faltam = apagaEm ? Math.max(0, Math.round((Date.parse(`${apagaEm}T12:00:00Z`) - agora.getTime()) / 86_400_000)) : null;
+  const celula = (dt: string, dd: ReactNode, small?: string | null, classe?: string) => (
+    <div className={classe}>
+      <dt>{dt}</dt>
+      <dd>
+        {dd}
+        {small ? <small>{small}</small> : null}
+      </dd>
+    </div>
+  );
+  return (
+    <>
+      <div className="cabeca-ambar campo-ambar cabeca-equipe sa-cab-pessoa">
+        <div>
+          <a className="sa-voltar" href={voltar}>
+            <Icone nome="esquerda" className="ico ico-s" />
+            {textoVoltar}
+          </a>
+          <p className="sobretitulo">Suporte de acesso</p>
+          <h1>{f.nome}</h1>
+          <span className="fio" aria-hidden="true" />
+          <p className="lede">
+            {`Foi da equipe da ${onde}${ate ? ` até ${diaBr(ate)}` : ""}. `}
+            {apagadaEm ? `A entrada foi apagada em ${diaBr(apagadaEm)}.` : "Não tem acesso a nenhum escritório agora."}
+          </p>
+        </div>
+        <div className="sa-selos">
+          {apagadaEm ? (
+            <span className="selo selo-apagada">
+              <Icone nome="lixeira" className="ico" />
+              Entrada apagada
+            </span>
+          ) : apagaEm ? (
+            <span className="selo selo-atencao">
+              <Icone nome="relogio" className="ico" />
+              Entrada apagada em {diaBr(apagaEm)}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="sa-grade">
+        <div className="sa-col">
+          <section className="folha" aria-labelledby="t-situ" style={{ overflow: "hidden" }}>
+            <div className="folha-cab">
+              <div>
+                <h2 id="t-situ">Situação da conta</h2>
+                <p className="sub">Só leitura.</p>
+              </div>
+            </div>
+            {apagadaEm ? (
+              <dl className="sa-situ">
+                {celula("E-mail cadastrado", <span className="sa-email fc-email-apagado">apagado em {diaBr(apagadaEm)}</span>,
+                  `junto com a senha, 90 dias depois de ${nome} perder o último acesso`, "sa-inteira")}
+                {celula("Acesso", (
+                  <span className="selo selo-apagada">
+                    <Icone nome="lixeira" className="ico" />
+                    Entrada apagada
+                  </span>
+                ), `em ${diaBr(apagadaEm)}`)}
+                {celula("Último acesso", ate ? diaBr(ate) : "Não registrado", ultimo ? `retirado da ${ultimo.nome}` : null)}
+                {celula("O que fica", "Só o nome", "como autor no histórico")}
+              </dl>
+            ) : (
+              <>
+                <dl className="sa-situ">
+                  {celula("E-mail cadastrado", <span className="sa-email">{f.email ?? "Não encontrado"}</span>,
+                    apagaEm ? `apagado em ${diaBr(apagaEm)}, com a senha, se ${nome} não voltar a ter acesso` : null, "sa-inteira")}
+                  {celula("Acesso", (
+                    <span className="selo selo-atencao">
+                      <Icone nome="relogio" className="ico" />
+                      Sem acesso
+                    </span>
+                  ), s.semAcessoDesde ? `desde ${dataHora(s.semAcessoDesde)} · saiu de todos os aparelhos` : null)}
+                  {apagaEm ? celula("Entrada apagada em", <span className="sa-num">{diaBr(apagaEm, true)}</span>,
+                    `de ${apagaEm.slice(0, 4)}${faltam !== null ? ` · ${faltam === 1 ? "falta 1 dia" : `faltam ${faltam} dias`}` : ""}`) : null}
+                  {celula("Última entrada", f.ultimaEntrada ? haQuanto(f.ultimaEntrada) : "Nunca entrou", f.ultimaEntrada ? "no Portal" : null)}
+                  {celula("Senha", f.senhaCriadaEm ? "Criada" : "Ainda não criada")}
+                  {celula("Autenticador", f.autenticadorDesde ? "Cadastrado" : "Não cadastrado")}
+                </dl>
+                <p className="sa-trava">
+                  <Icone nome="cadeado" className="ico" />
+                  <span>Ninguém da equipe vê a senha nem o link.</span>
+                </p>
+              </>
+            )}
+          </section>
+
+          <section className="folha" aria-labelledby="t-acoes" style={{ overflow: "hidden" }}>
+            <div className="folha-cab">
+              <div>
+                <h2 id="t-acoes">O que dá para fazer</h2>
+                <p className="sub">Cada ação pede um motivo e fica no histórico de suporte, com seu nome e a hora.</p>
+              </div>
+            </div>
+            <ul className="sa-acoes">
+              {apagadaEm ? (
+                <LinhaAcao icone="envelope" titulo="Para voltar, só com convite novo" classe="sa-destaque">
+                  Quem convida é o sócio dono do escritório, no Portal, em Equipe › Convidar pessoa. {nome} cria senha e autenticador do zero; a conta antiga
+                  não volta.
+                </LinhaAcao>
+              ) : (
+                <>
+                  <LinhaAcao icone="cadeado" titulo="Mandar link de nova senha" classe="sa-fora">
+                    {`Sem acesso a nenhum escritório, um link novo não serve para nada. Se ${nome} voltar a um escritório, usa a mesma senha.`}
+                  </LinhaAcao>
+                  <LinhaAcao icone="sair" titulo="Desconectar de todos os aparelhos" classe="sa-fora">
+                    {`${nome} já saiu de todos ao ser retirado.`}
+                  </LinhaAcao>
+                </>
+              )}
+            </ul>
+          </section>
+
+          <Historico eventos={eventos} novo={false} />
+        </div>
+
+        <aside className="sa-col" aria-label="Contexto da pessoa">
+          <section className="folha" aria-labelledby="t-escs">
+            <div className="folha-cab" style={{ paddingBottom: 4 }}>
+              <h2 id="t-escs" style={{ fontSize: 20 }}>
+                Escritórios
+              </h2>
+            </div>
+            <ul className="sa-escs">
+              {f.escritorios.map((e) => (
+                <li key={e.id}>
+                  <a href={`/clientes/${encodeURIComponent(e.id)}/socio`}>
+                    {e.nome}
+                    <span className="sr">, abrir a ficha do cliente</span>
+                  </a>
+                  <span className="sa-papel">
+                    <span className="selo selo-neutro">Retirado</span>
+                    <span>{`de ${diaBr(e.conviteEnviadoEm, true)}${e.retiradoEm ? ` a ${diaBr(e.retiradoEm)}` : ""}`}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="sa-uma">
+              <Icone nome="ajuda" className="ico" />
+              <span>
+                {apagadaEm
+                  ? `O nome de ${nome} continua como autor no histórico da ${onde}. Não há mais conta para atender.`
+                  : `${nome} não tem acesso a nenhum escritório agora. Quem tira e põe pessoas na equipe é o sócio dono, no Portal.`}
+              </span>
+            </p>
+          </section>
+          <section className="folha" aria-labelledby="t-regra">
+            <div className="folha-cab" style={{ paddingBottom: 12 }}>
+              <h2 id="t-regra" style={{ fontSize: 20 }}>
+                Quando a entrada sai
+              </h2>
+            </div>
+            <ul className="sa-regras">
+              <li>
+                <Icone nome="relogio" className="ico" />
+                <span>
+                  <b>90 dias sem nenhum acesso</b>
+                  Sem vínculo em nenhum escritório, nem na equipe T3jus. A rotina da noite apaga o e-mail e a senha.
+                </span>
+              </li>
+              <li>
+                <Icone nome="historico" className="ico" />
+                <span>
+                  <b>O nome fica</b>
+                  Como autor no histórico de cada escritório em que a pessoa trabalhou.
+                </span>
+              </li>
+              <li>
+                <Icone nome="envelope" className="ico" />
+                <span>
+                  <b>Para voltar</b>
+                  Antes da data, basta o sócio dono convidar de novo para o escritório. Depois, o convite cria uma entrada nova.
+                </span>
+              </li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+    </>
+  );
+}
+
 function SeloSituacao({ s }: { s: SituacaoAcesso }) {
   if (s === "EM_DIA") {
     return (
@@ -652,6 +856,7 @@ function FichaPessoa({ id, termo, aoNome, aoProibido }: { id: string; termo: str
   if (erro?.codigo === "FORBIDDEN") return null;
   if (erro) return <ErroAoCarregar oque="a conta da pessoa" aoTentar={() => void carregar()} />;
   if (!f) return <Carregando rotulo="Carregando a conta da pessoa…" linhas={3} />;
+  if (f.saida) return <FichaSemAcesso f={f} voltar={voltar} textoVoltar={textoVoltar} eventos={eventos} />;
 
   const agora = new Date();
   const nome = primeiroNome(f.nome);

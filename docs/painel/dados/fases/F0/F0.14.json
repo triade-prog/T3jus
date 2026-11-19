@@ -1,11 +1,11 @@
 {
   "id": "F0.14",
-  "texto": "Prazos que dependem do fim do contrato ou da saída da pessoa (escritórios, notas internas, pessoas e entrada no Supabase Auth, equipe, eventos do escritório no histórico)",
+  "texto": "Gatilhos do fim do contrato e da saída da pessoa: encerrar e reabrir no Console, 30 dias só para consulta, acesso que fecha e entrada no Supabase Auth apagada aos 90 dias sem acesso (o que sai no fim da guarda de 5 anos fica no F0.15)",
   "peca": "B2",
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
-  "proximo": "Registrar o fim do contrato no Console e a saída da pessoa, e ligar esses gatilhos à rotina da F0.13 (prazos já aprovados na migration 0090)",
-  "ordem": 140
+  "status": "feito",
+  "ordem": 140,
+  "evidencia": "Migration 0210 (encerrar e reabrir com motivo, só a Administração; 30 dias só para consulta com trava de escrita em toda tabela do escritório; acesso fecha no 30º dia; entrada da pessoa apagada aos 90 dias sem acesso; guarda de 5 anos no inventário); pgTAP 021; API do Console e do Portal; telas aprovadas em docs/design/aprovadas/console-fim-contrato; e2e fim-contrato.spec.ts"
 }
