@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As da seção 11 são do Portal do advogado e saíram das decisões da Carol sobre os três sistemas (17/11/2026). As ideias CH-06 a CH-09, FI-07 a FI-21, EX-06 a EX-14, IN-07 a IN-14, VA-08, PT-25 e PT-26 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As da seção 11 são do Portal do advogado e saíram das decisões da Carol sobre os três sistemas (17/11/2026); PA-03 veio de uma referência de editor de fluxos que a Carol enviou (19/11/2026). As ideias CH-06 a CH-09, FI-07 a FI-21, EX-06 a EX-14, IN-07 a IN-14, VA-08, PT-25 e PT-26 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -178,6 +178,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 |---|---|---|
 | PA-01 | Portal em áreas: Início, Conversas, Clientes e Agenda comuns no alto; Comercial, Contratos, Financeiro e Jurídico no meio, cada uma com a sua barra de seções; Equipe, Escritório e Ajuda embaixo. Cada área aparece só para quem o sócio liberou | [V1] |
 | PA-02 | Sem funções fixas no escritório: o sócio dono convida a equipe e marca, pessoa por pessoa, as áreas que cada uma acessa (Comercial, Contratos, Financeiro, Jurídico); pode mudar a qualquer momento, com registro no histórico; o sócio vê tudo | [V1] |
+| PA-03 | Automações de mensagens do WhatsApp em Conversas, montadas num desenho de fluxo (gatilho, condições, mensagem do modelo, espera, ramos e passar para uma pessoa da equipe): a IA do escritório sugere o fluxo a partir de um pedido em linguagem simples, os passos sugeridos aparecem tracejados até a sócia dona revisar, testar sem enviar e ligar; nada liga sozinho, e cada execução fica no histórico | [V1] |
 
 ## Contagem
 
@@ -193,5 +194,5 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 8. Princípios técnicos e de qualidade | 26 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 5 |
-| 11. Portal do advogado | 2 |
-| **Total** | **118** |
+| 11. Portal do advogado | 3 |
+| **Total** | **119** |
