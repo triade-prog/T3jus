@@ -5,8 +5,7 @@
   "refs": [
     "PA-03"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 55,
-  "evidencia": "Ideia PA-03 registrada no IDEIAS.md a partir da referência enviada pela Carol (19/11/2026); desenho com a especialista de frontend em project-files/t3jus/telas/portal-conversas-automacoes/",
-  "proximo": "Carol aprovar o desenho das automações; depois copiar para docs/design/aprovadas/ e programar"
+  "evidencia": "Desenho em docs/design/aprovadas/portal-conversas-automacoes/ (11 estados, computador e celular, axe sem violação), aprovado pela Carol em 19/11/2026 à 1h16 com as 5 recomendações do NOTAS.md"
 }

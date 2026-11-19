@@ -1,0 +1,46 @@
+[
+ {
+  "nome": "au-lista",
+  "url": "automacoes.html?estado=lista"
+ },
+ {
+  "nome": "au-pedir",
+  "url": "automacoes.html?estado=pedir"
+ },
+ {
+  "nome": "au-vazio",
+  "url": "automacoes.html?estado=vazio"
+ },
+ {
+  "nome": "au-nao-conectado",
+  "url": "automacoes.html?estado=nao-conectado"
+ },
+ {
+  "nome": "au-sugestao",
+  "url": "automacoes.html?estado=sugestao"
+ },
+ {
+  "nome": "au-bloco",
+  "url": "automacoes.html?estado=bloco"
+ },
+ {
+  "nome": "au-erros",
+  "url": "automacoes.html?estado=erros"
+ },
+ {
+  "nome": "au-testar",
+  "url": "automacoes.html?estado=testar"
+ },
+ {
+  "nome": "au-ligar",
+  "url": "automacoes.html?estado=ligar"
+ },
+ {
+  "nome": "au-historico",
+  "url": "automacoes.html?estado=historico"
+ },
+ {
+  "nome": "au-so-leitura",
+  "url": "automacoes.html?estado=so-leitura"
+ }
+]
