@@ -1,0 +1,12 @@
+{
+  "id": "F1.17",
+  "texto": "Automações de mensagens do WhatsApp em Conversas: editor de fluxo com sugestão da IA, teste sem enviar, ligar só pela sócia dona, histórico e as seis automações prontas",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "pendente",
+  "ordem": 66,
+  "nota": "Desenho aprovado em docs/design/aprovadas/portal-conversas-automacoes (19/11/2026), com as 5 decisões do NOTAS.md. Depende de Conversas e da ligação do WhatsApp de cada escritório.",
+  "proximo": "Programar junto com Conversas; depois, gatilhos de outras áreas (cliente novo, caso encerrado, documento pendente) e aprovação dos modelos na Meta"
+}
