@@ -6,6 +6,7 @@ import { AREAS_DIREITO, formatarCnj, PAPEIS_CASO, type AreaDireito, type Etapa, 
 export const ROTAS_JURIDICO = {
   casos: "/juridico/casos",
   novo: "/juridico/casos/novo",
+  etapas: "/juridico/casos/etapas",
   caso: (id: string) => `/juridico/casos/${id}`,
   contrato: (id: string) => `/contratos/contratos/${id}`,
   cliente: (id: string) => `/clientes/${id}`,

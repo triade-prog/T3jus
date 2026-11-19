@@ -260,3 +260,42 @@ export interface ListaTarefas {
   tarefas: Tarefa[];
   carga: CargaPessoa[] | null;
 }
+
+// ------------------------------------------------------------------------- Parte 3a: etapas e petições
+// (EX-07, EX-09; 0260_portal_juridico_etapas_peticoes.sql).
+
+export const etapaSchema = z.object({
+  versao: z.number().int().nullish(),
+  nome: texto(80),
+  descricao: texto(240),
+  textoCliente: texto(300),
+  avisaFinanceiro: z.boolean().default(false),
+});
+export const moverEtapaSchema = z.object({ direcao: z.enum(["SOBE", "DESCE"]) });
+export const removerEtapaSchema = z.object({ moverPara: id });
+
+export interface EtapaEditavel extends Etapa {
+  versao: number;
+  encerrados: number | null;
+}
+export interface EtapasEscritorio {
+  podeEditar: boolean;
+  escritorio: string;
+  etapas: EtapaEditavel[];
+}
+
+export const RESPOSTAS_PETICAO = {
+  SEMANA: { titulo: "Usaria toda semana", texto: "O escritório tem modelos e perde tempo preenchendo dados" },
+  AS_VEZES: { titulo: "Usaria às vezes", texto: "Só para peças repetidas, como iniciais de um mesmo tipo" },
+  NAO: { titulo: "Não usaria", texto: "Escrevo cada peça do zero ou já uso outro programa" },
+} as const;
+export type RespostaPeticao = keyof typeof RESPOSTAS_PETICAO;
+export const peticaoSchema = z.object({
+  resposta: z.enum(["SEMANA", "AS_VEZES", "NAO"]).nullish(),
+  comoFazHoje: texto(1200),
+});
+export interface RespostaPeticoes {
+  resposta: RespostaPeticao;
+  comoFazHoje: string | null;
+  em: string;
+}

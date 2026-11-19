@@ -303,6 +303,20 @@ Mesmas telas aprovadas (estados prazos, novo-prazo, tarefas, tarefas-equipe e a 
 - **Tela:** `/juridico/prazos` (agrupados em Vencidos, Hoje, Amanhã, Até sexta e Depois, com a urgência escrita), `/juridico/tarefas` (Minhas e Da equipe, com a carga), a seção "Prazos e tarefas" e o quadro "O que está travando" na ficha, e as colunas Próximo prazo e Pendências na lista de casos. As regras de urgência e de grupos ficam em `packages/ui/src/portal/juridico.ts`.
 - **Falta:** o lembrete 2 dias antes no Início e no sino (F3.38) e editar prazo e tarefa, inclusive trocar o responsável (F3.39). O T3jus não lê publicações nem conta dias úteis; a tela diz isso.
 
+### Jurídico do Portal, etapas do escritório e Petições (F3.36, F3.40; EX-07, EX-09)
+
+Mesmas telas aprovadas (estados etapas e peticoes). Migration `0260_portal_juridico_etapas_peticoes.sql`, teste `026_portal_juridico_etapas_peticoes_test.sql`, e2e `portal-juridico-etapas.spec.ts`.
+
+- **Quem edita:** a ação `juridico.etapas.editar` é só da função SOCIO (a sócia dona). A equipe com a área Jurídico vê a lista (`podeEditar: false`).
+- **Editar e adicionar:** `portal_juridico_etapa_salvar` (sem id, entra logo antes da final; com id, pede a versão). Nome único no escritório, sem contar acento. A final aceita texto novo, mas não "avisar o Financeiro" (ela pede o resultado).
+- **Ordem:** `portal_juridico_etapa_mover` troca com a vizinha (`SOBE` ou `DESCE`) num só comando; a final e a vizinha dela não trocam (`ETAPA_FINAL_FIXA`).
+- **Tirar:** `portal_juridico_etapa_remover` pede `moverPara` quando há casos (não pode ser a final). Cada caso ganha uma linha em `caso_etapa_mudancas`, sem aviso ao cliente. A etapa não é apagada: ganha `removida_em`, sai da ordem (vai para 1001 em diante) e some de `etapas_lista`; o gatilho `casos_etapa_viva` impede qualquer caso de entrar nela.
+- **Histórico:** `juridico.etapa_criada`, `etapa_editada` (antes e depois), `etapa_movida` e `etapa_removida`. O histórico recusa a chave `nome`, por isso o nome da etapa vai como `etapa`.
+- **Petições (EX-09, a validar):** `peticao_interesse` guarda só quem respondeu, a resposta (`SEMANA`, `AS_VEZES` ou `NAO`) e como faz hoje. A página mostra a última resposta da pessoa e deixa mudar.
+- **API:** `GET` e `POST /v1/escritorio/juridico/etapas`, `PUT /juridico/etapas/:id`, `POST /juridico/etapas/:id/mover`, `POST /juridico/etapas/:id/remover`, `GET` e `POST /juridico/peticoes`.
+- **Tela:** `/juridico/casos/etapas` (o botão "Etapas do escritório" aparece na lista de casos só para a sócia dona) e `/juridico/peticoes`.
+- **Falta:** as respostas de Petições no Console e o gerador (F3.41); o pedido ao Financeiro ao entrar na etapa marcada (F3.14).
+
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
 Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Carol de 19/11/2026 no `NOTAS.md`). Migration `0210_fim_contrato.sql`, teste `021_fim_contrato_test.sql`, e2e `fim-contrato.spec.ts`.

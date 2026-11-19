@@ -133,6 +133,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_tarefa_criar: () => ({ id: CLIENTE }),
     portal_juridico_tarefa_concluir: (a) => ({ id: a.p_tarefa, concluida: a.p_concluir }),
     portal_juridico_tarefa_chegou: (a) => ({ id: a.p_tarefa }),
+    portal_juridico_etapas: () => ({ podeEditar: true, escritorio: "Ribeiro & Matos", etapas: [] }),
+    portal_juridico_etapa_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, dados: a.p_dados }),
+    portal_juridico_etapa_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
+    portal_juridico_etapa_remover: (a) => ({ casosMovidos: a.p_mover_para ? 1 : 0, para: a.p_mover_para }),
+    portal_juridico_peticoes: () => ({ minhaResposta: null }),
+    portal_juridico_peticoes_responder: (a) => ({ ...(a.p_dados as object), em: "2026-11-19T22:00:00Z" }),
     portal_financeiro_conta_reembolsada: (a) => ({ id: a.p_conta, reembolsadoEm: (a.p_dados as { reembolsadoEm: string }).reembolsadoEm }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
     portal_compromisso_editar: (a) => {
@@ -787,4 +793,24 @@ Deno.test("EX-02, EX-04: prazos e tarefas, filtros, cadastrar, cumprir, concluir
   assertEquals((await (await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/concluida`, { corpo: { concluir: false }, cookie })).json()).concluida, false);
   assertEquals((await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/chegou`, { corpo: {}, cookie })).status, 200);
   assertEquals((await m.pedir("/v1/escritorio/juridico/tarefas/nao-e-id/chegou", { corpo: {}, cookie })).status, 404);
+});
+
+Deno.test("EX-07, EX-09: etapas do escritório (adicionar, editar com versão, mover, tirar) e a resposta de Petições", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/juridico/etapas", { cookie })).json()).podeEditar, true);
+  const nova = await m.pedir("/v1/escritorio/juridico/etapas", { corpo: { nome: "Acordo", textoCliente: "estamos negociando um acordo." }, cookie });
+  assertEquals([nova.status, (await nova.json()).versao], [201, 1]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/etapas/${CLIENTE}`, { metodo: "PUT", corpo: { nome: "X", textoCliente: "y" }, cookie }))).detalhes?.campos, ["versao"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/etapas/${CLIENTE}`, { metodo: "PUT", corpo: { versao: 3, nome: "Acordo", textoCliente: "estamos negociando." }, cookie })).json()).versao, 4);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/etapas/${CLIENTE}/mover`, { corpo: { direcao: "LADO" }, cookie }))).codigo, "VALIDATION_ERROR");
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/etapas/${CLIENTE}/mover`, { corpo: { direcao: "SOBE" }, cookie })).json())[0].direcao, "SOBE");
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/etapas/${CLIENTE}/remover`, { corpo: { moverPara: AURORA }, cookie })).json()).casosMovidos, 1);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/etapas/${CLIENTE}/remover`, { corpo: { moverPara: "x" }, cookie }))).detalhes?.campos, ["moverPara"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/juridico/peticoes", { cookie })).json()).minhaResposta, null);
+  const r = await m.pedir("/v1/escritorio/juridico/peticoes", { corpo: { resposta: "AS_VEZES", comoFazHoje: "Copio a última." }, cookie });
+  assertEquals([r.status, (await r.json()).resposta], [201, "AS_VEZES"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/peticoes", { corpo: { resposta: "TALVEZ" }, cookie })).status, 400);
+  const salvar = m.chamadas.filter((c) => c.funcao === "portal_juridico_etapa_salvar");
+  assertEquals(salvar.map((c) => c.args.p_escritorio), [AURORA, AURORA]);
 });

@@ -65,6 +65,10 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   TAREFA_JA_CONCLUIDA: "Esta tarefa já foi concluída. Recarregue a página.",
   TAREFA_ABERTA: "Esta tarefa já está aberta. Recarregue a página.",
   TAREFA_NAO_ESPERA: "Esta tarefa não está esperando ninguém. Recarregue a página.",
+  ETAPA_NOME_REPETIDO: "Já existe uma etapa com esse nome. Escolha outro.",
+  ETAPA_FINAL_FIXA: "A última etapa é sempre a final: ela não muda de lugar nem sai da lista.",
+  ETAPAS_DEMAIS: "O escritório pode ter até 30 etapas.",
+  ETAPAS_DE_MENOS: "O escritório precisa de pelo menos uma etapa além da final.",
   RESULTADO_OBRIGATORIO: "Diga como o caso terminou: ganho, perda ou acordo.",
 };
 

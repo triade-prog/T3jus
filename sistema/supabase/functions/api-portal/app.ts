@@ -14,7 +14,7 @@ import {
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
-  type ListaPrazos, type ListaTarefas,
+  type ListaPrazos, type ListaTarefas, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -637,6 +637,46 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.post("/v1/escritorio/juridico/tarefas/:id/chegou", async (c) => {
     return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_tarefa_chegou", { ...quem(c), p_tarefa: idDaRota(c, "id") }));
+  });
+
+  // Etapas do escritório (EX-07): todos com a área veem; só a sócia dona escreve (o banco confere).
+  app.get("/v1/escritorio/juridico/etapas", async (c) => {
+    return c.json(await deps.banco.rpc<EtapasEscritorio>("portal_juridico_etapas", quem(c)));
+  });
+
+  app.post("/v1/escritorio/juridico/etapas", async (c) => {
+    const { versao: _v, ...d } = await lerCorpo(c, etapaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_juridico_etapa_salvar", { ...quem(c), p_id: null, p_versao: null, p_dados: d }), 201);
+  });
+
+  app.put("/v1/escritorio/juridico/etapas/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, etapaSchema);
+    if (!versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_juridico_etapa_salvar", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/juridico/etapas/:id/mover", async (c) => {
+    const { direcao } = await lerCorpo(c, moverEtapaSchema);
+    return c.json(await deps.banco.rpc<Etapa[]>("portal_juridico_etapa_mover", { ...quem(c), p_id: idDaRota(c, "id"), p_direcao: direcao }));
+  });
+
+  app.post("/v1/escritorio/juridico/etapas/:id/remover", async (c) => {
+    const { moverPara } = await lerCorpo(c, removerEtapaSchema);
+    return c.json(await deps.banco.rpc<{ casosMovidos: number; para: string | null }>("portal_juridico_etapa_remover", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_mover_para: uuidOuNulo(moverPara ?? undefined, "moverPara"),
+    }));
+  });
+
+  // Petições (EX-09, a validar): só a resposta à pergunta, sem dado de cliente.
+  app.get("/v1/escritorio/juridico/peticoes", async (c) => {
+    return c.json(await deps.banco.rpc<{ minhaResposta: RespostaPeticoes | null }>("portal_juridico_peticoes", quem(c)));
+  });
+
+  app.post("/v1/escritorio/juridico/peticoes", async (c) => {
+    const d = await lerCorpo(c, peticaoSchema);
+    return c.json(await deps.banco.rpc<RespostaPeticoes>("portal_juridico_peticoes_responder", { ...quem(c), p_dados: d }), 201);
   });
 
   return app;

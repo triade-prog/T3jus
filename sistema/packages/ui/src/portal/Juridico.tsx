@@ -53,15 +53,23 @@ function usePessoas(): Pessoa[] | null {
 
 // ------------------------------------------------------------------------- Lista
 
-function CabCasos() {
+function CabCasos({ souDono = false }: { souDono?: boolean }) {
   return (
     <CabAmbar sobre="Jurídico" titulo="Casos e processos"
       lede="Cada caso com os clientes, a etapa, os prazos e o que falta. A lista mostra o número, o cliente e a etapa sem precisar abrir."
       acao={
-        <a data-muda className="btn btn-escuro" href={ROTAS_JURIDICO.novo} style={{ marginBottom: 6 }}>
-          <Icone nome="mais" className="ico" />
-          Novo caso
-        </a>
+        <div className="jr-cab-acoes">
+          {souDono ? (
+            <a className="btn btn-sec" href={ROTAS_JURIDICO.etapas}>
+              <Icone nome="ajustes" className="ico" />
+              Etapas do escritório
+            </a>
+          ) : null}
+          <a data-muda className="btn btn-escuro" href={ROTAS_JURIDICO.novo}>
+            <Icone nome="mais" className="ico" />
+            Novo caso
+          </a>
+        </div>
       } />
   );
 }
@@ -88,7 +96,7 @@ function CasosConteudo() {
   if (!t.andamento && !t.encerrados) {
     return (
       <div className="hn">
-        <CabCasos />
+        <CabCasos souDono={dados.souDono} />
         <section className="folha" aria-labelledby="t-jc" style={{ overflow: "hidden" }}>
           <h2 id="t-jc" className="sr">Lista de casos</h2>
           <Estado icone="balanca" titulo="Nenhum caso ainda"
@@ -114,7 +122,7 @@ function CasosConteudo() {
     : <b>{contar(n, "caso encerrado", "casos encerrados")}</b>;
   return (
     <div className="hn">
-      <CabCasos />
+      <CabCasos souDono={dados.souDono} />
       <section className="folha jr-lista" aria-labelledby="t-jc" style={{ overflow: "hidden" }}>
         <h2 id="t-jc" className="sr">Lista de casos</h2>
         <Busca id="jr-b" rotulo="Buscar por caso, número ou cliente" dica="Caso, número ou cliente" valor={busca} aoMudar={setBusca}>

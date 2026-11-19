@@ -43,6 +43,7 @@ export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financei
 export { PagarFinanceiro } from "./portal/FinanceiroPagar.tsx";
 export { CasosJuridicoPortal, FichaCasoPortal, NovoCasoPortal } from "./portal/Juridico.tsx";
 export { PrazosJuridicoPortal, TarefasJuridicoPortal } from "./portal/JuridicoPrazos.tsx";
+export { EtapasJuridicoPortal, PeticoesJuridicoPortal } from "./portal/JuridicoEtapas.tsx";
 export { ROTAS_JURIDICO } from "./portal/juridico.ts";
 export { ROTAS_FINANCEIRO } from "./portal/financeiro.ts";
 export { NovoContratoPortal, MudarContratoPortal } from "./portal/FormContrato.tsx";

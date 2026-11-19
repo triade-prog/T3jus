@@ -1,0 +1,11 @@
+{
+  "id": "F3.41",
+  "texto": "Gerador de petições: ver as respostas dos escritórios no Console e, se a resposta for sim, desenhar e construir o gerador com os modelos do escritório",
+  "peca": "S5",
+  "refs": [
+    "EX-09"
+  ],
+  "status": "pendente",
+  "ordem": 410,
+  "proximo": "As respostas já ficam guardadas em peticao_interesse; falta a tela do Console que as lista para a equipe T3jus"
+}
