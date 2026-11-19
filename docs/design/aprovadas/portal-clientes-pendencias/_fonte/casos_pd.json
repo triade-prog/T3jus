@@ -1,0 +1,114 @@
+[
+ {
+  "nome": "inicio",
+  "url": "pendencias.html?estado=inicio"
+ },
+ {
+  "nome": "inicio-registrar",
+  "url": "pendencias.html?estado=inicio-registrar"
+ },
+ {
+  "nome": "inicio-registrado",
+  "url": "pendencias.html?estado=inicio-registrado"
+ },
+ {
+  "nome": "inicio-muitos",
+  "url": "pendencias.html?estado=inicio-muitos"
+ },
+ {
+  "nome": "inicio-dona",
+  "url": "pendencias.html?estado=inicio-dona"
+ },
+ {
+  "nome": "inicio-dona-pedido",
+  "url": "pendencias.html?estado=inicio-dona-pedido"
+ },
+ {
+  "nome": "inicio-dona-equipe",
+  "url": "pendencias.html?estado=inicio-dona-equipe"
+ },
+ {
+  "nome": "inicio-vazio",
+  "url": "pendencias.html?estado=inicio-vazio"
+ },
+ {
+  "nome": "inicio-carregando",
+  "url": "pendencias.html?estado=inicio-carregando"
+ },
+ {
+  "nome": "inicio-erro",
+  "url": "pendencias.html?estado=inicio-erro"
+ },
+ {
+  "nome": "inicio-sem-comercial",
+  "url": "pendencias.html?estado=inicio-sem-comercial"
+ },
+ {
+  "nome": "inicio-encaixe",
+  "url": "pendencias.html?estado=inicio-encaixe"
+ },
+ {
+  "nome": "excluir-ficha",
+  "url": "pendencias.html?estado=excluir-ficha"
+ },
+ {
+  "nome": "excluir",
+  "url": "pendencias.html?estado=excluir"
+ },
+ {
+  "nome": "excluir-erros",
+  "url": "pendencias.html?estado=excluir-erros"
+ },
+ {
+  "nome": "excluir-confirmar",
+  "url": "pendencias.html?estado=excluir-confirmar"
+ },
+ {
+  "nome": "excluir-falhou",
+  "url": "pendencias.html?estado=excluir-falhou"
+ },
+ {
+  "nome": "excluido",
+  "url": "pendencias.html?estado=excluido"
+ },
+ {
+  "nome": "excluido-atendimentos",
+  "url": "pendencias.html?estado=excluido-atendimentos"
+ },
+ {
+  "nome": "excluido-lista",
+  "url": "pendencias.html?estado=excluido-lista"
+ },
+ {
+  "nome": "excluir-depois",
+  "url": "pendencias.html?estado=excluir-depois"
+ },
+ {
+  "nome": "excluir-ficha-equipe",
+  "url": "pendencias.html?estado=excluir-ficha-equipe"
+ },
+ {
+  "nome": "excluir-pedir",
+  "url": "pendencias.html?estado=excluir-pedir"
+ },
+ {
+  "nome": "excluir-pedido",
+  "url": "pendencias.html?estado=excluir-pedido"
+ },
+ {
+  "nome": "excluir-pedido-dona",
+  "url": "pendencias.html?estado=excluir-pedido-dona"
+ },
+ {
+  "nome": "excluir-do-pedido",
+  "url": "pendencias.html?estado=excluir-do-pedido"
+ },
+ {
+  "nome": "excluir-recusar",
+  "url": "pendencias.html?estado=excluir-recusar"
+ },
+ {
+  "nome": "excluir-recusado",
+  "url": "pendencias.html?estado=excluir-recusado"
+ }
+]

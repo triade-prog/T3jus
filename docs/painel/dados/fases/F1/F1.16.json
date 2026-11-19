@@ -1,0 +1,12 @@
+{
+  "id": "F1.16",
+  "texto": "Pedido de exclusão de cliente com contrato ou processo: só arquiva a pedido (LGPD), sem apagar; ficha só leitura e fora das listas comuns",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 65,
+  "nota": "Decisão 5 da Carol (18/11/2026): “Não exclui, só arquiva”. Desenhado no estado excluir-depois de docs/design/aprovadas/portal-clientes-pendencias. Hoje ainda não há contratos nem processos no T3jus, então a exclusão é sempre completa.",
+  "proximo": "Quando Contratos e Jurídico existirem, a exclusão de quem tiver um deles responde TEM_CONTRATO_OU_PROCESSO e a tela oferece “Arquivar a pedido (LGPD)”"
+}

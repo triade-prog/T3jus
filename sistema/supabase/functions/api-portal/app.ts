@@ -5,7 +5,8 @@ import type { MiddlewareHandler } from "hono";
 import {
   areasSchema, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
-  type Atendimento, type DadosCliente, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
+  contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
+  type Atendimento, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -250,6 +251,35 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const d = await lerCorpo(c, registrarAtendimentoSchema);
     const id = await deps.banco.rpc<string>("portal_registrar_atendimento", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d });
     return c.json({ id }, 201);
+  });
+
+  // Pedido de exclusão do titular (F1.15, PT-11): qualquer pessoa da equipe registra o pedido;
+  // só a sócia dona exclui ou recusa (decisão 2). O banco confere quem é a dona.
+  app.post("/v1/escritorio/clientes/:id/exclusao/pedido", async (c) => {
+    const d = await lerCorpo(c, pedirExclusaoSchema);
+    const pedido = await deps.banco.rpc<PedidoExclusao>("portal_cliente_pedir_exclusao", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d });
+    return c.json(pedido, 201);
+  });
+
+  app.post("/v1/escritorio/clientes/:id/exclusao/recusar", async (c) => {
+    const d = await lerCorpo(c, recusarExclusaoSchema);
+    const pedido = await deps.banco.rpc<PedidoExclusao>("portal_cliente_recusar_exclusao", { ...quem(c), p_cliente: idDaRota(c, "id"), p_motivo: d.motivo });
+    return c.json(pedido);
+  });
+
+  app.post("/v1/escritorio/clientes/:id/exclusao", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, excluirDadosSchema);
+    const r = await deps.banco.rpc<{ protocolo: string; versao: number; pedido: PedidoExclusao }>("portal_cliente_excluir_dados", {
+      ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    });
+    return c.json(r);
+  });
+
+  // Início: os contatos vencidos e os de hoje (F1.14, AP-06). "Da equipe" só para a dona.
+  app.get("/v1/escritorio/inicio/contatos", async (c) => {
+    const r = contatosInicioSchema.safeParse({ de: c.req.query("de") || undefined, limite: c.req.query("limite") || undefined });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await deps.banco.rpc<ContatosDoInicio>("portal_inicio_contatos", { ...quem(c), p_de: r.data.de, p_limite: r.data.limite }));
   });
 
   // Quem pode ser responsável pelo próximo contato ou ter atendido.

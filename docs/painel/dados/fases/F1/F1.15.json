@@ -1,12 +1,11 @@
 {
   "id": "F1.15",
-  "texto": "Pedido de exclusão do titular (LGPD): a sócia dona anonimiza nome, documento, contatos e resumos do cliente e guarda só o que a lei obriga",
+  "texto": "Pedido de exclusão do titular (LGPD): a equipe pede à sócia dona, que exclui ou recusa; ficam o registro do pedido e, nos atendimentos, data, canal, quem atendeu e resumo",
   "peca": "B2",
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 64,
-  "nota": "Decisão 5 da Carol (18/11/2026): fica fora da entrega de Clientes. Até lá, o pedido é tratado com o suporte T3jus; no Portal só existe inativar.",
-  "proximo": "Desenhar o fluxo de exclusão com a especialista e levar para a Carol aprovar"
+  "evidencia": "Portal › ficha do cliente, tela aprovada em docs/design/aprovadas/portal-clientes-pendencias com as decisões 2 a 4 da Carol (18/11/2026): quem não é a dona registra o pedido e a ficha mostra a faixa; a dona exclui (confere quem pediu e o nome digitado) ou recusa com motivo; a exclusão apaga nome, documento, qualificação, contatos e quem indicou numa transação só, com protocolo EXC-aaaa-nnnn; o excluído fica em Inativos como “Cliente excluído” e não se edita, reativa nem recebe atendimento; o Início da dona avisa o pedido esperando. Migration 0170 (pedidos_exclusao), rotas /exclusao da api-portal, pgTAP 017, Deno app_test.ts e e2e portal-exclusao.spec.ts. Vale para hoje, sem contrato nem processo: o caso com eles está em F1.16"
 }
