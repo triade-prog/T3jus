@@ -22,7 +22,8 @@ import { Busca, CabAmbar, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
 import { SeloTipo } from "./Honorarios.tsx";
 import { centavos as lerCentavos } from "./honorarios.ts";
-import { botaoMudar, juntarNomes, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr } from "./juridico.ts";
+import { botaoMudar, diaDaSemanaCurto, juntarNomes, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr, urgenciaPrazo } from "./juridico.ts";
+import { JanelaPrazo, JanelaTarefa, OQueTrava, PrazosETarefas, SeloUrgencia } from "./JuridicoPrazos.tsx";
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
@@ -55,7 +56,7 @@ function usePessoas(): Pessoa[] | null {
 function CabCasos() {
   return (
     <CabAmbar sobre="Jurídico" titulo="Casos e processos"
-      lede="Cada caso com os clientes, a etapa e quem cuida. A lista mostra o número, o cliente e a etapa sem precisar abrir."
+      lede="Cada caso com os clientes, a etapa, os prazos e o que falta. A lista mostra o número, o cliente e a etapa sem precisar abrir."
       acao={
         <a data-muda className="btn btn-escuro" href={ROTAS_JURIDICO.novo} style={{ marginBottom: 6 }}>
           <Icone nome="mais" className="ico" />
@@ -109,7 +110,7 @@ function CasosConteudo() {
   const filtrando = Boolean(q || resp || etapa);
   const resumo = filtrando
     ? <b>{contar(n, "caso encontrado", "casos encontrados")}{q ? <> para “{q}”</> : null}</b>
-    : situacao === "ANDAMENTO" ? <><b>{contar(n, "caso em andamento", "casos em andamento")}</b> · em ordem alfabética</>
+    : situacao === "ANDAMENTO" ? <><b>{contar(n, "caso em andamento", "casos em andamento")}</b>{t.prazoHoje ? ` · ${t.prazoHoje} com prazo hoje` : ""} · ordenados pelo prazo mais próximo</>
     : <b>{contar(n, "caso encerrado", "casos encerrados")}</b>;
   return (
     <div className="hn">
@@ -149,11 +150,11 @@ function CasosConteudo() {
         {n ? (
           <table className="hn-tab jr-tab">
             <caption className="sr">Casos</caption>
-            <colgroup>{["36%", "22%", "22%", "20%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
-            <thead><tr>{["Caso e processo", "Cliente", situacao === "ANDAMENTO" ? "Etapa" : "Resultado", "Responsável"].map((x) => <th key={x} scope="col">{x}</th>)}</tr></thead>
+            <colgroup>{(situacao === "ANDAMENTO" ? ["27%", "16%", "15%", "15%", "14%", "13%"] : ["36%", "22%", "22%", "20%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+            <thead><tr>{["Caso e processo", "Cliente", situacao === "ANDAMENTO" ? "Etapa" : "Resultado", "Responsável", ...(situacao === "ANDAMENTO" ? ["Próximo prazo", "Pendências"] : [])].map((x) => <th key={x} scope="col">{x}</th>)}</tr></thead>
             <tbody>
               {lista.map((c) => (
-                <tr key={c.id}>
+                <tr key={c.id} className={c.proximoPrazo?.data && c.proximoPrazo.data <= dados.hoje ? "jr-hoje" : undefined}>
                   <td>
                     <div className="esc">
                       <div>
@@ -183,6 +184,16 @@ function CasosConteudo() {
                   <td data-r="Responsável">
                     <span className="jr-resp"><span className="av-p" aria-hidden="true">{iniciais(c.responsavel.nome)}</span>{c.responsavel.nome}</span>
                   </td>
+                  {situacao === "ANDAMENTO" ? (
+                    <>
+                      <td data-r="Próximo prazo">
+                        {c.proximoPrazo ? <ProximoPrazo data={c.proximoPrazo.data} hoje={dados.hoje} oque={c.proximoPrazo.descricao} /> : <span className="hn-sem">Nenhum aberto</span>}
+                      </td>
+                      <td data-r="Pendências">
+                        {c.pendencias ? <span className="jr-pend"><Icone nome="alerta" className="ico ico-s" />{contar(c.pendencias, "pendência", "pendências")}</span> : <span className="hn-sem">Nenhuma</span>}
+                      </td>
+                    </>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -197,6 +208,18 @@ function CasosConteudo() {
           <span>Caso não se apaga. O encerrado fica guardado com o resultado, e cada mudança de etapa fica no histórico com o motivo.</span>
         </p>
       </section>
+    </div>
+  );
+}
+
+/** O próximo prazo na lista: o selo até "Em 3 dias"; mais longe, a data e o dia da semana. */
+function ProximoPrazo({ data, hoje, oque }: { data: string; hoje: string; oque: string }) {
+  const u = urgenciaPrazo(data, hoje);
+  const longe = u.tom === "neutro" && Number(u.texto.split(" ")[1]) > 3;
+  return (
+    <div className="jr-prox">
+      {longe ? <span className="jr-data">{diaDaSemanaCurto(data)}</span> : <SeloUrgencia u={u} />}
+      <small>{longe ? oque : `${data.slice(8, 10)}/${data.slice(5, 7)} · ${oque}`}</small>
     </div>
   );
 }
@@ -1028,7 +1051,7 @@ function Mudancas({ f }: { f: FichaCaso }) {
 
 function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio: EscritorioPortal; aoNome: (n: string) => void }) {
   const [f, setF] = useState<FichaCaso | null | "erro" | "nao">(null);
-  const [janela, setJanela] = useState<"etapa" | "editar" | "cliente" | null>(null);
+  const [janela, setJanela] = useState<"etapa" | "editar" | "cliente" | "prazo" | "tarefa" | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [vez, setVez] = useState(0);
 
@@ -1098,8 +1121,11 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
         <div className="hn-col">
           <Dados f={f} aoEditar={andamento ? () => setJanela("editar") : undefined} />
           <Clientes f={f} aoAdicionar={andamento ? () => setJanela("cliente") : undefined} />
+          <PrazosETarefas f={f} aoNovoPrazo={andamento ? () => setJanela("prazo") : undefined} aoNovaTarefa={andamento ? () => setJanela("tarefa") : undefined}
+            aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} />
         </div>
         <aside className="hn-col" aria-label="Sobre o caso">
+          <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} />
           <Contratos f={f} />
           <AvisoCliente f={f} />
           <Mudancas f={f} />
@@ -1122,6 +1148,14 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
       {janela === "cliente" ? (
         <JanelaCliente f={ficha} aberta aoFechar={fechar}
           aoFeito={(n) => { fechar(); setFeito({ titulo: "Cliente adicionado", texto: `${n} agora está no caso.` }); setVez((v) => v + 1); }} />
+      ) : null}
+      {janela === "prazo" ? (
+        <JanelaPrazo caso={{ id: f.id, nome: f.nome, linha: linhaProcesso(f) }} escritorio={escritorio} aoFechar={fechar}
+          aoFeito={(d) => { fechar(); setFeito({ titulo: "Prazo cadastrado", texto: `${d} está no caso e na lista de prazos.` }); setVez((v) => v + 1); }} />
+      ) : null}
+      {janela === "tarefa" ? (
+        <JanelaTarefa caso={{ id: f.id, nome: f.nome, linha: linhaProcesso(f) }} escritorio={escritorio} aoFechar={fechar}
+          aoFeito={(d) => { fechar(); setFeito({ titulo: "Tarefa criada", texto: `${d} está no caso e na lista de tarefas.` }); setVez((v) => v + 1); }} />
       ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>

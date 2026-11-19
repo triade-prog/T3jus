@@ -1,0 +1,12 @@
+{
+  "id": "F3.31",
+  "texto": "Lembrete do prazo ao responsável 2 dias antes (quando marcado no prazo), no Início e no sino de avisos, e os prazos e tarefas de cada pessoa no Início",
+  "peca": "S1",
+  "refs": [
+    "EX-04",
+    "EX-02"
+  ],
+  "status": "pendente",
+  "ordem": 310,
+  "proximo": "O campo \"lembrar\" já fica gravado em cada prazo; falta a rotina diária e o quadro no Início"
+}

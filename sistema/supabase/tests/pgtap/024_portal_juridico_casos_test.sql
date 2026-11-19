@@ -86,7 +86,7 @@ select is((teste.erro($$ select portal_juridico_caso_criar(diego, rm, jsonb_buil
   'NUMERO_JA_CADASTRADO', 'o mesmo número não entra duas vezes');
 
 -- Lista.
-select is((select portal_juridico_casos(diego, rm) -> 'totais' from ids), '{"andamento": 2, "encerrados": 0}'::jsonb, 'dois em andamento');
+select is((select portal_juridico_casos(diego, rm) -> 'totais' from ids), '{"andamento": 2, "prazoHoje": 0, "encerrados": 0}'::jsonb, 'dois em andamento');
 select is((select jsonb_path_query_array(portal_juridico_casos(diego, rm) -> 'etapas', '$[0 to 1].casos') from ids), '[1, 1]'::jsonb,
   'contagem por etapa');
 select is((select jsonb_path_query_array(portal_juridico_casos(diego, rm, 'ANDAMENTO', 'metalurgica paulista') -> 'casos', '$[*].nome') from ids),

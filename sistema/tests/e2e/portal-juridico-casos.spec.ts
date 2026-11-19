@@ -62,17 +62,17 @@ const etapa = (n: number) => ({ id: eid(n), ordem: n, nome: NOMES[n - 1], final:
 const LINHA = {
   id: CASO, nome: "Pereira x Mercado Bom Preço", area: "TRABALHISTA", numero: "10010225120265020045", situacao: "ANDAMENTO", resultado: null,
   parteContraria: "Mercado Bom Preço", cliente: JOANA, outrosClientes: 1, semContrato: false, etapa: etapa(5), responsavel: MARINA,
-  etapaDesde: "2026-11-07T13:00:00Z",
+  etapaDesde: "2026-11-07T13:00:00Z", proximoPrazo: null, pendencias: 0,
 };
 const LISTA = {
-  etapas: ETAPAS, totais: { andamento: 9, encerrados: 14 }, responsaveis: [LARISSA, MARINA], souDono: true,
+  hoje: "2026-11-18", etapas: ETAPAS, totais: { andamento: 9, encerrados: 14, prazoHoje: 0 }, responsaveis: [LARISSA, MARINA], souDono: true,
   casos: [
     LINHA,
     { ...LINHA, id: "a1000000-0000-4000-8000-000000000002", nome: "Ferreira Prado x INSS", area: "PREVIDENCIARIO", numero: null, cliente: { id: "c9", nome: "Antônia Ferreira Prado" },
       outrosClientes: 0, semContrato: true, etapa: etapa(1), responsavel: LARISSA },
   ],
 };
-const VAZIA = { ...LISTA, totais: { andamento: 0, encerrados: 0 }, casos: [], responsaveis: [], etapas: ETAPAS.map((e) => ({ ...e, casos: 0 })) };
+const VAZIA = { ...LISTA, totais: { andamento: 0, encerrados: 0, prazoHoje: 0 }, casos: [], responsaveis: [], etapas: ETAPAS.map((e) => ({ ...e, casos: 0 })) };
 
 const FICHA = {
   ...LINHA, tribunal: "TRT-2", vara: "45ª Vara do Trabalho de São Paulo", sistema: "PJe-JT", distribuidoEm: "2026-03-03", valorCausa: 8640000,
@@ -90,6 +90,7 @@ const FICHA = {
     { para: { ordem: 1, nome: "Preparação" }, de: null, motivo: "Caso cadastrado.", resultado: null, aviso: null, avisoEnviadoEm: null, por: LARISSA, em: "2026-03-03T13:00:00Z" },
   ],
   quemTemContratos: ["Marina Ribeiro", "Paula Nunes"],
+  hoje: "2026-11-18", prazos: [], tarefas: [],
 };
 const SEM_HONORARIOS = {
   ...FICHA, veHonorarios: false,

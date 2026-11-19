@@ -61,6 +61,10 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   CASO_ENCERRADO: "Este caso já foi encerrado e não muda mais de etapa.",
   CLIENTE_JA_NO_CASO: "Este cliente já está no caso.",
   MOTIVO_OBRIGATORIO: "Escreva o motivo da mudança. Ele fica só para a equipe.",
+  PRAZO_JA_CUMPRIDO: "Este prazo já foi marcado como cumprido. Recarregue a página.",
+  TAREFA_JA_CONCLUIDA: "Esta tarefa já foi concluída. Recarregue a página.",
+  TAREFA_ABERTA: "Esta tarefa já está aberta. Recarregue a página.",
+  TAREFA_NAO_ESPERA: "Esta tarefa não está esperando ninguém. Recarregue a página.",
   RESULTADO_OBRIGATORIO: "Diga como o caso terminou: ganho, perda ou acordo.",
 };
 

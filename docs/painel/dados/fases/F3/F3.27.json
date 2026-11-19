@@ -1,13 +1,15 @@
 {
   "id": "F3.27",
-  "texto": "Prazos e tarefas do Jurídico: cadastrar prazo à mão com responsável, cumprir, tarefas com responsável e travadas esperando o cliente, na ficha do caso, nas listas Prazos e Tarefas e na lista de casos (próximo prazo)",
+  "texto": "Prazos e tarefas do Jurídico: prazo cadastrado à mão com \"fazer até\", intimação e responsável, cumprido com confirmação; tarefas minhas e da equipe com a carga de cada pessoa; tarefa esperando alguém e o \"já chegou\"; na ficha do caso (com \"O que está travando\"), nas listas Prazos e Tarefas e na lista de casos (próximo prazo e pendências)",
   "peca": "S5",
   "refs": [
     "EX-02",
-    "EX-03",
-    "EX-04"
+    "EX-04",
+    "PD-05",
+    "IN-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 270,
-  "proximo": "Próxima entrega do Jurídico (parte 2)"
+  "evidencia": "Migration 0250 (prazos e tarefas protegidos, próximo prazo e pendências na linha do caso, prazos e tarefas na ficha, carga da equipe, prazos e tarefas passam de quem sai), pgTAP 025 (26 testes), rotas /v1/escritorio/juridico/prazos, /prazos/:id/cumprido, /tarefas, /tarefas/:id/concluida e /tarefas/:id/chegou na api-portal (1 teste Deno novo), regras de urgência e grupos em packages/ui/src/portal/juridico.ts (2 testes novos), e2e tests/e2e/portal-juridico-prazos.spec.ts (7 testes, celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-juridico.",
+  "nota": "O T3jus não lê publicações nem conta dias úteis: o prazo é cadastrado à mão e a tela diz isso. Faltam o lembrete 2 dias antes no Início e no sino (F3.31) e editar prazo e tarefa, inclusive trocar o responsável (F3.32)."
 }

@@ -119,11 +119,15 @@ export interface LinhaCaso {
   etapa: { id: string; ordem: number; nome: string; final: boolean };
   responsavel: PessoaRef;
   etapaDesde: string;
+  proximoPrazo: { data: string; fazerAte: string | null; descricao: string } | null;
+  pendencias: number;
 }
 
 export interface ListaCasos {
+  /** O dia de hoje em Brasília, para a urgência dos prazos. */
+  hoje: string;
   etapas: Etapa[];
-  totais: { andamento: number; encerrados: number };
+  totais: { andamento: number; encerrados: number; prazoHoje: number };
   responsaveis: PessoaRef[];
   souDono: boolean;
   casos: LinhaCaso[];
@@ -168,6 +172,9 @@ export interface FichaCaso extends LinhaCaso {
   etapas: Etapa[];
   mudancas: MudancaEtapa[];
   quemTemContratos: string[];
+  hoje: string;
+  prazos: Prazo[];
+  tarefas: Tarefa[];
 }
 
 /** O aviso ao cliente (decisão 5): começo e fim fixos, o meio é o texto da etapa. */
@@ -175,4 +182,81 @@ export function textoAvisoEtapa(cliente: string, escritorio: string, parteContra
   const primeiro = cliente.trim().split(/\s+/)[0] ?? "";
   const contra = parteContraria?.trim() ? ` contra ${parteContraria.trim()}` : "";
   return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Novidade no seu processo${contra}: ${meio.trim()} Qualquer dúvida, é só responder esta mensagem.`;
+}
+
+// ------------------------------------------------------------------------- Parte 2: prazos e tarefas
+// (EX-02, EX-04, PD-05, IN-08; 0250_portal_juridico_prazos_tarefas.sql).
+
+export const MOSTRAR_PRAZOS = ["ABERTOS", "MEUS", "CUMPRIDOS"] as const;
+export type MostrarPrazos = (typeof MOSTRAR_PRAZOS)[number];
+export const VISOES_TAREFAS = ["MINHAS", "EQUIPE"] as const;
+export type VisaoTarefas = (typeof VISOES_TAREFAS)[number];
+
+export const prazoSchema = z.object({
+  casoId: id,
+  descricao: texto(200),
+  dataFinal: texto(20),
+  fazerAte: texto(20),
+  intimacaoEm: texto(20),
+  responsavelId: id,
+  lembrar: z.boolean().default(true),
+});
+export type NovoPrazo = z.input<typeof prazoSchema>;
+
+export const tarefaSchema = z.object({
+  casoId: id,
+  titulo: texto(200),
+  venceEm: texto(20),
+  responsavelId: id,
+  esperando: texto(200),
+});
+export type NovaTarefa = z.input<typeof tarefaSchema>;
+
+export const concluirTarefaSchema = z.object({ concluir: z.boolean().default(true) });
+
+export interface Prazo {
+  id: string;
+  descricao: string;
+  dataFinal: string;
+  fazerAte: string | null;
+  intimacaoEm: string | null;
+  lembrar: boolean;
+  cumpridoEm: string | null;
+  cumpridoPor: PessoaRef | null;
+  responsavel: PessoaRef;
+  caso: { id: string; nome: string; numero: string | null; vara: string | null };
+}
+
+export interface Tarefa {
+  id: string;
+  titulo: string;
+  venceEm: string;
+  esperando: string | null;
+  esperandoDesde: string | null;
+  concluidaEm: string | null;
+  concluidaPor: PessoaRef | null;
+  responsavel: PessoaRef;
+  caso: { id: string; nome: string };
+}
+
+export interface ListaPrazos {
+  hoje: string;
+  totais: { abertos: number; meus: number; hoje: number };
+  responsaveis: PessoaRef[];
+  prazos: Prazo[];
+}
+
+export interface CargaPessoa {
+  pessoa: PessoaRef;
+  casos: number;
+  tarefas: number;
+  atrasadas: number;
+}
+
+export interface ListaTarefas {
+  hoje: string;
+  totais: { minhas: number; equipe: number; atrasadas: number; esperando: number };
+  responsaveis: PessoaRef[];
+  tarefas: Tarefa[];
+  carga: CargaPessoa[] | null;
 }

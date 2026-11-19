@@ -123,6 +123,16 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (!d.motivo) erroBanco("TC422", { motivo: "MOTIVO_OBRIGATORIO", campos: ["motivo"] });
       return { id: a.p_caso, versao: (a.p_versao as number) + 1, encerrado: false, aviso: null };
     },
+    portal_juridico_prazos: (a) => ({ mostrar: a.p_mostrar, responsavel: a.p_responsavel, prazos: [] }),
+    portal_juridico_prazo_criar: () => ({ id: CLIENTE }),
+    portal_juridico_prazo_cumprido: (a) => {
+      if (a.p_prazo === AURORA) erroBanco("TC422", { motivo: "PRAZO_JA_CUMPRIDO" });
+      return { id: a.p_prazo, cumpridoEm: "2026-11-18T13:00:00Z" };
+    },
+    portal_juridico_tarefas: (a) => ({ visao: a.p_visao, tarefas: [], carga: null }),
+    portal_juridico_tarefa_criar: () => ({ id: CLIENTE }),
+    portal_juridico_tarefa_concluir: (a) => ({ id: a.p_tarefa, concluida: a.p_concluir }),
+    portal_juridico_tarefa_chegou: (a) => ({ id: a.p_tarefa }),
     portal_financeiro_conta_reembolsada: (a) => ({ id: a.p_conta, reembolsadoEm: (a.p_dados as { reembolsadoEm: string }).reembolsadoEm }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
     portal_compromisso_editar: (a) => {
@@ -758,4 +768,23 @@ Deno.test("EX-01: áreas do direito e o número do CNJ do domínio batem com o b
   assertEquals(lista, Object.keys(AREAS_DIREITO));
   assertEquals([numeroCnjValido("1001234-77.2026.5.02.0011"), numeroCnjValido("1001234-78.2026.5.02.0011")], [true, false]);
   assertEquals(formatarCnj("10012347720265020011"), "1001234-77.2026.5.02.0011");
+});
+
+Deno.test("EX-02, EX-04: prazos e tarefas, filtros, cadastrar, cumprir, concluir, reabrir e já chegou", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/juridico/prazos?mostrar=meus", { cookie })).json()).mostrar, "MEUS");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/prazos?mostrar=todos", { cookie }))).detalhes?.campos, ["mostrar"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/prazos?responsavel=x", { cookie }))).detalhes?.campos, ["responsavel"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/prazos", { corpo: { casoId: CLIENTE, descricao: "Recurso", dataFinal: "2026-11-19" }, cookie })).status, 201);
+  const p = m.chamadas.find((c) => c.funcao === "portal_juridico_prazo_criar")!;
+  assertEquals([p.args.p_escritorio, (p.args.p_dados as { lembrar: boolean }).lembrar], [AURORA, true]);
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/prazos/${CLIENTE}/cumprido`, { corpo: {}, cookie })).status, 200);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/prazos/${AURORA}/cumprido`, { corpo: {}, cookie }))).detalhes?.motivo, "PRAZO_JA_CUMPRIDO");
+  assertEquals((await (await m.pedir("/v1/escritorio/juridico/tarefas?visao=equipe", { cookie })).json()).visao, "EQUIPE");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/tarefas?visao=todas", { cookie }))).detalhes?.campos, ["visao"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/tarefas", { corpo: { casoId: CLIENTE, titulo: "Minuta", venceEm: "2026-11-19" }, cookie })).status, 201);
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/concluida`, { corpo: { concluir: false }, cookie })).json()).concluida, false);
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/chegou`, { corpo: {}, cookie })).status, 200);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/tarefas/nao-e-id/chegou", { corpo: {}, cookie })).status, 404);
 });

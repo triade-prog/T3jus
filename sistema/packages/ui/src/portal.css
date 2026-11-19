@@ -1739,4 +1739,83 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .jr-mudancas,.jr-contratos{padding-left:16px;padding-right:16px}
 }
 .form-folha .ajuda a{text-decoration:underline;text-underline-offset:2px}
+/* Jurídico, parte 2: prazos e tarefas */
+.jr-ferr{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:0 24px 8px}
+.jr-ferr .campo{flex:0 1 230px;min-width:0}
+.jr-ferr .chips{margin-left:auto}
+.jr-grupo{padding:14px 0 0}
+.jr-grupo>h3{margin:0;padding:0 24px 6px;font-size:12px;display:flex;align-items:center;gap:8px}
+.jr-grupo>h3,.jr-sub h3,.jr-onde h3{font-family:var(--fonte-texto)}
+.jr-n{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:11px;background:var(--sal);color:var(--vinho);font-size:12px;letter-spacing:0}
+.jr-pzs,.jr-tfs,.jr-fpz,.jr-carga,.jr-trava{list-style:none;margin:0;padding:0}
+.jr-pz{display:grid;grid-template-columns:64px minmax(0,1fr) auto auto;gap:16px;align-items:center;padding:14px 24px;border-top:1px solid var(--divisor)}
+.jr-grupo>ul>li:first-child{border-top:0}
+.jr-dia{display:grid;justify-items:center;gap:4px}
+.jr-dia b{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;font-family:var(--serifa);font-size:22px;color:var(--vinho);background:var(--papel);border:1px solid var(--divisor)}
+.jr-dia small{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--texto-2)}
+.jr-dia-urgente b{background:var(--ambar);border-color:var(--ambar);color:var(--vinho-escuro)}
+.jr-dia-atencao b{background:var(--ambar-3);border-color:var(--ambar-3)}
+.jr-dia-feito b{background:var(--sal);color:var(--texto-2)}
+.jr-pz-t{margin:0;font-weight:500}
+.jr-pz-t a{color:inherit}
+.jr-pz-oque small,.jr-tf-oque small{display:block;margin-top:4px;font-size:13px;color:var(--texto-2)}
+.jr-pz-oque small b{color:var(--texto);font-weight:500}
+.jr-pz-quem{display:grid;justify-items:end;gap:6px;text-align:right;font-size:13px}
+.jr-data{display:inline-block;padding:4px 10px;border-radius:14px;background:var(--sal);font-size:13px;color:var(--texto);white-space:nowrap}
+.jr-tf{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:start;padding:14px 24px;border-top:1px solid var(--divisor)}
+.jr-tf .marcar{margin-top:2px}
+.jr-tf-t{display:block;margin:0;font-weight:500;cursor:pointer}
+.jr-tf-caso{display:inline-block;margin-top:4px;font-size:13px;color:var(--vinho)}
+.jr-tf-feita .jr-tf-t{text-decoration:line-through;color:var(--texto-2)}
+.jr-espera{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:8px 0 0;font-size:13px}
+.jr-espera>span{display:inline-flex;align-items:flex-start;gap:6px;padding:4px 10px;border-radius:6px;background:var(--ambar-3);color:var(--vinho)}
+.jr-espera .ico{flex:none;margin-top:3px}
+.jr-espera .jr-link{font-size:13px}
+.jr-sub{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px 4px;border-top:1px solid var(--divisor)}
+.jr-sub h3{margin:0;font-size:12px}
+.jr-fpz li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;border-top:1px solid var(--divisor)}
+.jr-fpz li:first-child{border-top:0}
+.jr-fpz li small{display:block;font-size:12px;color:var(--texto-2)}
+.jr-fpz li.feito{color:var(--texto-2)}
+.jr-fpz-acao{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.jr-tfs-ficha .jr-tf{padding:10px 24px}
+.jr-tfs-ficha .jr-tf:first-child{border-top:0}
+.jr-vazio{margin:0;padding:6px 24px 14px;font-size:14px;color:var(--texto-2)}
+.jr-rot{margin:0 0 6px;font-weight:500}
+.jr-nota{display:flex;gap:10px;align-items:flex-start;margin:0;padding:12px 16px;border-radius:var(--raio);background:var(--sal);font-size:14px}
+.jr-carga{padding:0 24px}
+.jr-carga li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--divisor)}
+.jr-carga li:first-child{border-top:0}
+.jr-carga small{display:block;font-size:13px;color:var(--texto-2)}
+.jr-carga .av-p{width:36px;height:36px;font-size:12px}
+.jr-barras{display:flex;gap:4px;margin-top:6px;height:6px}
+.jr-barras i,.jr-legenda i{display:block;height:6px;border-radius:3px;min-width:6px}
+.jr-barras .c,.jr-legenda .c{background:var(--vinho-3)}
+.jr-barras .t,.jr-legenda .t{background:var(--ambar)}
+.jr-legenda{display:flex;align-items:center;gap:6px;margin:0;padding:4px 24px 12px;font-size:13px;color:var(--texto-2)}
+.jr-legenda i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.jr-legenda .t{margin-left:12px}
+.jr-trava{padding:0 20px 18px;display:grid;gap:10px}
+.jr-trava li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px 14px;border-radius:var(--raio);background:var(--ambar-3);color:var(--vinho-escuro);font-size:14px}
+.jr-trava p{margin:0}
+.jr-trava .ico{margin-top:3px}
+.jr-tab tr.jr-hoje td:first-child{box-shadow:inset 3px 0 0 var(--vinho-3)}
+.jr-prox small{display:block;margin-top:4px;font-size:12px;color:var(--texto-2)}
+.jr-pend{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+@media (max-width:760px){
+  .jr-ferr{padding:0 16px 8px}
+  .jr-ferr .campo{flex:1 1 100%}
+  .jr-ferr .chips{margin-left:0}
+  .jr-grupo>h3{padding:0 16px 6px}
+  .jr-pz{grid-template-columns:52px minmax(0,1fr);gap:10px 12px;padding:14px 16px}
+  .jr-dia b{width:44px;height:44px;font-size:18px}
+  .jr-pz-quem{grid-column:2;justify-items:start;text-align:left;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .jr-pz>.btn{grid-column:2;justify-self:start}
+  .jr-tf{grid-template-columns:auto minmax(0,1fr);padding:14px 16px}
+  .jr-tf .jr-pz-quem{grid-column:2}
+  .jr-sub,.jr-fpz li,.jr-tfs-ficha .jr-tf,.jr-vazio,.jr-legenda{padding-left:16px;padding-right:16px}
+  .jr-fpz li{flex-wrap:wrap}
+  .jr-carga{padding:0 16px}
+  .jr-trava{padding:0 16px 16px}
+}
 /* <<< Jurídico */

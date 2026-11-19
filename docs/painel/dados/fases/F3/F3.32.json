@@ -1,0 +1,12 @@
+{
+  "id": "F3.32",
+  "texto": "Editar prazo e tarefa já cadastrados: mudar a data, o texto e trocar o responsável, com o histórico do caso",
+  "peca": "S5",
+  "refs": [
+    "EX-02",
+    "EX-04"
+  ],
+  "status": "pendente",
+  "ordem": 320,
+  "proximo": "Jurídico, parte 3"
+}

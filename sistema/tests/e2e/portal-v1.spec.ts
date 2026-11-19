@@ -34,10 +34,10 @@ const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
 test.describe("Portal v1: moldura em áreas (PA-01)", () => {
   test("o sócio dono vê as quatro áreas e a Equipe; no celular, a barra embaixo e o Mais", async ({ page }) => {
     await simular(page, { "/v1/escritorio": { corpo: ESCRITORIO } });
-    await page.goto(`${P}/juridico/prazos`);
+    await page.goto(`${P}/juridico/peticoes`);
     await expect(page.getByRole("heading", { level: 1, name: "O Jurídico está sendo preparado" })).toBeVisible();
     const secoes = page.getByRole("navigation", { name: "Seções do Jurídico" });
-    await expect(secoes.getByRole("link", { name: "Prazos" })).toHaveAttribute("aria-current", "page");
+    await expect(secoes.getByRole("link", { name: "Petições" })).toHaveAttribute("aria-current", "page");
     await semViolacoes(page);
     if (!ehCelular(page)) {
       const nav = page.getByRole("navigation", { name: "Navegação principal" });

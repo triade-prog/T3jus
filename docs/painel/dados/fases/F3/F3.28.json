@@ -1,10 +1,11 @@
 {
   "id": "F3.28",
-  "texto": "Documentos do caso: o que já está no caso, o que falta e pedir de novo ao cliente; o quadro \"O que está travando\" e as pendências na lista de casos",
+  "texto": "Documentos do caso: o que já está no caso, o que falta e pedir de novo ao cliente; documento que falta também aparece em \"O que está travando\"",
   "peca": "S6",
   "refs": [
     "EX-03",
-    "EX-05"
+    "EX-05",
+    "PD-05"
   ],
   "status": "pendente",
   "ordem": 280,

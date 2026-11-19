@@ -289,7 +289,19 @@ Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_port
 - **Inventário:** as quatro tabelas usam o prazo de guarda de 5 anos; a migration também corrige o prazo das tabelas do Financeiro (0220 e 0230), que tinham nascido com o texto antigo.
 - **API:** `GET /v1/escritorio/juridico/casos` (`?situacao=ANDAMENTO|ENCERRADO&q=&responsavel=&etapa=`), `GET /juridico/opcoes`, `POST /juridico/casos`, `GET` e `PUT /juridico/casos/:id`, `POST /juridico/casos/:id/clientes` e `POST /juridico/casos/:id/etapa`.
 - **Tela:** `/juridico/casos` (lista com a contagem por etapa), `/juridico/casos/novo` e `/juridico/casos/:id` (ficha com as janelas de mudar etapa, editar os dados e adicionar cliente).
-- **Falta:** prazos e tarefas (F3.27), documentos e o que está travando (F3.28), editar as etapas do escritório (F3.29), enviar o aviso pelo WhatsApp (F3.30) e o êxito que vai ao Financeiro com o resultado (F3.14).
+- **Falta:** documentos (F3.28), editar as etapas do escritório (F3.29), enviar o aviso pelo WhatsApp (F3.30) e o êxito que vai ao Financeiro com o resultado (F3.14).
+
+### Jurídico do Portal, prazos e tarefas (F3.27; EX-02, EX-04, PD-05, IN-08)
+
+Mesmas telas aprovadas (estados prazos, novo-prazo, tarefas, tarefas-equipe e a ficha). Migration `0250_portal_juridico_prazos_tarefas.sql`, teste `025_portal_juridico_prazos_tarefas_test.sql`, e2e `portal-juridico-prazos.spec.ts`.
+
+- **Banco:** `prazos` (o que é, prazo final, "fazer até" no prazo final ou antes, intimação de hoje ou antes, responsável, `lembrar`, quem cumpriu e quando) e `tarefas` (título, vencimento, responsável, o que ela espera e desde quando, quem concluiu). As duas passam por `proteger_tabela_escritorio`, entram no inventário com a guarda de 5 anos e só aceitam caso em andamento do mesmo escritório. Cumprir vale uma vez (`PRAZO_JA_CUMPRIDO`) e fica no histórico do caso; tarefa concluída pode ser reaberta.
+- **Lista de casos e ficha:** `caso_linha` ganhou `proximoPrazo` e `pendencias` (tarefas abertas esperando alguém); a lista vem pelo prazo mais próximo e traz `hoje` e `totais.prazoHoje`; a ficha traz `prazos` e `tarefas` (abertos primeiro, feitos nos últimos 30 dias depois).
+- **Carga da equipe (IN-08):** na visão da equipe, `carga` traz por pessoa os casos em andamento, as tarefas abertas e as atrasadas.
+- **Saída da pessoa (EX-10):** o gatilho `prazos_tarefas_passar_de_quem_saiu` passa os prazos e as tarefas abertas para quem recebeu o que era dela.
+- **API:** `GET /v1/escritorio/juridico/prazos` (`?mostrar=ABERTOS|MEUS|CUMPRIDOS&responsavel=`), `POST /juridico/prazos`, `POST /juridico/prazos/:id/cumprido`, `GET /juridico/tarefas` (`?visao=MINHAS|EQUIPE&responsavel=`), `POST /juridico/tarefas`, `POST /juridico/tarefas/:id/concluida` (`{ concluir }`) e `POST /juridico/tarefas/:id/chegou`.
+- **Tela:** `/juridico/prazos` (agrupados em Vencidos, Hoje, Amanhã, Até sexta e Depois, com a urgência escrita), `/juridico/tarefas` (Minhas e Da equipe, com a carga), a seção "Prazos e tarefas" e o quadro "O que está travando" na ficha, e as colunas Próximo prazo e Pendências na lista de casos. As regras de urgência e de grupos ficam em `packages/ui/src/portal/juridico.ts`.
+- **Falta:** o lembrete 2 dias antes no Início e no sino (F3.31) e editar prazo e tarefa, inclusive trocar o responsável (F3.32). O T3jus não lê publicações nem conta dias úteis; a tela diz isso.
 
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
