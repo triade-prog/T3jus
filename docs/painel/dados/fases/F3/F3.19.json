@@ -1,0 +1,11 @@
+{
+  "id": "F3.19",
+  "texto": "Recibo em PDF de cada pagamento, para baixar e mandar ao cliente pelo WhatsApp",
+  "peca": "S3",
+  "refs": [
+    "FI-14"
+  ],
+  "status": "pendente",
+  "ordem": 190,
+  "proximo": "Gerar o PDF no timbrado a partir do recibo já numerado; o envio pelo WhatsApp vem com Conversas"
+}

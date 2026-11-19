@@ -1248,3 +1248,364 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 .ct-cancelado td{color:var(--texto-2)}
 .ct-cancelado .num{text-decoration:line-through}
 /* <<< Contratos */
+
+/* >>> Financeiro: peças fi- do desenho aprovado (docs/design/aprovadas/portal-financeiro) */
+
+/* ==========================================================================
+   Portal · Financeiro. Prefixo fi- nas peças novas. Só pares do contraste.md.
+   Regra visual de FI-06: dinheiro do escritório fica na família vinho;
+   valores de terceiros ficam sempre num campo âmbar ou numa faixa âmbar-3,
+   com o escudo e o rótulo "De terceiros". Nunca dividem a mesma folha.
+   ========================================================================== */
+.fi{display:flex;flex-direction:column;gap:24px;min-width:0}
+.fi-grade{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+.fi-col{display:flex;flex-direction:column;gap:24px;min-width:0}
+.fi-v{text-align:right;white-space:nowrap;font-weight:500}
+.fi-v.forte{font-family:var(--serifa);font-size:19px;color:var(--vinho)}
+.fi-pq{font-size:12px;color:var(--texto-2)}
+.fi-pq b{font-weight:500;color:var(--texto)}
+
+/* Abertura do Resumo: o corte separa o escritório (vinho) dos terceiros (âmbar) */
+.fi-hero{min-height:0}
+.fi-hero .esq{gap:14px}
+.fi-hero .esq .sobretitulo{color:var(--ambar-2)}
+.fi-big{font-family:var(--serifa);font-size:54px;line-height:1;font-weight:500;color:var(--papel);font-variant-numeric:lining-nums tabular-nums}
+.fi-hero .fi-de{font-size:15px;color:var(--sal)}
+.fi-hero .fi-de b{font-weight:600}
+.fi-trilha{position:relative;height:10px;border-radius:5px;background:var(--vinho-2);overflow:hidden;max-width:520px}
+.fi-trilha i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--ambar)}
+.fi-hero-num{display:flex;gap:28px;flex-wrap:wrap;font-size:13px;color:var(--sal)}
+.fi-hero-num b{display:block;font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--papel)}
+.fi-hero .dir .grande{font-size:44px;color:var(--vinho-escuro)}
+.fi-terc-rot{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-escuro)}
+.fi-terc-rot .ico{width:18px;height:18px}
+.dir .fi-oque{font-size:13px;color:var(--tinta);line-height:1.5}
+.dir .fi-oque b{font-weight:600}
+.dir .btn{align-self:flex-start}
+
+/* Faixa de terceiros dentro de qualquer folha (FI-06) */
+.fi-terc-cab{display:flex;align-items:center;gap:10px;padding:10px 24px;background:var(--ambar-3);color:var(--vinho-escuro);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;border-radius:var(--raio-g) var(--raio-g) 0 0}
+.fi-terc-cab .ico{width:18px;height:18px}
+.folha.fi-terc{border-color:var(--ambar-2)}
+
+/* Listas de linhas financeiras */
+.fi-linhas{list-style:none;margin:0;padding:0}
+.fi-linha{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 24px;border-top:1px solid var(--divisor)}
+.fi-linha:first-child{border-top:0}
+.fi-linha .data small{letter-spacing:.1em}
+.fi-linha .data .disco{--d:46px;--f:21px}
+.fi-quem a,.fi-quem strong{display:block;font-weight:500;color:var(--texto);text-decoration:none;line-height:1.35}
+.fi-quem a{display:flex;align-items:center;min-height:44px;margin:-12px 0 -12px;width:fit-content}
+.fi-h2-link{display:inline-flex;align-items:center;min-height:44px;margin:-10px 0;text-decoration:none}
+.fi-quem a:hover{text-decoration:underline;color:var(--vinho)}
+.fi-quem small{display:block;font-size:12px;color:var(--texto-2);line-height:1.45}
+.fi-quem .fi-por{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px}
+.fi-lado{display:grid;justify-items:end;gap:6px;text-align:right}
+.fi-venc{grid-template-columns:minmax(0,1fr) auto}
+.fi-venc .fi-motivo{margin-top:6px;padding-left:10px;border-left:2px solid var(--vinho-3);font-size:13px;line-height:1.45}
+.fi-venc .fi-motivo b{font-weight:500}
+.fi-prox{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--texto-2)}
+.fi-prox .ico{width:16px;height:16px;color:var(--vinho)}
+.fi-prox b{color:var(--texto);font-weight:500}
+.fi-total{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 24px 18px;border-top:1px solid var(--divisor);font-size:13px;color:var(--texto-2)}
+.fi-total b{font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--vinho)}
+
+/* Gráficos: barras horizontais, sempre com o valor escrito ao lado */
+.fi-barras{display:grid;gap:12px;padding:4px 24px 18px}
+.fi-barra{display:grid;grid-template-columns:96px minmax(0,1fr) 150px;gap:12px;align-items:center;font-size:13px}
+.fi-barra .rot{color:var(--texto);font-weight:500}
+.fi-barra .rot small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+.fi-barra .val{text-align:right;line-height:1.35}
+.fi-barra .val b{display:block;font-weight:500}
+.fi-barra .val small{display:block;font-size:12px;color:var(--texto-2)}
+.fi-trilho{position:relative;height:14px;border-radius:4px;background:var(--sal)}
+.fi-trilho i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.fi-trilho i.real{background:var(--vinho)}
+.fi-trilho i.prev{background:var(--ambar-3);box-shadow:inset 0 0 0 1.5px var(--vinho-4);border:0}
+.fi-trilho i.urg{background:var(--vinho-3)}
+.fi-trilho i.tipo2{background:var(--vinho-2)}
+.fi-trilho i.tipo4{background:var(--vinho-4)}
+.fi-duplo{display:grid;gap:4px}
+.fi-duplo .fi-trilho{height:12px}
+.fi-leg{padding:0 24px 16px}
+.fi-tons{padding:0 24px}
+.fi-tons .tons{height:14px;margin:14px 0 10px}
+.fi-grande{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:0 24px}
+.fi-grande b{font-family:var(--serifa);font-size:40px;line-height:1;font-weight:500;color:var(--vinho);font-variant-numeric:lining-nums tabular-nums}
+.fi-grande span{color:var(--texto-2)}
+.fi-sub3{font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2);padding:14px 24px 10px;border-top:1px solid var(--divisor);margin-top:16px}
+.fi-aviso-in{margin:0 24px 18px}
+.fi-dl{margin:0;padding:0 24px 18px;display:grid;gap:0}
+.fi-dl div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px}
+.fi-dl div:first-child{border-top:0}
+.fi-dl dt{color:var(--texto-2)}
+.fi-dl dd{margin:0;font-weight:500;text-align:right}
+.fi-medidor{padding:0 24px 18px;display:grid;gap:8px}
+.fi-medidor p{font-size:13px;line-height:1.5}
+.fi-medidor p b{font-weight:600}
+.fi-pct{font-family:var(--serifa);font-size:34px;line-height:1;color:var(--vinho);font-weight:500}
+
+/* Números da seção (filtros) */
+.fi-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;background:var(--papel);border:1px solid var(--borda-folha);border-radius:var(--raio-g);box-shadow:var(--sombra);overflow:hidden}
+.fi-nums button,.fi-nums a{position:relative;display:grid;gap:2px;align-content:center;text-align:left;min-height:88px;padding:16px 22px;border:0;border-left:1px solid var(--divisor);background:transparent;font:inherit;color:var(--texto);cursor:pointer;text-decoration:none}
+.fi-nums>:first-child{border-left:0}
+.fi-nums button:hover,.fi-nums a:hover{background:#FCF8F5}
+.fi-nums .r{font-size:13px;color:var(--texto-2);display:flex;align-items:center;gap:6px}
+.fi-nums .r .ico{width:16px;height:16px;color:var(--vinho-3)}
+.fi-nums b{font-family:var(--serifa);font-size:26px;line-height:1.1;font-weight:500;color:var(--vinho);font-variant-numeric:lining-nums tabular-nums}
+.fi-nums small{font-size:12px;color:var(--texto-2)}
+.fi-nums [aria-pressed="true"]{background:#FCF8F5}
+.fi-nums [aria-pressed="true"] .r{color:var(--vinho);font-weight:500}
+.fi-nums [aria-pressed="true"]::after{content:"";position:absolute;left:22px;right:22px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--vinho)}
+
+/* Tabelas */
+.fi-tab td{vertical-align:top}
+.fi-tab tbody td{padding-top:14px;padding-bottom:14px}
+.fi-tab .fi-grupo th{padding:12px 16px 10px 24px;background:var(--sal-2);text-align:left;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--vinho-2);border-top:1px solid var(--divisor);border-bottom:1px solid var(--divisor)}
+.fi-tab .fi-grupo th span{float:right;letter-spacing:0;text-transform:none;font-size:13px;color:var(--texto)}
+.fi-tab .fi-grupo th span b{font-weight:600}
+.fi-tab tr.fi-atraso td:first-child{box-shadow:inset 3px 0 0 var(--vinho-3)}
+.fi-tab tr.fi-pago td{background:#FCFAF8}
+.fi-dt{display:grid;gap:2px}
+.fi-dt b{font-weight:500}
+.fi-dt small{font-size:12px;color:var(--texto-2)}
+.fi-forma{display:grid;gap:4px;justify-items:start;font-size:13px}
+.fi-forma b{font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.fi-forma b .ico{width:16px;height:16px;color:var(--vinho-4)}
+.fi-forma small{font-size:12px;color:var(--texto-2)}
+.fi-sit{display:grid;gap:6px;justify-items:start}
+.fi-sit .fi-motivo{font-size:12px;line-height:1.45;color:var(--texto)}
+.fi-sit .fi-motivo b{font-weight:500}
+.fi-docs{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.fi-docs a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px;font-weight:500;text-decoration:none}
+.fi-docs a:hover{text-decoration:underline}
+.fi-docs a .ico{width:16px;height:16px}
+.fi-tab .fi-acao{text-align:right}
+.fi-cat{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;background:var(--sal-2);color:var(--vinho);font-size:12px;font-weight:500;white-space:nowrap}
+.fi-cat.terc{background:var(--ambar-3);color:var(--vinho-escuro)}
+.fi-cat .ico{width:14px;height:14px;margin-right:4px}
+
+/* Ficha: totais do contrato */
+.fi-quatro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--divisor)}
+.fi-quatro div{padding:14px 24px;border-left:1px solid var(--divisor)}
+.fi-quatro div:first-child{border-left:0}
+.fi-quatro dt{font-size:12px;color:var(--texto-2)}
+.fi-quatro dd{margin:2px 0 0;font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--vinho);font-variant-numeric:lining-nums tabular-nums}
+.fi-quatro dd.urg{color:var(--vinho-3)}
+.fi-quatro{margin:0}
+
+/* Cobrança (FI-04) e Pix (FI-17) */
+.fi-cob{padding:0 24px 16px;display:grid;gap:12px}
+.fi-cob dl{margin:0;display:grid;gap:10px}
+.fi-cob dt{font-size:12px;color:var(--texto-2)}
+.fi-cob dd{margin:2px 0 0;font-weight:500;font-size:14px;line-height:1.45}
+.fi-cob dd small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+.fi-cob .btn{justify-self:start}
+.fi-pix{margin:0 24px 18px;padding:14px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:10px}
+.fi-pix code{display:block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--texto);overflow-wrap:anywhere;line-height:1.5}
+.fi-pix p{font-size:13px;line-height:1.5}
+.fi-pix .acoes{display:flex;gap:8px;flex-wrap:wrap}
+.eventos small b{font-weight:500;color:var(--texto)}
+
+/* Janela de registrar */
+.janela.fi-larga{width:min(760px,calc(100vw - 32px))}
+.fi-alvo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2)}
+.fi-alvo strong{display:block;font-weight:500}
+.fi-alvo small{display:block;font-size:12px;color:var(--texto-2)}
+.fi-alvo .fi-v{font-family:var(--serifa);font-size:22px;color:var(--vinho)}
+.fi-alvo>.ico{color:var(--vinho)}
+.fi-dois{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.janela .campo{max-width:none}
+.fi-ref{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio);border:1px solid var(--vinho-4);font-size:13px;line-height:1.5}
+.fi-ref .ico{color:var(--vinho);flex:none;margin-top:1px}
+.fi-ref b{font-weight:600}
+.fi-anexo{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 14px;border:1px solid var(--borda-folha);border-radius:var(--raio);background:var(--papel)}
+.fi-anexo>.ico{color:var(--vinho)}
+.fi-anexo span{flex:1;min-width:0;font-size:13px}
+.fi-anexo span b{display:block;font-weight:500;overflow-wrap:anywhere}
+.fi-anexo span small{font-size:12px;color:var(--texto-2)}
+.fi-anexo .btn-icone,.fi-anexo .fi-x{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;border-radius:var(--raio);color:var(--vinho);cursor:pointer}
+.fi-anexo .fi-x:hover{background:var(--sal-2)}
+.fi-rotulo{font-size:13px;font-weight:500;color:var(--texto)}
+.fi-caixa-fixa{display:flex;gap:10px;align-items:center;font-size:13px;padding:10px 14px;border-radius:var(--raio);background:var(--sal-2)}
+.fi-caixa-fixa .ico{color:var(--vinho)}
+.fi-caixa-fixa b{font-weight:600}
+.janela .opcao{margin:0}
+.fi-grupo-op{border:0;margin:0;padding:0;min-width:0;display:grid;gap:4px}
+.fi-grupo-op legend{padding:0;margin-bottom:6px;font-size:13px;font-weight:500}
+.fi-sub-op{margin:4px 0 0 34px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:14px}
+
+/* Destinação de um valor de terceiros (FI-05, VA-01) */
+.fi-dest{width:100%}
+.fi-dest td,.fi-dest th{vertical-align:top}
+.fi-dest tfoot td,.fi-dest tfoot th{padding:14px 16px;border-top:2px solid var(--vinho-4);font-weight:600}
+.fi-dest tfoot th{padding-left:24px;text-align:left}
+.fi-dest .fi-sub-linha td{padding-top:0}
+.fi-dest .fi-sub-linha td:first-child{padding-left:44px}
+.fi-quem-d{display:flex;align-items:flex-start;gap:12px}
+.fi-quem-d .av-p{width:36px;height:36px;font-size:12px}
+.fi-quem-d strong{display:block;font-weight:500}
+.fi-quem-d small{display:block;font-size:12px;color:var(--texto-2);line-height:1.45}
+.fi-recuo{display:flex;align-items:flex-start;gap:8px;font-size:13px}
+.fi-recuo .ico{width:16px;height:16px;color:var(--vinho-4);margin-top:2px}
+.fi-split{padding:0 24px 6px}
+.fi-split .tons{height:16px;margin:4px 0 10px}
+
+/* Fechamento do caso (FI-08) */
+.fi-fecha{padding:0 24px 20px;display:grid;gap:14px}
+.fi-fecha-num{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.fi-fecha-num div{padding:12px 6px;border-radius:var(--raio);background:var(--sal-2)}
+.fi-fecha-num div.falta{background:var(--papel);box-shadow:inset 0 0 0 1.5px var(--vinho-3)}
+.fi-fecha-num b{display:block;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.fi-fecha-num div.falta b{color:var(--vinho-3)}
+.fi-fecha-num small{font-size:12px;color:var(--texto-2)}
+.fi-check{list-style:none;margin:0;padding:0;display:grid}
+.fi-check li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--divisor);font-size:13px;line-height:1.45}
+.fi-check li:first-child{border-top:0}
+.fi-check .ico{width:18px;height:18px;color:var(--vinho);margin-top:1px}
+.fi-check li.falta .ico{color:var(--vinho-3)}
+.fi-check li.falta b{color:var(--vinho-3);font-weight:600}
+.fi-check small{display:block;font-size:12px;color:var(--texto-2)}
+
+/* Prestação de contas pelo WhatsApp (FI-12) */
+.fi-zap{padding:16px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:8px}
+.fi-zap-cab{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--texto-2)}
+.fi-zap-cab .ico{width:16px;height:16px;color:var(--vinho)}
+.fi-balao{justify-self:end;max-width:440px;background:var(--papel);border:1px solid var(--borda-folha);border-radius:14px 14px 4px 14px;padding:12px 14px;font-size:13px;line-height:1.55;box-shadow:var(--sombra-1,0 1px 3px rgba(105,39,70,.08))}
+.fi-balao table{table-layout:auto;margin:8px 0}
+.fi-balao td{padding:2px 0;border:0;font-size:13px;vertical-align:baseline}
+.fi-balao td:last-child{text-align:right;padding-left:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fi-balao tr.fi-fica td{font-weight:600;border-top:1px solid var(--divisor);padding-top:6px}
+.fi-balao tr:hover{background:transparent}
+.fi-balao td:first-child{padding-left:0!important}
+.fi-balao small{display:block;margin-top:6px;font-size:11px;color:var(--texto-2);text-align:right}
+
+/* Saldos do Caixa (FI-06) */
+.fi-saldos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+.fi-saldo{border-radius:var(--raio-g);padding:22px 26px;display:grid;gap:8px;box-shadow:var(--sombra);min-height:170px;align-content:start}
+.fi-saldo.campo-vinho .sobretitulo{color:var(--ambar-2)}
+.fi-saldo.campo-vinho .fi-big{font-size:44px}
+.fi-saldo.campo-vinho p{color:var(--sal);font-size:13px;line-height:1.5}
+.fi-saldo.campo-ambar .fi-big{font-size:44px;color:var(--vinho-escuro)}
+.fi-saldo.campo-ambar p{color:var(--tinta);font-size:13px;line-height:1.5}
+.fi-saldo .estatua{width:170px;height:170px;right:16px;bottom:-34px}
+
+/* Previsão de caixa: barras por mês */
+.fi-meses{padding:4px 24px 18px;display:grid;gap:14px}
+.fi-mes{display:grid;grid-template-columns:110px minmax(0,1fr) 200px;gap:14px;align-items:center}
+.fi-mes .rot{font-weight:500}
+.fi-mes .rot small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+.fi-mes .val{font-size:12px;line-height:1.5;color:var(--texto-2);text-align:right}
+.fi-mes .val b{font-weight:500;color:var(--texto);font-size:13px}
+.fi-mes.fi-hoje .rot{color:var(--vinho)}
+.fi-mes .fi-trilho i.rpv{background:var(--ambar)}
+.fi-tab-caixa td,.fi-tab-caixa th{text-align:right}
+.fi-tab-caixa td:first-child,.fi-tab-caixa th:first-child{text-align:left}
+.fi-tab-caixa tr.fi-futuro td{color:var(--texto-2)}
+.fi-tab-caixa tr.fi-futuro td:first-child{color:var(--texto)}
+.fi-tab-caixa tbody td{padding-top:12px;padding-bottom:12px}
+
+/* Lugar reservado (ideias [VAL]) */
+.fi-reserva{margin:4px 24px 20px;padding:14px 16px;border:1.5px dashed var(--vinho-4);border-radius:var(--raio);display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--texto-2);line-height:1.5}
+.fi-reserva .ico{color:var(--vinho-4);flex:none;margin-top:1px}
+.fi-reserva b{color:var(--texto);font-weight:500}
+
+/* Primeiro uso */
+.fi-passos{list-style:none;margin:0;padding:0 24px 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;counter-reset:p}
+.fi-passos li{border:1px solid var(--borda-folha);border-radius:var(--raio-g);padding:18px;display:grid;gap:10px;align-content:start;background:var(--papel)}
+.fi-passos .disco{--d:44px;--f:22px}
+.fi-passos h3{font-size:20px;line-height:1.2}
+.fi-passos p{font-size:13px;color:var(--texto-2);line-height:1.5}
+.fi-passos .btn{justify-self:start}
+
+.fi-cartao-v{font-family:var(--serifa);font-size:20px;color:var(--vinho);font-weight:500}
+
+.ferramentas .campo-busca{flex:1 1 220px}
+.fi-prox{display:block}
+.fi-prox .ico{vertical-align:-3px;margin-right:4px}
+.fi-forma b{display:flex;align-items:flex-start;gap:6px}
+.fi-forma b .ico{margin-top:2px}
+.fi .explica{padding-bottom:96px}
+.fi-grade-meio{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.fi-tab-caixa thead th{white-space:normal;line-height:1.35;vertical-align:bottom}
+.fi-saldo .estatua{top:auto!important}
+.fi-saldo.campo-ambar::before{-webkit-mask-image:radial-gradient(circle at 100% 0,#000 0,transparent 190px)!important;mask-image:radial-gradient(circle at 100% 0,#000 0,transparent 190px)!important}
+.fi-hero .estatua{top:auto!important;bottom:-40px!important}
+.fi-dest td.fi-v{padding-left:8px}
+@media (max-width:760px){.fi-grade-meio{grid-template-columns:minmax(0,1fr)}}
+
+@media (max-width:760px){
+  .fi{gap:16px}
+  .fi-grade{grid-template-columns:minmax(0,1fr);gap:16px}
+  .fi-col{gap:16px}
+  .fi-big{font-size:40px}
+  .fi-hero .dir .grande{font-size:34px!important}
+  .fi-hero-num{gap:16px}
+  .fi-linha{grid-template-columns:52px minmax(0,1fr);padding:12px 16px;gap:12px}
+  .fi-linha .fi-lado{grid-column:2;justify-items:start;text-align:left;grid-auto-flow:column;justify-content:start;align-items:center}
+  .fi-venc{grid-template-columns:minmax(0,1fr)}
+  .fi-venc .fi-lado{grid-column:1}
+  .fi-total{padding:12px 16px 16px}
+  .fi-barras{padding:4px 16px 16px}
+  .fi-barra{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+  .fi-barra>.fi-trilho,.fi-barra>.fi-duplo{grid-column:1/-1;grid-row:2}
+  .fi-hero .estatua{width:120px!important;height:120px!important;right:-10px!important;bottom:-20px!important}
+  .fi-leg,.fi-tons,.fi-grande,.fi-dl,.fi-medidor,.fi-cob,.fi-fecha,.fi-split{padding-left:16px;padding-right:16px}
+  .fi-sub3{padding-left:16px;padding-right:16px}
+  .fi-aviso-in,.fi-pix,.fi-reserva{margin-left:16px;margin-right:16px}
+  .fi-terc-cab{padding:10px 16px}
+  .fi-nums{grid-template-columns:1fr 1fr}
+  .fi-nums button,.fi-nums a{padding:14px 16px;min-height:84px;border-top:1px solid var(--divisor)}
+  .fi-nums>:nth-child(-n+2){border-top:0}
+  .fi-nums>:nth-child(odd){border-left:0}
+  .fi-nums b{font-size:21px}
+  .fi-quatro{grid-template-columns:1fr 1fr}
+  .fi-quatro div{padding:12px 16px}
+  .fi-quatro div:nth-child(3){border-left:0}
+  .fi-quatro div:nth-child(n+3){border-top:1px solid var(--divisor)}
+  .fi-dois{grid-template-columns:1fr}
+  .fi-saldos{grid-template-columns:1fr;gap:16px}
+  .fi-saldo{padding:18px 16px;min-height:0}
+  .fi-saldo .fi-big{font-size:36px!important}
+  .fi-mes{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+  .fi-mes .fi-duplo{grid-column:1/-1;grid-row:2}
+  .fi-passos{grid-template-columns:1fr;padding:0 16px 16px}
+  .fi-alvo{grid-template-columns:auto minmax(0,1fr)}
+  .fi-alvo .fi-v{grid-column:2}
+  .fi-fecha-num b{font-size:16px}
+  .dir .btn{align-self:stretch}
+  .ficha-cab .esq .ident h1{font-size:30px!important}
+  .cabeca-ambar{padding:22px 16px 20px}
+  .cabeca-ambar h1{font-size:34px}
+  .pt-cab .btn{flex:1 1 100%}
+  .fi-balao{max-width:100%}
+  .fi-sub-op{margin-left:0}
+}
+/* acréscimos da programação */
+.fi-tab .fi-grupo th{text-align:left}
+.fi-tab tr.fi-cancelada td{color:var(--texto-2)}
+.fi-tab tr.fi-cancelada .num{text-decoration:line-through}
+.fi-tab .fi-acao .btn{white-space:nowrap}
+.fi-quem a{min-height:44px}
+.fi-vazio-num{font-size:12px;color:var(--texto-2)}
+.fi-cob-sem{padding:0 24px 16px;font-size:13px;line-height:1.5;color:var(--texto-2)}
+.fi .hn-ferr>select.entrada{flex:0 1 210px;width:auto;min-width:0}
+.fi-quatro dd{white-space:nowrap;font-size:20px}
+.fi-tab td.fi-v{padding-right:16px}
+.co-carteira table.fi-tab{table-layout:fixed}
+.fi-grade .fi-tab thead th,.fi-grade .fi-tab tbody td{padding-left:10px;padding-right:10px}
+.fi-grade .fi-tab thead th:first-child,.fi-grade .fi-tab tbody td:first-child{padding-left:24px}
+.fi-tab .selo{white-space:normal;height:auto;min-height:24px;padding-top:3px;padding-bottom:3px;line-height:1.3}
+@media (max-width:760px){
+  .hn-tab.fi-tab tr.fi-grupo{border:0;background:transparent;padding:8px 0 0;box-shadow:none}
+  .hn-tab.fi-tab tr.fi-grupo th{display:flex;justify-content:space-between;padding:0;background:transparent;border:0}
+  .hn-tab.fi-tab tr.fi-grupo th span{float:none}
+  .hn-tab.fi-tab tr.fi-atraso{border-color:var(--vinho-3);box-shadow:inset 3px 0 0 var(--vinho-3)}
+  .hn-tab.fi-tab tr.fi-atraso td:first-child{box-shadow:none}
+  .hn-tab.fi-tab tr.fi-pago td{background:transparent}
+  .hn-tab.fi-tab .fi-sit,.hn-tab.fi-tab .fi-forma{justify-items:end;text-align:right}
+  .hn-tab.fi-tab .fi-docs{align-items:flex-end}
+  .fi-cob-sem{padding:0 16px 16px}
+  .fi .hn-ferr>select.entrada{flex:1 1 100%}
+}
+/* <<< Financeiro */

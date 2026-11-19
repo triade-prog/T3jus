@@ -1,0 +1,12 @@
+{
+  "id": "F3.18",
+  "texto": "Financeiro do Portal, A pagar: despesas, contas recorrentes e aprovação do sócio",
+  "peca": "S3",
+  "refs": [
+    "FI-01",
+    "FI-02"
+  ],
+  "status": "pendente",
+  "ordem": 180,
+  "proximo": "Programar A pagar do desenho aprovado (lançar despesa, recorrentes, aprovação da semana); hoje o Financeiro tem só A receber"
+}

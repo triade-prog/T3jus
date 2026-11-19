@@ -257,3 +257,14 @@ Telas aprovadas em `docs/design/aprovadas/portal-comercial-contratos`. Só quem 
 - **Telas:** `/contratos/contratos`, `/contratos/contratos/novo?proposta=`, `/contratos/contratos/:id?aba=contrato|recebimentos|documentos`, `/contratos/contratos/:id/mudar` e `/contratos/honorarios`. Procurações e modelos (CH-08) ainda em preparo.
 - **Comercial:** o Funil lista os contratos vindos de proposta e a Origem soma o valor certo contratado (F3.9).
 - **Quem sai da equipe:** os contratos em elaboração e ativos passam para quem o sócio escolheu (`contrato.responsavel_passado`, EX-10).
+
+### Financeiro do Portal, A receber (F3.17; FI-01 a FI-04, FI-14, FI-17)
+
+Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a área Financeiro abre (`financeiro.ver`; registrar e anotar pedem `financeiro.editar`).
+
+- **Banco (migration 0210):** `pagamentos_recebidos` (valor, multa e juros, dia em que o dinheiro entrou, forma, caixa do escritório ou de terceiros), `recibos` (número por escritório e ano, tirado com trava) e `cobranca_eventos` (ligação, mensagem, anotação ou passada, com motivo e próxima ação). As três só acrescentam: o guardião `financeiro_so_acrescenta` recusa UPDATE e DELETE. A parcela ganhou `forma`.
+- **Situação da parcela:** sai dos pagamentos (`parcela_situacao`): cancelada, paga, vencida, parcial ou a vencer. Cancelar o futuro de um contrato não toca parcela que já recebeu algum pagamento.
+- **Registrar (FI-02):** `portal_financeiro_receber_registrar` recusa parcela cancelada ou já paga, valor acima do que falta (devolve `falta`) e data no futuro. O pagamento atrasado baixa a parcela do mês a que ela se refere; no caixa, entra no dia em que o dinheiro entrou.
+- **Cobrança (FI-04):** `portal_financeiro_cobranca_anotar` pede o motivo do atraso na primeira anotação de parcela vencida e sempre a próxima ação (dia, o que fazer, quem faz). Quem sai da equipe passa as próximas ações para quem o sócio escolheu (evento PASSADA, EX-10).
+- **API:** `GET /v1/escritorio/financeiro/receber` (`?mostrar=ABERTO|VENCIDAS|SETE_DIAS|RECEBIDO_MES&q&responsavel&forma`), `GET /financeiro/contratos/:id`, `POST /financeiro/parcelas/:id/recebimentos` e `/cobranca`.
+- **Telas:** `/financeiro/a-receber` e `/financeiro/a-receber/contratos/:id`. Resumo, A pagar, Repasses e Caixa ainda mostram a área em preparo.

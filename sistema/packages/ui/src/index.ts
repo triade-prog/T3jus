@@ -39,4 +39,6 @@ export { FichaPropostaPortal } from "./portal/FichaProposta.tsx";
 export { NovaPropostaPortal, EditarPropostaPortal } from "./portal/FormProposta.tsx";
 export { ContratosPortal, HonorariosContratosPortal } from "./portal/Contratos.tsx";
 export { FichaContratoPortal } from "./portal/FichaContrato.tsx";
+export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financeiro.tsx";
+export { ROTAS_FINANCEIRO } from "./portal/financeiro.ts";
 export { NovoContratoPortal, MudarContratoPortal } from "./portal/FormContrato.tsx";

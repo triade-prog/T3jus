@@ -93,6 +93,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_contrato_assinatura: (a) => ({ id: a.p_contrato, versao: Number(a.p_versao) + 1, recebimentos: 3, em: a.p_assinado_em }),
     portal_contrato_base: (a) => ({ id: a.p_recebimento, valor: 63540, vencimento: "2026-12-15" }),
+    portal_financeiro_receber: (a) => ({ algum: true, parcelas: [], mostrar: a.p_mostrar, forma: a.p_forma, responsavel: a.p_responsavel }),
+    portal_financeiro_contrato: (a) => ({ id: a.p_contrato, parcelas: [] }),
+    portal_financeiro_receber_registrar: (a) => {
+      if ((a.p_dados as Record<string, unknown>).valor === 90000) erroBanco("TC422", { motivo: "VALOR_ACIMA_DO_SALDO", campos: ["valor"], falta: 85000 });
+      return { id: CLIENTE, paga: true, falta: 0, recibo: { ano: 2026, numero: 1 } };
+    },
+    portal_financeiro_cobranca_anotar: () => ({ id: CLIENTE }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
     portal_compromisso_editar: (a) => {
       if (a.p_motivo === null) erroBanco("TC422", { campos: ["motivo"] });
@@ -626,4 +633,32 @@ Deno.test("CH-01: situações do contrato e fontes da base no domínio são as m
   assertEquals(lista(/fonte\s+text not null check \(fonte in \(([^)]+)\)/), Object.keys(FONTES_BASE));
   assertEquals([...new Set(lista(/transicoes_permitidas \(tabela, de, para\) values\s+(\('contratos'[\s\S]*?);/)?.filter((x) => x !== "contratos"))].sort(),
     Object.keys(SITUACOES_CONTRATO).sort());
+});
+
+Deno.test("FI-01 a FI-04, FI-14: A receber, ficha de parcelas, registrar recebimento e anotar cobrança; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const l = await (await m.pedir(`/v1/escritorio/financeiro/receber?mostrar=vencidas&forma=pix&responsavel=${ANA.toUpperCase()}`, { cookie })).json();
+  assertEquals([l.mostrar, l.forma, l.responsavel], ["VENCIDAS", "PIX", ANA.toLowerCase()]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/receber?mostrar=tudo", { cookie }))).detalhes?.campos, ["mostrar"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/receber?forma=ouro", { cookie }))).detalhes?.campos, ["forma"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/receber?responsavel=x", { cookie }))).detalhes?.campos, ["responsavel"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie })).json()).id, CLIENTE);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/contratos/nao-e-id", { cookie })).status, 404);
+  const r = await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/recebimentos`, { corpo: { valor: 85000, recebidoEm: "2026-11-18", forma: "PIX", recibo: true }, cookie });
+  assertEquals([r.status, (await r.json()).recibo.numero], [201, 1]);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_receber_registrar")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_parcela], [AURORA, CLIENTE]);
+  const acima = await erro(await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/recebimentos`, { corpo: { valor: 90000, recebidoEm: "2026-11-18", forma: "PIX" }, cookie }));
+  assertEquals([acima.detalhes?.motivo, acima.detalhes?.falta], ["VALOR_ACIMA_DO_SALDO", 85000]);
+  const c = await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/cobranca`, {
+    corpo: { tipo: "LIGACAO", motivo: "Não atende", proxData: "2026-11-19", proxOque: "Ligar de novo", proxResponsavelId: ANA }, cookie });
+  assertEquals(c.status, 201);
+});
+
+Deno.test("FI-17: as formas de pagamento do domínio são as mesmas do banco", async () => {
+  const { FORMAS_PAGAMENTO } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0210_portal_financeiro_receber.sql", import.meta.url));
+  const formas = /select p in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(formas, Object.keys(FORMAS_PAGAMENTO));
 });
