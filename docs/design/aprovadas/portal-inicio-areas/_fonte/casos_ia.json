@@ -1,0 +1,34 @@
+[
+ {
+  "nome": "dona",
+  "url": "inicio.html?estado=dona"
+ },
+ {
+  "nome": "dona-equipe",
+  "url": "inicio.html?estado=dona-equipe"
+ },
+ {
+  "nome": "bianca",
+  "url": "inicio.html?estado=bianca"
+ },
+ {
+  "nome": "larissa",
+  "url": "inicio.html?estado=larissa"
+ },
+ {
+  "nome": "paula",
+  "url": "inicio.html?estado=paula"
+ },
+ {
+  "nome": "vazio",
+  "url": "inicio.html?estado=vazio"
+ },
+ {
+  "nome": "carregando",
+  "url": "inicio.html?estado=carregando"
+ },
+ {
+  "nome": "erro",
+  "url": "inicio.html?estado=erro"
+ }
+]
