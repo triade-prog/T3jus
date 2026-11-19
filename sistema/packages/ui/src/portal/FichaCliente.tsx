@@ -22,11 +22,12 @@ import {
 import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
+import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
 export type AbaCliente = "ficha" | "atendimentos";
-type Feito = { titulo: string; texto: string };
+export type Feito = { titulo: string; texto: string };
 
-function Toast({ feito, aoFechar }: { feito: Feito; aoFechar: () => void }) {
+export function Toast({ feito, aoFechar }: { feito: Feito; aoFechar: () => void }) {
   return (
     <div className="aviso aviso-sucesso toast" role="status">
       <Icone nome="check" className="ico" />
@@ -271,7 +272,7 @@ const Reserva = () => (
 
 // ------------------------------------------------------------------------- janelas
 
-function JanelaRegistrar({ aberta, f, pessoas, eu, aoFechar, aoFeito }: {
+export function JanelaRegistrar({ aberta, f, pessoas, eu, aoFechar, aoFeito }: {
   aberta: boolean;
   f: FichaCliente;
   pessoas: PessoaRef[];
@@ -559,9 +560,12 @@ function Historico({ atendimentos, f, hoje, destaque, aoRegistrar }: {
   const p = f.proxContato;
   const r = p ? rotuloProx(p, hoje) : null;
   const dias = agruparEventosPorDia(atendimentos);
+  const excluido = f.situacao === "EXCLUIDO";
   return (
     <Folha titulo="Histórico de atendimento" estilo={{ overflow: "hidden" }}
-      sub="Cada conversa com o cliente ou a família: quando, por onde, quem atendeu e o combinado. Nada aqui é apagado."
+      sub={excluido
+        ? "Ficam a data, o canal, quem atendeu e o resumo, como foi escrito. Com quem se falou foi excluído com os dados do cliente."
+        : "Cada conversa com o cliente ou a família: quando, por onde, quem atendeu e o combinado. Nada aqui é apagado."}
       acoes={aoRegistrar ? (
         <button className="btn btn-pri" type="button" onClick={aoRegistrar}>
           <Icone nome="mais" className="ico" />
@@ -592,6 +596,7 @@ function Historico({ atendimentos, f, hoje, destaque, aoRegistrar }: {
                     </p>
                     {a.comQuem ? <small>com {a.comQuem}</small> : null}
                     <span className="cl-resumo">“{a.resumo}”</span>
+                    {excluido ? <span className="pd-x-resumo">Com quem se falou e o próximo contato excluídos a pedido do titular (LGPD).</span> : null}
                     {a.proxContato ? (
                       <p className="cl-pc">
                         <Icone nome="relogio" className="ico" />
@@ -685,7 +690,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const [editando, setEditando] = useState(editarAoAbrir);
   const [conflito, setConflito] = useState<Conflito | null>(null);
   const [meu, setMeu] = useState<RascunhoCliente | null>(null);
-  const [janela, setJanela] = useState<"registrar" | "inativar" | "reativar" | null>(null);
+  const [janela, setJanela] = useState<"registrar" | "inativar" | "reativar" | "pedir" | "excluir" | "recusar" | null>(null);
   const [abertura, setAbertura] = useState(0);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [destaque, setDestaque] = useState<string | null>(null);
@@ -792,14 +797,18 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   }
 
   const ativo = f.situacao === "ATIVO";
+  const excluido = f.situacao === "EXCLUIDO";
   const abaAtual: AbaCliente = comercial ? aba : "ficha";
   const editar = ativo ? () => { setFeito(null); setEditando(true); } : undefined;
   const p = f.proxContato;
   const r = p ? rotuloProx(p, hoje) : null;
   const proc = prontosParaProcuracao(f);
   const dona = escritorio.socios[0];
+  const nomeDona = dona ?? "a sócia dona";
 
-  const dir = comercial ? (
+  const dir = excluido ? (
+    <RegistroNoCabecalho f={f} />
+  ) : comercial ? (
     <section className="dir campo-ambar" aria-labelledby="cl-t-prox">
       <p className="sobretitulo" id="cl-t-prox">
         Próximo contato
@@ -864,18 +873,27 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const cab = (
     <div className="ficha-cab">
       <div className="esq campo-vinho">
-        <Icone nome="balanca" className="ico estatua" />
-        <a className="voltar" href={ROTAS_PORTAL.clientes}>
+        <Icone nome={excluido ? "escudo" : "balanca"} className="ico estatua" />
+        <a className="voltar" href={excluido ? `${ROTAS_PORTAL.clientes}?filtro=inativos` : ROTAS_PORTAL.clientes}>
           <Icone nome="esquerda" className="ico ico-s" />
           Clientes
         </a>
         <div className="ident">
           <div>
             <p className="sobretitulo">Cliente · {TIPOS_CLIENTE[f.tipo].toLowerCase()}</p>
-            <h1>{f.nome}</h1>
+            <h1 className={excluido ? "pd-excl-h1" : undefined}>{f.nome}</h1>
             <p className="meta">
-              {ativo ? <span className="selo selo-ativo">Ativo</span> : <span className="selo selo-neutro">Inativo</span>}
-              <span>cliente desde {dataLonga(f.criadoEm)}</span>
+              {excluido ? (
+                <span className="selo selo-excl">
+                  <Icone nome="escudo" className="ico" />
+                  Excluído (LGPD)
+                </span>
+              ) : ativo ? (
+                <span className="selo selo-ativo">Ativo</span>
+              ) : (
+                <span className="selo selo-neutro">Inativo</span>
+              )}
+              <span>{excluido ? `a pedido do titular em ${f.exclusao ? dataLonga(f.exclusao.em) : ""}` : `cliente desde ${dataLonga(f.criadoEm)}`}</span>
               {f.documento ? (
                 <>
                   <span className="sep" aria-hidden="true" />
@@ -904,7 +922,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     </nav>
   );
 
-  const faixaInativo = !ativo ? (
+  const faixaInativo = !ativo && !excluido ? (
     <div className="aviso aviso-info cl-inativo-faixa" role="status">
       <Icone nome="pasta" className="ico" />
       <div>
@@ -935,23 +953,34 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     </Folha>
   );
 
-  const situacao = ativo && f.podeInativar ? (
+  const lgpd = <AcaoLgpd f={f} dona={nomeDona} aoExcluir={() => abrir("excluir")} aoPedir={() => abrir("pedir")} />;
+  const situacao = excluido ? (
+    <Folha titulo="Situação" pequena>
+      <div className="cl-sit">
+        <p>Não dá para editar, reativar nem registrar atendimento em cliente excluído. Se a pessoa voltar a procurar o escritório, cadastre de novo, como cliente novo.</p>
+      </div>
+    </Folha>
+  ) : ativo ? (
     <Folha titulo="Situação" pequena>
       <div className="cl-sit">
         <p>Ativo desde {dataLonga(f.criadoEm)}. Inativar tira o cliente da lista do dia a dia e encerra o próximo contato. Nada é apagado, e dá para reativar.</p>
-        <button className="btn btn-perigo" type="button" onClick={() => abrir("inativar")}>
-          <Icone nome="pasta" className="ico" />
-          Inativar cliente
-        </button>
+        {f.podeInativar ? (
+          <button className="btn btn-perigo" type="button" onClick={() => abrir("inativar")}>
+            <Icone nome="pasta" className="ico" />
+            Inativar cliente
+          </button>
+        ) : null}
+        {lgpd}
       </div>
     </Folha>
-  ) : !ativo ? (
+  ) : (
     <Folha titulo="Situação" pequena>
       <div className="cl-sit">
         <p>Inativo não aparece na lista do dia a dia nem gera próximo contato. Continua na busca, pelo filtro “Inativos”, e na exportação dos dados do escritório.</p>
+        {lgpd}
       </div>
     </Folha>
-  ) : null;
+  );
 
   let corpo: ReactNode;
   if (editando) {
@@ -985,24 +1014,29 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             <Historico atendimentos={atendimentos} f={f} hoje={hoje} destaque={destaque} aoRegistrar={ativo ? () => abrir("registrar") : null} />
           )
         }
-        lateral={<ExplicaHistorico />}
+        lateral={excluido ? <RegistroExclusao f={f} /> : <ExplicaHistorico />}
       />
     );
   } else {
     corpo = (
       <Grade
         principal={
-          <>
-            <Dados f={f} aoEditar={editar} />
-            <Contatos f={f} aoEditar={editar} />
-          </>
+          excluido ? (
+            <DadosExcluidos f={f} />
+          ) : (
+            <>
+              <Dados f={f} aoEditar={editar} />
+              <Contatos f={f} aoEditar={editar} />
+            </>
+          )
         }
         lateral={
           <>
+            {excluido ? <RegistroExclusao f={f} /> : null}
             {ativo ? <Procuracao f={f} aoEditar={editar} /> : null}
             {comercial ? <Origem f={f} /> : notaSemComercial}
             {situacao}
-            <Reserva />
+            {excluido ? null : <Reserva />}
           </>
         }
       />
@@ -1013,6 +1047,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     <MolduraPortal atual="clientes" trilha={trilha} escritorio={escritorio} pagina="co-ficha">
       <div className="cl">
         {cab}
+        {excluido ? null : <FaixaPedido f={f} aoExcluir={() => abrir("excluir")} aoRecusar={() => abrir("recusar")} />}
         {abas}
         {faixaInativo}
         {corpo}
@@ -1031,6 +1066,20 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           aoFechar={() => setJanela(null)} aoFeito={(x) => void concluir(x)}
           aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
       ) : null}
+      {excluido ? null : (
+        <>
+          <JanelaPedir key={`p-${abertura}`} aberta={janela === "pedir"} f={f} dona={nomeDona} hoje={hoje} aoFechar={() => setJanela(null)}
+            aoFeito={(x) => void concluir(x)} />
+          {f.dono ? (
+            <>
+              <JanelaExcluir key={`x-${abertura}`} aberta={janela === "excluir"} f={f} hoje={hoje} aoFechar={() => setJanela(null)}
+                aoFeito={(x) => void concluir(x, async () => { if (abaAtual === "atendimentos") await carregarAtendimentos(); })}
+                aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
+              <JanelaRecusar key={`n-${abertura}`} aberta={janela === "recusar"} f={f} aoFechar={() => setJanela(null)} aoFeito={(x) => void concluir(x)} />
+            </>
+          ) : null}
+        </>
+      )}
     </MolduraPortal>
   );
 }

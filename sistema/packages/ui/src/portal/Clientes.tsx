@@ -10,7 +10,7 @@ import { Icone } from "../Icone.tsx";
 import { formatarTelefone } from "../console/ficha.ts";
 import { Carregando, ErroAoCarregar, Estado } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
-import { rotuloProx } from "./clientes.ts";
+import { dataBr, rotuloProx } from "./clientes.ts";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
 
 export type FiltroClientes = "ativos" | "inativos" | "vencidos";
@@ -32,6 +32,14 @@ function Marca({ texto, termo }: { texto: string; termo: string }) {
 }
 
 export function SeloSituacao({ situacao }: { situacao: ClienteLinha["situacao"] }) {
+  if (situacao === "EXCLUIDO") {
+    return (
+      <span className="selo selo-excl">
+        <Icone nome="escudo" className="ico" />
+        Excluído
+      </span>
+    );
+  }
   return situacao === "ATIVO" ? (
     <span className="selo selo-ok">
       <Icone nome="check" className="ico" />
@@ -160,7 +168,14 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
   let contagem: ReactNode = null;
   if (lista && lista.length) {
     if (buscado) contagem = <><b>{plural(lista.length, "cliente", "clientes")}</b> para “{buscado}”{/\d/.test(buscado) ? "" : ", no nome ou em um contato"}</>;
-    else if (filtro === "inativos") contagem = <><b>{plural(lista.length, "cliente inativo", "clientes inativos")}</b>. Nada foi apagado: abra a ficha para ver ou reativar.</>;
+    else if (filtro === "inativos") {
+      const exc = lista.filter((c) => c.situacao === "EXCLUIDO").length;
+      contagem = exc ? (
+        <><b>{plural(lista.length, "cliente inativo", "clientes inativos")}</b>, {exc === 1 ? "1 deles excluído" : `${exc} deles excluídos`} a pedido (LGPD). Nada some em silêncio: o excluído fica só com o registro, sem dado pessoal.</>
+      ) : (
+        <><b>{plural(lista.length, "cliente inativo", "clientes inativos")}</b>. Nada foi apagado: abra a ficha para ver ou reativar.</>
+      );
+    }
     else if (filtro === "vencidos") contagem = <><b>{plural(lista.length, "cliente", "clientes")}</b> com o próximo contato vencido, do mais atrasado para o mais recente</>;
     else contagem = (
       <>
@@ -249,21 +264,22 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
           {lista.map((c) => {
             const ct = c.contatoPrincipal;
             return (
-              <tr key={c.id} className={comercial && vencido(c) ? "cl-venc" : c.situacao === "INATIVO" ? "cl-off" : undefined}>
+              <tr key={c.id} className={comercial && vencido(c) ? "cl-venc" : c.situacao === "EXCLUIDO" ? "pd-excl" : c.situacao === "INATIVO" ? "cl-off" : undefined}>
                 <td>
                   <div className="esc">
                     <span className={c.situacao === "ATIVO" ? "av-p forte" : "av-p"} aria-hidden="true">
-                      {iniciais(c.nome)}
+                      {c.situacao === "EXCLUIDO" ? <Icone nome="escudo" className="ico ico-s" /> : iniciais(c.nome)}
                     </span>
                     <div>
                       <a href={hrefFicha(c)}>
                         <Marca texto={c.nome} termo={buscado} />
                       </a>
-                      <small>{TIPOS_CLIENTE[c.tipo]}</small>
+                      <small>{TIPOS_CLIENTE[c.tipo]}{c.exclusao ? ` · protocolo ${c.exclusao.protocolo}` : ""}</small>
                     </div>
                   </div>
                 </td>
                 <td>
+                  {c.exclusao ? <span className="cl-sem">Excluído a pedido (LGPD) em {dataBr(c.exclusao.em)}</span> : null}
                   {ct ? (
                     <div className="cl-ct">
                       <strong>
@@ -296,13 +312,13 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
             <li key={c.id} className={venc ? "cartao cl-venc" : "cartao"}>
               <div className="c-topo">
                 <span className={c.situacao === "ATIVO" ? "av-p forte" : "av-p"} aria-hidden="true">
-                  {iniciais(c.nome)}
+                  {c.situacao === "EXCLUIDO" ? <Icone nome="escudo" className="ico ico-s" /> : iniciais(c.nome)}
                 </span>
                 <div>
                   <a className="c-nome" href={hrefFicha(c)}>
                     <Marca texto={c.nome} termo={buscado} />
                   </a>
-                  <small>{TIPOS_CLIENTE[c.tipo]}</small>
+                  <small>{c.exclusao ? `Excluído a pedido (LGPD) em ${dataBr(c.exclusao.em)}` : TIPOS_CLIENTE[c.tipo]}</small>
                 </div>
                 <Icone nome="dir" className="ico c-ir" />
               </div>
