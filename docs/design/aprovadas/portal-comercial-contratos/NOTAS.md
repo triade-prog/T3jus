@@ -1,6 +1,6 @@
 # Portal: Comercial e Contratos · notas
 
-> **Aprovado pela Carol em 19/11/2026, às 0h36 (Brasília).** Ela já tinha pedido 4 ajustes, todos aplicados antes da aprovação: o tipo "Outro" na Agenda, "Mensagens" no lugar de "Caixa" em Conversas, o funil redesenhado e mais de um tipo de honorário no contrato e na proposta. As perguntas do fim seguem a recomendação até a Carol dizer o contrário.
+> **Aprovado pela Carol em 19/11/2026, às 0h36 (Brasília).** Ela já tinha pedido 4 ajustes, todos aplicados antes da aprovação: o tipo "Outro" na Agenda, "Mensagens" no lugar de "Caixa" em Conversas, o funil redesenhado e mais de um tipo de honorário no contrato e na proposta. À 1h01 ela confirmou que as perguntas do fim seguem a recomendação ("pode seguir"): valem como decisões.
 
 As áreas Comercial e Contratos do Portal do advogado, para a Carol aprovar antes de virar código. É a primeira rodada destas áreas: mostra a estrutura, a tela principal de cada seção, as fichas e os formulários, e só os estados que mudam decisão (primeiro uso, um erro de formulário e o acesso parcial). Elas atendem:
 

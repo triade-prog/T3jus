@@ -1,6 +1,6 @@
 # Portal: Agenda e Conversas · notas
 
-> **Aprovado pela Carol em 19/11/2026, às 0h36 (Brasília).** Ela já tinha pedido 4 ajustes, todos aplicados antes da aprovação: o tipo "Outro" na Agenda, "Mensagens" no lugar de "Caixa" em Conversas, o funil redesenhado e mais de um tipo de honorário no contrato e na proposta. As perguntas do fim seguem a recomendação até a Carol dizer o contrário.
+> **Aprovado pela Carol em 19/11/2026, às 0h36 (Brasília).** Ela já tinha pedido 4 ajustes, todos aplicados antes da aprovação: o tipo "Outro" na Agenda, "Mensagens" no lugar de "Caixa" em Conversas, o funil redesenhado e mais de um tipo de honorário no contrato e na proposta. À 1h01 ela confirmou que as perguntas do fim seguem a recomendação ("pode seguir"): valem como decisões.
 
 As duas áreas comuns do Portal do advogado que ficam na barra de baixo do celular, para a Carol aprovar antes de virar código.
 
