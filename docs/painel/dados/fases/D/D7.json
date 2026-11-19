@@ -5,7 +5,7 @@
   "refs": [
     "PA-04"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 56,
-  "proximo": "Carol aprovar o desenho da ligação do WhatsApp e da IA (D7) e responder as perguntas do NOTAS.md"
+  "evidencia": "Desenho em docs/design/aprovadas/portal-whatsapp/ (14 estados, computador e celular, axe sem violação), aprovado pela Carol em 19/11/2026 às 19h30 (Bahia) com as 5 recomendações do NOTAS.md"
 }
