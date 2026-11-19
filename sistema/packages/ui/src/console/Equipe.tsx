@@ -4,13 +4,14 @@
 // desativar e reativar (com as funções em branco). Só a Administração; o servidor decide.
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { cadastrarMembroSchema, FUNCOES_CONSOLE, type FuncaoConsole } from "@t3jus/domain";
+import { cadastrarMembroSchema, FUNCOES_CONSOLE, type FuncaoConsole, type SaidaPessoa } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { DESCRICAO_FUNCOES, FuncoesDef } from "./AbaEquipe.tsx";
 import { ListaHistorico } from "./AbaNotasHistorico.tsx";
 import { CARTEIRA, chamarConsole, EQUIPE, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
+import { dataBr } from "./FimContrato.tsx";
 import { dataLonga, iniciais } from "./tempo.ts";
 
 export interface PessoaDaEquipe {
@@ -21,7 +22,13 @@ export interface PessoaDaEquipe {
   funcoes: FuncaoConsole[];
   desde: string;
   convitePendente: boolean;
+  /** Desde quando está desativada e o que acontece com a entrada (F0.14). */
+  desativadaEm?: string | null;
+  saida?: SaidaPessoa | null;
 }
+
+const apagada = (p: PessoaDaEquipe) => !!p.saida?.entradaApagadaEm;
+const dia = (iso: string) => dataBr(iso.slice(0, 10));
 
 type Filtro = "TODAS" | "ATIVAS" | "DESATIVADAS";
 
@@ -52,7 +59,7 @@ function OpcoesFuncoes({ marcadas, aoMudar, erro, prefixo, foco }: {
 }
 
 /** Cadastrar ou reativar: a mesma janela; ao reativar, nome e e-mail vêm travados e as funções em branco. */
-function JanelaCadastro({ aberta, reativar, pessoas, aoFechar, aoFeito }: {
+function JanelaCadastro({ aberta, reativar: alvo, pessoas, aoFechar, aoFeito }: {
   aberta: boolean;
   reativar: PessoaDaEquipe | null;
   pessoas: PessoaDaEquipe[];
@@ -61,9 +68,13 @@ function JanelaCadastro({ aberta, reativar, pessoas, aoFechar, aoFeito }: {
 }) {
   const ids = useId();
   const corpo = useRef<HTMLDivElement>(null);
+  // Entrada apagada (90 dias sem acesso): não dá para reativar; volta por convite novo, com o
+  // nome já escrito e o e-mail em branco, porque o antigo foi apagado.
+  const novo = alvo && apagada(alvo) ? alvo : null;
+  const reativar = novo ? null : alvo;
   // Reativar começa com nome e e-mail da pessoa e as funções em branco (decisão da Carol).
   // O pai troca a key a cada abertura, então o estado sempre começa daqui.
-  const [nome, setNome] = useState(reativar?.nome ?? "");
+  const [nome, setNome] = useState(alvo?.nome ?? "");
   const [email, setEmail] = useState(reativar?.email ?? "");
   const [funcoes, setFuncoes] = useState<FuncaoConsole[]>([]);
   const [erros, setErros] = useState<{ nome?: string; email?: string; funcoes?: string }>({});
@@ -77,7 +88,11 @@ function JanelaCadastro({ aberta, reativar, pessoas, aoFechar, aoFeito }: {
     if (!v.success) {
       const campos = new Set(v.error.issues.map((i) => String(i.path[0])));
       if (campos.has("nome")) novos.nome = "Escreva o nome completo.";
-      if (campos.has("email")) novos.email = "Confira o e-mail: falta o @ ou o final, como .com.br.";
+      if (campos.has("email")) {
+        novos.email = novo && !email.trim()
+          ? `Escreva o e-mail de ${novo.nome.split(/\s+/)[0]}. O antigo foi apagado e não temos mais como saber qual era.`
+          : "Confira o e-mail: falta o @ ou o final, como .com.br.";
+      }
       if (campos.has("funcoes")) novos.funcoes = "Escolha ao menos uma função.";
     }
     const ja = !reativar && v.success ? pessoas.find((p) => p.ativa && p.email?.toLowerCase() === v.data.email) : undefined;
@@ -100,10 +115,10 @@ function JanelaCadastro({ aberta, reativar, pessoas, aoFechar, aoFeito }: {
   }
 
   const n = Object.keys(erros).length;
-  const primeiro = (reativar?.nome ?? "").split(/\s+/)[0];
+  const primeiro = (alvo?.nome ?? "").split(/\s+/)[0];
   return (
     <Janela id={`${ids}-j`} aberta={aberta} aoFechar={aoFechar} sobretitulo="Equipe T3jus" descricao={`${ids}-d`}
-      titulo={reativar ? `Reativar ${reativar.nome}` : "Cadastrar pessoa"} aoEnviar={() => void enviar()}
+      titulo={reativar ? `Reativar ${reativar.nome}` : novo ? `Convidar ${novo.nome} de novo` : "Cadastrar pessoa"} aoEnviar={() => void enviar()}
       pe={
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>
@@ -119,13 +134,25 @@ function JanelaCadastro({ aberta, reativar, pessoas, aoFechar, aoFeito }: {
         <p id={`${ids}-d`}>
           {reativar
             ? `${primeiro} volta para a equipe só com as funções que você marcar agora. As funções de antes não voltam sozinhas.`
-            : "Mandamos um convite por e-mail. A pessoa cria a senha e cadastra o autenticador antes de entrar."}
+            : novo
+              ? `${primeiro} volta só com as funções que você marcar agora.`
+              : "Mandamos um convite por e-mail. A pessoa cria a senha e cadastra o autenticador antes de entrar."}
         </p>
+        {novo?.saida?.entradaApagadaEm ? (
+          <Aviso tom="info" titulo={`A entrada de ${primeiro} foi apagada em ${dia(novo.saida.entradaApagadaEm)}.`}>
+            90 dias depois de perder o acesso. Por isso volta como pessoa nova: recebe um convite, cria a senha e cadastra o autenticador de novo. O que fez
+            antes continua no histórico, com o nome.
+          </Aviso>
+        ) : reativar?.saida?.entradaApagaEm ? (
+          <Aviso tom="info" titulo={`A entrada de ${primeiro} ainda existe.`}>
+            {`Entra com o mesmo e-mail, a mesma senha e o mesmo autenticador. Se ninguém reativar, ela é apagada em ${dataBr(reativar.saida.entradaApagaEm)}.`}
+          </Aviso>
+        ) : null}
         {n ? <Aviso tom="urgencia" titulo={faltaAcertar(n)}>{reativar ? "Ninguém foi reativado ainda." : "O convite ainda não foi enviado."}</Aviso> : null}
         {erro ? <Aviso tom="urgencia" titulo={reativar ? "Não deu para reativar." : "O convite não foi enviado."}>{textoDoErro(erro)}</Aviso> : null}
         <div className="campo">
           <label htmlFor={`${ids}-nome`}>Nome completo</label>
-          <input className="entrada" id={`${ids}-nome`} value={nome} readOnly={!!reativar} autoComplete="off" data-foco={reativar ? undefined : true}
+          <input className="entrada" id={`${ids}-nome`} value={nome} readOnly={!!reativar} autoComplete="off" data-foco={reativar || novo ? undefined : true}
             onChange={(e) => setNome(e.target.value)} aria-invalid={erros.nome ? true : undefined}
             aria-describedby={erros.nome ? `${ids}-nome-erro` : undefined} />
           {erros.nome ? <ErroCampo id={`${ids}-nome-erro`}>{erros.nome}</ErroCampo> : null}
@@ -134,11 +161,12 @@ function JanelaCadastro({ aberta, reativar, pessoas, aoFechar, aoFeito }: {
           <label htmlFor={`${ids}-email`}>E-mail</label>
           <input className="entrada" id={`${ids}-email`} type="email" value={email} readOnly={!!reativar} autoComplete="off"
             onChange={(e) => setEmail(e.target.value)} aria-invalid={erros.email ? true : undefined}
-            aria-describedby={descritoPor(erros.email && `${ids}-email-erro`, !erros.email && !reativar && `${ids}-email-ajuda`)} />
+            data-foco={novo ? true : undefined}
+            aria-describedby={descritoPor(erros.email && `${ids}-email-erro`, !reativar && `${ids}-email-ajuda`)} />
           {erros.email ? <ErroCampo id={`${ids}-email-erro`}>{erros.email}</ErroCampo> : null}
-          {!erros.email && !reativar ? (
+          {!reativar ? (
             <p className="ajuda" id={`${ids}-email-ajuda`}>
-              O convite vale 1 hora.
+              {novo ? "O e-mail antigo foi apagado com a entrada. O convite vale 1 hora." : "O convite vale 1 hora."}
             </p>
           ) : null}
         </div>
@@ -241,7 +269,37 @@ function JanelaDesativar({ pessoa, aoFechar, aoFeito }: { pessoa: PessoaDaEquipe
   );
 }
 
+/** O que acontece com a entrada de quem saiu: a data em que será apagada, ou em que foi. */
+function SaidaDaEntrada({ p, celular }: { p: PessoaDaEquipe; celular?: boolean }) {
+  const s = p.saida;
+  const desde = p.desativadaEm ? dia(p.desativadaEm) : null;
+  if (s?.entradaApagadaEm) {
+    return (
+      <span className="fc-saida">
+        {desde ? `${celular ? "Desativada" : "desativada"} em ${desde} · ` : ""}
+        {celular ? "entrada apagada" : "apagada"} em {dia(s.entradaApagadaEm)}
+      </span>
+    );
+  }
+  if (s?.entradaApagaEm) {
+    return (
+      <span className="fc-saida">
+        {desde ? (celular ? `Desativada em ${desde} · ` : `desde ${desde} · `) : ""}a entrada será apagada em <b>{dataBr(s.entradaApagaEm)}</b>
+      </span>
+    );
+  }
+  return null;
+}
+
 function Situacao({ p }: { p: PessoaDaEquipe }) {
+  if (apagada(p)) {
+    return (
+      <span className="selo selo-apagada">
+        <Icone nome="lixeira" className="ico" />
+        Entrada apagada
+      </span>
+    );
+  }
   if (!p.ativa) {
     return (
       <span className="selo selo-neutro" style={{ boxShadow: "inset 0 0 0 1px var(--vinho-4)", background: "transparent" }}>
@@ -315,6 +373,14 @@ export function EquipeT3jus({ aba }: { aba: "pessoas" | "historico" }) {
 
   const acoes = (p: PessoaDaEquipe, compacto: boolean) => {
     const c = compacto ? " btn-compacto" : "";
+    if (apagada(p)) {
+      return (
+        <button className={`btn btn-sec${c}`} type="button" aria-label={`Convidar de novo: ${p.nome}`} onClick={() => abrir(() => setCadastro({ reativar: p }))}>
+          <Icone nome="envelope" className="ico ico-s" />
+          Convidar de novo
+        </button>
+      );
+    }
     if (!p.ativa) {
       return (
         <button className={`btn btn-sec${c}`} type="button" aria-label={`Reativar ${p.nome}`} onClick={() => abrir(() => setCadastro({ reativar: p }))}>
@@ -429,7 +495,7 @@ export function EquipeT3jus({ aba }: { aba: "pessoas" | "historico" }) {
                             <div>
                               <strong style={{ fontWeight: 500 }}>{p.nome}</strong>
                               {p.id === eu ? <span className="voce">você</span> : null}
-                              <small style={{ display: "block", fontSize: 12, color: "var(--texto-2)", overflowWrap: "anywhere" }}>{p.email ?? "E-mail não encontrado"}</small>
+                              <small style={{ display: "block", fontSize: 12, color: "var(--texto-2)", overflowWrap: "anywhere" }}>{apagada(p) ? <i className="fc-email-apagado">e-mail apagado</i> : (p.email ?? "E-mail não encontrado")}</small>
                             </div>
                           </div>
                         </td>
@@ -445,6 +511,7 @@ export function EquipeT3jus({ aba }: { aba: "pessoas" | "historico" }) {
                         <td className="quando">{dataLonga(p.desde)}</td>
                         <td>
                           <Situacao p={p} />
+                          <SaidaDaEntrada p={p} />
                         </td>
                         <td>
                           <div className="acoes-tab">{acoes(p, true)}</div>
@@ -465,8 +532,11 @@ export function EquipeT3jus({ aba }: { aba: "pessoas" | "historico" }) {
                             {p.nome}
                           </strong>
                           {p.id === eu ? <span className="voce">você</span> : null}
-                          <small style={{ overflowWrap: "anywhere" }}>{p.email ?? "E-mail não encontrado"}</small>
+                          <small style={{ overflowWrap: "anywhere" }}>
+                            {apagada(p) ? <i className="fc-email-apagado">e-mail apagado</i> : (p.email ?? "E-mail não encontrado")}
+                          </small>
                           <small>na equipe desde {dataLonga(p.desde)}</small>
+                          <SaidaDaEntrada p={p} celular />
                         </div>
                       </div>
                       <div className="c-selos">
@@ -481,6 +551,15 @@ export function EquipeT3jus({ aba }: { aba: "pessoas" | "historico" }) {
                     </li>
                   ))}
                 </ul>
+                {pessoas.some((p) => !p.ativa) ? (
+                  <p className="fc-regra">
+                    <Icone nome="relogio" className="ico" />
+                    <span>
+                      Quem fica <b>90 dias sem nenhum acesso</b> tem a entrada (e-mail e senha) apagada pela rotina da noite. O nome continua como autor no
+                      histórico. Reativar antes disso devolve a mesma entrada; depois, vira um convite novo.
+                    </span>
+                  </p>
+                ) : null}
                 {pessoas.length === 1 ? (
                   <Estado icone="pessoaMais" titulo="Só você está na equipe"
                     acoes={

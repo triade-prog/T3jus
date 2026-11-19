@@ -1,7 +1,7 @@
 // Regras da carteira de escritórios (CO-01), separadas da tela para os testes: pendências de
 // cada cliente, o que pede a pessoa agora, contagens, busca e ordem.
 
-import { etapasImplantacao, type SocioCliente } from "@t3jus/domain";
+import { etapasImplantacao, type DatasContrato, type SocioCliente } from "@t3jus/domain";
 import { esperando, haQuanto } from "./tempo.ts";
 
 /** Uma linha de GET /v1/clientes. */
@@ -10,27 +10,46 @@ export interface ClienteCarteira {
   nome: string;
   cidade: string | null;
   uf: string | null;
-  estagio: "IMPLANTACAO" | "ATIVO";
+  estagio: "IMPLANTACAO" | "ATIVO" | "ENCERRADO";
   funcoes: string[];
   situacoes: string[];
   criadoEm: string;
   socios: SocioCliente[];
   equipe: { pessoaId: string; nome: string; funcoes: string[] }[];
   ultimaAtividade: string;
+  /** Fim do contrato registrado (marcado ou já encerrado); null enquanto não houver. */
+  encerramento?: DatasContrato | null;
 }
 
 /** O convite vale 1 hora (decisão da Carol, 18/11/2026). */
 export const VALIDADE_CONVITE_MS = 60 * 60 * 1000;
 
-export type Filtro = "TODOS" | "IMPLANTACAO" | "ATIVO" | "PENDENCIA";
-export type Ordem = "PENDENCIAS" | "RECENTES" | "ATIVIDADE" | "NOME";
+export type Filtro = "TODOS" | "IMPLANTACAO" | "ATIVO" | "PENDENCIA" | "ENCERRADOS";
+export type Ordem = "PENDENCIAS" | "RECENTES" | "ATIVIDADE" | "NOME" | "FIM" | "PROXIMO";
 
 export const ORDENS: Record<Ordem, string> = {
   PENDENCIAS: "Pendências primeiro",
   RECENTES: "Cadastro mais recente",
   ATIVIDADE: "Atividade mais recente",
   NOME: "Nome",
+  FIM: "Fim mais recente",
+  PROXIMO: "Próximo passo",
 };
+
+/** As ordens de cada lista: a dos encerrados tem as suas (tela aprovada do F0.14). */
+export const ORDENS_DA_LISTA: Record<"ABERTOS" | "ENCERRADOS", Ordem[]> = {
+  ABERTOS: ["PENDENCIAS", "RECENTES", "ATIVIDADE", "NOME"],
+  ENCERRADOS: ["FIM", "PROXIMO", "NOME"],
+};
+
+export const encerrado = (c: Pick<ClienteCarteira, "estagio">) => c.estagio === "ENCERRADO";
+
+/** A próxima data de um encerrado: o fecho do acesso, durante a consulta; depois, o fim da guarda. */
+export function proximoPasso(c: Pick<ClienteCarteira, "encerramento">): string {
+  const e = c.encerramento;
+  if (!e) return "9999-12-31";
+  return e.situacao === "CONSULTA" ? e.acessoFechaEm : e.guardaAte;
+}
 
 export type Pendencia = "SEM_SOCIO" | "CONVITE_PENDENTE" | "SEM_CONTATO" | "SEM_CONTRATO";
 
@@ -51,8 +70,9 @@ export function conviteVencido(s: Pick<SocioCliente, "conviteEnviadoEm">, agora:
   return agora.getTime() - new Date(s.conviteEnviadoEm).getTime() > VALIDADE_CONVITE_MS;
 }
 
-export function pendencias(c: Pick<ClienteCarteira, "situacoes" | "socios">): Pendencia[] {
+export function pendencias(c: Pick<ClienteCarteira, "situacoes" | "socios"> & { estagio?: ClienteCarteira["estagio"] }): Pendencia[] {
   const lista: Pendencia[] = [];
+  if (c.estagio === "ENCERRADO") return lista;
   if (c.situacoes.includes("SEM_SOCIO")) lista.push("SEM_SOCIO");
   else if (socioPendente(c)) lista.push("CONVITE_PENDENTE");
   if (c.situacoes.includes("SEM_CONTATO")) lista.push("SEM_CONTATO");
@@ -121,11 +141,14 @@ export function tarefasDaCarteira(lista: ClienteCarteira[], agora: Date = new Da
 }
 
 export function contarCarteira(lista: ClienteCarteira[]): Record<Filtro, number> {
+  // Encerrados não entram em "Todos" nem nos outros números.
+  const abertos = lista.filter((c) => !encerrado(c));
   return {
-    TODOS: lista.length,
-    IMPLANTACAO: lista.filter((c) => c.estagio === "IMPLANTACAO").length,
-    ATIVO: lista.filter((c) => c.estagio === "ATIVO").length,
-    PENDENCIA: lista.filter((c) => pendencias(c).length > 0).length,
+    TODOS: abertos.length,
+    IMPLANTACAO: abertos.filter((c) => c.estagio === "IMPLANTACAO").length,
+    ATIVO: abertos.filter((c) => c.estagio === "ATIVO").length,
+    PENDENCIA: abertos.filter((c) => pendencias(c).length > 0).length,
+    ENCERRADOS: lista.length - abertos.length,
   };
 }
 
@@ -135,6 +158,7 @@ const semAcento = (t: string) => t.normalize("NFD").replace(/\p{M}/gu, "").toLow
 export function filtrarCarteira(lista: ClienteCarteira[], o: { filtro: Filtro; termo: string; ordem: Ordem }): ClienteCarteira[] {
   const t = semAcento(o.termo);
   const filtrados = lista.filter((c) => {
+    if ((o.filtro === "ENCERRADOS") !== encerrado(c)) return false;
     if (o.filtro === "IMPLANTACAO" && c.estagio !== "IMPLANTACAO") return false;
     if (o.filtro === "ATIVO" && c.estagio !== "ATIVO") return false;
     if (o.filtro === "PENDENCIA" && pendencias(c).length === 0) return false;
@@ -146,6 +170,8 @@ export function filtrarCarteira(lista: ClienteCarteira[], o: { filtro: Filtro; t
     RECENTES: (a, b) => b.criadoEm.localeCompare(a.criadoEm) || porNome(a, b),
     ATIVIDADE: (a, b) => b.ultimaAtividade.localeCompare(a.ultimaAtividade) || porNome(a, b),
     NOME: porNome,
+    FIM: (a, b) => (b.encerramento?.fimEm ?? "").localeCompare(a.encerramento?.fimEm ?? "") || porNome(a, b),
+    PROXIMO: (a, b) => proximoPasso(a).localeCompare(proximoPasso(b)) || porNome(a, b),
   };
   return [...filtrados].sort(ordens[o.ordem]);
 }

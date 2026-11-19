@@ -378,7 +378,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                 : "Quem o escritório atende: contatos, qualificação para procuração e contrato, origem e histórico de atendimento. Todos da equipe veem esta lista."}
             </p>
           </div>
-          <a className="btn btn-escuro" href={`${ROTAS_PORTAL.clientes}/novo`} style={{ marginBottom: 6 }}>
+          <a data-muda className="btn btn-escuro" href={`${ROTAS_PORTAL.clientes}/novo`} style={{ marginBottom: 6 }}>
             <Icone nome="pessoaMais" className="ico" />
             Novo cliente
           </a>
@@ -397,7 +397,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
             </h2>
             <Estado icone="pessoas" titulo="Nenhum cliente cadastrado ainda"
               acoes={
-                <a className="btn btn-pri" href={`${ROTAS_PORTAL.clientes}/novo`}>
+                <a data-muda className="btn btn-pri" href={`${ROTAS_PORTAL.clientes}/novo`}>
                   <Icone nome="pessoaMais" className="ico" />
                   Cadastrar o primeiro cliente
                 </a>
@@ -428,7 +428,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                       <Icone nome="xis" className="ico" />
                       Limpar busca
                     </button>
-                    <a className="btn btn-pri" href={`${ROTAS_PORTAL.clientes}/novo`}>
+                    <a data-muda className="btn btn-pri" href={`${ROTAS_PORTAL.clientes}/novo`}>
                       <Icone nome="pessoaMais" className="ico" />
                       Cadastrar cliente
                     </a>

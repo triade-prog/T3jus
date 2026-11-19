@@ -30,6 +30,11 @@ const CAMPOS_FICHA: Record<string, string> = {
 const nomeFuncao = (f: unknown) => (typeof f === "string" && f in FUNCOES_CONSOLE ? FUNCOES_CONSOLE[f as keyof typeof FUNCOES_CONSOLE] : String(f ?? ""));
 const lista = (v: unknown) => (Array.isArray(v) ? v.map(nomeFuncao).join(", ") : "");
 
+/** "2026-11-30" vira "30/11/2026". */
+function dataDoEvento(v: unknown): string {
+  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10).split("-").reverse().join("/") : "uma data";
+}
+
 export function fraseDoEvento(e: EventoHistorico, nomeDe: (id: string) => string | null = () => null): FraseEvento {
   const quem = e.autor ? (e.autor.nome ?? "Alguém da equipe") : null;
   const d = e.dados ?? {};
@@ -70,9 +75,25 @@ export function fraseDoEvento(e: EventoHistorico, nomeDe: (id: string) => string
       return { quem, fez: `desativou ${alvo ?? "uma pessoa"}` };
     case "escritorio.exportado":
       return { quem, fez: "exportou os dados do escritório" };
+    case "contrato.encerramento_marcado":
+      return { quem, fez: `marcou o fim do contrato para ${dataDoEvento(d.fim_em)}`, detalhe: typeof d.motivo === "string" ? `“${d.motivo}”` : undefined };
+    case "contrato.encerramento_desmarcado":
+      return { quem, fez: "desmarcou o fim do contrato", detalhe: typeof d.motivo === "string" ? `“${d.motivo}”` : undefined };
+    case "contrato.convites_cancelados":
+      return { quem, fez: "cancelou os convites pendentes do escritório", detalhe: typeof d.quantidade === "number" ? `${d.quantidade} ${d.quantidade === 1 ? "convite" : "convites"}` : undefined };
+    case "contrato.acesso_fechado":
+      return { quem, fez: "fechou o acesso do escritório, 30 dias depois do fim do contrato", detalhe: typeof d.sessoes === "number" ? `${d.sessoes} ${d.sessoes === 1 ? "sessão encerrada" : "sessões encerradas"}` : undefined };
+    case "pessoa.entrada_apagada":
+      return { quem, fez: `apagou a entrada (e-mail e senha) de ${alvo ?? "uma pessoa"}`, detalhe: "90 dias sem nenhum acesso · o nome continua como autor no histórico" };
     case "dados.prazos_aplicados":
       return { quem, fez: "aplicou os prazos de guarda dos dados" };
     case "estado.mudou": {
+      if (e.entidade === "clientes" && d.para === "ENCERRADO") {
+        return { quem, fez: "encerrou o contrato", detalhe: typeof d.motivo === "string" ? `“${d.motivo}”` : undefined };
+      }
+      if (e.entidade === "clientes" && d.de === "ENCERRADO") {
+        return { quem, fez: "reabriu o contrato", detalhe: typeof d.motivo === "string" ? `“${d.motivo}”` : undefined };
+      }
       if (e.entidade === "clientes" && typeof d.para === "string" && d.para in ESTAGIOS) {
         return {
           quem,

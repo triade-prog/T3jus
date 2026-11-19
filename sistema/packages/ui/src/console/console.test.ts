@@ -66,10 +66,25 @@ describe("carteira (CO-01)", () => {
       cliente({ id: "a", nome: "Jatobá", situacoes: ["SEM_SOCIO"] }),
       cliente({ id: "b", nome: "Ipê", cidade: "Brasília", estagio: "ATIVO" }),
     ];
-    expect(contarCarteira(lista)).toEqual({ TODOS: 2, IMPLANTACAO: 1, ATIVO: 1, PENDENCIA: 1 });
+    expect(contarCarteira(lista)).toEqual({ TODOS: 2, IMPLANTACAO: 1, ATIVO: 1, PENDENCIA: 1, ENCERRADOS: 0 });
     expect(filtrarCarteira(lista, { filtro: "TODOS", termo: "brasilia", ordem: "NOME" }).map((c) => c.id)).toEqual(["b"]);
     expect(filtrarCarteira(lista, { filtro: "TODOS", termo: "", ordem: "NOME" }).map((c) => c.id)).toEqual(["b", "a"]);
     expect(filtrarCarteira(lista, { filtro: "TODOS", termo: "", ordem: "PENDENCIAS" }).map((c) => c.id)).toEqual(["a", "b"]);
     expect(filtrarCarteira(lista, { filtro: "PENDENCIA", termo: "", ordem: "NOME" }).map((c) => c.id)).toEqual(["a"]);
+  });
+  it("encerrados ficam fora de Todos e dos outros números, com ordem própria (F0.14)", () => {
+    const datas = (fimEm: string, situacao: "CONSULTA" | "FECHADO", acessoFechaEm: string, guardaAte: string) => ({
+      fimEm, situacao, consultaAte: fimEm, acessoFechaEm, acessoFechadoEm: null, entradasAte: guardaAte, guardaAte });
+    const lista = [
+      cliente({ id: "a", nome: "Jatobá", situacoes: ["SEM_SOCIO"] }),
+      cliente({ id: "c", nome: "Cedro", estagio: "ENCERRADO", situacoes: ["SEM_CONTRATO"], encerramento: datas("2026-11-19", "CONSULTA", "2026-12-19", "2031-11-19") }),
+      cliente({ id: "m", nome: "Mangaba", estagio: "ENCERRADO", encerramento: datas("2026-08-02", "FECHADO", "2026-09-01", "2031-08-02") }),
+    ];
+    expect(contarCarteira(lista)).toEqual({ TODOS: 1, IMPLANTACAO: 1, ATIVO: 0, PENDENCIA: 1, ENCERRADOS: 2 });
+    expect(pendencias(lista[1]!)).toEqual([]);
+    expect(filtrarCarteira(lista, { filtro: "TODOS", termo: "", ordem: "NOME" }).map((c) => c.id)).toEqual(["a"]);
+    expect(filtrarCarteira(lista, { filtro: "ENCERRADOS", termo: "", ordem: "FIM" }).map((c) => c.id)).toEqual(["c", "m"]);
+    expect(filtrarCarteira(lista, { filtro: "ENCERRADOS", termo: "", ordem: "PROXIMO" }).map((c) => c.id)).toEqual(["c", "m"]);
+    expect(tarefasDaCarteira(lista, AGORA).map((t) => t.clienteId)).toEqual(["a"]);
   });
 });

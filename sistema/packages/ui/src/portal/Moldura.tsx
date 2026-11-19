@@ -6,7 +6,7 @@
 // o Mais abre uma folha com o resto (Carol, 18/11/2026).
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AREAS_PORTAL, type AreaPortal } from "@t3jus/domain";
+import { AREAS_PORTAL, type AreaPortal, type DatasContrato } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { LogoCompacto } from "../Marca.tsx";
@@ -29,6 +29,31 @@ export interface EscritorioPortal {
   endereco: string | null;
   contatos: { nome: string; papel?: string | null; telefone?: string | null; email?: string | null }[];
   ultimaExportacao: { em: string; por: string | null } | null;
+  /** Contrato encerrado, nos 30 dias só para consulta (F0.14); fora disso, null. */
+  encerramento?: DatasContrato | null;
+}
+
+/** Só consulta: o contrato terminou e ninguém cria nem muda nada (o banco recusa também). */
+export const soConsulta = (e: Pick<EscritorioPortal, "encerramento"> | null) => !!e?.encerramento;
+
+const diaBr = (iso: string, curta = false) => {
+  const [a, m, d] = iso.slice(0, 10).split("-");
+  return curta ? `${d}/${m}` : `${d}/${m}/${a}`;
+};
+
+/** Faixa fina no alto das páginas, durante os 30 dias só para consulta. */
+function TiraSoConsulta({ e }: { e: EscritorioPortal }) {
+  const d = e.encerramento!;
+  return (
+    <div className="fc-tira" role="note">
+      <Icone nome="cadeado" className="ico" />
+      <span>
+        <b>Só consulta até {diaBr(d.consultaAte)}.</b> O contrato com o T3jus terminou; em {diaBr(d.acessoFechaEm, true)} o acesso fecha e os dados ficam
+        guardados pelo T3jus por 5 anos.
+      </span>
+      <a href={ROTAS_PORTAL.escritorio}>{e.dono ? "Baixar os dados" : "Ver o aviso"}</a>
+    </div>
+  );
 }
 
 export const ROTAS_PORTAL = {
@@ -146,7 +171,7 @@ export function MolduraPortal({
 
   const papel = escritorio ? papelNoEscritorio(escritorio) : " ";
   return (
-    <div className={`co pt ${pagina}`}>
+    <div className={`co pt ${pagina}${soConsulta(escritorio) ? " pt-consulta" : ""}`}>
       <a className="pular" href="#conteudo">
         Pular para o conteúdo
       </a>
@@ -217,6 +242,7 @@ export function MolduraPortal({
         </aside>
 
         <div className="palco">
+          {escritorio && soConsulta(escritorio) && atual !== "escritorio" ? <TiraSoConsulta e={escritorio} /> : null}
           <header className="topo">
             <nav className="trilha" aria-label="Você está em">
               {trilha.map((t, i) => (

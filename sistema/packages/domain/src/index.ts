@@ -8,3 +8,4 @@ export * from "./console.ts";
 export * from "./portal.ts";
 export * from "./suporte.ts";
 export * from "./clientes.ts";
+export * from "./contrato.ts";

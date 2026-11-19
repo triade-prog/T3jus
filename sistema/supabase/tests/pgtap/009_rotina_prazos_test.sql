@@ -22,7 +22,7 @@ insert into historico (ocorrido_em, escritorio_id, autor_tipo, autor_id, acao, e
 update inventario_dados set situacao = 'PROPOSTA' where dado_pessoal;
 create temp table r1 as select aplicar_prazos() as j;
 select is((select j -> 'apagados' from r1), '{}'::jsonb, 'PT-11: prazo em proposta não apaga nada');
-select is((select j -> 'aguardando_aprovacao' from r1), '["sessoes_escritorio", "limites_uso", "historico"]'::jsonb,
+select is((select j -> 'aguardando_aprovacao' from r1), '["sessoes_escritorio", "limites_uso", "historico", "pessoas"]'::jsonb,
   'PT-11: o resultado diz quais prazos esperam aprovação');
 select is((select count(*)::int from sessoes_escritorio), 2, 'sessões continuam enquanto o prazo não for aprovado');
 
@@ -39,8 +39,8 @@ select is((select count(*)::int from historico where acao = 'acesso.entrou'), 1,
   'PT-11: entrada no sistema com mais de 6 meses sai do histórico; a recente fica');
 select is((select count(*)::int from historico where acao = 'caso.criado'), 1,
   'evento do escritório fica (o prazo depende do fim do contrato, ainda sem gatilho)');
-select ok((select j -> 'sem_gatilho' from r2) ? 'escritorios' and (select j -> 'sem_gatilho' from r2) ? 'pessoas',
-  'o resultado lista os prazos que ainda não têm gatilho');
+select ok((select j -> 'sem_gatilho' from r2) ? 'escritorios' and not ((select j -> 'sem_gatilho' from r2) ? 'pessoas'),
+  'o resultado lista os prazos que ainda não têm gatilho (a guarda de 5 anos, F0.15); a saída da pessoa já tem');
 
 -- Regra 4: a contagem fica no histórico, sem dado pessoal.
 select is((select dados -> 'apagados' from historico where acao = 'dados.prazos_aplicados' order by id desc limit 1),

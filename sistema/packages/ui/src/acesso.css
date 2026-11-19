@@ -759,3 +759,14 @@ a.ac-btn{box-sizing:border-box}
 .ac-centro{align-self:center}
 .ac-pergunta{margin:4px 0 0}
 .ac-escolha{margin-bottom:18px}
+
+/* F0.14 · Depois de entrar, com o acesso fechado (docs/design/aprovadas/console-fim-contrato/entrar-escritorio.html) */
+.fc-ac-lista{display:grid;gap:12px;margin-bottom:18px}
+.fc-ac-contato{font-size:12px;color:var(--ac-tinta-2);text-align:center}
+.ac-lede b{font-weight:600;color:var(--ac-tinta)}
+.fc-ac-fechado{margin-top:10px;padding:12px 14px 12px 16px;border:1px dashed var(--ac-vinho-4,#AC788D);border-radius:var(--ac-raio);background:var(--ac-sal-2)}
+.fc-ac-fechado-t{display:grid;gap:3px}
+.fc-ac-selo{display:inline-flex;align-items:center;gap:6px;justify-self:start;height:22px;padding:0 9px;border-radius:999px;background:var(--ac-papel);color:var(--ac-vinho);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;box-shadow:inset 0 0 0 1px #AC788D}
+.fc-ac-selo .ac-ico{width:13px;height:13px}
+.fc-ac-fechado .ac-esc-nome{color:var(--ac-tinta-2)}
+.ac-estado .ac-btn .ac-ico{width:20px;height:20px}

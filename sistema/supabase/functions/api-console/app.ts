@@ -8,6 +8,10 @@ import {
   atribuirSchema,
   cadastrarMembroSchema,
   contratoSchema,
+  encerrarContratoSchema,
+  reabrirContratoSchema,
+  type DatasContrato,
+  type SaidaPessoa,
   convidarPessoaSchema,
   COOKIES_CONSOLE,
   criarEscritorioSchema,
@@ -49,6 +53,7 @@ interface LinhaCarteira {
   cidade: string | null;
   uf: string | null;
   estagio: string;
+  encerramento: DatasContrato | null;
   funcoes: string[];
   situacoes: string[];
   criado_em: string;
@@ -140,6 +145,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
         socios: l.socios,
         equipe: l.equipe,
         ultimaAtividade: l.ultima_atividade,
+        encerramento: l.encerramento,
       })),
     });
   });
@@ -185,6 +191,23 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json({
       versao: await rpc<number>("console_mudar_estagio", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_estagio: d.estagio, p_motivo: d.motivo }),
     });
+  });
+
+  // Fim do contrato (F0.14, PT-11): só a Administração. Encerrar confere a data, o motivo e o
+  // nome do escritório; reabrir (ou desmarcar o fim que não chegou) pede o motivo.
+  app.post("/v1/clientes/:id/encerrar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, encerrarContratoSchema);
+    return c.json(await rpc("console_encerrar_contrato", {
+      p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao,
+      p_dados: { fimEm: d.fimEm, motivo: d.motivo, nomeConfirmado: d.nomeConfirmado },
+    }));
+  });
+
+  app.post("/v1/clientes/:id/reabrir", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, reabrirContratoSchema);
+    return c.json(await rpc("console_reabrir_contrato", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_motivo: d.motivo }));
   });
 
   // Convidar o sócio (PT-20): conta própria, ligada ao escritório. A permissão é conferida
@@ -292,12 +315,15 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Equipe (PT-24): só administração.
   app.get("/v1/equipe", async (c) => {
-    const linhas = await rpc<{ pessoa_id: string; nome: string; ativa: boolean; funcoes: string[]; desde: string; senha_criada_em: string | null }[]>(
-      "console_equipe", { p_pessoa: pessoa(c) });
+    const linhas = await rpc<{
+      pessoa_id: string; nome: string; ativa: boolean; funcoes: string[]; desde: string; senha_criada_em: string | null;
+      desativada_em: string | null; saida: SaidaPessoa | null;
+    }[]>("console_equipe", { p_pessoa: pessoa(c) });
     // O e-mail vem do Auth (o banco só guarda o nome); convite pendente = ainda sem senha.
     const pessoas = await Promise.all(linhas.map(async (l) => ({
       id: l.pessoa_id, nome: l.nome, ativa: l.ativa, funcoes: l.funcoes, desde: l.desde,
-      email: await deps.admin.emailDe(l.pessoa_id), convitePendente: l.senha_criada_em === null,
+      email: l.saida?.entradaApagadaEm ? null : await deps.admin.emailDe(l.pessoa_id), convitePendente: l.senha_criada_em === null,
+      desativadaEm: l.desativada_em, saida: l.saida,
     })));
     return c.json({ pessoas });
   });
@@ -342,6 +368,10 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const ficha = await rpc<Omit<FichaAcesso, "emailConfirmado" | "ultimaEntrada" | "autenticadorDesde">>(
       "console_suporte_pessoa", { p_pessoa: pessoa(c), p_alvo: alvo });
     const conta = await deps.admin.conta(alvo);
+    // Entrada apagada (90 dias sem acesso, F0.14): a ficha mostra só o nome e a data.
+    if (!conta && ficha.saida?.entradaApagadaEm) {
+      return { ...ficha, email: null, emailConfirmado: false, ultimaEntrada: null, autenticadorDesde: null, podeAgir: false };
+    }
     if (!conta) throw new ErroDominio("NOT_FOUND");
     return { ...ficha, email: conta.email, emailConfirmado: conta.emailConfirmado, ultimaEntrada: conta.ultimaEntrada, autenticadorDesde: conta.autenticadorDesde };
   }

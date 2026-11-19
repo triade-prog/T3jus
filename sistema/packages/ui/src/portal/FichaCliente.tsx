@@ -105,7 +105,7 @@ function Dados({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
   return (
     <Folha titulo="Dados e qualificação" sub={f.situacao === "INATIVO" ? "Guardados como estavam ao inativar." : "O que vai na procuração e no contrato."}
       acoes={aoEditar ? (
-        <button className="btn btn-sec" type="button" onClick={aoEditar}>
+        <button data-muda className="btn btn-sec" type="button" onClick={aoEditar}>
           <Icone nome="lapis" className="ico" />
           Editar
         </button>
@@ -141,7 +141,7 @@ function Contatos({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
   return (
     <Folha titulo="Contatos" sub={`${n} ${n === 1 ? "contato" : "contatos"}${n > 1 ? " · o principal é quem o escritório procura primeiro" : ""}`}
       acoes={aoEditar ? (
-        <button className="btn btn-sec" type="button" onClick={aoEditar}>
+        <button data-muda className="btn btn-sec" type="button" onClick={aoEditar}>
           <Icone nome="mais" className="ico" />
           Adicionar contato
         </button>
@@ -208,7 +208,7 @@ function Procuracao({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void })
             : "Tudo pronto para quando a área Contratos chegar."}
         </p>
         {p.faltam.length && aoEditar ? (
-          <button className="btn btn-sec" type="button" onClick={aoEditar}>
+          <button data-muda className="btn btn-sec" type="button" onClick={aoEditar}>
             <Icone nome="lapis" className="ico" />
             Completar qualificação
           </button>
@@ -567,7 +567,7 @@ function Historico({ atendimentos, f, hoje, destaque, aoRegistrar }: {
         ? "Ficam a data, o canal, quem atendeu e o resumo, como foi escrito. Com quem se falou foi excluído com os dados do cliente."
         : "Cada conversa com o cliente ou a família: quando, por onde, quem atendeu e o combinado. Nada aqui é apagado."}
       acoes={aoRegistrar ? (
-        <button className="btn btn-pri" type="button" onClick={aoRegistrar}>
+        <button data-muda className="btn btn-pri" type="button" onClick={aoRegistrar}>
           <Icone nome="mais" className="ico" />
           Registrar atendimento
         </button>
@@ -845,7 +845,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
         </>
       )}
       {ativo && !editando ? (
-        <button className="btn btn-pri" type="button" onClick={() => abrir("registrar")}>
+        <button data-muda className="btn btn-pri" type="button" onClick={() => abrir("registrar")}>
           <Icone nome="mais" className="ico" />
           Registrar atendimento
         </button>
@@ -862,7 +862,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
       </p>
       <p className="cl-oque">{proc.faltam.length ? <>Falta: <b>{juntarComE(proc.faltam.map((x) => x.toLowerCase()))}</b></> : "Tudo pronto."}</p>
       {proc.faltam.length && editar && !editando ? (
-        <button className="btn btn-pri" type="button" onClick={editar}>
+        <button data-muda className="btn btn-pri" type="button" onClick={editar}>
           <Icone nome="lapis" className="ico" />
           Completar qualificação
         </button>
@@ -933,7 +933,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
         </p>
       </div>
       {f.podeInativar ? (
-        <button className="btn btn-sec" type="button" onClick={() => abrir("reativar")}>
+        <button data-muda className="btn btn-sec" type="button" onClick={() => abrir("reativar")}>
           <Icone nome="reenviar" className="ico" />
           Reativar
         </button>
@@ -953,7 +953,11 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     </Folha>
   );
 
-  const lgpd = <AcaoLgpd f={f} dona={nomeDona} aoExcluir={() => abrir("excluir")} aoPedir={() => abrir("pedir")} />;
+  const lgpd = (
+    <div data-muda style={{ display: "contents" }}>
+      <AcaoLgpd f={f} dona={nomeDona} aoExcluir={() => abrir("excluir")} aoPedir={() => abrir("pedir")} />
+    </div>
+  );
   const situacao = excluido ? (
     <Folha titulo="Situação" pequena>
       <div className="cl-sit">
@@ -965,7 +969,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
       <div className="cl-sit">
         <p>Ativo desde {dataLonga(f.criadoEm)}. Inativar tira o cliente da lista do dia a dia e encerra o próximo contato. Nada é apagado, e dá para reativar.</p>
         {f.podeInativar ? (
-          <button className="btn btn-perigo" type="button" onClick={() => abrir("inativar")}>
+          <button data-muda className="btn btn-perigo" type="button" onClick={() => abrir("inativar")}>
             <Icone nome="pasta" className="ico" />
             Inativar cliente
           </button>

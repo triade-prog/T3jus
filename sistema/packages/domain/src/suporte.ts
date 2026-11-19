@@ -3,6 +3,7 @@
 // Carol, 18/11/2026). Toda ação pede o motivo, que fica só no histórico do Console.
 
 import { z } from "zod";
+import type { SaidaPessoa } from "./contrato.ts";
 
 const motivo = z.string().trim().min(1).max(300);
 
@@ -24,6 +25,8 @@ export interface EscritorioDaPessoa {
   conviteEnviadoEm: string;
   /** Telefone da ficha do escritório, para conferir a identidade. */
   telefone: string | null;
+  /** Quando a pessoa foi retirada deste escritório (F0.14); sem isso, ela está nele. */
+  retiradoEm?: string;
 }
 
 /** Pessoa achada na busca do suporte. */
@@ -44,6 +47,8 @@ export interface FichaAcesso extends PessoaSuporte {
   ultimaEntrada: string | null;
   /** Desde quando tem o autenticador; null quando não tem. */
   autenticadorDesde: string | null;
+  /** Sem nenhum acesso: quando a entrada some, ou quando sumiu (F0.14). */
+  saida?: SaidaPessoa | null;
 }
 
 export interface EventoSuporte {

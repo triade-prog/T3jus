@@ -18,6 +18,9 @@ export const ESTAGIOS = {
   ATIVO: "Ativo",
 } as const;
 export type Estagio = keyof typeof ESTAGIOS;
+/** Na carteira e na ficha, o fim do contrato é o terceiro estágio (F0.14); só Encerrar leva a ele. */
+export const ESTAGIOS_CARTEIRA = { ...ESTAGIOS, ENCERRADO: "Encerrado" } as const;
+export type EstagioCarteira = keyof typeof ESTAGIOS_CARTEIRA;
 
 /** Situações a tratar (CO-01), calculadas pelo banco a partir da ficha. */
 export const SITUACOES = {

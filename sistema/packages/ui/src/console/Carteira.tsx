@@ -11,7 +11,9 @@ import {
   contarCarteira,
   etapasDoCliente,
   filtrarCarteira,
+  encerrado,
   ORDENS,
+  ORDENS_DA_LISTA,
   pendencias,
   situacaoSocio,
   tarefasDaCarteira,
@@ -22,16 +24,66 @@ import {
 } from "./carteira.ts";
 import { CARTEIRA, chamarConsole, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
+import { dataBr } from "./FimContrato.tsx";
 import { haQuanto, iniciais } from "./tempo.ts";
 
 const POR_PAGINA = 20;
 
-const RESUMO: { filtro: Filtro; nome: string; ambar?: boolean }[] = [
+const RESUMO: { filtro: Filtro; nome: string; ambar?: boolean; enc?: boolean }[] = [
   { filtro: "TODOS", nome: "Todos os escritórios" },
   { filtro: "IMPLANTACAO", nome: "Em implantação" },
   { filtro: "ATIVO", nome: "Ativos" },
   { filtro: "PENDENCIA", nome: "Com pendência", ambar: true },
+  { filtro: "ENCERRADOS", nome: "Encerrados", enc: true },
 ];
+
+const monograma = (c: ClienteCarteira) => (encerrado(c) ? "m-enc" : c.estagio === "ATIVO" ? "m-ativo" : "m-impl");
+
+/** Encerrado: o selo e a data do fim. */
+function SituacaoEncerrado({ c }: { c: ClienteCarteira }) {
+  return (
+    <div className="fc-sit">
+      <span className="selo selo-enc">
+        <Icone nome="cadeado" className="ico" />
+        Encerrado
+      </span>
+      {c.encerramento ? <small>em {dataBr(c.encerramento.fimEm)}</small> : null}
+    </div>
+  );
+}
+
+/** O próximo passo de um encerrado: o acesso fechar ou, depois, o fim da guarda. */
+function ProximoPasso({ c, celular }: { c: ClienteCarteira; celular?: boolean }) {
+  const e = c.encerramento;
+  if (!e) return null;
+  const sub: CSSProperties | undefined = celular ? { display: "block", width: "100%", fontSize: 12, color: "var(--texto-2)" } : undefined;
+  return e.situacao === "FECHADO" ? (
+    <>
+      <span className="selo selo-neutro">
+        <Icone nome="guardar" className="ico" />
+        Guarda até {dataBr(e.guardaAte)}
+      </span>
+      <small style={sub}>Acesso fechado em {dataBr(e.acessoFechadoEm ?? e.acessoFechaEm)} · dá para reabrir</small>
+    </>
+  ) : (
+    <>
+      <span className="selo selo-atencao">
+        <Icone nome="relogio" className="ico" />
+        Só leitura até {dataBr(e.consultaAte, true)}
+      </span>
+      <small style={sub}>Acesso fecha em {dataBr(e.acessoFechaEm)}</small>
+    </>
+  );
+}
+
+/** Sócio de um encerrado: se baixou os dados, ou desde quando está sem acesso. */
+function socioDoEncerrado(c: ClienteCarteira, padrao: { nome: string | null; detalhe: string }) {
+  const e = c.encerramento;
+  if (!e) return padrao;
+  if (e.exportadoEm) return { ...padrao, detalhe: `Baixou os dados em ${dataBr(e.exportadoEm.slice(0, 10), true)}` };
+  if (e.situacao === "FECHADO") return { ...padrao, detalhe: `Sem acesso desde ${dataBr(e.acessoFechadoEm ?? e.acessoFechaEm, true)}` };
+  return { ...padrao, detalhe: "Ainda não baixou os dados" };
+}
 
 function Estagio({ c }: { c: ClienteCarteira }) {
   if (c.estagio === "ATIVO") {
@@ -186,6 +238,7 @@ export function Carteira() {
   const [filtro, setFiltro] = useState<Filtro>("TODOS");
   const [termo, setTermo] = useState("");
   const [ordem, setOrdem] = useState<Ordem>("PENDENCIAS");
+  const verEncerrados = filtro === "ENCERRADOS";
   const [pagina, setPagina] = useState(1);
   const [agora, setAgora] = useState(() => new Date());
   const [cadastrar, setCadastrar] = useState(false);
@@ -219,7 +272,11 @@ export function Carteira() {
             <p className="sobretitulo">Clientes</p>
             <h1>Carteira de escritórios</h1>
             <span className="fio" aria-hidden="true" />
-            <p className="lede">Os escritórios que contrataram o T3jus e que você atende, da implantação ao uso diário.</p>
+            <p className="lede">
+              {verEncerrados
+                ? "Os escritórios que contrataram o T3jus e que você atende, da implantação ao uso diário, e os que já encerraram."
+                : "Os escritórios que contrataram o T3jus e que você atende, da implantação ao uso diário."}
+            </p>
           </div>
           {podeCadastrar ? (
             <button className="btn btn-escuro" type="button" style={{ marginBottom: 6 }} onClick={() => setCadastrar(true)}>
@@ -229,11 +286,15 @@ export function Carteira() {
           ) : null}
         </div>
 
-        <div className="folha resumo" role="group" aria-label="Filtrar a carteira por estágio">
+        <div className="folha resumo fc-cinco" role="group" aria-label="Filtrar a carteira por estágio">
           {RESUMO.map((r) => (
             <button key={r.filtro} type="button" aria-pressed={filtro === r.filtro}
-              onClick={() => { setFiltro(r.filtro); setPagina(1); }}>
-              <span className="disco" style={r.ambar ? ({ "--c": "var(--ambar-2)" } as CSSProperties) : undefined}>
+              onClick={() => {
+                if ((r.filtro === "ENCERRADOS") !== verEncerrados) setOrdem(r.filtro === "ENCERRADOS" ? "FIM" : "PENDENCIAS");
+                setFiltro(r.filtro);
+                setPagina(1);
+              }}>
+              <span className={r.enc ? "disco fc-disco-enc" : "disco"} style={r.ambar ? ({ "--c": "var(--ambar-2)" } as CSSProperties) : undefined}>
                 <span>{lista ? contagem[r.filtro] : "–"}</span>
               </span>
               <span className="r">{r.nome}</span>
@@ -249,7 +310,7 @@ export function Carteira() {
         </div>
       ) : null}
 
-      {lista ? (
+      {lista && !verEncerrados ? (
         <section className="pedem campo-vinho" aria-labelledby={`${ids}-pedem`}>
           <h2 id={`${ids}-pedem`}>
             <small>Hoje</small>Pedem você agora
@@ -293,7 +354,7 @@ export function Carteira() {
             Ordenar
           </label>
           <select id={`${ids}-ordem`} value={ordem} onChange={(e) => setOrdem(e.target.value as Ordem)}>
-            {(Object.keys(ORDENS) as Ordem[]).map((o) => (
+            {ORDENS_DA_LISTA[verEncerrados ? "ENCERRADOS" : "ABERTOS"].map((o) => (
               <option key={o} value={o}>
                 {ORDENS[o]}
               </option>
@@ -305,10 +366,14 @@ export function Carteira() {
           <div className="carregando" />
         ) : visiveis.length === 0 ? (
           <div className="vazio">
-            <strong>{lista.length === 0 ? "Nenhum escritório com você ainda" : "Nenhum escritório encontrado"}</strong>
+            <strong>
+              {lista.length === 0 ? "Nenhum escritório com você ainda" : verEncerrados && !termo ? "Nenhum escritório encerrado" : "Nenhum escritório encontrado"}
+            </strong>
             {lista.length === 0
               ? "Quando a administração atribuir um cliente a você, ele aparece aqui."
-              : "Tente outro nome ou volte para todos os escritórios."}
+              : verEncerrados && !termo
+                ? "Quando um contrato terminar, o escritório aparece aqui até o fim da guarda de 5 anos."
+                : "Tente outro nome ou volte para todos os escritórios."}
           </div>
         ) : (
           <div className="tabela">
@@ -317,7 +382,7 @@ export function Carteira() {
                 <tr>
                   <th scope="col">Escritório</th>
                   <th scope="col">Estágio</th>
-                  <th scope="col">Pendências</th>
+                  <th scope="col">{verEncerrados ? "Próximo passo" : "Pendências"}</th>
                   <th scope="col">Sócio dono</th>
                   <th scope="col">Equipe</th>
                   <th scope="col">Atividade</th>
@@ -328,12 +393,12 @@ export function Carteira() {
               </thead>
               <tbody>
                 {daPagina.map((c) => {
-                  const socio = situacaoSocio(c, agora);
+                  const socio = encerrado(c) ? socioDoEncerrado(c, situacaoSocio(c, agora)) : situacaoSocio(c, agora);
                   return (
                     <tr key={c.id}>
                       <td>
                         <div className="esc">
-                          <span className={`mono ${c.estagio === "ATIVO" ? "m-ativo" : "m-impl"}`} aria-hidden="true">
+                          <span className={`mono ${monograma(c)}`} aria-hidden="true">
                             {iniciais(c.nome).slice(0, 1)}
                           </span>
                           <div>
@@ -343,10 +408,16 @@ export function Carteira() {
                         </div>
                       </td>
                       <td data-rotulo="Estágio">
-                        <Estagio c={c} />
+                        {encerrado(c) ? <SituacaoEncerrado c={c} /> : <Estagio c={c} />}
                       </td>
-                      <td data-rotulo="Pendências">
-                        <Pendencias c={c} />
+                      <td data-rotulo={verEncerrados ? "Próximo passo" : "Pendências"}>
+                        {encerrado(c) ? (
+                          <div className="fc-sit">
+                            <ProximoPasso c={c} />
+                          </div>
+                        ) : (
+                          <Pendencias c={c} />
+                        )}
                       </td>
                       <td className="socio" data-rotulo="Sócio dono">
                         {socio.nome ? (
@@ -382,13 +453,13 @@ export function Carteira() {
             </table>
             <ul className="cartoes so-cel" aria-label="Escritórios">
               {daPagina.map((c) => {
-                const socio = situacaoSocio(c, agora);
+                const socio = encerrado(c) ? socioDoEncerrado(c, situacaoSocio(c, agora)) : situacaoSocio(c, agora);
                 const e = etapasDoCliente(c);
                 const lista = pendencias(c);
                 return (
                   <li key={c.id} className="cartao">
                     <div className="c-topo">
-                      <span className={`mono ${c.estagio === "ATIVO" ? "m-ativo" : "m-impl"}`} aria-hidden="true">
+                      <span className={`mono ${monograma(c)}`} aria-hidden="true">
                         {iniciais(c.nome).slice(0, 1)}
                       </span>
                       <div>
@@ -400,7 +471,15 @@ export function Carteira() {
                       <Icone nome="dir" className="ico c-ir" />
                     </div>
                     <div className="c-selos">
-                      {c.estagio === "ATIVO" ? (
+                      {encerrado(c) ? (
+                        <>
+                          <span className="selo selo-enc">
+                            <Icone nome="cadeado" className="ico" />
+                            Encerrado{c.encerramento ? ` em ${dataBr(c.encerramento.fimEm)}` : ""}
+                          </span>
+                          <ProximoPasso c={c} celular />
+                        </>
+                      ) : c.estagio === "ATIVO" ? (
                         <span className="selo selo-ativo">
                           <span className="bolinha" aria-hidden="true" />
                           {ESTAGIOS.ATIVO}
@@ -408,7 +487,7 @@ export function Carteira() {
                       ) : (
                         <span className="selo selo-implant">{ESTAGIOS.IMPLANTACAO}</span>
                       )}
-                      {lista.length ? (
+                      {encerrado(c) ? null : lista.length ? (
                         lista.map((p) => (
                           <span key={p} className="selo selo-atencao">
                             {TEXTOS_PENDENCIA[p]}
@@ -421,7 +500,7 @@ export function Carteira() {
                         </span>
                       )}
                     </div>
-                    {c.estagio !== "ATIVO" ? (
+                    {c.estagio === "IMPLANTACAO" ? (
                       <span className="lin" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span className={`trilho-etapas e${e.feitas}`} aria-hidden="true">
                           <i />
@@ -463,10 +542,20 @@ export function Carteira() {
           </div>
         )}
 
+        {lista && verEncerrados && visiveis.length > 0 ? (
+          <p className="fc-nota-lista">
+            <Icone nome="ajuda" className="ico" />
+            <span>
+              Encerrados não entram em “Todos os escritórios” nem nos outros números. Ficam aqui até o fim da guarda de 5 anos, com os dados dos clientes
+              guardados; depois, sai tudo, menos o nome.
+            </span>
+          </p>
+        ) : null}
         {lista && visiveis.length > 0 ? (
           <div className="rodape-tab">
             <span aria-live="polite">
               Mostrando {daPagina.length} de {visiveis.length} {visiveis.length === 1 ? "escritório" : "escritórios"}
+              {verEncerrados ? (visiveis.length === 1 ? " encerrado" : " encerrados") : ""}
             </span>
             {paginas > 1 ? (
               <nav className="pag" aria-label="Páginas">

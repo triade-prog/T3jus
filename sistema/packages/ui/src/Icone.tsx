@@ -232,6 +232,42 @@ const DESENHOS = {
     </>
   ),
   pasta: <path d="M3 6h7l2 2.5h9V19H3Z" />,
+  // Fim do contrato e saída da pessoa (F0.14), do desenho aprovado em console-fim-contrato.
+  fim: (
+    <>
+      <path d="M5 3.5h10l4 4V20.5H5Z" />
+      <path d="M15 3.5v4h4" />
+      <path d="m9 12.5 6 6M15 12.5l-6 6" />
+    </>
+  ),
+  lixeira: (
+    <>
+      <path d="M4 6.5h16M9.5 6.5V4h5v2.5" />
+      <path d="M6 6.5 7 20.5h10l1-14" />
+      <path d="M10 10.5v6M14 10.5v6" />
+    </>
+  ),
+  guardar: (
+    <>
+      <path d="M3.5 4.5h17v4h-17Z" />
+      <path d="M5 8.5v11h14v-11" />
+      <path d="M9.5 12.5h5" />
+    </>
+  ),
+  abrir: (
+    <>
+      <path d="M5 10.5h14v10H5Z" />
+      <path d="M8 10.5V7a4 4 0 0 1 7.6-1.7" />
+      <path d="M12 14v3" />
+    </>
+  ),
+  "pessoa-menos": (
+    <>
+      <circle cx="9.5" cy="8" r="3.5" />
+      <path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h4a4.5 4.5 0 0 1 4.5 4.5V20" />
+      <path d="M16 11h6" />
+    </>
+  ),
   dir: (
     <>
       <path d="m9 6 6 6-6 6" />

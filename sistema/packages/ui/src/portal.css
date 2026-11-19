@@ -492,3 +492,52 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .hero .dia{gap:12px!important}
 }
 /* <<< pendências de Clientes */
+
+/* F0.14 · Fim do contrato no Portal (docs/design/aprovadas/console-fim-contrato). */
+/* Aviso do fim do contrato no Portal */
+.pt .fc-aviso-fim{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:24px;align-items:center;padding:24px 28px;border-radius:var(--raio-g);background:var(--papel);box-shadow:var(--sombra),inset 0 0 0 1px var(--borda-folha);position:relative;overflow:hidden;margin-bottom:24px}
+.pt .fc-aviso-fim::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--vinho)}
+.pt .fc-aviso-fim.fc-urgente::before{background:var(--vinho-3)}
+.pt .fc-conta{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;align-content:center;background:var(--ambar-3);color:var(--vinho-escuro);text-align:center}
+.pt .fc-conta b{font-family:var(--serifa);font-size:36px;line-height:1;font-weight:500}
+.pt .fc-conta small{font-size:11px;font-weight:500;margin-top:2px}
+.pt .fc-urgente .fc-conta{background:var(--vinho-3);color:var(--papel)}
+.pt .fc-aviso-fim h2{font-size:26px;line-height:1.2;color:var(--vinho);margin-top:4px}
+.pt .fc-aviso-fim p.fc-txt{font-size:14px;line-height:1.55;margin-top:6px;color:var(--texto);max-width:70ch}
+.pt .fc-aviso-fim p.fc-txt b{font-weight:600}
+.pt .fc-aviso-fim .fc-botoes{display:flex;flex-direction:column;gap:10px;align-items:stretch;min-width:220px}
+.pt .fc-aviso-fim .fc-botoes small{font-size:12px;color:var(--texto-2);text-align:center}
+.pt .fc-datas{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:13px;color:var(--texto-2)}
+.pt .fc-datas span{display:inline-flex;align-items:center;gap:6px}
+.pt .fc-datas .ico{width:16px;height:16px;color:var(--vinho-4)}
+.pt .fc-datas b{color:var(--texto);font-weight:500}
+/* Faixa fina, no alto das outras páginas */
+.pt .fc-tira{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 48px;background:var(--ambar-3);color:var(--tinta);font-size:13px;border-bottom:1px solid var(--ambar-2)}
+.pt .fc-tira .ico{color:var(--vinho);flex:none}
+.pt .fc-tira b{font-weight:600}
+.pt .fc-tira a{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border-radius:var(--raio);color:var(--vinho);font-weight:600}
+.pt .fc-tira a:hover{background:rgba(255,255,255,.5)}
+.pt .fc-tira span{flex:1;min-width:0}
+/* Equipe: quem saiu */
+.pt .fc-saida{display:block;font-size:12px;color:var(--texto-2);margin-top:4px;line-height:1.4}
+.pt .fc-saida b{font-weight:500;color:var(--texto)}
+.pt .selo-apagada{background:var(--papel);color:var(--texto-2);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.pt .fc-email-apagado{font-style:italic}
+.pt .fc-regra{display:flex;align-items:flex-start;gap:10px;margin:0 24px 18px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.pt .fc-regra .ico{color:var(--vinho-4);margin-top:1px;flex:none}
+.pt .fc-leitura{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--texto-2)}
+.pt .fc-leitura .ico{width:16px;height:16px;color:var(--vinho-4)}
+@media (max-width:760px){
+  .pt .fc-aviso-fim{grid-template-columns:auto minmax(0,1fr);gap:14px 16px;padding:18px 16px 18px 20px;margin-bottom:16px}
+  .pt .fc-conta{width:64px;height:64px}
+  .pt .fc-conta b{font-size:26px}
+  .pt .fc-conta small{font-size:10px}
+  .pt .fc-aviso-fim h2{font-size:21px}
+  .pt .fc-aviso-fim .fc-botoes{grid-column:1/-1;min-width:0}
+  .pt .fc-aviso-fim .fc-corpo{grid-column:1/-1}
+  .pt .fc-tira{padding:6px 16px}
+  .pt .fc-regra{margin:0 16px 16px}
+}
+
+/* Só consulta: os botões de criar e mudar somem (o banco recusa também). */
+.pt.pt-consulta [data-muda]{display:none!important}
