@@ -7,7 +7,8 @@
     "EX-05",
     "PD-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 350,
-  "proximo": "Jurídico, parte 3"
+  "evidencia": "Migration 0270 (documento_pedidos e documentos_caso protegidas, nada se apaga; pedir, pedir de novo, já chegou com ou sem arquivo, envio em duas etapas no bucket privado documentos-portal, abrir com link de 60 segundos; o que falta conta nas pendências e entra na ficha), pgTAP 027, rotas /v1/escritorio/juridico/casos/:id/pedidos, /pedidos/:id/de-novo, /pedidos/:id/chegou, /casos/:id/documentos, /documentos/:id/concluir e /documentos/:id/abrir na api-portal (1 teste Deno novo), e2e tests/e2e/portal-juridico-documentos.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-juridico.",
+  "nota": "\"Pedir de novo\" mostra o texto pronto (copiar ou abrir no WhatsApp do aparelho) e guarda a data; abrir a conversa do cliente pelo WhatsApp do escritório fica em F3.42."
 }

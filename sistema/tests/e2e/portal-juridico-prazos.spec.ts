@@ -219,7 +219,7 @@ test.describe("Jurídico do Portal, prazos e tarefas (EX-02, EX-04, PD-05, IN-08
       proximoPrazo: null, pendencias: 1, tribunal: "TRT-2", sistema: "PJe-JT", distribuidoEm: null, valorCausa: null, avisarCliente: true, encerradoEm: null,
       versao: 1, criadoEm: "2026-03-03T13:00:00Z", veHonorarios: true, clientes: [], quemTemContratos: [], mudancas: [],
       etapas: [5, 6].map((n) => ({ id: `e${n}`, ordem: n, nome: n === 5 ? "Sentença" : "Recurso", descricao: null, textoCliente: "x", avisaFinanceiro: false, final: false, casos: 0 })),
-      hoje: HOJE,
+      hoje: HOJE, escritorio: "Ribeiro & Matos", faltam: [], documentos: [],
       prazos: [PRAZOS[2], prazo(8, "Embargos de declaração", "2026-11-13", PEREIRA, MARINA, { cumpridoEm: "2026-11-13T15:00:00Z", cumpridoPor: MARINA })],
       tarefas: [TAREFAS[1], tarefa(5, "Calcular as horas extras", "2026-11-20", PEREIRA, LARISSA, { esperando: "o cliente: CTPS digital", esperandoDesde: "2026-11-10" }),
         tarefa(7, "Pedir a cópia do laudo", "2026-11-12", PEREIRA, MARINA, { concluidaEm: "2026-11-12T15:00:00Z", concluidaPor: MARINA })],

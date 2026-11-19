@@ -30,6 +30,13 @@ public = false
 file_size_limit = "10MiB"
 allowed_mime_types = ["application/pdf", "image/jpeg", "image/png"]
 
+# Documentos dos casos no Portal (EX-05): outro bucket privado, separado dos anexos do Console,
+# porque são dados do escritório. Também só a Edge Function assina envio e leitura.
+[storage.buckets.documentos-portal]
+public = false
+file_size_limit = "10MiB"
+allowed_mime_types = ["application/pdf", "image/jpeg", "image/png"]
+
 # Login (F0.6, PT-08). Ninguém se cadastra sozinho: a equipe T3jus cria o escritório e
 # convida o sócio (passo 1).
 [auth]

@@ -317,6 +317,17 @@ Mesmas telas aprovadas (estados etapas e peticoes). Migration `0260_portal_jurid
 - **Tela:** `/juridico/casos/etapas` (o botão "Etapas do escritório" aparece na lista de casos só para a sócia dona) e `/juridico/peticoes`.
 - **Falta:** as respostas de Petições no Console e o gerador (F3.41); o pedido ao Financeiro ao entrar na etapa marcada (F3.14).
 
+### Jurídico do Portal, documentos do caso (F3.35; EX-03, EX-05, PD-05)
+
+Mesma ficha aprovada (folha "Documentos"). Migration `0270_portal_juridico_documentos.sql`, teste `027_portal_juridico_documentos_test.sql`, e2e `portal-juridico-documentos.spec.ts`.
+
+- **Os que faltam:** `documento_pedidos` guarda o que falta, com qual cliente do caso está (`cliente_id` precisa estar em `caso_clientes`), quando foi pedido e, se for o caso, quando foi pedido de novo (`repedido_em`). Só caso em andamento recebe pedido. Pedido não se apaga e, depois de chegar, não muda mais.
+- **Já chegou:** `portal_juridico_documento_chegou` fecha o pedido sem arquivo; com arquivo, o envio leva o `pedidoId` e o pedido fecha ao concluir. O que falta entra em `pendencias` (lista de casos) e na ficha em `faltam`, e a tela mostra em "O que está travando".
+- **Pedir de novo:** a tela mostra o texto pronto (`textoPedirDocumento`, com o primeiro nome do cliente e o nome do escritório) para copiar ou abrir no WhatsApp do aparelho, e `portal_juridico_documento_repedir` guarda a data. Abrir a conversa pelo WhatsApp do escritório fica para Conversas (F3.42).
+- **Ligados ao caso:** `documentos_caso`, com o mesmo envio em duas etapas do Console, num bucket separado e privado (`documentos-portal`, PDF, JPG ou PNG até 10 MB; caminho `<escritório>/<documento>`). Categorias: petição, decisão ou sentença, procuração, documento do cliente e outro. Nada se apaga. Caso encerrado ainda recebe arquivo.
+- **Histórico:** `juridico.documento_pedido`, `documento_repedido`, `documento_chegou` (com `comArquivo`), `documento_anexado` e `documento_aberto`. O nome do arquivo não vai para o histórico.
+- **API:** `POST /v1/escritorio/juridico/casos/:id/pedidos`, `/pedidos/:id/de-novo`, `/pedidos/:id/chegou`, `/casos/:id/documentos`, `/documentos/:id/concluir` e `/documentos/:id/abrir`. A CSP do Portal aceita a origem do Storage pela variável `ARQUIVOS_ORIGEM`, como no Console.
+
 ### Fim do contrato e saída da pessoa (F0.14; PT-11)
 
 Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Carol de 19/11/2026 no `NOTAS.md`). Migration `0210_fim_contrato.sql`, teste `021_fim_contrato_test.sql`, e2e `fim-contrato.spec.ts`.

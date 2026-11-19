@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import type { Condicao } from "./honorarios.ts";
 import type { SituacaoContrato } from "./contratos.ts";
+import { TAMANHO_MAXIMO_DOCUMENTO, TIPOS_DOCUMENTO, type TipoDocumento } from "./console.ts";
 
 export const AREAS_DIREITO = {
   TRABALHISTA: "Trabalhista",
@@ -175,6 +176,10 @@ export interface FichaCaso extends LinhaCaso {
   hoje: string;
   prazos: Prazo[];
   tarefas: Tarefa[];
+  /** Nome do escritório, para o texto pronto de "Pedir de novo". */
+  escritorio: string;
+  faltam: DocumentoFaltando[];
+  documentos: DocumentoDoCaso[];
 }
 
 /** O aviso ao cliente (decisão 5): começo e fim fixos, o meio é o texto da etapa. */
@@ -298,4 +303,57 @@ export interface RespostaPeticoes {
   resposta: RespostaPeticao;
   comoFazHoje: string | null;
   em: string;
+}
+
+// ------------------------------------------------------------------------- Parte 3b: documentos do caso
+// (EX-05, PD-05; 0270_portal_juridico_documentos.sql).
+
+export const CATEGORIAS_DOCUMENTO_CASO = {
+  PETICAO: "Petição",
+  DECISAO: "Decisão ou sentença",
+  PROCURACAO: "Procuração",
+  DOCUMENTO_CLIENTE: "Documento do cliente",
+  OUTRO: "Outro",
+} as const;
+export type CategoriaDocumentoCaso = keyof typeof CATEGORIAS_DOCUMENTO_CASO;
+
+export const pedirDocumentoSchema = z.object({
+  descricao: texto(200),
+  clienteId: id,
+});
+
+export const iniciarDocumentoCasoSchema = z.object({
+  categoria: z.enum(Object.keys(CATEGORIAS_DOCUMENTO_CASO) as [CategoriaDocumentoCaso, ...CategoriaDocumentoCaso[]]),
+  nome: z.string().trim().min(1).max(200).refine((n) => !/[/\\]/.test(n), { message: "Nome de arquivo inválido" }),
+  tipo: z.enum(Object.keys(TIPOS_DOCUMENTO) as [TipoDocumento, ...TipoDocumento[]]),
+  tamanho: z.number().int().min(1).max(TAMANHO_MAXIMO_DOCUMENTO),
+  pedidoId: id.nullish(),
+});
+
+export interface DocumentoFaltando {
+  id: string;
+  descricao: string;
+  pedidoEm: string;
+  repedidoEm: string | null;
+  cliente: { id: string; nome: string; telefone: string | null };
+  pedidoPor: PessoaRef;
+}
+
+export interface DocumentoDoCaso {
+  id: string;
+  categoria: CategoriaDocumentoCaso;
+  nome: string;
+  tipo: TipoDocumento;
+  tamanho: number;
+  enviadoPor: PessoaRef;
+  enviadoEm: string;
+  /** O pedido que este arquivo atendeu, se veio de "Faltam". */
+  pedido: string | null;
+}
+
+/** O texto pronto de "Pedir de novo", do jeito que o cliente vai receber. */
+export function textoPedirDocumento(cliente: string, escritorio: string, parteContraria: string | null, descricao: string): string {
+  const primeiro = cliente.trim().split(/\s+/)[0] ?? "";
+  const contra = parteContraria?.trim() ? ` contra ${parteContraria.trim()}` : "";
+  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Para o seu processo${contra} andar, ainda precisamos de: ${descricao.trim()}. Pode enviar por aqui mesmo? Obrigado.`;
 }

@@ -17,6 +17,8 @@ export interface Arquivos {
 }
 
 export const BUCKET_DOCUMENTOS = "documentos-console";
+/** Documentos dos casos no Portal (EX-05): dado do escritório, num bucket separado. */
+export const BUCKET_DOCUMENTOS_PORTAL = "documentos-portal";
 /** O link de abrir vale 60 segundos: o suficiente para o navegador começar a baixar. */
 export const VALIDADE_LEITURA_S = 60;
 

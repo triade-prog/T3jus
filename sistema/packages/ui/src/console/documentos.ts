@@ -45,3 +45,20 @@ export function problemaDoArquivo(nome: string, tipo: string, tamanho: number): 
   if (/[/\\]/.test(nome) || nome.trim().length > 200) return "O nome do arquivo é longo demais. Renomeie e envie de novo.";
   return null;
 }
+
+/** PUT do arquivo direto no Storage, no endereço de uso único que a API devolveu, com o progresso. */
+export function enviarArquivo(endereco: string, arquivo: File, tipo: string, aoProgredir: (p: number) => void): Promise<boolean> {
+  return new Promise((resolve) => {
+    const x = new XMLHttpRequest();
+    x.open("PUT", endereco);
+    x.setRequestHeader("content-type", tipo);
+    x.upload.onprogress = (e) => {
+      if (e.lengthComputable) aoProgredir(Math.round((e.loaded / e.total) * 100));
+    };
+    x.onload = () => resolve(x.status >= 200 && x.status < 300);
+    x.onerror = () => resolve(false);
+    x.onabort = () => resolve(false);
+    x.send(arquivo);
+  });
+}
+

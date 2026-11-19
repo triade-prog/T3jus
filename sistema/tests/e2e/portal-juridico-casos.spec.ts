@@ -90,7 +90,7 @@ const FICHA = {
     { para: { ordem: 1, nome: "Preparação" }, de: null, motivo: "Caso cadastrado.", resultado: null, aviso: null, avisoEnviadoEm: null, por: LARISSA, em: "2026-03-03T13:00:00Z" },
   ],
   quemTemContratos: ["Marina Ribeiro", "Paula Nunes"],
-  hoje: "2026-11-18", prazos: [], tarefas: [],
+  hoje: "2026-11-18", prazos: [], tarefas: [], escritorio: "Ribeiro & Matos", faltam: [], documentos: [],
 };
 const SEM_HONORARIOS = {
   ...FICHA, veHonorarios: false,

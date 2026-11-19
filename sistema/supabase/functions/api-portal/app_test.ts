@@ -1,7 +1,7 @@
 // F0.6 e F0.3 no Portal do advogado: quem tem vínculo entra; o escritório vem da sessão.
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
-import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
+import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -137,6 +137,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_etapa_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, dados: a.p_dados }),
     portal_juridico_etapa_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
     portal_juridico_etapa_remover: (a) => ({ casosMovidos: a.p_mover_para ? 1 : 0, para: a.p_mover_para }),
+    portal_juridico_documento_pedir: (a) => ({ id: CLIENTE, ...(a.p_dados as object) }),
+    portal_juridico_documento_repedir: (a) => ({ id: a.p_pedido, repedidoEm: "2026-11-19" }),
+    portal_juridico_documento_chegou: (a) => ({ id: a.p_pedido, chegouEm: "2026-11-19T22:00:00Z" }),
+    portal_juridico_documento_iniciar: () => CLIENTE,
+    portal_juridico_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 1200 }],
+    portal_juridico_documento_concluir: (a) => ({ id: a.p_documento, nome: "peticao.pdf" }),
+    portal_juridico_documento_abrir: () => "peticao.pdf",
     portal_juridico_peticoes: () => ({ minhaResposta: null }),
     portal_juridico_peticoes_responder: (a) => ({ ...(a.p_dados as object), em: "2026-11-19T22:00:00Z" }),
     portal_financeiro_conta_reembolsada: (a) => ({ id: a.p_conta, reembolsadoEm: (a.p_dados as { reembolsadoEm: string }).reembolsadoEm }),
@@ -148,11 +155,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_compromisso_cancelar: (a) => Number(a.p_versao) + 1,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
   });
+  const storage = arquivosFalsos();
   const app = criarApiPortal("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo", admin,
+    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo", admin, arquivos: storage.arquivos,
     senhaVazada: (senha) => Promise.resolve((opcoes.vazadas ?? []).includes(senha)),
   });
-  return { pedir: pedido(app, "api-portal"), vinculos, enviados, contas, ...falso, ...db };
+  return { pedir: pedido(app, "api-portal"), vinculos, enviados, contas, storage, ...falso, ...db };
 }
 
 Deno.test("sócio sem autenticador entra só com a senha (o autenticador é obrigatório só para a equipe)", async () => {
@@ -813,4 +821,34 @@ Deno.test("EX-07, EX-09: etapas do escritório (adicionar, editar com versão, m
   assertEquals((await m.pedir("/v1/escritorio/juridico/peticoes", { corpo: { resposta: "TALVEZ" }, cookie })).status, 400);
   const salvar = m.chamadas.filter((c) => c.funcao === "portal_juridico_etapa_salvar");
   assertEquals(salvar.map((c) => c.args.p_escritorio), [AURORA, AURORA]);
+});
+
+Deno.test("EX-05: documentos do caso (pedir, pedir de novo, já chegou, enviar em duas etapas e abrir) no caminho do escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const p = await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/pedidos`, { corpo: { descricao: "CTPS digital", clienteId: ANA }, cookie });
+  assertEquals(p.status, 201);
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/pedidos/${CLIENTE}/de-novo`, { corpo: {}, cookie })).json()).repedidoEm, "2026-11-19");
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/pedidos/${CLIENTE}/chegou`, { corpo: {}, cookie })).status, 200);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/pedidos/nao-e-id/chegou", { corpo: {}, cookie })).status, 404);
+
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/documentos`, { corpo: { categoria: "PETICAO", nome: "a/b.pdf", tipo: "application/pdf", tamanho: 10 }, cookie }))).detalhes?.campos, ["nome"]);
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/documentos`, { corpo: { categoria: "PETICAO", nome: "x.exe", tipo: "application/x-msdownload", tamanho: 10 }, cookie })).status, 400);
+  const ini = await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/documentos`, { corpo: { categoria: "PETICAO", nome: "peticao.pdf", tipo: "application/pdf", tamanho: 1200 }, cookie });
+  assertEquals(ini.status, 201);
+  assertEquals((await ini.json()).id, CLIENTE);
+  assertEquals(m.storage.pedidosDeEnvio, [`${AURORA}/${CLIENTE}`]);
+
+  // Sem o arquivo no Storage, não conclui.
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/documentos/${CLIENTE}/concluir`, { corpo: {}, cookie }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.storage.guardados.set(`${AURORA}/${CLIENTE}`, { tamanho: 999, tipo: "application/pdf" });
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/documentos/${CLIENTE}/concluir`, { corpo: {}, cookie }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.storage.guardados.set(`${AURORA}/${CLIENTE}`, { tamanho: 1200, tipo: "application/pdf" });
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/documentos/${CLIENTE}/concluir`, { corpo: {}, cookie })).json()).nome, "peticao.pdf");
+
+  const abrir = await (await m.pedir(`/v1/escritorio/juridico/documentos/${CLIENTE}/abrir`, { corpo: {}, cookie })).json();
+  assertMatch(abrir.url, /^https:\/\/storage\.exemplo\/ler\//);
+  assertEquals(m.storage.leituras, [{ caminho: `${AURORA}/${CLIENTE}`, segundos: 60, nome: "peticao.pdf" }]);
+  const pedidos = m.chamadas.filter((c) => c.funcao.startsWith("portal_juridico_documento"));
+  assert(pedidos.every((c) => c.args.p_escritorio === AURORA));
 });
