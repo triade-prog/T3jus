@@ -1,0 +1,58 @@
+[
+ {
+  "nome": "nao-ligado",
+  "url": "whatsapp.html?estado=nao-ligado"
+ },
+ {
+  "nome": "passos",
+  "url": "whatsapp.html?estado=passos"
+ },
+ {
+  "nome": "numero-erro",
+  "url": "whatsapp.html?estado=numero-erro"
+ },
+ {
+  "nome": "em-analise",
+  "url": "whatsapp.html?estado=em-analise"
+ },
+ {
+  "nome": "ligado",
+  "url": "whatsapp.html?estado=ligado"
+ },
+ {
+  "nome": "modelo-recusado",
+  "url": "whatsapp.html?estado=modelo-recusado"
+ },
+ {
+  "nome": "desligar",
+  "url": "whatsapp.html?estado=desligar"
+ },
+ {
+  "nome": "ia",
+  "url": "whatsapp.html?estado=ia"
+ },
+ {
+  "nome": "ia-passar",
+  "url": "whatsapp.html?estado=ia-passar"
+ },
+ {
+  "nome": "ia-saber",
+  "url": "whatsapp.html?estado=ia-saber"
+ },
+ {
+  "nome": "ia-testar",
+  "url": "whatsapp.html?estado=ia-testar"
+ },
+ {
+  "nome": "ia-ligar",
+  "url": "whatsapp.html?estado=ia-ligar"
+ },
+ {
+  "nome": "ia-ligada",
+  "url": "whatsapp.html?estado=ia-ligada"
+ },
+ {
+  "nome": "so-leitura",
+  "url": "whatsapp.html?estado=so-leitura"
+ }
+]
