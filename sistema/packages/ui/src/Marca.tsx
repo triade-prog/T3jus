@@ -61,11 +61,11 @@ export function LogoCompleto({ tom = "cor", className, titulo }: Props) {
   );
 }
 
-/** Só o símbolo (coluna em T). */
-export function Simbolo({ tom = "cor", className, titulo }: Props) {
+/** Só o símbolo (coluna em T). `cor` troca a cor do desenho (ex.: "currentColor" na marca d'água). */
+export function Simbolo({ tom = "cor", className, titulo, cor }: Props & { cor?: string }) {
   return (
     <Svg w={SIMBOLO.w} h={SIMBOLO.h} titulo={titulo} className={className}>
-      <path fill={cores(tom).simbolo} fillRule="evenodd" d={SIMBOLO.d} />
+      <path fill={cor ?? cores(tom).simbolo} fillRule="evenodd" d={SIMBOLO.d} />
     </Svg>
   );
 }

@@ -104,15 +104,16 @@
   mix-blend-mode: soft-light;
   background-image: var(--ac-grao);
 }
+/* Marca d'água: símbolo do logo oficial, no mesmo lugar e tamanho da coluna anterior. */
 .ac-coluna {
   position: absolute;
   z-index: -1;
-  left: 34.7%;
-  top: 46%;
-  width: min(330px, 23vw);
-  height: min(330px, 23vw);
+  left: calc(34.7% + min(38px, 2.64vw));
+  top: calc(46% + min(55px, 3.83vw));
+  width: min(220px, 15.3vw);
+  height: auto;
   color: var(--ac-vinho-2);
-  stroke-width: 0.9;
+  pointer-events: none;
 }
 .ac-fita {
   position: absolute;
