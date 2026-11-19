@@ -217,7 +217,7 @@ export const buscaClientesSchema = z.object({
 
 // ------------------------------------------------------------------- o que a API devolve
 
-export type SituacaoCliente = "ATIVO" | "INATIVO";
+export type SituacaoCliente = "ATIVO" | "INATIVO" | "EXCLUIDO";
 export interface PessoaRef {
   id: string;
   nome: string;
@@ -236,6 +236,95 @@ export interface ProxContato {
   vencido: boolean;
   responsavel: PessoaRef;
 }
+// ---------------------------------------------------------------------------------------
+// Pedido de exclusão do titular (F1.15, PT-11).
+
+export const CANAIS_PEDIDO = {
+  WHATSAPP: "WhatsApp",
+  TELEFONE: "Telefone",
+  EMAIL: "E-mail",
+  PRESENCIAL: "Presencial",
+  CARTA: "Carta",
+} as const;
+export type CanalPedido = keyof typeof CANAIS_PEDIDO;
+export const QUEM_PEDIU = { TITULAR: "O próprio titular", REPRESENTANTE: "Alguém em nome do titular" } as const;
+export type QuemPediu = keyof typeof QUEM_PEDIU;
+
+export interface PedidoExclusao {
+  id: string;
+  estado: "PENDENTE" | "ATENDIDO" | "RECUSADO";
+  pedidoEm: string;
+  canal: CanalPedido;
+  quemPediu?: QuemPediu;
+  observacao?: string;
+  registradoPor: PessoaRef;
+  registradoEm: string;
+  resolvidoPor?: PessoaRef;
+  resolvidoEm?: string;
+  motivoRecusa?: string;
+  protocolo?: string;
+}
+
+const pedidoExclusaoBase = {
+  pedidoEm: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  canal: z.enum(Object.keys(CANAIS_PEDIDO) as [CanalPedido, ...CanalPedido[]]),
+  quemPediu: z.enum(Object.keys(QUEM_PEDIU) as [QuemPediu, ...QuemPediu[]]),
+  observacao: z
+    .string()
+    .trim()
+    .max(300)
+    .nullish()
+    .transform((v) => (v ? v : null)),
+};
+export const pedirExclusaoSchema = z.object({ ...pedidoExclusaoBase, quemPediu: pedidoExclusaoBase.quemPediu.optional() });
+export const excluirDadosSchema = z.object({
+  ...pedidoExclusaoBase,
+  versao: z.number().int().min(1),
+  conferido: z.literal(true),
+  nomeConfirmado: z.string().trim().min(1).max(160),
+});
+export const recusarExclusaoSchema = z.object({ motivo: z.string().trim().min(1).max(300) });
+
+/** O nome digitado confere com o do cliente, sem diferença de maiúsculas e espaços (igual ao servidor). */
+export function nomeConfere(digitado: string, nome: string): boolean {
+  const n = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+  return n(digitado) !== "" && n(digitado) === n(nome);
+}
+
+// ---------------------------------------------------------------------------------------
+// Início: contatos do dia (F1.14, AP-06).
+
+export interface ContatoDoDia {
+  clienteId: string;
+  tipo: TipoCliente;
+  nome: string;
+  contatoPrincipal: Omit<ContatoCliente, "principal"> | null;
+  em: string;
+  oque: string;
+  vencido: boolean;
+  diasAtraso: number;
+  responsavel: PessoaRef;
+}
+export interface ContatosDoInicio {
+  de: "MEUS" | "EQUIPE";
+  dono: boolean;
+  vencidos: ContatoDoDia[];
+  hoje: ContatoDoDia[];
+  totalVencidos: number;
+  totalHoje: number;
+  maisAntigo: string | null;
+  /** O próximo contato marcado depois de hoje (para o "tudo em dia"). */
+  proximo: { em: string; nome: string } | null;
+  /** Só para a dona, nos dela. */
+  equipeVencidos: number | null;
+  /** Só para a dona. */
+  pedidosExclusao: { id: string; clienteId: string; nome: string; pedidoEm: string; por: string }[] | null;
+}
+export const contatosInicioSchema = z.object({
+  de: z.enum(["MEUS", "EQUIPE"]).default("MEUS"),
+  limite: z.coerce.number().int().min(1).max(50).default(5),
+});
+
 export interface ClienteLinha {
   id: string;
   tipo: TipoCliente;
@@ -246,6 +335,8 @@ export interface ClienteLinha {
   /** Só com a área Comercial. */
   origem?: Origem | null;
   proxContato?: ProxContato | null;
+  /** Só no cliente excluído (F1.15). */
+  exclusao?: { em: string; protocolo: string };
 }
 export interface ListaClientes {
   comercial: boolean;
@@ -297,6 +388,14 @@ export interface FichaCliente {
   proxContato?: ProxContato | null;
   atendimentos?: number;
   primeiroAtendimento?: { em: string; canal: Canal } | null;
+  /** É a sócia dona: só ela exclui ou recusa o pedido (F1.15). */
+  dono: boolean;
+  /** Pedido de exclusão esperando a sócia dona. */
+  pedidoExclusao: PedidoExclusao | null;
+  /** A última recusa, quando não há pedido aberto. */
+  ultimaRecusa: PedidoExclusao | null;
+  /** Só no cliente excluído: o registro da exclusão. */
+  exclusao: (PedidoExclusao & { em: string }) | null;
 }
 
 export interface Atendimento {

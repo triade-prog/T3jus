@@ -355,3 +355,140 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .cl-inativo-faixa{grid-template-columns:auto minmax(0,1fr)}
   .cl-inativo-faixa .btn{grid-column:1/-1}
 }
+
+/* >>> pendências de Clientes (pd-), do desenho aprovado em docs/design/aprovadas/portal-clientes-pendencias */
+
+/* ==========================================================================
+   Portal · Pendências de Clientes (F1.14 AP-06; F1.15 PT-11). Prefixo pd-.
+   ========================================================================== */
+.pd-inicio{display:flex;flex-direction:column;gap:24px;min-width:0}
+.pd-folha-cab h2 .ico{color:var(--vinho-4)}
+.pd-contatos .prazo{grid-template-columns:64px minmax(0,1fr) auto}
+.pd-contatos .prazo .lado{min-width:190px}
+.pd-contatos .prazo a{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0 -10px}
+.pd-oque{display:block;font-size:14px;color:var(--texto);margin-top:2px}
+.pd-ct{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--texto-2);margin-top:4px}
+.pd-ct .ico{width:14px;height:14px;color:var(--vinho-4)}
+.pd-grupo{display:flex;align-items:center;gap:10px;padding:10px 24px 6px;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-2);border-top:1px solid var(--divisor)}
+.pd-grupo::after{content:"";flex:1;height:1px;background:var(--borda-folha)}
+.pd-grupo:first-child{border-top:0}
+.pd-contatos .prazo:first-child{border-top:0}
+.data .pd-venc{--c:var(--vinho-3);color:var(--papel)}
+.pd-chips{display:flex;gap:6px;padding:0 24px 14px;flex-wrap:wrap}
+.pd-chips button{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--borda-folha);background:var(--papel);font:inherit;font-size:13px;color:var(--texto-2);cursor:pointer;display:flex;align-items:center;gap:6px}
+.pd-chips button[aria-pressed="true"]{background:var(--vinho);border-color:var(--vinho);color:var(--papel)}
+.pd-nada-meu{display:flex;align-items:flex-start;gap:10px;margin:0 24px 6px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.pd-nada-meu .ico{color:var(--vinho-4);flex:none;margin-top:1px}
+.pd-vazio{display:grid;justify-items:center;text-align:center;gap:10px;padding:30px 24px 30px}
+.pd-vazio .pd-sol{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho);box-shadow:0 0 0 10px var(--sal-2)}
+.pd-vazio .pd-sol .ico{width:32px;height:32px}
+.pd-vazio h3{font-size:24px;color:var(--vinho);margin-top:10px}
+.pd-vazio p{max-width:46ch;color:var(--texto-2)}
+.pd-vazio .pd-prox{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;background:var(--sal-2);color:var(--texto);font-size:13px}
+.pd-vazio .pd-prox b{font-weight:500}
+.pd-vazio .pd-prox .ico{width:16px;height:16px;color:var(--vinho-4)}
+.pd-esq{display:grid;grid-template-columns:64px minmax(0,1fr) 150px;gap:16px;align-items:center;padding:14px 24px;border-top:1px solid var(--divisor)}
+.pd-esq:first-child{border-top:0}
+.hero .dia .pd-esq-dia{display:flex;align-items:center;gap:14px}
+.pd-encaixe{border:1.5px dashed var(--vinho-4);border-radius:var(--raio-g);padding:18px 22px;display:grid;gap:6px;background:rgba(255,255,255,.35)}
+.pd-encaixe .pd-rotulo{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--vinho-2)}
+.pd-encaixe h2{font-size:22px;color:var(--vinho);display:flex;align-items:center;gap:10px}
+.pd-encaixe h2 .ico{color:var(--vinho-4)}
+.pd-encaixe p{font-size:13px;color:var(--texto-2);line-height:1.5}
+.pd-encaixe.pd-alto{min-height:260px;align-content:start}
+.pd-encaixe.pd-medio{min-height:180px;align-content:start}
+.pd-anot{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:var(--raio);background:var(--ambar-3);font-size:13px;line-height:1.5}
+.pd-anot .ico{color:var(--vinho);flex:none;margin-top:1px}
+.hero .dia .pd-res{opacity:.85}
+.hero .dia .pd-res .disco{background:transparent;box-shadow:inset 0 0 0 1.5px var(--vinho-4);color:var(--ambar-3)}
+
+/* Exclusão (LGPD) */
+.pd-lgpd-acao{margin-top:6px;padding-top:14px;border-top:1px solid var(--divisor);display:grid;gap:8px}
+.pd-lgpd-acao p{font-size:13px;color:var(--texto-2);line-height:1.5}
+.pd-lgpd-acao p b{display:block;color:var(--texto);font-weight:500}
+.pd-lgpd-acao .btn{justify-self:start}
+.janela.pd-janela{width:min(980px,calc(100vw - 32px))}
+.pd-janela .janela-pe{position:sticky;bottom:0;z-index:2;background:var(--superficie);border-top:1px solid var(--divisor);box-shadow:0 -10px 18px -14px rgba(42,26,34,.35)}
+.pd-janela .janela-corpo{padding-bottom:20px}
+.pd-j{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px 28px;align-items:start}
+.pd-j>.pd-inteira{grid-column:1/-1}
+.pd-col{display:grid;gap:14px;min-width:0}
+.pd-lado{border-radius:var(--raio);padding:14px 16px;display:grid;gap:8px}
+.pd-lado h3{font-size:18px;display:flex;align-items:center;gap:8px;color:var(--vinho)}
+.pd-lado h3 .ico{width:20px;height:20px}
+.pd-lado ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.pd-lado li{font-size:13px;line-height:1.45;padding-left:14px;position:relative}
+.pd-lado li::before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
+.pd-lado li small{display:block;font-size:12px;color:var(--texto-2)}
+.pd-some{background:#FBF1F4;box-shadow:inset 3px 0 0 var(--vinho-3)}
+.pd-some h3{color:var(--vinho-3)}
+.pd-fica{background:var(--sal-2);box-shadow:inset 3px 0 0 var(--vinho-4)}
+.pd-guarda{background:var(--ambar-3);box-shadow:inset 3px 0 0 var(--ambar)}
+.pd-pedido{border:0;margin:0;padding:0;display:grid;gap:14px;min-width:0}
+.pd-pedido>legend{padding:0;font-family:var(--serifa);font-size:19px;font-weight:600;color:var(--vinho);margin-bottom:2px}
+.pd-dois{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pd-confirma{padding:14px 16px;border-radius:var(--raio);border:1.5px solid var(--vinho-3);background:var(--papel);display:grid;gap:8px}
+.pd-confirma .pd-nome{font-family:var(--serifa);font-size:18px;color:var(--vinho);font-weight:600}
+.pd-irrev{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5;color:var(--texto)}
+.pd-irrev .ico{color:var(--vinho-3);flex:none;margin-top:1px}
+.btn.pd-perigo-cheio{background:var(--urgencia);border-color:var(--urgencia);color:var(--urgencia-sobre)}
+.btn.pd-perigo-cheio:hover{background:var(--vinho);border-color:var(--vinho)}
+.btn.pd-perigo-cheio .ico{color:inherit}
+.pd-quem{border:0;margin:0;padding:0;display:grid;gap:2px;min-width:0}
+.pd-quem legend{font-weight:500;font-size:14px;margin-bottom:4px;padding:0}
+.pd-quem .opcao{margin:0 -8px}
+.janela-pe .pd-pe-nota{margin-right:auto;font-size:12px;color:var(--texto-2);max-width:36ch;line-height:1.4}
+
+/* Ficha de cliente excluído */
+.ficha-cab .esq .meta .selo-excl{background:var(--sal);color:var(--vinho)}
+.pd-excl-h1{font-style:italic}
+.pd-registro{margin:0;padding:0 24px 8px;display:grid;gap:10px}
+.pd-registro div{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding-top:10px;border-top:1px solid var(--divisor)}
+.pd-registro div:first-child{border-top:0;padding-top:0}
+.pd-registro dt{color:var(--texto-2)}
+.pd-registro dd{margin:0;font-weight:500;text-align:right}
+.dados-ficha dd.pd-x{font-style:italic;color:var(--texto-2);font-weight:400;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pd-x-resumo{display:block;margin-top:6px;padding-left:12px;border-left:2px solid var(--borda-folha);font-size:13px;font-style:italic;color:var(--texto-2)}
+.cl-tab tr.pd-excl td{color:var(--texto-2);background:#FBF8F6}
+.cl-tab tr.pd-excl .esc span.av-p{background:var(--sal-2);color:var(--texto-2)}
+.selo-excl{background:var(--sal);color:var(--vinho)}
+.pd-futuro{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:var(--raio);border:1.5px dashed var(--vinho-4);font-size:12px;color:var(--vinho-2);letter-spacing:.04em}
+.pd-futuro .ico{color:var(--vinho-4);flex:none}
+
+/* Decisões da Carol (18/11/2026): pedido pela equipe, faixa, aviso no Início, dica do resumo */
+.pd-dica{display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--papel);font-size:12px;line-height:1.45;color:var(--texto)}
+.pd-dica .ico{width:16px;height:16px;color:var(--vinho-3);flex:none;margin-top:1px}
+.pd-faixa .aviso{box-shadow:none}
+.pd-faixa .aviso-titulo{font-weight:500}
+.pd-faixa .aviso-acoes .btn{min-height:44px}
+.pd-pedido-ini{display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 20px;border-radius:var(--raio-g);background:var(--papel);border:1px solid var(--borda-folha);box-shadow:inset 5px 0 0 var(--ambar);color:var(--texto);text-decoration:none}
+.pd-pedido-ini>.ico:first-child{color:var(--vinho-3);flex:none;width:24px;height:24px}
+.pd-pedido-ini b{display:block;font-weight:500;color:var(--vinho);font-size:15px}
+.pd-pedido-ini small{display:block;font-size:12px;color:var(--texto-2)}
+.pd-pedido-ini .pd-ir{margin-left:auto;flex:none;color:var(--vinho-4)}
+.pd-pedido-ini:hover b{text-decoration:underline}
+.pd-pedido-ini:focus-visible{outline:3px solid var(--vinho-4);outline-offset:2px}
+.pd-arq-nota{font-size:13px;line-height:1.5}
+
+@media (max-width:760px){
+  .pd-faixa .aviso-acoes .btn{flex:1 1 100%}
+  .pd-pedido-ini{padding:12px 16px}
+  .pd-inicio{gap:16px}
+  .pd-contatos .prazo{grid-template-columns:52px minmax(0,1fr)}
+  .pd-contatos .prazo .lado{min-width:0;flex-direction:row;flex-wrap:wrap;align-items:center}
+  .pd-contatos .prazo .lado .btn{flex:1 1 100%;min-height:44px}
+  .pd-grupo{padding:10px 16px 6px}
+  .pd-chips{padding:0 16px 12px}
+  .pd-chips button{flex:1 1 0;justify-content:center}
+  .pd-nada-meu{margin:0 16px 6px}
+  .pd-esq{grid-template-columns:52px minmax(0,1fr);padding:12px 16px}
+  .pd-esq .so-pc-i{display:none}
+  .pd-encaixe{padding:16px}
+  .pd-j{grid-template-columns:minmax(0,1fr);gap:16px}
+  .pd-dois{grid-template-columns:1fr}
+  .pd-lgpd-acao .btn{justify-self:stretch}
+  .janela-pe .pd-pe-nota{display:none}
+  .pd-registro{padding-left:16px;padding-right:16px}
+  .hero .dia{gap:12px!important}
+}
+/* <<< pendências de Clientes */

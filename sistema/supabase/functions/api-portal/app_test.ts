@@ -67,6 +67,16 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_atendimentos: () => { if (opcoes.semComercial) erroBanco("TC401", { motivo: "AREA_NAO_LIBERADA" }); return []; },
     portal_registrar_atendimento: () => "9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
     portal_pessoas_escritorio: () => [{ id: ANA, nome: "Ana" }],
+    portal_inicio_contatos: (a) => {
+      if (a.p_de === "EQUIPE" && opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
+      return { de: a.p_de, dono: !opcoes.naoDono, vencidos: [], hoje: [], totalVencidos: 0, totalHoje: 0, maisAntigo: null, equipeVencidos: null, pedidosExclusao: null };
+    },
+    portal_cliente_pedir_exclusao: (a) => ({ id: "p1", estado: "PENDENTE", ...(a.p_dados as Record<string, unknown>) }),
+    portal_cliente_recusar_exclusao: (a) => ({ id: "p1", estado: "RECUSADO", motivoRecusa: a.p_motivo }),
+    portal_cliente_excluir_dados: (a) => {
+      if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
+      return { protocolo: "EXC-2026-0001", versao: Number(a.p_versao) + 1, pedido: { id: "p1", estado: "ATENDIDO" } };
+    },
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
   });
   const app = criarApiPortal("segredo-de-repasse-de-teste", {
@@ -439,4 +449,52 @@ Deno.test("AP-01: os valores do domínio são os mesmos do banco", async () => {
   assertEquals(lista(/origem\s+text check \(origem in \(([^)]+)\)/), Object.keys(ORIGENS));
   assertEquals(lista(/canal\s+text not null check \(canal in \(([^)]+)\)/), Object.keys(CANAIS));
   assertEquals(lista(/estado_civil\s+text check \(estado_civil in \(([^)]+)\)/), Object.keys(ESTADOS_CIVIS));
+});
+
+Deno.test("F1.14: o Início pede os contatos da pessoa; \"Da equipe\" só para a dona", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/inicio/contatos", { cookie });
+  assertEquals((await r.json()).de, "MEUS");
+  const ch = m.chamadas.find((c) => c.funcao === "portal_inicio_contatos")!;
+  assertEquals([ch.args.p_de, ch.args.p_limite], ["MEUS", 5]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/inicio/contatos?de=TODOS", { cookie }))).detalhes?.campos, ["de"]);
+  const n = montar({ naoDono: true });
+  const e = await n.pedir("/v1/escritorio/inicio/contatos?de=EQUIPE", { cookie: await noEscritorio(n) });
+  assertEquals([e.status, (await erro(e)).detalhes?.motivo], [403, "SO_SOCIO_DONO"]);
+});
+
+Deno.test("F1.15: o pedido de exclusão confere data, canal e quem pediu", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const ruim = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao/pedido`, { metodo: "POST", corpo: { pedidoEm: "18/11", canal: "FAX" }, cookie });
+  assertEquals((await erro(ruim)).detalhes?.campos, ["pedidoEm", "canal"]);
+  const ok = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao/pedido`, {
+    metodo: "POST", corpo: { pedidoEm: "2026-11-18", canal: "WHATSAPP" }, cookie,
+  });
+  assertEquals(ok.status, 201);
+  const sem = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao/recusar`, { metodo: "POST", corpo: { motivo: " " }, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["motivo"]);
+});
+
+Deno.test("F1.15: excluir pede a conferência e o nome; quem não é a dona é recusado com o motivo", async () => {
+  const corpo = { pedidoEm: "2026-11-18", canal: "TELEFONE", quemPediu: "TITULAR", versao: 2, nomeConfirmado: "Helena Prado" };
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const sem = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao`, { metodo: "POST", corpo, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["conferido"]);
+  const ok = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao`, { metodo: "POST", corpo: { ...corpo, conferido: true }, cookie });
+  assertEquals((await ok.json()).protocolo, "EXC-2026-0001");
+  const ch = m.chamadas.find((c) => c.funcao === "portal_cliente_excluir_dados")!;
+  assertEquals([ch.args.p_versao, (ch.args.p_dados as Record<string, unknown>).versao], [2, undefined]);
+  const n = montar({ naoDono: true });
+  const e = await n.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao`, { metodo: "POST", corpo: { ...corpo, conferido: true }, cookie: await noEscritorio(n) });
+  assertEquals((await erro(e)).detalhes?.motivo, "SO_SOCIO_DONO");
+});
+
+Deno.test("F1.15: os canais do pedido no domínio são os mesmos do banco", async () => {
+  const { CANAIS_PEDIDO } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0170_clientes_pendencias.sql", import.meta.url));
+  const lista = /canal\s+text not null check \(canal in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((s) => s.slice(1, -1));
+  assertEquals(lista, Object.keys(CANAIS_PEDIDO));
 });

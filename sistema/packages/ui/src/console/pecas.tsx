@@ -94,8 +94,10 @@ export function Carregando({ rotulo, linhas = 3 }: { rotulo: string; linhas?: nu
  * Janela (dialog com showModal): o foco fica preso, Esc fecha e o foco volta a quem abriu.
  * O formulário da janela é o `aoEnviar`; o rodapé recebe os botões.
  */
-export function Janela({ id, aberta, aoFechar, titulo, sobretitulo, descricao, alerta, aoEnviar, children, pe }: {
+export function Janela({ id, aberta, aoFechar, titulo, sobretitulo, descricao, alerta, aoEnviar, children, pe, classe }: {
   id: string;
+  /** Classe a mais no dialog (por exemplo, uma janela larga). */
+  classe?: string;
   aberta: boolean;
   aoFechar: () => void;
   titulo: ReactNode;
@@ -117,7 +119,7 @@ export function Janela({ id, aberta, aoFechar, titulo, sobretitulo, descricao, a
     } else if (!aberta && d.open) d.close();
   }, [aberta]);
   return (
-    <dialog ref={ref} className="janela" id={id} aria-labelledby={`${id}-t`} aria-describedby={descricao}
+    <dialog ref={ref} className={classe ? `janela ${classe}` : "janela"} id={id} aria-labelledby={`${id}-t`} aria-describedby={descricao}
       role={alerta ? "alertdialog" : undefined} onClose={aoFechar}>
       <form className="janela-form" noValidate onSubmit={(e) => { e.preventDefault(); aoEnviar(); }}>
         <div className="janela-cabeca">

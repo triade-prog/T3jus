@@ -1,0 +1,190 @@
+// Pedido de exclusão do titular (F1.15, PT-11), tela aprovada em
+// docs/design/aprovadas/portal-clientes-pendencias (estados excluir-* e excluido-*), com as
+// decisões da Carol de 18/11/2026. A API é simulada.
+import { expect, test, type Page } from "@playwright/test";
+import { h, semViolacoes } from "./console-dados.ts";
+
+const P = "http://localhost:3000";
+const ESC = "e0000000-0000-4000-8000-0000000000a1";
+const CLI = "c1000000-0000-4000-8000-000000000301";
+const DIEGO = { id: "a0000000-0000-4000-8000-000000000103", nome: "Diego Almeida" };
+const MARINA = { id: "a0000000-0000-4000-8000-000000000101", nome: "Marina Ribeiro" };
+
+const BASE = {
+  id: ESC, nome: "Ribeiro & Matos", socios: ["Marina Ribeiro"], pessoas: 5, outrosEscritorios: 0, cnpj: null, cidade: "São Paulo", uf: "SP",
+  endereco: null, contatos: [], ultimaExportacao: null,
+};
+const ESC_MARINA = { ...BASE, pessoa: "Marina Ribeiro", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"], funcoes: ["SOCIO"] };
+const ESC_DIEGO = { ...BASE, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const br = (iso: string) => iso.split("-").reverse().join("/");
+
+const FICHA = {
+  id: CLI, tipo: "PF", nome: "Antônia Ferreira Prado", documento: "52998224725", nacionalidade: "brasileira", estadoCivil: "VIUVO", profissao: null,
+  rg: null, rgOrgao: null, cep: null, endereco: null, bairro: null, cidade: "São Paulo", uf: "SP", repNome: null, repCargo: null, repDocumento: null,
+  repEstadoCivil: null, repProfissao: null, situacao: "ATIVO", inativadoEm: null, motivoInativacao: null, inativadoPor: null, criadoEm: h(24 * 22),
+  criadoPor: { id: "x", nome: "Paula Nunes" }, versao: 3, comercial: true, podeInativar: true, faltando: ["PROFISSAO", "RG"], alterado: null,
+  contatos: [
+    { id: "k1", nome: "Joana Prado", papel: "Filha", telefone: "+5511991234567", email: null, principal: true },
+    { id: "k2", nome: "Antônia Ferreira Prado", papel: null, telefone: "+5511987654321", email: null, principal: false },
+  ],
+  origem: "INDICACAO_CLIENTE", origemIndicacao: "Rosa Almeida", atendimentos: 3, primeiroAtendimento: { em: h(24 * 22), canal: "TELEFONE" },
+  proxContato: { em: dia(-5), oque: "Ligar para Joana", vencido: true, responsavel: DIEGO },
+  dono: true, pedidoExclusao: null, ultimaRecusa: null, exclusao: null,
+};
+const PEDIDO = { id: "p1", estado: "PENDENTE", pedidoEm: dia(0), canal: "WHATSAPP", observacao: "Pediu por mensagem, do número da ficha", registradoPor: DIEGO, registradoEm: h(1) };
+const EXCLUIDA = {
+  ...FICHA, nome: "Cliente excluído", documento: null, nacionalidade: null, estadoCivil: null, cidade: null, uf: null, contatos: [], origemIndicacao: null,
+  proxContato: null, situacao: "EXCLUIDO", podeInativar: false, faltando: [], versao: 4,
+  exclusao: { id: "p1", estado: "ATENDIDO", pedidoEm: dia(0), canal: "EMAIL", quemPediu: "TITULAR", registradoPor: MARINA, registradoEm: h(0.1),
+    resolvidoPor: MARINA, resolvidoEm: h(0.1), protocolo: "EXC-2026-0007", em: h(0.1) },
+};
+
+type Resp = { status?: number; corpo: unknown };
+type Pedido = { metodo: string; caminho: string; busca: string; corpo: unknown };
+async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
+  const pedidos: Pedido[] = [];
+  await page.route("**/api/v1/**", async (rota) => {
+    const url = new URL(rota.request().url());
+    const caminho = url.pathname.replace(/^\/api/, "");
+    const metodo = rota.request().method();
+    pedidos.push({ metodo, caminho, busca: url.search, corpo: rota.request().postDataJSON() });
+    const r = rotas[`${metodo} ${caminho}${url.search}`] ?? rotas[`${metodo} ${caminho}`] ?? rotas[caminho];
+    const lista = Array.isArray(r) ? r : r ? [r] : [{ status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } }];
+    const vez = pedidos.filter((p) => p.caminho === caminho && p.metodo === metodo && p.busca === url.search).length - 1;
+    const x = lista[Math.min(vez, lista.length - 1)]!;
+    await rota.fulfill({ status: x.status ?? 200, contentType: "application/json", body: JSON.stringify(x.corpo) });
+  });
+  return pedidos;
+}
+const ficha = `/v1/escritorio/clientes/${CLI}`;
+
+test.describe("Pedido de exclusão do titular (F1.15, PT-11)", () => {
+  test("a dona exclui: confere o pedido e o nome; a ficha vira “Cliente excluído”", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA }, [`GET ${ficha}`]: [{ corpo: FICHA }, { corpo: EXCLUIDA }],
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`POST ${ficha}/exclusao`]: { corpo: { protocolo: "EXC-2026-0007", versao: 4, pedido: EXCLUIDA.exclusao } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Atender pedido de exclusão" }).click();
+    const j = page.getByRole("alertdialog", { name: "Excluir os dados de Antônia Ferreira Prado?" });
+    await expect(j).toBeVisible();
+    await expect(j.getByText("Os 2 contatos")).toBeVisible();
+    await expect(j.getByText("Rosa Almeida")).toBeVisible();
+    await expect(j.getByText(/Data, canal, quem atendeu e o resumo, nos 3 atendimentos/)).toBeVisible();
+    await semViolacoes(page);
+    await j.getByLabel("Para confirmar, escreva o nome do cliente").fill("Antonia Prado");
+    await j.getByRole("button", { name: "Excluir os dados para sempre" }).click();
+    await expect(j.getByText("Falta acertar 3 pontos, marcados abaixo.")).toBeVisible();
+    await expect(j.getByText("Escolha por onde o pedido chegou.")).toBeVisible();
+    await expect(j.getByText(/O nome não confere/)).toBeVisible();
+    expect(pedidos.some((p) => p.metodo === "POST")).toBe(false);
+    await j.getByLabel("Como o pedido chegou").selectOption("EMAIL");
+    await j.getByRole("checkbox", { name: /Conferi que o pedido veio do cliente/ }).check();
+    await j.getByLabel("Para confirmar, escreva o nome do cliente").fill(" antônia ferreira  PRADO ");
+    await expect(j.getByText("O nome confere")).toBeVisible();
+    await j.getByRole("button", { name: "Excluir os dados para sempre" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Dados excluídos." })).toContainText("EXC-2026-0007");
+    await expect(page.getByRole("heading", { level: 1, name: "Cliente excluído" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Registro da exclusão" }).getByText("EXC-2026-0007")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Atender pedido de exclusão" })).toHaveCount(0);
+    const post = pedidos.find((p) => p.metodo === "POST")!;
+    expect(post.corpo).toMatchObject({ versao: 3, pedidoEm: dia(0), canal: "EMAIL", quemPediu: "TITULAR", conferido: true });
+    await semViolacoes(page);
+  });
+
+  test("decisão 2: quem não é a dona pede a exclusão a ela, e a faixa avisa", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_DIEGO },
+      [`GET ${ficha}`]: [{ corpo: { ...FICHA, dono: false } }, { corpo: { ...FICHA, dono: false, pedidoExclusao: PEDIDO } }],
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`POST ${ficha}/exclusao/pedido`]: { status: 201, corpo: PEDIDO },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await expect(page.getByRole("button", { name: "Atender pedido de exclusão" })).toHaveCount(0);
+    await expect(page.getByText(/Quem atende o pedido \(LGPD\) é Marina Ribeiro/)).toBeVisible();
+    await page.getByRole("button", { name: "Pedir a exclusão à sócia dona" }).click();
+    const j = page.getByRole("dialog", { name: "Pedir a exclusão à sócia dona" });
+    await j.getByRole("button", { name: "Enviar o pedido" }).click();
+    await expect(j.getByText("Escolha por onde o pedido chegou.")).toBeVisible();
+    await j.getByLabel("Como o pedido chegou").selectOption("WHATSAPP");
+    await j.getByLabel(/Observação/).fill("Pediu por mensagem, do número da ficha");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Enviar o pedido" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Pedido enviado a Marina Ribeiro." })).toBeVisible();
+    await expect(page.getByText(/Exclusão pedida em .* por Diego Almeida, aguardando a sócia dona\./)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Excluir os dados" })).toHaveCount(0);
+    await expect(page.getByText("Pedido de exclusão enviado")).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "POST")!.corpo).toEqual({ pedidoEm: dia(0), canal: "WHATSAPP", observacao: "Pediu por mensagem, do número da ficha" });
+  });
+
+  test("a dona recusa o pedido com o motivo; a faixa mostra a recusa", async ({ page }) => {
+    const recusado = { ...PEDIDO, estado: "RECUSADO", resolvidoPor: MARINA, resolvidoEm: h(0.1), motivoRecusa: "Não deu para confirmar que veio da cliente." };
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: [{ corpo: { ...FICHA, pedidoExclusao: PEDIDO } }, { corpo: { ...FICHA, ultimaRecusa: recusado } }],
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`POST ${ficha}/exclusao/recusar`]: { corpo: recusado },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await expect(page.getByText(/Quem decide é você/)).toBeVisible();
+    await expect(page.getByText("Há um pedido esperando você, no alto da ficha.")).toBeVisible();
+    await page.getByRole("button", { name: "Recusar o pedido" }).click();
+    const j = page.getByRole("alertdialog", { name: "Recusar o pedido de exclusão?" });
+    await j.getByRole("button", { name: "Recusar o pedido" }).click();
+    await expect(j.getByText(/Escreva o motivo/)).toBeVisible();
+    await j.getByLabel("Motivo").fill("Não deu para confirmar que veio da cliente.");
+    await j.getByRole("button", { name: "Recusar o pedido" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Pedido de exclusão recusado." })).toBeVisible();
+    await expect(page.getByText(/Pedido de exclusão recusado em .* por Marina Ribeiro\./)).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "POST")!.corpo).toEqual({ motivo: "Não deu para confirmar que veio da cliente." });
+  });
+
+  test("a janela da dona vem com a data e o canal do pedido", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA }, [`GET ${ficha}`]: { corpo: { ...FICHA, pedidoExclusao: PEDIDO } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Excluir os dados", exact: true }).click();
+    const j = page.getByRole("alertdialog");
+    await expect(j.getByText(/Pedido registrado por Diego Almeida/)).toBeVisible();
+    await expect(j.getByLabel("Data do pedido")).toHaveValue(br(dia(0)));
+    await expect(j.getByLabel("Como o pedido chegou")).toHaveValue("WHATSAPP");
+  });
+
+  test("decisões 3 e 4: o excluído mostra os resumos sem com quem se falou, e fica em Inativos", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA }, [`GET ${ficha}`]: { corpo: EXCLUIDA },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET ${ficha}/atendimentos`]: { corpo: { atendimentos: [{ id: "f1", ocorridoEm: h(24 * 12), canal: "WHATSAPP", comQuem: null, atendidoPor: DIEGO,
+        resumo: "Mandou a certidão; falta a carta do INSS.", registradoEm: h(24 * 12), proxContato: null }] } },
+      "GET /v1/escritorio/clientes?situacao=ATIVO": { corpo: { comercial: true, clientes: [] } },
+      "GET /v1/escritorio/clientes?situacao=INATIVO": { corpo: { comercial: true, clientes: [{ id: CLI, tipo: "PF", nome: "Cliente excluído", situacao: "EXCLUIDO", versao: 4,
+        contatoPrincipal: null, origem: "INDICACAO_CLIENTE", proxContato: null, exclusao: { em: h(0.1), protocolo: "EXC-2026-0007" } }] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}?aba=atendimentos`);
+    await expect(page.getByText("“Mandou a certidão; falta a carta do INSS.”")).toBeVisible();
+    await expect(page.getByText("Com quem se falou e o próximo contato excluídos a pedido do titular (LGPD).")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Registrar atendimento" })).toHaveCount(0);
+    await semViolacoes(page);
+    await page.goto(`${P}/clientes?filtro=inativos`);
+    await expect(page.getByText(/1 deles excluído a pedido \(LGPD\)/)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Cliente excluído" }).first()).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("decisão 2: o Início da dona avisa o pedido esperando e leva à ficha", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      "GET /v1/escritorio/inicio/contatos?de=MEUS": { corpo: { de: "MEUS", dono: true, vencidos: [], hoje: [], totalVencidos: 0, totalHoje: 0, maisAntigo: null,
+        proximo: null, equipeVencidos: 0, pedidosExclusao: [{ id: "p1", clienteId: CLI, nome: "Antônia Ferreira Prado", pedidoEm: dia(0), por: "Diego Almeida" }] } },
+    });
+    await page.goto(P);
+    const aviso = page.getByRole("link", { name: /1 pedido de exclusão esperando você/ });
+    await expect(aviso).toHaveAttribute("href", `/clientes/${CLI}`);
+    await expect(aviso).toContainText("Antônia Ferreira Prado · pedido em");
+    await semViolacoes(page);
+  });
+});

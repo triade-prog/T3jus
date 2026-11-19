@@ -211,4 +211,14 @@ Tela aprovada em `docs/design/aprovadas/portal-clientes`, com as cinco recomenda
 - **Origem (decisão 4):** lista fixa em `ORIGENS` (domínio) e no `check` da tabela; um teste Deno confere os dois.
 - **Histórico:** `cliente.cadastrado`, `cliente.editado` (só os nomes dos campos), `cliente.atendimento_registrado`; inativar e reativar passam pelo guardião com o motivo.
 - **API:** `/v1/escritorio/clientes` (GET com `q`, `situacao`, `vencidos`; POST), `/clientes/duplicados`, `/clientes/:id` (GET e PUT com `versao`), `/clientes/:id/inativar`, `/reativar`, `/clientes/:id/atendimentos` (GET e POST) e `/v1/escritorio/pessoas`. Na recusa por área, a API devolve só o `motivo` (`AREA_NAO_LIBERADA`).
-- **Pendentes:** aviso do vencido no Início (F1.14) e pedido de exclusão do titular pela LGPD (F1.15, decisão 5).
+- **Pendências (feitas):** aviso do vencido no Início (F1.14) e pedido de exclusão do titular pela LGPD (F1.15), na seção abaixo.
+
+### Início com os contatos do dia e pedido de exclusão (F1.14, F1.15; AP-06, PT-11)
+
+Tela aprovada em `docs/design/aprovadas/portal-clientes-pendencias`, com as decisões da Carol de 18/11/2026.
+
+- **Início (migration 0170, `portal_inicio_contatos`):** só para quem tem a área Comercial. Devolve os vencidos (do mais antigo) e os de hoje em que a pessoa é a responsável, com limite e totais, o próximo marcado (para o vazio) e, para a sócia dona, quantos vencidos a equipe tem e os pedidos de exclusão esperando. `de=EQUIPE` só para a dona (`SO_SOCIO_DONO`). A tela é `InicioPortal`; os outros blocos do Início entram com as áreas deles.
+- **Pedido de exclusão:** `pedidos_exclusao` (um aberto por cliente, estados PENDENTE, ATENDIDO e RECUSADO, protocolo `EXC-aaaa-nnnn` por escritório) guarda o pedido sem dado pessoal do cliente. Quem não é a dona registra o pedido; só a dona exclui (confere quem pediu e o nome digitado) ou recusa com motivo.
+- **Exclusão:** numa transação, o cliente passa a `EXCLUIDO` (sem volta), perde nome, documento, qualificação, representante, contatos e quem indicou; nos atendimentos saem com quem se falou e o próximo contato, e ficam data, canal, quem atendeu e o resumo (decisão 3). O gatilho dos atendimentos continua só de inserção, com uma única exceção conferida pelos dados: limpar esses campos de cliente já excluído. Cliente excluído não se edita, reativa nem recebe atendimento (`CLIENTE_EXCLUIDO`) e aparece só em Inativos, com a data e o protocolo (decisão 4).
+- **API:** `GET /v1/escritorio/inicio/contatos?de=MEUS|EQUIPE`, `POST /clientes/:id/exclusao/pedido`, `POST /clientes/:id/exclusao/recusar` e `POST /clientes/:id/exclusao` (com `versao`, `conferido` e `nomeConfirmado`).
+- **Pendente:** com contrato ou processo, o pedido só arquiva (decisão 5), em F1.16.

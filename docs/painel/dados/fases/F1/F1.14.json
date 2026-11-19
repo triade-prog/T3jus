@@ -5,8 +5,7 @@
   "refs": [
     "AP-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 63,
-  "nota": "A lista de Clientes e a ficha já mostram o vencido e o filtro Contato vencido. Falta o aviso no Início, que ainda não tem dados.",
-  "proximo": "Quando o Início do Portal tiver dados, listar os próximos contatos vencidos e os de hoje do responsável"
+  "evidencia": "Portal › Início (/), tela aprovada em docs/design/aprovadas/portal-clientes-pendencias com a decisão 1 da Carol (18/11/2026): bloco “Contatos de hoje” com os vencidos do mais antigo e depois os de hoje da pessoa responsável, limite de 5 com o pé do que falta, “Registrar atendimento” abrindo a janela da ficha, vazio com o próximo marcado, erro dentro do bloco; a sócia dona vê os dela e, com “Da equipe”, os de todos; sem a área Comercial o bloco não aparece. Migration 0170 (portal_inicio_contatos), rota /v1/escritorio/inicio/contatos, pgTAP 017, vitest inicio.test.ts e e2e portal-inicio.spec.ts"
 }
