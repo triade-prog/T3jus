@@ -1,0 +1,12 @@
+{
+  "id": "D6",
+  "texto": "Desenho das automações de mensagens do WhatsApp em Conversas: fluxo visual com sugestão da IA, teste sem enviar, ligar só pela sócia dona e histórico",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "andamento",
+  "ordem": 55,
+  "evidencia": "Ideia PA-03 registrada no IDEIAS.md a partir da referência enviada pela Carol (19/11/2026); desenho com a especialista de frontend em project-files/t3jus/telas/portal-conversas-automacoes/",
+  "proximo": "Carol aprovar o desenho das automações; depois copiar para docs/design/aprovadas/ e programar"
+}
