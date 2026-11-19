@@ -1,0 +1,17 @@
+{
+  "id": "F3.26",
+  "texto": "Início do Portal por áreas: faixa \"Hoje nas suas áreas\" e um bloco por área liberada (Comercial, Contratos, Financeiro e Jurídico), com Os meus / Da equipe para a sócia dona",
+  "peca": "S1",
+  "refs": [
+    "PD-01",
+    "PD-02",
+    "PD-03",
+    "PD-04",
+    "PD-05",
+    "PD-06",
+    "PD-07"
+  ],
+  "status": "pendente",
+  "ordem": 260,
+  "proximo": "Programar o Início por áreas aprovado (docs/design/aprovadas/portal-inicio-areas/) quando as áreas tiverem os dados no servidor; inclui o responsável pelo repasse (responsável do contrato, com troca)"
+}
