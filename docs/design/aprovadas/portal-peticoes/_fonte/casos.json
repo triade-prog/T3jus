@@ -1,0 +1,191 @@
+[
+ {
+  "nome": "peticoes",
+  "url": "peticoes.html?estado=peticoes",
+  "alto": 0,
+  "titulo": "Petições (sócia dona)",
+  "legenda": "Busca, filtro por situação, Todas, Minhas e Para eu revisar. Cada linha: modelo e arquivo, caso (leva à ficha), quem gerou e quando, e a situação (Rascunho, Em revisão, Ajuste pedido, Aprovada, Reprovada) com o detalhe: com quem está, quem decidiu, dados marcados. Só a aprovada tem Baixar; a que espera Marina tem Revisar."
+ },
+ {
+  "nome": "peticoes-vazio",
+  "url": "peticoes.html?estado=peticoes-vazio",
+  "alto": 0,
+  "titulo": "Primeiro uso",
+  "legenda": "Sem petições: dois passos, conferir os modelos (já vêm 8 padrão do T3jus) e gerar a primeira."
+ },
+ {
+  "nome": "modelos",
+  "url": "peticoes.html?estado=modelos",
+  "alto": 0,
+  "titulo": "Modelos por área",
+  "legenda": "Trabalhista, Cível e Para qualquer área. Cada modelo: “Do escritório” ou “Padrão T3jus”, versão, quem enviou, quantos campos, quantas vezes foi usado, Baixar e Trocar. Ao lado, os campos aceitos e quem muda os modelos."
+ },
+ {
+  "nome": "modelo-enviar",
+  "url": "peticoes.html?estado=modelo-enviar",
+  "alto": 1500,
+  "titulo": "Enviar modelo, com a conferência",
+  "legenda": "O arquivo .docx, nome, tipo de peça, área e qual modelo substitui (a versão anterior fica guardada). A conferência lista os 11 campos achados; o desconhecido [NOME_RECLAMADA] gera aviso e não bloqueia."
+ },
+ {
+  "nome": "modelo-erro",
+  "url": "peticoes.html?estado=modelo-erro",
+  "alto": 1300,
+  "titulo": "Enviar modelo: arquivo em PDF",
+  "legenda": "O erro fica preso ao arquivo e diz como sair: salvar como Documento do Word. O modelo atual continua valendo."
+ },
+ {
+  "nome": "nova-caso",
+  "url": "peticoes.html?estado=nova-caso",
+  "alto": 0,
+  "titulo": "Passo 1: o caso",
+  "legenda": "Busca e os casos em andamento em cartões de escolha, com número, área, clientes e etapa. Ao lado, de onde vem cada dado."
+ },
+ {
+  "nome": "nova-modelo",
+  "url": "peticoes.html?estado=nova-modelo",
+  "alto": 0,
+  "titulo": "Passo 2: o modelo",
+  "legenda": "Os modelos da área do caso primeiro, depois os que servem a qualquer área; “Outras áreas” fica fechado. Ao lado, o resumo com Trocar."
+ },
+ {
+  "nome": "nova-dados",
+  "url": "peticoes.html?estado=nova-dados",
+  "alto": 0,
+  "titulo": "Passo 3: dados da peça",
+  "legenda": "Só o que o modelo usa: endereçamento montado da vara, número e vara do caso, valor da causa (do caso, editável só nesta petição), clientes que entram como partes, qualificação da parte contrária e quem assina. Felipe entra só com a OAB/SP: a OAB/RJ foi desmarcada nesta petição. A linha âmbar mostra como os advogados saem no documento."
+ },
+ {
+  "nome": "nova-erro",
+  "url": "peticoes.html?estado=nova-erro",
+  "alto": 0,
+  "titulo": "Passo 3: o que impede a prévia",
+  "legenda": "Endereçamento vazio e nenhum advogado marcado: resumo no topo com links e o erro preso a cada campo. São os dois únicos bloqueios; dado faltando no cadastro não bloqueia."
+ },
+ {
+  "nome": "nova-previa",
+  "url": "peticoes.html?estado=nova-previa",
+  "alto": 0,
+  "titulo": "Passo 4: prévia e gerar",
+  "legenda": "A prévia em papel timbrado, como a aprovada em Contratos: dado do cadastro (traço), deste formulário (pontilhado) e o que falta em destaque ([RG: falta]). Ao lado, o que conferir, o aviso de que o T3jus não revisa nem protocola e Gerar o .docx."
+ },
+ {
+  "nome": "nova-dados-larissa",
+  "url": "peticoes.html?estado=nova-dados-larissa",
+  "alto": 0,
+  "titulo": "Passo 3 por quem só tem Jurídico (Larissa)",
+  "legenda": "Caso sem número ainda: o campo fica vazio e explica que sai marcado, com a opção de gravar o número no caso. Larissa vê e muda o valor da causa; honorários não entram em petições."
+ },
+ {
+  "nome": "nova-faltas",
+  "url": "peticoes.html?estado=nova-faltas",
+  "alto": 0,
+  "titulo": "Passo 4 com dois dados faltando",
+  "legenda": "Sem número do processo e sem o RG da cliente: os dois saem marcados. Para o número, a tela lembra que, antes da distribuição, o modelo certo talvez seja a inicial. O botão diz “Gerar com 2 dados marcados”."
+ },
+ {
+  "nome": "revisao-enviar",
+  "url": "peticoes.html?estado=revisao-enviar",
+  "alto": 0,
+  "titulo": "Passo 4 pela estagiária: enviar para revisão",
+  "legenda": "O último passo vira “Prévia e enviar”: diz que vai para Felipe Matos, responsável pelo caso, e só fica pronta depois da aprovação. Recado opcional. Dá para guardar como rascunho."
+ },
+ {
+  "nome": "revisao-enviada",
+  "url": "peticoes.html?estado=revisao-enviada",
+  "alto": 0,
+  "titulo": "Enviada: Em revisão",
+  "legenda": "Situação “Em revisão” com quem e desde quando, o rascunho para baixar (com “Rascunho · em revisão” no cabeçalho), o que acontece agora e a versão 1 no histórico."
+ },
+ {
+  "nome": "aviso-revisao",
+  "url": "peticoes.html?estado=aviso-revisao",
+  "alto": 0,
+  "titulo": "Para eu revisar (Felipe)",
+  "legenda": "O filtro “Para eu revisar” com a contestação e o botão Revisar. Ao lado, como o pedido chega: no sino e no Início, em “Pedem você agora”, com o prazo do caso."
+ },
+ {
+  "nome": "revisar",
+  "url": "peticoes.html?estado=revisar",
+  "alto": 0,
+  "titulo": "Tela de revisão",
+  "legenda": "A prévia com um botão de comentar ao lado de cada parágrafo (aqui, um comentário sendo escrito na qualificação). Ao lado: quem enviou, o recado, o prazo do caso, os dados usados, as versões e a decisão: Aprovar, Pedir ajuste ou Reprovar."
+ },
+ {
+  "nome": "revisar-ajuste",
+  "url": "peticoes.html?estado=revisar-ajuste",
+  "alto": 0,
+  "titulo": "Pedir ajuste",
+  "legenda": "Um comentário preso ao parágrafo da qualificação e um comentário geral. O botão diz “Pedir ajuste a Beatriz”."
+ },
+ {
+  "nome": "revisar-erro",
+  "url": "peticoes.html?estado=revisar-erro",
+  "alto": 0,
+  "titulo": "Pedir ajuste sem comentário",
+  "legenda": "Resumo no topo e o erro preso ao comentário geral (COMENTARIO_OBRIGATORIO). Nada foi enviado."
+ },
+ {
+  "nome": "passar-revisao",
+  "url": "peticoes.html?estado=passar-revisao",
+  "alto": 1100,
+  "titulo": "Passar a revisão",
+  "legenda": "Felipe passa para outro advogado com OAB e Jurídico, com o motivo opcional. Ele continua responsável pelo caso."
+ },
+ {
+  "nome": "ajuste-pedido",
+  "url": "peticoes.html?estado=ajuste-pedido",
+  "alto": 0,
+  "titulo": "Ajuste pedido (Beatriz)",
+  "legenda": "Os comentários de Felipe (o geral e o do parágrafo, com o trecho), a v1 com o comentário no lugar e as duas formas de corrigir: refazer pelos dados ou enviar o .docx editado no Word."
+ },
+ {
+  "nome": "reenviar-v2",
+  "url": "peticoes.html?estado=reenviar-v2",
+  "alto": 0,
+  "titulo": "Enviar a versão 2",
+  "legenda": "O .docx editado (conferido: nenhum dado “falta”), cada comentário marcado como resolvido e o recado. Vai como v2, para Felipe de novo."
+ },
+ {
+  "nome": "revisar-v2",
+  "url": "peticoes.html?estado=revisar-v2",
+  "alto": 0,
+  "titulo": "Revisar a v2 e aprovar",
+  "legenda": "A prévia do .docx editado, o comentário da v1 marcado como resolvido, o histórico v1 (ajuste pedido) e v2, e Aprovar com comentário opcional."
+ },
+ {
+  "nome": "aprovada",
+  "url": "peticoes.html?estado=aprovada",
+  "alto": 0,
+  "titulo": "Aprovada: pronta",
+  "legenda": "Só agora a petição sai pronta: Baixar o .docx sem a marca de rascunho, o comentário de Felipe, o aviso de que o T3jus não protocola nem revisa e as versões."
+ },
+ {
+  "nome": "reprovada",
+  "url": "peticoes.html?estado=reprovada",
+  "alto": 0,
+  "titulo": "Reprovada",
+  "legenda": "O motivo obrigatório, guardada sem sair como pronta (PT-03), o rascunho para consulta e “Gerar outra petição deste caso”."
+ },
+ {
+  "nome": "gerada",
+  "url": "peticoes.html?estado=gerada",
+  "alto": 0,
+  "titulo": "Petição gerada pela responsável",
+  "legenda": "Marina é a responsável pelo caso: sai aprovada, sem revisão. Baixar o .docx, o dado que saiu marcado, o aviso claro de que o T3jus não protocola nem revisa o conteúdo jurídico, os próximos passos e o lugar reservado da assinatura eletrônica. Ao lado, como saiu."
+ },
+ {
+  "nome": "ficha-peticoes",
+  "url": "peticoes.html?estado=ficha-peticoes",
+  "alto": 0,
+  "titulo": "Ficha do caso com Petições",
+  "legenda": "A ficha aprovada ganha “Gerar petição” em Documentos e a folha “Petições do caso” na lateral, com a situação de cada uma (a juntada de Beatriz espera Marina: Revisar). Só a aprovada entra nos documentos ligados."
+ },
+ {
+  "nome": "sem-juridico",
+  "url": "peticoes.html?estado=sem-juridico",
+  "alto": 0,
+  "titulo": "Sem a área Jurídico (Paula)",
+  "legenda": "O Jurídico não aparece no menu nem no Mais. Quem abre um link direto vê o aviso, com quem libera, e o servidor responde AREA_NAO_LIBERADA."
+ }
+]
