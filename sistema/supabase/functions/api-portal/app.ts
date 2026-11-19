@@ -6,6 +6,8 @@ import {
   areasSchema, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso,
+  dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
+  type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -324,6 +326,72 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
       ...quem(c), p_compromisso: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo, p_avisar: d.avisar,
     });
     return c.json({ versao });
+  });
+
+  // ------------------------------------------------------------------ Comercial (AP-02 a AP-06)
+  // Só com a área Comercial: o banco recusa com AREA_NAO_LIBERADA.
+
+  app.get("/v1/escritorio/comercial/retornos", async (c) => {
+    const resp = c.req.query("responsavel") || null;
+    if (resp && !UUID.test(resp)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["responsavel"] });
+    return c.json(await deps.banco.rpc<Retornos>("portal_comercial_retornos", { ...quem(c), p_responsavel: resp?.toLowerCase() ?? null }));
+  });
+
+  app.get("/v1/escritorio/propostas", async (c) => {
+    const mostrar = (c.req.query("mostrar") || "ANDAMENTO").toUpperCase();
+    if (!["ANDAMENTO", "CONTRATO", "RECUSADAS"].includes(mostrar)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
+    const q = c.req.query("q") ?? null;
+    if (q && q.length > 120) throw new ErroDominio("VALIDATION_ERROR", { campos: ["q"] });
+    return c.json(await deps.banco.rpc<ListaPropostas>("portal_propostas", { ...quem(c), p_mostrar: mostrar, p_q: q }));
+  });
+
+  app.post("/v1/escritorio/propostas", async (c) => {
+    const d = await lerCorpo(c, dadosPropostaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_proposta_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/propostas/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaProposta>("portal_proposta", { ...quem(c), p_proposta: idDaRota(c, "id") }));
+  });
+
+  // Editar segue a versão lida (PT-19); a mudança fica no histórico com as condições de antes.
+  app.put("/v1/escritorio/propostas/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarPropostaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_proposta_editar", {
+      ...quem(c), p_proposta: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  // "Enviada" é marcada à mão: o escritório envia como já envia.
+  app.post("/v1/escritorio/propostas/:id/enviada", async (c) => {
+    const d = await lerCorpo(c, versaoSchema);
+    const versao = await deps.banco.rpc<number>("portal_proposta_enviada", { ...quem(c), p_proposta: idDaRota(c, "id"), p_versao: d.versao });
+    return c.json({ versao });
+  });
+
+  // Aceitou, pediu mudança ou recusou: grava o atendimento do cliente e encerra o retorno.
+  app.post("/v1/escritorio/propostas/:id/resposta", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, respostaPropostaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; situacao: string }>("portal_proposta_resposta", {
+      ...quem(c), p_proposta: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/propostas/:id/pedir-contrato", async (c) => {
+    await deps.banco.rpc("portal_proposta_pedir_contrato", { ...quem(c), p_proposta: idDaRota(c, "id") });
+    return c.json({ ok: true });
+  });
+
+  app.get("/v1/escritorio/comercial/funil", async (c) => {
+    const periodo = c.req.query("periodo") || "90";
+    if (!(periodo in PERIODOS_COMERCIAL)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["periodo"] });
+    return c.json(await deps.banco.rpc<Funil>("portal_comercial_funil", { ...quem(c), p_periodo: periodo }));
+  });
+
+  app.get("/v1/escritorio/comercial/origem", async (c) => {
+    const periodo = c.req.query("periodo") || "90";
+    if (!(periodo in PERIODOS_COMERCIAL)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["periodo"] });
+    return c.json(await deps.banco.rpc<OrigemContatos>("portal_comercial_origem", { ...quem(c), p_periodo: periodo }));
   });
 
   return app;
