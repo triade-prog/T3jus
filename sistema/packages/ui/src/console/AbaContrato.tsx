@@ -8,7 +8,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { CATEGORIAS_DOCUMENTO, ESTAGIOS, ESTAGIOS_CARTEIRA, etapasImplantacao, type CategoriaDocumento } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { problemaDoArquivo, tamanhoLegivel, tipoDoArquivo, tipoLegivel, type DocumentoCliente } from "./documentos.ts";
+import { enviarArquivo, problemaDoArquivo, tamanhoLegivel, tipoDoArquivo, tipoLegivel, type DocumentoCliente } from "./documentos.ts";
 import type { FichaDoCliente } from "./ficha.ts";
 import { AcaoEncerrar, dataBr, FolhaFim, JanelaEncerrar, soLeitura, TrajetoTres } from "./FimContrato.tsx";
 import { type EventoHistorico } from "./historico.ts";
@@ -148,22 +148,6 @@ interface ItemFila {
   erro?: string;
   /** Erro de rede ou do servidor: dá para tentar de novo. */
   deNovo?: boolean;
-}
-
-/** PUT do arquivo no endereço de envio, com o progresso. */
-function enviarArquivo(endereco: string, arquivo: File, tipo: string, aoProgredir: (p: number) => void): Promise<boolean> {
-  return new Promise((resolve) => {
-    const x = new XMLHttpRequest();
-    x.open("PUT", endereco);
-    x.setRequestHeader("content-type", tipo);
-    x.upload.onprogress = (e) => {
-      if (e.lengthComputable) aoProgredir(Math.round((e.loaded / e.total) * 100));
-    };
-    x.onload = () => resolve(x.status >= 200 && x.status < 300);
-    x.onerror = () => resolve(false);
-    x.onabort = () => resolve(false);
-    x.send(arquivo);
-  });
 }
 
 let chaveFila = 1;

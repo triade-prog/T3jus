@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AREAS_DIREITO, dataBr, formatarCnj, numeroCnjValido, PAPEIS_CASO, reais, RESULTADOS_CASO, textoAvisoEtapa,
-  type AreaDireito, type ClienteLinha, type Etapa, type FichaCaso, type ListaCasos, type ListaClientes, type OpcoesCaso,
+  type AreaDireito, type ClienteLinha, type DocumentoFaltando, type Etapa, type FichaCaso, type ListaCasos, type ListaClientes, type OpcoesCaso,
   type PapelCaso, type ResultadoCaso, type SituacaoCaso,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -24,6 +24,7 @@ import { SeloTipo } from "./Honorarios.tsx";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { botaoMudar, diaDaSemanaCurto, juntarNomes, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr, urgenciaPrazo } from "./juridico.ts";
 import { JanelaPrazo, JanelaTarefa, OQueTrava, PrazosETarefas, SeloUrgencia } from "./JuridicoPrazos.tsx";
+import { DocumentosDoCaso, JanelaEnviarDocumento, JanelaJaChegou, JanelaPedirDeNovo, JanelaPedirDocumento } from "./JuridicoDocumentos.tsx";
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
@@ -1059,7 +1060,8 @@ function Mudancas({ f }: { f: FichaCaso }) {
 
 function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio: EscritorioPortal; aoNome: (n: string) => void }) {
   const [f, setF] = useState<FichaCaso | null | "erro" | "nao">(null);
-  const [janela, setJanela] = useState<"etapa" | "editar" | "cliente" | "prazo" | "tarefa" | null>(null);
+  const [janela, setJanela] = useState<"etapa" | "editar" | "cliente" | "prazo" | "tarefa" | "pedir" | "enviar" | null>(null);
+  const [doc, setDoc] = useState<{ d: DocumentoFaltando; acao: "denovo" | "chegou" } | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [vez, setVez] = useState(0);
 
@@ -1085,7 +1087,8 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
   const ficha = f;
   const andamento = f.situacao === "ANDAMENTO";
   const prox = proximaEtapa(f.etapa.ordem, f.etapas);
-  const fechar = () => setJanela(null);
+  const fechar = () => { setJanela(null); setDoc(null); };
+  const pronto = (x: Feito) => { fechar(); setFeito(x); setVez((v) => v + 1); };
 
   return (
     <div className="hn">
@@ -1131,9 +1134,11 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
           <Clientes f={f} aoAdicionar={andamento ? () => setJanela("cliente") : undefined} />
           <PrazosETarefas f={f} aoNovoPrazo={andamento ? () => setJanela("prazo") : undefined} aoNovaTarefa={andamento ? () => setJanela("tarefa") : undefined}
             aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} />
+          <DocumentosDoCaso f={f} andamento={andamento} aoPedir={() => setJanela("pedir")} aoEnviar={() => setJanela("enviar")}
+            aoPedirDeNovo={(d) => setDoc({ d, acao: "denovo" })} aoChegou={(d) => setDoc({ d, acao: "chegou" })} />
         </div>
         <aside className="hn-col" aria-label="Sobre o caso">
-          <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} />
+          <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} aoDocumentoChegou={(d) => setDoc({ d, acao: "chegou" })} />
           <Contratos f={f} />
           <AvisoCliente f={f} />
           <Mudancas f={f} />
@@ -1165,6 +1170,10 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
         <JanelaTarefa caso={{ id: f.id, nome: f.nome, linha: linhaProcesso(f) }} escritorio={escritorio} aoFechar={fechar}
           aoFeito={(d) => { fechar(); setFeito({ titulo: "Tarefa criada", texto: `${d} está no caso e na lista de tarefas.` }); setVez((v) => v + 1); }} />
       ) : null}
+      {janela === "pedir" ? <JanelaPedirDocumento f={ficha} aoFechar={fechar} aoFeito={pronto} /> : null}
+      {janela === "enviar" ? <JanelaEnviarDocumento f={ficha} aoFechar={fechar} aoFeito={pronto} /> : null}
+      {doc?.acao === "denovo" ? <JanelaPedirDeNovo f={ficha} d={doc.d} aoFechar={fechar} aoFeito={pronto} /> : null}
+      {doc?.acao === "chegou" ? <JanelaJaChegou f={ficha} d={doc.d} aoFechar={fechar} aoFeito={pronto} /> : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );

@@ -14,13 +14,14 @@ import {
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
-  type ListaPrazos, type ListaTarefas, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
+  type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
+import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 
@@ -46,6 +47,8 @@ export interface DepsPortal extends DepsSessao {
   urlApp: string;
   /** Convites da equipe do escritório (PA-02): conta própria no Auth, e-mail só lá. */
   admin: AdminAuth;
+  /** Storage dos documentos dos casos (EX-05), no bucket documentos-portal. */
+  arquivos: Arquivos;
 }
 
 interface LinhaHistoricoEquipe {
@@ -637,6 +640,43 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.post("/v1/escritorio/juridico/tarefas/:id/chegou", async (c) => {
     return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_tarefa_chegou", { ...quem(c), p_tarefa: idDaRota(c, "id") }));
+  });
+
+  // Documentos do caso (EX-05). O arquivo vai direto do navegador para o Storage; aqui só se
+  // registra, confere e assina. O caminho é <escritório>/<documento>, montado no servidor.
+  app.post("/v1/escritorio/juridico/casos/:id/pedidos", async (c) => {
+    const d = await lerCorpo(c, pedirDocumentoSchema);
+    return c.json(await deps.banco.rpc<DocumentoFaltando>("portal_juridico_documento_pedir", { ...quem(c), p_caso: idDaRota(c, "id"), p_dados: d }), 201);
+  });
+
+  app.post("/v1/escritorio/juridico/pedidos/:id/de-novo", async (c) => {
+    return c.json(await deps.banco.rpc<DocumentoFaltando>("portal_juridico_documento_repedir", { ...quem(c), p_pedido: idDaRota(c, "id") }));
+  });
+
+  app.post("/v1/escritorio/juridico/pedidos/:id/chegou", async (c) => {
+    return c.json(await deps.banco.rpc<{ id: string; chegouEm: string }>("portal_juridico_documento_chegou", { ...quem(c), p_pedido: idDaRota(c, "id") }));
+  });
+
+  app.post("/v1/escritorio/juridico/casos/:id/documentos", async (c) => {
+    const d = await lerCorpo(c, iniciarDocumentoCasoSchema);
+    const documento = await deps.banco.rpc<string>("portal_juridico_documento_iniciar", { ...quem(c), p_caso: idDaRota(c, "id"), p_dados: d });
+    return c.json({ id: documento, enderecoDeEnvio: await deps.arquivos.enderecoDeEnvio(`${c.get("escritorioId")}/${documento}`) }, 201);
+  });
+
+  app.post("/v1/escritorio/juridico/documentos/:id/concluir", async (c) => {
+    const doc = idDaRota(c, "id");
+    const [registro] = await deps.banco.rpc<{ tipo: string; tamanho: number }[]>("portal_juridico_documento_para_concluir", { ...quem(c), p_documento: doc });
+    const chegou = await deps.arquivos.info(`${c.get("escritorioId")}/${doc}`);
+    if (!registro || !chegou || chegou.tamanho !== registro.tamanho || chegou.tipo !== registro.tipo) {
+      throw new ErroDominio("VALIDATION_ERROR", { campos: ["arquivo"], motivo: "ARQUIVO_NAO_CHEGOU" });
+    }
+    return c.json(await deps.banco.rpc<DocumentoDoCaso>("portal_juridico_documento_concluir", { ...quem(c), p_documento: doc }));
+  });
+
+  app.post("/v1/escritorio/juridico/documentos/:id/abrir", async (c) => {
+    const doc = idDaRota(c, "id");
+    const nome = await deps.banco.rpc<string>("portal_juridico_documento_abrir", { ...quem(c), p_documento: doc });
+    return c.json({ url: await deps.arquivos.enderecoDeLeitura(`${c.get("escritorioId")}/${doc}`, VALIDADE_LEITURA_S, nome), validadeSegundos: VALIDADE_LEITURA_S });
   });
 
   // Etapas do escritório (EX-07): todos com a área veem; só a sócia dona escreve (o banco confere).

@@ -7,7 +7,7 @@
 // nem conta dias úteis: a tela diz isso. O lembrete no Início e no sino chega numa próxima entrega.
 
 import { useEffect, useRef, useState } from "react";
-import { dataBr, formatarCnj, type FichaCaso, type LinhaCaso, type ListaCasos, type ListaPrazos, type ListaTarefas, type MostrarPrazos, type Prazo, type Tarefa, type VisaoTarefas } from "@t3jus/domain";
+import { dataBr, formatarCnj, type DocumentoFaltando, type FichaCaso, type LinhaCaso, type ListaCasos, type ListaPrazos, type ListaTarefas, type MostrarPrazos, type Prazo, type Tarefa, type VisaoTarefas } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -762,10 +762,10 @@ export function PrazosETarefas({ f, aoNovoPrazo, aoNovaTarefa, aoMudou }: {
 }
 
 /** "O que está travando" (PD-05): as tarefas abertas que esperam alguém, com o "já chegou". */
-export function OQueTrava({ f, aoMudou }: { f: FichaCaso; aoMudou: (feito: Feito) => void }) {
+export function OQueTrava({ f, aoMudou, aoDocumentoChegou }: { f: FichaCaso; aoMudou: (feito: Feito) => void; aoDocumentoChegou: (d: DocumentoFaltando) => void }) {
   const [falha, setFalha] = useState<string | null>(null);
   const travadas = f.tarefas.filter((t) => t.esperando && !t.concluidaEm);
-  if (!travadas.length) return null;
+  if (!travadas.length && !f.faltam.length) return null;
   const jaChegou = async (t: Tarefa) => {
     setFalha(null);
     const e = await chegou(t);
@@ -784,6 +784,16 @@ export function OQueTrava({ f, aoMudou }: { f: FichaCaso; aoMudou: (feito: Feito
               <p><b>{textoEsperando(t.esperando!, t.esperandoDesde, f.hoje)}.</b></p>
               <p>Trava: <b>{t.titulo}</b> ({t.responsavel.nome}).</p>
               <button className="jr-link" type="button" onClick={() => void jaChegou(t)} aria-label={`Já chegou: ${t.titulo}`}>Já chegou</button>
+            </div>
+          </li>
+        ))}
+        {f.faltam.map((d) => (
+          <li key={d.id}>
+            <Icone nome="doc" className="ico ico-s" />
+            <div>
+              <p><b>{textoEsperando(`${d.cliente.nome.split(/\s+/)[0]}: ${d.descricao}`, d.repedidoEm ?? d.pedidoEm, f.hoje)}.</b></p>
+              <p>Documento pedido em {dataBr(d.pedidoEm)}.</p>
+              <button className="jr-link" type="button" onClick={() => aoDocumentoChegou(d)} aria-label={`Já chegou: ${d.descricao}`}>Já chegou</button>
             </div>
           </li>
         ))}

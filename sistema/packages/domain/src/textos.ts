@@ -70,6 +70,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ETAPAS_DEMAIS: "O escritório pode ter até 30 etapas.",
   ETAPAS_DE_MENOS: "O escritório precisa de pelo menos uma etapa além da final.",
   RESULTADO_OBRIGATORIO: "Diga como o caso terminou: ganho, perda ou acordo.",
+  DOCUMENTO_JA_CHEGOU: "Este documento já chegou. Recarregue a página.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

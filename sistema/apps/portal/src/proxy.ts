@@ -5,7 +5,8 @@ import { cabecalhosSeguranca, gerarNonce, montarCsp } from "@t3jus/servidor/cabe
 
 export function proxy(request: NextRequest) {
   const nonce = gerarNonce();
-  const csp = montarCsp({ nonce, dev: process.env.NODE_ENV === "development" });
+  // O Storage entra em connect-src para o envio direto dos documentos dos casos (EX-05).
+  const csp = montarCsp({ nonce, dev: process.env.NODE_ENV === "development", conectar: [process.env.ARQUIVOS_ORIGEM ?? ""] });
 
   const headers = new Headers(request.headers);
   headers.set("x-nonce", nonce);

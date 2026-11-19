@@ -3,6 +3,7 @@
 
 import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
+import { arquivosStorage, BUCKET_DOCUMENTOS_PORTAL } from "../_shared/arquivos.ts";
 import { conferirVazadaHibp } from "../_shared/senha.ts";
 import { criarApiPortal } from "./app.ts";
 
@@ -13,12 +14,14 @@ function exigir(nome: string): string {
 }
 
 const url = exigir("SUPABASE_URL");
+const chaveServico = exigir("SUPABASE_SERVICE_ROLE_KEY");
 const app = criarApiPortal(Deno.env.get("REPASSE_SEGREDO"), {
-  banco: bancoPostgrest(url, exigir("SUPABASE_SERVICE_ROLE_KEY")),
+  banco: bancoPostgrest(url, chaveServico),
   auth: authGoTrue(url, exigir("SUPABASE_ANON_KEY")),
   senhaVazada: conferirVazadaHibp(),
   urlApp: exigir("PORTAL_URL"),
-  admin: adminGoTrue(url, exigir("SUPABASE_SERVICE_ROLE_KEY")),
+  admin: adminGoTrue(url, chaveServico),
+  arquivos: arquivosStorage(url, chaveServico, BUCKET_DOCUMENTOS_PORTAL),
 });
 
 Deno.serve(app.fetch);

@@ -1,0 +1,11 @@
+{
+  "id": "F3.42",
+  "texto": "\"Pedir de novo\" abre a conversa do cliente no WhatsApp do escritório, dentro de Conversas, com o texto pronto",
+  "peca": "S6",
+  "refs": [
+    "EX-05"
+  ],
+  "status": "pendente",
+  "ordem": 420,
+  "proximo": "Depende de Conversas (WhatsApp do escritório ligado ao T3jus); até lá a janela mostra o texto para copiar ou abrir no WhatsApp do aparelho"
+}
