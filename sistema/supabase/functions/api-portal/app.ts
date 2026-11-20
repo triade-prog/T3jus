@@ -18,6 +18,8 @@ import {
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
+  ajustarAvisoSchema, conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
+  respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
@@ -394,6 +396,60 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/conversas/:id/mensagens", async (c) => {
     const d = await lerCorpo(c, enviarConversaSchema);
     return c.json(await deps.banco.rpc<{ id: string; envio: string }>("portal_conversa_enviar", { ...quem(c), p_conversa: idDaRota(c, "id"), p_dados: d }), 201);
+  });
+
+  // Escritório › WhatsApp e IA (F3.54; PA-04). O token da Meta nunca passa por aqui: a troca do
+  // código da janela da Meta e os avisos da Meta são do serviço do WhatsApp (F3.53).
+  app.get("/v1/escritorio/whatsapp", async (c) =>
+    c.json(await deps.banco.rpc<PaginaWhatsapp>("portal_whatsapp", quem(c))));
+
+  app.put("/v1/escritorio/whatsapp/rascunho", async (c) => {
+    const d = await lerCorpo(c, rascunhoLigacaoSchema);
+    return c.json(await deps.banco.rpc("portal_whatsapp_rascunho", { ...quem(c), p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/whatsapp/conferir-numero", async (c) => {
+    const d = await lerCorpo(c, conferirNumeroSchema);
+    return c.json(await deps.banco.rpc("portal_whatsapp_conferir_numero", { ...quem(c), p_dados: { ...d, telefone: telefoneE164(d.telefone) } }));
+  });
+
+  app.post("/v1/escritorio/whatsapp/desligar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, desligarWhatsappSchema);
+    return c.json(await deps.banco.rpc<PaginaWhatsapp>("portal_whatsapp_desligar", { ...quem(c), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/whatsapp/avisos/:chave", async (c) => {
+    const chave = c.req.param("chave");
+    if (!(chave in AVISOS_WHATSAPP)) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, ajustarAvisoSchema);
+    return c.json(await deps.banco.rpc<PaginaWhatsapp>("portal_whatsapp_aviso_ajustar", { ...quem(c), p_chave: chave, p_versao: d.versao, p_texto: d.texto }));
+  });
+
+  app.get("/v1/escritorio/ia", async (c) => c.json(await deps.banco.rpc<PaginaIa>("portal_ia", quem(c))));
+
+  app.patch("/v1/escritorio/ia", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, salvarIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_salvar", { ...quem(c), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/ia/ligar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, ligarIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_ligar", { ...quem(c), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/ia/pausar", async (c) => {
+    const { versao } = await lerCorpo(c, pausarIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_pausar", { ...quem(c), p_versao: versao }));
+  });
+
+  app.post("/v1/escritorio/ia/respostas", async (c) => {
+    const d = await lerCorpo(c, respostaIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_resposta_salvar", { ...quem(c), p_dados: d }));
+  });
+
+  app.patch("/v1/escritorio/ia/respostas/:id", async (c) => {
+    const d = await lerCorpo(c, situacaoRespostaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_resposta_situacao", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_situacao: d.situacao }));
   });
 
   // ------------------------------------------------------------------ Comercial (AP-02 a AP-06)

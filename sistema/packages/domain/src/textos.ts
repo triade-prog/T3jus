@@ -32,6 +32,15 @@ export const TEXTO_LINK_ENVIADO =
 
 /** Motivo de uma recusa do banco (detalhes.motivo), dito para quem usa o Console. */
 export const TEXTOS_MOTIVO: Record<string, string> = {
+  SO_SOCIO_DONO: "Só a sócia dona faz isso.",
+  WHATSAPP_NAO_LIGADO: "O WhatsApp do escritório não está ligado.",
+  JA_LIGADO: "O WhatsApp do escritório já está ligado.",
+  NUMERO_EM_OUTRA_CONTA: "Este número já está ligado em outro escritório.",
+  CAMPO_NO_INICIO_OU_FIM: "A Meta pede que o texto não comece nem termine com um campo entre chaves.",
+  NOME_SEM_ASSISTENTE_VIRTUAL: "O nome sempre começa com “Assistente virtual”. A IA nunca finge ser uma pessoa.",
+  SEM_TESTE: "Teste a IA sem enviar antes de ligar.",
+  JA_LIGADA: "A IA já está ligada.",
+  IA_NAO_LIGADA: "A IA não está ligada.",
   SEM_SOCIO: "Convide o sócio antes de concluir a implantação.",
   MESMO_ESTAGIO: "O cliente já está neste estágio.",
   JA_SOCIO: "Esta pessoa já é sócia deste escritório.",

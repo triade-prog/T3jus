@@ -327,6 +327,17 @@ const DESENHOS = {
       <path d="M19 8v6M16 11h6" />
     </>
   ),
+  // Escritório › WhatsApp e IA (desenho aprovado).
+  ligar: <><path d="M12 3v9" /><path d="M7 6.2a7.5 7.5 0 1 0 10 0" /></>,
+  pausa: <path d="M8 5v14M16 5v14" />,
+  janela: <><path d="M3 4.5h18v15H3Z" /><path d="M3 8.5h18" /><path d="M13 13h5v4" /><path d="m18 13-6 6" /></>,
+  chave: <><path d="M8.5 10a4.5 4.5 0 1 1 0 .1Z" /><path d="M13 12.5h8v3.5" /><path d="M17.5 12.5v2.5" /></>,
+  medidor: <><path d="M3.5 17a8.5 8.5 0 1 1 17 0" /><path d="m12 17 4-6" /></>,
+  selo: <><path d="M12 3 19 6v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6Z" /><path d="m8.5 12 2.5 2.5 4.5-5" /></>,
+  livro: <><path d="M4 4.5h7v15H4Z" /><path d="M13 4.5h7v15h-7Z" /></>,
+  celular: <><path d="M7 2.5h10v19H7Z" /><path d="M11 18.5h2" /></>,
+  proibido: <><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Z" /><path d="m5.6 5.6 12.8 12.8" /></>,
+  fonte: <><path d="M5 3h10l4 4v14H5Z" /><path d="M8.5 11h7M8.5 15h7" /></>,
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

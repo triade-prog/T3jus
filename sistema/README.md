@@ -313,6 +313,18 @@ Telas aprovadas em `docs/design/aprovadas/portal-agenda-conversas`. Migration `0
 - **Tela:** `/conversas` (lista, conversa e contexto; no celular, uma coisa por vez), com o número de quem espera no menu. Automações e Avisos automáticos mostram "em preparo".
 - **Falta:** a IA e o envio e recebimento pelo provedor (F3.53), ligar o número em Escritório › WhatsApp e IA (F3.54), o aviso no sino (F3.55) e as automações (F1.17).
 
+### Escritório › WhatsApp e IA (F3.54; PA-04, PA-02)
+
+Telas aprovadas em `docs/design/aprovadas/portal-whatsapp`. Migration `0310_portal_whatsapp_ia.sql`, teste `031_portal_whatsapp_ia_test.sql`, e2e `portal-whatsapp.spec.ts`.
+
+- **Banco:** `whatsapp_escritorio` ganhou a saúde que a Meta devolve (nome, qualidade, limite, empresa confirmada), quem ligou e quem desligou com o motivo; guarda só a referência ao token no cofre (`token_ref`), nunca o token, e nenhuma função do Portal a devolve. O mesmo número não liga em dois escritórios (índice único). `whatsapp_ligacao_rascunho` (o assistente fica salvo), `whatsapp_eventos` (histórico do número, só acréscimo), `whatsapp_avisos` (os 6 avisos e a situação na Meta), `ia_config` (nasce desligada, nome sempre "Assistente virtual"), `ia_config_versoes` (só acréscimo), `ia_respostas` (sugerida, publicada, arquivada) e `ia_perguntas_sem_resposta`.
+- **Só a sócia dona** liga, muda e desliga (`so_socio_dono`); quem tem o Escritório lê, e só ela vê quantos avisos a Meta entregou no mês. Quem não é dona sugere respostas; ela publica.
+- **Serviço do WhatsApp (ainda não ligado à Meta):** `whatsapp_meta_ligou` (depois da janela da Meta) e `whatsapp_meta_evento` (nome, qualidade, limite, verificação e situação de cada aviso). Recusam token no dado.
+- **Regras:** o texto do aviso não começa nem termina com campo (`CAMPO_NO_INICIO_OU_FIM`); desligar pede motivo e confirmação e pausa a IA; a IA só liga com o número ligado e depois de um teste (`SEM_TESTE`); pausar é um clique.
+- **API:** `GET /v1/escritorio/whatsapp`, `PUT /whatsapp/rascunho`, `POST /whatsapp/conferir-numero` (o número brasileiro vira E.164; fixo por SMS recusa `FIXO_SEM_SMS`), `POST /whatsapp/desligar`, `POST /whatsapp/avisos/:chave`, `GET` e `PATCH /v1/escritorio/ia`, `POST /ia/ligar`, `POST /ia/pausar`, `POST /ia/respostas` e `PATCH /ia/respostas/:id`.
+- **Tela:** `/meu-escritorio/whatsapp` (abas Número e Como a IA atende; `?ligar=1`, `?aviso=CHAVE`, `?parte=ia&ia=passar|saber|testar`). Escritório ganhou a barra de seções.
+- **Falta:** a ligação real com a Meta, o webhook e trocar o número (F3.56); Testar sem enviar e a IA que responde (F3.53).
+
 ### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 
 Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_portal_juridico_casos.sql`, teste `024_portal_juridico_casos_test.sql`, e2e `portal-juridico-casos.spec.ts`.

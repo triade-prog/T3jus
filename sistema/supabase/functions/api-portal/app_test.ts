@@ -157,6 +157,25 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_caixa: (a) => ({ saldo: 0, escritorio: a.p_escritorio }),
     portal_conversas: (a) => ({ filtro: a.p_filtro, busca: a.p_busca, escritorio: a.p_escritorio }),
     portal_conversa: (a) => ({ id: a.p_conversa }),
+    portal_whatsapp: (a) => ({ escritorio: a.p_escritorio }),
+    portal_whatsapp_rascunho: (a) => a.p_dados,
+    portal_whatsapp_conferir_numero: (a) => {
+      const d = a.p_dados as { telefone: string; receberCodigo: string };
+      if (d.receberCodigo === "SMS" && /^\+551130/.test(d.telefone)) erroBanco("TC422", { campos: ["receberCodigo"], motivos: { receberCodigo: "FIXO_SEM_SMS" } });
+      return { passo: 2, telefone: d.telefone };
+    },
+    portal_whatsapp_desligar: (a) => ({ versao: a.p_versao, dados: a.p_dados }),
+    portal_whatsapp_aviso_ajustar: (a) => ({ chave: a.p_chave, texto: a.p_texto }),
+    portal_ia: (a) => ({ escritorio: a.p_escritorio }),
+    portal_ia_salvar: (a) => {
+      const d = a.p_dados as { nome?: string };
+      if (d.nome && !/^assistente virtual/i.test(d.nome)) erroBanco("TC422", { campos: ["nome"], motivo: "NOME_SEM_ASSISTENTE_VIRTUAL" });
+      return { versao: (a.p_versao as number) + 1 };
+    },
+    portal_ia_ligar: () => erroBanco("TC422", { motivo: "SEM_TESTE" }),
+    portal_ia_pausar: (a) => ({ situacao: "PAUSADA", versao: a.p_versao }),
+    portal_ia_resposta_salvar: (a) => ({ dados: a.p_dados }),
+    portal_ia_resposta_situacao: (a) => ({ id: a.p_id, situacao: a.p_situacao }),
     portal_conversa_assumir: (a) => (a.p_versao as number) + 1,
     portal_conversa_devolver: (a) => {
       const d = a.p_dados as { nota?: string; registrarAtendimento?: boolean };
@@ -835,6 +854,42 @@ Deno.test("PD-07, AP-02: Conversas, lista, conversa, assumir, devolver, passar e
   const e = await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/mensagens`, { corpo: { texto: "Oi, Marta" }, cookie });
   assertEquals(e.status, 201);
   assertEquals((await erro(await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/mensagens`, { corpo: { texto: "  " }, cookie }))).detalhes?.campos, ["texto"]);
+});
+
+Deno.test("PA-04: WhatsApp e IA, o número do Brasil vira E.164, nada de token, e o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp", { cookie })).json()).escritorio, AURORA);
+  const ok = await (await m.pedir("/v1/escritorio/whatsapp/conferir-numero", { corpo: { telefone: "(11) 97405-2210", receberCodigo: "SMS", confirmouNumero: true }, cookie })).json();
+  assertEquals(ok.telefone, "+5511974052210");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/whatsapp/conferir-numero", { corpo: { telefone: "(11) 3032-4410", receberCodigo: "SMS" }, cookie }))).detalhes?.motivos,
+    { receberCodigo: "FIXO_SEM_SMS" });
+  assertEquals((await erro(await m.pedir("/v1/escritorio/whatsapp/rascunho", { metodo: "PUT", corpo: { passo: 9 }, cookie }))).detalhes?.campos, ["passo"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp/rascunho", { metodo: "PUT", corpo: { passo: 1, receberCodigo: "VOZ" }, cookie })).json()).receberCodigo, "VOZ");
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp/desligar", { corpo: { versao: 3, motivo: "Trocar", entendi: true }, cookie })).json()).dados,
+    { motivo: "Trocar", entendi: true });
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp/avisos/PARCELA_ATRASO", { corpo: { versao: 2, texto: "Olá, {nome}." }, cookie })).json()).chave, "PARCELA_ATRASO");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/whatsapp/avisos/OUTRO", { corpo: { versao: 2, texto: "Olá" }, cookie }))).codigo, "NOT_FOUND");
+  assertEquals((await (await m.pedir("/v1/escritorio/ia", { cookie })).json()).escritorio, AURORA);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia", { metodo: "PATCH", corpo: { versao: 1, nome: "Carla" }, cookie }))).detalhes?.motivo, "NOME_SEM_ASSISTENTE_VIRTUAL");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia", { metodo: "PATCH", corpo: { versao: 1, tom: "SECO" }, cookie }))).detalhes?.campos, ["tom"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/ia", { metodo: "PATCH", corpo: { versao: 1, palavras: ["penhora"] }, cookie })).json()).versao, 2);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia/ligar", { corpo: { versao: 2, revisou: true }, cookie }))).detalhes?.motivo, "SEM_TESTE");
+  assertEquals((await (await m.pedir("/v1/escritorio/ia/pausar", { corpo: { versao: 2 }, cookie })).json()).situacao, "PAUSADA");
+  assertEquals((await (await m.pedir("/v1/escritorio/ia/respostas", { corpo: { pergunta: "Sábados", resposta: "Não atendemos." }, cookie })).json()).dados.pergunta, "Sábados");
+  assertEquals((await (await m.pedir(`/v1/escritorio/ia/respostas/${CLIENTE}`, { metodo: "PATCH", corpo: { versao: 1, situacao: "ARQUIVADA" }, cookie })).json()).situacao, "ARQUIVADA");
+  const tudo = JSON.stringify(m.chamadas.map((c) => c.args));
+  assertEquals(/token/i.test(tudo), false);
+});
+
+Deno.test("PA-04: avisos, assuntos e tons do domínio são os mesmos do banco", async () => {
+  const { AVISOS_WHATSAPP, ASSUNTOS_IA, TONS_IA, textoAvisoValido } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0310_portal_whatsapp_ia.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/chave\s+text not null check \(chave in \(([^)]+)\)/), Object.keys(AVISOS_WHATSAPP));
+  assertEquals(lista(/assuntos <@ array\[([^\]]+)\]/), Object.keys(ASSUNTOS_IA));
+  assertEquals(lista(/tom\s+text not null default 'CORDIAL' check \(tom in \(([^)]+)\)/), Object.keys(TONS_IA));
+  assertEquals([textoAvisoValido("{nome}, venceu."), textoAvisoValido("Olá, {nome}. Pague: {link}"), textoAvisoValido("Olá, {nome}. Venceu.")], [false, false, true]);
 });
 
 Deno.test("PD-07: motivos e razões do domínio são os mesmos do banco", async () => {

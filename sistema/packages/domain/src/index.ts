@@ -16,3 +16,4 @@ export * from "./contratos.ts";
 export * from "./financeiro.ts";
 export * from "./juridico.ts";
 export * from "./conversas.ts";
+export * from "./whatsapp.ts";

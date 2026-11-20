@@ -1,11 +1,12 @@
 {
   "id": "F3.54",
-  "texto": "Escritório › WhatsApp e IA: a sócia dona liga o número do escritório pelo caminho oficial da Meta, vê a saúde do número e define as regras da IA, testadas sem enviar",
+  "texto": "Escritório › WhatsApp e IA: a sócia dona liga o número passo a passo (o que já informou fica salvo), vê a saúde do número e os avisos na Meta, ajusta o texto recusado e desliga com motivo; e define como a IA atende (apresentação, assuntos, palavras, horário, respostas do escritório e perguntas que ela não soube), liga depois do teste e pausa num clique; quem não é dona vê para ler",
   "peca": "B3",
   "refs": [
     "PA-04"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 540,
-  "proximo": "Programar o desenho aprovado em docs/design/aprovadas/portal-whatsapp (14 estados, 5 decisões); a tabela whatsapp_escritorio já existe (migration 0300)"
+  "evidencia": "Migration 0310 (número com a saúde e sem token, rascunho do assistente, histórico do número só de acréscimo, os 6 avisos e a situação na Meta, configuração da IA com versões, respostas sugeridas e publicadas, perguntas sem resposta; peças do serviço whatsapp_meta_ligou e whatsapp_meta_evento), pgTAP 031 (49 testes), rotas /v1/escritorio/whatsapp e /v1/escritorio/ia na api-portal (2 testes Deno novos), e2e tests/e2e/portal-whatsapp.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-whatsapp.",
+  "nota": "A janela da Meta e a troca do código pelo token dependem do cadastro do T3jus como parceiro na Meta (F3.56); até lá, o passo 2 leva à ligação com a equipe T3jus. Testar sem enviar vem com a IA (F3.53)."
 }

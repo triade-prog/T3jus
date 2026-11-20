@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 530,
-  "proximo": "Ligar o serviço do WhatsApp (webhook do provedor) às peças whatsapp_mensagem_recebida, conversa_ia_respondeu e conversa_ia_passou, que já existem e estão testadas; a IA segue as regras de Escritório › WhatsApp e IA (F3.54)"
+  "proximo": "Ligar o serviço do WhatsApp às peças whatsapp_mensagem_recebida, conversa_ia_respondeu, conversa_ia_passou e conversa_ia_nao_soube; a IA segue a configuração de ia_config (F3.54) e as regras fixas conferidas no servidor; com a IA desligada ou pausada, a conversa vai direto para a equipe; Testar sem enviar grava ia_config.testada_em"
 }

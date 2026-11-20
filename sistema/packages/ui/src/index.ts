@@ -43,6 +43,7 @@ export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financei
 export { PagarFinanceiro } from "./portal/FinanceiroPagar.tsx";
 export { RepasseFinanceiro, RepassesFinanceiro } from "./portal/FinanceiroRepasses.tsx";
 export { BarraConversas, ConversasEmPreparo, ConversasPortal, ROTAS_CONVERSAS } from "./portal/Conversas.tsx";
+export { BarraEscritorio, ROTAS_ESCRITORIO, WhatsappPortal } from "./portal/WhatsApp.tsx";
 export { CaixaDoFinanceiro, ResumoDoFinanceiro } from "./portal/FinanceiroResumo.tsx";
 export { abasContador, arquivoContador, crc32, csvContador, planilhaXlsx, zipar } from "./portal/planilha.ts";
 export { CasosJuridicoPortal, FichaCasoPortal, NovoCasoPortal } from "./portal/Juridico.tsx";

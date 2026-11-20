@@ -12,7 +12,7 @@ export type Resposta<T> = { ok: true; dados: T } | { ok: false; status: number; 
 
 export async function chamarApi<T>(
   caminho: string,
-  opcoes: { metodo?: "GET" | "POST" | "PUT"; corpo?: unknown; sinal?: AbortSignal; buscar?: typeof fetch } = {},
+  opcoes: { metodo?: "GET" | "POST" | "PUT" | "PATCH"; corpo?: unknown; sinal?: AbortSignal; buscar?: typeof fetch } = {},
 ): Promise<Resposta<T>> {
   const buscar = opcoes.buscar ?? fetch;
   let r: Response;
