@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As da seção 11 são do Portal do advogado e saíram das decisões da Carol sobre os três sistemas (17/11/2026); PA-03 veio de uma referência de editor de fluxos que a Carol enviou (19/11/2026); PA-04 (ligar o WhatsApp do escritório e configurar a IA) a Carol aprovou desenhar em 19/11/2026. FI-22 (DRE) a Carol pediu para registrar em 19/11/2026, a partir de um post sobre o CPC 51/IFRS 18. As ideias CH-06 a CH-09, FI-07 a FI-21, EX-06 a EX-14, IN-07 a IN-14, VA-08, PT-25 e PT-26 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As da seção 11 são do Portal do advogado e saíram das decisões da Carol sobre os três sistemas (17/11/2026); PA-03 veio de uma referência de editor de fluxos que a Carol enviou (19/11/2026); PA-04 (ligar o WhatsApp do escritório e configurar a IA) a Carol aprovou desenhar em 19/11/2026. FI-22 (DRE) a Carol pediu para registrar em 19/11/2026, a partir de um post sobre o CPC 51/IFRS 18. IN-15 (quanto rendeu cada cliente) a Carol aprovou com o desenho dos relatórios do sócio (20/11/2026). As ideias CH-06 a CH-09, FI-07 a FI-21, EX-06 a EX-14, IN-07 a IN-14, VA-08, PT-25 e PT-26 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -107,6 +107,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | IN-12 | Receita e casos por área de atuação e por responsável | [V1] |
 | IN-13 | Esforço dedicado a cada cliente de mensalidade (tarefas e horas) comparado ao valor pago, para negociar reajuste | [VAL] |
 | IN-14 | Volume do período: quantos clientes receberam valores e quanto foi repassado | [V1] |
+| IN-15 | Quanto rendeu cada cliente, área e responsável no período: o que entrou menos as despesas de caso adiantadas que não voltaram, sem ratear despesa fixa | [V1] |
 
 ## 7. A validar com os pilotos
 
@@ -191,10 +192,10 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 3. Contratos e honorários | 9 |
 | 4. Financeiro e repasses | 22 |
 | 5. Execução jurídica | 14 |
-| 6. Indicadores | 14 |
+| 6. Indicadores | 15 |
 | 7. A validar com os pilotos | 8 |
 | 8. Princípios técnicos e de qualidade | 26 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 5 |
 | 11. Portal do advogado | 4 |
-| **Total** | **121** |
+| **Total** | **122** |
