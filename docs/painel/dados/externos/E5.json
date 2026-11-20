@@ -4,6 +4,7 @@
   "quem": "Carol",
   "precisa_em": "F1",
   "refs": [],
-  "status": "pendente",
-  "ordem": 50
+  "status": "feito",
+  "ordem": 50,
+  "evidencia": "Carol ligou o SMTP do Resend, colou os modelos e os endereços em 20/11/2026; e-mail de nova senha chegou em admin@t3jus.pro (caiu no spam, domínio novo)"
 }
