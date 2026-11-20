@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T3jus · Sistema jurídico · Em breve</title>
+<meta name="description" content="O T3jus está chegando: um sistema para escritórios de advocacia organizarem atendimento, contratos, honorários, financeiro e processos num só lugar, com o cliente atendido pelo WhatsApp do escritório.">
+<meta name="theme-color" content="#692746">
+<link rel="canonical" href="https://t3jus.pro/">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="T3jus">
+<meta property="og:url" content="https://t3jus.pro/">
+<meta property="og:title" content="T3jus · Sistema jurídico · Em breve">
+<meta property="og:description" content="Atendimento, contratos, honorários, financeiro e processos do escritório de advocacia num só lugar, com o cliente atendido pelo WhatsApp do escritório.">
+<meta property="og:image" content="https://t3jus.pro/marca/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Logo do T3jus, Sistema jurídico, sobre fundo vinho">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="/marca/icone-app.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,500;0,600;1,500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Conceito "Gabinete": vinho com grão, âmbar só como fio e figura, sal como campo claro. */
+:root{
+  --vinho:#692746; --vinho-2:#87335B; --vinho-3:#AC3F6B; --vinho-4:#AC788D;
+  --ambar:#DD9760; --ambar-2:#E9AE90; --ambar-3:#F2CDB3;
+  --sal:#F1E6DF; --sal-2:#F2ECE8;
+  --tinta:#2A1A22; --tinta-2:#6E5562; --vinho-escuro:#4F1D35; --papel:#FFFFFF;
+  --serifa:"Alegreya","Iowan Old Style",Georgia,serif;
+  --sans:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --grao:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27200%27%20height%3D%27200%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%27.85%27%20numOctaves%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27200%27%20height%3D%27200%27%20filter%3D%27url%28%23n%29%27%20opacity%3D%27.6%27%2F%3E%3C%2Fsvg%3E");
+  /* Padrão de ícones de traço (balança, coluna, pena, escudo, maleta) em âmbar, para a folha de trás */
+  --padrao:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20fill%3D%22none%22%20stroke%3D%22%23692746%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22square%22%3E%3Cg%20transform%3D%22translate%2812%2012%29%22%3E%3Cpath%20d%3D%22M12%203.5v16M7.5%2020.5h9M4.5%207h15%22%2F%3E%3Cpath%20d%3D%22M4.5%207%202%2013h5ZM19.5%207%2017%2013h5Z%22%2F%3E%3Cpath%20d%3D%22M2%2013a2.5%202.5%200%200%200%205%200M17%2013a2.5%202.5%200%200%200%205%200%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2872%2018%29%22%3E%3Cpath%20d%3D%22M4%204h16l-1.5%202.5h-13Z%22%2F%3E%3Cpath%20d%3D%22M7%206.5v11M10.3%206.5v11M13.7%206.5v11M17%206.5v11%22%2F%3E%3Cpath%20d%3D%22M5.5%2017.5h13L20%2020H4Z%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2842%2070%29%22%3E%3Cpath%20d%3D%22M20%204C12%204%207.5%209%206.5%2016.5L5%2021%22%2F%3E%3Cpath%20d%3D%22M20%204c0%207.5-5%2011.5-12.5%2012.5%22%2F%3E%3Cpath%20d%3D%22M9.5%2011h6M8%2014h4.5%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2896%2082%29%20rotate%28-18%2012%2012%29%22%3E%3Cpath%20d%3D%22M12%203.5%2019.5%206v6c0%204.5-3.2%207.6-7.5%208.5C7.7%2019.6%204.5%2016.5%204.5%2012V6Z%22%2F%3E%3Cpath%20d%3D%22M12%207v10%22%2F%3E%3Cpath%20d%3D%22M8.5%209v4.5c0%201.5%201.3%202.6%203.5%203.5M15.5%209v4.5c0%201.5-1.3%202.6-3.5%203.5%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%28-14%2068%29%20rotate%2812%2012%2012%29%22%3E%3Cpath%20d%3D%22M3%208h18v12H3Z%22%2F%3E%3Cpath%20d%3D%22M9%208V4.5h6V8%22%2F%3E%3Cpath%20d%3D%22M3%2013h18%22%2F%3E%3Cpath%20d%3D%22M10.5%2012v2.5h3V12%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--sans);font-size:15px;line-height:1.6;color:var(--tinta);background:var(--sal);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2{font-family:var(--serifa);font-weight:500;margin:0;letter-spacing:-.01em}
+p{margin:0}
+:focus-visible{outline:3px solid var(--vinho-3);outline-offset:3px;border-radius:6px}
+.ico{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter}
+
+/* ===== Tela: campo sal com grão; o vinho entra por um corte diagonal ===== */
+.tela{position:relative;min-height:100vh;min-height:100svh;isolation:isolate;overflow:hidden;
+  display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto 1fr auto;
+  column-gap:48px;padding:56px 72px 0}
+.tela::after{content:"";position:absolute;inset:0;z-index:-3;opacity:.4;mix-blend-mode:multiply;background-image:var(--grao);pointer-events:none}
+.lado{position:absolute;inset:0;z-index:-2;background:var(--vinho);clip-path:polygon(0 0,62% 0,51% 100%,0 100%)}
+.lado::after{content:"";position:absolute;inset:0;opacity:.35;mix-blend-mode:soft-light;background-image:var(--grao)}
+.estatua{position:absolute;z-index:-1;left:41.5%;top:20%;width:270px;height:270px;color:var(--vinho-2);stroke-width:.9;pointer-events:none}
+.fita{position:absolute;z-index:-1;left:0;bottom:0;width:62%;height:10px;display:flex}
+.fita i{flex:1}
+
+/* ===== Lado vinho ===== */
+.topo{grid-column:1;grid-row:1}
+.logo{display:block;width:min(440px,100%);height:auto}
+.frase{grid-column:1;grid-row:2;align-self:center;color:var(--sal);max-width:640px;padding:56px 0 48px}
+.selo{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 14px;border-radius:15px;background:var(--ambar-3);color:var(--vinho);font-size:13px;font-weight:600;letter-spacing:.04em}
+.selo::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--vinho)}
+.sobretitulo{display:block;margin-top:28px;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--ambar-2)}
+h1{margin-top:14px;font-size:clamp(42px,5.2vw,74px);line-height:1.04;color:var(--papel)}
+h1 i{font-style:italic;color:var(--ambar-3)}
+.fio{display:block;width:72px;height:2px;background:var(--ambar);margin-top:28px}
+.frase p{margin-top:22px;font-size:16px;line-height:1.65;max-width:46ch;color:var(--sal)}
+.areas{list-style:none;padding:0;margin:34px 0 0;display:flex;flex-wrap:wrap;gap:20px 26px}
+.areas li{display:flex;flex-direction:column;align-items:flex-start;gap:10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ambar-2)}
+.bola{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--vinho)}
+
+/* ===== Lado sal: folhas sobrepostas e cartão de contato ===== */
+.folhas{grid-column:2;grid-row:1 / span 3;align-self:center;justify-self:center;position:relative;width:100%;max-width:440px;margin:24px 0}
+.f-ambar{position:absolute;inset:16px -8px 22px 12px;border-radius:16px;background:var(--ambar);transform:rotate(-6deg);box-shadow:0 30px 60px -30px rgba(42,26,34,.55);overflow:hidden}
+.f-ambar::before{content:"";position:absolute;inset:0;background-image:var(--padrao);background-size:128px 128px;opacity:.6}
+.f-timbre{position:absolute;inset:8px 0 14px 4px;border-radius:16px;background:var(--papel);transform:rotate(3deg);box-shadow:0 20px 50px -30px rgba(42,26,34,.5);overflow:hidden}
+.f-timbre::before{content:"";position:absolute;right:0;top:0;width:130px;height:10px;background:var(--vinho)}
+.f-timbre::after{content:"";position:absolute;right:130px;top:0;width:44px;height:10px;background:var(--ambar)}
+.cartao{position:relative;background:var(--papel);border-radius:16px;padding:44px 44px 36px;box-shadow:0 24px 60px -28px rgba(105,39,70,.55)}
+.cartao .sobretitulo{margin-top:0;color:var(--vinho-2)}
+.cartao h2{margin-top:8px;font-size:40px;line-height:1.05;color:var(--vinho)}
+.cartao .fio{width:56px;margin-top:16px}
+.cartao p{margin-top:18px;font-size:15px;color:var(--tinta-2)}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;margin-top:26px;padding:0 20px;border-radius:10px;background:var(--vinho);color:var(--papel);font-weight:500;font-size:15px;text-decoration:none;box-shadow:inset 0 -2px 0 var(--vinho-escuro);overflow-wrap:anywhere;text-align:center}
+.btn:hover{background:var(--vinho-2)}
+.btn:active{background:var(--vinho-escuro)}
+.btn .ico{color:var(--ambar-3)}
+.nota{display:flex;gap:12px;align-items:flex-start;margin-top:26px;padding:16px 18px;border-radius:12px;background:var(--ambar-3);color:var(--tinta);font-size:13.5px;line-height:1.55}
+.nota .ico{color:var(--vinho);margin-top:1px}
+.nota strong{display:block;color:var(--vinho);font-weight:600}
+.selo-marca{position:absolute;z-index:2;left:-92px;bottom:-34px;width:150px;height:150px;border-radius:50%;filter:drop-shadow(0 14px 22px rgba(42,26,34,.35))}
+
+/* ===== Rodapé ===== */
+.rodape{grid-column:1;grid-row:3;padding:0 0 40px;font-size:12.5px;color:var(--ambar-2)}
+
+/* ===== Tablet e celular: os campos viram faixas, sem diagonal larga ===== */
+@media (max-width:1020px){
+  .tela{display:block;padding:0}
+  .lado{display:none}
+  .vinho{position:relative;background:var(--vinho);isolation:isolate;overflow:hidden;padding:32px 24px 72px;clip-path:polygon(0 0,100% 0,100% calc(100% - 40px),0 100%)}
+  .vinho::after{content:"";position:absolute;inset:0;z-index:-1;opacity:.35;mix-blend-mode:soft-light;background-image:var(--grao)}
+  .estatua{display:none}
+  .fita{display:none}
+  .frase{padding:40px 0 0;max-width:none}
+  .folhas{max-width:520px;margin:8px auto 0;padding:0 24px}
+  .f-ambar{inset:14px 18px 18px 30px}
+  .f-timbre{inset:6px 24px 10px 26px}
+  .selo-marca{display:none}
+  .rodape{padding:40px 24px 32px;color:var(--tinta-2);text-align:center}
+}
+@media (min-width:1021px){
+  .vinho{display:contents}
+}
+@media (max-width:520px){
+  .logo{width:min(300px,100%)}
+  .vinho{padding:28px 20px 64px}
+  .frase{padding-top:32px}
+  h1{font-size:40px}
+  .frase p{font-size:15px}
+  .areas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 12px}
+  .areas li{font-size:10.5px;letter-spacing:.1em}
+  .bola{width:44px;height:44px}
+  .folhas{padding:0 16px}
+  .cartao{padding:32px 24px 26px}
+  .cartao h2{font-size:34px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .btn{transition:background-color .15s ease}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-whats" viewBox="0 0 24 24"><path d="M4.5 20 5.6 16A8.5 8.5 0 1 1 8.3 18.7Z"/><path d="M9 9.5c.3 2.3 2.2 4.3 4.5 5"/></symbol>
+  <symbol id="i-pena" viewBox="0 0 24 24"><path d="M20 4C12 4 7.5 9 6.5 16.5L5 21"/><path d="M20 4c0 7.5-5 11.5-12.5 12.5"/><path d="M9.5 11h6M8 14h4.5"/></symbol>
+  <symbol id="i-moeda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.6-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 2.9 5.8 1.4 5.8 4.3 0 1.3-1.3 2.2-3 2.2-1.3 0-2.5-.6-3-1.6M12 6v1.8M12 16.4v1.6"/></symbol>
+  <symbol id="i-carteira" viewBox="0 0 24 24"><path d="M3.5 6.5h17v13h-17Z"/><path d="M3.5 6.5 16 3.5v3"/><path d="M14 11.5h6.5v4H14Z"/></symbol>
+  <symbol id="i-balanca" viewBox="0 0 24 24"><path d="M12 3.5v16M7.5 20.5h9M4.5 7h15"/><path d="M4.5 7 2 13h5ZM19.5 7 17 13h5Z"/><path d="M2 13a2.5 2.5 0 0 0 5 0M17 13a2.5 2.5 0 0 0 5 0"/></symbol>
+  <symbol id="i-coluna" viewBox="0 0 24 24"><path d="M4 4h16l-1.5 2.5h-13Z"/><path d="M7 6.5v11M10.3 6.5v11M13.7 6.5v11M17 6.5v11"/><path d="M5.5 17.5h13L20 20H4Z"/></symbol>
+  <symbol id="i-envelope" viewBox="0 0 24 24"><path d="M3 5.5h18v13H3Z"/><path d="m3 5.5 9 7 9-7"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+</svg>
+
+<div class="tela">
+  <div class="lado" aria-hidden="true"></div>
+  <div class="fita" aria-hidden="true">
+    <i style="background:#692746"></i><i style="background:#87335B"></i><i style="background:#AC3F6B"></i><i style="background:#AC788D"></i><i style="background:#DD9760"></i><i style="background:#E9AE90"></i><i style="background:#F2CDB3"></i><i style="background:#F2ECE8"></i><i style="background:#F1E6DF"></i>
+  </div>
+
+  <div class="vinho">
+    <svg class="ico estatua" aria-hidden="true"><use href="#i-coluna"/></svg>
+
+    <header class="topo">
+      <img class="logo" src="/marca/logo-completo-sobre-vinho.svg" width="1583" height="512" alt="T3jus, Sistema jurídico">
+    </header>
+
+    <main class="frase" id="conteudo">
+      <span class="selo">Em breve</span>
+      <span class="sobretitulo">Gestão para escritórios de advocacia</span>
+      <h1>O T3jus está <i>chegando.</i></h1>
+      <span class="fio" aria-hidden="true"></span>
+      <p>Um sistema para o escritório de advocacia organizar atendimento, contratos, honorários, financeiro e processos num só lugar, com o cliente atendido pelo WhatsApp do próprio escritório.</p>
+      <ul class="areas" aria-label="O que o T3jus reúne">
+        <li><span class="bola" style="background:var(--ambar)"><svg class="ico" aria-hidden="true"><use href="#i-whats"/></svg></span>Atendimento</li>
+        <li><span class="bola" style="background:var(--ambar-2)"><svg class="ico" aria-hidden="true"><use href="#i-pena"/></svg></span>Contratos</li>
+        <li><span class="bola" style="background:var(--ambar-3)"><svg class="ico" aria-hidden="true"><use href="#i-moeda"/></svg></span>Honorários</li>
+        <li><span class="bola" style="background:var(--sal-2)"><svg class="ico" aria-hidden="true"><use href="#i-carteira"/></svg></span>Financeiro</li>
+        <li><span class="bola" style="background:var(--sal)"><svg class="ico" aria-hidden="true"><use href="#i-balanca"/></svg></span>Processos</li>
+      </ul>
+    </main>
+  </div>
+
+  <aside class="folhas" aria-labelledby="contato-titulo">
+    <div class="f-ambar" aria-hidden="true"></div>
+    <div class="f-timbre" aria-hidden="true"></div>
+    <section class="cartao">
+      <span class="sobretitulo">Contato</span>
+      <h2 id="contato-titulo">Fale com a gente</h2>
+      <span class="fio" aria-hidden="true"></span>
+      <p>Quer saber mais sobre o T3jus ou conversar sobre o seu escritório? Escreva para nós.</p>
+      <!-- TROCAR: confirmar e-mail de contato com a Carol -->
+      <a class="btn" href="mailto:contato@t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg>contato@t3jus.pro</a>
+      <div class="nota">
+        <svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>
+        <span><strong>Ainda em preparação</strong>O T3jus está sendo construído junto com quem vive a rotina de um escritório de advocacia.</span>
+      </div>
+      <img class="selo-marca" src="/marca/selo-cor.svg" width="150" height="150" alt="" aria-hidden="true">
+    </section>
+  </aside>
+
+  <footer class="rodape">© 2026 T3jus</footer>
+</div>
+</body>
+</html>
