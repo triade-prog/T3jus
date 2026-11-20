@@ -411,3 +411,16 @@ Telas aprovadas em `docs/design/aprovadas/console-fim-contrato` (decisões da Ca
 - **Saída da pessoa.** Quem fica 90 dias sem acesso a nenhum escritório nem à equipe T3jus tem a entrada (e-mail e senha no Supabase Auth) apagada pela rotina; `pessoas` fica com o nome e `entrada_apagada_em`. A data aparece antes na Equipe do Portal (filtro Retiradas), na Equipe T3jus e no Suporte. Voltar depois disso é por convite novo.
 - **Contato do T3jus**: `CONTATO_T3JUS` em `@t3jus/domain`, provisório (`atendimento@exemplo.com.br`) até a Carol mandar o real.
 - **Falta**: apagar tudo no fim da guarda de 5 anos (F0.15, inclusive os arquivos do Storage) e os avisos por e-mail à sócia dona (F0.16).
+
+### Início por áreas (F3.26; PD-01 a PD-07, IN-04, IN-06)
+
+Tela aprovada em `docs/design/aprovadas/portal-inicio-areas` (Carol, 19/11/2026). Migration `0400_portal_inicio_areas.sql`, teste `040_portal_inicio_areas_test.sql`, e2e `portal-inicio.spec.ts`.
+
+- **Sem tabela nova.** Cada área tem a sua consulta, para o bloco carregar e falhar sozinho: `portal_inicio_contatos` (Comercial, do F1.14, agora com as propostas esperando resposta), `portal_inicio_contratos` (cobranças paradas sem a base do mês e contratos em elaboração com a assinatura marcada até domingo), `portal_inicio_financeiro` (duas listas que nunca somam: as parcelas do escritório vencidas ou que entram em 2 dias úteis, e os repasses de terceiros pendentes) e `portal_inicio_juridico` (prazos com "fazer até" ou prazo final até hoje, tarefas atrasadas e de hoje e tarefas esperando alguém). Cada uma passa por `entrar_area`.
+- **Grupos e limite:** `inicio_bloco` arruma os itens em Vencidos, Para hoje, A acompanhar e Esperando alguém, corta em 5 (os mais atrasados primeiro) e devolve o total de cada grupo para o rodapé.
+- **Os meus e Da equipe:** `de=MEUS` filtra pelo responsável (na parcela, quem tem a próxima ação da cobrança; sem anotação, o responsável pelo contrato). `de=EQUIPE` só para a sócia dona (`SO_SOCIO_DONO`).
+- **Responsável pelo repasse (decisão 4):** `levantamentos.responsavel_id` nasce com o responsável pelo contrato do cliente no caso (sem contrato, o do caso) e troca por `portal_financeiro_repasse_responsavel` (vai ao histórico). Quem sai da equipe passa os repasses abertos para quem ficou com o trabalho (EX-10).
+- **Hero:** `portal_inicio_resumo` soma o que pede a pessoa nas áreas dela (só as que ela tem são calculadas) e conta os compromissos de hoje da equipe.
+- **API:** `GET /v1/escritorio/inicio/resumo`, `GET /v1/escritorio/inicio/{contratos,financeiro,juridico}?de=MEUS|EQUIPE` e `PUT /v1/escritorio/financeiro/repasses/:id/responsavel`.
+- **Tela:** `/` (`InicioPortal`). As regras de texto (datas relativas, verbo, selo, rodapé e cartões) ficam em `packages/ui/src/portal/inicio.ts`, com testes. A parte comum usa as rotas da Agenda e de Conversas.
+- **Falta:** a troca do responsável pelo repasse na tela da ficha (F3.71).

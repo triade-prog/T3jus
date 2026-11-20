@@ -23,6 +23,7 @@ import {
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
+  deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -318,6 +319,26 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const r = contatosInicioSchema.safeParse({ de: c.req.query("de") || undefined, limite: c.req.query("limite") || undefined });
     if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
     return c.json(await deps.banco.rpc<ContatosDoInicio>("portal_inicio_contatos", { ...quem(c), p_de: r.data.de, p_limite: r.data.limite }));
+  });
+
+  // Início por áreas (F3.26, PD-01 a PD-07): uma consulta por área, para cada bloco carregar e
+  // falhar sozinho, e o resumo do hero. "Da equipe" só para a dona; a área o banco confere.
+  app.get("/v1/escritorio/inicio/resumo", async (c) => {
+    return c.json(await deps.banco.rpc<ResumoInicio>("portal_inicio_resumo", quem(c)));
+  });
+  const deInicio = (c: Context<VarsPortal>) => {
+    const r = deInicioSchema.safeParse({ de: c.req.query("de") || undefined });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["de"] });
+    return r.data.de;
+  };
+  app.get("/v1/escritorio/inicio/contratos", async (c) => {
+    return c.json(await deps.banco.rpc<InicioContratos>("portal_inicio_contratos", { ...quem(c), p_de: deInicio(c) }));
+  });
+  app.get("/v1/escritorio/inicio/financeiro", async (c) => {
+    return c.json(await deps.banco.rpc<InicioFinanceiro>("portal_inicio_financeiro", { ...quem(c), p_de: deInicio(c) }));
+  });
+  app.get("/v1/escritorio/inicio/juridico", async (c) => {
+    return c.json(await deps.banco.rpc<InicioJuridico>("portal_inicio_juridico", { ...quem(c), p_de: deInicio(c) }));
   });
 
   // Quem pode ser responsável pelo próximo contato ou ter atendido.
@@ -769,6 +790,14 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   });
 
   // Resumo e Caixa (FI-03, FI-09, PD-03, PD-06, IN-02 a IN-14), tudo calculado no banco.
+  // O responsável pelo repasse (decisão 4 do Início por áreas): nasce o do contrato, e troca aqui.
+  app.put("/v1/escritorio/financeiro/repasses/:id/responsavel", async (c) => {
+    const d = await lerCorpo(c, responsavelRepasseSchema);
+    return c.json({ responsavel: await deps.banco.rpc<{ id: string; nome: string }>("portal_financeiro_repasse_responsavel", {
+      ...quem(c), p_levantamento: idDaRota(c, "id"), p_responsavel: d.responsavelId,
+    }) });
+  });
+
   app.get("/v1/escritorio/financeiro/resumo", async (c) => {
     return c.json(await deps.banco.rpc<ResumoFinanceiro>("portal_financeiro_resumo", quem(c)));
   });
