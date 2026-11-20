@@ -300,6 +300,44 @@ Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a ár
 - **Telas:** `/financeiro` (Resumo, com o estado vazio de três passos) e `/financeiro/caixa`, com a janela de exportar. `?lancar=1` em A pagar e `?registrar=1` em Repasses abrem a janela direto.
 - **Falta:** RPVs e precatórios a caminho (F3.48), meta do mês (F3.49), contador cadastrado, envio por e-mail, comprovantes e saldo de abertura (F3.50) e a categoria Empréstimos (F3.51).
 
+### Conversas do Portal, Mensagens (F3.52; PA-05, PD-07, EX-10, AP-02)
+
+Telas aprovadas em `docs/design/aprovadas/portal-agenda-conversas`. Migration `0300_portal_conversas_mensagens.sql`, teste `030_portal_conversas_mensagens_test.sql`, e2e `portal-conversas.spec.ts`.
+
+- **Banco:** `whatsapp_escritorio` (o número do escritório e se está ligado; sem dado pessoal), `conversas` (uma por telefone no escritório; com a IA, precisando de alguém, com o motivo, ou com a equipe) e `conversa_mensagens` (cliente, IA, equipe, aviso e os momentos da conversa; só se acrescentam, e o gatilho só deixa mudar a situação do envio). As três passam por `proteger_tabela_escritorio` e estão no inventário.
+- **Quem responde:** `conversa_quem_responde` escolhe, nesta ordem, quem cuida do caso em andamento, quem é responsável pelo próximo contato, a primeira pessoa da área Comercial (contato novo) e a sócia dona; a razão fica gravada e aparece na tela. O número só vira cliente quando um único cliente ativo tem aquele telefone.
+- **Serviço do WhatsApp (ainda não ligado):** `whatsapp_mensagem_recebida`, `conversa_ia_respondeu` e `conversa_ia_passou` são as peças que o serviço vai chamar; não passam pela api-portal. Com o WhatsApp desligado, recusam `WHATSAPP_NAO_LIGADO`. Entram no escritório por `entrar_escritorio_servico`, a única entrada sem pessoa, que o teste 002 conta entre as funções que gravam o contexto.
+- **Portal:** `portal_conversas` (fila, contagens e o dia), `portal_conversa` (mensagens e o contexto: próximo contato, caso só com a área Jurídico, compromisso), `portal_conversa_assumir`, `portal_conversa_devolver` (com nota para a IA e, se pedido, o atendimento na ficha do cliente), `portal_conversa_passar` e `portal_conversa_enviar` (só quem assumiu escreve; a mensagem entra na fila de envio). As ações usam a versão lida.
+- **Saída da pessoa (EX-10):** o gatilho `conversas_passar_de_quem_saiu` passa as conversas para quem recebeu o que era dela.
+- **API:** `GET /v1/escritorio/conversas` (`?mostrar=PRECISA|EQUIPE|IA|RESOLVIDAS&q=`), `GET /conversas/:id`, `POST /conversas/:id/assumir`, `/devolver`, `/passar` e `POST /conversas/:id/mensagens` (201).
+- **Tela:** `/conversas` (lista, conversa e contexto; no celular, uma coisa por vez), com o número de quem espera no menu. Automações e Avisos automáticos mostram "em preparo".
+- **Falta:** a IA e o envio e recebimento pelo provedor (F3.53), ligar o número em Escritório › WhatsApp e IA (F3.54), o aviso no sino (F3.57) e as automações (F1.17).
+
+### Escritório › WhatsApp e IA (F3.54; PA-04, PA-02)
+
+Telas aprovadas em `docs/design/aprovadas/portal-whatsapp`. Migration `0310_portal_whatsapp_ia.sql`, teste `031_portal_whatsapp_ia_test.sql`, e2e `portal-whatsapp.spec.ts`.
+
+- **Banco:** `whatsapp_escritorio` ganhou a saúde que a Meta devolve (nome, qualidade, limite, empresa confirmada), quem ligou e quem desligou com o motivo; guarda só a referência ao token no cofre (`token_ref`), nunca o token, e nenhuma função do Portal a devolve. O mesmo número não liga em dois escritórios (índice único). `whatsapp_ligacao_rascunho` (o assistente fica salvo), `whatsapp_eventos` (histórico do número, só acréscimo), `whatsapp_avisos` (os 6 avisos e a situação na Meta), `ia_config` (nasce desligada, nome sempre "Assistente virtual"), `ia_config_versoes` (só acréscimo), `ia_respostas` (sugerida, publicada, arquivada) e `ia_perguntas_sem_resposta`.
+- **Só a sócia dona** liga, muda e desliga (`so_socio_dono`); quem tem o Escritório lê, e só ela vê quantos avisos a Meta entregou no mês. Quem não é dona sugere respostas; ela publica.
+- **Serviço do WhatsApp (ainda não ligado à Meta):** `whatsapp_meta_ligou` (depois da janela da Meta) e `whatsapp_meta_evento` (nome, qualidade, limite, verificação e situação de cada aviso). Recusam token no dado.
+- **Regras:** o texto do aviso não começa nem termina com campo (`CAMPO_NO_INICIO_OU_FIM`); desligar pede motivo e confirmação e pausa a IA; a IA só liga com o número ligado e depois de um teste (`SEM_TESTE`); pausar é um clique.
+- **API:** `GET /v1/escritorio/whatsapp`, `PUT /whatsapp/rascunho`, `POST /whatsapp/conferir-numero` (o número brasileiro vira E.164; fixo por SMS recusa `FIXO_SEM_SMS`), `POST /whatsapp/desligar`, `POST /whatsapp/avisos/:chave`, `GET` e `PATCH /v1/escritorio/ia`, `POST /ia/ligar`, `POST /ia/pausar`, `POST /ia/respostas` e `PATCH /ia/respostas/:id`.
+- **Tela:** `/meu-escritorio/whatsapp` (abas Número e Como a IA atende; `?ligar=1`, `?aviso=CHAVE`, `?parte=ia&ia=passar|saber|testar`). Escritório ganhou a barra de seções.
+- **Falta:** a ligação real com a Meta, o webhook e trocar o número (F3.58); Testar sem enviar e a IA que responde (F3.53).
+
+### Conversas › Automações (F1.17; PA-03)
+
+Telas aprovadas em `docs/design/aprovadas/portal-conversas-automacoes`. Migration `0320_portal_automacoes.sql`, teste `032_portal_automacoes_test.sql`, domínio `packages/domain/src/automacoes.ts`, e2e `portal-automacoes.spec.ts`.
+
+- **Banco:** `automacoes` (rascunho em jsonb, situação RASCUNHO, EM_APROVACAO, LIGADA ou DESLIGADA, versão ligada e a que espera a Meta), `automacao_versoes` e `automacao_eventos` (só acréscimo), `automacao_modelos` (o texto aprovado fica fixo; situação na Meta), `automacao_execucoes` (uma por automação e origem; falha pede responsável e motivo) e `clientes_sem_avisos`. Todas passam por `proteger_tabela_escritorio` e entram no inventário.
+- **O desenho:** é uma lista de passos (gatilho, condições, mensagem, espera, ramos, IA, pessoa, fim). `automacao_forma` recusa o que não tem forma (gatilho só no começo, ramos só no caminho principal, quem termina por último, até 40 passos); `automacao_erros` diz o que falta por passo (caminho sem saída, responsável, campo que o gatilho não tem, texto vazio ou com campo na ponta, limite semanal) e trava testar e ligar.
+- **Quem faz o quê:** quem tem a área do gatilho monta e testa; só a sócia dona aprova o texto, liga e desliga (com motivo). Os outros mandam `sugerir-mudanca`.
+- **Limites fixos:** 8h às 20h em dia útil (`proximoHorario`, com os feriados nacionais), 1 cobrança por semana por parcela somando todas (ligar recusa `CONFLITO_LIMITE_SEMANAL`, ou desliga a outra se a sócia escolher), quem pediu para não receber avisos fica de fora e só sai texto aprovado. Ligar com texto novo deixa a automação em aprovação no WhatsApp; `automacao_meta_modelo` recebe a resposta.
+- **Prontas:** `automacoes_garantir` cria as 6 a partir dos avisos, ligadas na versão 1. A de parcela em atraso sai em 1, 8 e 15 dias.
+- **API:** `GET` e `POST /v1/escritorio/automacoes`, `GET` e `PATCH /automacoes/:id`, `POST /:id/aprovar-texto`, `/:id/ligar`, `/:id/desligar`, `/:id/sugerir-mudanca`, `/:id/simular` (roda `simularFluxo` sobre os dados do banco, nada é enviado), `GET /:id/quem-entraria`, `GET /:id/execucoes` e `POST /v1/escritorio/clientes/:id/sem-avisos`.
+- **Tela:** `/conversas/automacoes` (lista) e `?a=<id>&passo=montar|testar|ligar|historico&b=<passo>` (editor).
+- **Falta:** a IA que monta o fluxo (F3.59), o motor que envia (F3.60), mandar os textos à Meta (F3.61), quem entraria nos gatilhos do Jurídico (F3.62), "não receber avisos" na ficha (F3.63), Avisos automáticos e a edição no celular (F3.64).
+
 ### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 
 Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_portal_juridico_casos.sql`, teste `024_portal_juridico_casos_test.sql`, e2e `portal-juridico-casos.spec.ts`.

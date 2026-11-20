@@ -1,0 +1,12 @@
+{
+  "id": "D8",
+  "texto": "Desenho da cobrança dos escritórios no Console: planos, assinatura na ficha, faturas, régua de lembretes, atraso e a seção Plano e faturas do sócio dono no Portal",
+  "peca": "C1",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "andamento",
+  "ordem": 57,
+  "proximo": "Carol aprovar o desenho da cobrança dos escritórios e responder as perguntas do NOTAS.md",
+  "nota": "Desenho para aprovação: https://claude.ai/artifact/KN5r2vZXajkvJ9xT8sXUSJ (pasta project-files/t3jus/telas/console-cobranca, com NOTAS.md e as perguntas)"
+}

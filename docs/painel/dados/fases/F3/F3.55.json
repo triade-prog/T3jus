@@ -1,0 +1,11 @@
+{
+  "id": "F3.55",
+  "texto": "Programar a importação de planilha de clientes e contratos (desenho D10)",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 550,
+  "proximo": "Programar a importação de planilha seguindo docs/design/aprovadas/portal-importacao/NOTAS.md (tabelas e API descritas lá)"
+}

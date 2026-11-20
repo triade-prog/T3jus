@@ -31,6 +31,8 @@ export interface EscritorioPortal {
   ultimaExportacao: { em: string; por: string | null } | null;
   /** Contrato encerrado, nos 30 dias só para consulta (F0.14); fora disso, null. */
   encerramento?: DatasContrato | null;
+  /** Conversas que esperam alguém da equipe (o número no trilho e na barra do celular). */
+  conversasEsperando?: number;
 }
 
 /** Só consulta: o contrato terminou e ninguém cria nem muda nada (o banco recusa também). */
@@ -132,6 +134,7 @@ export function MolduraPortal({
   trilha,
   escritorio,
   barraArea,
+  barra,
   pagina = "",
   children,
 }: {
@@ -141,6 +144,8 @@ export function MolduraPortal({
   escritorio: EscritorioPortal | null;
   /** Área aberta e a seção atual: mostra a barra de seções no alto. */
   barraArea?: { area: AreaPortal; secao?: string };
+  /** Barra de seções de uma área comum (Conversas), no mesmo lugar da barra de área. */
+  barra?: ReactNode;
   /** Classes da página (co-equipe co-carteira, por exemplo). */
   pagina?: string;
   children: ReactNode;
@@ -170,6 +175,11 @@ export function MolduraPortal({
   );
 
   const papel = escritorio ? papelNoEscritorio(escritorio) : " ";
+  const esperando = escritorio?.conversasEsperando ?? 0;
+  const contador = (cls: string, chave: LugarPortal) =>
+    chave === "conversas" && esperando > 0 ? (
+      <span className={cls} aria-label={`, ${esperando} ${esperando === 1 ? "esperando" : "esperando"}`}>{esperando}</span>
+    ) : null;
   return (
     <div className={`co pt ${pagina}${soConsulta(escritorio) ? " pt-consulta" : ""}`}>
       <a className="pular" href="#conteudo">
@@ -204,6 +214,7 @@ export function MolduraPortal({
               <a key={i.nome} className="item" href={i.href} aria-current={atualDe(i.chave, atual, false)}>
                 <Icone nome={i.icone} className="ico" />
                 {i.nome}
+                {contador("cont", i.chave)}
               </a>
             ))}
             {areas.length ? <p className="grupo">Áreas</p> : null}
@@ -253,7 +264,7 @@ export function MolduraPortal({
               ))}
             </nav>
           </header>
-          {barraArea ? <BarraArea {...barraArea} /> : null}
+          {barraArea ? <BarraArea {...barraArea} /> : barra ?? null}
           <main className="conteudo" id="conteudo" tabIndex={-1}>
             {children}
           </main>
@@ -264,6 +275,7 @@ export function MolduraPortal({
             <a key={i.nome} href={i.href} aria-current={atualDe(i.chave, atual, false)}>
               <Icone nome={i.icone} className="ico" />
               <span>{i.nome}</span>
+              {contador("pt-cont", i.chave)}
             </a>
           ))}
           <button ref={abrirMais} type="button" aria-haspopup="dialog" aria-controls="folha-mais" onClick={abrirFolha}

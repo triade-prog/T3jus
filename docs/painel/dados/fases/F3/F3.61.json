@@ -1,0 +1,11 @@
+{
+  "id": "F3.61",
+  "texto": "Automações: enviar os textos novos para aprovação da Meta e receber a resposta",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "pendente",
+  "ordem": 610,
+  "proximo": "Depende da ligação real com a Meta (F3.58); a resposta chama automacao_meta_modelo (já pronta e testada)"
+}

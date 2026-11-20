@@ -1,0 +1,11 @@
+{
+  "id": "F3.58",
+  "texto": "Ligação real com a Meta: o cadastro do T3jus como parceiro (Cadastro Incorporado), a janela da Meta no passo 2, a troca do código pelo token guardado no cofre, os avisos da Meta pelo webhook com a assinatura conferida, e trocar o número",
+  "peca": "B3",
+  "refs": [
+    "PA-04"
+  ],
+  "status": "pendente",
+  "ordem": 580,
+  "proximo": "Registrar o T3jus como parceiro de tecnologia na Meta (dependência externa); depois ligar a janela ao serviço, que chama whatsapp_meta_ligou e whatsapp_meta_evento (já prontas e testadas)"
+}

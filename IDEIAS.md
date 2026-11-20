@@ -173,6 +173,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CO-03 | Carteira e notas internas que o escritório nunca vê | [V1] |
 | CO-04 | Histórico administrativo de cada cliente e da equipe interna, com quem fez o quê e quando | [V1] |
 | CO-05 | Contrato e documentos do escritório cliente anexados na ficha do Console (PDF e imagem), guardados sem apagar, com quem enviou e quando; arquivo privado, aberto só por link temporário | [V1] |
+| CO-06 | Cobrança dos escritórios que assinam o T3jus, no Console: planos com valor e limite de pessoas, assinatura na ficha do escritório, faturas mensais com Pix ou boleto, régua de lembretes e tratamento do atraso (aviso ao sócio dono e Portal só para consulta com confirmação da Administração, sem apagar dados); o sócio dono vê e paga as faturas no Portal | [V1] |
 
 ## 11. Portal do advogado
 
@@ -182,6 +183,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | PA-02 | Sem funções fixas no escritório: o sócio dono convida a equipe e marca, pessoa por pessoa, as áreas que cada uma acessa (Comercial, Contratos, Financeiro, Jurídico); pode mudar a qualquer momento, com registro no histórico; o sócio vê tudo | [V1] |
 | PA-03 | Automações de mensagens do WhatsApp em Conversas, montadas num desenho de fluxo (gatilho, condições, mensagem do modelo, espera, ramos e passar para uma pessoa da equipe): a IA do escritório sugere o fluxo a partir de um pedido em linguagem simples, os passos sugeridos aparecem tracejados até a sócia dona revisar, testar sem enviar e ligar; nada liga sozinho, e cada execução fica no histórico | [V1] |
 | PA-04 | Ligação do próprio número de WhatsApp do escritório pela sócia dona, no caminho oficial da Meta, passo a passo ou com ajuda da equipe T3jus, com a saúde do número em linguagem simples (nome aprovado, qualidade, limite por dia, modelos de mensagem); e as regras da IA que atende os clientes (se apresenta como assistente virtual, o que pode e o que nunca responde, quem pode falar, quando passa para uma pessoa, horário), testada sem enviar antes de ligar e com pausa a qualquer momento | [V1] |
+| PA-05 | Conversas pelo WhatsApp do escritório: o cliente fala com a IA, que responde o que está no T3jus e passa para uma pessoa da equipe quando não sabe, com o motivo e um responsável escolhido pela regra (quem cuida do caso, o próximo contato, a área Comercial ou a sócia dona); a equipe vê a fila de quem espera, assume, escreve, devolve para a IA (com o atendimento na ficha) e passa para outra pessoa, tudo registrado na conversa (decisão da Carol, 18/11/2026; desenho aprovado em 19/11/2026) | [V1] |
 
 ## Contagem
 
@@ -196,6 +198,6 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 7. A validar com os pilotos | 8 |
 | 8. Princípios técnicos e de qualidade | 26 |
 | 9. Site comercial e entrada de clientes | 6 |
-| 10. Console T3jus | 5 |
-| 11. Portal do advogado | 4 |
-| **Total** | **122** |
+| 10. Console T3jus | 6 |
+| 11. Portal do advogado | 5 |
+| **Total** | **124** |

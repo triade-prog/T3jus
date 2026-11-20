@@ -1,0 +1,11 @@
+{
+  "id": "F3.56",
+  "texto": "Importar de outros sistemas (ADVBOX, Astrea e outros) direto, além da planilha",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 560,
+  "nota": "Decisão da Carol (20/11/2026): fica para depois; por enquanto a planilha exportada desses sistemas entra pela importação de planilha"
+}
