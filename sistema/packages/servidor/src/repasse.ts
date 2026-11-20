@@ -30,8 +30,10 @@ export function opcoesConsole(env: Ambiente): OpcoesRepasse {
 
 const METODOS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const CAMINHO_VALIDO = /^v1(\/[A-Za-z0-9_-]+)+$/;
-// A planilha da importação (F3.55) é o único corpo que não é JSON: vai como está, até 5 MB.
-const ENVIO_PLANILHA = /^v1\/escritorio\/importacoes$/;
+// Os corpos que não são JSON vão como estão, até 5 MB: a planilha da importação (F3.55) e o
+// .docx das petições (EX-09: o modelo, a conferência e a versão editada no Word).
+const ENVIO_PLANILHA =
+  /^v1\/escritorio\/(importacoes|peticoes\/modelos(\/conferir|\/[0-9a-f-]{36}\/versoes)?|peticoes\/[0-9a-f-]{36}\/versoes\/docx)$/;
 const MAX_PLANILHA_BYTES = 5 * 1024 * 1024;
 // Importar grava até 2.000 linhas numa transação: espera mais que o normal.
 const DEMORADO = /^v1\/escritorio\/importacoes(\/[0-9a-f-]+\/(importar|colunas|desfazer))?$/;

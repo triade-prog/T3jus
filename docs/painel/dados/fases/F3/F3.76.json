@@ -1,0 +1,11 @@
+{
+  "id": "F3.76",
+  "texto": "Petição esperando revisão na lista “Pedem você agora” do Início",
+  "peca": "S5",
+  "refs": [
+    "EX-09"
+  ],
+  "status": "pendente",
+  "ordem": 760,
+  "proximo": "O sino já avisa quem revisa (PETICAO_REVISAR); falta o item no Início, que sai quando o revisor decide"
+}

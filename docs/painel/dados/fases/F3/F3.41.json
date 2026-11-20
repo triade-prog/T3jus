@@ -1,11 +1,12 @@
 {
   "id": "F3.41",
-  "texto": "Gerador de petições: ver as respostas dos escritórios no Console e, se a resposta for sim, desenhar e construir o gerador com os modelos do escritório",
+  "texto": "Gerador de petições (desenho D aprovado em 19/11/2026): modelos do escritório e 8 padrão, formulário curto, prévia, .docx e revisão pelo advogado responsável",
   "peca": "S5",
   "refs": [
     "EX-09"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 410,
-  "proximo": "As respostas já ficam guardadas em peticao_interesse; falta a tela do Console que as lista para a equipe T3jus"
+  "proximo": "Programar as telas aprovadas: lista, Modelos de petição e Enviar modelo, nova petição em 4 passos, resultado, revisão, ajuste e Petições do caso na ficha (troca a pergunta de interesse)",
+  "evidencia": "Servidor pronto: migration 0440_portal_peticoes.sql (modelos e versões, petições, versões, eventos e comentários, revisão com aprovar, ajuste, reprovar e passar, a aprovada nos documentos do caso, avisos no sino), teste 044_portal_peticoes_test.sql (57), motor do .docx sem biblioteca em packages/domain (zip.ts, docx.ts: conferência, campos quebrados pelo Word, preenchimento, marca de rascunho no cabeçalho, prévia do .docx editado) e peticoes.ts (8 modelos padrão, valores com o que falta marcado, valor e data por extenso), 14 testes vitest, rotas /v1/escritorio/peticoes/* com 6 testes Deno"
 }

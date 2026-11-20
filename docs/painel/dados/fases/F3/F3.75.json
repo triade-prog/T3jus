@@ -1,0 +1,11 @@
+{
+  "id": "F3.75",
+  "texto": "Validar o gerador de petições e o texto dos 8 modelos padrão com a advogada parceira e os pilotos",
+  "peca": "S5",
+  "refs": [
+    "EX-09"
+  ],
+  "status": "pendente",
+  "ordem": 750,
+  "proximo": "A advogada parceira revisa o texto jurídico dos 8 padrão (packages/domain/src/peticoes.ts) e os pilotos dizem se usam, com quais peças e se os campos bastam"
+}

@@ -234,6 +234,7 @@ export function arquivosFalsos() {
   const guardados = new Map<string, { tamanho: number; tipo: string }>();
   const pedidosDeEnvio: string[] = [];
   const leituras: { caminho: string; segundos: number; nome: string }[] = [];
+  const bytes = new Map<string, Uint8Array>();
   const arquivos: Arquivos = {
     enderecoDeEnvio: (caminho) => {
       pedidosDeEnvio.push(caminho);
@@ -244,6 +245,13 @@ export function arquivosFalsos() {
       leituras.push({ caminho, segundos, nome });
       return Promise.resolve(`https://storage.exemplo/ler/${caminho}?token=curto`);
     },
+    enviar: (caminho, dados, tipo, substituir) => {
+      if (bytes.has(caminho) && !substituir) return Promise.reject(new Error("Storage respondeu 409"));
+      bytes.set(caminho, dados);
+      guardados.set(caminho, { tamanho: dados.length, tipo });
+      return Promise.resolve();
+    },
+    baixar: (caminho) => Promise.resolve(bytes.get(caminho) ?? null),
   };
-  return { arquivos, guardados, pedidosDeEnvio, leituras };
+  return { arquivos, guardados, pedidosDeEnvio, leituras, bytes };
 }

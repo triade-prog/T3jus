@@ -38,6 +38,7 @@ import { criarApp } from "../_shared/app.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { rotasPeticoes } from "./peticoes.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
 import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
@@ -1175,6 +1176,9 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const d = await lerCorpo(c, peticaoSchema);
     return c.json(await deps.banco.rpc<RespostaPeticoes>("portal_juridico_peticoes_responder", { ...quem(c), p_dados: d }), 201);
   });
+
+  // Gerador de petições (EX-09).
+  rotasPeticoes(app, deps);
 
   return app;
 }
