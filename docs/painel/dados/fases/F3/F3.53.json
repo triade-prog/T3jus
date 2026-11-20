@@ -9,6 +9,6 @@
   ],
   "status": "feito",
   "ordem": 530,
-  "evidencia": "Migration 0330 (contexto só de quem escreve, atendimento para o serviço, mensagem pelo app no celular, motivos novos, peças do teste), pgTAP 033 (32 testes), domínio ia.ts (15 testes vitest), serviço _shared/ia.ts e _shared/atendimento.ts (5 testes Deno) e rotas /v1/escritorio/ia/teste/clientes e /ia/testar (2 testes Deno), e2e portal-whatsapp.spec.ts com o Testar sem enviar (celular e computador, com axe). Modelo Claude Haiku 5.5, escolhido pela Carol.",
+  "evidencia": "Migration 0330 (contexto só de quem escreve, atendimento para o serviço, mensagem pelo app no celular, motivos novos, peças do teste), pgTAP 033 (32 testes), domínio ia.ts (15 testes vitest), serviço _shared/ia.ts e _shared/atendimento.ts (5 testes Deno) e rotas /v1/escritorio/ia/teste/clientes e /ia/testar (2 testes Deno), e2e portal-whatsapp.spec.ts com o Testar sem enviar (celular e computador, com axe). IA da OpenAI (gpt-4.1-mini, troca por IA_MODELO), escolhida pela Carol; Deno _shared/ia_test.ts (2 testes).",
   "nota": "O serviço que recebe a mensagem da Meta e chama atenderConversa, e o envio com entregue, lida ou falha, ficam em F3.58 (dependem do cadastro do T3jus como parceiro da Meta)."
 }

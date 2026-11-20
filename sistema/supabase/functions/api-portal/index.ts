@@ -5,7 +5,7 @@ import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
 import { arquivosStorage, BUCKET_DOCUMENTOS_PORTAL } from "../_shared/arquivos.ts";
 import { conferirVazadaHibp } from "../_shared/senha.ts";
-import { cerebroClaude, MODELO_PADRAO } from "../_shared/ia.ts";
+import { cerebroOpenAI, MODELO_PADRAO } from "../_shared/ia.ts";
 import { criarApiPortal } from "./app.ts";
 
 function exigir(nome: string): string {
@@ -24,7 +24,7 @@ const app = criarApiPortal(Deno.env.get("REPASSE_SEGREDO"), {
   admin: adminGoTrue(url, chaveServico),
   arquivos: arquivosStorage(url, chaveServico, BUCKET_DOCUMENTOS_PORTAL),
   // Sem a chave, a IA fica indisponível: o teste diz isso e as conversas vão para a equipe.
-  ia: Deno.env.get("ANTHROPIC_API_KEY") ? cerebroClaude(Deno.env.get("ANTHROPIC_API_KEY")!, Deno.env.get("IA_MODELO") || MODELO_PADRAO) : null,
+  ia: Deno.env.get("OPENAI_API_KEY") ? cerebroOpenAI(Deno.env.get("OPENAI_API_KEY")!, Deno.env.get("IA_MODELO") || MODELO_PADRAO) : null,
 });
 
 Deno.serve(app.fetch);
