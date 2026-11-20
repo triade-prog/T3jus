@@ -172,6 +172,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CO-03 | Carteira e notas internas que o escritório nunca vê | [V1] |
 | CO-04 | Histórico administrativo de cada cliente e da equipe interna, com quem fez o quê e quando | [V1] |
 | CO-05 | Contrato e documentos do escritório cliente anexados na ficha do Console (PDF e imagem), guardados sem apagar, com quem enviou e quando; arquivo privado, aberto só por link temporário | [V1] |
+| CO-06 | Cobrança dos escritórios que assinam o T3jus, no Console: planos com valor e limite de pessoas, assinatura na ficha do escritório, faturas mensais com Pix ou boleto, régua de lembretes e tratamento do atraso (aviso ao sócio dono e Portal só para consulta com confirmação da Administração, sem apagar dados); o sócio dono vê e paga as faturas no Portal | [V1] |
 
 ## 11. Portal do advogado
 
@@ -195,6 +196,6 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 7. A validar com os pilotos | 8 |
 | 8. Princípios técnicos e de qualidade | 26 |
 | 9. Site comercial e entrada de clientes | 6 |
-| 10. Console T3jus | 5 |
+| 10. Console T3jus | 6 |
 | 11. Portal do advogado | 4 |
-| **Total** | **121** |
+| **Total** | **122** |
