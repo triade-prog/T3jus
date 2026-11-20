@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { ConversasEmPreparo } from "@t3jus/ui";
+import { AvisosAutomaticosPortal } from "@t3jus/ui";
 
-// Avisos automáticos (desenho aprovado); entra com a próxima parte de Conversas.
+// Conversas › Avisos automáticos (F3.64), tela aprovada em docs/design/aprovadas/portal-conversas-automacoes.
 export const metadata: Metadata = { title: "Avisos automáticos" };
 
 export default function Pagina() {
-  return <ConversasEmPreparo secao="avisos" />;
+  return <AvisosAutomaticosPortal />;
 }

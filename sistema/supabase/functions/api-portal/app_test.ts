@@ -184,6 +184,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_ia_testada: (a) => ({ testadaComo: a.p_como }),
     portal_automacoes: (a) => ({ escritorio: a.p_escritorio, automacoes: [] }),
+    portal_avisos_automaticos: (a) => ({ tipo: a.p_gatilho, pular: a.p_pular, limite: a.p_limite }),
     portal_automacao: (a) => ({ id: a.p_id }),
     portal_automacao_criar: (a) => ({ dados: a.p_dados }),
     portal_automacao_salvar: (a) => ({ versao: (a.p_versao as number) + 1, dados: a.p_dados }),
@@ -970,6 +971,8 @@ Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sa
   assertEquals(sim.conversa.at(-1).em, "2026-11-23T10:20:00-03:00");
   assertEquals((m.chamadas.find((c) => c.funcao === "portal_automacao_simulacao")!.args as { p_parcela: string }).p_parcela, CLIENTE);
   assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/simular`, { corpo: { escolha: "TALVEZ" }, cookie }))).detalhes?.campos, ["escolha"]);
+  assertEquals(await (await m.pedir("/v1/escritorio/avisos-automaticos?tipo=PARCELA_ATRASO&pular=20", { cookie })).json(), { tipo: "PARCELA_ATRASO", pular: 20, limite: 20 });
+  assertEquals((await erro(await m.pedir("/v1/escritorio/avisos-automaticos?pular=-1", { cookie }))).detalhes?.campos, ["pular"]);
   assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "COBRANCA", origem: "CONVERSA" }, cookie })).json()).dados.tipo, "COBRANCA");
   assertEquals(m.chamadas.every((c) => !("p_escritorio" in c.args) || c.args.p_escritorio === AURORA), true);
 });

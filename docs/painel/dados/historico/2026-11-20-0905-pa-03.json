@@ -1,0 +1,10 @@
+{
+  "data": "20/11/2026",
+  "inicio": "09:05",
+  "fim": "09:30",
+  "texto": "Avisos automáticos do Portal (F3.64): a tela mostra o que saiu sozinho pelo WhatsApp nos últimos 7 dias, com a situação de cada aviso, a resposta do cliente, a mensagem e quais avisos estão ligados.",
+  "refs": [
+    "PA-03",
+    "PD-07"
+  ]
+}

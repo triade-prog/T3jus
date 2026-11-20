@@ -843,20 +843,3 @@ export function ConversasPortal() {
     </MolduraPortal>
   );
 }
-
-/** Automações e Avisos automáticos: desenhados e aprovados; entram com a próxima parte. */
-export function ConversasEmPreparo({ secao }: { secao: "automacoes" | "avisos" }) {
-  const { escritorio } = useEscritorioPortal();
-  const nome = secao === "automacoes" ? "Automações" : "Avisos automáticos";
-  return (
-    <MolduraPortal atual="conversas" trilha={[{ nome: "Conversas", href: ROTAS_CONVERSAS.mensagens }, { nome }]} escritorio={escritorio}
-      barra={<BarraConversas secao={secao} esperando={escritorio?.conversasEsperando ?? 0} />}>
-      <Estado icone="conversas" moldura nivel={1} titulo={`${nome} está sendo preparado`}
-        acoes={<a className="btn btn-sec" href={ROTAS_CONVERSAS.mensagens}><Icone nome="conversas" className="ico" />Ir para Mensagens</a>}>
-        {secao === "automacoes"
-          ? "Aqui o escritório vai montar as mensagens que saem sozinhas pelo WhatsApp, com a ajuda da IA: lembrete de audiência, aviso de etapa, cobrança e prestação de contas."
-          : "Aqui vai ficar o registro do que saiu sozinho pelo WhatsApp, com o que foi entregue, lido ou não entregue."}
-      </Estado>
-    </MolduraPortal>
-  );
-}

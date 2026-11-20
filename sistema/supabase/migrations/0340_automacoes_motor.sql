@@ -421,8 +421,9 @@ begin
                                                     else 'Falta um dado para completar o texto da mensagem.' end);
         return 'FALHOU';
       end if;
-      insert into conversa_mensagens (escritorio_id, conversa_id, autor, texto, aviso_tipo, envio)
-      values (e.escritorio_id, v_conv, 'AVISO', v_texto, left(coalesce(p ->> 'nome', a.nome), 60), 'NA_FILA');
+      insert into conversa_mensagens (escritorio_id, conversa_id, autor, texto, aviso_tipo, envio, dados)
+      values (e.escritorio_id, v_conv, 'AVISO', v_texto, left(coalesce(p ->> 'nome', a.nome), 60), 'NA_FILA',
+              jsonb_build_object('execucao', e.id, 'automacao', a.id, 'passo', p ->> 'id'));
       update conversas set ultima_em = app_now() where id = v_conv;
       e.conversa_id := v_conv;
       e.ultima_msg_em := app_now();

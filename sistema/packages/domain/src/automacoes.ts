@@ -651,3 +651,50 @@ export const semAvisosSchema = z.object({
   quemPediu: z.string().max(120).optional(),
   retirar: z.boolean().optional(),
 });
+
+// ------------------------------------------------------------------ Avisos automáticos (F3.64)
+// O que saiu sozinho pelo WhatsApp nos últimos 7 dias (portal_avisos_automaticos).
+
+export type SituacaoAvisoAutomatico = "NA_FILA" | "ENVIADA" | "ENTREGUE" | "LIDA" | "RESPONDEU" | "NAO_ENTREGUE";
+
+export const SITUACAO_AVISO: Record<SituacaoAvisoAutomatico, string> = {
+  NA_FILA: "Na fila", ENVIADA: "Enviado", ENTREGUE: "Entregue", LIDA: "Lido", RESPONDEU: "Respondeu", NAO_ENTREGUE: "Não entregue",
+};
+
+/** Os nomes curtos dos filtros da tela, na ordem aprovada. */
+export const FILTROS_AVISO: { gatilho: Gatilho | null; nome: string }[] = [
+  { gatilho: null, nome: "Todos" },
+  { gatilho: "PAGAMENTO_RECEBIDO", nome: "Pagamento" },
+  { gatilho: "PARCELA_VAI_VENCER", nome: "Vai vencer" },
+  { gatilho: "PARCELA_ATRASO", nome: "Atraso" },
+  { gatilho: "ETAPA_CASO", nome: "Etapa do caso" },
+  { gatilho: "LEMBRETE_AUDIENCIA", nome: "Audiência" },
+  { gatilho: "PRESTACAO_CONTAS", nome: "Prestação de contas" },
+];
+
+export interface AvisoAutomatico {
+  id: string;
+  mensagemId: string | null;
+  execucaoId: string;
+  gatilho: Gatilho;
+  automacao: { id: string; nome: string };
+  nome: string;
+  detalhe: string | null;
+  cliente: { id: string; nome: string };
+  para: { nome: string; papel: string | null } | null;
+  conversaId: string | null;
+  em: string;
+  texto: string | null;
+  situacao: SituacaoAvisoAutomatico;
+  motivo: string | null;
+  resposta: string | null;
+}
+
+export interface ListaAvisosAutomaticos {
+  itens: AvisoAutomatico[];
+  total: number;
+  naoEntregues: number;
+  porTipo: Partial<Record<Gatilho, number>>;
+  socioDono: PessoaRef | null;
+  dono: boolean;
+}

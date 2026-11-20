@@ -1,11 +1,12 @@
 {
   "id": "F3.64",
-  "texto": "Avisos automáticos: o registro do que saiu, com a entrega e o que disparou; e adicionar, mover e apagar passos no celular",
+  "texto": "Avisos automáticos: o registro do que saiu, com a entrega e o que disparou (a edição no celular fica no computador, decisão da Carol)",
   "peca": "B3",
   "refs": [
-    "PA-03"
+    "PA-03",
+    "PD-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 640,
-  "proximo": "Programar a tela Avisos automáticos aprovada (estado avisos de docs/design/aprovadas/portal-conversas-automacoes) a partir de automacao_execucoes e conversa_mensagens; a edição no celular fica no computador por decisão da Carol"
+  "evidencia": "Migration 0360 (portal_avisos_automaticos: últimos 7 dias, por tipo, com situação, motivo da falha e a resposta do cliente; só as automações das áreas da pessoa) e o aviso guarda execução e passo (0340); pgTAP 034; rota GET /v1/escritorio/avisos-automaticos no app_test.ts; tela /conversas/avisos e e2e portal-conversas.spec.ts."
 }

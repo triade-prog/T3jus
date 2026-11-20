@@ -4,7 +4,7 @@
 -- cobrança por semana; lembrete de audiência com a espera em horas e o caminho "não
 -- respondeu" passando para quem cuida; desligada, para; sem WhatsApp, nada anda (PA-03).
 begin;
-select plan(32);
+select plan(36);
 
 select ajustar_relogio(('2026-11-01 10:00-03'::timestamptz - now()));
 
@@ -122,6 +122,14 @@ select automacoes_rodar();
 select is((select situacao from automacao_execucoes x join lem using (id)), 'CONCLUIDA', 'depois do 2º lembrete, sem resposta, a execução termina');
 select is((select c.situacao || ' ' || (c.responsavel_id = ids.larissa)::text from conversas c, ids where c.telefone = '+5511996027731'),
   'PRECISA true', 'e a conversa passa para Larissa, que cuida do compromisso');
+
+-- F3.64: Avisos automáticos, os últimos 7 dias.
+select is((select portal_avisos_automaticos(socia, rm) -> 'porTipo' from ids), '{"LEMBRETE_AUDIENCIA": 2}'::jsonb, 'F3.64: os avisos dos últimos 7 dias, por tipo');
+select ajustar_relogio(('2026-12-08 08:20-03'::timestamptz - now()));
+select whatsapp_mensagem_recebida(rm, '+5511996027731', 'Irene', 'Confirmo, estarei lá.') from ids;
+select is((select portal_avisos_automaticos(socia, rm) -> 'itens' -> 0 ->> 'situacao' from ids), 'RESPONDEU', 'a resposta do cliente aparece no aviso');
+select is((select portal_avisos_automaticos(larissa, rm) ->> 'total' from ids), '2', 'Larissa (Jurídico) vê os lembretes');
+select is((teste.erro($$ select portal_avisos_automaticos(socia, rm, 'NADA') from ids $$)) -> 'detalhe' -> 'campos', '["tipo"]'::jsonb, 'tipo desconhecido é recusado');
 
 -- Desligada, a execução para.
 select ajustar_relogio(('2026-12-08 08:10-03'::timestamptz - now()));
