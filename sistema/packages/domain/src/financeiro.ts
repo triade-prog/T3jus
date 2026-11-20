@@ -377,3 +377,142 @@ export function textoPrestacaoContas(
     c.fecho,
   ].join("\n");
 }
+
+// ------------------------------------------------------------------------------------------
+// Resumo, Caixa e exportação para o contador (FI-03, FI-09, FI-21, PD-03, PD-06, IN-02 a IN-05,
+// IN-07, IN-09, IN-10, IN-14). Os números vêm prontos do banco
+// (0290_portal_financeiro_resumo_caixa.sql); aqui ficam os grupos de honorário, o alerta de
+// queda e as palavras.
+
+/** O dinheiro de terceiros que está com o escritório, por quem ainda espera. */
+export interface TerceirosNaConta { saldo: number; honorarios: number; clientes: number; peritos: number; parceiros: number; outros: number }
+
+export interface RepassePendente {
+  id: string; levantamentoId: string; para: ParaDestinacao; nome: string; regra: string | null; valor: number; prazo: string;
+  tipo: TipoLevantamento; cliente: string; caso: string;
+}
+
+export interface ResumoFinanceiro {
+  hoje: string;
+  mes: string;
+  algum: boolean;
+  escritorio: { recebido: number; vencidoMes: number; seteDias: number; restoMes: number };
+  vencidas: { valor: number; n: number; semAcao: number; faixas: { valor: number; n: number }[]; parcelas: ParcelaLinha[] };
+  proximas: { valor: number; n: number; ate: string | null; parcelas: ParcelaLinha[] };
+  terceiros: TerceirosNaConta;
+  repasses: { valor: number; n: number; lista: RepassePendente[] };
+  meses: { mes: string; previsto: number; realizado: number }[];
+  porTipo: { tipo: TipoHonorario; valor: number; anteriores: number; restante: number }[];
+  contratado: { n: number; valor: number };
+  clientesReceberam: { n: number; valor: number };
+  fixas: { receita: number; despesas: number };
+}
+
+export interface MesCaixa {
+  mes: string;
+  entradasPrevistas: number;
+  entradasRealizadas: number | null;
+  saidasPrevistas: number;
+  saidasRealizadas: number | null;
+  saldo: number;
+}
+
+export interface CaixaFinanceiro {
+  hoje: string;
+  mes: string;
+  saldo: number;
+  fechaMes: number;
+  terceiros: TerceirosNaConta;
+  meses: MesCaixa[];
+  exportacoes: { mes: string; formato: FormatoExportacao; em: string; por: PessoaRef | null }[];
+  mesesExportar: string[];
+}
+
+export const FORMATOS_EXPORTACAO = { XLSX: "Planilha (.xlsx)", CSV: "Só a planilha (.csv)" } as const;
+export type FormatoExportacao = keyof typeof FORMATOS_EXPORTACAO;
+
+export const exportarSchema = z.object({
+  mes: z.string().regex(/^\d{4}-\d{2}-01$/).nullish(),
+  formato: z.enum(["XLSX", "CSV"]).nullish(),
+});
+export type Exportar = z.input<typeof exportarSchema>;
+
+export interface PreviaExportacao {
+  mes: string;
+  aberto: boolean;
+  recebimentos: { n: number; valor: number };
+  honorariosTransferidos: { n: number; valor: number };
+  despesas: { n: number; valor: number };
+  recibos: number;
+  terceiros: { entrou: number; repassado: number };
+}
+
+export interface DadosExportacao {
+  id: string;
+  mes: string;
+  formato: FormatoExportacao;
+  escritorio: string;
+  recebimentos: {
+    dia: string; cliente: string; contrato: string | null; parcela: string; tipo: TipoHonorario | "REEMBOLSO";
+    referencia: string; forma: FormaPagamento; valor: number; multaJuros: number; recibo: string | null;
+  }[];
+  despesas: {
+    dia: string; vencimento: string; descricao: string; fornecedor: string | null; categoria: CategoriaSaida;
+    forma: FormaPagamento | null; valor: number; recorrente: boolean; cliente: string | null;
+  }[];
+  terceiros: {
+    entrouEm: string; tipo: TipoLevantamento; cliente: string; caso: string; levantado: number;
+    para: ParaDestinacao; nome: string; valor: number; feitoEm: string | null; situacao: "FEITO" | "DISPENSADO" | "PENDENTE";
+  }[];
+}
+
+/** Os tipos de honorário agrupados como o Resumo mostra (decisão 2, IN-10). */
+export const GRUPOS_RECEITA = {
+  CONTRATUAL: { nome: "Contratual", tipos: ["FIXO", "PARCELADO"] },
+  MENSALIDADES: { nome: "Mensalidades", tipos: ["MENSAL", "RECORRENTE"] },
+  EXITO: { nome: "Êxito", tipos: ["EXITO", "SUCUMBENCIA"] },
+  ATO: { nome: "Por ato e consultas", tipos: ["ATO"] },
+} as const satisfies Record<string, { nome: string; tipos: readonly TipoHonorario[] }>;
+export type GrupoReceita = keyof typeof GRUPOS_RECEITA;
+
+export interface ReceitaGrupo { grupo: GrupoReceita; nome: string; valor: number; anteriores: number; restante: number }
+
+/** O recebido do mês por grupo, do maior para o menor; grupos sem nada nos 4 meses ficam de fora. */
+export function receitaPorGrupo(porTipo: ResumoFinanceiro["porTipo"]): ReceitaGrupo[] {
+  return (Object.keys(GRUPOS_RECEITA) as GrupoReceita[])
+    .map((grupo) => {
+      const tipos: readonly string[] = GRUPOS_RECEITA[grupo].tipos;
+      const deles = porTipo.filter((t) => tipos.includes(t.tipo));
+      const soma = (k: "valor" | "anteriores" | "restante") => deles.reduce((s, t) => s + t[k], 0);
+      return { grupo, nome: GRUPOS_RECEITA[grupo].nome, valor: soma("valor"), anteriores: soma("anteriores"), restante: soma("restante") };
+    })
+    .filter((g) => g.valor > 0 || g.anteriores > 0)
+    .sort((a, b) => b.valor - a.valor);
+}
+
+/** Abaixo de 70% da média dos três meses anteriores, mesmo que tudo o que falta no mês entre. */
+export const LIMITE_QUEDA = 0.7;
+
+export interface AlertaQueda { grupo: GrupoReceita; nome: string; valor: number; media: number; pct: number }
+
+/** O alerta de queda (IN-09): o grupo que mais caiu contra a média dos três meses anteriores. */
+export function alertaDeQueda(grupos: ReceitaGrupo[]): AlertaQueda | null {
+  const caidos = grupos
+    .map((g) => ({ g, media: Math.round(g.anteriores / 3) }))
+    .filter(({ g, media }) => media > 0 && g.valor + g.restante < media * LIMITE_QUEDA)
+    .map(({ g, media }) => ({ grupo: g.grupo, nome: g.nome, valor: g.valor, media, pct: Math.round((1 - g.valor / media) * 100) }));
+  return caidos.sort((a, b) => b.pct - a.pct || b.media - a.media)[0] ?? null;
+}
+
+/** Quem espera o dinheiro de terceiros: "2 clientes, 1 perito e 1 parceiro". */
+export function quemEspera(t: TerceirosNaConta): string {
+  const n = (q: number, um: string, varios: string) => (q ? `${q} ${q === 1 ? um : varios}` : null);
+  const partes = [
+    n(t.clientes, "cliente", "clientes"),
+    n(t.peritos, "perito", "peritos"),
+    n(t.parceiros, "parceiro", "parceiros"),
+    n(t.outros, "outra pessoa", "outras pessoas"),
+  ].filter((x): x is string => !!x);
+  if (partes.length <= 1) return partes[0] ?? "";
+  return `${partes.slice(0, -1).join(", ")} e ${partes[partes.length - 1]}`;
+}

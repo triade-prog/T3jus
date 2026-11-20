@@ -153,6 +153,14 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_financeiro_levantamento_registrar: () => ({ id: CLIENTE }),
     portal_financeiro_repasses: () => ({ algum: false, levantamentos: [] }),
+    portal_financeiro_resumo: (a) => ({ algum: false, escritorio: a.p_escritorio }),
+    portal_financeiro_caixa: (a) => ({ saldo: 0, escritorio: a.p_escritorio }),
+    portal_financeiro_exportacao_previa: (a) => ({ mes: a.p_mes, aberto: false }),
+    portal_financeiro_exportar: (a) => {
+      const d = a.p_dados as { mes?: string; formato?: string };
+      if (!d.formato) erroBanco("TC422", { campos: ["formato"] });
+      return { id: CLIENTE, mes: d.mes, formato: d.formato, recebimentos: [], despesas: [], terceiros: [] };
+    },
     portal_financeiro_repasse_proposta: () => ({ contrato: null, linhas: [], cliente: 100, falta: 0 }),
     portal_financeiro_repasse: (a) => ({ id: a.p_levantamento }),
     portal_financeiro_prestacao_enviada: (a) => ({ id: a.p_levantamento, prestacaoEm: "2026-11-19T22:00:00Z" }),
@@ -782,6 +790,32 @@ Deno.test("FI-05: tipos de levantamento e destinações do domínio são os mesm
   assertEquals(lista(/para\s+text not null check \(para in \(([^)]+)\)/), Object.keys(PARA_DESTINACAO));
   assertEquals(/prazo_repasse_dias\(\) returns integer\s+language sql immutable\s+as \$\$ select (\d+)/.exec(sql)?.[1], String(PRAZO_REPASSE_DIAS));
   assertEquals(somarDiasUteis("2026-11-19", 3), "2026-11-24");
+});
+
+Deno.test("FI-09, FI-21: Resumo, Caixa e exportação para o contador; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/financeiro/resumo", { cookie })).json()).escritorio, AURORA);
+  assertEquals((await (await m.pedir("/v1/escritorio/financeiro/caixa", { cookie })).json()).escritorio, AURORA);
+  assertEquals((await (await m.pedir("/v1/escritorio/financeiro/exportacoes/previa?mes=2026-10-01", { cookie })).json()).mes, "2026-10-01");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/exportacoes/previa?mes=outubro", { cookie }))).detalhes?.campos, ["mes"]);
+  const e = await m.pedir("/v1/escritorio/financeiro/exportacoes", { corpo: { mes: "2026-10-01", formato: "CSV" }, cookie });
+  assertEquals(e.status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_exportar")!;
+  assertEquals(ch.args.p_escritorio, AURORA);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/exportacoes", { corpo: { mes: "2026-10-01", formato: "PDF" }, cookie }))).detalhes?.campos, ["formato"]);
+});
+
+Deno.test("IN-10: os grupos de honorário cobrem todos os tipos do banco, e o alerta de queda", async () => {
+  const { GRUPOS_RECEITA, TIPOS_HONORARIO, receitaPorGrupo, alertaDeQueda } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0200_portal_contratos.sql", import.meta.url));
+  const tipos = /tipo\s+text not null check \(tipo in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1)).sort();
+  assertEquals(Object.values(GRUPOS_RECEITA).flatMap((g) => [...g.tipos]).sort(), tipos);
+  assertEquals(Object.keys(TIPOS_HONORARIO).sort(), tipos);
+  const g = receitaPorGrupo([{ tipo: "EXITO", valor: 720000, anteriores: 3690000, restante: 0 }, { tipo: "MENSAL", valor: 960000, anteriores: 2880000, restante: 0 }]);
+  assertEquals(g.map((x) => x.grupo), ["MENSALIDADES", "EXITO"]);
+  assertEquals(alertaDeQueda(g), { grupo: "EXITO", nome: "Êxito", valor: 720000, media: 1230000, pct: 41 });
+  assertEquals(alertaDeQueda([{ grupo: "EXITO", nome: "Êxito", valor: 100, anteriores: 3000, restante: 900 }]), null);
 });
 
 Deno.test("FI-20, FI-07: categorias de saída e formas de reembolso do domínio são as mesmas do banco", async () => {

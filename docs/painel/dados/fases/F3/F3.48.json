@@ -1,0 +1,11 @@
+{
+  "id": "F3.48",
+  "texto": "RPVs e precatórios a caminho: registrar o expedido com a data estimada e pôr a parte do escritório na previsão de caixa",
+  "peca": "S3",
+  "refs": [
+    "FI-09"
+  ],
+  "status": "pendente",
+  "ordem": 480,
+  "proximo": "Desenhar a janela de registrar o RPV ou precatório expedido (valor requisitado, tribunal, data estimada) e levar a parte do escritório, pelo contrato, à previsão do Caixa em âmbar; quando o valor entrar, vira levantamento em Repasses"
+}

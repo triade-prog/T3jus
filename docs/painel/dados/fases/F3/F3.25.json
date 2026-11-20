@@ -5,7 +5,8 @@
   "refs": [
     "FI-20"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 250,
-  "proximo": "Vem com o Resumo e os Repasses; as saídas já usam as categorias"
+  "evidencia": "F3.47: o Resumo agrupa o recebido por tipo de honorário (contratual, mensalidades, êxito, por ato), os valores de terceiros ficam sempre à parte e os reembolsos transferidos entram como reembolso; a exportação para o contador separa recebimentos por tipo, despesas por categoria e terceiros numa aba própria (migration 0290, planilha.ts).",
+  "nota": "A categoria Empréstimos fica em F3.51."
 }

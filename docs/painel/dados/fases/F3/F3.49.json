@@ -1,0 +1,11 @@
+{
+  "id": "F3.49",
+  "texto": "Meta de receita do mês e a comparação com ela no Resumo",
+  "peca": "S3",
+  "refs": [
+    "IN-09"
+  ],
+  "status": "pendente",
+  "ordem": 490,
+  "proximo": "A sócia dona define a meta do mês; o Resumo compara o realizado com ela, ao lado da comparação com os meses anteriores (que já existe)"
+}

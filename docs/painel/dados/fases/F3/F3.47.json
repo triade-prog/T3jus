@@ -1,0 +1,25 @@
+{
+  "id": "F3.47",
+  "texto": "Resumo e Caixa do Financeiro: o mês do escritório ao lado do dinheiro de terceiros, sem somar; vencido por idade com motivo e próxima ação; previsto contra realizado com o alerta de queda; próximos 7 dias e repasses pendentes; saldos e previsão mês a mês; exportação para o contador em .xlsx ou .csv",
+  "peca": "S3",
+  "refs": [
+    "FI-03",
+    "FI-06",
+    "FI-20",
+    "FI-21",
+    "PD-03",
+    "PD-06",
+    "IN-02",
+    "IN-03",
+    "IN-04",
+    "IN-05",
+    "IN-07",
+    "IN-09",
+    "IN-10",
+    "IN-14"
+  ],
+  "status": "feito",
+  "ordem": 470,
+  "evidencia": "Migration 0290 (exportacoes_contador protegida e só inserção; resumo, caixa, prévia e exportação calculados no banco: recebido no mês com os honorários transferidos, vencido por idade, próximos 7 dias, terceiros à parte, comparação com 3 meses, recebido por tipo, cobertura das fixas, saldo pelos registros e previsão com as recorrentes que ainda vão nascer; a exportação vai para o histórico), pgTAP 029 (40 testes), rotas /v1/escritorio/financeiro/resumo, /caixa, /exportacoes/previa e /exportacoes na api-portal (2 testes Deno novos), planilha .xlsx e .csv montadas na tela (packages/ui/src/portal/planilha.ts, testes vitest, conferida com o openpyxl), e2e tests/e2e/portal-financeiro-caixa.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-financeiro.",
+  "nota": "O saldo do escritório sai dos registros do T3jus (o que entrou menos o que foi pago), sem saldo de abertura (F3.50). RPVs e precatórios a caminho ficam em F3.48; a meta do mês, em F3.49; comprovantes no arquivo e envio ao contador por e-mail, em F3.50; a categoria Empréstimos, em F3.51."
+}

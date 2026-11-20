@@ -59,6 +59,14 @@ function PagarConteudo() {
   const hoje = hojeBrasilia();
   const [mostrar, setMostrar] = useState<MostrarPagar>("SEMANA");
   const [lancar, setLancar] = useState(false);
+  // Vindo dos primeiros passos do Resumo (?lancar=1), a janela já abre.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has("lancar")) return;
+    q.delete("lancar");
+    window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
+    void Promise.resolve().then(() => setLancar(true));
+  }, []);
   const [pagar, setPagar] = useState<ContaPagar | null>(null);
   const [reembolso, setReembolso] = useState<ContaPagar | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);

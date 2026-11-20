@@ -267,7 +267,7 @@ Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a ár
 - **Registrar (FI-02):** `portal_financeiro_receber_registrar` recusa parcela cancelada ou já paga, valor acima do que falta (devolve `falta`) e data no futuro. O pagamento atrasado baixa a parcela do mês a que ela se refere; no caixa, entra no dia em que o dinheiro entrou.
 - **Cobrança (FI-04):** `portal_financeiro_cobranca_anotar` pede o motivo do atraso na primeira anotação de parcela vencida e sempre a próxima ação (dia, o que fazer, quem faz). Quem sai da equipe passa as próximas ações para quem o sócio escolheu (evento PASSADA, EX-10).
 - **API:** `GET /v1/escritorio/financeiro/receber` (`?mostrar=ABERTO|VENCIDAS|SETE_DIAS|RECEBIDO_MES&q&responsavel&forma`), `GET /financeiro/contratos/:id`, `POST /financeiro/parcelas/:id/recebimentos` e `/cobranca`.
-- **Telas:** `/financeiro/a-receber` e `/financeiro/a-receber/contratos/:id`. Resumo, Repasses e Caixa ainda mostram a área em preparo.
+- **Telas:** `/financeiro/a-receber` e `/financeiro/a-receber/contratos/:id`.
 
 ### Financeiro do Portal, A pagar (F3.18; FI-01, FI-02, FI-07, FI-13, FI-20)
 
@@ -288,6 +288,17 @@ Telas aprovadas em `docs/design/aprovadas/portal-financeiro`. Só quem tem a ár
 - **API:** `GET /v1/escritorio/financeiro/repasses`, `POST /financeiro/repasses/proposta`, `POST /financeiro/repasses` (201), `GET /financeiro/repasses/:id`, `POST /financeiro/repasses/:id/prestacao`, `POST /financeiro/destinacoes/:id/feito` e `/dispensar`.
 - **Tela:** `/financeiro/repasses` (um bloco âmbar por valor de terceiros, "Como funciona" e o repassado no mês) e `/financeiro/repasses/:id` (para onde vai cada parte, a prévia da prestação de contas, o fechamento e o histórico), com as janelas de registrar alvará ou RPV, feito, dispensar e prestação de contas.
 - **Falta:** envio pelo WhatsApp do escritório com o "lida" (F3.44), encerrar o caso no financeiro (F3.45), prazo ajustável e motivo do atraso (F3.46) e o comprovante anexado (F3.22).
+
+### Financeiro do Portal, Resumo, Caixa e exportação (F3.47; FI-03, FI-06, FI-21, PD-03, PD-06, IN-02 a IN-05, IN-07, IN-09, IN-10, IN-14)
+
+- **Banco (migration 0290):** `exportacoes_contador` guarda cada arquivo gerado (mês, formato, quem e quando), só acrescenta e vai ao histórico. Todos os números são calculados no banco a partir dos registros; nada é digitado à parte.
+- **Peças:** `parcelas_validas` (contrato ativo ou encerrado, parcela não cancelada), `caixa_entradas` (pagamentos no caixa do escritório, com multa e juros, mais os honorários e reembolsos transferidos em Repasses), `caixa_saidas`, `parcelas_previstas`, `saidas_previstas` (inclui as recorrentes que ainda vão nascer no mês), `terceiros_na_conta` e `receita_por_tipo` (honorários de levantamento contam como êxito).
+- **Resumo (`portal_financeiro_resumo`):** o mês do escritório (recebido, vencido no mês, próximos 7 dias e o resto do mês) com os terceiros sempre ao lado e nunca somados; vencido por idade (até 30, 31 a 60, 61 a 90, mais de 90 dias) com quantas estão sem próxima ação; previsto contra realizado nos últimos meses; recebido por tipo comparado com a média dos 3 meses anteriores (alerta de queda abaixo de 70%, `alertaDeQueda` no domínio); repasses pendentes; contratado no mês, clientes que pagaram e cobertura das despesas fixas.
+- **Caixa (`portal_financeiro_caixa`):** saldo do escritório pelos registros (o que entrou menos o que foi pago), quanto fecha o mês, terceiros na conta e seis meses de previsto e realizado (dois para trás, o atual e três à frente).
+- **Exportação para o contador (FI-21):** `portal_financeiro_exportacao_previa` mostra o que vai no arquivo e avisa se o mês ainda não fechou; `portal_financeiro_exportar` registra e devolve as linhas. O arquivo é montado no navegador (`packages/ui/src/portal/planilha.ts`): .xlsx com as abas Resumo, Recebimentos, Despesas e Terceiros (terceiros não é receita), ou .csv com ponto e vírgula e vírgula decimal, como o Excel brasileiro abre.
+- **API:** `GET /v1/escritorio/financeiro/resumo`, `GET /financeiro/caixa`, `GET /financeiro/exportacoes/previa?mes=aaaa-mm-01` e `POST /financeiro/exportacoes` (201).
+- **Telas:** `/financeiro` (Resumo, com o estado vazio de três passos) e `/financeiro/caixa`, com a janela de exportar. `?lancar=1` em A pagar e `?registrar=1` em Repasses abrem a janela direto.
+- **Falta:** RPVs e precatórios a caminho (F3.48), meta do mês (F3.49), contador cadastrado, envio por e-mail, comprovantes e saldo de abertura (F3.50) e a categoria Empréstimos (F3.51).
 
 ### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 
