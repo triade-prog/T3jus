@@ -27,6 +27,7 @@ import { JanelaPrazo, JanelaTarefa, OQueTrava, PrazosETarefas, SeloUrgencia } fr
 import { DocumentosDoCaso, JanelaEnviarDocumento, JanelaJaChegou, JanelaPedirDeNovo, JanelaPedirDocumento } from "./JuridicoDocumentos.tsx";
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { PeticoesDoCaso } from "./Peticoes.tsx";
 
 type Pessoa = { id: string; nome: string };
 type Feito = { titulo: string; texto: string };
@@ -1139,6 +1140,7 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
         </div>
         <aside className="hn-col" aria-label="Sobre o caso">
           <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} aoDocumentoChegou={(d) => setDoc({ d, acao: "chegou" })} />
+          <PeticoesDoCaso key={`pc-${vez}`} casoId={f.id} andamento={andamento} />
           <Contratos f={f} />
           <AvisoCliente f={f} />
           <Mudancas f={f} />

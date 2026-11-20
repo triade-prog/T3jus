@@ -392,8 +392,8 @@ Mesmas telas aprovadas (estados etapas e peticoes). Migration `0260_portal_jurid
 - **Histórico:** `juridico.etapa_criada`, `etapa_editada` (antes e depois), `etapa_movida` e `etapa_removida`. O histórico recusa a chave `nome`, por isso o nome da etapa vai como `etapa`.
 - **Petições (EX-09, a validar):** `peticao_interesse` guarda só quem respondeu, a resposta (`SEMANA`, `AS_VEZES` ou `NAO`) e como faz hoje. A página mostra a última resposta da pessoa e deixa mudar.
 - **API:** `GET` e `POST /v1/escritorio/juridico/etapas`, `PUT /juridico/etapas/:id`, `POST /juridico/etapas/:id/mover`, `POST /juridico/etapas/:id/remover`, `GET` e `POST /juridico/peticoes`.
-- **Tela:** `/juridico/casos/etapas` (o botão "Etapas do escritório" aparece na lista de casos só para a sócia dona) e `/juridico/peticoes`.
-- **Falta:** as respostas de Petições no Console e o gerador (F3.41); o pedido ao Financeiro ao entrar na etapa marcada (F3.14).
+- **Tela:** `/juridico/casos/etapas` (o botão "Etapas do escritório" aparece na lista de casos só para a sócia dona). A pergunta de interesse saiu da tela quando o gerador chegou (F3.41); a tabela e as rotas ficam, com as respostas já dadas.
+- **Falta:** o pedido ao Financeiro ao entrar na etapa marcada (F3.14).
 
 ### Jurídico do Portal, documentos do caso (F3.35; EX-03, EX-05, PD-05)
 
@@ -472,4 +472,16 @@ Tela aprovada em `docs/design/aprovadas/portal-peticoes` (Carol, 19/11/2026; 27 
 - **Revisão:** quem gera e não é o responsável pelo caso nem a sócia dona manda para o responsável; responsável sem OAB, para a sócia dona (`peticao_revisor`). Avisos no sino: `PETICAO_REVISAR`, `PETICAO_DECIDIDA`, `PETICAO_PASSADA`.
 - **Arquivos** (bucket `documentos-portal`, que passa a aceitar .docx): `<escritório>/peticoes/<versão>.docx` (limpo), `…-rascunho.docx`, `<escritório>/peticoes/modelos/<versão>.docx` e, aprovada, `<escritório>/<documento>` nos documentos do caso. O nome que a pessoa dá não entra no caminho.
 - **Rotas** (`supabase/functions/api-portal/peticoes.ts`): `GET /v1/escritorio/peticoes` (lista, `visao=TODAS|MINHAS|REVISAR`, `caso=`), `GET …/peticoes/:id` (ficha, revisão e ajuste), `POST …/:id/abrir?versao=`, `GET …/casos/:caso/dados`, `POST …/casos/:caso/previa` e `…/gerar`, `POST …/:id/enviar`, `…/comentarios`, `…/comentarios/:id/desfazer`, `…/decisao`, `GET …/:id/revisores`, `POST …/:id/passar`, `POST …/:id/versoes` (pelos dados) e `…/versoes/docx` (o .docx editado), e os modelos: `GET …/modelos`, `POST …/modelos/conferir`, `POST …/modelos?nome&tipo&area&substitui&arquivo`, `POST …/modelos/:id/versoes`, `…/arquivar` e `…/abrir`. Os envios de .docx vão como `application/octet-stream` (o repasse do Portal só deixa nesses caminhos).
-- **Falta:** as telas (F3.41), validar com a advogada parceira (F3.75), o item no Início (F3.76) e a concordância automática (F3.77).
+- **Falta:** validar com a advogada parceira (F3.75), o item no Início (F3.76) e a concordância automática (F3.77).
+
+### Gerador de petições, telas (F3.41; EX-09)
+
+As telas aprovadas em `docs/design/aprovadas/portal-peticoes`, com o CSS `pe-` e `rv-` copiado do desenho para `portal.css`. Componentes em `packages/ui/src/portal/Peticoes.tsx` (lista, modelos, nova petição e Petições do caso), `PeticaoPagina.tsx` (resultado, revisão, ajuste e versão nova) e `peticoes.ts` (textos e regras da tela, com testes vitest). E2e `portal-peticoes.spec.ts`.
+
+- **Rotas:** `/juridico/peticoes` (lista; `Para eu revisar` mostra quantas esperam por você), `/juridico/peticoes/modelos`, `/juridico/peticoes/nova` (aceita `?caso=` e começa no passo 2), `/juridico/peticoes/:id` (a tela muda com a situação e com quem abre: quem revisa vê a revisão) e `/juridico/peticoes/:id/versao`.
+- **O que bloqueia e o que não bloqueia:** bloqueiam só o endereçamento vazio, ninguém assinando e campo do formulário com valor inválido; o resumo do erro leva ao campo. O que falta no cadastro sai marcado no texto ("[RG: falta]") e o botão diz quantos (`Gerar com 1 dado marcado`).
+- **Quem assina:** vem marcado o responsável pelo caso com todas as inscrições (a principal primeiro); sem OAB, a sócia dona. A linha "No documento:" mostra a frase que vai para o papel.
+- **Modelos:** o .docx é conferido assim que chega (campos aceitos, desconhecidos com sugestão, PDF e .doc recusados) e só então se salva; "Substitui" já vem com o modelo da linha.
+- **Revisão:** comentário preso ao parágrafo (com desfazer enquanto a decisão não sai), decisão com o comentário obrigatório para ajuste e o motivo para reprovar, e "Passar a revisão" para outro advogado com OAB.
+- **Ficha do caso:** a folha "Petições do caso" no lado e "Gerar petição" em Documentos. O sino leva à petição.
+- **Falta:** o mesmo de cima (F3.75, F3.76, F3.77). A aprovada entra nos documentos do caso com a categoria "Petição".

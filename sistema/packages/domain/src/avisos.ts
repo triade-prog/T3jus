@@ -61,7 +61,8 @@ export const semAvisosSchema = z.object({
 
 export type TipoAvisoSino =
   | "CONVERSA_IA" | "CONVERSA_ASSUMIDA" | "CONVERSA_PASSADA" | "AUTOMACAO_SUGESTAO"
-  | "MODELO_APROVADO" | "MODELO_RECUSADO" | "PRAZO_2_DIAS";
+  | "MODELO_APROVADO" | "MODELO_RECUSADO" | "PRAZO_2_DIAS"
+  | "PETICAO_REVISAR" | "PETICAO_DECIDIDA" | "PETICAO_PASSADA";
 
 export interface AvisoSino {
   id: string;
@@ -69,8 +70,10 @@ export interface AvisoSino {
   dados: {
     conversa?: string; contato?: string; quem?: string; trecho?: string; motivo?: string; recado?: string;
     automacao?: string; texto?: string; modelo?: string; prazo?: string; cliente?: string; vence?: string; processo?: string;
+    /** Petições (EX-09). */
+    caso?: string; versao?: number; decisao?: "APROVADA" | "AJUSTE" | "REPROVADA"; para?: string; passadaPor?: string;
   };
-  origem: "conversas" | "automacoes" | "prazos";
+  origem: "conversas" | "automacoes" | "prazos" | "peticoes";
   origemId: string;
   em: string;
   lido: boolean;

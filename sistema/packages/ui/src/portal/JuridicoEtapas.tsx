@@ -1,20 +1,20 @@
 "use client";
-// Jurídico do Portal, parte 3a (EX-07, EX-09), desenho aprovado em
-// docs/design/aprovadas/portal-juridico (estados etapas e peticoes, decisões 8 e 11):
+// Jurídico do Portal, parte 3a (EX-07), desenho aprovado em
+// docs/design/aprovadas/portal-juridico (estado etapas, decisão 8):
 // - Etapas do escritório, dentro de Casos e processos. Só a sócia dona edita; a equipe vê a
 //   lista. Editar abre a etapa no próprio lugar, com a prévia do WhatsApp. Subir e descer mudam a
 //   ordem; a última é sempre a final. Tirar uma etapa com casos pede para qual etapa eles vão.
-// - Petições: o lugar reservado, com a pergunta curta aos escritórios. A resposta vai para a
-//   equipe T3jus, sem dado de cliente.
+// As Petições (EX-09), que aqui eram o lugar reservado com a pergunta de interesse, viraram o
+// gerador de petições em Peticoes.tsx e PeticaoPagina.tsx.
 
 import { Fragment, useRef, useState } from "react";
 import {
-  RESPOSTAS_PETICAO, textoAvisoEtapa, type EtapaEditavel, type EtapasEscritorio, type RespostaPeticao, type RespostaPeticoes,
+  textoAvisoEtapa, type EtapaEditavel, type EtapasEscritorio,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
-import { contar, diaCurto } from "./agenda.ts";
+import { contar } from "./agenda.ts";
 import { useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
 import { ROTAS_JURIDICO } from "./juridico.ts";
@@ -22,8 +22,6 @@ import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
 type Feito = { titulo: string; texto: string };
-const fuso = { timeZone: "America/Sao_Paulo" } as const;
-const diaDoInstante = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
 
 // ------------------------------------------------------------------------- Etapas
 
@@ -339,116 +337,4 @@ export function EtapasJuridicoPortal() {
       {() => <EtapasConteudo />}
     </MolduraArea>
   );
-}
-
-// ------------------------------------------------------------------------- Petições (EX-09)
-
-function PeticoesConteudo() {
-  const { dados, recarregar } = useCarga<{ minhaResposta: RespostaPeticoes | null }>("/v1/escritorio/juridico/peticoes");
-  const [resposta, setResposta] = useState<RespostaPeticao | "">("");
-  const [como, setComo] = useState("");
-  const [erro, setErro] = useState(false);
-  const [falha, setFalha] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
-  const [denovo, setDenovo] = useState(false);
-  const cab = (
-    <div className="pt-cab">
-      <div>
-        <p className="sobretitulo">Jurídico</p>
-        <h1>Petições</h1>
-        <span className="fio" aria-hidden="true" />
-        <p className="lede">Ainda não existe. Conte para a gente se faria diferença.</p>
-      </div>
-    </div>
-  );
-  if (dados === "erro") return <>{cab}<ErroAoCarregar oque="a página" aoTentar={recarregar} /></>;
-  if (!dados) return <>{cab}<Carregando rotulo="Carregando…" linhas={3} /></>;
-  const dada = denovo ? null : dados.minhaResposta;
-
-  async function enviar() {
-    setFalha(null);
-    if (!resposta) {
-      setErro(true);
-      return document.querySelector<HTMLInputElement>('input[name="pt-resposta"]')?.focus();
-    }
-    setEnviando(true);
-    const r = await chamarPortal<RespostaPeticoes>("/v1/escritorio/juridico/peticoes", { metodo: "POST", corpo: { resposta, comoFazHoje: como.trim() || null } });
-    setEnviando(false);
-    if (!r.ok) return setFalha(textoDoErro(r.erro));
-    setDenovo(false);
-    recarregar();
-  }
-
-  return (
-    <div className="hn">
-      {cab}
-      <div className="hn-grade">
-        <section className="folha" aria-labelledby="t-pt" style={{ overflow: "hidden" }}>
-          <div className="folha-cab">
-            <div>
-              <h2 id="t-pt">Petições</h2>
-              <p className="sub">Lugar reservado · a validar com os escritórios piloto</p>
-            </div>
-          </div>
-          <div className="jr-pt">
-            <div className="jr-estudo">
-              <p><Icone nome="pena" className="ico" /><span><b>Em estudo: o gerador de petições.</b> A ideia é usar os modelos do próprio escritório e preencher sozinho os dados do cliente, do caso e dos advogados (nome e OAB), com um formulário curto para o endereçamento e o valor da causa. O resultado seria um arquivo editável no Word.</span></p>
-              <p><Icone nome="ajuda" className="ico" /><span>Antes de construir, queremos saber se isso ajuda no dia a dia de quem escreve as peças. Nada aqui mexe nos seus casos.</span></p>
-            </div>
-            {dada ? (
-              <div className="jr-pt-ok" role="status">
-                <Aviso tom="sucesso" titulo="Resposta enviada. Obrigado!">
-                  Você respondeu “{RESPOSTAS_PETICAO[dada.resposta].titulo}” em {diaCurto(diaDoInstante(dada.em))}.{dada.comoFazHoje ? ` Como faz hoje: “${dada.comoFazHoje}”.` : ""}
-                </Aviso>
-                <button className="btn btn-sec" type="button" onClick={() => { setResposta(dada.resposta); setComo(dada.comoFazHoje ?? ""); setDenovo(true); }}>
-                  <Icone nome="lapis" className="ico" />
-                  Mudar minha resposta
-                </button>
-              </div>
-            ) : (
-              <form noValidate onSubmit={(e) => { e.preventDefault(); void enviar(); }} style={{ display: "grid", gap: 16 }}>
-                {falha ? <Aviso tom="urgencia" titulo="A resposta não foi enviada.">{falha}</Aviso> : null}
-                <fieldset className="jr-pt-op" aria-describedby={descritoPor(erro && "pt-r-er")}>
-                  <legend>Você usaria um gerador de petições com os modelos do escritório?</legend>
-                  {(Object.entries(RESPOSTAS_PETICAO) as [RespostaPeticao, { titulo: string; texto: string }][]).map(([v, o]) => (
-                    <label key={v} className={resposta === v ? "jr-op jr-op-sel" : "jr-op"}>
-                      <input className="marcar" type="radio" name="pt-resposta" value={v} checked={resposta === v} onChange={() => { setResposta(v); setErro(false); }} />
-                      <span>{o.titulo}<small>{o.texto}</small></span>
-                    </label>
-                  ))}
-                  {erro ? <ErroCampo id="pt-r-er">Escolha uma das três respostas.</ErroCampo> : null}
-                </fieldset>
-                <div className="campo">
-                  <label htmlFor="pt-como">Como você faz hoje?<span className="opcional"> (opcional)</span></label>
-                  <textarea className="entrada" id="pt-como" rows={4} maxLength={1000} value={como} onChange={(e) => setComo(e.target.value)} aria-describedby="pt-como-aj" />
-                  <p className="ajuda" id="pt-como-aj">Ex.: copio a última inicial parecida e troco os dados. Não escreva dados de clientes aqui.</p>
-                </div>
-                <div>
-                  <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
-                    <Icone nome="enviar" className="ico" />
-                    Enviar resposta
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </section>
-        <aside className="hn-col" aria-label="Sobre a resposta">
-          <section className="explica campo-ambar" aria-labelledby="t-ptx">
-            <p className="sobretitulo">Sua resposta</p>
-            <h2 id="t-ptx">Vai para a equipe T3jus.</h2>
-            <ul>
-              <li><Icone nome="pessoas" className="ico" /><span>Vai com o seu nome e o do escritório, para podermos conversar depois.</span></li>
-              <li><Icone nome="escudo" className="ico" /><span>Não leva nenhum dado de cliente ou de caso.</span></li>
-              <li><Icone nome="balanca" className="ico" /><span>Enquanto isso, os dados que o gerador usaria já ficam prontos: qualificação dos clientes, dados dos casos e OAB da equipe.</span></li>
-            </ul>
-          </section>
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-export function PeticoesJuridicoPortal() {
-  return <MolduraArea area="JURIDICO" secao="peticoes">{() => <PeticoesConteudo />}</MolduraArea>;
 }

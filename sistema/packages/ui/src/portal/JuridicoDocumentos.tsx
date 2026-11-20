@@ -15,6 +15,7 @@ import { Icone } from "../Icone.tsx";
 import { enviarArquivo, problemaDoArquivo, tamanhoLegivel, tipoDoArquivo, tipoLegivel } from "../console/documentos.ts";
 import { formatarTelefone } from "../console/ficha.ts";
 import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
+import { ROTAS_PETICOES } from "./peticoes.ts";
 import { chamarPortal } from "./Moldura.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -71,6 +72,7 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
         </div>
         {andamento ? (
           <div className="acoes">
+            <a className="btn btn-sec" href={ROTAS_PETICOES.nova(f.id)}><Icone nome="pena" className="ico" />Gerar petição</a>
             <button className="btn btn-sec" type="button" onClick={aoPedir}><Icone nome="mais" className="ico" />Pedir documento</button>
           </div>
         ) : null}

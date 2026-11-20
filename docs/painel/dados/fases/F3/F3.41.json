@@ -5,8 +5,7 @@
   "refs": [
     "EX-09"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 410,
-  "proximo": "Programar as telas aprovadas: lista, Modelos de petição e Enviar modelo, nova petição em 4 passos, resultado, revisão, ajuste e Petições do caso na ficha (troca a pergunta de interesse)",
-  "evidencia": "Servidor pronto: migration 0440_portal_peticoes.sql (modelos e versões, petições, versões, eventos e comentários, revisão com aprovar, ajuste, reprovar e passar, a aprovada nos documentos do caso, avisos no sino), teste 044_portal_peticoes_test.sql (57), motor do .docx sem biblioteca em packages/domain (zip.ts, docx.ts: conferência, campos quebrados pelo Word, preenchimento, marca de rascunho no cabeçalho, prévia do .docx editado) e peticoes.ts (8 modelos padrão, valores com o que falta marcado, valor e data por extenso), 14 testes vitest, rotas /v1/escritorio/peticoes/* com 6 testes Deno"
+  "evidencia": "Servidor pronto: migration 0440_portal_peticoes.sql (modelos e versões, petições, versões, eventos e comentários, revisão com aprovar, ajuste, reprovar e passar, a aprovada nos documentos do caso, avisos no sino), teste 044_portal_peticoes_test.sql (57), motor do .docx sem biblioteca em packages/domain (zip.ts, docx.ts: conferência, campos quebrados pelo Word, preenchimento, marca de rascunho no cabeçalho, prévia do .docx editado) e peticoes.ts (8 modelos padrão, valores com o que falta marcado, valor e data por extenso), 14 testes vitest, rotas /v1/escritorio/peticoes/* com 6 testes Deno. Telas: lista com situação e “Para eu revisar”, Modelos de petição com conferência do .docx assim que chega, nova petição em 4 passos (caso, modelo por área, dados com o que bloqueia, prévia com o que sai marcado), resultado, revisão com comentário por parágrafo, decisão e “Passar a revisão”, versão 2 pelo formulário ou .docx editado, Petições do caso na ficha e “Gerar petição” nos Documentos, avisos do sino (packages/ui/src/portal/Peticoes.tsx, PeticaoPagina.tsx e peticoes.ts com 7 testes vitest; e2e tests/e2e/portal-peticoes.spec.ts com 11 cenários em celular e computador e axe). A pergunta de interesse saiu da tela"
 }
