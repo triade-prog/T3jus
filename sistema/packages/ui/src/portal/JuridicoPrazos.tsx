@@ -408,6 +408,14 @@ function PrazosConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
   const [mostrar, setMostrar] = useState<MostrarPrazos>("ABERTOS");
   const [resp, setResp] = useState("");
   const [novo, setNovo] = useState(false);
+  // Vindo do atalho "Novo prazo" do Início (?novo=1), a janela já abre.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has("novo")) return;
+    q.delete("novo");
+    window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
+    void Promise.resolve().then(() => setNovo(true));
+  }, []);
   const [cumprir, setCumprir] = useState<Prazo | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const filtros = new URLSearchParams({ mostrar });

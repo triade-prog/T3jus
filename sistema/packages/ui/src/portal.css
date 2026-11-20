@@ -2720,3 +2720,111 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .au-sim-bt{justify-self:stretch}
   .au-pe-nota{padding:0 16px 16px}
 }
+
+/* >>> Início por áreas (ar-), do desenho aprovado em docs/design/aprovadas/portal-inicio-areas (Carol, 19/11/2026) */
+/* ==========================================================================
+   Portal · Início por áreas. Prefixo ar-. Só tokens e peças já aprovados.
+   ========================================================================== */
+.ar-faixa{display:grid;gap:14px}
+.ar-faixa-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.ar-faixa-cab h2{font-size:26px;line-height:1.15;color:var(--vinho)}
+.ar-faixa-cab .sub{font-size:13px;color:var(--texto-2);margin-top:2px}
+.ar-faixa-cab .pd-chips{padding:0}
+.ar-cartoes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:16px}
+.ar-cartao{position:relative;display:grid;gap:12px;align-content:start;height:100%;padding:16px 18px 16px;border-radius:var(--raio-g);background:var(--papel);border:1px solid var(--borda-folha);box-shadow:var(--sombra);color:var(--texto);text-decoration:none}
+.ar-cartao:hover{border-color:var(--vinho-4)}
+.ar-cartao:hover .ar-c-nome{text-decoration:underline}
+.ar-cartao:focus-visible{outline:3px solid var(--vinho-3);outline-offset:2px}
+.ar-c-cab{display:flex;align-items:center;gap:8px}
+.ar-c-cab .ico{color:var(--vinho-4);width:20px;height:20px}
+.ar-c-nome{font-family:var(--serifa);font-size:20px;font-weight:600;color:var(--vinho);line-height:1.1}
+.ar-c-cab .ar-ir{margin-left:auto;width:16px;height:16px}
+.ar-c-num{display:flex;align-items:center;gap:12px}
+.ar-c-num .disco{--d:44px;--f:22px}
+.ar-c-num .disco.pd-venc{--c:var(--vinho-3);color:var(--papel)}
+.ar-c-num .disco.prox{}
+.ar-c-num .disco.hoje{--c:var(--ambar);color:var(--vinho-escuro)}
+.ar-c-num span.ar-t{font-size:13px;line-height:1.3;color:var(--texto-2)}
+.ar-c-num span.ar-t b{display:block;font-size:14px;font-weight:500;color:var(--texto)}
+.ar-c-2{display:flex;align-items:flex-start;gap:6px;padding-top:10px;border-top:1px solid var(--divisor);font-size:12px;line-height:1.4;color:var(--texto-2)}
+.ar-c-2 .ico{width:15px;height:15px;color:var(--vinho-4);flex:none;margin-top:1px}
+.ar-c-2 b{font-weight:500;color:var(--texto)}
+.ar-c-2.ar-terc{background:var(--ambar-3);color:var(--vinho-escuro);border-top:0;margin:0 -8px -6px;padding:7px 8px;border-radius:8px}
+.ar-c-2.ar-terc .ico{color:var(--vinho-escuro)}
+.ar-c-2.ar-terc b{color:var(--vinho-escuro)}
+.disco.ar-ok{--c:transparent;box-shadow:inset 0 0 0 1.5px var(--vinho-4);color:var(--vinho-2)}
+.disco.ar-ok .ico{width:20px;height:20px}
+.disco.ar-erro{--c:var(--vinho-3);color:var(--papel)}
+.disco.ar-erro .ico{width:20px;height:20px}
+
+/* Blocos de área: o mesmo desenho do bloco Contatos de hoje aprovado */
+.ar-rot{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-2);margin-bottom:2px}
+.ar-bloco .folha-cab h2 .ico{color:var(--vinho-4)}
+.ar-bloco .folha-cab>.ver{white-space:nowrap;flex:none}
+.ar-bloco .prazo{grid-template-columns:64px minmax(0,1fr) auto}
+.ar-bloco .prazo .lado{min-width:120px}
+.ar-bloco .prazo>div>a{display:inline-block;padding:12px 0 11px;margin:-12px 0 -11px}
+.ar-bloco .pd-contatos .prazo .lado{min-width:190px}
+.ar-valor{font-family:var(--serifa);font-size:18px;font-weight:600;color:var(--vinho);font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.ar-terc-bloco .ar-valor{color:var(--vinho-escuro)}
+.ar-bloco .pd-ct{flex-wrap:nowrap;align-items:flex-start}
+.ar-bloco .pd-ct .ico{flex:none;margin-top:2px}
+.ar-tipo{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--vinho-2);margin-right:6px}
+.ar-esp{display:inline-flex;align-items:flex-start;gap:6px;margin-top:6px;padding:5px 10px;border-radius:8px;background:var(--ambar-3);color:var(--tinta);font-size:12px;line-height:1.4}
+.ar-esp .ico{width:14px;height:14px;color:var(--vinho);flex:none;margin-top:2px}
+.ar-pe{display:flex;align-items:flex-start;gap:10px;padding:12px 24px 16px;border-top:1px solid var(--divisor);font-size:13px;line-height:1.5;color:var(--texto-2)}
+.ar-pe>.ico{color:var(--vinho-4);flex:none;margin-top:2px;width:16px;height:16px}
+.ar-pe b{font-weight:500;color:var(--texto)}
+.ar-pe a{color:var(--vinho);font-weight:500}
+.ar-pe .ar-pe-ir{margin-left:auto;white-space:nowrap}
+.ar-fin{display:grid;gap:12px}
+.ar-terc-bloco.folha.fi-terc{overflow:hidden}
+.ar-terc-bloco .fi-terc-cab{border-radius:0}
+.ar-terc-bloco .folha-cab h3{font-family:var(--serifa);font-size:20px;font-weight:500;line-height:1.2;color:var(--vinho);display:flex;align-items:center;gap:10px}
+.ar-terc-bloco .folha-cab h3 .ico{color:var(--vinho-4)}
+.ar-emdia{display:flex;align-items:center;gap:14px;padding:4px 24px 18px}
+.ar-emdia .disco{--d:44px}
+.ar-emdia p{font-size:14px;line-height:1.45}
+.ar-emdia p b{display:block;font-weight:500;color:var(--texto)}
+.ar-emdia p span{font-size:13px;color:var(--texto-2)}
+.ar-tudo{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--raio-g);background:var(--papel);border:1px solid var(--borda-folha);box-shadow:inset 5px 0 0 var(--vinho-4);font-size:14px}
+.ar-tudo .ico{color:var(--vinho-2);flex:none}
+.ar-tudo b{font-weight:500;color:var(--vinho)}
+.ar-esq{display:grid;grid-template-columns:64px minmax(0,1fr) 110px;gap:16px;align-items:center;padding:14px 24px;border-top:1px solid var(--divisor)}
+.ar-esq:first-child{border-top:0}
+.ar-bloco .estado{border:0;background:transparent;padding:24px 24px 28px}
+.ar-comum{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.ar-aside-rot{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-2);margin:0 0 -10px}
+.ar-aside-rot::after{content:"";flex:1;height:1px;background:var(--borda-folha)}
+.ar-sem-area{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:var(--raio-g);background:var(--sal-2);font-size:14px;line-height:1.5}
+.ar-sem-area .ico{color:var(--vinho-4);flex:none;margin-top:2px}
+.ar-sem-area b{font-weight:500}
+.conversas .c-pe .btn{min-height:44px}
+
+@media (max-width:760px){
+  .ar-faixa-cab h2{font-size:22px}
+  .ar-faixa-cab .pd-chips{width:100%}
+  .ar-cartoes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .ar-cartoes.ar-n1{grid-template-columns:1fr}
+  .ar-cartao{padding:12px 12px 12px;gap:10px}
+  .ar-c-nome{font-size:18px}
+  .ar-c-num{gap:8px;align-items:flex-start}
+  .ar-c-num .disco{--d:36px!important;--f:18px!important}
+  .ar-c-num span.ar-t{font-size:12px}
+  .ar-c-num span.ar-t b{font-size:13px}
+  .ar-c-2{font-size:12px}
+  .ar-bloco .prazo{grid-template-columns:52px minmax(0,1fr)}
+  .ar-bloco .prazo .lado{min-width:0!important;flex-direction:row;flex-wrap:wrap;align-items:center}
+  .ar-bloco .pd-contatos .prazo .lado .btn{flex:1 1 100%;min-height:44px}
+  .ar-pe{padding:12px 16px 12px;display:grid;grid-template-columns:16px minmax(0,1fr);gap:4px 10px}
+  .ar-pe .ar-pe-ir{grid-column:2;justify-self:start;margin-left:-6px}
+  .ar-emdia{padding:4px 16px 16px}
+  .ar-esq{grid-template-columns:52px minmax(0,1fr);padding:12px 16px}
+  .ar-esq .so-pc-i{display:none}
+  .ar-comum{grid-template-columns:minmax(0,1fr);gap:16px}
+  .ar-aside-rot{margin:8px 0 -4px}
+}
+/* Acréscimos da programação: o cartão que ainda carrega e o botão do dia que vira link */
+.ar-cartao[aria-busy="true"]{pointer-events:none}
+.ar-hero-carregando{opacity:.85}
+/* <<< Início por áreas */
