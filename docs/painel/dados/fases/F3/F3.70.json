@@ -13,7 +13,7 @@
     "IN-14",
     "IN-15"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 700,
-  "proximo": "Programar os relatórios aprovados (docs/design/aprovadas/portal-relatorios/) com as rotas GET /v1/financeiro/relatorios/*, calculadas no servidor e só para a sócia dona"
+  "evidencia": "Migration 0410_portal_relatorios_socio.sql (período e comparação, entrou, falta receber, rendeu, por cliente, um cliente, por área e por responsável, exportação no histórico), teste 041_portal_relatorios_socio_test.sql (38), rotas /v1/escritorio/financeiro/relatorios/*, tela Relatorios.tsx (aba Relatórios só para a sócia dona; PDF pela impressão do navegador) e e2e portal-relatorios.spec.ts (celular e computador, com axe)"
 }

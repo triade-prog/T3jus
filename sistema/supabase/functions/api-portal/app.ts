@@ -23,6 +23,8 @@ import {
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
+  exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
+  type RelatorioResponsaveis, type ResumoRelatorio,
   deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
@@ -817,6 +819,35 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/financeiro/exportacoes", async (c) => {
     const d = await lerCorpo(c, exportarSchema);
     return c.json(await deps.banco.rpc<DadosExportacao>("portal_financeiro_exportar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  // Relatórios do sócio (F3.70, IN-15): só a sócia dona; o período vem na consulta e o banco
+  // confere (PERIODO_INVALIDO, PERIODO_LONGO). Exportar guarda no histórico.
+  const periodoRel = (c: Context<VarsPortal>) => {
+    const r = periodoRelatorioSchema.safeParse({
+      de: c.req.query("de") || undefined, ate: c.req.query("ate") || undefined, comparar: c.req.query("comparar") || undefined,
+    });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: r.error.issues.map((i) => String(i.path[0])), motivo: "PERIODO_INVALIDO" });
+    return { p_de: r.data.de ?? null, p_ate: r.data.ate ?? null, p_comparar: r.data.comparar ?? null };
+  };
+  app.get("/v1/escritorio/financeiro/relatorios/resumo", async (c) => {
+    return c.json(await deps.banco.rpc<ResumoRelatorio>("portal_relatorio_resumo", { ...quem(c), ...periodoRel(c) }));
+  });
+  app.get("/v1/escritorio/financeiro/relatorios/clientes", async (c) => {
+    return c.json(await deps.banco.rpc<RelatorioClientes>("portal_relatorio_clientes", { ...quem(c), ...periodoRel(c) }));
+  });
+  app.get("/v1/escritorio/financeiro/relatorios/clientes/:id", async (c) => {
+    return c.json(await deps.banco.rpc<RelatorioCliente>("portal_relatorio_cliente", { ...quem(c), p_cliente: idDaRota(c, "id"), ...periodoRel(c) }));
+  });
+  app.get("/v1/escritorio/financeiro/relatorios/areas", async (c) => {
+    return c.json(await deps.banco.rpc<RelatorioAreas>("portal_relatorio_areas", { ...quem(c), ...periodoRel(c) }));
+  });
+  app.get("/v1/escritorio/financeiro/relatorios/responsaveis", async (c) => {
+    return c.json(await deps.banco.rpc<RelatorioResponsaveis>("portal_relatorio_responsaveis", { ...quem(c), ...periodoRel(c) }));
+  });
+  app.post("/v1/escritorio/financeiro/relatorios/exportacoes", async (c) => {
+    const d = await lerCorpo(c, exportarRelatorioSchema);
+    return c.json(await deps.banco.rpc<DadosRelatorioExportado>("portal_relatorio_exportar", { ...quem(c), p_dados: d }), 201);
   });
 
   // Jurídico (EX-01, EX-03, EX-07, EX-14): casos, ficha e mudar etapa.

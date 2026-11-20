@@ -20,3 +20,4 @@ export * from "./whatsapp.ts";
 export * from "./automacoes.ts";
 export * from "./ia.ts";
 export * from "./inicio.ts";
+export * from "./relatorios.ts";

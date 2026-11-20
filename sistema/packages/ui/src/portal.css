@@ -2828,3 +2828,212 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 .ar-cartao[aria-busy="true"]{pointer-events:none}
 .ar-hero-carregando{opacity:.85}
 /* <<< Início por áreas */
+
+/* ==========================================================================
+   Portal · Financeiro · Relatórios. Prefixo re- nas peças novas.
+   Mesma regra de FI-06: o que é do escritório fica na família vinho;
+   o que é de terceiros só aparece numa folha com a faixa âmbar-3 e o escudo, e nunca soma.
+   ========================================================================== */
+.re-barra{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;padding:12px 16px 12px 20px;background:var(--papel);border:1px solid var(--borda-folha);border-radius:var(--raio-g);box-shadow:var(--sombra)}
+.re-barra .chips{margin-left:0}
+.re-barra .re-rot{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2)}
+.re-per{display:grid;gap:0;font-size:13px;color:var(--texto-2);line-height:1.45;margin-left:auto;text-align:right}
+.re-per b{font-weight:500;color:var(--texto)}
+.re-vistas{display:flex;gap:6px;flex-wrap:wrap}
+.re-vistas a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--borda-folha);background:var(--papel);color:var(--texto-2);font-weight:500;font-size:14px;text-decoration:none}
+.re-vistas a .ico{width:18px;height:18px;color:var(--vinho-4)}
+.re-vistas a:hover{border-color:var(--vinho-4);color:var(--vinho)}
+.re-vistas a[aria-current="page"]{background:var(--vinho);border-color:var(--vinho);color:var(--papel)}
+.re-vistas a[aria-current="page"] .ico{color:var(--ambar)}
+.re-topo{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
+
+/* "Como contamos": ajuda curta, aberta e fechada pela própria pessoa */
+.re-como{background:var(--papel);border:1px solid var(--borda-folha);border-radius:var(--raio-g)}
+.re-como summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 20px;cursor:pointer;font-weight:500;color:var(--vinho);list-style:none}
+.re-como summary::-webkit-details-marker{display:none}
+.re-como summary .ico{color:var(--vinho-4)}
+.re-como summary .re-seta{margin-left:auto;transition:transform .15s}
+.re-como[open] summary .re-seta{transform:rotate(180deg)}
+.re-como summary small{font-weight:400;color:var(--texto-2);font-size:12px}
+.re-como dl{margin:0;padding:4px 20px 18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 28px;border-top:1px solid var(--divisor)}
+.re-como dl div{padding-top:12px}
+.re-como dt{font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho)}
+.re-como dd{margin:4px 0 0;font-size:13px;line-height:1.5;color:var(--texto)}
+.re-como dd b{font-weight:600}
+.re-como .re-terc dt{display:flex;align-items:center;gap:6px}
+.re-como .re-terc dt .ico{width:18px;height:18px;color:var(--vinho)}
+
+/* Os três números do período, no campo vinho */
+.re-tres{position:relative;overflow:hidden;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:var(--raio-g);box-shadow:var(--sombra)}
+.re .folha-cab .ver{white-space:nowrap}
+.re-tres .estatua{position:absolute;right:18px;top:auto!important;bottom:-38px;width:180px;height:180px;color:var(--vinho-2);opacity:.9}
+.re-n{position:relative;display:grid;gap:8px;align-content:start;padding:22px 26px 24px;border-left:1px solid rgba(242,205,179,.22)}
+.re-n:first-of-type{border-left:0}
+.re-n .sobretitulo{color:var(--ambar-2)}
+.re-n .fi-big{font-size:42px}
+.re-n p{font-size:13px;line-height:1.5;color:var(--sal)}
+.re-n p b{font-weight:600;color:var(--papel)}
+.re-n .re-cmp{display:flex;align-items:flex-start;gap:8px;color:var(--papel);font-weight:500}
+.re-n .re-cmp .ico{width:18px;height:18px;color:var(--ambar);flex:none;margin-top:1px}
+.re-n .selo{justify-self:start}
+.re-n .re-aparte{margin-top:4px;padding-top:10px;border-top:1px dashed rgba(242,205,179,.35)}
+
+/* Barras do período: este período e o anterior */
+.re-grupo-rot{grid-column:1/-1;font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--vinho-2);padding-top:6px}
+.re-grupo-rot span{letter-spacing:0;text-transform:none;font-weight:400;color:var(--texto-2);margin-left:6px}
+.fi-trilho i.re-falta{background:var(--ambar-3);box-shadow:inset 0 0 0 1.5px var(--vinho-4);border-radius:0 4px 4px 0}
+.re-soma{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0 0;border-top:1px solid var(--divisor);font-size:13px;color:var(--texto-2)}
+.re-soma b{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho)}
+.re-barras-nome .fi-barra{grid-template-columns:minmax(0,190px) minmax(0,1fr) 128px}
+.re-barras-nome .rot a{color:var(--texto);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin:-12px 0}
+.re-barras-nome .rot a:hover{color:var(--vinho);text-decoration:underline}
+.re-barras-nome .val small{white-space:nowrap}
+.re-leitura{display:flex;gap:10px;align-items:flex-start;margin:0 24px 18px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.re-leitura .ico{color:var(--vinho);flex:none;margin-top:1px}
+.re-leitura b{font-weight:600}
+
+/* Rendeu: a conta escrita */
+.re-conta{margin:0;padding:0 24px 8px;display:grid}
+.re-conta div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px}
+.re-conta div:first-child{border-top:0}
+.re-conta dt{color:var(--texto)}
+.re-conta dt small{display:block;font-size:12px;color:var(--texto-2)}
+.re-conta dd{margin:0;font-weight:500;white-space:nowrap}
+.re-conta div.re-igual{border-top:2px solid var(--vinho-4)}
+.re-conta div.re-igual dt{font-weight:600}
+.re-conta div.re-igual dd{font-family:var(--serifa);font-size:22px;color:var(--vinho)}
+.re-fora{margin:0 24px 18px;padding:10px 12px;border:1.5px dashed var(--vinho-4);border-radius:var(--raio);font-size:12px;line-height:1.5;color:var(--texto-2);display:flex;gap:8px}
+.re-fora .ico{width:16px;height:16px;color:var(--vinho-4);flex:none;margin-top:1px}
+.re-fora b{color:var(--texto);font-weight:500}
+
+/* Falta receber: grupos e o que fica à parte */
+.re-sub{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 24px 6px;font-size:13px}
+.re-sub b{font-weight:500}
+.re-sub .fi-v{font-size:15px}
+.re-aparte-f{margin:6px 24px 18px;border:1px solid var(--borda-folha);border-radius:var(--raio);overflow:hidden}
+.re-aparte-f>p{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--sal-2);font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho-2)}
+.re-aparte-f>p .ico{width:16px;height:16px;color:var(--vinho)}
+.re-aparte-f ul{list-style:none;margin:0;padding:0}
+.re-aparte-f li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 14px;border-top:1px solid var(--divisor);font-size:13px}
+.re-aparte-f li small{display:block;font-size:12px;color:var(--texto-2)}
+.re-aparte-f li b{font-weight:500}
+.re-aparte-f .re-pe{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-top:1px solid var(--divisor);font-size:12px;color:var(--texto-2)}
+.re-aparte-f .re-pe b{color:var(--vinho);font-weight:600}
+
+/* Terceiros no período (FI-06): fluxo, nunca soma com o escritório */
+.re-fluxo{margin:0;padding:0 24px 6px;display:grid}
+.re-fluxo div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px}
+.re-fluxo div:first-child{border-top:0}
+.re-fluxo dt small{display:block;font-size:12px;color:var(--texto-2)}
+.re-fluxo dd{margin:0;font-weight:500;white-space:nowrap;text-align:right}
+.re-fluxo div.re-saldo{border-top:2px solid var(--ambar-2)}
+.re-fluxo div.re-saldo dt{font-weight:600}
+.re-fluxo div.re-saldo dd{font-family:var(--serifa);font-size:20px;color:var(--vinho-escuro)}
+
+/* Tabelas dos relatórios */
+.re-tab{width:100%}
+.re-tab td,.re-tab th{vertical-align:top}
+.re-tab th[scope="col"].v,.re-tab td.v{text-align:right}
+.re-tab tbody td{padding-top:12px;padding-bottom:12px}
+.re-tab tbody th[scope="row"]{padding:14px 16px 12px 24px;border-bottom:1px solid var(--divisor);vertical-align:top;font-size:14px}
+.re-tab tbody tr:last-child th{border-bottom:0}
+.re-tab td.v{white-space:nowrap;font-variant-numeric:tabular-nums}
+.re-tab td.v small{display:block;font-size:12px;color:var(--texto-2);white-space:normal}
+.re-tab td.v .selo{margin-top:6px}
+.re-tab tfoot th,.re-tab tfoot td{padding:14px 16px;border-top:2px solid var(--vinho-4);font-weight:600;background:#FCFAF8}
+.re-tab tfoot th{padding-left:24px;text-align:left}
+.re-tab tfoot td{text-align:right;white-space:nowrap}
+.re-tab tfoot td small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+.re-tab tr.re-neg td.re-rend{color:var(--vinho-3)}
+.re-tab th[aria-sort] .ico{width:14px;height:14px;vertical-align:-2px;margin-left:2px;color:var(--vinho)}
+.re-tab .re-nome{display:grid;gap:2px}
+.re-tab .re-nome a{font-weight:500;color:var(--texto);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin:-12px 0 -10px;width:fit-content}
+.re-tab .re-nome a:hover{color:var(--vinho);text-decoration:underline}
+.re-tab .re-nome strong{font-weight:500}
+.re-tab .re-nome small{font-size:12px;color:var(--texto-2);line-height:1.45}
+.re-tab .re-nome .selo{justify-self:start;margin-top:4px}
+.re-aparte-txt{display:flex;gap:6px;align-items:flex-start;justify-content:flex-end;margin-top:6px;font-size:12px;color:var(--texto-2);white-space:normal;text-align:right}
+.re-aparte-txt .ico{width:14px;height:14px;color:var(--vinho-4);flex:none;margin-top:2px}
+.re-pessoa{display:flex;align-items:center;gap:12px}
+.re-pessoa .av-p{width:40px;height:40px;font-size:13px;flex:none}
+.re-pessoa strong{display:block;font-weight:500}
+.re-pessoa small{display:block;font-size:12px;color:var(--texto-2)}
+.re-carga{display:grid;gap:2px}
+.re-carga b{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho);line-height:1.1}
+.re-carga small{font-size:12px;color:var(--texto-2)}
+.re-ferr{padding:16px 24px 12px;display:flex;gap:10px 14px;align-items:flex-end;flex-wrap:wrap;border-bottom:1px solid var(--divisor)}
+.re-ferr .campo.re-busca{flex:1 1 300px}
+.re-busca .campo-busca{display:block}
+.re-ferr .campo{max-width:none;flex:0 1 240px;margin:0}
+.re-ferr label{font-size:13px}
+.re-cont{padding:12px 24px;font-size:13px;color:var(--texto-2)}
+.re-cont b{font-weight:500;color:var(--texto)}
+
+/* Relatório de um cliente */
+.re-linha-t{list-style:none;margin:0;padding:0 24px 8px}
+.re-linha-t>li{display:grid;grid-template-columns:118px minmax(0,1fr);gap:16px;padding:14px 0;border-top:1px solid var(--divisor)}
+.re-linha-t>li:first-child{border-top:0}
+.re-mes{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho);line-height:1.2}
+.re-mes small{display:block;font-family:var(--sans);font-size:12px;color:var(--texto-2);font-weight:400}
+.re-mes b{display:block;font-family:var(--sans);font-size:13px;color:var(--texto);font-weight:500;margin-top:4px}
+.re-evs{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.re-evs li{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:start;font-size:13px}
+.re-evs time{font-weight:500;color:var(--texto-2);font-variant-numeric:tabular-nums}
+.re-evs strong{display:block;font-weight:500}
+.re-evs small{display:block;font-size:12px;color:var(--texto-2);line-height:1.45}
+.re-evs .fi-v{font-size:14px}
+.re-nada{font-size:13px;color:var(--texto-2);padding-top:2px}
+.re-links{display:flex;flex-wrap:wrap;gap:8px}
+.re-ct td .re-nome small{display:block}
+.re-tab .re-nome a{line-height:1.3}
+.re-ct .re-nome a{margin:-10px 0 0}
+
+/* Sem acesso, vazio, carregando */
+.re-esq-tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;background:var(--papel);border:1px solid var(--borda-folha);border-radius:var(--raio-g);overflow:hidden}
+.re-esq-tres>div{display:grid;gap:12px;padding:24px 26px;border-left:1px solid var(--divisor)}
+.re-esq-tres>div:first-child{border-left:0}
+.re-esq-folha{padding:6px 24px 22px;display:grid;gap:16px}
+.re-esq-linha{display:grid;grid-template-columns:120px minmax(0,1fr) 120px;gap:14px;align-items:center}
+
+.re .fi-passos{grid-template-columns:repeat(3,minmax(0,1fr))}
+.janela .re-atalhos{display:flex;gap:6px;flex-wrap:wrap}
+.janela .re-atalhos button{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--borda-folha);background:var(--papel);font:inherit;font-size:13px;color:var(--texto-2);cursor:pointer}
+.janela .re-atalhos button:hover{border-color:var(--vinho-4);color:var(--vinho)}
+
+@media (max-width:760px){
+  .re-barra{padding:12px 14px;gap:10px}
+  .re-barra .chips{width:100%}
+  .re-barra .chips button{flex:1 1 calc(50% - 6px);justify-content:center}
+  .re-per{margin-left:0;text-align:left}
+  .re-vistas{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+  .re-vistas a{justify-content:center;padding:0 8px;font-size:13px;border-radius:var(--raio)}
+  .re-topo{gap:10px}
+  .re-como summary{padding:8px 16px;flex-wrap:wrap;gap:4px 10px}
+  .re-como summary small{flex-basis:100%;order:3}
+  .re-como dl{grid-template-columns:1fr;padding:0 16px 16px;gap:6px}
+  .re-tres{grid-template-columns:1fr}
+  .re-n{border-left:0;border-top:1px solid rgba(242,205,179,.22);padding:18px 16px 20px}
+  .re-n:first-of-type{border-top:0}
+  .re-n .fi-big{font-size:36px}
+  .re-tres .estatua{width:120px;height:120px;top:-20px;bottom:auto;right:-16px}
+  .re-barras-nome .fi-barra{grid-template-columns:minmax(0,1fr) auto}
+  .re-leitura,.re-fora,.re-aparte-f{margin-left:16px;margin-right:16px}
+  .re-conta,.re-fluxo{padding-left:16px;padding-right:16px}
+  .re-sub{padding-left:16px;padding-right:16px}
+  .re-ferr{padding:14px 16px 12px}
+  .re-ferr .campo{flex:1 1 100%}
+  .re-cont{padding:12px 16px}
+  .re-linha-t{padding:0 16px 8px}
+  .re-linha-t>li{grid-template-columns:1fr;gap:8px}
+  .re-evs li{grid-template-columns:44px minmax(0,1fr);}
+  .re-evs li .fi-v{grid-column:2}
+  .re-esq-tres{grid-template-columns:1fr}
+  .re-esq-tres>div{border-left:0;border-top:1px solid var(--divisor);padding:18px 16px}
+  .re-esq-tres>div:first-child{border-top:0}
+  .re-esq-folha{padding:4px 16px 18px}
+  .re-esq-linha{grid-template-columns:1fr 90px}
+  .re-esq-linha>:nth-child(2){display:none}
+  .re .fi-passos{grid-template-columns:1fr}
+  .cartao .c-dados dd small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+}
+@media print{.pt-barra-area,.re-barra,.re-topo,.re-como,.pt-cab .btn{display:none}}

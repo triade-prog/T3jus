@@ -33,6 +33,8 @@ export const TEXTO_LINK_ENVIADO =
 /** Motivo de uma recusa do banco (detalhes.motivo), dito para quem usa o Console. */
 export const TEXTOS_MOTIVO: Record<string, string> = {
   SO_SOCIO_DONO: "Só a sócia dona faz isso.",
+  PERIODO_INVALIDO: "Confira as datas do período.",
+  PERIODO_LONGO: "O relatório mostra até 2 anos por vez.",
   WHATSAPP_NAO_LIGADO: "O WhatsApp do escritório não está ligado.",
   JA_LIGADO: "O WhatsApp do escritório já está ligado.",
   NUMERO_EM_OUTRA_CONTA: "Este número já está ligado em outro escritório.",

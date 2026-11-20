@@ -264,7 +264,7 @@ export function MolduraPortal({
               ))}
             </nav>
           </header>
-          {barraArea ? <BarraArea {...barraArea} /> : barra ?? null}
+          {barraArea ? <BarraArea {...barraArea} dono={!!escritorio?.dono} /> : barra ?? null}
           <main className="conteudo" id="conteudo" tabIndex={-1}>
             {children}
           </main>
@@ -374,7 +374,7 @@ export function MolduraPortal({
 }
 
 /** Barra de seções da área, no alto: o nome da área e as seções. */
-function BarraArea({ area, secao }: { area: AreaPortal; secao?: string }) {
+function BarraArea({ area, secao, dono }: { area: AreaPortal; secao?: string; dono: boolean }) {
   return (
     <div className="pt-barra-area">
       <p className="pt-area-nome">
@@ -382,7 +382,7 @@ function BarraArea({ area, secao }: { area: AreaPortal; secao?: string }) {
         {AREAS_PORTAL[area]}
       </p>
       <nav className="pt-secoes" aria-label={`Seções do ${AREAS_PORTAL[area]}`}>
-        {SECOES_AREA[area].map((s) => (
+        {SECOES_AREA[area].filter((s) => dono || !s.soDono).map((s) => (
           <a key={s.chave} href={rotaArea(area, s.chave)} aria-current={s.chave === secao ? "page" : undefined}>
             {s.nome}
           </a>
