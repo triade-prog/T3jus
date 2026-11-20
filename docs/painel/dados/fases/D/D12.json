@@ -1,0 +1,12 @@
+{
+  "id": "D12",
+  "texto": "Desenho do sino de avisos do Portal e do \"não receber avisos\" na ficha do cliente",
+  "peca": "S4",
+  "refs": [
+    "PD-07",
+    "PA-03"
+  ],
+  "status": "feito",
+  "ordem": 62,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-sem-avisos-sino/ (computador e celular, axe sem violação), aprovado pela Carol em 20/11/2026 às 9h50 (Bahia) com as 10 recomendações do NOTAS.md"
+}

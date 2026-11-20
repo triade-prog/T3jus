@@ -5,13 +5,14 @@
 // Ajuda. No celular (até 760 px), uma barra fixa embaixo com Início, Conversas, Agenda e Mais;
 // o Mais abre uma folha com o resto (Carol, 18/11/2026).
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AREAS_PORTAL, type AreaPortal, type DatasContrato } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { LogoCompacto } from "../Marca.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { ICONE_AREA, ORDEM_AREAS, rotaArea, SECOES_AREA } from "./areas.ts";
+import { BotaoSino, PainelSino, useSino } from "./Sino.tsx";
 
 /** O escritório da sessão, como GET /v1/escritorio devolve. */
 export interface EscritorioPortal {
@@ -154,6 +155,19 @@ export function MolduraPortal({
   const mais = useRef<HTMLDialogElement>(null);
   const abrirMais = useRef<HTMLButtonElement>(null);
   const areas = ORDEM_AREAS.filter((a) => escritorio?.areas.includes(a));
+  // O sino (F3.57): um painel para os dois botões (o do topo e o da barra do celular).
+  const sino = useSino();
+  const [sinoAberto, setSinoAberto] = useState(false);
+  const sinoQueAbriu = useRef<HTMLButtonElement | null>(null);
+  const novos = sino.lista && sino.lista !== "erro" ? sino.lista.novos : 0;
+  const clicarSino = (b: HTMLButtonElement) => {
+    sinoQueAbriu.current = b;
+    setSinoAberto((x) => !x);
+  };
+  const fecharSino = useCallback(() => {
+    setSinoAberto(false);
+    sinoQueAbriu.current?.focus();
+  }, []);
 
   async function sair() {
     setSaindo(true);
@@ -192,6 +206,7 @@ export function MolduraPortal({
             <span>Portal</span>
             <span className="sr">, início</span>
           </a>
+          <BotaoSino cls="bb" novos={novos} aberto={sinoAberto} aoClicar={clicarSino} />
         </header>
         <aside className="trilho" id="trilho" aria-label="Portal do advogado">
           <div className="marca">
@@ -263,6 +278,7 @@ export function MolduraPortal({
                 </span>
               ))}
             </nav>
+            <BotaoSino cls="icone-botao" novos={novos} aberto={sinoAberto} aoClicar={clicarSino} />
           </header>
           {barraArea ? <BarraArea {...barraArea} dono={!!escritorio?.dono} /> : barra ?? null}
           <main className="conteudo" id="conteudo" tabIndex={-1}>
@@ -285,6 +301,8 @@ export function MolduraPortal({
           </button>
         </nav>
       </div>
+
+      <PainelSino sino={sino} aberto={sinoAberto} aoFechar={fecharSino} />
 
       <dialog ref={mais} className="janela pt-mais" id="folha-mais" aria-labelledby="folha-mais-t" onClose={() => abrirMais.current?.focus()}>
         <div className="janela-cabeca">

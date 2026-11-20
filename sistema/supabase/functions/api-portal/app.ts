@@ -19,7 +19,7 @@ import {
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
-  semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, pedirIaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
+  semAvisosSchema, avisosLidosSchema, type AvisosDoCliente, type ListaAvisosSino, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, pedirIaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
@@ -577,6 +577,20 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const d = await lerCorpo(c, semAvisosSchema);
     return c.json(await deps.banco.rpc("portal_cliente_sem_avisos", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d }));
   });
+
+  // Ficha do cliente › Avisos automáticos (F3.63): o pedido que vale e o histórico.
+  app.get("/v1/escritorio/clientes/:id/sem-avisos", async (c) =>
+    c.json(await deps.banco.rpc<AvisosDoCliente>("portal_cliente_avisos", { ...quem(c), p_cliente: idDaRota(c, "id") })));
+
+  // O sino (F3.57): cada pessoa lê os seus, dos últimos 30 dias. Abrir marca lido; "marcar todos"
+  // vai até o último aviso mostrado, para não marcar o que chegou depois.
+  app.get("/v1/escritorio/avisos", async (c) => c.json(await deps.banco.rpc<ListaAvisosSino>("portal_avisos", quem(c))));
+  app.post("/v1/escritorio/avisos/lidos", async (c) => {
+    const d = await lerCorpo(c, avisosLidosSchema);
+    return c.json(await deps.banco.rpc<ListaAvisosSino>("portal_avisos_lidos", { ...quem(c), p_ate: d.ate }));
+  });
+  app.post("/v1/escritorio/avisos/:id/lido", async (c) =>
+    c.json(await deps.banco.rpc<ListaAvisosSino>("portal_aviso_lido", { ...quem(c), p_id: idDaRota(c, "id") })));
 
   // ------------------------------------------------------------------ Comercial (AP-02 a AP-06)
   // Só com a área Comercial: o banco recusa com AREA_NAO_LIBERADA.

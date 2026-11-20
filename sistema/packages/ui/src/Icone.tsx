@@ -345,6 +345,10 @@ const DESENHOS = {
   celular: <><path d="M7 2.5h10v19H7Z" /><path d="M11 18.5h2" /></>,
   proibido: <><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Z" /><path d="m5.6 5.6 12.8 12.8" /></>,
   fonte: <><path d="M5 3h10l4 4v14H5Z" /><path d="M8.5 11h7M8.5 15h7" /></>,
+  // Sino de avisos e "não receber avisos" (desenho aprovado em 20/11/2026).
+  "sino-mudo": <><path d="M6 16.5V11a6 6 0 0 1 9.2-5.1" /><path d="M18 10.2v6.3l1.5 2H8" /><path d="M10 21h4" /><path d="M4 20 20 4" /></>,
+  "sino-volta": <><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z" /><path d="M10 21h4" /><path d="m9.5 11.5 2 2 3.5-3.5" /></>,
+  checks: <><path d="m2.5 12.5 4 4 8-9" /><path d="m11.5 16 1 .5 8-9" /></>,
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

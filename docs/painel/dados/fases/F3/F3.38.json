@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 380,
-  "proximo": "O campo \"lembrar\" já fica gravado em cada prazo; falta a rotina diária, e o quadro no Início vem com o Início por áreas (F3.26)"
+  "proximo": "O campo \"lembrar\" já fica gravado em cada prazo e o sino já aceita o aviso PRAZO_2_DIAS (0390); falta a rotina diária que cria o aviso, e o quadro no Início vem com o Início por áreas (F3.26)"
 }
