@@ -1,0 +1,11 @@
+{
+  "id": "F3.55",
+  "texto": "Aviso no sino ao responsável quando a IA passa uma conversa, quando alguém assume uma conversa que era dele ou quando ela é passada para ele",
+  "peca": "B3",
+  "refs": [
+    "PD-07"
+  ],
+  "status": "pendente",
+  "ordem": 550,
+  "proximo": "Vem com o sino de avisos do Portal (o mesmo de F3.38); a troca já fica registrada na conversa"
+}

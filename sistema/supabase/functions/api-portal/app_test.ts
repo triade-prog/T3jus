@@ -155,6 +155,19 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_repasses: () => ({ algum: false, levantamentos: [] }),
     portal_financeiro_resumo: (a) => ({ algum: false, escritorio: a.p_escritorio }),
     portal_financeiro_caixa: (a) => ({ saldo: 0, escritorio: a.p_escritorio }),
+    portal_conversas: (a) => ({ filtro: a.p_filtro, busca: a.p_busca, escritorio: a.p_escritorio }),
+    portal_conversa: (a) => ({ id: a.p_conversa }),
+    portal_conversa_assumir: (a) => (a.p_versao as number) + 1,
+    portal_conversa_devolver: (a) => {
+      const d = a.p_dados as { nota?: string; registrarAtendimento?: boolean };
+      if (d.registrarAtendimento && !d.nota) erroBanco("TC422", { campos: ["nota"] });
+      return (a.p_versao as number) + 1;
+    },
+    portal_conversa_passar: (a) => (a.p_versao as number) + 1,
+    portal_conversa_enviar: (a) => {
+      if (a.p_conversa !== CLIENTE) erroBanco("TC422", { motivo: "ASSUMA_PRIMEIRO" });
+      return { id: CLIENTE, envio: "NA_FILA" };
+    },
     portal_financeiro_exportacao_previa: (a) => ({ mes: a.p_mes, aberto: false }),
     portal_financeiro_exportar: (a) => {
       const d = a.p_dados as { mes?: string; formato?: string };
@@ -804,6 +817,33 @@ Deno.test("FI-09, FI-21: Resumo, Caixa e exportação para o contador; o escrit�
   const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_exportar")!;
   assertEquals(ch.args.p_escritorio, AURORA);
   assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/exportacoes", { corpo: { mes: "2026-10-01", formato: "PDF" }, cookie }))).detalhes?.campos, ["formato"]);
+});
+
+Deno.test("PD-07, AP-02: Conversas, lista, conversa, assumir, devolver, passar e escrever; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const l = await (await m.pedir("/v1/escritorio/conversas?mostrar=resolvidas&q=Marta", { cookie })).json();
+  assertEquals([l.filtro, l.busca, l.escritorio], ["RESOLVIDAS", "Marta", AURORA]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/conversas?mostrar=todas", { cookie }))).detalhes?.campos, ["mostrar"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/conversas/${CLIENTE}`, { cookie })).json()).id, CLIENTE);
+  assertEquals((await (await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/assumir`, { corpo: { versao: 2 }, cookie })).json()).versao, 3);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/devolver`, { corpo: { versao: 3, registrarAtendimento: true }, cookie }))).detalhes?.campos, ["nota"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/devolver`, { corpo: { versao: 3, nota: "Liga às 14h", registrarAtendimento: true }, cookie })).json()).versao, 4);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/passar`, { corpo: { versao: 4, pessoa: "Paula" }, cookie }))).detalhes?.campos, ["pessoa"]);
+  await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/passar`, { corpo: { versao: 4, pessoa: AURORA.toUpperCase(), recado: "Confere?" }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_conversa_passar")!.args.p_dados as { pessoa: string }).pessoa, AURORA);
+  const e = await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/mensagens`, { corpo: { texto: "Oi, Marta" }, cookie });
+  assertEquals(e.status, 201);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/mensagens`, { corpo: { texto: "  " }, cookie }))).detalhes?.campos, ["texto"]);
+});
+
+Deno.test("PD-07: motivos e razões do domínio são os mesmos do banco", async () => {
+  const { MOTIVOS_CONVERSA, RAZOES_RESPONSAVEL, ENVIO_MENSAGEM } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0300_portal_conversas_mensagens.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/motivo\s+text check \(motivo in \(([^)]+)\)/), Object.keys(MOTIVOS_CONVERSA));
+  assertEquals(lista(/responsavel_razao\s+text check \(responsavel_razao in \(([^)]+)\)/), Object.keys(RAZOES_RESPONSAVEL));
+  assertEquals(lista(/envio\s+text check \(envio in \(([^)]+)\)/), Object.keys(ENVIO_MENSAGEM));
 });
 
 Deno.test("IN-10: os grupos de honorário cobrem todos os tipos do banco, e o alerta de queda", async () => {

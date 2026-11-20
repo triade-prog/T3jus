@@ -1,0 +1,11 @@
+{
+  "id": "F3.53",
+  "texto": "A IA que atende pelo WhatsApp do escritório e o envio e o recebimento pelo provedor: a mensagem que chega abre ou acha a conversa, a IA responde o que está no T3jus ou passa para uma pessoa, e o que a equipe escreve sai com entregue, lida ou o motivo da falha",
+  "peca": "B3",
+  "refs": [
+    "PA-05"
+  ],
+  "status": "pendente",
+  "ordem": 530,
+  "proximo": "Ligar o serviço do WhatsApp (webhook do provedor) às peças whatsapp_mensagem_recebida, conversa_ia_respondeu e conversa_ia_passou, que já existem e estão testadas; a IA segue as regras de Escritório › WhatsApp e IA (F3.54)"
+}

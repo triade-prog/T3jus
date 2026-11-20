@@ -1,0 +1,11 @@
+{
+  "id": "F3.54",
+  "texto": "Escritório › WhatsApp e IA: a sócia dona liga o número do escritório pelo caminho oficial da Meta, vê a saúde do número e define as regras da IA, testadas sem enviar",
+  "peca": "B3",
+  "refs": [
+    "PA-04"
+  ],
+  "status": "pendente",
+  "ordem": 540,
+  "proximo": "Programar o desenho aprovado em docs/design/aprovadas/portal-whatsapp (14 estados, 5 decisões); a tabela whatsapp_escritorio já existe (migration 0300)"
+}

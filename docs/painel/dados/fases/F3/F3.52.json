@@ -1,0 +1,15 @@
+{
+  "id": "F3.52",
+  "texto": "Conversas do Portal, Mensagens: a fila de quem espera alguém, com o motivo e o responsável escolhido pela regra; a conversa com o cliente, a IA, a equipe e os momentos; o contexto pelas áreas; assumir, escrever, devolver para a IA (com o atendimento na ficha) e passar; o número de quem espera no menu",
+  "peca": "B3",
+  "refs": [
+    "PA-05",
+    "PD-07",
+    "EX-10",
+    "AP-02"
+  ],
+  "status": "feito",
+  "ordem": 520,
+  "evidencia": "Migration 0300 (whatsapp_escritorio, conversas e conversa_mensagens protegidas por escritório; mensagens só se acrescentam; regra do responsável: caso, próximo contato, Comercial, sócia dona; assumir, devolver com atendimento na ficha, passar e escrever com a versão lida; quem sai da equipe passa as conversas; peças de receber e de a IA responder ou passar, para o serviço do WhatsApp), pgTAP 030 (43 testes), rotas /v1/escritorio/conversas na api-portal (2 testes Deno novos), e2e tests/e2e/portal-conversas.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-agenda-conversas.",
+  "nota": "Sem o WhatsApp ligado, a tela mostra os passos para a sócia dona e quem liga para a equipe; nada entra nem sai. A IA que responde e o envio pelo provedor ficam em F3.53; a ligação do número, em F3.54; o aviso no sino, em F3.55."
+}

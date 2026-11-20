@@ -18,6 +18,7 @@ import {
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
+  devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -352,6 +353,47 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
       ...quem(c), p_compromisso: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo, p_avisar: d.avisar,
     });
     return c.json({ versao });
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Conversas, Mensagens (PD-07, EX-10, AP-02): todos da equipe veem; o contexto segue as áreas
+  // (o banco decide). Receber e a IA responder ficam com o serviço do WhatsApp, fora daqui.
+
+  app.get("/v1/escritorio/conversas", async (c) => {
+    const mostrar = (c.req.query("mostrar") || "PRECISA").toUpperCase();
+    if (!(mostrar in FILTROS_CONVERSA)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
+    const q = c.req.query("q") || null;
+    if (q && q.length > 80) throw new ErroDominio("VALIDATION_ERROR", { campos: ["q"] });
+    return c.json(await deps.banco.rpc<ListaConversas>("portal_conversas", { ...quem(c), p_filtro: mostrar, p_busca: q }));
+  });
+
+  app.get("/v1/escritorio/conversas/:id", async (c) => {
+    return c.json(await deps.banco.rpc<Conversa>("portal_conversa", { ...quem(c), p_conversa: idDaRota(c, "id") }));
+  });
+
+  app.post("/v1/escritorio/conversas/:id/assumir", async (c) => {
+    const d = await lerCorpo(c, versaoConversaSchema);
+    const versao = await deps.banco.rpc<number>("portal_conversa_assumir", { ...quem(c), p_conversa: idDaRota(c, "id"), p_versao: d.versao });
+    return c.json({ versao });
+  });
+
+  app.post("/v1/escritorio/conversas/:id/devolver", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, devolverConversaSchema);
+    const v = await deps.banco.rpc<number>("portal_conversa_devolver", { ...quem(c), p_conversa: idDaRota(c, "id"), p_versao: versao, p_dados: d });
+    return c.json({ versao: v });
+  });
+
+  app.post("/v1/escritorio/conversas/:id/passar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, passarConversaSchema);
+    const v = await deps.banco.rpc<number>("portal_conversa_passar", {
+      ...quem(c), p_conversa: idDaRota(c, "id"), p_versao: versao, p_dados: { ...d, pessoa: d.pessoa.toLowerCase() },
+    });
+    return c.json({ versao: v });
+  });
+
+  app.post("/v1/escritorio/conversas/:id/mensagens", async (c) => {
+    const d = await lerCorpo(c, enviarConversaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; envio: string }>("portal_conversa_enviar", { ...quem(c), p_conversa: idDaRota(c, "id"), p_dados: d }), 201);
   });
 
   // ------------------------------------------------------------------ Comercial (AP-02 a AP-06)

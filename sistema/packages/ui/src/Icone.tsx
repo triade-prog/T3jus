@@ -305,6 +305,28 @@ const DESENHOS = {
       <path d="M5.5 21v-4.2h4.2" />
     </>
   ),
+  // Conversas (desenho aprovado de Agenda e Conversas).
+  ia: <path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2Z" />,
+  mao: (
+    <>
+      <path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11" />
+      <path d="M11 10V4.5a1.5 1.5 0 0 1 3 0V11" />
+      <path d="M14 10.5V6a1.5 1.5 0 0 1 3 0v8c0 4-2.5 7-6.5 7S5 18.5 4 16l-1.5-4a1.4 1.4 0 0 1 2.5-1.3L8 14" />
+    </>
+  ),
+  devolver: (
+    <>
+      <path d="M9 5 4 10l5 5" />
+      <path d="M4 10h11a5 5 0 0 1 0 10h-3" />
+    </>
+  ),
+  "pessoa-mais": (
+    <>
+      <circle cx="9.5" cy="8" r="3.5" />
+      <path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h4a4.5 4.5 0 0 1 4.5 4.5V20" />
+      <path d="M19 8v6M16 11h6" />
+    </>
+  ),
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

@@ -15,3 +15,4 @@ export * from "./comercial.ts";
 export * from "./contratos.ts";
 export * from "./financeiro.ts";
 export * from "./juridico.ts";
+export * from "./conversas.ts";
