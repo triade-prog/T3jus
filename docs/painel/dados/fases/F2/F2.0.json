@@ -5,8 +5,7 @@
   "refs": [
     "SC-06"
   ],
-  "status": "andamento",
-  "nota": "Página desenhada pela especialista de frontend; prévia enviada à Carol. O site completo segue em F2.1, que continua citando SC-06.",
-  "proximo": "Carol aprovar a prévia e o e-mail de contato; publicar na Vercel e apontar o DNS no hPanel",
+  "status": "feito",
+  "evidencia": "Aprovada pela Carol em 20/11/2026; no ar em https://t3jus.pro (projeto site-t3jus na Vercel, www redireciona); contato@t3jus.pro confirmado por ela. O site completo segue em F2.1, que continua citando SC-06.",
   "ordem": 5
 }

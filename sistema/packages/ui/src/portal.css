@@ -3338,3 +3338,154 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 }
 .pt .pt-pe-folha a{color:var(--vinho);text-decoration:underline;text-underline-offset:2px}
 .co-carteira table.im-map,.co-carteira table.im-hist{table-layout:fixed}
+
+/* ==========================================================================
+   Sino e não receber avisos (F3.57, F3.63): CSS da tela aprovada
+   (docs/design/aprovadas/portal-sem-avisos-sino), sem mudança
+   ========================================================================== */
+/* ==========================================================================
+   Ficha do cliente · Avisos automáticos (prefixo sa-)
+   ========================================================================== */
+.sa-corpo{padding:0 24px 20px;display:grid;gap:14px}
+.sa-linha{display:flex;align-items:flex-start;gap:12px;font-size:13.5px;line-height:1.5}
+.sa-linha>.ico{flex:none;margin-top:1px;color:var(--vinho-4)}
+.sa-linha b{font-weight:600;color:var(--texto)}
+.sa-linha span{color:var(--texto-2)}
+.sa-fora{display:grid;gap:12px;padding:14px 16px 14px 18px;border-radius:var(--raio);background:var(--ambar-3);box-shadow:inset 3px 0 0 var(--vinho)}
+.sa-fora-tit{display:flex;align-items:flex-start;gap:12px}
+.sa-fora-tit .ico{flex:none;color:var(--vinho);margin-top:2px}
+.sa-fora-tit strong{display:block;font-family:var(--serifa);font-size:19px;font-weight:600;color:var(--vinho);line-height:1.25}
+.sa-fora-tit small{display:block;font-size:13px;color:var(--tinta);line-height:1.45;margin-top:2px}
+.sa-dl{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 18px;padding-left:36px}
+.sa-dl dt{font-size:12px;color:var(--tinta)}
+.sa-dl dd{margin:0;font-size:13.5px;font-weight:500;color:var(--tinta);line-height:1.4}
+.sa-dl dd small{display:block;font-weight:400;font-size:12px}
+.sa-continua{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5;color:var(--texto-2)}
+.sa-continua .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho-4)}
+.sa-continua b{color:var(--texto);font-weight:500}
+.sa-acoes{display:flex;gap:10px;flex-wrap:wrap}
+.sa-hist{border-top:1px solid var(--divisor);margin:0 -24px;padding:0 24px}
+.sa-hist summary{display:flex;align-items:center;gap:8px;min-height:48px;cursor:pointer;font-weight:500;color:var(--vinho);list-style:none}
+.sa-hist summary::-webkit-details-marker{display:none}
+.sa-hist summary .ico{width:16px;height:16px;transition:transform .15s}
+.sa-hist[open] summary .ico-abre{transform:rotate(180deg)}
+.sa-hist summary .q{font-size:12px;color:var(--texto-2);font-weight:400}
+.sa-ev{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:0}
+.sa-ev li{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px;line-height:1.5}
+.sa-ev li:first-child{border-top:0}
+.sa-ev time{color:var(--texto-2);font-variant-numeric:tabular-nums}
+.sa-ev b{font-weight:600}
+.sa-ev small{display:block;color:var(--texto-2);font-size:12px}
+.meta .sa-selo{background:var(--ambar-2);color:var(--tinta)}
+.meta .sa-selo .ico{width:14px;height:14px}
+/* Janela: rádios em cartão (padrão do Clientes) e o campo de "outra pessoa" logo abaixo */
+.sa-j .x-ops-l{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.sa-j .x-ops .opcao small{display:block;font-size:12px;color:var(--texto-2);line-height:1.4;margin-top:2px}
+.sa-j .x-ops.sa-tipo .x-ops-l{grid-template-columns:1fr 1fr}
+.sa-j .x-ops.erro .opcao{border-color:var(--vinho-3)}
+.sa-j .x-ops.sa-como .x-ops-l{grid-template-columns:repeat(4,minmax(0,1fr))}
+.sa-corpo>.sa-hist:last-child{margin-bottom:-20px}
+.sa-j .sa-dois{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+@media (max-width:760px){
+  .sa-corpo{padding:0 16px 16px}
+  .sa-dl{grid-template-columns:1fr;padding-left:0}
+  .sa-acoes .btn{flex:1 1 100%}
+  .sa-hist{margin:0 -16px;padding:0 16px}
+  .sa-ev li{grid-template-columns:1fr;gap:2px}
+  .sa-j .x-ops.sa-tipo .x-ops-l,.sa-j .x-ops-l{grid-template-columns:1fr}
+  .sa-j .x-ops.sa-como .x-ops-l{grid-template-columns:1fr 1fr}
+  .sa-corpo>.sa-hist:last-child{margin-bottom:-16px}
+  .sa-j .sa-dois{grid-template-columns:1fr}
+}
+
+/* ==========================================================================
+   Sino de avisos (prefixo si-)
+   ========================================================================== */
+/* O botão do sino aberto fica marcado, como um item atual */
+.icone-botao[aria-expanded="true"]{background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--ambar-2)}
+.barra-cel .bb[aria-expanded="true"]{background:var(--vinho-2)}
+
+/* Computador: painel que desce do sino, sem cobrir a página inteira */
+.si-painel{position:fixed;inset:auto;top:72px;right:40px;margin:0;z-index:90;width:460px;max-height:calc(100vh - 96px);padding:0;
+  display:none;flex-direction:column;border:1px solid var(--borda-folha);border-radius:var(--raio-g);background:var(--papel);color:var(--texto);
+  box-shadow:0 24px 48px -20px rgba(42,26,34,.45),0 2px 6px rgba(42,26,34,.08);overflow:hidden}
+.si-painel[open]{display:flex}
+.si-painel:focus{outline:none}
+.si-painel::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--vinho)}
+.si-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 20px 10px 24px}
+.si-cab h2{font-size:26px;line-height:1.1}
+.si-cab .si-conta{font-size:13px;color:var(--texto-2);margin-top:4px}
+.si-cab .si-conta b{font-weight:600;color:var(--vinho)}
+.si-cab .fechar{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;border-radius:var(--raio);color:var(--vinho);cursor:pointer;margin:-6px -6px 0 0}
+.si-cab .fechar:hover{background:var(--sal-2)}
+.si-ferr{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:0 16px 12px 24px;border-bottom:1px solid var(--divisor)}
+.si-ferr .chips{margin-left:0}
+.si-ferr .chips button .q{font-size:12px;font-weight:600}
+.si-todos{min-height:44px;padding:0 10px;margin-right:-4px}
+.si-tudo-lido{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px;color:var(--texto-2)}
+.si-tudo-lido .ico{width:16px;height:16px;color:var(--vinho-4)}
+.si-lista{overflow:auto;overscroll-behavior:contain;flex:1 1 auto}
+.si-dia{position:sticky;top:0;z-index:1;margin:0;padding:10px 24px 6px;background:var(--papel);font-family:inherit;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-2);display:flex;align-items:center;gap:10px}
+.si-dia::after{content:"";flex:1;height:1px;background:var(--borda-folha)}
+.si-ul{list-style:none;margin:0;padding:0}
+.si-item{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) 12px;gap:12px;padding:14px 20px 14px 24px;border-top:1px solid var(--divisor)}
+.si-ul li:first-child .si-item,.si-ul>li:first-child.si-item{border-top:0}
+.si-item:hover{background:var(--sal-2)}
+.si-item:focus-within{background:var(--sal-2)}
+.si-novo{background:#FFFBF8;box-shadow:inset 3px 0 0 var(--vinho)}
+.si-ico{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--sal-2);color:var(--vinho-2)}
+.si-novo .si-ico{background:var(--ambar-3);color:var(--vinho)}
+.si-ico .ico{width:20px;height:20px}
+.si-tit{font-size:14px;line-height:1.4;color:var(--texto)}
+.si-link{color:inherit;text-decoration:none}
+.si-link::after{content:"";position:absolute;inset:0}
+.si-link:focus-visible{outline:none}
+.si-item:has(.si-link:focus-visible){outline:3px solid var(--vinho-3);outline-offset:-3px}
+.si-link:hover{text-decoration:underline}
+.si-novo .si-tit{font-weight:600}
+.si-tit b{font-weight:600}
+.si-det{font-size:13px;line-height:1.45;color:var(--texto-2);margin-top:2px}
+.si-det q{font-family:var(--serifa);font-style:italic;font-size:14px;color:var(--tinta)}
+.si-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:8px;font-size:12px;color:var(--texto-2)}
+.si-meta .selo{height:24px;padding:0 9px;font-size:11.5px}
+.si-meta .si-onde{display:inline-flex;align-items:center;gap:4px;color:var(--vinho);font-weight:500}
+.si-meta .si-onde .ico{width:14px;height:14px}
+.si-meta .si-nv{font-weight:600;color:var(--vinho-3)}
+.si-pto{width:10px;height:10px;border-radius:50%;background:var(--vinho-3);margin-top:6px}
+.si-pe{display:flex;align-items:flex-start;gap:10px;padding:12px 24px 14px;border-top:1px solid var(--divisor);background:var(--sal-2);font-size:12px;line-height:1.5;color:var(--texto-2)}
+.si-pe .ico{width:16px;height:16px;flex:none;margin-top:1px;color:var(--vinho-4)}
+.si-msg{margin:12px 20px 4px 24px}
+.si-painel .estado{margin:16px 20px 20px;border:0;box-shadow:none;background:var(--sal-2);padding:32px 20px}
+.si-vazio-lista{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px;text-align:left}
+.si-vazio-lista li{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.45;color:var(--texto-2)}
+.si-vazio-lista .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho-4)}
+
+/* Celular: o painel ocupa a tela, abaixo da barra vinho, como a folha Mais */
+@media (max-width:760px){
+  .si-painel{top:0;right:0;left:0;bottom:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;border-radius:0}
+  .si-painel::before{display:none}
+  .si-cab{padding:16px 10px 8px 16px;background:var(--vinho);color:var(--papel)}
+  .si-cab h2{color:var(--papel)}
+  .si-cab .sobretitulo{color:var(--ambar-2)}
+  .si-cab .si-conta{color:var(--ambar-3)}
+  .si-cab .si-conta b{color:var(--papel)}
+  .si-cab .fechar{color:var(--ambar-2);margin:0}
+  .si-cab .fechar:hover{background:var(--vinho-2)}
+  .si-cab .fechar:focus-visible{outline-color:var(--ambar-3)}
+  .si-ferr{padding:10px 12px 10px 16px}
+  .si-todos{flex:0 0 auto}
+  .si-dia{padding:10px 16px 6px}
+  .si-item{padding:14px 14px 14px 16px;gap:10px;grid-template-columns:36px minmax(0,1fr) 10px}
+  .si-ico{width:36px;height:36px}
+  .si-msg{margin:12px 16px 4px}
+  .si-pe{padding:12px 16px calc(14px + env(safe-area-inset-bottom))}
+  .si-painel .estado{margin:16px}
+  .si-painel::backdrop{background:rgba(42,26,34,.4)}
+}
+
+/* Moldura: o sino fica no fim do topo (a busca entra depois) */
+.pt .topo .icone-botao{margin-left:auto}
+/* Filtros do painel (mesmo desenho dos chips da carteira) */
+.si-ferr .chips{display:flex;gap:6px}
+.si-ferr .chips button{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--borda-folha);background:var(--papel);font:inherit;font-size:13px;color:var(--texto-2);cursor:pointer;display:flex;align-items:center;gap:6px}
+.si-ferr .chips button[aria-pressed="true"]{background:var(--ambar-3);border-color:var(--ambar-2);color:var(--vinho);font-weight:500}

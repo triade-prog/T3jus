@@ -1,0 +1,11 @@
+{
+  "id": "F3.65",
+  "texto": "Atalho \"não receber avisos\" dentro da conversa, que já preenche quem pediu e o canal WhatsApp",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "pendente",
+  "ordem": 650,
+  "proximo": "O servidor já aceita o pedido vindo da conversa (origem CONVERSA); falta o atalho na tela da conversa, que passa pela especialista e pela Carol"
+}

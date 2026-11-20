@@ -21,8 +21,9 @@ import {
 } from "./clientes.ts";
 import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
-import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
+import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
+import { FolhaSemAvisos, SeloSemAvisos, useAvisosCliente } from "./SemAvisos.tsx";
 import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
 export type AbaCliente = "ficha" | "atendimentos";
@@ -696,6 +697,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const [feito, setFeito] = useState<Feito | null>(null);
   const [destaque, setDestaque] = useState<string | null>(null);
   const hoje = hojeBrasilia();
+  const avisos = useAvisosCliente(id, aba === "ficha");
 
   const carregar = useCallback(async () => {
     const r = await chamarPortal<FichaCliente>(`/v1/escritorio/clientes/${id}`);
@@ -890,7 +892,10 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
                   Excluído (LGPD)
                 </span>
               ) : ativo ? (
-                <span className="selo selo-ativo">Ativo</span>
+                <>
+                  <span className="selo selo-ativo">Ativo</span>
+                  <SeloSemAvisos ativo={avisos.dados?.ativo} />
+                </>
               ) : (
                 <span className="selo selo-neutro">Inativo</span>
               )}
@@ -1033,6 +1038,8 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             <>
               <Dados f={f} aoEditar={editar} />
               <Contatos f={f} aoEditar={editar} />
+              <FolhaSemAvisos f={f} dados={avisos.dados} eu={escritorio.pessoa} podeEscrever={!soConsulta(escritorio)}
+                aoFeito={(x) => { setFeito(x); avisos.recarregar(); }} />
             </>
           )
         }

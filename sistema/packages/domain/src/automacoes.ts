@@ -648,12 +648,6 @@ export const ligarAutomacaoSchema = z.object({
 export const desligarAutomacaoSchema = z.object({ versao: z.number().int().positive(), motivo: z.string().max(600) });
 export const sugerirMudancaSchema = z.object({ texto: z.string().max(600) });
 export const simularAutomacaoSchema = z.object({ parcelaId: z.string().uuid().nullish(), escolha: z.enum(["NADA", "RESPONDEU", "PAGOU"]) });
-export const semAvisosSchema = z.object({
-  tipo: z.enum(["TODOS", "COBRANCA"]).optional(),
-  origem: z.enum(["CONVERSA", "FICHA"]).optional(),
-  quemPediu: z.string().max(120).optional(),
-  retirar: z.boolean().optional(),
-});
 
 // ------------------------------------------------------------------ Avisos automáticos (F3.64)
 // O que saiu sozinho pelo WhatsApp nos últimos 7 dias (portal_avisos_automaticos).

@@ -1,0 +1,62 @@
+[
+ {
+  "nome": "sa-ficha",
+  "url": "sem-avisos.html?estado=ficha"
+ },
+ {
+  "nome": "sa-retirar",
+  "url": "sem-avisos.html?estado=retirar"
+ },
+ {
+  "nome": "sa-retirado",
+  "url": "sem-avisos.html?estado=retirado"
+ },
+ {
+  "nome": "sa-mudar",
+  "url": "sem-avisos.html?estado=mudar"
+ },
+ {
+  "nome": "sa-recebe",
+  "url": "sem-avisos.html?estado=recebe"
+ },
+ {
+  "nome": "sa-marcar",
+  "url": "sem-avisos.html?estado=marcar"
+ },
+ {
+  "nome": "sa-marcar-erros",
+  "url": "sem-avisos.html?estado=marcar-erros"
+ },
+ {
+  "nome": "sa-marcado",
+  "url": "sem-avisos.html?estado=marcado"
+ },
+ {
+  "nome": "sa-sem-comercial",
+  "url": "sem-avisos.html?estado=sem-comercial"
+ },
+ {
+  "nome": "si-aberto",
+  "url": "sino.html?estado=aberto"
+ },
+ {
+  "nome": "si-nao-lidos",
+  "url": "sino.html?estado=nao-lidos"
+ },
+ {
+  "nome": "si-lidos",
+  "url": "sino.html?estado=lidos"
+ },
+ {
+  "nome": "si-juridico",
+  "url": "sino.html?estado=juridico"
+ },
+ {
+  "nome": "si-vazio",
+  "url": "sino.html?estado=vazio"
+ },
+ {
+  "nome": "si-erro",
+  "url": "sino.html?estado=erro"
+ }
+]
