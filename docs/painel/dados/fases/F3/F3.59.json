@@ -5,7 +5,7 @@
   "refs": [
     "PA-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 590,
-  "proximo": "Vem com a IA que atende (F3.53); hoje a janela Pedir à IA diz que está em preparo e oferece montar do zero"
+  "evidencia": "Migration 0370 (sugestao em automacoes, portal_automacao_ia_contexto e portal_automacao_ia_sugerir; salvar aplica ou recusa), domínio montar.ts (instruções, formato, desenho, alertas, aplicar e recusar) com vitest, serviço _shared/montar_fluxo.ts e rotas POST /v1/escritorio/automacoes/ia e /automacoes/:id/ia com testes Deno, pgTAP 037, e2e portal-automacoes.spec.ts (pedido, sugestão tracejada, aplicar um, recusar tudo, pedir mudança)."
 }

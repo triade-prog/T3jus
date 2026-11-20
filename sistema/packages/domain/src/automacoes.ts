@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
+import type { SugestaoIa } from "./montar.ts";
 import { reais } from "./honorarios.ts";
 
 export type Gatilho = "PAGAMENTO_RECEBIDO" | "PARCELA_VAI_VENCER" | "PARCELA_ATRASO" | "ETAPA_CASO" | "LEMBRETE_AUDIENCIA" | "PRESTACAO_CONTAS";
@@ -369,6 +370,8 @@ export interface PaginaAutomacao extends LinhaAutomacao {
   campos: string[];
   execucoes: { total: number; concluidas: number; andamento: number; falhas: number };
   eventos: EventoAutomacao[];
+  /** O que a IA sugeriu e ainda não foi aplicado nem recusado (F3.59). */
+  sugestao: SugestaoIa | null;
 }
 
 export interface ItemQuemEntraria {

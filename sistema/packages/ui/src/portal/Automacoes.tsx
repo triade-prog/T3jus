@@ -2,14 +2,14 @@
 // Conversas › Automações (PA-03), tela aprovada em docs/design/aprovadas/portal-conversas-automacoes
 // (estados lista, pedir, vazio, nao-conectado, sugestao, bloco, erros, testar, ligar, historico e
 // so-leitura). O banco confere o desenho e diz o que falta; só a sócia dona aprova o texto, liga e
-// desliga. A IA que monta o fluxo ainda está em preparo (depende da IA do escritório): o pedido
-// não é salvo, e a tela diz isso. No celular, adicionar, mover e apagar passos fica no computador.
+// desliga. A IA monta o fluxo a partir de um pedido (F3.59): o que ela sugere aparece tracejado,
+// com aplicar e recusar, até a pessoa decidir. No celular, adicionar, mover e apagar passos fica no computador.
 // O endereço guarda o estado: ?a=<id>&passo=montar|testar|ligar|historico&b=<passo>.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   GATILHOS, ORDEM_GATILHOS, PASSOS_ADICIONAVEIS, REGRAS_PESSOA, TIPOS_PASSO, TITULOS_ERRO_FLUXO,
-  acharPasso, adicionarPasso, apagarPasso, moverPasso, nomeDoRamo, passoNovo, podeMover, quandoSai, quemRecebe, reais, textoDoErroFluxo, trocarPasso,
+  acharPasso, adicionarPasso, apagarPasso, aplicarSugestao, fluxoComSugestao, moverPasso, passosSugeridos, passosTracejados, recusarSugestao, nomeDoRamo, passoNovo, podeMover, quandoSai, quemRecebe, reais, textoDoErroFluxo, trocarPasso,
   type ErroFluxo, type EscolhaSimulacao, type ExecucaoAutomacao, type Fluxo, type Gatilho, type LinhaAutomacao, type ListaAutomacoes,
   type PaginaAutomacao, type Passo, type PassoMensagem, type PassoPessoa, type PassoRamos, type Quando, type QuemEntraria, type Simulacao, type TipoPasso,
 } from "@t3jus/domain";
@@ -148,39 +148,64 @@ function TabelaAutomacoes({ criadas, prontas, pessoas, whats }: { criadas: Linha
 
 const EXEMPLOS = [
   "Quero cobrar com educação quem atrasar a parcela, e se não pagar em 5 dias passa para a pessoa do Financeiro.",
-  "Mande boas-vindas quando um cliente for cadastrado, com o nosso horário.",
-  "Lembre o cliente de mandar os documentos que faltam, uma vez por semana.",
+  "Agradeça quando o pagamento de uma parcela for registrado, e se o cliente responder deixe a IA conversar.",
+  "Lembre o cliente da audiência 1 dia antes e 2 horas antes; se não responder, passe para quem cuida do caso.",
 ];
 
-function JanelaPedir({ aberta, inicial, aoFechar, aoMontar }: { aberta: boolean; inicial: string; aoFechar: () => void; aoMontar: () => void }) {
+/** O que deu errado ao pedir à IA, em palavras simples (F3.59). */
+function falhaDaIa(e: ErroApi): { titulo: string; texto: string } {
+  if (e.codigo === "UPSTREAM_UNAVAILABLE") return { titulo: "A IA não respondeu agora", texto: "Nada foi salvo. Tente de novo em instantes ou monte do zero." };
+  if (e.detalhes?.motivo === "NAO_ENTENDEU") return { titulo: "A IA não conseguiu montar com esse pedido", texto: String(e.detalhes.porque ?? "Diga quando começa, o que dizer e para quem passa.") };
+  if (e.detalhes?.motivo === "PRONTA") return { titulo: "As prontas do T3jus não passam pela IA", texto: "Mude os passos aqui mesmo, ou peça à IA uma automação nova." };
+  return { titulo: "Nada foi salvo", texto: textoDoErro(e) };
+}
+
+function JanelaPedir({ aberta, inicial, aoFechar, aoMontar, aoCriada }: {
+  aberta: boolean; inicial: string; aoFechar: () => void; aoMontar: () => void; aoCriada: (id: string) => void;
+}) {
   const [texto, setTexto] = useState(inicial);
-  const [enviou, setEnviou] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erroCampo, setErroCampo] = useState<string | null>(null);
+  const [falha, setFalha] = useState<{ titulo: string; texto: string; fora: boolean } | null>(null);
+  async function pedir() {
+    if (enviando) return;
+    if (texto.trim().length < 3) { setErroCampo("Escreva o que você quer que aconteça."); return; }
+    setErroCampo(null);
+    setFalha(null);
+    setEnviando(true);
+    const r = await chamarPortal<PaginaAutomacao>("/v1/escritorio/automacoes/ia", { corpo: { pedido: texto.trim() } });
+    setEnviando(false);
+    if (r.ok) { aoCriada(r.dados.id); return; }
+    setFalha({ ...falhaDaIa(r.erro), fora: r.erro.codigo === "UPSTREAM_UNAVAILABLE" });
+  }
   return (
     <Janela id="janela-pedir" aberta={aberta} aoFechar={aoFechar} sobretitulo="Automações" titulo="Pedir à IA" descricao="janela-pedir-d"
-      aoEnviar={() => setEnviou(true)}
-      pe={enviou ? (
-        <><button className="btn btn-fantasma" type="button" onClick={aoFechar}>Fechar</button>
-          <button className="btn btn-pri" type="button" onClick={aoMontar}><Icone nome="mais" className="ico" />Montar do zero</button></>
-      ) : (
-        <><button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
-          <button className="btn btn-pri" type="submit"><Icone nome="ia" className="ico" />Pedir sugestão</button></>
-      )}>
+      aoEnviar={() => void pedir()}
+      pe={<>
+        {falha?.fora ? <button className="btn btn-fantasma" type="button" onClick={aoMontar}><Icone nome="mais" className="ico" />Montar do zero</button>
+          : <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>}
+        <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
+          <Icone nome="ia" className="ico" />{enviando ? "A IA está montando…" : falha ? "Pedir de novo" : "Pedir sugestão"}
+        </button></>}>
       <p id="janela-pedir-d" className="ajuda">Escreva como falaria com alguém da equipe.</p>
-      {enviou ? (
-        <Aviso tom="atencao" icone="ia" titulo="A IA que monta o fluxo ainda está sendo preparada">
-          Ela chega junto com a IA que responde os clientes. O seu pedido não foi salvo. Por enquanto, monte do zero: o desenho, o teste e a ligação já funcionam.
-        </Aviso>
-      ) : null}
+      <div aria-live="polite">
+        {falha ? <Aviso tom="atencao" icone="ia" titulo={falha.titulo}>{falha.texto}</Aviso> : null}
+        {enviando ? <p className="ajuda">A IA está montando o desenho. Costuma levar alguns segundos.</p> : null}
+      </div>
       <div className="campo">
         <label htmlFor="pd-txt">O que você quer que aconteça</label>
-        <textarea className="entrada" id="pd-txt" data-foco value={texto} maxLength={600} onChange={(e) => setTexto(e.target.value)} aria-describedby="pd-aj" style={{ minHeight: 110 }} />
+        <textarea className="entrada" id="pd-txt" data-foco value={texto} maxLength={600} onChange={(e) => setTexto(e.target.value)}
+          aria-describedby={descritoPor("pd-aj", erroCampo ? "pd-er" : null)} aria-invalid={erroCampo ? true : undefined} style={{ minHeight: 110 }} />
         <p className="ajuda" id="pd-aj">Diga quando começa, o que dizer e para quem passa. A IA usa as áreas, a equipe e os modelos do escritório.</p>
+        {erroCampo ? <ErroCampo id="pd-er">{erroCampo}</ErroCampo> : null}
       </div>
       <div className="campo" role="group" aria-labelledby="pd-ex">
         <p className="au-rot-p" id="pd-ex">Ou comece por um exemplo</p>
         <div className="au-chips">
-          {["Boas-vindas ao cliente novo", "Cobrar documento que falta", "Cobrança gentil de parcela"].map((t) => (
-            <button key={t} type="button" onClick={() => setTexto(t)}>{t}</button>
+          {[["Agradecer o pagamento", EXEMPLOS[1]!],
+            ["Lembrete de audiência", EXEMPLOS[2]!],
+            ["Cobrança gentil de parcela", EXEMPLOS[0]!]].map(([t, pedido]) => (
+            <button key={t} type="button" onClick={() => setTexto(pedido!)}>{t}</button>
           ))}
         </div>
       </div>
@@ -260,7 +285,7 @@ function Lista({ l, aoAbrir }: { l: ListaAutomacoes; aoAbrir: (id: string) => vo
   ) : null;
   const janelas = (
     <>
-      {janela === "pedir" ? <JanelaPedir aberta inicial={pedido} aoFechar={() => setJanela(null)} aoMontar={() => setJanela("nova")} /> : null}
+      {janela === "pedir" ? <JanelaPedir aberta inicial={pedido} aoFechar={() => setJanela(null)} aoMontar={() => setJanela("nova")} aoCriada={aoAbrir} /> : null}
       {janela === "nova" ? <JanelaNova aberta areas={l.areas} aoFechar={() => setJanela(null)} aoCriada={aoAbrir} /> : null}
     </>
   );
@@ -362,6 +387,10 @@ interface CtxDesenho {
   sel: string | null;
   podeMudar: boolean;
   aoAdicionar: (onde: { ramos?: string; quando?: Quando }) => void;
+  /** F3.59: o que a IA sugeriu e ainda não está no rascunho (tracejado). */
+  tracejados: Set<string>;
+  mudando: boolean;
+  aoDecidir: (acao: "aplicar" | "recusar", id: string) => void;
 }
 
 function textoDaMensagem(p: PaginaAutomacao, m: PassoMensagem): string {
@@ -389,6 +418,7 @@ function Bloco({ ctx, passo }: { ctx: CtxDesenho; passo: Passo }) {
   const erros = ctx.erros.get(passo.id)?.filter((e) => !e.ramo) ?? [];
   const sel = ctx.sel === passo.id;
   const voce = passo.tipo === "PESSOA" && passo.pessoaId === p.eu;
+  const sug = ctx.tracejados.has(passo.id);
   const cls = { GATILHO: "gatilho", CONDICOES: "condicao", MENSAGEM: "mensagem", ESPERA: "espera", RAMOS: "ramo", IA: "ia", PESSOA: "pessoa", FIM: "fim" }[passo.tipo];
   let titulo: ReactNode = tipo.nome;
   let corpo: ReactNode = null;
@@ -446,19 +476,27 @@ function Bloco({ ctx, passo }: { ctx: CtxDesenho; passo: Passo }) {
   }
   const id = `b-${passo.id}`;
   return (
-    <article className={`au-b t-${cls}${erros.length ? " erro" : ""}${sel ? " sel" : ""}${voce ? " eu" : ""}`} id={id} aria-labelledby={`${id}-t`} aria-current={sel || undefined} tabIndex={-1}>
+    <article className={`au-b t-${cls}${sug ? " sug" : ""}${erros.length ? " erro" : ""}${sel ? " sel" : ""}${voce ? " eu" : ""}`} id={id} aria-labelledby={`${id}-t`} aria-current={sel || undefined} tabIndex={-1}>
       <div className="au-b-cab">
         <span className="au-ic"><Icone nome={ic(tipo.icone)} className="ico" /></span>
         <p className="au-tipo">{num} · {tipo.nome}</p>
         {voce ? <span className="au-voce"><Icone nome="pessoas" className="ico ico-s" />Você</span> : null}
-        {erros.length ? <Selo tipo="urgente" icone="alerta">Precisa de ajuste</Selo> : null}
-        <a className="au-ed" href={hrefAutomacao({ a: p.id, b: passo.id })} aria-label={`${ctx.podeMudar ? "Editar" : "Ver"} o passo ${num}, ${tipo.nome}`}>
-          <Icone nome={ctx.podeMudar ? "lapis" : "olho"} className="ico" />
-        </a>
+        {erros.length ? <Selo tipo="urgente" icone="alerta">Precisa de ajuste</Selo> : sug ? <Selo tipo="implant" icone="ia">Sugerido pela IA</Selo> : null}
+        {sug ? null : (
+          <a className="au-ed" href={hrefAutomacao({ a: p.id, b: passo.id })} aria-label={`${ctx.podeMudar ? "Editar" : "Ver"} o passo ${num}, ${tipo.nome}`}>
+            <Icone nome={ctx.podeMudar ? "lapis" : "olho"} className="ico" />
+          </a>
+        )}
       </div>
-      <h3 id={`${id}-t`}>{titulo}</h3>
+      <h3 id={`${id}-t`}>{sug ? <span className="sr">Sugerido pela IA, ainda não salvo. </span> : null}{titulo}</h3>
       {corpo}
       {erros.map((e, i) => <p key={i} className="au-err" id={`${id}-er${i}`}><Icone nome="alerta" className="ico" /><span>{textoDoErroFluxo(e, g)}</span></p>)}
+      {sug && ctx.podeMudar ? (
+        <div className="au-b-acoes">
+          <button className="btn btn-pri" type="button" disabled={ctx.mudando} onClick={() => ctx.aoDecidir("aplicar", passo.id)}><Icone nome="check" className="ico" />Aplicar<span className="sr"> o passo {num}, {tipo.nome}</span></button>
+          <button className="btn btn-sec" type="button" disabled={ctx.mudando} onClick={() => ctx.aoDecidir("recusar", passo.id)}><Icone nome="xis" className="ico" />Recusar<span className="sr"> o passo {num}, {tipo.nome}</span></button>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -467,20 +505,26 @@ function Sequencia({ ctx, passos, rotulo }: { ctx: CtxDesenho; passos: Passo[]; 
   return (
     <ol className="au-fluxo" aria-label={rotulo}>
       {passos.map((s) => {
+        const sug = ctx.tracejados.has(s.id);
+        const temSug = ctx.tracejados.size > 0;
         if (s.tipo === "FIM") {
           return (
-            <li key={s.id} className="au-li-fim">
-              <a className="au-fim" id={`b-${s.id}`} href={hrefAutomacao({ a: ctx.p.id, b: s.id })} aria-current={ctx.sel === s.id || undefined}>
-                <Icone nome="encerrar" className="ico" />{s.texto || "Fim"}
-              </a>
+            <li key={s.id} className={`au-li-fim${sug ? " sug" : ""}`}>
+              {sug ? (
+                <span className="au-fim" id={`b-${s.id}`}><Icone nome="encerrar" className="ico" /><span className="sr">Sugerido pela IA: </span>{s.texto || "Fim"}</span>
+              ) : (
+                <a className="au-fim" id={`b-${s.id}`} href={hrefAutomacao({ a: ctx.p.id, b: s.id })} aria-current={ctx.sel === s.id || undefined}>
+                  <Icone nome="encerrar" className="ico" />{s.texto || "Fim"}
+                </a>
+              )}
             </li>
           );
         }
         if (s.tipo === "RAMOS") {
           return (
-            <li key={s.id} className="au-li-ramo">
+            <li key={s.id} className={`au-li-ramo${sug ? " sug" : ""}`}>
               <Bloco ctx={ctx} passo={s} />
-              <ul className="au-ramos" aria-label={`Caminhos depois do passo ${ctx.numeros.get(s.id)}`}>
+              <ul className={`au-ramos${sug ? " sug" : ""}`} aria-label={`Caminhos depois do passo ${ctx.numeros.get(s.id)}`}>
                 {s.ramos.map((r) => (
                   <li key={r.quando}>
                     <span className="au-rot"><Icone nome={ic(r.quando === "PAGOU" ? "moeda" : r.quando === "RESPONDEU" ? "conversas" : "relogio")} className="ico" />{nomeDoRamo(r.quando, ctx.p.gatilho)}</span>
@@ -489,12 +533,12 @@ function Sequencia({ ctx, passos, rotulo }: { ctx: CtxDesenho; passos: Passo[]; 
                         <li>
                           <div className="au-falta" id={`b-${s.id}-${r.quando}`} role="group" aria-labelledby={`b-${s.id}-${r.quando}-t`} tabIndex={-1}>
                             <p id={`b-${s.id}-${r.quando}-t`}><Icone nome="alerta" className="ico ico-s" /> Este caminho não leva a nenhum passo. Quem cair aqui ficaria sem ninguém.</p>
-                            {ctx.podeMudar ? <button className="btn btn-sec so-pc" type="button" onClick={() => ctx.aoAdicionar({ ramos: s.id, quando: r.quando })}><Icone nome="mais" className="ico" />Adicionar passo</button> : null}
+                            {ctx.podeMudar && !temSug ? <button className="btn btn-sec so-pc" type="button" onClick={() => ctx.aoAdicionar({ ramos: s.id, quando: r.quando })}><Icone nome="mais" className="ico" />Adicionar passo</button> : null}
                           </div>
                         </li>
                       </ol>
                     )}
-                    {r.passos.length > 0 && ctx.podeMudar && r.passos.at(-1)?.tipo !== "PESSOA" ? (
+                    {r.passos.length > 0 && ctx.podeMudar && !temSug && r.passos.at(-1)?.tipo !== "PESSOA" ? (
                       <button className="btn btn-fantasma so-pc" type="button" style={{ marginTop: 10 }} onClick={() => ctx.aoAdicionar({ ramos: s.id, quando: r.quando })}>
                         <Icone nome="mais" className="ico" />Passo neste caminho
                       </button>
@@ -505,7 +549,7 @@ function Sequencia({ ctx, passos, rotulo }: { ctx: CtxDesenho; passos: Passo[]; 
             </li>
           );
         }
-        return <li key={s.id}><Bloco ctx={ctx} passo={s} /></li>;
+        return <li key={s.id} className={sug ? "sug" : undefined}><Bloco ctx={ctx} passo={s} /></li>;
       })}
     </ol>
   );
@@ -809,11 +853,12 @@ const podeMudarAutomacao = (p: PaginaAutomacao) => p.dono || p.pessoas.some((x) 
 
 function Passos({ p, atual }: { p: PaginaAutomacao; atual: PassoEditor }) {
   const erros = p.listaErros.length;
+  const nSug = passosSugeridos(p.rascunho, p.sugestao).size;
   const ligada = p.situacao === "LIGADA" && !p.rascunhoMudou;
   const itens: { k: PassoEditor; n: string; nome: string; sub: string; bloq: string }[] = [
-    { k: "montar", n: "1", nome: "Montar", sub: erros ? `${erros} ${erros === 1 ? "passo para ajustar" : "passos para ajustar"}` : podeMudarAutomacao(p) ? `${numerar(p.rascunho).size} passos, todos salvos` : "Só ver", bloq: "" },
+    { k: "montar", n: "1", nome: "Montar", sub: nSug ? `${nSug} ${nSug === 1 ? "sugestão" : "sugestões"} para revisar` : erros ? `${erros} ${erros === 1 ? "passo para ajustar" : "passos para ajustar"}` : podeMudarAutomacao(p) ? `${numerar(p.rascunho).size} passos, todos salvos` : "Só ver", bloq: "" },
     { k: "testar", n: "2", nome: "Testar", sub: "Sem enviar nada", bloq: erros ? `Ajuste ${erros === 1 ? "o passo" : `os ${erros} passos`} antes` : "" },
-    { k: "ligar", n: "3", nome: "Ligar", sub: ligada ? `Ligada · versão ${p.versaoLigada}` : p.situacao === "EM_APROVACAO" ? "Espera a Meta" : p.dono ? "Revisar e ligar" : "Só a sócia dona", bloq: erros ? "Ajuste os passos antes" : "" },
+    { k: "ligar", n: "3", nome: "Ligar", sub: ligada ? `Ligada · versão ${p.versaoLigada}` : p.situacao === "EM_APROVACAO" ? "Espera a Meta" : p.dono ? "Revisar e ligar" : "Só a sócia dona", bloq: erros ? "Ajuste os passos antes" : nSug ? "Aplique ou recuse as sugestões" : "" },
     { k: "historico", n: "4", nome: "Histórico", sub: p.execucoes.total ? `${p.execucoes.total} em 30 dias` : "Ainda nada saiu", bloq: "" },
   ];
   return (
@@ -839,6 +884,8 @@ function CabEditor({ p, sobre, acoes }: { p: PaginaAutomacao; sobre: string; aco
   const sub = p.situacao === "LIGADA" ? `Ligada ${p.ligada ? `desde ${quando(p.ligada.em)}${p.ligada.por ? ` por ${primeiro(p.ligada.por.nome)}` : ""}` : ""} · versão ${p.versaoLigada}${p.rascunhoMudou ? " · rascunho com mudanças" : ""}`
     : p.situacao === "EM_APROVACAO" ? `Enviada à Meta ${quando(p.aguardando?.desde)} · espera a aprovação`
     : p.situacao === "DESLIGADA" ? `Desligada ${quando(p.desligada?.em)}${p.desligada?.por ? ` por ${primeiro(p.desligada.por.nome)}` : ""}`
+    : passosSugeridos(p.rascunho, p.sugestao).size
+      ? `Salvo ${quando(p.atualizadaEm)} · ${numerar(p.rascunho).size} ${numerar(p.rascunho).size === 1 ? "passo salvo" : "passos salvos"}, ${passosSugeridos(p.rascunho, p.sugestao).size} ${passosSugeridos(p.rascunho, p.sugestao).size === 1 ? "sugerido" : "sugeridos"}`
     : `Salvo ${quando(p.atualizadaEm)}${p.listaErros.length ? ` · ${p.listaErros.length} ${p.listaErros.length === 1 ? "passo" : "passos"} com ajuste` : p.textosPorAprovar ? " · texto por aprovar" : ""}`;
   return (
     <div className="au-ed-cab">
@@ -852,11 +899,93 @@ function CabEditor({ p, sobre, acoes }: { p: PaginaAutomacao; sobre: string; aco
   );
 }
 
-function LadoMontar({ p, aoSugerir }: { p: PaginaAutomacao; aoSugerir: () => void }) {
+/** Pedir à IA uma mudança nesta automação (F3.59). A sugestão nova substitui a anterior. */
+function PedirMudanca({ p, inicial, aoNova }: { p: PaginaAutomacao; inicial?: string; aoNova: (n: PaginaAutomacao) => void }) {
+  const [texto, setTexto] = useState(inicial ?? "");
+  const [enviando, setEnviando] = useState(false);
+  const [falha, setFalha] = useState<{ titulo: string; texto: string } | null>(null);
+  useEffect(() => { if (inicial) void Promise.resolve().then(() => setTexto(inicial)); }, [inicial]);
+  async function pedir() {
+    if (enviando || texto.trim().length < 3) { setFalha({ titulo: "Escreva o pedido", texto: "Diga o que mudar, como falaria com alguém da equipe." }); return; }
+    setEnviando(true);
+    setFalha(null);
+    const r = await chamarPortal<PaginaAutomacao>(`/v1/escritorio/automacoes/${p.id}/ia`, { corpo: { pedido: texto.trim() } });
+    setEnviando(false);
+    if (r.ok) { setTexto(""); aoNova(r.dados); return; }
+    setFalha(falhaDaIa(r.erro));
+  }
+  return (
+    <form className="au-as-sec au-pedir" noValidate onSubmit={(e) => { e.preventDefault(); void pedir(); }}>
+      <label className="au-rot-p" htmlFor="as-txt">Peça uma mudança</label>
+      <textarea className="entrada" id="as-txt" value={texto} maxLength={600} placeholder="Ex.: espere 7 dias em vez de 5" onChange={(e) => setTexto(e.target.value)} />
+      <div aria-live="polite">{falha ? <Aviso tom="atencao" icone="ia" titulo={falha.titulo}>{falha.texto}</Aviso> : null}</div>
+      <button className="btn btn-sec" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
+        <Icone nome="enviar" className="ico" />{enviando ? "A IA está montando…" : "Pedir à IA"}
+      </button>
+    </form>
+  );
+}
+
+/** O painel da IA ao lado do desenho, enquanto há sugestão para revisar (estado sugestao). */
+function Assistente({ p, aoNova }: { p: PaginaAutomacao; aoNova: (n: PaginaAutomacao) => void }) {
+  const s = p.sugestao!;
+  const [pedido, setPedido] = useState<string | undefined>(undefined);
+  const mostrar = (passo: string, rotulo: string) => (
+    <a className="au-mostrar" href={`#b-${passo}`} onClick={(ev) => { ev.preventDefault(); irParaBloco(`b-${passo}`); }}>
+      <Icone nome="alvo" className="ico ico-s" />Mostrar no desenho<span className="sr">: {rotulo.slice(0, 40)}</span>
+    </a>
+  );
+  const podeMudar = podeMudarAutomacao(p);
+  return (
+    <aside className="folha au-as" aria-labelledby="as-t">
+      <div className="au-as-cab"><span className="disco"><Icone nome="ia" className="ico" /></span><div><p className="sobretitulo">IA do escritório</p><h2 id="as-t">Assistente</h2></div></div>
+      <section className="au-as-sec" aria-labelledby="as-p">
+        <h3 id="as-p">{s.por?.id === p.eu ? "Você pediu" : `${primeiro(s.por?.nome) || "Alguém"} pediu`}</h3>
+        <p className="au-pedido"><span className="de">{s.por?.nome ?? "Equipe"}</span>{s.pedido}<time>{horaDe(s.em)}</time></p>
+      </section>
+      {s.feito.length ? (
+        <section className="au-as-sec" aria-labelledby="as-f">
+          <h3 id="as-f">O que a IA fez</h3>
+          <ul className="au-fez">
+            {s.feito.map((f, i) => (
+              <li key={i}><span className="ok" aria-hidden="true"><Icone nome="check" className="ico" /></span>
+                <div>{f.texto}{f.passo && acharPasso(fluxoComSugestao(p.rascunho, s), f.passo) ? <><br />{mostrar(f.passo, f.texto)}</> : null}</div></li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {s.alertas.length ? (
+        <section className="au-as-sec" aria-labelledby="as-a">
+          <h3 id="as-a">Para você decidir · {s.alertas.length}</h3>
+          <ul className="au-fez">
+            {s.alertas.map((a, i) => (
+              <li key={i} className="alerta"><span className="al" aria-hidden="true">!</span>
+                <div><span className="sr">Atenção: </span>{a.texto}
+                  {a.automacao ? <><br /><a className="au-mostrar" href={hrefAutomacao({ a: a.automacao.id })}><Icone nome="dir" className="ico ico-s" />Ver a automação “{a.automacao.nome}”</a></> : null}
+                  {a.passo && acharPasso(fluxoComSugestao(p.rascunho, s), a.passo) ? <><br />{mostrar(a.passo, a.texto)}</> : null}
+                </div></li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {podeMudar && s.experimente.length ? (
+        <section className="au-as-sec" aria-labelledby="as-e">
+          <h3 id="as-e">Experimente a seguir</h3>
+          <div className="au-chips">{s.experimente.map((t) => <button key={t} type="button" onClick={() => setPedido(t)}>{t}</button>)}</div>
+        </section>
+      ) : null}
+      {podeMudar ? <PedirMudanca p={p} inicial={pedido} aoNova={aoNova} /> : null}
+      <p className="au-as-pe"><Icone nome="escudo" className="ico" /><span><b>A IA sugere, você aprova.</b> Aplicar muda só o rascunho. Nada sai para cliente antes de testar e {p.dono ? "você" : primeiro(p.quemCuida?.nome) || "a sócia dona"} ligar.</span></p>
+    </aside>
+  );
+}
+
+function LadoMontar({ p, aoSugerir, aoNova }: { p: PaginaAutomacao; aoSugerir: () => void; aoNova: (n: PaginaAutomacao) => void }) {
   const g = p.gatilho;
   const numeros = numerar(p.rascunho);
   const meu = (Array.from(numeros.keys()).map((id) => acharPasso(p.rascunho, id)).find((x) => x?.tipo === "PESSOA" && x.pessoaId === p.eu)) ?? null;
   const sugestoes = p.eventos.filter((e) => e.tipo === "SUGESTAO").slice(0, 3);
+  if (p.sugestao) return <Assistente p={p} aoNova={aoNova} />;
   if (p.listaErros.length) {
     return (
       <aside className="folha au-as" aria-labelledby="as-t">
@@ -899,22 +1028,26 @@ function LadoMontar({ p, aoSugerir }: { p: PaginaAutomacao; aoSugerir: () => voi
         ) : null}
         <a className="btn btn-sec" href={hrefAutomacao({ a: p.id, passo: "testar" })}><Icone nome="olho" className="ico" />Testar sem enviar</a>
         {!p.dono ? <button className="btn btn-sec" type="button" onClick={aoSugerir}><Icone nome="conversas" className="ico" />Sugerir mudança a {primeiro(p.quemCuida?.nome) || "a sócia dona"}</button> : null}
-        <p className="cv-nota"><Icone nome="ia" className="ico" /><span>A IA que sugere passos e corrige o desenho ainda está em preparo. Ela chega junto com a IA que responde os clientes.</span></p>
       </div>
+      {p.origem === "ESCRITORIO" && podeMudarAutomacao(p) ? <PedirMudanca p={p} aoNova={aoNova} /> : null}
     </aside>
   );
 }
 
-function Montar({ p, b, mudando, falha, aoSalvar, aoSugerir }: {
+function Montar({ p, b, mudando, falha, aoSalvar, aoSugerir, aoDecidir, aoNova }: {
   p: PaginaAutomacao; b: string | null; mudando: boolean; falha: string | null;
   aoSalvar: (f: Fluxo, aprovar?: string) => void; aoSugerir: () => void;
+  aoDecidir: (acao: "aplicar" | "recusar", escolha: string[] | "TUDO") => void; aoNova: (n: PaginaAutomacao) => void;
 }) {
   const [onde, setOnde] = useState<{ ramos?: string; quando?: Quando } | null>(null);
-  const numeros = numerar(p.rascunho);
+  const desenho = fluxoComSugestao(p.rascunho, p.sugestao);
+  const tracejados = passosTracejados(p.rascunho, p.sugestao);
+  const nSug = passosSugeridos(p.rascunho, p.sugestao).size;
+  const numeros = numerar(desenho);
   const erros = new Map<string, ErroFluxo[]>();
   p.listaErros.forEach((e) => erros.set(e.passo, [...(erros.get(e.passo) ?? []), e]));
   const podeMudar = podeMudarAutomacao(p);
-  const ctx: CtxDesenho = { p, numeros, erros, sel: b, podeMudar, aoAdicionar: setOnde };
+  const ctx: CtxDesenho = { p, numeros, erros, sel: b, podeMudar, aoAdicionar: setOnde, tracejados, mudando, aoDecidir: (a, id) => aoDecidir(a, [id]) };
   const passo = b ? acharPasso(p.rascunho, b) : null;
   const ultimo = p.rascunho.passos[p.rascunho.passos.length - 1];
   const resumo = p.listaErros.map((e, i) => {
@@ -933,21 +1066,34 @@ function Montar({ p, b, mudando, falha, aoSalvar, aoSugerir }: {
             </div>
           ) : null}
           {falha && !passo ? <div style={{ padding: "16px 20px 4px" }}><Aviso tom="urgencia" titulo="Nada mudou">{falha}</Aviso></div> : null}
+          {nSug ? (
+            <div className="au-faixa" role="region" aria-label="Sugestões da IA">
+              <Icone nome="ia" className="ico" />
+              <p><b>{nSug} {nSug === 1 ? "passo sugerido" : "passos sugeridos"} pela IA</b>: revise antes de aplicar.{podeMudar ? " Você também pode aplicar ou recusar um por um." : ` Quem aplica é quem tem a área ou ${primeiro(p.quemCuida?.nome) || "a sócia dona"}.`}</p>
+              {podeMudar ? (
+                <div className="bts">
+                  <button className="btn btn-sec" type="button" disabled={mudando} onClick={() => aoDecidir("recusar", "TUDO")}><Icone nome="xis" className="ico" />Recusar tudo</button>
+                  <button className="btn btn-pri" type="button" disabled={mudando} onClick={() => aoDecidir("aplicar", "TUDO")}><Icone nome="check" className="ico" />Aplicar tudo</button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <div className="au-ferr">
             <div className="au-leg" aria-label="Legenda">
               <span><i aria-hidden="true" />Contorno contínuo: salvo no rascunho</span>
+              {nSug ? <span><i className="t" aria-hidden="true" />Tracejado: sugerido pela IA, ainda não salvo</span> : null}
               {p.listaErros.length ? <span><i className="e" aria-hidden="true" />Filete: precisa de ajuste</span> : null}
             </div>
-            {podeMudar && ultimo?.tipo !== "RAMOS" ? <button className="btn btn-sec so-pc" type="button" disabled={mudando} onClick={() => setOnde({})}><Icone nome="mais" className="ico" />Adicionar passo</button> : null}
+            {podeMudar && !nSug && ultimo?.tipo !== "RAMOS" ? <button className="btn btn-sec so-pc" type="button" disabled={mudando} onClick={() => setOnde({})}><Icone nome="mais" className="ico" />Adicionar passo</button> : null}
           </div>
-          <div className="au-tela"><Sequencia ctx={ctx} passos={p.rascunho.passos} rotulo="Passos da automação, de cima para baixo" /></div>
+          <div className="au-tela"><Sequencia ctx={ctx} passos={desenho.passos} rotulo="Passos da automação, de cima para baixo" /></div>
           <p className="au-tela-pe"><Icone nome="celular" className="ico" />
-            <span className="so-cel">No celular dá para editar cada passo, aprovar o texto, testar e ligar. Para adicionar, mover ou apagar passos, use o computador.</span>
+            <span className="so-cel">No celular dá para {nSug ? "aplicar e recusar sugestões, " : ""}editar cada passo, aprovar o texto, testar e ligar. Para adicionar, mover ou apagar passos, use o computador.</span>
             <span className="so-pc-i">O desenho também é uma lista: leitores de tela leem os passos em ordem, com os caminhos de cada ramo.</span></p>
         </section>
       </div>
       <div className="au-col au-lado">
-        {passo ? <EditarPasso key={`${passo.id}-${p.versao}`} p={p} passo={passo} num={numeros.get(passo.id) ?? 0} mudando={mudando} falha={falha} aoSalvar={aoSalvar} /> : <LadoMontar p={p} aoSugerir={aoSugerir} />}
+        {passo ? <EditarPasso key={`${passo.id}-${p.versao}`} p={p} passo={passo} num={numeros.get(passo.id) ?? 0} mudando={mudando} falha={falha} aoSalvar={aoSalvar} /> : <LadoMontar p={p} aoSugerir={aoSugerir} aoNova={aoNova} />}
       </div>
       {onde ? <JanelaAdicionar g={p.gatilho} onde={onde} aoFechar={() => setOnde(null)} aoEscolher={(t) => {
         const novo = passoNovo(p.rascunho, t, p.gatilho);
@@ -1408,6 +1554,25 @@ function Editor({ id, passo, b, aoMudou }: { id: string; passo: PassoEditor; b: 
     setP(novo);
     aoMudou();
   }
+  // F3.59: aplicar ou recusar sugestões da IA. O rascunho e o que sobra da sugestão vão juntos.
+  async function decidir(acao: "aplicar" | "recusar", escolha: string[] | "TUDO") {
+    if (!pag.sugestao) return;
+    setMudando(true);
+    setFalha(null);
+    const corpo = acao === "aplicar"
+      ? (() => { const r = aplicarSugestao(pag.rascunho, pag.sugestao, escolha); return { versao: pag.versao, fluxo: r.fluxo, sugestao: r.sobra ? { fluxo: r.sobra } : null }; })()
+      : (() => { const sobra = recusarSugestao(pag.rascunho, pag.sugestao, escolha); return { versao: pag.versao, sugestao: sobra ? { fluxo: sobra } : null }; })();
+    const r = await chamarPortal<PaginaAutomacao>(`/v1/escritorio/automacoes/${pag.id}`, { metodo: "PATCH", corpo });
+    setMudando(false);
+    if (!r.ok) { falhou(r.erro); return; }
+    setP(r.dados);
+    aoMudou();
+    if (escolha === "TUDO") {
+      setFeito(acao === "aplicar"
+        ? { titulo: "Sugestões aplicadas.", texto: r.dados.listaErros.length ? "Estão no rascunho. Ajuste os passos marcados antes de testar." : "Estão no rascunho. Agora é testar sem enviar." }
+        : { titulo: "Sugestões recusadas.", texto: "O rascunho ficou como estava." });
+    }
+  }
   async function ligar(d: { revisou: boolean; desligarConflitos: boolean; entramJaAtrasados: boolean }) {
     setMudando(true);
     setFalha(null);
@@ -1430,7 +1595,7 @@ function Editor({ id, passo, b, aoMudou }: { id: string; passo: PassoEditor; b: 
     setFeito({ titulo: "Automação desligada.", texto: "Nada mais sai por ela. Dá para ligar de novo em Ligar." });
   }
 
-  const sobre = pag.origem === "PRONTA" ? "Automação · pronta do T3jus" : `Automação · ${passo === "testar" ? "teste sem enviar" : passo === "ligar" ? "ligar" : passo === "historico" ? "histórico" : `criada por ${primeiro(pag.criadaPor?.nome)} em ${diaCurto(diaDe(pag.criadaEm))}`}`;
+  const sobre = pag.origem === "PRONTA" ? "Automação · pronta do T3jus" : `Automação · ${passo === "testar" ? "teste sem enviar" : passo === "ligar" ? "ligar" : passo === "historico" ? "histórico" : pag.eventos.some((e) => e.tipo === "CRIADA" && e.detalhe.ia) ? `criada com a IA ${diaDe(pag.criadaEm) === diaDe(new Date().toISOString()) ? "hoje" : `em ${diaCurto(diaDe(pag.criadaEm))}`}` : `criada por ${primeiro(pag.criadaPor?.nome)} em ${diaCurto(diaDe(pag.criadaEm))}`}`;
   const acoes = passo === "historico" || passo === "ligar"
     ? (pag.dono && (pag.situacao === "LIGADA" || pag.situacao === "EM_APROVACAO")
       ? <button className="btn btn-sec" type="button" onClick={() => { setFalha(null); setJanela("desligar"); }}><Icone nome="ligar" className="ico" />Desligar</button> : null)
@@ -1439,13 +1604,15 @@ function Editor({ id, passo, b, aoMudou }: { id: string; passo: PassoEditor; b: 
       : pag.listaErros.length
         ? <span className="btn btn-sec" role="link" aria-disabled="true"><Icone nome="olho" className="ico" />Testar sem enviar</span>
         : <a className="btn btn-sec" href={hrefAutomacao({ a: pag.id, passo: "testar" })}><Icone nome="olho" className="ico" />Testar sem enviar</a>;
-  const bloqueado = (passo === "testar" || passo === "ligar") && pag.listaErros.length > 0;
+  const bloqueado = ((passo === "testar" || passo === "ligar") && pag.listaErros.length > 0)
+    || (passo === "ligar" && passosSugeridos(pag.rascunho, pag.sugestao).size > 0);
   return (
     <div className="au">
       <CabEditor p={pag} sobre={sobre} acoes={acoes} />
       <Passos p={pag} atual={bloqueado ? "montar" : passo} />
       {bloqueado || passo === "montar"
-        ? <Montar p={pag} b={b} mudando={mudando} falha={falha} aoSalvar={(f, a) => void salvar(f, a)} aoSugerir={() => setJanela("sugerir")} />
+        ? <Montar p={pag} b={b} mudando={mudando} falha={falha} aoSalvar={(f, a) => void salvar(f, a)} aoSugerir={() => setJanela("sugerir")}
+            aoDecidir={(a, e) => void decidir(a, e)} aoNova={(n) => { setP(n); setFalha(null); aoMudou(); }} />
         : passo === "testar" ? <Testar p={pag} />
         : passo === "ligar" ? <Ligar p={pag} mudando={mudando} falha={falha} aoLigar={(d) => void ligar(d)} aoSugerir={() => setJanela("sugerir")} />
         : <Historico p={pag} />}

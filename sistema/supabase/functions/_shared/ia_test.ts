@@ -29,3 +29,15 @@ Deno.test("PA-05: recusa, formato errado ou fora do ar viram nulo (a conversa pa
   const torto = () => Promise.resolve(resposta({ choices: [{ message: { content: '{"acao":"OUTRA"}' }, finish_reason: "stop" }] }));
   assertEquals(await cerebroOpenAI("c", "m", torto as typeof fetch).pensar(PEDIDO), null);
 });
+
+Deno.test("F3.59: montar usa o seu formato, sem limites numéricos no esquema estrito", async () => {
+  const pedidos: Record<string, unknown>[] = [];
+  const saida = { entendeu: false, porque: "Não é automação.", gatilho: null, nome: null, dias: null, semCombinado: null, passos: [], feito: [], experimente: [] };
+  const buscar = (_u: string | URL | Request, i?: RequestInit) => {
+    pedidos.push(JSON.parse(String(i?.body)));
+    return Promise.resolve(resposta({ choices: [{ message: { content: JSON.stringify(saida) }, finish_reason: "stop" }] }));
+  };
+  assertEquals(await cerebroOpenAI("c", "m", buscar as typeof fetch).montar!(PEDIDO), saida);
+  const fmt = (pedidos[0]!.response_format as { json_schema: { name: string; schema: unknown } }).json_schema;
+  assertEquals([fmt.name, /"(minimum|maximum)"/.test(JSON.stringify(fmt.schema))], ["fluxo_automacao", false]);
+});

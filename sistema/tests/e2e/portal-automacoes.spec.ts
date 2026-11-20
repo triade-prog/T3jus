@@ -106,6 +106,7 @@ const pagina = (mudar: object = {}) => ({
   textosPorAprovarIds: ["msg"], conflitos: [], entramJaAtrasados: false, ligada: null, modelos: {}, aviso: null, pessoas: PESSOAS, campos: CAMPOS,
   execucoes: { total: 0, concluidas: 0, andamento: 0, falhas: 0 },
   eventos: [{ tipo: "CRIADA", detalhe: {}, pessoa: GUSTAVO, em: hoje("09:00") }],
+  sugestao: null,
   ...mudar,
 });
 const MODELO = { id: "mod1", nome: "Cobrança gentil", texto: "Olá, {nome}. A parcela {parcela} venceu em {vencimento}. Para pagar: {link de pagamento}.",
@@ -149,6 +150,7 @@ test("PA-03: a lista mostra as criadas e as prontas; a nova automação começa 
     "/v1/escritorio": { corpo: ESCRITORIO },
     "GET /v1/escritorio/automacoes": { corpo: LISTA },
     "POST /v1/escritorio/automacoes": { status: 201, corpo: pagina({ id: ID }) },
+    "POST /v1/escritorio/automacoes/ia": { status: 502, corpo: { erro: { codigo: "UPSTREAM_UNAVAILABLE", mensagem: "x", detalhes: { motivo: "IA_INDISPONIVEL" } } } },
     [`GET /v1/escritorio/automacoes/${ID}`]: { corpo: pagina() },
   });
   await page.goto(`${P}/conversas/automacoes`);
@@ -162,7 +164,10 @@ test("PA-03: a lista mostra as criadas e as prontas; a nova automação começa 
 
   await page.getByRole("button", { name: "Pedir à IA" }).click();
   await page.getByRole("button", { name: "Pedir sugestão" }).click();
-  await expect(page.getByText("A IA que monta o fluxo ainda está sendo preparada")).toBeVisible();
+  await expect(page.getByText("Escreva o que você quer que aconteça.")).toBeVisible();
+  await page.getByLabel("O que você quer que aconteça").fill("Cobrar quem atrasar");
+  await page.getByRole("button", { name: "Pedir sugestão" }).click();
+  await expect(page.getByText("A IA não respondeu agora")).toBeVisible();
   await page.getByRole("button", { name: "Montar do zero" }).click();
 
   await expect(page.getByRole("heading", { name: "Nova automação" })).toBeVisible();
@@ -173,7 +178,7 @@ test("PA-03: a lista mostra as criadas e as prontas; a nova automação começa 
   await page.getByRole("radio", { name: /^Parcela em atraso/ }).check();
   await page.getByRole("button", { name: "Criar o rascunho" }).click();
   await expect(page).toHaveURL(new RegExp(`a=${ID}`));
-  expect(pedidos.find((x) => x.metodo === "POST")?.corpo).toEqual({ nome: "Cobrança gentil de parcela em atraso", gatilho: "PARCELA_ATRASO" });
+  expect(pedidos.find((x) => x.metodo === "POST" && x.caminho === "/v1/escritorio/automacoes")?.corpo).toEqual({ nome: "Cobrança gentil de parcela em atraso", gatilho: "PARCELA_ATRASO" });
   await expect(page.getByRole("heading", { level: 1, name: "Cobrança gentil de parcela em atraso" })).toBeVisible();
 });
 
@@ -340,4 +345,82 @@ test.describe("no celular", () => {
     await expect(page.getByRole("heading", { name: "A pronta espera" })).toBeVisible();
     await semViolacoes(page);
   });
+});
+
+// F3.59: a IA monta o fluxo. Gatilho e condições salvos; o resto tracejado, com aplicar e recusar.
+const SUGERIDO = {
+  passos: [
+    ...COM_FALTA.passos.slice(0, 4),
+    {
+      id: "ramo", tipo: "RAMOS", ramos: [
+        { quando: "PAGOU", passos: [{ id: "fim-p", tipo: "FIM" }] },
+        { quando: "RESPONDEU", passos: [{ id: "ia", tipo: "IA" }, { id: "fim-r", tipo: "FIM" }] },
+        { quando: "NADA", passos: [{ id: "pessoa", tipo: "PESSOA", pessoaId: GUSTAVO.id, motivo: "5 dias sem pagamento nem resposta" }] },
+      ],
+    },
+  ],
+};
+const SUGESTAO = {
+  pedido: "Quero cobrar com educação quem atrasar a parcela, e se não pagar em 5 dias passa para o Gustavo.",
+  por: MARINA, em: hoje("10:04"), fluxo: SUGERIDO,
+  feito: [{ texto: "Espera de 5 dias, como você pediu.", passo: "espera" }, { texto: "Mantive o gatilho e as condições.", passo: null }],
+  alertas: [
+    { texto: "Já existe a automação “Parcela em atraso” ligada.", passo: null, automacao: { id: PRONTA, nome: "Parcela em atraso" } },
+    { texto: "O texto é um modelo novo.", passo: "msg", automacao: null },
+  ],
+  experimente: ["Espere 7 dias em vez de 5"],
+};
+const COM_SUG = pagina({
+  rascunho: { passos: COM_FALTA.passos.slice(0, 2) }, listaErros: [], textosPorAprovarIds: [], erros: 0, textosPorAprovar: 0,
+  eventos: [{ tipo: "CRIADA", detalhe: { ia: true }, pessoa: MARINA, em: hoje("10:04") }], sugestao: SUGESTAO,
+});
+
+test("F3.59: o pedido vira sugestão tracejada; aplicar um, recusar tudo e pedir uma mudança", async ({ page }) => {
+  const pedidos = await simular(page, {
+    "/v1/escritorio": { corpo: ESCRITORIO },
+    "GET /v1/escritorio/automacoes": { corpo: LISTA },
+    "POST /v1/escritorio/automacoes/ia": { status: 201, corpo: COM_SUG },
+    [`GET /v1/escritorio/automacoes/${ID}`]: { corpo: COM_SUG },
+    [`PATCH /v1/escritorio/automacoes/${ID}`]: (c) => {
+      const b = c as { fluxo?: unknown; sugestao: unknown };
+      return { corpo: { ...COM_SUG, versao: 4, rascunho: b.fluxo ?? COM_SUG.rascunho, sugestao: b.sugestao ? SUGESTAO : null } };
+    },
+    [`POST /v1/escritorio/automacoes/${ID}/ia`]: { corpo: { ...COM_SUG, versao: 5, sugestao: { ...SUGESTAO, pedido: "Espere 7 dias em vez de 5" } } },
+  });
+  await page.goto(`${P}/conversas/automacoes`);
+  await page.getByRole("button", { name: "Pedir à IA" }).first().click();
+  await page.getByRole("button", { name: "Cobrança gentil de parcela" }).click();
+  await page.getByRole("button", { name: "Pedir sugestão" }).click();
+  await expect(page).toHaveURL(new RegExp(`a=${ID}`));
+  expect(pedidos.find((x) => x.caminho === "/v1/escritorio/automacoes/ia")?.corpo).toEqual({ pedido: expect.stringContaining("Quero cobrar com educação") });
+
+  await expect(page.getByText("Automação · criada com a IA hoje")).toBeVisible();
+  await expect(page.getByText("5 passos sugeridos pela IA")).toBeVisible();
+  await expect(page.getByText("2 passos salvos, 5 sugeridos")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Passos da automação" }).getByText("Aplique ou recuse as sugestões")).toBeVisible();
+  const lado = page.getByRole("complementary", { name: "Assistente" });
+  await expect(lado.getByText(SUGESTAO.pedido)).toBeVisible();
+  await expect(lado.getByText("Espera de 5 dias, como você pediu.")).toBeVisible();
+  await expect(lado.getByRole("heading", { name: "Para você decidir · 2" })).toBeVisible();
+  await expect(lado.getByRole("link", { name: "Ver a automação “Parcela em atraso”" })).toHaveAttribute("href", new RegExp(`a=${PRONTA}`));
+  await expect(page.locator("#b-msg")).toHaveClass(/sug/);
+  await expect(page.locator("#b-gatilho")).not.toHaveClass(/sug/);
+  await semViolacoes(page);
+
+  await page.getByRole("button", { name: "Aplicar o passo 3, Mensagem" }).click();
+  await expect.poll(() => pedidos.filter((x) => x.metodo === "PATCH").length).toBe(1);
+  const patch = pedidos.find((x) => x.metodo === "PATCH")!.corpo as { versao: number; fluxo: { passos: { id: string }[] }; sugestao: unknown };
+  expect([patch.versao, patch.fluxo.passos.map((x) => x.id), patch.sugestao]).toEqual([3, ["gatilho", "cond", "msg"], { fluxo: SUGERIDO }]);
+  await expect(page.locator("#b-msg")).not.toHaveClass(/sug/);
+  await expect(page.getByText("4 passos sugeridos pela IA")).toBeVisible();
+
+  await page.getByRole("button", { name: "Recusar tudo" }).click();
+  await expect(page.getByText("Sugestões recusadas.")).toBeVisible();
+  expect(pedidos.filter((x) => x.metodo === "PATCH").at(-1)!.corpo).toEqual({ versao: 4, sugestao: null });
+  await expect(page.getByText("passos sugeridos pela IA")).toHaveCount(0);
+
+  await page.getByLabel("Peça uma mudança").fill("Espere 7 dias em vez de 5");
+  await page.getByRole("button", { name: "Pedir à IA" }).click();
+  await expect(page.getByRole("complementary", { name: "Assistente" }).getByText("Espere 7 dias em vez de 5").first()).toBeVisible();
+  expect(pedidos.find((x) => x.caminho === `/v1/escritorio/automacoes/${ID}/ia`)?.corpo).toEqual({ pedido: "Espere 7 dias em vez de 5" });
 });
