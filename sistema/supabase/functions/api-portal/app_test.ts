@@ -78,6 +78,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (a.p_de === "EQUIPE" && opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
       return { de: a.p_de, dono: !opcoes.naoDono, vencidos: [], hoje: [], totalVencidos: 0, totalHoje: 0, maisAntigo: null, equipeVencidos: null, pedidosExclusao: null };
     },
+    portal_relatorio_resumo: (a) => {
+      if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
+      return { periodo: { de: a.p_de, ate: a.p_ate, comparar: a.p_comparar ?? "anterior" } };
+    },
+    portal_relatorio_cliente: (a) => ({ cliente: { id: a.p_cliente } }),
+    portal_relatorio_exportar: (a) => ({ formato: (a.p_dados as { formato: string }).formato }),
     portal_inicio_resumo: () => ({ areas: ["JURIDICO"], dono: false, pedem: { JURIDICO: 2 }, total: 2, compromissos: 0, proximoCompromisso: null }),
     portal_inicio_juridico: (a) => {
       if (a.p_de === "EQUIPE" && opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
@@ -674,6 +680,25 @@ Deno.test("F3.26: trocar o responsável pelo repasse pede alguém e vai ao banco
   assertEquals((await ok.json()).responsavel.nome, "Ana");
   const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_repasse_responsavel")!;
   assertEquals([ch.args.p_levantamento, ch.args.p_responsavel], [CLIENTE, ANA]);
+});
+
+Deno.test("F3.70: os relatórios do sócio levam o período ao banco, conferem as datas e recusam quem não é a dona", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/financeiro/relatorios/resumo?de=2026-07-01&ate=2026-09-30&comparar=ano_passado", { cookie });
+  assertEquals((await r.json()).periodo, { de: "2026-07-01", ate: "2026-09-30", comparar: "ano_passado" });
+  const ch = m.chamadas.find((c) => c.funcao === "portal_relatorio_resumo")!;
+  assertEquals(typeof ch.args.p_escritorio, "string");
+  const ruim = await m.pedir("/v1/escritorio/financeiro/relatorios/resumo?de=01/07/2026&comparar=sempre", { cookie });
+  assertEquals((await erro(ruim)).detalhes?.campos, ["de", "comparar"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/relatorios/clientes/${CLIENTE}`, { cookie })).json()).cliente.id, CLIENTE);
+  const exp = await m.pedir("/v1/escritorio/financeiro/relatorios/exportacoes", { metodo: "POST", corpo: { visao: "clientes", formato: "XLSX" }, cookie });
+  assertEquals([exp.status, (await exp.json()).formato], [201, "XLSX"]);
+  const semF = await m.pedir("/v1/escritorio/financeiro/relatorios/exportacoes", { metodo: "POST", corpo: { visao: "clientes", formato: "DOC" }, cookie });
+  assertEquals((await erro(semF)).detalhes?.campos, ["formato"]);
+  const n = montar({ naoDono: true });
+  const e = await n.pedir("/v1/escritorio/financeiro/relatorios/resumo", { cookie: await noEscritorio(n) });
+  assertEquals([e.status, (await erro(e)).detalhes?.motivo], [403, "SO_SOCIO_DONO"]);
 });
 
 Deno.test("F1.15: o pedido de exclusão confere data, canal e quem pediu", async () => {

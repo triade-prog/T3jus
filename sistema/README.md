@@ -427,3 +427,14 @@ Tela aprovada em `docs/design/aprovadas/portal-inicio-areas` (Carol, 19/11/2026)
 - **API:** `GET /v1/escritorio/inicio/resumo`, `GET /v1/escritorio/inicio/{contratos,financeiro,juridico}?de=MEUS|EQUIPE` e `PUT /v1/escritorio/financeiro/repasses/:id/responsavel`.
 - **Tela:** `/` (`InicioPortal`). As regras de texto (datas relativas, verbo, selo, rodapé e cartões) ficam em `packages/ui/src/portal/inicio.ts`, com testes. A parte comum usa as rotas da Agenda e de Conversas.
 - **Falta:** a troca do responsável pelo repasse na tela da ficha (F3.71).
+
+### Relatórios do sócio (F3.70; IN-02 a IN-05, IN-07, IN-09, IN-12, IN-14, IN-15)
+
+Tela aprovada em `docs/design/aprovadas/portal-relatorios` (Carol, 20/11/2026). Migration `0410_portal_relatorios_socio.sql`, teste `041_portal_relatorios_socio_test.sql`, e2e `portal-relatorios.spec.ts`.
+
+- **Só a sócia dona.** `relatorio_entrar` pede a área Financeiro e `so_socio_dono`; a aba Relatórios só aparece para ela (`soDono` em `SECOES_AREA`).
+- **Sem tabela nova.** As peças `relatorio_entradas`, `relatorio_abertas`, `relatorio_adiantadas`, `relatorio_aparte` e `relatorio_contratado` leem as tabelas do Financeiro, dos contratos e dos casos.
+- **Regras:** Entrou = recebimentos de parcela no caixa do escritório, pelo dia em que o dinheiro entrou, mais os honorários transferidos de um levantamento. Rendeu = Entrou menos as despesas de caso adiantadas, pagas no período, que não voltaram até o fim dele. Falta receber é de hoje; a mensalidade sem número de meses conta só até o mês corrente; RPV e precatório (honorários ainda a transferir) ficam à parte. A área é a do primeiro caso ligado ao contrato ("Sem caso ligado" quando não há); o responsável é o do contrato. A despesa adiantada vai para o caso e o contrato mais recentes do cliente.
+- **Período:** `relatorio_periodo` confere `de` e `ate` (até hoje, no máximo 2 anos; `PERIODO_INVALIDO` e `PERIODO_LONGO`). Sem datas, os últimos 3 meses. A comparação "anterior" volta o mesmo número de meses quando o período é de meses inteiros, senão o mesmo número de dias; "ano_passado" e "nao" também.
+- **API:** `GET /v1/escritorio/financeiro/relatorios/{resumo,clientes,clientes/:id,areas,responsaveis}?de&ate&comparar` e `POST /v1/escritorio/financeiro/relatorios/exportacoes` (vai ao histórico como `financeiro.relatorio_exportado`). A planilha é montada na tela (`abasRelatorio`), com terceiros numa aba à parte. O PDF sai pela impressão do navegador.
+- **Falta:** RPV e precatório ainda a caminho, com a data estimada (F3.72).

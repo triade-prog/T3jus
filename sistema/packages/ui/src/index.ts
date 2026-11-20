@@ -54,3 +54,4 @@ export { EtapasJuridicoPortal, PeticoesJuridicoPortal } from "./portal/JuridicoE
 export { ROTAS_JURIDICO } from "./portal/juridico.ts";
 export { ROTAS_FINANCEIRO } from "./portal/financeiro.ts";
 export { NovoContratoPortal, MudarContratoPortal } from "./portal/FormContrato.tsx";
+export { RelatoriosFinanceiro } from "./portal/Relatorios.tsx";

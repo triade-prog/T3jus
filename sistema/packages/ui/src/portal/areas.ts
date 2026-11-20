@@ -7,7 +7,8 @@ import type { NomeIcone } from "../Icone.tsx";
 export const ORDEM_AREAS = Object.keys(AREAS_PORTAL) as AreaPortal[];
 
 /** Seções de cada área (barra de seções no alto da área). */
-export const SECOES_AREA: Record<AreaPortal, { chave: string; nome: string }[]> = {
+/** As seções de cada área. "soDono": só a sócia dona vê (os Relatórios, decisão 1 do F3.70). */
+export const SECOES_AREA: Record<AreaPortal, { chave: string; nome: string; soDono?: boolean }[]> = {
   COMERCIAL: [
     { chave: "atendimentos", nome: "Atendimentos" },
     { chave: "propostas", nome: "Propostas" },
@@ -25,6 +26,7 @@ export const SECOES_AREA: Record<AreaPortal, { chave: string; nome: string }[]> 
     { chave: "a-pagar", nome: "A pagar" },
     { chave: "repasses", nome: "Repasses" },
     { chave: "caixa", nome: "Caixa" },
+    { chave: "relatorios", nome: "Relatórios", soDono: true },
   ],
   JURIDICO: [
     { chave: "casos", nome: "Casos e processos" },

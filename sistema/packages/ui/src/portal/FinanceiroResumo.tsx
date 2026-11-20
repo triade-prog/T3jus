@@ -42,7 +42,7 @@ const proximoMes = (m: string) => {
 
 // ------------------------------------------------------------------------------- peças comuns
 
-function Cab({ titulo, lede, botao }: { titulo: string; lede: string; botao?: ReactNode }) {
+export function Cab({ titulo, lede, botao }: { titulo: string; lede: string; botao?: ReactNode }) {
   return (
     <div className="pt-cab">
       <div>
@@ -56,8 +56,8 @@ function Cab({ titulo, lede, botao }: { titulo: string; lede: string; botao?: Re
   );
 }
 
-function Folha({ id, titulo, icone, sub, ver, terc, children }: {
-  id: string; titulo: string; icone: NomeIcone; sub?: string; ver?: { texto: string; href: string }; terc?: boolean; children: ReactNode;
+export function Folha({ id, titulo, icone, sub, ver, acoes, terc, children }: {
+  id: string; titulo: string; icone: NomeIcone; sub?: string; ver?: { texto: string; href: string }; acoes?: ReactNode; terc?: boolean; children: ReactNode;
 }) {
   return (
     <section className={terc ? "folha fi-terc" : "folha"} aria-labelledby={id} style={{ overflow: "hidden" }}>
@@ -67,9 +67,10 @@ function Folha({ id, titulo, icone, sub, ver, terc, children }: {
           <h2 id={id}><Icone nome={icone} className="ico" />{titulo}</h2>
           {sub ? <p className="sub">{sub}</p> : null}
         </div>
-        {ver ? (
+        {ver || acoes ? (
           <div className="acoes">
-            <a className="ver" href={ver.href}>{ver.texto}<Icone nome="dir" className="ico ico-s" /></a>
+            {acoes}
+            {ver ? <a className="ver" href={ver.href}>{ver.texto}<Icone nome="dir" className="ico ico-s" /></a> : null}
           </div>
         ) : null}
       </div>
@@ -603,7 +604,7 @@ export function CaixaDoFinanceiro() {
 
 // ----------------------------------------------------------------------- Exportar para o contador
 
-function salvar(nome: string, tipo: string, dados: Uint8Array | string) {
+export function salvar(nome: string, tipo: string, dados: Uint8Array | string) {
   const blob = new Blob([dados as BlobPart], { type: tipo });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
