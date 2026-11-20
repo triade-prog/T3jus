@@ -1,0 +1,19 @@
+{
+  "id": "F3.70",
+  "texto": "Relatórios do sócio no Financeiro: visão do período, por cliente, ficha do cliente, por área do direito e por responsável, escolher datas e exportar, só para a sócia dona",
+  "peca": "S4",
+  "refs": [
+    "IN-02",
+    "IN-03",
+    "IN-04",
+    "IN-05",
+    "IN-07",
+    "IN-09",
+    "IN-12",
+    "IN-14",
+    "IN-15"
+  ],
+  "status": "pendente",
+  "ordem": 700,
+  "proximo": "Programar os relatórios aprovados (docs/design/aprovadas/portal-relatorios/) com as rotas GET /v1/financeiro/relatorios/*, calculadas no servidor e só para a sócia dona"
+}

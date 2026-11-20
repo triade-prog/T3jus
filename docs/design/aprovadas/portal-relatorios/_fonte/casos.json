@@ -1,0 +1,50 @@
+[
+ {
+  "nome": "visao",
+  "url": "relatorios.html?estado=visao"
+ },
+ {
+  "nome": "clientes",
+  "url": "relatorios.html?estado=clientes"
+ },
+ {
+  "nome": "cliente",
+  "url": "relatorios.html?estado=cliente"
+ },
+ {
+  "nome": "areas",
+  "url": "relatorios.html?estado=areas"
+ },
+ {
+  "nome": "responsaveis",
+  "url": "relatorios.html?estado=responsaveis"
+ },
+ {
+  "nome": "periodo",
+  "url": "relatorios.html?estado=periodo"
+ },
+ {
+  "nome": "periodo-erro",
+  "url": "relatorios.html?estado=periodo-erro"
+ },
+ {
+  "nome": "exportar",
+  "url": "relatorios.html?estado=exportar"
+ },
+ {
+  "nome": "vazio",
+  "url": "relatorios.html?estado=vazio"
+ },
+ {
+  "nome": "carregando",
+  "url": "relatorios.html?estado=carregando"
+ },
+ {
+  "nome": "erro",
+  "url": "relatorios.html?estado=erro"
+ },
+ {
+  "nome": "sem-acesso",
+  "url": "relatorios.html?estado=sem-acesso"
+ }
+]
