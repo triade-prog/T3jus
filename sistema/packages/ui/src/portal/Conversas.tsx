@@ -191,13 +191,15 @@ function Momento({ m, eu }: { m: MensagemConversa; eu: string }): ReactNode {
       return <>A IA marcou a conversa como <b>resolvida</b>.</>;
     case "RESPONSAVEL_SAIU":
       return <><b>{m.de?.nome}</b> saiu da equipe; a conversa passou para <b>{m.para?.nome}</b>.</>;
+    case "APP_RESPONDEU":
+      return <>Alguém respondeu <b>pelo app do WhatsApp no celular</b>. A conversa ficou com <b>{m.para?.nome}</b>, e a IA fica em silêncio até devolverem.</>;
     default:
       return null;
   }
 }
 
 const ICONE_MOMENTO: Record<string, NomeIcone> = {
-  IA_PASSOU: "mao", ASSUMIU: "pessoas", DEVOLVEU: "devolver", PASSOU: "trocar", IA_RESOLVEU: "check", RESPONSAVEL_SAIU: "trocar",
+  IA_PASSOU: "mao", ASSUMIU: "pessoas", DEVOLVEU: "devolver", PASSOU: "trocar", IA_RESOLVEU: "check", RESPONSAVEL_SAIU: "trocar", APP_RESPONDEU: "celular",
 };
 
 function Anexo({ a }: { a: NonNullable<MensagemConversa["anexo"]> }) {
@@ -243,7 +245,7 @@ function Mensagens({ c, hoje }: { c: Conversa; hoje: string }) {
         <li key={m.id} className={`cv-m ${cls}`}>
           <div className="cv-b">
             <span className="de">
-              {m.autor === "IA" ? <><Icone nome="ia" className="ico" />IA do escritório</> : m.autor === "EQUIPE" ? m.pessoa?.nome : de}
+              {m.autor === "IA" ? <><Icone nome="ia" className="ico" />IA do escritório</> : m.autor === "EQUIPE" ? m.pessoa?.nome : m.autor === "APP" ? "Pelo app no celular" : de}
             </span>
             {m.anexo ? <Anexo a={m.anexo} /> : null}
             {m.texto}

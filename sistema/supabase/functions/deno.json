@@ -3,7 +3,9 @@
     "hono": "npm:hono@^4.9.0",
     "@std/assert": "jsr:@std/assert@^1",
     "zod": "npm:zod@^4.1.0",
-    "@t3jus/domain": "../../packages/domain/src/index.ts"
+    "@t3jus/domain": "../../packages/domain/src/index.ts",
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^0.137.0",
+    "@anthropic-ai/sdk/": "npm:/@anthropic-ai/sdk@^0.137.0/"
   },
   "compilerOptions": {
     "strict": true

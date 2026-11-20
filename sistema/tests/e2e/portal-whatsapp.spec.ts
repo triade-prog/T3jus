@@ -1,6 +1,6 @@
 // Escritório › WhatsApp e IA (tela aprovada em docs/design/aprovadas/portal-whatsapp, estados
 // nao-ligado, passos, numero-erro, em-analise, ligado, modelo-recusado, desligar, ia, ia-passar,
-// ia-saber, ia-ligar, ia-ligada e so-leitura): ligar o número passo a passo, a saúde e os avisos
+// ia-saber, ia-testar, ia-ligar, ia-ligada e so-leitura): ligar o número passo a passo, a saúde e os avisos
 // na Meta, ajustar o texto recusado, desligar com motivo, e como a IA atende (salvar com versão,
 // palavras, respostas, ligar e pausar). A API é simulada; aqui se testa a tela, a
 // acessibilidade e o que ela manda.
@@ -258,6 +258,52 @@ test("PA-04: o que ela sabe, sugestões, publicar e virar resposta; IA ligada mo
   await page.getByRole("button", { name: "Pausar a IA agora" }).click();
   await expect(page.getByText("A IA está pausada")).toBeVisible();
   expect(pedidos.find((p) => p.caminho === "/v1/escritorio/ia/pausar")!.corpo).toEqual({ versao: 3 });
+});
+
+test("PA-05: testar sem enviar, como contato da ficha e como número desconhecido, mostra a fonte e quando passaria", async ({ page }) => {
+  const CLIENTES = { clientes: [{ id: "c0000000-0000-4000-8000-000000000001", nome: "Antônia Ferreira Prado", contatos: [
+    { id: "k1", nome: "Antônia Ferreira Prado", papel: null, principal: true }, { id: "k2", nome: "Joana Prado", papel: "filha", principal: false }] }] };
+  const plano = (x: object) => ({ enviar: null, passar: null, passariaPara: null, motivoTexto: null, naoSoube: null, resolvida: false, fonte: null, barrada: null, foraDoHorario: false, ...x });
+  let vez = 0;
+  const pedidos = await simular(page, {
+    ...(await entrar(page)),
+    "GET /v1/escritorio/whatsapp": { corpo: LIGADO },
+    "GET /v1/escritorio/ia": { corpo: IA },
+    "GET /v1/escritorio/ia/teste/clientes": { corpo: CLIENTES },
+    "POST /v1/escritorio/ia/testar": () => {
+      vez++;
+      const ia = { ...IA, testadaEm: hoje("10:13"), testadaComo: "um contato da ficha" };
+      if (vez === 1) return { corpo: { ia, plano: plano({ enviar: "Bom dia, Antônia! Sou a assistente virtual. O recurso foi enviado em 16/11.", fonte: "Jurídico › Prado x INSS", resolvida: true }) } };
+      if (vez === 2) return { corpo: { ia, plano: plano({ enviar: "Vou passar sua mensagem para Larissa.", passar: "REGRA_FIXA", barrada: "OPINIAO", passariaPara: "Larissa Costa" }) } };
+      return { status: 503, corpo: { erro: { codigo: "UPSTREAM_UNAVAILABLE", mensagem: "Fora do ar", detalhes: { motivo: "IA_INDISPONIVEL" } } } };
+    },
+  });
+  await page.goto(`${P}/meu-escritorio/whatsapp?parte=ia&ia=testar`);
+  await expect(page.getByRole("radio", { name: /Antônia Ferreira Prado/ })).toBeChecked();
+  await expect(page.getByText("Simulação.")).toBeVisible();
+  await page.getByRole("button", { name: "Enviar no teste" }).click();
+  await expect(page.getByText("Escreva a mensagem do teste.")).toBeVisible();
+  await page.getByLabel("Escreva como Antônia").fill("Como está o meu processo?");
+  await page.getByRole("button", { name: "Enviar no teste" }).click();
+  await expect(page.getByText("O recurso foi enviado em 16/11.")).toBeVisible();
+  await expect(page.getByText("Jurídico › Prado x INSS").first()).toBeVisible();
+  await expect(page.getByText("Respondeu sozinha.")).toBeVisible();
+  expect(pedidos.find((p) => p.caminho === "/v1/escritorio/ia/testar")!.corpo)
+    .toEqual({ clienteId: "c0000000-0000-4000-8000-000000000001", contatoId: "k1", mensagens: [{ autor: "CLIENTE", texto: "Como está o meu processo?" }] });
+  await expect(page.getByRole("complementary", { name: "Explicação" }).getByText(/Último teste: .*, como um contato da ficha/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Quero falar com a doutora" }).click();
+  await expect(page.getByText("Passaria para Larissa.")).toBeVisible();
+  await expect(page.getByText("Regra fixa: nunca dá opinião sobre o resultado.", { exact: true })).toBeVisible();
+  await semViolacoes(page);
+  expect((pedidos.filter((p) => p.caminho === "/v1/escritorio/ia/testar")[1]!.corpo as { mensagens: unknown[] }).mensagens).toHaveLength(3);
+
+  await page.getByRole("radio", { name: /Número desconhecido/ }).check();
+  await expect(page.getByText("Respondeu sozinha.")).toHaveCount(0);
+  await page.getByLabel("Escreva como o número desconhecido").fill("Oi");
+  await page.getByRole("button", { name: "Enviar no teste" }).click();
+  await expect(page.getByText("A IA não respondeu agora.")).toBeVisible();
+  expect(pedidos.filter((p) => p.caminho === "/v1/escritorio/ia/testar").at(-1)!.corpo).toMatchObject({ clienteId: null, contatoId: null });
 });
 
 test("PA-02: quem não é a sócia dona vê para ler, sem trocar, desligar, salvar nem o gasto na Meta", async ({ page }) => {

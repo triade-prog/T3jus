@@ -21,7 +21,7 @@ import {
   ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
   semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, type DadosSimulacao, type ListaAutomacoes, type PaginaAutomacao,
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
-  respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
+  respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
@@ -32,6 +32,8 @@ import { criarApp } from "../_shared/app.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { planejarResposta } from "../_shared/atendimento.ts";
+import type { Cerebro } from "../_shared/ia.ts";
 
 export type VarsPortal = { Variables: VarsSessao["Variables"] & { escritorioId: string } };
 
@@ -57,6 +59,8 @@ export interface DepsPortal extends DepsSessao {
   admin: AdminAuth;
   /** Storage dos documentos dos casos (EX-05), no bucket documentos-portal. */
   arquivos: Arquivos;
+  /** O modelo da IA do escritório (F3.53); nulo enquanto o servidor não tem a chave. */
+  ia?: Cerebro | null;
 }
 
 interface LinhaHistoricoEquipe {
@@ -452,6 +456,21 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.patch("/v1/escritorio/ia/respostas/:id", async (c) => {
     const d = await lerCorpo(c, situacaoRespostaSchema);
     return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_resposta_situacao", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_situacao: d.situacao }));
+  });
+
+  // Testar sem enviar (F3.53): só a sócia dona. Conversa como um contato da ficha ou como um
+  // número desconhecido; nada vai para a conversa nem para a ficha, e o teste libera ligar.
+  app.get("/v1/escritorio/ia/teste/clientes", async (c) =>
+    c.json(await deps.banco.rpc<{ clientes: ClienteTesteIa[] }>("portal_ia_teste_contatos", { ...quem(c), p_busca: c.req.query("q") ?? null })));
+
+  app.post("/v1/escritorio/ia/testar", async (c) => {
+    const d = await lerCorpo(c, testarIaSchema);
+    const ctx = await deps.banco.rpc<ContextoIa>("portal_ia_teste_contexto", { ...quem(c), p_cliente: d.clienteId ?? null, p_contato: d.contatoId ?? null });
+    if (!deps.ia) throw new ErroDominio("UPSTREAM_UNAVAILABLE", { motivo: "IA_INDISPONIVEL" });
+    if (d.mensagens.at(-1)?.autor !== "CLIENTE") throw new ErroDominio("VALIDATION_ERROR", { campos: ["mensagens"] });
+    const plano = await planejarResposta(deps.ia, ctx, d.mensagens);
+    const ia = await deps.banco.rpc<PaginaIa>("portal_ia_testada", { ...quem(c), p_como: d.clienteId ? "um contato da ficha" : "um número desconhecido" });
+    return c.json({ plano, ia });
   });
 
   // ------------------------------------------------------------------ Conversas › Automações (PA-03)

@@ -1,11 +1,14 @@
 {
   "id": "F3.53",
-  "texto": "A IA que atende pelo WhatsApp do escritório e o envio e o recebimento pelo provedor: a mensagem que chega abre ou acha a conversa, a IA responde o que está no T3jus ou passa para uma pessoa, e o que a equipe escreve sai com entregue, lida ou o motivo da falha",
+  "texto": "A IA que atende pelo WhatsApp do escritório: responde com o que está no T3jus ou passa para uma pessoa, segue as regras fixas e a configuração do escritório, fica quieta quando uma pessoa já respondeu, fora do horário diz quando alguém vai ver; e Testar sem enviar, como contato da ficha ou número desconhecido",
   "peca": "B3",
   "refs": [
-    "PA-05"
+    "PA-05",
+    "PA-04",
+    "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 530,
-  "proximo": "Ligar o serviço do WhatsApp às peças whatsapp_mensagem_recebida, conversa_ia_respondeu, conversa_ia_passou e conversa_ia_nao_soube; a IA segue a configuração de ia_config (F3.54) e as regras fixas conferidas no servidor; com a IA desligada ou pausada, a conversa vai direto para a equipe; Testar sem enviar grava ia_config.testada_em"
+  "evidencia": "Migration 0330 (contexto só de quem escreve, atendimento para o serviço, mensagem pelo app no celular, motivos novos, peças do teste), pgTAP 033 (32 testes), domínio ia.ts (15 testes vitest), serviço _shared/ia.ts e _shared/atendimento.ts (5 testes Deno) e rotas /v1/escritorio/ia/teste/clientes e /ia/testar (2 testes Deno), e2e portal-whatsapp.spec.ts com o Testar sem enviar (celular e computador, com axe). Modelo Claude Haiku 5.5, escolhido pela Carol.",
+  "nota": "O serviço que recebe a mensagem da Meta e chama atenderConversa, e o envio com entregue, lida ou falha, ficam em F3.58 (dependem do cadastro do T3jus como parceiro da Meta)."
 }

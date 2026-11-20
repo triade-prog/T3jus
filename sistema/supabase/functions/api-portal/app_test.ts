@@ -1,6 +1,8 @@
 // F0.6 e F0.3 no Portal do advogado: quem tem vínculo entra; o escritório vem da sessão.
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
+import type { Cerebro } from "../_shared/ia.ts";
+import type { ContextoIa } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -11,7 +13,7 @@ const VL_LARA = "6b3c9f6e-1d7a-4c8b-9e4f-7a8b9c0d1e2f";
 const CLIENTE = "7c4d0a7f-2e8b-4d9c-8f5a-8b9c0d1e2f3a";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
 
-function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean } = {}) {
+function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean; ia?: Cerebro | null } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
@@ -167,6 +169,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_whatsapp_desligar: (a) => ({ versao: a.p_versao, dados: a.p_dados }),
     portal_whatsapp_aviso_ajustar: (a) => ({ chave: a.p_chave, texto: a.p_texto }),
     portal_ia: (a) => ({ escritorio: a.p_escritorio }),
+    portal_ia_teste_contatos: (a) => ({ clientes: [], busca: a.p_busca }),
+    portal_ia_teste_contexto: (a) => {
+      if (a.p_cliente && a.p_contato !== "k1") erroBanco("TC422", { motivo: "CONTATO_FORA_DA_FICHA" });
+      return contextoTeste(Boolean(a.p_cliente));
+    },
+    portal_ia_testada: (a) => ({ testadaComo: a.p_como }),
     portal_automacoes: (a) => ({ escritorio: a.p_escritorio, automacoes: [] }),
     portal_automacao: (a) => ({ id: a.p_id }),
     portal_automacao_criar: (a) => ({ dados: a.p_dados }),
@@ -229,7 +237,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
   });
   const storage = arquivosFalsos();
   const app = criarApiPortal("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo", admin, arquivos: storage.arquivos,
+    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo", admin, arquivos: storage.arquivos, ia: opcoes.ia,
     senhaVazada: (senha) => Promise.resolve((opcoes.vazadas ?? []).includes(senha)),
   });
   return { pedir: pedido(app, "api-portal"), vinculos, enviados, contas, storage, ...falso, ...db };
@@ -954,9 +962,11 @@ Deno.test("PA-04: avisos, assuntos e tons do domínio são os mesmos do banco", 
 Deno.test("PD-07: motivos e razões do domínio são os mesmos do banco", async () => {
   const { MOTIVOS_CONVERSA, RAZOES_RESPONSAVEL, ENVIO_MENSAGEM } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0300_portal_conversas_mensagens.sql", import.meta.url));
-  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
-  assertEquals(lista(/motivo\s+text check \(motivo in \(([^)]+)\)/), Object.keys(MOTIVOS_CONVERSA));
-  assertEquals(lista(/responsavel_razao\s+text check \(responsavel_razao in \(([^)]+)\)/), Object.keys(RAZOES_RESPONSAVEL));
+  // A 0330 refaz as listas de motivo e de razão (a IA que atende).
+  const sql330 = await Deno.readTextFile(new URL("../../migrations/0330_portal_ia_atende.sql", import.meta.url));
+  const lista = (re: RegExp, texto = sql) => re.exec(texto)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/check \(motivo in \(([^)]+)\)/, sql330), Object.keys(MOTIVOS_CONVERSA));
+  assertEquals(lista(/check \(responsavel_razao in \(([^)]+)\)/, sql330), Object.keys(RAZOES_RESPONSAVEL));
   assertEquals(lista(/envio\s+text check \(envio in \(([^)]+)\)/), Object.keys(ENVIO_MENSAGEM));
 });
 
@@ -1076,4 +1086,55 @@ Deno.test("EX-05: documentos do caso (pedir, pedir de novo, já chegou, enviar e
   assertEquals(m.storage.leituras, [{ caminho: `${AURORA}/${CLIENTE}`, segundos: 60, nome: "peticao.pdf" }]);
   const pedidos = m.chamadas.filter((c) => c.funcao.startsWith("portal_juridico_documento"));
   assert(pedidos.every((c) => c.args.p_escritorio === AURORA));
+});
+
+function contextoTeste(comCliente: boolean): ContextoIa {
+  return {
+    escritorio: "Aurora Advocacia",
+    config: { nome: "Assistente virtual da Aurora", apresentacao: "Olá! Sou a assistente virtual da Aurora.", tom: "CORDIAL", assuntos: ["ANDAMENTO_CASO"],
+      palavras: [], dias: [1, 2, 3, 4, 5], horaInicio: "09:00", horaFim: "18:00", msgForaHorario: "Uma pessoa vê {próximo atendimento}.",
+      telefoneUrgencia: null, situacao: "DESLIGADA" },
+    agora: "2026-11-18T10:12", feriados: [],
+    cliente: comCliente ? { nome: "Antônia Prado" } : null,
+    contato: comCliente ? { nome: "Joana Prado", papel: "filha", principal: true } : null,
+    quemResponde: { nome: "Lara Souza", razao: "CASO" }, comercial: "Diego Alves", respostas: [],
+    dados: comCliente ? { casos: [{ nome: "Prado x INSS", etapa: "Recurso enviado", desde: "2026-11-16", texto: "O recurso foi enviado.", quemEscreveu: "Lara Souza", responsavel: "Lara Souza" }] } : {},
+  };
+}
+
+Deno.test("PA-05: Testar sem enviar responde com o contexto da ficha, confere as regras fixas e libera ligar", async () => {
+  const pedidos: string[] = [];
+  const ia: Cerebro = {
+    pensar(p) {
+      pedidos.push(p.instrucoes);
+      const ultima = p.mensagens.at(-1)?.content ?? "";
+      return Promise.resolve(/ganho/.test(ultima)
+        ? { acao: "RESPONDER", texto: "Acho que você vai ganhar.", motivo: null, fonte: null, resolvida: false, naoSoube: null }
+        : { acao: "RESPONDER", texto: "O recurso foi enviado em 16/11.", motivo: null, fonte: "Jurídico › Prado x INSS › etapa Recurso enviado", resolvida: false, naoSoube: null });
+    },
+  };
+  const m = montar({ ia });
+  const cookie = await noEscritorio(m);
+  const r = await (await m.pedir("/v1/escritorio/ia/testar", { corpo: { clienteId: CLIENTE, contatoId: "k1", mensagens: [{ autor: "CLIENTE", texto: "Como está o processo?" }] }, cookie })).json();
+  assertEquals(r.plano.fonte, "Jurídico › Prado x INSS › etapa Recurso enviado");
+  assertEquals(r.plano.enviar, "Olá! Sou a assistente virtual da Aurora.\n\nO recurso foi enviado em 16/11.");
+  assertEquals(r.ia.testadaComo, "um contato da ficha");
+  assert(pedidos[0]!.includes("Prado x INSS"));
+  const barrada = await (await m.pedir("/v1/escritorio/ia/testar", { corpo: { clienteId: CLIENTE, contatoId: "k1", mensagens: [
+    { autor: "CLIENTE", texto: "Oi" }, { autor: "IA", texto: "Olá! Sou a assistente virtual." }, { autor: "CLIENTE", texto: "Tenho ganho de causa?" }] }, cookie })).json();
+  assertEquals([barrada.plano.passar, barrada.plano.barrada, barrada.plano.passariaPara], ["REGRA_FIXA", "OPINIAO", "Lara Souza"]);
+  const novo = await (await m.pedir("/v1/escritorio/ia/testar", { corpo: { mensagens: [{ autor: "CLIENTE", texto: "Oi" }] }, cookie })).json();
+  assertEquals(novo.ia.testadaComo, "um número desconhecido");
+  assert(!pedidos[2]!.includes("Prado x INSS"));
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia/testar", { corpo: { clienteId: CLIENTE, contatoId: "k9", mensagens: [{ autor: "CLIENTE", texto: "Oi" }] }, cookie }))).detalhes?.motivo,
+    "CONTATO_FORA_DA_FICHA");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia/testar", { corpo: { mensagens: [] }, cookie }))).detalhes?.campos, ["mensagens"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/ia/teste/clientes?q=prado", { cookie })).json()).busca, "prado");
+});
+
+Deno.test("PA-05: sem a chave da IA, o teste diz que ela está indisponível", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const e = await erro(await m.pedir("/v1/escritorio/ia/testar", { corpo: { mensagens: [{ autor: "CLIENTE", texto: "Oi" }] }, cookie }));
+  assertEquals([e.codigo, e.detalhes?.motivo], ["UPSTREAM_UNAVAILABLE", "IA_INDISPONIVEL"]);
 });
