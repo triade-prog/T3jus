@@ -5,8 +5,7 @@
   "refs": [
     "CO-06"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 57,
-  "proximo": "Carol aprovar o desenho da cobrança dos escritórios e responder as perguntas do NOTAS.md",
-  "nota": "Desenho para aprovação: https://claude.ai/artifact/KN5r2vZXajkvJ9xT8sXUSJ (pasta project-files/t3jus/telas/console-cobranca, com NOTAS.md e as perguntas)"
+  "evidencia": "Desenho em docs/design/aprovadas/console-cobranca/ (51 estados, computador e celular, axe sem violação, com o carnê), aprovado pela Carol em 20/11/2026 às 8h31 (Bahia) com as 6 recomendações do NOTAS.md"
 }

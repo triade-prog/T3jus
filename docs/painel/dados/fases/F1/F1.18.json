@@ -1,0 +1,12 @@
+{
+  "id": "F1.18",
+  "texto": "Cobrança dos escritórios: área Cobrança do Console (faturas, planos e régua), aba Assinatura com carnê, situação de atraso na carteira, só consulta por atraso e Plano e faturas do sócio dono no Portal",
+  "peca": "C1",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67,
+  "nota": "Desenho aprovado em docs/design/aprovadas/console-cobranca (20/11/2026). Depende do meio de pagamento (Pix, boleto e PDF do carnê), do emissor de nota fiscal e do remetente de e-mail.",
+  "proximo": "Programar a cobrança dos escritórios seguindo o desenho aprovado em docs/design/aprovadas/console-cobranca"
+}

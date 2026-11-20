@@ -1,0 +1,206 @@
+[
+ {
+  "nome": "faturas",
+  "url": "cobranca.html?aba=faturas&estado=ver"
+ },
+ {
+  "nome": "faturas-atraso",
+  "url": "cobranca.html?aba=faturas&estado=atraso"
+ },
+ {
+  "nome": "faturas-financeiro",
+  "url": "cobranca.html?aba=faturas&estado=ver&papel=financeiro"
+ },
+ {
+  "nome": "faturas-vazio",
+  "url": "cobranca.html?aba=faturas&estado=vazio"
+ },
+ {
+  "nome": "faturas-carregando",
+  "url": "cobranca.html?aba=faturas&estado=carregando"
+ },
+ {
+  "nome": "faturas-erro",
+  "url": "cobranca.html?aba=faturas&estado=erro"
+ },
+ {
+  "nome": "sem-permissao",
+  "url": "cobranca.html?aba=faturas&papel=suporte"
+ },
+ {
+  "nome": "fatura",
+  "url": "cobranca.html?aba=fatura&estado=ver"
+ },
+ {
+  "nome": "fatura-atraso",
+  "url": "cobranca.html?aba=fatura&estado=atraso"
+ },
+ {
+  "nome": "fatura-lembrete",
+  "url": "cobranca.html?aba=fatura&estado=lembrete&papel=financeiro"
+ },
+ {
+  "nome": "fatura-pagar",
+  "url": "cobranca.html?aba=fatura&estado=pagar"
+ },
+ {
+  "nome": "fatura-pagar-erros",
+  "url": "cobranca.html?aba=fatura&estado=pagar-erros"
+ },
+ {
+  "nome": "fatura-pagar-enviando",
+  "url": "cobranca.html?aba=fatura&estado=pagar-enviando"
+ },
+ {
+  "nome": "fatura-pagar-falha",
+  "url": "cobranca.html?aba=fatura&estado=pagar-falha"
+ },
+ {
+  "nome": "fatura-pagar-conflito",
+  "url": "cobranca.html?aba=fatura&estado=pagar-conflito"
+ },
+ {
+  "nome": "fatura-paga",
+  "url": "cobranca.html?aba=fatura&estado=paga"
+ },
+ {
+  "nome": "fatura-cancelar",
+  "url": "cobranca.html?aba=fatura&estado=cancelar"
+ },
+ {
+  "nome": "fatura-cancelada",
+  "url": "cobranca.html?aba=fatura&estado=cancelada"
+ },
+ {
+  "nome": "fatura-carne",
+  "url": "cobranca.html?aba=fatura&estado=carne"
+ },
+ {
+  "nome": "planos",
+  "url": "cobranca.html?aba=planos&estado=ver"
+ },
+ {
+  "nome": "planos-editar",
+  "url": "cobranca.html?aba=planos&estado=editar"
+ },
+ {
+  "nome": "planos-criar-erros",
+  "url": "cobranca.html?aba=planos&estado=criar-erros"
+ },
+ {
+  "nome": "planos-arquivar",
+  "url": "cobranca.html?aba=planos&estado=arquivar"
+ },
+ {
+  "nome": "planos-financeiro",
+  "url": "cobranca.html?aba=planos&estado=ver&papel=financeiro"
+ },
+ {
+  "nome": "planos-vazio",
+  "url": "cobranca.html?aba=planos&estado=vazio"
+ },
+ {
+  "nome": "regua",
+  "url": "cobranca.html?aba=regua&estado=ver"
+ },
+ {
+  "nome": "assinatura",
+  "url": "ficha.html?aba=assinatura&estado=cb-em-dia"
+ },
+ {
+  "nome": "assinatura-suporte",
+  "url": "ficha.html?aba=assinatura&estado=cb-em-dia&papel=suporte"
+ },
+ {
+  "nome": "assinatura-sem",
+  "url": "ficha.html?aba=assinatura&estado=cb-sem"
+ },
+ {
+  "nome": "assinatura-editar",
+  "url": "ficha.html?aba=assinatura&estado=cb-editar"
+ },
+ {
+  "nome": "assinatura-editar-erros",
+  "url": "ficha.html?aba=assinatura&estado=cb-editar-erros"
+ },
+ {
+  "nome": "assinatura-conflito",
+  "url": "ficha.html?aba=assinatura&estado=cb-conflito"
+ },
+ {
+  "nome": "assinatura-mudar-plano",
+  "url": "ficha.html?aba=assinatura&estado=cb-mudar-plano"
+ },
+ {
+  "nome": "assinatura-atraso",
+  "url": "ficha.html?aba=assinatura&estado=cb-atraso"
+ },
+ {
+  "nome": "assinatura-consulta-confirmar",
+  "url": "ficha.html?aba=assinatura&estado=cb-so-consulta-confirmar"
+ },
+ {
+  "nome": "assinatura-consulta",
+  "url": "ficha.html?aba=assinatura&estado=cb-so-consulta"
+ },
+ {
+  "nome": "assinatura-encerrado",
+  "url": "ficha.html?aba=assinatura&estado=cb-encerrado"
+ },
+ {
+  "nome": "assinatura-carne",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne"
+ },
+ {
+  "nome": "assinatura-editar-carne",
+  "url": "ficha.html?aba=assinatura&estado=cb-editar-carne"
+ },
+ {
+  "nome": "assinatura-carne-novo",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne-novo"
+ },
+ {
+  "nome": "assinatura-erro",
+  "url": "ficha.html?aba=assinatura&estado=cb-erro"
+ },
+ {
+  "nome": "carteira",
+  "url": "carteira.html?estado=cb-ver"
+ },
+ {
+  "nome": "carteira-atraso",
+  "url": "carteira.html?estado=cb-atraso"
+ },
+ {
+  "nome": "portal-plano",
+  "url": "portal-escritorio.html?estado=cb-plano"
+ },
+ {
+  "nome": "portal-pagar",
+  "url": "portal-escritorio.html?estado=cb-pagar"
+ },
+ {
+  "nome": "portal-carne",
+  "url": "portal-escritorio.html?estado=cb-carne"
+ },
+ {
+  "nome": "portal-atraso",
+  "url": "portal-escritorio.html?estado=cb-atraso"
+ },
+ {
+  "nome": "portal-consulta",
+  "url": "portal-escritorio.html?estado=cb-so-consulta"
+ },
+ {
+  "nome": "portal-consulta-equipe",
+  "url": "portal-escritorio.html?estado=cb-so-consulta-equipe"
+ },
+ {
+  "nome": "portal-vazio",
+  "url": "portal-escritorio.html?estado=cb-vazio"
+ },
+ {
+  "nome": "portal-erro",
+  "url": "portal-escritorio.html?estado=cb-erro"
+ }
+]
