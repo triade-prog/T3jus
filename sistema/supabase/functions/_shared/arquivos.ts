@@ -14,6 +14,10 @@ export interface Arquivos {
   info(caminho: string): Promise<InfoArquivo | null>;
   /** Endereço de leitura que vale por poucos segundos, já com o nome para baixar. */
   enderecoDeLeitura(caminho: string, segundos: number, nomeParaBaixar: string): Promise<string>;
+  /** Grava o arquivo montado no servidor (as petições, EX-09). Com substituir, troca o que houver. */
+  enviar(caminho: string, dados: Uint8Array, tipo: string, substituir?: boolean): Promise<void>;
+  /** Os bytes do arquivo; null se não existe. */
+  baixar(caminho: string): Promise<Uint8Array | null>;
 }
 
 export const BUCKET_DOCUMENTOS = "documentos-console";
@@ -50,6 +54,21 @@ export function arquivosStorage(url: string, chaveServico: string, bucket = BUCK
       if (!r.ok) throw new Error(`Storage respondeu ${r.status}`);
       const { signedURL } = (await r.json()) as { signedURL: string };
       return `${base}${signedURL}&download=${encodeURIComponent(nomeParaBaixar)}`;
+    },
+    async enviar(caminho, dados, tipo, substituir = false) {
+      const r = await buscar(`${base}/object/${objeto(caminho)}`, {
+        method: "POST",
+        headers: { apikey: chaveServico, authorization: `Bearer ${chaveServico}`, "content-type": tipo, "x-upsert": substituir ? "true" : "false" },
+        body: dados.slice().buffer,
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!r.ok) throw new Error(`Storage respondeu ${r.status}`);
+    },
+    async baixar(caminho) {
+      const r = await buscar(`${base}/object/authenticated/${objeto(caminho)}`, { headers: { apikey: chaveServico, authorization: `Bearer ${chaveServico}` }, signal: AbortSignal.timeout(15000) });
+      if (r.status === 404 || r.status === 400) return null;
+      if (!r.ok) throw new Error(`Storage respondeu ${r.status}`);
+      return new Uint8Array(await r.arrayBuffer());
     },
   };
 }

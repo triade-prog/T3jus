@@ -87,6 +87,17 @@ describe("F0.8: repasse /api", () => {
     expect((await repassar(grande, ctx(caminho))).status).toBe(400);
   });
 
+  it("EX-09: o .docx das petições passa como arquivo só nos envios de modelo e de versão editada", async () => {
+    const id = "8d5e1b8a-3f9c-4e0d-9a6b-9c0d1e2f3a4b";
+    const docx = (caminho: string) => new Request(`https://portal.exemplo/api/${caminho}`, {
+      method: "POST", body: new Uint8Array(1000), headers: { "content-type": "application/octet-stream" } });
+    for (const caminho of ["v1/escritorio/peticoes/modelos", "v1/escritorio/peticoes/modelos/conferir", `v1/escritorio/peticoes/modelos/${id}/versoes`, `v1/escritorio/peticoes/${id}/versoes/docx`]) {
+      mockFetch(new Response("{}", { status: 201 }));
+      expect((await repassar(docx(caminho), ctx(caminho.split("/")))).status, caminho).toBe(201);
+    }
+    expect((await repassar(docx(`v1/escritorio/peticoes/${id}/decisao`), ctx(["v1", "escritorio", "peticoes", id, "decisao"]))).status).toBe(400);
+  });
+
   it("função fora do ar vira UPSTREAM_UNAVAILABLE", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("fetch failed"); }));
     const r = await repassar(new Request("https://portal.exemplo/api/v1/saude"), ctx(["v1", "saude"]));

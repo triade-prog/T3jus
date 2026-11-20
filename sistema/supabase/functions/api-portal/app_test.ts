@@ -2,7 +2,7 @@
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
 import type { Cerebro } from "../_shared/ia.ts";
-import type { ContextoIa } from "@t3jus/domain";
+import { conferirDocx, criarDocx, paragrafosDocx, type ContextoIa, type DadosPeticao } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -12,6 +12,23 @@ const LARA = "5a2b8e5d-0c6f-4b7a-8d3e-6f7a8b9c0d1e";
 const VL_LARA = "6b3c9f6e-1d7a-4c8b-9e4f-7a8b9c0d1e2f";
 const CLIENTE = "7c4d0a7f-2e8b-4d9c-8f5a-8b9c0d1e2f3a";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
+const PETICAO = "8d5e1b8a-3f9c-4e0d-9a6b-9c0d1e2f3a4b";
+const VERSAO_PET = "9e6f2c9b-4a0d-4f1e-8b7c-0d1e2f3a4b5c";
+const OAB_ANA = "0f7a3d0c-5b1e-4a2f-9c8d-1e2f3a4b5c6d";
+const DADOS_PETICAO: DadosPeticao = {
+  caso: { id: CLIENTE, nome: "Pereira x Mercado", area: "TRABALHISTA", numero: null, vara: "45ª Vara do Trabalho de São Paulo", tribunal: null, sistema: null,
+    parteContraria: "Mercado Bom Preço Ltda.", parteContrariaQualificacao: null, valorCausa: 8640000, responsavel: { id: ANA, nome: "Ana" } },
+  clientes: [{ id: CLIENTE, nome: "Joana Pereira", tipo: "PF", papel: "AUTOR", documento: "52998224725", nacionalidade: "Brasileira", estadoCivil: "SOLTEIRO",
+    profissao: "Costureira", rg: null, rgOrgao: null, endereco: "Rua Itapura, 77", bairro: "Tatuapé", cidade: "São Paulo", uf: "SP", cep: "03310000", repNome: null, repCargo: null }],
+  advogados: [{ pessoaId: ANA, nome: "Ana Ribeiro", responsavel: true, socioDono: true,
+    inscricoes: [{ id: OAB_ANA, uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" }] }],
+  semOab: [], escritorio: { nome: "Aurora Advocacia", endereco: "Av. Paulista, 2.100", cidade: "São Paulo", uf: "SP" }, hoje: "2026-11-20",
+  revisor: null, semRevisao: "RESPONSAVEL",
+};
+const PEDIDO_PETICAO = {
+  modelo: { padrao: "JUNTADA" }, partes: [CLIENTE], advogados: [{ pessoaId: ANA, inscricoes: [OAB_ANA] }],
+  enderecamento: "Excelentíssimo(a) Senhor(a) Juiz(íza) da 45ª Vara do Trabalho de São Paulo", cidadeData: "São Paulo, 20 de novembro de 2026",
+};
 
 function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean; ia?: Cerebro | null } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
@@ -260,6 +277,18 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { id: a.p_compromisso, versao: Number(a.p_versao) + 1 };
     },
     portal_compromisso_cancelar: (a) => Number(a.p_versao) + 1,
+    portal_peticao_preparar: (a) => ({ pedido: { ...(a.p_pedido as object), numero: null, valorCausa: 8640000, parteContrariaQualificacao: null }, dados: DADOS_PETICAO }),
+    portal_peticao_gravar: (a) => {
+      const r = a.p_resultado as { peticaoId: string; arquivo: string; marcados: string[] };
+      return { id: r.peticaoId, situacao: "APROVADA", arquivo: r.arquivo, marcados: r.marcados, revisor: null, versao: 1 };
+    },
+    portal_peticao_modelos: () => ({ modelos: [], usosPadrao: { JUNTADA: 2 }, podeEnviar: true }),
+    portal_peticao_modelo_enviar: (a) => ({ id: "m1", nome: (a.p_dados as { nome: string }).nome, versao: 1 }),
+    portal_peticao_para_aprovar: () => ({ versaoId: VERSAO_PET, nome: "juntada.docx", tamanho: 10 }),
+    portal_peticao_decidir: (a) => ({ id: a.p_id, situacao: a.p_documento ? "APROVADA" : "AJUSTE" }),
+    portal_peticao_arquivo: (a) => ({ versaoId: VERSAO_PET, nome: "juntada.docx", rascunho: a.p_versao === 1 }),
+    portal_peticao_versao_preparar: () => ({ numero: 2, modeloNome: "Juntada de documentos", casoNome: "Pereira x Mercado" }),
+    portal_peticao_versao_gravar: (a) => ({ id: a.p_id, situacao: "REVISAO", versao: 2, arquivo: (a.p_resultado as { arquivo: string }).arquivo }),
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
   });
   const storage = arquivosFalsos();
@@ -1272,4 +1301,85 @@ Deno.test("PA-05: sem a chave da IA, o teste diz que ela está indisponível", a
   const cookie = await noEscritorio(m);
   const e = await erro(await m.pedir("/v1/escritorio/ia/testar", { corpo: { mensagens: [{ autor: "CLIENTE", texto: "Oi" }] }, cookie }));
   assertEquals([e.codigo, e.detalhes?.motivo], ["UPSTREAM_UNAVAILABLE", "IA_INDISPONIVEL"]);
+});
+
+// ------------------------------------------------------------------------------- petições (EX-09)
+
+Deno.test("EX-09: gerar monta o .docx com os dados, grava o limpo, o rascunho e, aprovada, o documento do caso", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/peticoes/casos/${CLIENTE}/gerar`, { corpo: PEDIDO_PETICAO, cookie });
+  assertEquals(r.status, 201);
+  const g = m.chamadas.find((c) => c.funcao === "portal_peticao_gravar")!.args;
+  const res = g.p_resultado as { versaoId: string; documentoId: string; arquivo: string; marcados: string[]; previa: { t: string; texto: string }[][] };
+  assertEquals(res.arquivo, "juntada-de-documentos-pereira-x-mercado.docx");
+  assertEquals(res.marcados, ["RG de Joana Pereira", "Número do processo"]);
+  assertEquals(res.previa[0], [{ t: "formulario", texto: PEDIDO_PETICAO.enderecamento }]);
+  const limpo = m.storage.bytes.get(`${AURORA}/peticoes/${res.versaoId}.docx`)!;
+  assertEquals((await conferirDocx(limpo)).campos, []);
+  assert((await paragrafosDocx(limpo)).some((p) => p.startsWith("JOANA PEREIRA, brasileira, solteiro(a), costureira, portador(a) do RG nº [RG: falta]")));
+  assert(m.storage.bytes.has(`${AURORA}/peticoes/${res.versaoId}-rascunho.docx`));
+  assertEquals(m.storage.bytes.get(`${AURORA}/${res.documentoId}`), limpo);
+});
+
+Deno.test("EX-09: a prévia não grava nada e conta os campos", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await (await m.pedir(`/v1/escritorio/peticoes/casos/${CLIENTE}/previa`, { corpo: PEDIDO_PETICAO, cookie })).json();
+  assertEquals(r.campos, { total: 6, cadastro: 2, formulario: 2, preenchidos: 4 });
+  assertEquals(r.semRevisao, "RESPONSAVEL");
+  assertEquals(m.storage.bytes.size, 0);
+  assert(!m.chamadas.some((c) => c.funcao === "portal_peticao_gravar"));
+});
+
+Deno.test("EX-09: enviar modelo confere o .docx, aponta o campo desconhecido e recusa PDF", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const docx = await criarDocx([{ texto: "[ENDERECAMENTO]" }, { texto: "Em face de [NOME_RECLAMADA]" }]);
+  const r = await m.pedir("/v1/escritorio/peticoes/modelos?nome=Juntada%20do%20escrit%C3%B3rio&tipo=JUNTADA&area=QUALQUER&substitui=JUNTADA&arquivo=juntada.docx", { bruto: docx, cookie });
+  assertEquals(r.status, 201);
+  assertEquals((await r.json()).conferencia.desconhecidos, [{ campo: "NOME_RECLAMADA", sugestao: "PARTE_CONTRARIA" }]);
+  const conf = m.chamadas.find((c) => c.funcao === "portal_peticao_modelo_enviar")!.args;
+  assertEquals((conf.p_conferido as { campos: string[] }).campos, ["ENDERECAMENTO", "NOME_RECLAMADA"]);
+  const pdf = await m.pedir("/v1/escritorio/peticoes/modelos/conferir", { bruto: new TextEncoder().encode("%PDF-1.7"), cookie });
+  assertEquals((await erro(pdf)).detalhes, { campos: ["arquivo"], motivo: "ARQUIVO_PDF" });
+  const sem = await m.pedir("/v1/escritorio/peticoes/modelos?nome=X&tipo=JUNTADA&area=QUALQUER", { bruto: docx, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["nome", "arquivo"]);
+});
+
+Deno.test("EX-09: a lista de modelos junta os 8 padrão com o uso de cada um", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await (await m.pedir("/v1/escritorio/peticoes/modelos", { cookie })).json();
+  assertEquals(r.modelos.length, 8);
+  assertEquals(r.modelos.find((x: { id: string }) => x.id === "JUNTADA").usos, 2);
+  assertEquals(r.campos.length, 20);
+});
+
+Deno.test("EX-09: aprovar copia o arquivo limpo para os documentos; o rascunho baixa com a marca", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  m.storage.bytes.set(`${AURORA}/peticoes/${VERSAO_PET}.docx`, new Uint8Array([1, 2, 3]));
+  const r = await (await m.pedir(`/v1/escritorio/peticoes/${PETICAO}/decisao`, { corpo: { decisao: "APROVAR", versao: 1 }, cookie })).json();
+  assertEquals(r.situacao, "APROVADA");
+  const doc = m.chamadas.find((c) => c.funcao === "portal_peticao_decidir")!.args.p_documento as string;
+  assertEquals(m.storage.bytes.get(`${AURORA}/${doc}`), new Uint8Array([1, 2, 3]));
+  const ajuste = await m.pedir(`/v1/escritorio/peticoes/${PETICAO}/decisao`, { corpo: { decisao: "AJUSTE", versao: 1, comentario: "Corrija" }, cookie });
+  assertEquals((await ajuste.json()).situacao, "AJUSTE");
+  const b = await (await m.pedir(`/v1/escritorio/peticoes/${PETICAO}/abrir?versao=1`, { metodo: "POST", cookie })).json();
+  assertEquals(b.rascunho, true);
+  assertEquals(m.storage.leituras.at(-1), { caminho: `${AURORA}/peticoes/${VERSAO_PET}-rascunho.docx`, segundos: 60, nome: "rascunho-juntada.docx" });
+});
+
+Deno.test("EX-09: a versão editada no Word passa pela conferência e a prévia é o texto do arquivo", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const docx = await criarDocx([{ texto: "Corrigido." }, { texto: "RG [RG: falta]" }]);
+  const r = await m.pedir(`/v1/escritorio/peticoes/${PETICAO}/versoes/docx?recado=Pronto&resolvidos=${VERSAO_PET}`, { bruto: docx, cookie });
+  assertEquals(r.status, 201);
+  assertEquals((await r.json()).faltas, 1);
+  const a = m.chamadas.find((c) => c.funcao === "portal_peticao_versao_gravar")!.args;
+  assertEquals(a.p_dados, { origem: "DOCX_EDITADO", resolvidos: [VERSAO_PET], recado: "Pronto" });
+  assertEquals((a.p_resultado as { previa: unknown }).previa, [[{ t: "fixo", texto: "Corrigido." }], [{ t: "fixo", texto: "RG " }, { t: "falta", texto: "[RG: falta]" }]]);
+  assertEquals((a.p_resultado as { arquivo: string }).arquivo, "juntada-de-documentos-pereira-x-mercado-v2.docx");
 });

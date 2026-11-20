@@ -24,3 +24,6 @@ export * from "./ia.ts";
 export * from "./inicio.ts";
 export * from "./relatorios.ts";
 export * from "./importacao.ts";
+export * from "./zip.ts";
+export * from "./docx.ts";
+export * from "./peticoes.ts";

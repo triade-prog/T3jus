@@ -19,3 +19,18 @@ Deno.test("Storage: endereços assinados com a chave só no servidor e o caminho
   assertEquals(chamadas.find((c) => c.url.includes("/object/sign/"))?.corpo, JSON.stringify({ expiresIn: 60 }));
   assertEquals(chamadas.every((c) => c.chave === "chave-servico"), true);
 });
+
+Deno.test("Storage: o servidor grava e lê o arquivo que montou (petições, EX-09)", async () => {
+  const chamadas: { url: string; metodo: string; upsert: string | null; tipo: string | null }[] = [];
+  const buscar = ((url: string, init: RequestInit) => {
+    const h = new Headers(init.headers);
+    chamadas.push({ url, metodo: init.method ?? "GET", upsert: h.get("x-upsert"), tipo: h.get("content-type") });
+    if (url.includes("/authenticated/")) return Promise.resolve(url.endsWith("/x") ? new Response("", { status: 400 }) : new Response(new Uint8Array([1, 2, 3])));
+    return Promise.resolve(Response.json({ Key: "ok" }));
+  }) as typeof fetch;
+  const a = arquivosStorage("https://proj.supabase.co", "chave-servico", "documentos-portal", buscar);
+  await a.enviar("e/peticoes/v 1.docx", new Uint8Array([9]), "application/x", true);
+  assertEquals(chamadas[0], { url: "https://proj.supabase.co/storage/v1/object/documentos-portal/e/peticoes/v%201.docx", metodo: "POST", upsert: "true", tipo: "application/x" });
+  assertEquals(await a.baixar("e/d"), new Uint8Array([1, 2, 3]));
+  assertEquals(await a.baixar("e/x"), null);
+});
