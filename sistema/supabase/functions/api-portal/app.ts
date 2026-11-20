@@ -19,7 +19,7 @@ import {
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
-  semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
+  semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, pedirIaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
@@ -36,6 +36,7 @@ import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
+import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
 
 export type VarsPortal = { Variables: VarsSessao["Variables"] & { escritorioId: string } };
@@ -504,6 +505,18 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/automacoes", async (c) => {
     const d = await lerCorpo(c, criarAutomacaoSchema);
     return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  // F3.59: a IA monta o fluxo a partir de um pedido. Sem automação, cria uma em rascunho; com,
+  // guarda a sugestão nova. Em ambos, o que a IA propõe aparece tracejado até a pessoa aplicar.
+  app.post("/v1/escritorio/automacoes/ia", async (c) => {
+    const d = await lerCorpo(c, pedirIaSchema);
+    return c.json(await montarSugestao(deps.banco, deps.ia, quem(c), null, d.pedido), 201);
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/ia", async (c) => {
+    const d = await lerCorpo(c, pedirIaSchema);
+    return c.json(await montarSugestao(deps.banco, deps.ia, quem(c), idDaRota(c, "id"), d.pedido));
   });
 
   app.get("/v1/escritorio/automacoes/:id", async (c) =>

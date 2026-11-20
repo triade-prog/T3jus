@@ -18,6 +18,7 @@ export * from "./juridico.ts";
 export * from "./conversas.ts";
 export * from "./whatsapp.ts";
 export * from "./automacoes.ts";
+export * from "./montar.ts";
 export * from "./ia.ts";
 export * from "./inicio.ts";
 export * from "./relatorios.ts";
