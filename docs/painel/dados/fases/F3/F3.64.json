@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 640,
-  "proximo": "Avisos automáticos depende do motor (F3.60); a edição no celular precisa de desenho próprio"
+  "proximo": "Programar a tela Avisos automáticos aprovada (estado avisos de docs/design/aprovadas/portal-conversas-automacoes) a partir de automacao_execucoes e conversa_mensagens; a edição no celular fica no computador por decisão da Carol"
 }

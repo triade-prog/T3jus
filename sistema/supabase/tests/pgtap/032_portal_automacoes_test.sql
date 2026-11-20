@@ -172,8 +172,8 @@ select is((select jsonb_agg((i -> 'cliente' ->> 'nome') || ':' || coalesce(i ->>
   'FI-04: quem entraria e quem fica de fora, com o motivo');
 select is((select i -> 'detalhe' ->> 'quemPediu' from ids, au, jsonb_array_elements(portal_automacao_quem_entraria(gustavo, rm, au.id) -> 'itens') i
   where i ->> 'motivo' = 'SEM_AVISOS'), 'Joana', 'o pedido diz quem pediu');
-select is((select portal_automacao_quem_entraria(felipe, rm, pr.id) ->> 'disponivel' from ids, pr where k = 'ETAPA_CASO'), 'false',
-  'nos gatilhos do Jurídico a lista vem depois');
+select is((select portal_automacao_quem_entraria(felipe, rm, pr.id) ->> 'disponivel' from ids, pr where k = 'ETAPA_CASO'), 'true',
+  'F3.62: nos gatilhos do Jurídico também há a lista');
 
 -- Simular: só os dados da parcela escolhida, sem enviar nada.
 select is((select portal_automacao_simulacao(gustavo, rm, au.id, parc.id) -> 'exemplo' ->> 'contato' from ids, au, parc where parc.k = 'far'), 'Sueli Ramos',

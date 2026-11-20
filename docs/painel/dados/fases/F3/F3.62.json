@@ -5,7 +5,7 @@
   "refs": [
     "PA-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 620,
-  "proximo": "Hoje só os gatilhos de parcela mostram a lista; a simulação já funciona para todos"
+  "evidencia": "Migration 0350 (portal_automacao_quem_entraria para o lembrete de audiência, com os compromissos dos próximos 7 dias, e para a etapa do caso, com as mudanças dos últimos 7 dias; a lista ganhou origem), pgTAP 032 e 034, e2e portal-automacoes.spec.ts."
 }

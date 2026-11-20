@@ -372,11 +372,13 @@ export interface PaginaAutomacao extends LinhaAutomacao {
 }
 
 export interface ItemQuemEntraria {
-  parcela: { id: string; descricao: string; valor: number; vencimento: string };
+  /** O que faz entrar: a parcela, o compromisso ou a mudança de etapa (quando: vencimento, início ou dia da mudança). */
+  origem: { id: string; descricao: string; quando: string };
+  parcela?: { id: string; descricao: string; valor: number; vencimento: string };
   cliente: { id: string; nome: string };
   contato: { nome: string | null; papel: string | null };
-  diasAtraso: number;
-  jaEmAtraso: boolean;
+  diasAtraso?: number;
+  jaEmAtraso?: boolean;
   entra: boolean;
   motivo: "SEM_AVISOS" | "SEM_WHATSAPP" | "COMBINADO" | null;
   detalhe: { quemPediu?: string | null; em?: string; tipo?: string; oQue?: string; data?: string } | null;
