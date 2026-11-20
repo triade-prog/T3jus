@@ -70,7 +70,7 @@ test.describe("Portal v1: moldura em áreas (PA-01)", () => {
     await semViolacoes(page);
     if (ehCelular(page)) await page.getByRole("button", { name: "Mais" }).click();
     const onde = ehCelular(page) ? page.getByRole("dialog", { name: "Mais" }) : page.locator("#trilho");
-    await expect(onde.getByRole("link", { name: "Jurídico" })).toBeVisible();
+    await expect(onde.getByRole("link", { name: "Jurídico", exact: true })).toBeVisible();
     for (const a of ["Comercial", "Contratos", "Financeiro", "Equipe"]) await expect(onde.getByRole("link", { name: a, exact: true })).toHaveCount(0);
     await expect(onde.getByText("Área: Jurídico")).toBeVisible();
   });
@@ -127,7 +127,7 @@ test.describe("Portal v1: Equipe do escritório (PA-02)", () => {
     await j.getByRole("button", { name: "Enviar convite" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Convite enviado para Gustavo Lima." })).toBeVisible();
     expect(pedidos.find((x) => x.metodo === "POST" && x.caminho === "/v1/escritorio/equipe")?.corpo).toEqual({
-      nome: "Gustavo Lima", email: "gustavo@ribeiromatos.adv.br", areas: ["JURIDICO"],
+      nome: "Gustavo Lima", email: "gustavo@ribeiromatos.adv.br", areas: ["JURIDICO"], oab: null,
     });
   });
 

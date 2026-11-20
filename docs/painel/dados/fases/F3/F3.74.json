@@ -1,0 +1,11 @@
+{
+  "id": "F3.74",
+  "texto": "Mostrar a OAB dos advogados no contrato e escolher quais inscrições vão no documento",
+  "peca": "S2",
+  "refs": [
+    "EX-12"
+  ],
+  "status": "pendente",
+  "ordem": 740,
+  "proximo": "Na tela de novo contrato e em Mudar advogados, as caixas das inscrições de cada advogado (padrão todas, ao menos uma), guardadas por contrato; o contrato e a procuração usam oab_frase com as escolhidas"
+}
