@@ -1,11 +1,11 @@
 {
   "id": "F3.15",
-  "texto": "OAB e UF de cada advogado na Equipe, mostradas no contrato",
+  "texto": "OAB e UF de cada advogado na Equipe, no convite e em Sua conta",
   "peca": "S2",
   "refs": [
     "EX-12"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 150,
-  "proximo": "Desenho em aprovação com a Carol (pasta telas/portal-equipe-oab); depois, programar a Equipe e mostrar a OAB nos advogados do contrato"
+  "evidencia": "Tela aprovada em docs/design/aprovadas/portal-equipe-oab (Carol, 20/11/2026). Migration 0430_equipe_oab.sql (oab_inscricao com principal e suplementares, número só com dígitos e letra à parte, erros presos aos campos, a mesma OAB de outra pessoa recusada, remover sem apagar, o convite com a OAB principal, Sua conta e a frase do documento oab_frase), teste 043_equipe_oab_test.sql (30), rotas /v1/escritorio/equipe/pessoas/:pessoa, /oab e /v1/escritorio/conta com 2 testes Deno, telas EquipeOab.tsx (ficha da pessoa, incluir, editar e remover, Sua conta) e e2e portal-equipe-oab.spec.ts (celular e computador, com axe)"
 }

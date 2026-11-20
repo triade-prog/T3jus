@@ -24,6 +24,7 @@ export {
 } from "./portal/Moldura.tsx";
 export * from "./portal/areas.ts";
 export { EquipePortal } from "./portal/Equipe.tsx";
+export { EquipePessoaPortal, ContaPortalPagina } from "./portal/EquipeOab.tsx";
 export { EscritorioDoPortal, nomeArquivoExportacao } from "./portal/Escritorio.tsx";
 export { PaginaComumPortal, PaginaAreaPortal } from "./portal/Paginas.tsx";
 export * from "./portal/equipe.ts";

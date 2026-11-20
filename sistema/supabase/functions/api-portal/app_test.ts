@@ -57,6 +57,11 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_equipe_retiradas: () => [{ vinculoId: VL_LARA, pessoaId: LARA, nome: "Lara", retiradaEm: "2026-11-18", saida: { entradaApagaEm: "2027-02-16" } }],
     portal_convidar: () => VL_LARA,
+    portal_equipe_pessoa: (a) => ({ vinculoId: VL_LARA, pessoaId: a.p_alvo, nome: "Lara", oab: [], frase: null, contratos: [] }),
+    portal_oab_incluir: (a) => ({ id: VL_LARA, uf: (a.p_dados as { uf: string }).uf, frase: "OAB/SP nº 1" }),
+    portal_oab_mudar: (a) => ({ id: a.p_inscricao, versao: Number(a.p_versao) + 1 }),
+    portal_oab_remover: () => ({ frase: null }),
+    portal_conta: (a) => ({ pessoaId: a.p_pessoa, nome: "Ana", oab: [], frase: null, contratos: [], socios: ["Ana"] }),
     portal_mudar_areas: (a) => a.p_areas,
     portal_reenviar_convite: () => LARA,
     portal_retirar: (a) => {
@@ -510,6 +515,38 @@ Deno.test("PA-02: convidar cria a conta, manda o link do Portal e grava as área
   const conv = m.chamadas.find((c) => c.funcao === "portal_convidar")!;
   assertEquals(conv.args.p_areas, ["FINANCEIRO"]);
   assertEquals(conv.args.p_escritorio, AURORA);
+});
+
+Deno.test("EX-12: o convite leva a OAB principal; a ficha e Sua conta trazem o e-mail do Auth", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/equipe", {
+    metodo: "POST", corpo: { nome: "Bia", email: "bia@aurora.adv.br", areas: [], oab: { uf: "SP", numero: "498.310" } }, cookie,
+  });
+  assertEquals(r.status, 201);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_convidar")!.args.p_oab, { uf: "SP", numero: "498.310" });
+  const ficha = await (await m.pedir(`/v1/escritorio/equipe/pessoas/${LARA}`, { cookie })).json();
+  assertEquals(ficha.email, "lara@aurora.adv.br");
+  const conta = await m.pedir("/v1/escritorio/conta", { cookie });
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_conta")!.args, { p_pessoa: ANA, p_escritorio: AURORA });
+  assertEquals((await conta.json()).nome, "Ana");
+});
+
+Deno.test("EX-12: incluir, mudar (com a versão) e remover a inscrição", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const inc = await m.pedir(`/v1/escritorio/equipe/pessoas/${LARA}/oab`, { metodo: "POST", corpo: { uf: "SP", numero: "1", tipo: "PRINCIPAL" }, cookie });
+  assertEquals(inc.status, 201);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_oab_incluir")!.args.p_alvo, LARA);
+  const mud = await m.pedir(`/v1/escritorio/equipe/oab/${VL_LARA}`, { metodo: "PUT", corpo: { versao: 2, uf: "RJ", numero: "2", tipo: "PRINCIPAL", trocarPrincipal: true }, cookie });
+  assertEquals((await mud.json()).versao, 3);
+  const args = m.chamadas.find((c) => c.funcao === "portal_oab_mudar")!.args;
+  assertEquals(args.p_versao, 2);
+  assertEquals(args.p_dados, { uf: "RJ", numero: "2", tipo: "PRINCIPAL", trocarPrincipal: true });
+  const sem = await m.pedir(`/v1/escritorio/equipe/oab/${VL_LARA}/remover`, { metodo: "POST", corpo: {}, cookie });
+  assertEquals(sem.status, 400);
+  const rem = await m.pedir(`/v1/escritorio/equipe/oab/${VL_LARA}/remover`, { metodo: "POST", corpo: { versao: 3 }, cookie });
+  assertEquals(rem.status, 200);
 });
 
 Deno.test("PA-02: área desconhecida não chega ao banco", async () => {

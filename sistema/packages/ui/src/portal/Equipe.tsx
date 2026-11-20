@@ -14,6 +14,8 @@ import { agruparEventosPorDia, fraseEquipe, listaAreas, primeiroNome, situacaoNa
 import { VALIDADE_CONVITE_MS } from "../console/carteira.ts";
 import { DESCRICAO_AREA } from "./areas.ts";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
+import { CamposOab, LinhaOab, NomeComFicha, PreviaOab } from "./EquipeOab.tsx";
+import { conferirOab, errosDoServidor, mensagemOab, previaOab, resumoOab, type CampoOab, type ErrosOab, type RascunhoOab } from "./oab.ts";
 
 const ORDEM = Object.keys(AREAS_PORTAL) as AreaPortal[];
 const EQUIPE_API = "/v1/escritorio/equipe";
@@ -23,7 +25,7 @@ const diaBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 const apagada = (p: PessoaRetiradaPortal) => !!p.saida?.entradaApagadaEm;
 
 /** Aviso de sucesso que flutua no canto (no celular, acima da barra de baixo). */
-function Toast({ titulo, texto, aoFechar }: { titulo: string; texto: string; aoFechar: () => void }) {
+export function Toast({ titulo, texto, aoFechar }: { titulo: string; texto: string; aoFechar: () => void }) {
   return (
     <div className="aviso aviso-sucesso toast" role="status">
       <Icone nome="check" className="ico" />
@@ -68,7 +70,7 @@ function horaDeVencer(): string {
   return hora(new Date(new Date().getTime() + VALIDADE_CONVITE_MS).toISOString());
 }
 
-type Feito = { titulo: string; texto: string; destaque?: string };
+export type Feito = { titulo: string; texto: string; destaque?: string };
 
 function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito }: {
   aberta: boolean;
@@ -86,6 +88,11 @@ function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito
   const [areas, setAreas] = useState<AreaPortal[]>([]);
   const primeiro = deNovo ? primeiroNome(deNovo.nome) : "";
   const [erros, setErros] = useState<{ nome?: string; email?: string }>({});
+  // A OAB principal, opcional (decisão 6 da OAB).
+  const [oab, setOab] = useState<RascunhoOab>({ uf: "", numero: "", letra: "" });
+  const [errosOab, setErrosOab] = useState<ErrosOab>({});
+  const [donoOab, setDonoOab] = useState<string | undefined>();
+  const quemOab = nome.trim() || "a pessoa";
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -108,13 +115,25 @@ function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito
       }
     }
     if (v.success && pessoas.some((p) => p.email?.toLowerCase() === v.data.email)) novos.email = jaNaEquipe(v.data.email);
+    const eOab = conferirOab(oab, true);
     setErros(novos);
-    if (Object.keys(novos).length || !v.success) return focarPrimeiroErro(corpo.current);
+    setErrosOab(eOab);
+    setDonoOab(undefined);
+    if (Object.keys(novos).length || Object.keys(eOab).length || !v.success) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
-    const r = await chamarPortal<{ vinculoId: string }>(EQUIPE_API, { corpo: v.data });
+    const temOab = !!(oab.uf || oab.numero.trim() || oab.letra.trim());
+    const r = await chamarPortal<{ vinculoId: string }>(EQUIPE_API, {
+      corpo: { ...v.data, oab: temOab ? { uf: oab.uf, numero: oab.numero, letra: oab.letra.trim() || null } : null },
+    });
     setEnviando(false);
     if (!r.ok) {
       const campos = r.erro.detalhes?.campos;
+      const doServidor = errosDoServidor(r.erro.detalhes);
+      if (doServidor && Object.keys(doServidor.erros).length) {
+        setErrosOab(doServidor.erros);
+        setDonoOab(doServidor.nome);
+        return focarPrimeiroErro(corpo.current);
+      }
       if (r.erro.detalhes?.motivo === "JA_NA_EQUIPE") setErros({ email: jaNaEquipe(v.data.email) });
       else if (Array.isArray(campos) && campos.includes("nome")) setErros({ nome: "Escreva o nome da pessoa." });
       else return setErro(r.erro);
@@ -128,7 +147,10 @@ function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito
     });
   }
 
-  const n = Object.keys(erros).length;
+  const prevOab = previaOab(oab);
+  const msgOab = Object.fromEntries(Object.entries(errosOab).map(([c, cod]) => [c, mensagemOab(c as CampoOab, cod!, quemOab, { nome: donoOab, texto: prevOab?.replace(" nº", "") })]));
+  const pontosOab = (Object.entries(errosOab) as [CampoOab, string][]).map(([c, cod]) => ({ id: `${ids}-oab-${c}`, texto: resumoOab(c, cod, { nome: donoOab }, "OAB") }));
+  const n = Object.keys(erros).length + pontosOab.length;
   return (
     <Janela id={`${ids}-j`} aberta={aberta} aoFechar={aoFechar} sobretitulo={`Equipe · ${escritorio}`} descricao={`${ids}-d`}
       titulo={deNovo ? `Convidar ${deNovo.nome} de novo` : "Convidar pessoa"} aoEnviar={() => void enviar()}
@@ -154,7 +176,12 @@ function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito
         ) : deNovo ? (
           <Aviso tom="info" titulo={`${primeiro} ainda tem a entrada.`}>Recebe o convite no mesmo e-mail e entra com a senha de sempre.</Aviso>
         ) : null}
-        {n ? <Aviso tom="urgencia" titulo={faltaAcertar(n)}>O convite ainda não foi enviado.</Aviso> : null}
+        {n ? (
+          <Aviso tom="urgencia" titulo={faltaAcertar(n)}
+            acoes={pontosOab.length ? <ul>{pontosOab.map((p) => <li key={p.id}><a href={`#${p.id}`}>{p.texto}</a></li>)}</ul> : undefined}>
+            O convite ainda não foi enviado.
+          </Aviso>
+        ) : null}
         {erro ? <Aviso tom="urgencia" titulo="O convite não foi enviado.">{textoDoErro(erro)}</Aviso> : null}
         <div className="campo">
           <label htmlFor={`${ids}-nome`}>Nome completo</label>
@@ -176,6 +203,14 @@ function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito
             </p>
           )}
         </div>
+        <fieldset className="oe-grupo" aria-describedby={`${ids}-oab-aj`}>
+          <legend>
+            OAB <span className="opcional" style={{ fontWeight: 400 }}>(opcional)</span>
+          </legend>
+          <p className="ajuda" id={`${ids}-oab-aj`}>Só para quem é advogado. É a inscrição principal; a suplementar se põe depois, na ficha da pessoa.</p>
+          <CamposOab pref={`${ids}-oab`} valor={oab} aoMudar={(v) => { setOab(v); setErrosOab({}); }} erros={errosOab} mensagens={msgOab} />
+        </fieldset>
+        {prevOab && !Object.keys(errosOab).length ? <PreviaOab texto={`${nome.trim() || "A pessoa"}, ${prevOab}`} /> : null}
         <CaixasAreas legenda="Áreas que a pessoa abre" marcadas={areas} aoMudar={setAreas} />
         <Comuns />
       </div>
@@ -183,7 +218,7 @@ function JanelaConvidar({ aberta, escritorio, pessoas, deNovo, aoFechar, aoFeito
   );
 }
 
-function JanelaAreas({ pessoa, escritorio, aoFechar, aoFeito }: {
+export function JanelaAreas({ pessoa, escritorio, aoFechar, aoFeito }: {
   pessoa: PessoaEquipePortal | null;
   escritorio: string;
   aoFechar: () => void;
@@ -235,7 +270,7 @@ function JanelaAreas({ pessoa, escritorio, aoFechar, aoFeito }: {
   );
 }
 
-function JanelaRetirar({ pessoa, pessoas, escritorio, aoFechar, aoFeito }: {
+export function JanelaRetirar({ pessoa, pessoas, escritorio, aoFechar, aoFeito }: {
   pessoa: PessoaEquipePortal | null;
   pessoas: PessoaEquipePortal[];
   escritorio: string;
@@ -837,7 +872,7 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
                         </colgroup>
                         <thead>
                           <tr>
-                            <th scope="col">Pessoa</th>
+                            <th scope="col">Pessoa e OAB</th>
                             <th scope="col">Áreas liberadas</th>
                             <th scope="col">Situação</th>
                             <th scope="col">
@@ -854,11 +889,12 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
                                     {iniciais(p.nome)}
                                   </span>
                                   <div>
-                                    <strong style={{ fontWeight: 500 }}>{p.nome}</strong>
+                                    <NomeComFicha p={p} />
                                     {p.dono ? <span className="voce">você</span> : null}
                                     <small style={{ display: "block", fontSize: 12, color: "var(--texto-2)", overflowWrap: "anywhere" }}>
                                       {p.email ?? "E-mail não encontrado"}
                                     </small>
+                                    <LinhaOab oab={p.oab ?? []} />
                                   </div>
                                 </div>
                               </td>
@@ -884,10 +920,11 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
                               </span>
                               <div>
                                 <strong className="c-nome" style={{ fontSize: 18 }}>
-                                  {p.nome}
+                                  <NomeComFicha p={p} />
                                 </strong>
                                 {p.dono ? <span className="voce">você</span> : null}
                                 <small style={{ overflowWrap: "anywhere" }}>{p.email ?? "E-mail não encontrado"}</small>
+                                <LinhaOab oab={p.oab ?? []} />
                               </div>
                             </div>
                             <div className="c-selos">
@@ -916,10 +953,16 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
                       </span>
                     </p>
                   ) : (
-                    <p className="pt-pe-folha">
-                      <Icone nome="relogio" className="ico" />
-                      <span>O convite vale 1 hora. Depois disso, use Reenviar: o link antigo deixa de valer e o novo vale mais 1 hora.</span>
-                    </p>
+                    <>
+                      <p className="pt-pe-folha">
+                        <Icone nome="balanca" className="ico" />
+                        <span>A OAB é opcional: só quem é advogado precisa dela. Abra o nome da pessoa para cadastrar. É dela que saem o nome e a OAB/UF nos contratos e procurações.</span>
+                      </p>
+                      <p className="pt-pe-folha" style={{ borderTop: 0, paddingTop: 0 }}>
+                        <Icone nome="relogio" className="ico" />
+                        <span>O convite vale 1 hora. Depois disso, use Reenviar: o link antigo deixa de valer e o novo vale mais 1 hora.</span>
+                      </p>
+                    </>
                   )}
                 </>
               ) : (
@@ -933,9 +976,10 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
                           </span>
                           <div className="quem-e">
                             <strong>
-                              {p.nome}
+                              <NomeComFicha p={p} />
                               <span className="voce">você</span>
                             </strong>
+                            <LinhaOab oab={p.oab ?? []} />
                             <small>{p.email ?? ""} · sócio dono</small>
                           </div>
                           <span className="selo selo-ativo">Vê tudo</span>

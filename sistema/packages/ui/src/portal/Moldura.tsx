@@ -68,6 +68,8 @@ export const ROTAS_PORTAL = {
   escritorio: "/meu-escritorio",
   ajuda: "/ajuda",
   escolher: "/escritorio",
+  /** Sua conta: os próprios dados e a OAB, só para ler (EX-12, decisão 7 da OAB). */
+  conta: "/conta",
 } as const;
 
 /** O papel que aparece embaixo do nome: o dono vê tudo; os outros, as áreas liberadas. */
@@ -116,7 +118,7 @@ export function useEscritorioPortal(): { escritorio: EscritorioPortal | null; er
   return { escritorio, erro, recarregar: () => { setErro(false); setVez((v) => v + 1); } };
 }
 
-export type LugarPortal = "inicio" | "conversas" | "clientes" | "agenda" | "equipe" | "escritorio" | "ajuda" | AreaPortal | null;
+export type LugarPortal = "inicio" | "conversas" | "clientes" | "agenda" | "equipe" | "escritorio" | "ajuda" | "conta" | AreaPortal | null;
 
 const COMUNS: { chave: LugarPortal; nome: string; icone: NomeIcone; href: string }[] = [
   { chave: "inicio", nome: "Início", icone: "inicio", href: ROTAS_PORTAL.inicio },
@@ -253,13 +255,16 @@ export function MolduraPortal({
               </a>
             </nav>
             <div className="quem">
-              <span className="av" aria-hidden="true">
-                {escritorio ? iniciais(escritorio.pessoa).slice(0, 1) : ""}
-              </span>
-              <span>
-                <strong>{escritorio?.pessoa ?? " "}</strong>
-                <small>{papel}</small>
-              </span>
+              <a className="oe-quem" href={ROTAS_PORTAL.conta} aria-current={atualDe("conta", atual, false)}>
+                <span className="av" aria-hidden="true">
+                  {escritorio ? iniciais(escritorio.pessoa).slice(0, 1) : ""}
+                </span>
+                <span>
+                  <strong>{escritorio?.pessoa ?? " "}</strong>
+                  <small>{papel}</small>
+                  <span className="sr">, sua conta e sua OAB</span>
+                </span>
+              </a>
               <button className="sair" type="button" onClick={sair} disabled={saindo} aria-label="Sair do Portal">
                 <Icone nome="sair" className="ico" />
               </button>
@@ -371,6 +376,13 @@ export function MolduraPortal({
             </span>
           </div>
           <ul className="pt-ml">
+            <li>
+              <a className="pt-mi" href={ROTAS_PORTAL.conta} aria-current={atualDe("conta", atual, false)}>
+                <Icone nome="balanca" className="ico" />
+                Seus dados e sua OAB
+                <Icone nome="dir" className="ico ico-s pt-ir" />
+              </a>
+            </li>
             <li>
               <a className="pt-mi" href={ROTAS_PORTAL.escolher}>
                 <Icone nome="trocar" className="ico" />

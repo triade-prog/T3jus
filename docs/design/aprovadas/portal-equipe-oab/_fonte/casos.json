@@ -1,0 +1,89 @@
+[
+ {
+  "nome": "equipe-ver",
+  "url": "equipe.html?estado=ver"
+ },
+ {
+  "nome": "equipe-pessoa",
+  "url": "equipe.html?estado=pessoa"
+ },
+ {
+  "nome": "equipe-pessoa-sem-oab",
+  "url": "equipe.html?estado=pessoa-sem-oab"
+ },
+ {
+  "nome": "equipe-inscricao-nova",
+  "url": "equipe.html?estado=inscricao-nova"
+ },
+ {
+  "nome": "equipe-inscricao-erros",
+  "url": "equipe.html?estado=inscricao-erros"
+ },
+ {
+  "nome": "equipe-inscricao-duplicada",
+  "url": "equipe.html?estado=inscricao-duplicada"
+ },
+ {
+  "nome": "equipe-inscricao-salva",
+  "url": "equipe.html?estado=inscricao-salva"
+ },
+ {
+  "nome": "equipe-inscricao-editar",
+  "url": "equipe.html?estado=inscricao-editar"
+ },
+ {
+  "nome": "equipe-inscricao-remover",
+  "url": "equipe.html?estado=inscricao-remover"
+ },
+ {
+  "nome": "equipe-convidar",
+  "url": "equipe.html?estado=convidar"
+ },
+ {
+  "nome": "equipe-convidar-oab-erro",
+  "url": "equipe.html?estado=convidar-oab-erro"
+ },
+ {
+  "nome": "conta",
+  "url": "conta.html?estado=conta"
+ },
+ {
+  "nome": "conta-sem-oab",
+  "url": "conta.html?estado=conta-sem-oab"
+ },
+ {
+  "nome": "conta-mais",
+  "url": "conta.html?estado=conta&mais=1",
+  "tams": [
+   "celular"
+  ]
+ },
+ {
+  "nome": "contratos-novo-sem-oab",
+  "url": "contratos.html?estado=novo-sem-oab"
+ },
+ {
+  "nome": "contratos-novo-inscricoes",
+  "url": "contratos.html?estado=novo-inscricoes"
+ },
+ {
+  "nome": "contratos-novo-inscricao-erro",
+  "url": "contratos.html?estado=novo-inscricao-erro"
+ },
+ {
+  "nome": "contratos-contrato-inscricoes",
+  "url": "contratos.html?estado=contrato-inscricoes"
+ },
+ {
+  "nome": "contratos-contrato-inscricoes-mudar",
+  "url": "contratos.html?estado=contrato-inscricoes-mudar"
+ },
+ {
+  "nome": "contratos-contrato-sem-oab",
+  "url": "contratos.html?estado=contrato-sem-oab"
+ },
+ {
+  "nome": "contratos-contrato-sem-oab-pessoa",
+  "url": "contratos.html?estado=contrato-sem-oab-pessoa"
+ }
+]

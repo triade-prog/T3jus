@@ -3,7 +3,7 @@
 
 import type { MiddlewareHandler } from "hono";
 import {
-  areasSchema, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
+  areasSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
@@ -163,7 +163,9 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     await deps.banco.rpc("portal_exigir_escrita", quem(c));
     if (!(await deps.banco.rpc<boolean>("limite_contar", { p_tipo: "convite", p_chave: c.get("sessao").pessoaId }))) throw new ErroDominio("RATE_LIMITED");
     const conta = await deps.admin.convidar(d.email, `${deps.urlApp}/criar-senha`);
-    const vinculoId = await deps.banco.rpc<string>("portal_convidar", { ...quem(c), p_convidado: conta.userId, p_nome: d.nome, p_areas: d.areas });
+    const vinculoId = await deps.banco.rpc<string>("portal_convidar", {
+      ...quem(c), p_convidado: conta.userId, p_nome: d.nome, p_areas: d.areas, p_oab: d.oab ?? null,
+    });
     return c.json({ vinculoId, contaNova: conta.contaNova }, 201);
   });
 
@@ -182,6 +184,33 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const email = await deps.admin.emailDe(membro);
     if (!email) throw new ErroDominio("NOT_FOUND");
     return c.json({ enviado: await deps.admin.reenviarConvite(email, `${deps.urlApp}/criar-senha`) });
+  });
+
+  // A ficha da pessoa e a OAB (EX-12): só a sócia dona. O e-mail vem do Auth.
+  app.get("/v1/escritorio/equipe/pessoas/:pessoa", async (c) => {
+    const ficha = await deps.banco.rpc<Omit<FichaPessoaEquipe, "email">>("portal_equipe_pessoa", { ...quem(c), p_alvo: idDaRota(c, "pessoa") });
+    return c.json({ ...ficha, email: await deps.admin.emailDe(ficha.pessoaId) });
+  });
+
+  app.post("/v1/escritorio/equipe/pessoas/:pessoa/oab", async (c) => {
+    const d = await lerCorpo(c, oabSchema);
+    return c.json(await deps.banco.rpc("portal_oab_incluir", { ...quem(c), p_alvo: idDaRota(c, "pessoa"), p_dados: d }), 201);
+  });
+
+  app.put("/v1/escritorio/equipe/oab/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, mudarOabSchema);
+    return c.json(await deps.banco.rpc("portal_oab_mudar", { ...quem(c), p_inscricao: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/equipe/oab/:id/remover", async (c) => {
+    const { versao } = await lerCorpo(c, removerOabSchema);
+    return c.json(await deps.banco.rpc("portal_oab_remover", { ...quem(c), p_inscricao: idDaRota(c, "id"), p_versao: versao }));
+  });
+
+  // Sua conta (decisão 7 da OAB): só a pessoa da sessão, sem pessoa na rota.
+  app.get("/v1/escritorio/conta", async (c) => {
+    const conta = await deps.banco.rpc<Omit<ContaPortal, "email">>("portal_conta", quem(c));
+    return c.json({ ...conta, email: await deps.admin.emailDe(conta.pessoaId) });
   });
 
   // Quem foi retirado e quando a entrada some (F0.14, filtro "Retiradas" da Equipe).
