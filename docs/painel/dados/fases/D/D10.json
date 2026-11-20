@@ -1,0 +1,11 @@
+{
+  "id": "D10",
+  "texto": "Desenho da importação de planilha de clientes e contratos no Portal, com ligação das colunas e prévia antes de salvar",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "feito",
+  "ordem": 59,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-importacao/ (20 estados, computador e celular, axe sem violação), aprovado pela Carol em 20/11/2026 às 7h55 (Bahia), com as 4 recomendações do NOTAS.md"
+}
