@@ -325,6 +325,19 @@ Telas aprovadas em `docs/design/aprovadas/portal-whatsapp`. Migration `0310_port
 - **Tela:** `/meu-escritorio/whatsapp` (abas Número e Como a IA atende; `?ligar=1`, `?aviso=CHAVE`, `?parte=ia&ia=passar|saber|testar`). Escritório ganhou a barra de seções.
 - **Falta:** a ligação real com a Meta, o webhook e trocar o número (F3.56); Testar sem enviar e a IA que responde (F3.53).
 
+### Conversas › Automações (F1.17; PA-03)
+
+Telas aprovadas em `docs/design/aprovadas/portal-conversas-automacoes`. Migration `0320_portal_automacoes.sql`, teste `032_portal_automacoes_test.sql`, domínio `packages/domain/src/automacoes.ts`, e2e `portal-automacoes.spec.ts`.
+
+- **Banco:** `automacoes` (rascunho em jsonb, situação RASCUNHO, EM_APROVACAO, LIGADA ou DESLIGADA, versão ligada e a que espera a Meta), `automacao_versoes` e `automacao_eventos` (só acréscimo), `automacao_modelos` (o texto aprovado fica fixo; situação na Meta), `automacao_execucoes` (uma por automação e origem; falha pede responsável e motivo) e `clientes_sem_avisos`. Todas passam por `proteger_tabela_escritorio` e entram no inventário.
+- **O desenho:** é uma lista de passos (gatilho, condições, mensagem, espera, ramos, IA, pessoa, fim). `automacao_forma` recusa o que não tem forma (gatilho só no começo, ramos só no caminho principal, quem termina por último, até 40 passos); `automacao_erros` diz o que falta por passo (caminho sem saída, responsável, campo que o gatilho não tem, texto vazio ou com campo na ponta, limite semanal) e trava testar e ligar.
+- **Quem faz o quê:** quem tem a área do gatilho monta e testa; só a sócia dona aprova o texto, liga e desliga (com motivo). Os outros mandam `sugerir-mudanca`.
+- **Limites fixos:** 8h às 20h em dia útil (`proximoHorario`, com os feriados nacionais), 1 cobrança por semana por parcela somando todas (ligar recusa `CONFLITO_LIMITE_SEMANAL`, ou desliga a outra se a sócia escolher), quem pediu para não receber avisos fica de fora e só sai texto aprovado. Ligar com texto novo deixa a automação em aprovação no WhatsApp; `automacao_meta_modelo` recebe a resposta.
+- **Prontas:** `automacoes_garantir` cria as 6 a partir dos avisos, ligadas na versão 1. A de parcela em atraso sai em 1, 8 e 15 dias.
+- **API:** `GET` e `POST /v1/escritorio/automacoes`, `GET` e `PATCH /automacoes/:id`, `POST /:id/aprovar-texto`, `/:id/ligar`, `/:id/desligar`, `/:id/sugerir-mudanca`, `/:id/simular` (roda `simularFluxo` sobre os dados do banco, nada é enviado), `GET /:id/quem-entraria`, `GET /:id/execucoes` e `POST /v1/escritorio/clientes/:id/sem-avisos`.
+- **Tela:** `/conversas/automacoes` (lista) e `?a=<id>&passo=montar|testar|ligar|historico&b=<passo>` (editor).
+- **Falta:** a IA que monta o fluxo (F3.57), o motor que envia (F3.58), mandar os textos à Meta (F3.59), quem entraria nos gatilhos do Jurídico (F3.60), "não receber avisos" na ficha (F3.61), Avisos automáticos e a edição no celular (F3.62).
+
 ### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 
 Telas aprovadas em `docs/design/aprovadas/portal-juridico`. Migration `0240_portal_juridico_casos.sql`, teste `024_portal_juridico_casos_test.sql`, e2e `portal-juridico-casos.spec.ts`.

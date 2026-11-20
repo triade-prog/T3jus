@@ -275,15 +275,15 @@ test.describe("Conversas do Portal, Mensagens (PD-07, EX-10, AP-02)", () => {
     await semViolacoes(page);
   });
 
-  test("ninguém esperando: a fila diz que está em dia; Automações e Avisos automáticos mostram o que vem", async ({ page }) => {
+  test("ninguém esperando: a fila diz que está em dia; Avisos automáticos mostra o que vem", async ({ page }) => {
     await simular(page, comuns({ ...ESCRITORIO, conversasEsperando: 0 }, { ...LISTA, contagem: { precisa: 0, equipe: 0, ia: 2, resolvidas: 14 }, conversas: [] }));
     await page.goto(`${P}/conversas`);
     await expect(page.getByRole("heading", { name: "Ninguém esperando agora" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ver as resolvidas hoje" })).toBeVisible();
     await semViolacoes(page);
-    await page.goto(`${P}/conversas/automacoes`);
-    await expect(page.getByRole("heading", { level: 1, name: "Automações está sendo preparado" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Seções de Conversas" }).getByRole("link", { name: "Automações" })).toHaveAttribute("aria-current", "page");
+    await page.goto(`${P}/conversas/avisos`);
+    await expect(page.getByRole("heading", { level: 1, name: "Avisos automáticos está sendo preparado" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Seções de Conversas" }).getByRole("link", { name: "Avisos automáticos" })).toHaveAttribute("aria-current", "page");
     await semViolacoes(page);
   });
 });

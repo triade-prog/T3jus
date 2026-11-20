@@ -167,6 +167,28 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_whatsapp_desligar: (a) => ({ versao: a.p_versao, dados: a.p_dados }),
     portal_whatsapp_aviso_ajustar: (a) => ({ chave: a.p_chave, texto: a.p_texto }),
     portal_ia: (a) => ({ escritorio: a.p_escritorio }),
+    portal_automacoes: (a) => ({ escritorio: a.p_escritorio, automacoes: [] }),
+    portal_automacao: (a) => ({ id: a.p_id }),
+    portal_automacao_criar: (a) => ({ dados: a.p_dados }),
+    portal_automacao_salvar: (a) => ({ versao: (a.p_versao as number) + 1, dados: a.p_dados }),
+    portal_automacao_aprovar_texto: (a) => ({ passo: a.p_passo }),
+    portal_automacao_ligar: (a) => {
+      if (!(a.p_dados as { desligarConflitos: boolean }).desligarConflitos) erroBanco("TC422", { motivo: "CONFLITO_LIMITE_SEMANAL" });
+      return { situacao: "EM_APROVACAO", dados: a.p_dados };
+    },
+    portal_automacao_desligar: (a) => ({ situacao: "DESLIGADA", motivo: a.p_motivo }),
+    portal_automacao_sugerir: (a) => ({ texto: a.p_texto }),
+    portal_automacao_quem_entraria: () => ({ disponivel: true, itens: [] }),
+    portal_automacao_execucoes: (a) => ({ situacao: a.p_situacao, itens: [] }),
+    portal_automacao_simulacao: (a) => ({
+      gatilho: "PARCELA_ATRASO", nome: "Cobrança", escritorio: "Aurora", hoje: "2026-11-18T13:12:00Z", parcela: a.p_parcela,
+      exemplo: { cliente: "Farmácia Bom Jesus", contato: "Sueli Ramos", papel: "gerente", parcela: "Mensalidade de novembro", valor: 180000, vencimento: "2026-11-15", quemCuida: null },
+      fluxo: { passos: [{ id: "g", tipo: "GATILHO", dias: 3 }, { id: "m", tipo: "MENSAGEM", nome: "Cobrança", modeloId: "x" }, { id: "e", tipo: "ESPERA", dias: 5 },
+        { id: "r", tipo: "RAMOS", ramos: [{ quando: "PAGOU", passos: [{ id: "f", tipo: "FIM" }] }, { quando: "NADA", passos: [{ id: "p", tipo: "PESSOA", regra: "SOCIA_DONA" }] }] }] },
+      textos: { x: "Olá, {nome}. A parcela {parcela}, de {valor}, venceu em {vencimento}. Qualquer dúvida, é só responder." },
+      aviso: null, pessoas: {}, socioDono: { id: "1", nome: "Marina Ribeiro" }, quemTemArea: null,
+    }),
+    portal_cliente_sem_avisos: (a) => ({ dados: a.p_dados }),
     portal_ia_salvar: (a) => {
       const d = a.p_dados as { nome?: string };
       if (d.nome && !/^assistente virtual/i.test(d.nome)) erroBanco("TC422", { campos: ["nome"], motivo: "NOME_SEM_ASSISTENTE_VIRTUAL" });
@@ -880,6 +902,43 @@ Deno.test("PA-04: WhatsApp e IA, o número do Brasil vira E.164, nada de token, 
   assertEquals((await (await m.pedir(`/v1/escritorio/ia/respostas/${CLIENTE}`, { metodo: "PATCH", corpo: { versao: 1, situacao: "ARQUIVADA" }, cookie })).json()).situacao, "ARQUIVADA");
   const tudo = JSON.stringify(m.chamadas.map((c) => c.args));
   assertEquals(/token/i.test(tudo), false);
+});
+
+Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sai do serviço e nada é enviado", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/automacoes", { cookie })).json()).escritorio, AURORA);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/automacoes", { corpo: { gatilho: "SMS", nome: "x" }, cookie }))).detalhes?.campos, ["gatilho"]);
+  const criada = await m.pedir("/v1/escritorio/automacoes", { corpo: { gatilho: "PARCELA_ATRASO", nome: "Cobrança gentil" }, cookie });
+  assertEquals(criada.status, 201);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}`, { metodo: "PATCH", corpo: { versao: 1, fluxo: { passos: [], extra: 1 } }, cookie }))).codigo, "VALIDATION_ERROR");
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}`, { metodo: "PATCH", corpo: { versao: 1, fluxo: { passos: [{ id: "g", tipo: "GATILHO", dias: 3 }] } }, cookie })).json()).versao, 2);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/aprovar-texto`, { corpo: { versao: 2, passo: "Msg!" }, cookie }))).detalhes?.campos, ["passo"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/ligar`, { corpo: { versao: 2, revisou: true }, cookie }))).detalhes?.motivo, "CONFLITO_LIMITE_SEMANAL");
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/ligar`, { corpo: { versao: 2, revisou: true, desligarConflitos: true }, cookie })).json()).situacao, "EM_APROVACAO");
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/desligar`, { corpo: { versao: 3, motivo: "Pausa" }, cookie })).json()).motivo, "Pausa");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/execucoes?situacao=TALVEZ`, { cookie }))).detalhes?.campos, ["situacao"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/execucoes?situacao=FALHOU`, { cookie })).json()).situacao, "FALHOU");
+  const sim = await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/simular`, { corpo: { parcelaId: CLIENTE, escolha: "NADA" }, cookie })).json();
+  assertEquals(sim.caminho.map((c: { rotulo: string }) => c.rotulo), ["1 Gatilho", "2 Mensagem", "3 Espera", "4 Ramos", "Nem pagou, nem respondeu", "5 Passar para Marina"]);
+  assertEquals(sim.conversa[1].texto, "Olá, Sueli. A parcela Mensalidade de novembro, de R$ 1.800,00, venceu em 15/11. Qualquer dúvida, é só responder.");
+  // A passagem cai na segunda, 23/11 (5 dias corridos depois de quarta, 18/11, dentro do horário).
+  assertEquals(sim.conversa.at(-1).em, "2026-11-23T10:20:00-03:00");
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_automacao_simulacao")!.args as { p_parcela: string }).p_parcela, CLIENTE);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/simular`, { corpo: { escolha: "TALVEZ" }, cookie }))).detalhes?.campos, ["escolha"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "COBRANCA", origem: "CONVERSA" }, cookie })).json()).dados.tipo, "COBRANCA");
+  assertEquals(m.chamadas.every((c) => !("p_escritorio" in c.args) || c.args.p_escritorio === AURORA), true);
+});
+
+Deno.test("PA-03: gatilhos e tipos de passo do domínio são os mesmos do banco", async () => {
+  const { GATILHOS, TIPOS_PASSO } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0320_portal_automacoes.sql", import.meta.url));
+  for (const [g, info] of Object.entries(GATILHOS)) {
+    const linha = new RegExp(`when '${g}' then array\\[([^\\]]+)\\]`).exec(sql)?.[1];
+    assertEquals(linha?.match(/'([^']+)'/g)?.map((x) => x.slice(1, -1)), info.campos, g);
+  }
+  const tipos = /v_ok := case v_tipo([\s\S]+?) end;/.exec(sql)?.[1]?.match(/when '([A-Z]+)'/g)?.map((x) => x.slice(6, -1));
+  assertEquals(tipos, Object.keys(TIPOS_PASSO));
 });
 
 Deno.test("PA-04: avisos, assuntos e tons do domínio são os mesmos do banco", async () => {

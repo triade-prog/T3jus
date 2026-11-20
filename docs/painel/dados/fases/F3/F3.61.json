@@ -1,0 +1,11 @@
+{
+  "id": "F3.61",
+  "texto": "Ficha do cliente: marcar e retirar \"não receber avisos\" (todos ou só cobrança), com quem pediu",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "pendente",
+  "ordem": 610,
+  "proximo": "O servidor está pronto (portal_cliente_sem_avisos e a rota /clientes/:id/sem-avisos); falta a tela na ficha, que passa pela especialista e pela Carol"
+}

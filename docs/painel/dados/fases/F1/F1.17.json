@@ -5,8 +5,8 @@
   "refs": [
     "PA-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 66,
-  "nota": "Desenho aprovado em docs/design/aprovadas/portal-conversas-automacoes (19/11/2026), com as 5 decisões do NOTAS.md. Depende de Conversas e da ligação do WhatsApp de cada escritório.",
-  "proximo": "Programar sobre Mensagens (F3.52, feito) e a ligação do WhatsApp (F3.54); depois, gatilhos de outras áreas (cliente novo, caso encerrado, documento pendente) e aprovação dos modelos na Meta. Avisos automáticos (o registro do que saiu) entra junto"
+  "nota": "Desenho aprovado em docs/design/aprovadas/portal-conversas-automacoes (19/11/2026). A pronta de parcela em atraso sai em 1, 8 e 15 dias (antes 1, 7 e 15) para caber em 1 cobrança por semana. O que falta está em F3.57 a F3.62.",
+  "evidencia": "Migration 0320 (automacoes, automacao_versoes, automacao_modelos, automacao_eventos, automacao_execucoes e clientes_sem_avisos, protegidas por escritório; o banco confere o desenho e diz o que falta por passo; só a sócia dona aprova o texto, liga e desliga; limite de 1 cobrança por semana por parcela somando todas, com opção de desligar a que conflita; texto aprovado fica fixo e o novo vai para a Meta; as 6 prontas nascem ligadas a partir dos avisos), pgTAP 032 (56 testes), rotas /v1/escritorio/automacoes na api-portal com simulação sem enviar e quem entraria hoje (2 testes Deno novos), simulação e limites de horário em packages/domain/src/automacoes.ts (11 testes), tela em packages/ui/src/portal/Automacoes.tsx e e2e tests/e2e/portal-automacoes.spec.ts (celular e computador, com axe)."
 }

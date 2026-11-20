@@ -1,0 +1,11 @@
+{
+  "id": "F3.60",
+  "texto": "Automações: quem entraria hoje para os gatilhos do Jurídico e da Agenda (etapa do caso, lembrete de audiência)",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "pendente",
+  "ordem": 600,
+  "proximo": "Hoje só os gatilhos de parcela mostram a lista; a simulação já funciona para todos"
+}

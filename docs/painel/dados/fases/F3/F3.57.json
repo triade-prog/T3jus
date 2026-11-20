@@ -1,0 +1,11 @@
+{
+  "id": "F3.57",
+  "texto": "Automações: a IA que monta o fluxo a partir de um pedido e sugere passos (tracejados, aplicar ou recusar)",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "pendente",
+  "ordem": 570,
+  "proximo": "Vem com a IA que atende (F3.53); hoje a janela Pedir à IA diz que está em preparo e oferece montar do zero"
+}

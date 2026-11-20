@@ -18,7 +18,9 @@ import {
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
-  ajustarAvisoSchema, conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
+  ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
+  semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, type DadosSimulacao, type ListaAutomacoes, type PaginaAutomacao,
+  conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
@@ -450,6 +452,67 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.patch("/v1/escritorio/ia/respostas/:id", async (c) => {
     const d = await lerCorpo(c, situacaoRespostaSchema);
     return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_resposta_situacao", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_situacao: d.situacao }));
+  });
+
+  // ------------------------------------------------------------------ Conversas › Automações (PA-03)
+  // Cada pessoa vê as automações das suas áreas; só a sócia dona aprova o texto, liga e desliga.
+
+  app.get("/v1/escritorio/automacoes", async (c) => c.json(await deps.banco.rpc<ListaAutomacoes>("portal_automacoes", quem(c))));
+
+  app.post("/v1/escritorio/automacoes", async (c) => {
+    const d = await lerCorpo(c, criarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/automacoes/:id", async (c) =>
+    c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.patch("/v1/escritorio/automacoes/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, salvarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_salvar", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/aprovar-texto", async (c) => {
+    const d = await lerCorpo(c, aprovarTextoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_aprovar_texto", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_passo: d.passo }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/ligar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, ligarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_ligar", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/desligar", async (c) => {
+    const d = await lerCorpo(c, desligarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_desligar", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/sugerir-mudanca", async (c) => {
+    const d = await lerCorpo(c, sugerirMudancaSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_sugerir", { ...quem(c), p_id: idDaRota(c, "id"), p_texto: d.texto }));
+  });
+
+  app.get("/v1/escritorio/automacoes/:id/quem-entraria", async (c) =>
+    c.json(await deps.banco.rpc("portal_automacao_quem_entraria", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.get("/v1/escritorio/automacoes/:id/execucoes", async (c) => {
+    const sit = c.req.query("situacao") || null;
+    if (sit && !["AGENDADA", "EM_ANDAMENTO", "CONCLUIDA", "FALHOU", "FICOU_DE_FORA"].includes(sit)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["situacao"] });
+    const antes = c.req.query("antes") || null;
+    if (antes && Number.isNaN(Date.parse(antes))) throw new ErroDominio("VALIDATION_ERROR", { campos: ["antes"] });
+    return c.json(await deps.banco.rpc("portal_automacao_execucoes", { ...quem(c), p_id: idDaRota(c, "id"), p_situacao: sit, p_antes: antes }));
+  });
+
+  // Simular sem enviar: o banco entrega só o que a pessoa pode ver; o caminho e a conversa saem aqui.
+  app.post("/v1/escritorio/automacoes/:id/simular", async (c) => {
+    const d = await lerCorpo(c, simularAutomacaoSchema);
+    const dados = await deps.banco.rpc<DadosSimulacao>("portal_automacao_simulacao", { ...quem(c), p_id: idDaRota(c, "id"), p_parcela: d.parcelaId ?? null });
+    return c.json(simularFluxo(dados, d.escolha));
+  });
+
+  app.post("/v1/escritorio/clientes/:id/sem-avisos", async (c) => {
+    const d = await lerCorpo(c, semAvisosSchema);
+    return c.json(await deps.banco.rpc("portal_cliente_sem_avisos", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d }));
   });
 
   // ------------------------------------------------------------------ Comercial (AP-02 a AP-06)

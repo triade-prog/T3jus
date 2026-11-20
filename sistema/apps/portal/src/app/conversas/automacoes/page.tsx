@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { ConversasEmPreparo } from "@t3jus/ui";
+import { AutomacoesPortal } from "@t3jus/ui";
 
-// Automações (desenho aprovado); entra com a próxima parte de Conversas.
+// Conversas › Automações (PA-03), desenho aprovado em docs/design/aprovadas/portal-conversas-automacoes.
 export const metadata: Metadata = { title: "Automações" };
 
 export default function Pagina() {
-  return <ConversasEmPreparo secao="automacoes" />;
+  return <AutomacoesPortal />;
 }
