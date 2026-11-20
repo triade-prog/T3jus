@@ -1,11 +1,11 @@
 {
   "id": "F3.57",
-  "texto": "Automações: a IA que monta o fluxo a partir de um pedido e sugere passos (tracejados, aplicar ou recusar)",
+  "texto": "Aviso no sino ao responsável quando a IA passa uma conversa, quando alguém assume uma conversa que era dele ou quando ela é passada para ele",
   "peca": "B3",
   "refs": [
-    "PA-03"
+    "PD-07"
   ],
   "status": "pendente",
   "ordem": 570,
-  "proximo": "Vem com a IA que atende (F3.53); hoje a janela Pedir à IA diz que está em preparo e oferece montar do zero"
+  "proximo": "Vem com o sino de avisos do Portal (o mesmo de F3.38); a troca já fica registrada na conversa"
 }

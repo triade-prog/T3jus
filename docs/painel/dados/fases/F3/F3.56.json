@@ -1,11 +1,11 @@
 {
   "id": "F3.56",
-  "texto": "Ligação real com a Meta: o cadastro do T3jus como parceiro (Cadastro Incorporado), a janela da Meta no passo 2, a troca do código pelo token guardado no cofre, os avisos da Meta pelo webhook com a assinatura conferida, e trocar o número",
-  "peca": "B3",
+  "texto": "Importar de outros sistemas (ADVBOX, Astrea e outros) direto, além da planilha",
+  "peca": "S7",
   "refs": [
-    "PA-04"
+    "VA-05"
   ],
   "status": "pendente",
   "ordem": 560,
-  "proximo": "Registrar o T3jus como parceiro de tecnologia na Meta (dependência externa); depois ligar a janela ao serviço, que chama whatsapp_meta_ligou e whatsapp_meta_evento (já prontas e testadas)"
+  "nota": "Decisão da Carol (20/11/2026): fica para depois; por enquanto a planilha exportada desses sistemas entra pela importação de planilha"
 }

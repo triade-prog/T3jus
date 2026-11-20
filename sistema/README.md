@@ -311,7 +311,7 @@ Telas aprovadas em `docs/design/aprovadas/portal-agenda-conversas`. Migration `0
 - **Saída da pessoa (EX-10):** o gatilho `conversas_passar_de_quem_saiu` passa as conversas para quem recebeu o que era dela.
 - **API:** `GET /v1/escritorio/conversas` (`?mostrar=PRECISA|EQUIPE|IA|RESOLVIDAS&q=`), `GET /conversas/:id`, `POST /conversas/:id/assumir`, `/devolver`, `/passar` e `POST /conversas/:id/mensagens` (201).
 - **Tela:** `/conversas` (lista, conversa e contexto; no celular, uma coisa por vez), com o número de quem espera no menu. Automações e Avisos automáticos mostram "em preparo".
-- **Falta:** a IA e o envio e recebimento pelo provedor (F3.53), ligar o número em Escritório › WhatsApp e IA (F3.54), o aviso no sino (F3.55) e as automações (F1.17).
+- **Falta:** a IA e o envio e recebimento pelo provedor (F3.53), ligar o número em Escritório › WhatsApp e IA (F3.54), o aviso no sino (F3.57) e as automações (F1.17).
 
 ### Escritório › WhatsApp e IA (F3.54; PA-04, PA-02)
 
@@ -323,7 +323,7 @@ Telas aprovadas em `docs/design/aprovadas/portal-whatsapp`. Migration `0310_port
 - **Regras:** o texto do aviso não começa nem termina com campo (`CAMPO_NO_INICIO_OU_FIM`); desligar pede motivo e confirmação e pausa a IA; a IA só liga com o número ligado e depois de um teste (`SEM_TESTE`); pausar é um clique.
 - **API:** `GET /v1/escritorio/whatsapp`, `PUT /whatsapp/rascunho`, `POST /whatsapp/conferir-numero` (o número brasileiro vira E.164; fixo por SMS recusa `FIXO_SEM_SMS`), `POST /whatsapp/desligar`, `POST /whatsapp/avisos/:chave`, `GET` e `PATCH /v1/escritorio/ia`, `POST /ia/ligar`, `POST /ia/pausar`, `POST /ia/respostas` e `PATCH /ia/respostas/:id`.
 - **Tela:** `/meu-escritorio/whatsapp` (abas Número e Como a IA atende; `?ligar=1`, `?aviso=CHAVE`, `?parte=ia&ia=passar|saber|testar`). Escritório ganhou a barra de seções.
-- **Falta:** a ligação real com a Meta, o webhook e trocar o número (F3.56); Testar sem enviar e a IA que responde (F3.53).
+- **Falta:** a ligação real com a Meta, o webhook e trocar o número (F3.58); Testar sem enviar e a IA que responde (F3.53).
 
 ### Conversas › Automações (F1.17; PA-03)
 
@@ -336,7 +336,7 @@ Telas aprovadas em `docs/design/aprovadas/portal-conversas-automacoes`. Migratio
 - **Prontas:** `automacoes_garantir` cria as 6 a partir dos avisos, ligadas na versão 1. A de parcela em atraso sai em 1, 8 e 15 dias.
 - **API:** `GET` e `POST /v1/escritorio/automacoes`, `GET` e `PATCH /automacoes/:id`, `POST /:id/aprovar-texto`, `/:id/ligar`, `/:id/desligar`, `/:id/sugerir-mudanca`, `/:id/simular` (roda `simularFluxo` sobre os dados do banco, nada é enviado), `GET /:id/quem-entraria`, `GET /:id/execucoes` e `POST /v1/escritorio/clientes/:id/sem-avisos`.
 - **Tela:** `/conversas/automacoes` (lista) e `?a=<id>&passo=montar|testar|ligar|historico&b=<passo>` (editor).
-- **Falta:** a IA que monta o fluxo (F3.57), o motor que envia (F3.58), mandar os textos à Meta (F3.59), quem entraria nos gatilhos do Jurídico (F3.60), "não receber avisos" na ficha (F3.61), Avisos automáticos e a edição no celular (F3.62).
+- **Falta:** a IA que monta o fluxo (F3.59), o motor que envia (F3.60), mandar os textos à Meta (F3.61), quem entraria nos gatilhos do Jurídico (F3.62), "não receber avisos" na ficha (F3.63), Avisos automáticos e a edição no celular (F3.64).
 
 ### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 

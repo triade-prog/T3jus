@@ -12,7 +12,7 @@
 -- O fluxo é um jsonb conferido aqui contra o catálogo de passos e os campos de cada gatilho.
 -- Nada é apagado: as versões ligadas, os textos aprovados, os eventos e as execuções só se
 -- acrescentam. O que vem depois: a IA que sugere o fluxo (depende da IA, F3.53), o envio dos
--- textos à Meta (F3.56) e o motor que roda as execuções; as peças de serviço já ficam aqui.
+-- textos à Meta (F3.58) e o motor que roda as execuções; as peças de serviço já ficam aqui.
 
 -- ---------------------------------------------------------------------------------------
 -- Catálogo.
@@ -996,7 +996,7 @@ begin
   select coalesce(array_agg(m.id), '{}') into v_novos from automacao_modelos m
    where m.id = any (automacao_modelos_do_fluxo(a.rascunho)) and m.meta_situacao <> 'APROVADO';
   if cardinality(v_novos) > 0 then
-    -- O envio à Meta é do serviço do WhatsApp (F3.56): o texto fica em análise até a resposta.
+    -- O envio à Meta é do serviço do WhatsApp (F3.58): o texto fica em análise até a resposta.
     update automacao_modelos set meta_situacao = 'EM_ANALISE', meta_em = app_now(), meta_motivo = null
      where id = any (v_novos) and meta_situacao <> 'EM_ANALISE';
     update automacoes set situacao = 'EM_APROVACAO', versao_aguardando = v_numero, aguardando_desde = app_now(),

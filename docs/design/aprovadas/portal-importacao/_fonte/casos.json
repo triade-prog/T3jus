@@ -1,0 +1,142 @@
+[
+ {
+  "nome": "clientes-vazio",
+  "url": "importacao.html?estado=clientes-vazio",
+  "alto": 0,
+  "titulo": "Clientes de um escritório novo",
+  "legenda": "A lista vazia oferece as duas saídas: importar a planilha (principal) ou cadastrar um por um. Embaixo, o atalho para a planilha-modelo."
+ },
+ {
+  "nome": "clientes-lista",
+  "url": "importacao.html?estado=clientes-lista",
+  "alto": 0,
+  "titulo": "Clientes com o botão Importar planilha",
+  "legenda": "A lista aprovada, sem mudança, com “Importar planilha” ao lado de “Novo cliente” e, no pé, o caminho para o histórico das importações."
+ },
+ {
+  "nome": "contratos-lista",
+  "url": "importacao.html?estado=contratos-lista",
+  "alto": 0,
+  "titulo": "Contratos com o botão Importar planilha",
+  "legenda": "A lista aprovada de Contratos ganha o mesmo botão. Ele abre o mesmo fluxo, já com “Clientes e contratos” marcado."
+ },
+ {
+  "nome": "enviar",
+  "url": "importacao.html?estado=enviar",
+  "alto": 0,
+  "titulo": "Enviar a planilha",
+  "legenda": "Só clientes, ou clientes e contratos. A planilha-modelo para baixar, o espaço para soltar o arquivo, os limites (.xlsx ou .csv, 5 MB, 2.000 linhas) e o aviso LGPD. Ao lado: como funciona, quem pode importar e as importações anteriores."
+ },
+ {
+  "nome": "modelo",
+  "url": "importacao.html?estado=modelo",
+  "alto": 1300,
+  "titulo": "As colunas da planilha-modelo",
+  "legenda": "Janela com cada coluna, se é obrigatória e um exemplo. Uma linha por contrato; quatro dos sete tipos de honorário vêm da planilha."
+ },
+ {
+  "nome": "lendo",
+  "url": "importacao.html?estado=lendo",
+  "alto": 0,
+  "titulo": "Lendo a planilha",
+  "legenda": "O arquivo enviado e a leitura em andamento (96 de 148 linhas), com Cancelar e apagar o arquivo."
+ },
+ {
+  "nome": "arquivo-erro",
+  "url": "importacao.html?estado=arquivo-erro",
+  "alto": 0,
+  "titulo": "Arquivo que não é planilha",
+  "legenda": "Um PDF no lugar da planilha: o erro diz como baixar em .xlsx no Google Planilhas. Ao lado, as mensagens dos outros problemas: vazia, grande demais, com senha e sem os nomes das colunas."
+ },
+ {
+  "nome": "enviar-sem-contratos",
+  "url": "importacao.html?estado=enviar-sem-contratos",
+  "alto": 0,
+  "titulo": "Quem não tem a área Contratos (Paula)",
+  "legenda": "Paula importa só clientes. A linha diz que as colunas de contrato e de origem ficam de fora e quem libera."
+ },
+ {
+  "nome": "colunas",
+  "url": "importacao.html?estado=colunas",
+  "alto": 1500,
+  "titulo": "Ligar as colunas",
+  "legenda": "A aba da planilha, as 11 colunas do cliente e as 9 do contrato, cada uma com “Vai para” e como foi ligada. Embaixo, os valores que viram itens das listas (“Dra. Marina” vira Marina Ribeiro; “Dr. Paulo”, que saiu, vai para quem você escolher). Ao lado, o que é obrigatório."
+ },
+ {
+  "nome": "colunas-erro",
+  "url": "importacao.html?estado=colunas-erro",
+  "alto": 1500,
+  "titulo": "Campo obrigatório sem coluna",
+  "legenda": "Telefone, e-mail e tipo de honorário ficaram como “Não importar”: resumo no topo com links, erro preso a cada coluna e a lista de obrigatórios marcando o que falta. O botão “Ver a prévia” não fica desabilitado."
+ },
+ {
+  "nome": "previa",
+  "url": "importacao.html?estado=previa",
+  "alto": 0,
+  "titulo": "A prévia",
+  "legenda": "Os quatro números (lidas, prontas, com aviso, com erro) são também filtros. Cada linha mostra o cliente, o contrato, o que gera no Financeiro e a situação. Ao lado, o que vai entrar e o botão “Importar 131 linhas prontas”, que explica o que fica de fora."
+ },
+ {
+  "nome": "previa-erros",
+  "url": "importacao.html?estado=previa-erros",
+  "alto": 0,
+  "titulo": "Linhas com erro: corrigir na prévia",
+  "legenda": "A linha 4 aberta para corrigir o CPF com dígito errado, ou pular. Outras: sem telefone e sem e-mail, data que não existe (31/02) e valor com a letra O no lugar do zero."
+ },
+ {
+  "nome": "previa-duplicado",
+  "url": "importacao.html?estado=previa-duplicado",
+  "alto": 0,
+  "titulo": "Linhas com aviso: possível duplicado",
+  "legenda": "A linha 3 tem o CPF de Antônia, já cadastrada: a comparação campo a campo e as três saídas (juntar, criar outro, pular). Juntar só preenche o que está vazio. Há “Juntar as 6” e outros avisos: telefone de outro cliente, sem data da assinatura, estado civil fora da lista."
+ },
+ {
+  "nome": "previa-contrato",
+  "url": "importacao.html?estado=previa-contrato",
+  "alto": 0,
+  "titulo": "O que um contrato gera",
+  "legenda": "A linha 7 aberta: R$ 5.000,00 em 3 parcelas (2 de R$ 1.666,67 e 1 de R$ 1.666,66), a já paga como informação, a vencida entrando em atraso e a soma que fecha no total."
+ },
+ {
+  "nome": "confirmar",
+  "url": "importacao.html?estado=confirmar",
+  "alto": 1000,
+  "titulo": "Confirmar a importação",
+  "legenda": "A janela resume as 142 linhas que entram (clientes, contratos, parcelas e valor) e as 6 que ficam de fora, diz que entra tudo ou nada, que o arquivo é apagado e até quando dá para desfazer."
+ },
+ {
+  "nome": "importando",
+  "url": "importacao.html?estado=importando",
+  "alto": 0,
+  "titulo": "Importando",
+  "legenda": "A barra de progresso, “ou entra tudo ou nada” e “pode sair desta página, avisamos no sino”."
+ },
+ {
+  "nome": "importar-erro",
+  "url": "importacao.html?estado=importar-erro",
+  "alto": 0,
+  "titulo": "A importação falhou",
+  "legenda": "O servidor desfez tudo: nada entrou. A prévia continua guardada; código para o suporte."
+ },
+ {
+  "nome": "resultado",
+  "url": "importacao.html?estado=resultado",
+  "alto": 0,
+  "titulo": "Importação concluída",
+  "legenda": "142 entraram e 6 ficaram de fora. Links para os clientes, os cadastros completados, os contratos e A receber. A planilha com as 6 linhas e o motivo. O aviso de que o arquivo foi apagado e o caminho para desfazer."
+ },
+ {
+  "nome": "importacoes",
+  "url": "importacao.html?estado=importacoes",
+  "alto": 0,
+  "titulo": "Histórico das importações",
+  "legenda": "Cada importação com arquivo, quem, quando, o que entrou e a situação: concluída, com prazo de desfazer, ou desfeita com quem, quando e o motivo."
+ },
+ {
+  "nome": "desfazer",
+  "url": "importacao.html?estado=desfazer",
+  "alto": 1100,
+  "titulo": "Desfazer a importação",
+  "legenda": "Janela de alerta com motivo obrigatório: clientes inativados, cadastros completados voltando ao que eram, contratos encerrados e parcelas canceladas. O que alguém já mexeu depois fica como está."
+ }
+]

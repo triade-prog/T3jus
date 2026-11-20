@@ -1,11 +1,11 @@
 {
   "id": "F3.62",
-  "texto": "Avisos automáticos: o registro do que saiu, com a entrega e o que disparou; e adicionar, mover e apagar passos no celular",
+  "texto": "Automações: quem entraria hoje para os gatilhos do Jurídico e da Agenda (etapa do caso, lembrete de audiência)",
   "peca": "B3",
   "refs": [
     "PA-03"
   ],
   "status": "pendente",
   "ordem": 620,
-  "proximo": "Avisos automáticos depende do motor (F3.58); a edição no celular precisa de desenho próprio"
+  "proximo": "Hoje só os gatilhos de parcela mostram a lista; a simulação já funciona para todos"
 }

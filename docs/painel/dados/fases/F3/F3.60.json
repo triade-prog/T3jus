@@ -1,11 +1,11 @@
 {
   "id": "F3.60",
-  "texto": "Automações: quem entraria hoje para os gatilhos do Jurídico e da Agenda (etapa do caso, lembrete de audiência)",
+  "texto": "Automações: o motor que roda as execuções (gatilhos do Financeiro e da Agenda, esperas, caminhos, IA e passagem), com 8h às 20h em dia útil e 1 cobrança por semana conferidos na hora do envio",
   "peca": "B3",
   "refs": [
     "PA-03"
   ],
   "status": "pendente",
   "ordem": 600,
-  "proximo": "Hoje só os gatilhos de parcela mostram a lista; a simulação já funciona para todos"
+  "proximo": "Agendar pela fila do servidor e enviar pelo serviço do WhatsApp (F3.53); registrar cada passo com automacao_execucao_registrar (já pronta e testada)"
 }

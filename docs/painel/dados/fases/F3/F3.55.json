@@ -1,11 +1,11 @@
 {
   "id": "F3.55",
-  "texto": "Aviso no sino ao responsável quando a IA passa uma conversa, quando alguém assume uma conversa que era dele ou quando ela é passada para ele",
-  "peca": "B3",
+  "texto": "Programar a importação de planilha de clientes e contratos (desenho D10)",
+  "peca": "S7",
   "refs": [
-    "PD-07"
+    "VA-05"
   ],
   "status": "pendente",
   "ordem": 550,
-  "proximo": "Vem com o sino de avisos do Portal (o mesmo de F3.38); a troca já fica registrada na conversa"
+  "proximo": "Programar a importação de planilha seguindo docs/design/aprovadas/portal-importacao/NOTAS.md (tabelas e API descritas lá)"
 }

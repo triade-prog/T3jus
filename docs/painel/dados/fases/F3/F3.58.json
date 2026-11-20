@@ -1,11 +1,11 @@
 {
   "id": "F3.58",
-  "texto": "Automações: o motor que roda as execuções (gatilhos do Financeiro e da Agenda, esperas, caminhos, IA e passagem), com 8h às 20h em dia útil e 1 cobrança por semana conferidos na hora do envio",
+  "texto": "Ligação real com a Meta: o cadastro do T3jus como parceiro (Cadastro Incorporado), a janela da Meta no passo 2, a troca do código pelo token guardado no cofre, os avisos da Meta pelo webhook com a assinatura conferida, e trocar o número",
   "peca": "B3",
   "refs": [
-    "PA-03"
+    "PA-04"
   ],
   "status": "pendente",
   "ordem": 580,
-  "proximo": "Agendar pela fila do servidor e enviar pelo serviço do WhatsApp (F3.53); registrar cada passo com automacao_execucao_registrar (já pronta e testada)"
+  "proximo": "Registrar o T3jus como parceiro de tecnologia na Meta (dependência externa); depois ligar a janela ao serviço, que chama whatsapp_meta_ligou e whatsapp_meta_evento (já prontas e testadas)"
 }

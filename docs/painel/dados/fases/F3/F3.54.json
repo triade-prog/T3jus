@@ -8,5 +8,5 @@
   "status": "feito",
   "ordem": 540,
   "evidencia": "Migration 0310 (número com a saúde e sem token, rascunho do assistente, histórico do número só de acréscimo, os 6 avisos e a situação na Meta, configuração da IA com versões, respostas sugeridas e publicadas, perguntas sem resposta; peças do serviço whatsapp_meta_ligou e whatsapp_meta_evento), pgTAP 031 (49 testes), rotas /v1/escritorio/whatsapp e /v1/escritorio/ia na api-portal (2 testes Deno novos), e2e tests/e2e/portal-whatsapp.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-whatsapp.",
-  "nota": "A janela da Meta e a troca do código pelo token dependem do cadastro do T3jus como parceiro na Meta (F3.56); até lá, o passo 2 leva à ligação com a equipe T3jus. Testar sem enviar vem com a IA (F3.53)."
+  "nota": "A janela da Meta e a troca do código pelo token dependem do cadastro do T3jus como parceiro na Meta (F3.58); até lá, o passo 2 leva à ligação com a equipe T3jus. Testar sem enviar vem com a IA (F3.53)."
 }
