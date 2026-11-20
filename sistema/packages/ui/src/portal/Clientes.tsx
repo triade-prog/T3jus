@@ -11,6 +11,7 @@ import { formatarTelefone } from "../console/ficha.ts";
 import { Carregando, ErroAoCarregar, Estado } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { dataBr, rotuloProx } from "./clientes.ts";
+import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
 
 export type FiltroClientes = "ativos" | "inativos" | "vencidos";
@@ -92,7 +93,9 @@ function Prox({ c, hoje }: { c: ClienteLinha; hoje: string }) {
 
 const vencido = (c: ClienteLinha) => c.situacao === "ATIVO" && !!c.proxContato?.vencido;
 
-export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos" }: { termoInicial?: string; filtroInicial?: FiltroClientes }) {
+export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos", importacao, juntados = false }: {
+  termoInicial?: string; filtroInicial?: FiltroClientes; importacao?: string; juntados?: boolean;
+}) {
   const ids = useId();
   const { escritorio, erro: erroEscritorio, recarregar } = useEscritorioPortal();
   const [termo, setTermo] = useState(termoInicial);
@@ -102,6 +105,8 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
   const [inativos, setInativos] = useState<ClienteLinha[] | null>(null);
   const [achados, setAchados] = useState<ClienteLinha[] | null>(null);
   const [erro, setErro] = useState(false);
+  // O filtro "Desta importação" (F3.55): os clientes que vieram de uma planilha.
+  const [daImportacao, setDaImportacao] = useState<(ListaClientes & { importacao: { id: string; arquivo: string; em: string } }) | null>(null);
   const busca = useRef<HTMLInputElement>(null);
   const hoje = hojeBrasilia();
 
@@ -114,7 +119,13 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
     if (!a.ok || !i.ok) return setErro(true);
     setAtivos(a.dados);
     setInativos(i.dados.clientes);
-  }, []);
+    if (importacao) {
+      const d = await chamarPortal<ListaClientes & { importacao: { id: string; arquivo: string; em: string } }>(
+        `/v1/escritorio/importacoes/${encodeURIComponent(importacao)}/clientes${juntados ? "?juntados=1" : ""}`);
+      if (!d.ok) return setErro(true);
+      setDaImportacao(d.dados);
+    }
+  }, [importacao, juntados]);
 
   useEffect(() => {
     void Promise.resolve().then(() => carregar());
@@ -156,6 +167,8 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
   const vencidos = useMemo(() => (ativos?.clientes ?? []).filter(vencido), [ativos]);
   const lista: ClienteLinha[] | null = buscado
     ? achados
+    : importacao
+      ? daImportacao?.clientes ?? null
     : !ativos || !inativos
       ? null
       : filtro === "inativos"
@@ -168,6 +181,13 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
   let contagem: ReactNode = null;
   if (lista && lista.length) {
     if (buscado) contagem = <><b>{plural(lista.length, "cliente", "clientes")}</b> para “{buscado}”{/\d/.test(buscado) ? "" : ", no nome ou em um contato"}</>;
+    else if (importacao && daImportacao) contagem = (
+      <>
+        <b>{plural(lista.length, juntados ? "cadastro completado" : "cliente", juntados ? "cadastros completados" : "clientes")}</b>
+        {` ${juntados ? "pela" : "da"} importação de ${daImportacao.importacao.arquivo}. `}
+        <a href={ROTAS_PORTAL.clientes}>Ver todos os clientes</a>
+      </>
+    );
     else if (filtro === "inativos") {
       const exc = lista.filter((c) => c.situacao === "EXCLUIDO").length;
       contagem = exc ? (
@@ -378,10 +398,16 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                 : "Quem o escritório atende: contatos, qualificação para procuração e contrato, origem e histórico de atendimento. Todos da equipe veem esta lista."}
             </p>
           </div>
-          <a data-muda className="btn btn-escuro" href={`${ROTAS_PORTAL.clientes}/novo`} style={{ marginBottom: 6 }}>
-            <Icone nome="pessoaMais" className="ico" />
-            Novo cliente
-          </a>
+          <div className="im-cab-acoes">
+            <a className="btn btn-sec" href={ROTAS_IMPORTACAO.enviar}>
+              <Icone nome="enviar" className="ico" />
+              Importar planilha
+            </a>
+            <a data-muda className="btn btn-escuro" href={`${ROTAS_PORTAL.clientes}/novo`}>
+              <Icone nome="pessoaMais" className="ico" />
+              Novo cliente
+            </a>
+          </div>
         </div>
 
         {erro ? (
@@ -397,13 +423,23 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
             </h2>
             <Estado icone="pessoas" titulo="Nenhum cliente cadastrado ainda"
               acoes={
-                <a data-muda className="btn btn-pri" href={`${ROTAS_PORTAL.clientes}/novo`}>
-                  <Icone nome="pessoaMais" className="ico" />
-                  Cadastrar o primeiro cliente
-                </a>
+                <>
+                  <a className="btn btn-pri" href={ROTAS_IMPORTACAO.enviar}>
+                    <Icone nome="enviar" className="ico" />
+                    Importar planilha
+                  </a>
+                  <a data-muda className="btn btn-sec" href={`${ROTAS_PORTAL.clientes}/novo`}>
+                    <Icone nome="pessoaMais" className="ico" />
+                    Cadastrar o primeiro cliente
+                  </a>
+                </>
               }>
-              Comece pelo nome e um telefone ou e-mail. A qualificação para a procuração pode ficar para depois, e a ficha mostra o que falta.
+              Se os clientes já estão numa planilha do Excel ou do Google Planilhas, importe todos de uma vez: você confere tudo numa prévia antes de salvar. Ou cadastre um por um.
             </Estado>
+            <p className="pt-pe-folha">
+              <Icone nome="doc" className="ico" />
+              <span>Não sabe por onde começar? Baixe a <a href={ROTAS_IMPORTACAO.modelo}>planilha-modelo</a>, cole os seus clientes e envie.</span>
+            </p>
           </section>
         ) : (
           <section className="folha" aria-labelledby={`${ids}-t`} style={{ overflow: "hidden" }}>
@@ -447,6 +483,10 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
               </Estado>
             )}
             {peSemComercial}
+            <p className="pt-pe-folha">
+              <Icone nome="historico" className="ico" />
+              <span>Clientes que vieram de planilha dizem isso na ficha. <a href={ROTAS_IMPORTACAO.historico}>Ver as importações</a></span>
+            </p>
           </section>
         )}
       </div>

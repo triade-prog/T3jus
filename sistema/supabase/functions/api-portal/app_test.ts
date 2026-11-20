@@ -82,6 +82,8 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
       return { periodo: { de: a.p_de, ate: a.p_ate, comparar: a.p_comparar ?? "anterior" } };
     },
+    portal_importacao_criar: (a) => ({ id: CLIENTE, ...(a.p_dados as object) }),
+    portal_importacao_linha: (a) => ({ linha: { numero: a.p_numero }, dados: a.p_dados }),
     portal_relatorio_cliente: (a) => ({ cliente: { id: a.p_cliente } }),
     portal_relatorio_exportar: (a) => ({ formato: (a.p_dados as { formato: string }).formato }),
     portal_inicio_resumo: () => ({ areas: ["JURIDICO"], dono: false, pedem: { JURIDICO: 2 }, total: 2, compromissos: 0, proximoCompromisso: null }),
@@ -704,6 +706,23 @@ Deno.test("F3.70: os relatórios do sócio levam o período ao banco, conferem a
   const n = montar({ naoDono: true });
   const e = await n.pedir("/v1/escritorio/financeiro/relatorios/resumo", { cookie: await noEscritorio(n) });
   assertEquals([e.status, (await erro(e)).detalhes?.motivo], [403, "SO_SOCIO_DONO"]);
+});
+
+Deno.test("F3.55: a planilha é lida na API e ao banco vão só as células; arquivo ruim volta com o motivo", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const csv = new TextEncoder().encode("Nome;CPF\nRosa Almeida;529.982.247-25\n");
+  const r = await m.pedir("/v1/escritorio/importacoes?oQue=CLIENTES&nome=clientes.csv", { bruto: csv, cookie });
+  assertEquals(r.status, 201);
+  assertEquals((await r.json()).abas, [{ nome: "clientes", colunas: ["Nome", "CPF"], linhas: [["Rosa Almeida", "529.982.247-25"]] }]);
+  const pdf = await m.pedir("/v1/escritorio/importacoes?oQue=CLIENTES&nome=contrato.pdf", { bruto: new TextEncoder().encode("%PDF-1.7"), cookie });
+  assertEquals([pdf.status, (await erro(pdf)).detalhes?.motivo], [400, "ARQUIVO_FORMATO"]);
+  const sem = await m.pedir("/v1/escritorio/importacoes?oQue=TUDO&nome=a.csv", { bruto: csv, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["oQue"]);
+  const linha = await m.pedir(`/v1/escritorio/importacoes/${CLIENTE}/linhas/4`, { metodo: "PATCH", corpo: { campos: { documento: "" }, decisao: "PULAR" }, cookie });
+  const lj = await linha.json(); assertEquals(lj.linha?.numero, 4, JSON.stringify(lj));
+  const ruim = await m.pedir(`/v1/escritorio/importacoes/${CLIENTE}/linhas/4`, { metodo: "PATCH", corpo: { campos: { senha: "x" } }, cookie });
+  assertEquals(ruim.status, 400);
 });
 
 Deno.test("F1.15: o pedido de exclusão confere data, canal e quem pediu", async () => {

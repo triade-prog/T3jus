@@ -9,5 +9,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<R
   const q = await searchParams;
   const termo = typeof q.q === "string" ? q.q.slice(0, 120) : "";
   const filtro = q.filtro === "inativos" || q.filtro === "vencidos" ? q.filtro : "ativos";
-  return <ListaClientesPortal termoInicial={termo} filtroInicial={filtro} />;
+  // ?importacao=…: só os clientes que vieram de uma planilha (F3.55); &juntados=1: os completados.
+  const importacao = typeof q.importacao === "string" && /^[0-9a-f-]{36}$/i.test(q.importacao) ? q.importacao : undefined;
+  return <ListaClientesPortal termoInicial={termo} filtroInicial={filtro} importacao={importacao} juntados={q.juntados === "1"} />;
 }

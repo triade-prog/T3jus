@@ -1,0 +1,11 @@
+{
+  "data": "20/11/2026",
+  "inicio": "09:45",
+  "fim": "10:10",
+  "texto": "Importar planilha programado: clientes e contratos de um .xlsx ou .csv, com ligação das colunas, prévia com correção e decisões, importar tudo ou nada, resultado, histórico e desfazer em 7 dias; as parcelas pagas antes ficam para a ficha do contrato (F3.73).",
+  "refs": [
+    "F3.55",
+    "F3.73",
+    "VA-05"
+  ]
+}

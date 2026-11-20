@@ -23,6 +23,9 @@ import {
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
+  colunasImportacaoSchema, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema,
+  LIMITE_ARQUIVO_BYTES, lerPlanilha, ligacaoImportacaoSchema, linhaImportacaoSchema, type Importacao, type LinhaPrevia, type LinhasFora,
+  type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
   type RelatorioResponsaveis, type ResumoRelatorio,
   deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio,
@@ -854,6 +857,90 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/financeiro/exportacoes", async (c) => {
     const d = await lerCorpo(c, exportarSchema);
     return c.json(await deps.banco.rpc<DadosExportacao>("portal_financeiro_exportar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  // Importar planilha (F3.55, VA-05). O arquivo chega como corpo binário e é lido aqui, na
+  // memória: ao banco vão só as células. Nada entra no cadastro antes de importar.
+  app.post("/v1/escritorio/importacoes", async (c) => {
+    const q = enviarImportacaoSchema.safeParse({ oQue: c.req.query("oQue"), nome: c.req.query("nome") });
+    if (!q.success) throw new ErroDominio("VALIDATION_ERROR", { campos: q.error.issues.map((i) => String(i.path[0])) });
+    const tamanho = Number(c.req.header("content-length") ?? 0);
+    if (tamanho > LIMITE_ARQUIVO_BYTES) throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_GRANDE" });
+    const bytes = new Uint8Array(await c.req.arrayBuffer());
+    let abas;
+    try {
+      abas = await lerPlanilha(bytes, q.data.nome);
+    } catch (e) {
+      if (e instanceof ErroArquivo) throw new ErroDominio("VALIDATION_ERROR", { motivo: e.motivo });
+      throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_FORMATO" });
+    }
+    const r = await deps.banco.rpc<Importacao>("portal_importacao_criar", {
+      ...quem(c), p_dados: { arquivoNome: q.data.nome, oQue: q.data.oQue, abas },
+    });
+    return c.json(r, 201);
+  });
+  app.get("/v1/escritorio/importacoes", async (c) => {
+    return c.json({ importacoes: await deps.banco.rpc<Importacao[]>("portal_importacoes", quem(c)) });
+  });
+  app.get("/v1/escritorio/importacoes/:id", async (c) => {
+    return c.json(await deps.banco.rpc<Importacao>("portal_importacao", { ...quem(c), p_importacao: idDaRota(c, "id") }));
+  });
+  app.post("/v1/escritorio/importacoes/:id/pares", async (c) => {
+    const d = await lerCorpo(c, ligacaoImportacaoSchema);
+    return c.json(await deps.banco.rpc<ParesImportacao>("portal_importacao_pares", { ...quem(c), p_importacao: idDaRota(c, "id"), p_dados: d }));
+  });
+  app.patch("/v1/escritorio/importacoes/:id/colunas", async (c) => {
+    const d = await lerCorpo(c, colunasImportacaoSchema);
+    return c.json(await deps.banco.rpc<ResumoPrevia & { versao: number }>("portal_importacao_colunas", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao, p_dados: { aba: d.aba, ligacao: d.ligacao, pares: d.pares ?? {} },
+    }));
+  });
+  app.get("/v1/escritorio/importacoes/:id/linhas", async (c) => {
+    const r = filtroLinhasSchema.safeParse({ situacao: c.req.query("situacao") || undefined, q: c.req.query("q") || undefined, desde: c.req.query("desde") || undefined });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: r.error.issues.map((i) => String(i.path[0])) });
+    return c.json(await deps.banco.rpc<PreviaImportacao>("portal_importacao_linhas", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_situacao: r.data.situacao ?? null, p_q: r.data.q ?? null, p_desde: r.data.desde ?? 0,
+    }));
+  });
+  app.patch("/v1/escritorio/importacoes/:id/linhas/:n", async (c) => {
+    const n = Number(c.req.param("n"));
+    if (!Number.isInteger(n) || n < 2 || n > 2001) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, linhaImportacaoSchema);
+    return c.json(await deps.banco.rpc<ResumoPrevia & { linha: LinhaPrevia; versao: number }>("portal_importacao_linha", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_numero: n, p_dados: d,
+    }));
+  });
+  app.post("/v1/escritorio/importacoes/:id/decisoes", async (c) => {
+    const d = await lerCorpo(c, decidirImportacaoSchema);
+    return c.json(await deps.banco.rpc<ResumoPrevia & { decididas: number }>("portal_importacao_decidir", { ...quem(c), p_importacao: idDaRota(c, "id"), p_dados: d }));
+  });
+  app.post("/v1/escritorio/importacoes/:id/cancelar", async (c) => {
+    await deps.banco.rpc("portal_importacao_cancelar", { ...quem(c), p_importacao: idDaRota(c, "id") });
+    return c.json({ ok: true });
+  });
+  app.post("/v1/escritorio/importacoes/:id/importar", async (c) => {
+    const d = await lerCorpo(c, importarSchema);
+    return c.json(await deps.banco.rpc<Importacao>("portal_importacao_importar", { ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao }));
+  });
+  app.get("/v1/escritorio/importacoes/:id/desfazer", async (c) => {
+    return c.json(await deps.banco.rpc<PlanoDesfazer>("portal_importacao_plano_desfazer", { ...quem(c), p_importacao: idDaRota(c, "id") }));
+  });
+  app.post("/v1/escritorio/importacoes/:id/desfazer", async (c) => {
+    const d = await lerCorpo(c, desfazerImportacaoSchema);
+    return c.json(await deps.banco.rpc<Importacao & { feito: PlanoDesfazer }>("portal_importacao_desfazer", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_motivo: d.motivo,
+    }));
+  });
+  app.get("/v1/escritorio/importacoes/:id/fora", async (c) => {
+    return c.json(await deps.banco.rpc<LinhasFora>("portal_importacao_fora", { ...quem(c), p_importacao: idDaRota(c, "id") }));
+  });
+  app.get("/v1/escritorio/importacoes/:id/clientes", async (c) => {
+    return c.json(await deps.banco.rpc<ListaClientes>("portal_clientes_da_importacao", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_juntados: c.req.query("juntados") === "1",
+    }));
+  });
+  app.get("/v1/escritorio/importacoes/:id/origem", async (c) => {
+    return c.json({ origem: await deps.banco.rpc<OrigemImportacao | null>("portal_importacao_origem", { ...quem(c), p_importacao: idDaRota(c, "id") }) });
   });
 
   // Relatórios do sócio (F3.70, IN-15): só a sócia dona; o período vem na consulta e o banco

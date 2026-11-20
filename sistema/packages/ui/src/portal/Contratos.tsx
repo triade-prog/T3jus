@@ -22,16 +22,23 @@ import { centavos as lerCentavos } from "./honorarios.ts";
 import { ROTAS_COMERCIAL } from "./comercial.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { chamarPortal } from "./Moldura.tsx";
+import { ROTAS_IMPORTACAO } from "./importacao.ts";
 
 function CabContratos() {
   return (
     <CabAmbar sobre="Contratos de honorários" titulo="Contratos"
       lede="Cada contrato liga o cliente aos casos, diz quem responde por ele e o que se combinou de honorários. Das condições sai a programação dos recebimentos que o Financeiro acompanha."
       acao={
-        <a data-muda className="btn btn-escuro" href={ROTAS_CONTRATOS.novo} style={{ marginBottom: 6 }}>
-          <Icone nome="mais" className="ico" />
-          Novo contrato
-        </a>
+        <div className="im-cab-acoes">
+          <a data-muda className="btn btn-sec" href={ROTAS_IMPORTACAO.enviarContratos}>
+            <Icone nome="enviar" className="ico" />
+            Importar planilha
+          </a>
+          <a data-muda className="btn btn-escuro" href={ROTAS_CONTRATOS.novo}>
+            <Icone nome="mais" className="ico" />
+            Novo contrato
+          </a>
+        </div>
       } />
   );
 }

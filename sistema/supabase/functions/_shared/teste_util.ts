@@ -165,15 +165,16 @@ export function erroBanco(codigo: string, detalhe?: unknown): never {
 }
 
 export function pedido(app: { request: (url: string, init?: RequestInit) => Response | Promise<Response> }, base: string) {
-  return async (caminho: string, opcoes: { metodo?: string; corpo?: unknown; cookie?: string; segredo?: string | null } = {}) => {
+  return async (caminho: string, opcoes: { metodo?: string; corpo?: unknown; bruto?: Uint8Array; cookie?: string; segredo?: string | null } = {}) => {
     const headers = new Headers({ "x-cliente-ip": "200.1.2.3" });
     if (opcoes.segredo !== null) headers.set("x-repasse-segredo", opcoes.segredo ?? SEGREDO);
     if (opcoes.cookie) headers.set("cookie", opcoes.cookie);
     if (opcoes.corpo !== undefined) headers.set("content-type", "application/json");
+    if (opcoes.bruto !== undefined) headers.set("content-type", "application/octet-stream");
     return await app.request(`/${base}${caminho}`, {
-      method: opcoes.metodo ?? (opcoes.corpo === undefined ? "GET" : "POST"),
+      method: opcoes.metodo ?? (opcoes.corpo === undefined && opcoes.bruto === undefined ? "GET" : "POST"),
       headers,
-      body: opcoes.corpo === undefined ? undefined : JSON.stringify(opcoes.corpo),
+      body: (opcoes.bruto?.slice() as BodyInit | undefined) ?? (opcoes.corpo === undefined ? undefined : JSON.stringify(opcoes.corpo)),
     });
   };
 }
