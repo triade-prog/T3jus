@@ -213,6 +213,10 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       aviso: null, pessoas: {}, socioDono: { id: "1", nome: "Marina Ribeiro" }, quemTemArea: null,
     }),
     portal_cliente_sem_avisos: (a) => ({ dados: a.p_dados }),
+    portal_cliente_avisos: (a) => ({ cliente: a.p_cliente }),
+    portal_avisos: () => ({ novos: 1, total: 1, itens: [] }),
+    portal_aviso_lido: (a) => ({ id: a.p_id }),
+    portal_avisos_lidos: (a) => ({ ate: a.p_ate }),
     portal_ia_salvar: (a) => {
       const d = a.p_dados as { nome?: string };
       if (d.nome && !/^assistente virtual/i.test(d.nome)) erroBanco("TC422", { campos: ["nome"], motivo: "NOME_SEM_ASSISTENTE_VIRTUAL" });
@@ -1002,6 +1006,14 @@ Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sa
   assertEquals(await (await m.pedir("/v1/escritorio/avisos-automaticos?tipo=PARCELA_ATRASO&pular=20", { cookie })).json(), { tipo: "PARCELA_ATRASO", pular: 20, limite: 20 });
   assertEquals((await erro(await m.pedir("/v1/escritorio/avisos-automaticos?pular=-1", { cookie }))).detalhes?.campos, ["pular"]);
   assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "COBRANCA", origem: "CONVERSA" }, cookie })).json()).dados.tipo, "COBRANCA");
+  // F3.63: quem pediu, como e o dia; F3.57: o sino.
+  assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { cookie })).json()).cliente, CLIENTE);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "TODOS", origem: "FICHA", canal: "FAX" }, cookie }))).detalhes?.campos, ["canal"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "TODOS", origem: "FICHA", pedidoEm: "03/11/2026" }, cookie }))).detalhes?.campos, ["pedidoEm"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/avisos", { cookie })).json()).novos, 1);
+  assertEquals((await (await m.pedir(`/v1/escritorio/avisos/${CLIENTE}/lido`, { corpo: {}, cookie })).json()).id, CLIENTE);
+  assertEquals((await (await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "2026-11-18T10:04:00.123456+00:00" }, cookie })).json()).ate, "2026-11-18T10:04:00.123456+00:00");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "ontem" }, cookie }))).detalhes?.campos, ["ate"]);
   assertEquals(m.chamadas.every((c) => !("p_escritorio" in c.args) || c.args.p_escritorio === AURORA), true);
 });
 

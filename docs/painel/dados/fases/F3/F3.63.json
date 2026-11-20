@@ -5,7 +5,7 @@
   "refs": [
     "PA-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 630,
-  "proximo": "O servidor está pronto (portal_cliente_sem_avisos e a rota /clientes/:id/sem-avisos); falta a tela na ficha, que passa pela especialista e pela Carol"
+  "evidencia": "Migration 0380 (quem pediu: o cliente, um contato ou outra pessoa; como pediu; o dia do pedido, nunca no futuro; mudar e retirar guardam o histórico; toda a equipe com Conversas registra); pgTAP 038; rota GET /v1/escritorio/clientes/:id/sem-avisos no app_test.ts; folha \"Avisos automáticos\" e selo na ficha, e2e portal-sino-avisos.spec.ts."
 }

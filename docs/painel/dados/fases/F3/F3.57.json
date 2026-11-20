@@ -5,7 +5,7 @@
   "refs": [
     "PD-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 570,
-  "proximo": "Vem com o sino de avisos do Portal (o mesmo de F3.38); a troca já fica registrada na conversa"
+  "evidencia": "Migration 0390 (avisos_sino: a IA passou, alguém assumiu ou passou a conversa, sugestão de mudança e resposta da Meta para a sócia dona; nunca para quem fez; 30 dias; abrir marca lido; marcar todos até o último mostrado; nada se apaga); pgTAP 039; rotas /v1/escritorio/avisos no app_test.ts; sino na moldura do Portal (ponto, número no rótulo, painel por dia) e e2e portal-sino-avisos.spec.ts."
 }
