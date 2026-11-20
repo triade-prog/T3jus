@@ -165,6 +165,14 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
   const hoje = hojeBrasilia();
   const { dados, recarregar } = useCarga<ListaRepasses>("/v1/escritorio/financeiro/repasses");
   const [registrar, setRegistrar] = useState(false);
+  // Vindo dos primeiros passos do Resumo (?registrar=1), a janela já abre.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has("registrar")) return;
+    q.delete("registrar");
+    window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
+    void Promise.resolve().then(() => setRegistrar(true));
+  }, []);
   const [feitoEm, setFeitoEm] = useState<{ l: Levantamento; d: Destinacao } | null>(null);
   const [dispensar, setDispensar] = useState<{ l: Levantamento; d: Destinacao } | null>(null);
   const [prestacao, setPrestacao] = useState<Levantamento | null>(null);

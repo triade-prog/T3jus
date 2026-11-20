@@ -10,8 +10,10 @@ export type TomAviso = "urgencia" | "atencao" | "sucesso" | "info";
 const ICONE_AVISO: Record<TomAviso, NomeIcone> = { urgencia: "alerta", atencao: "relogio", sucesso: "check", info: "ajuda" };
 
 /** Aviso do D2. Urgência é `alert`; o resto, `status`. */
-export function Aviso({ tom, titulo, children, acoes, className }: {
+export function Aviso({ tom, titulo, children, acoes, className, icone }: {
   tom: TomAviso;
+  /** Outro ícone no lugar do padrão do tom. */
+  icone?: NomeIcone;
   titulo?: ReactNode;
   children?: ReactNode;
   acoes?: ReactNode;
@@ -19,7 +21,7 @@ export function Aviso({ tom, titulo, children, acoes, className }: {
 }) {
   return (
     <div className={`aviso aviso-${tom}${className ? ` ${className}` : ""}`} role={tom === "urgencia" ? "alert" : "status"}>
-      <Icone nome={ICONE_AVISO[tom]} className="ico" />
+      <Icone nome={icone ?? ICONE_AVISO[tom]} className="ico" />
       <div>
         {titulo ? <strong className="aviso-titulo">{titulo}</strong> : null}
         {children ? <p>{children}</p> : null}

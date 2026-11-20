@@ -1,0 +1,11 @@
+{
+  "id": "F3.51",
+  "texto": "Categoria Empréstimos nas entradas e saídas",
+  "peca": "S3",
+  "refs": [
+    "FI-20"
+  ],
+  "status": "pendente",
+  "ordem": 510,
+  "proximo": "Acrescentar Empréstimos às categorias (banco, domínio e exportação) e perguntar à Carol se entra como receita ou à parte, como terceiros"
+}

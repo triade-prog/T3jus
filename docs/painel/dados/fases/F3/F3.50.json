@@ -1,0 +1,12 @@
+{
+  "id": "F3.50",
+  "texto": "Contador do escritório: nome e e-mail, envio da exportação por e-mail, comprovantes no arquivo e saldo de abertura do caixa",
+  "peca": "S3",
+  "refs": [
+    "FI-21",
+    "FI-09"
+  ],
+  "status": "pendente",
+  "ordem": 500,
+  "proximo": "Desenhar o contador e o saldo de abertura em Escritório; enviar o arquivo por e-mail (precisa do serviço de e-mail com anexo); juntar os comprovantes num .zip quando chegar o envio de arquivos do Financeiro (F3.22)"
+}

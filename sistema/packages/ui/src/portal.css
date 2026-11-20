@@ -1691,6 +1691,21 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .fi-linha.rp-linha .fi-lado{grid-column:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;text-align:left}
   .rp-linha .rp-acoes{justify-content:flex-start}
 }
+/* Resumo e Caixa (F3.47) */
+.fi-linha.rs-rep{grid-template-columns:40px minmax(0,1fr) auto}
+.rs-av{width:40px;height:40px;font-size:13px}
+.fi-barra.rs-tipo{grid-template-columns:118px minmax(0,1fr) 106px}
+.cartao .c-nome.rs-mes{font-size:18px}
+.fi-check li.rs-depois .ico{color:var(--vinho-4)}
+.fi-check li.rs-depois{color:var(--texto-2)}
+.rs-aberto{margin-top:12px}
+.fi-tab-caixa td.num{white-space:nowrap}
+.fi-total b{white-space:nowrap}
+@media (max-width:760px){
+  .fi-linha.rs-rep{grid-template-columns:40px minmax(0,1fr)}
+  .fi-linha.rs-rep .fi-lado{grid-column:2;display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .fi-barra.rs-tipo{grid-template-columns:minmax(0,1fr) auto}
+}
 /* <<< Financeiro */
 /* >>> Jurídico, parte 1: casos, ficha e mudar etapa */
 .jr-trilha{display:flex;gap:4px;margin:5px 0 3px}

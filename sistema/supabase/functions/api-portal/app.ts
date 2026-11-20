@@ -13,6 +13,7 @@ import {
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, registrarRecebimentoSchema,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
+  exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
@@ -585,6 +586,28 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<Destinacao>("portal_financeiro_destinacao_dispensar", {
       ...quem(c), p_destinacao: idDaRota(c, "id"), p_motivo: d.motivo ?? null,
     }));
+  });
+
+  // Resumo e Caixa (FI-03, FI-09, PD-03, PD-06, IN-02 a IN-14), tudo calculado no banco.
+  app.get("/v1/escritorio/financeiro/resumo", async (c) => {
+    return c.json(await deps.banco.rpc<ResumoFinanceiro>("portal_financeiro_resumo", quem(c)));
+  });
+
+  app.get("/v1/escritorio/financeiro/caixa", async (c) => {
+    return c.json(await deps.banco.rpc<CaixaFinanceiro>("portal_financeiro_caixa", quem(c)));
+  });
+
+  // Exportação para o contador (FI-21): o que vai no arquivo e os dados dele. O arquivo é
+  // montado na tela; a exportação fica no histórico do escritório.
+  app.get("/v1/escritorio/financeiro/exportacoes/previa", async (c) => {
+    const mes = c.req.query("mes") ?? "";
+    if (!/^\d{4}-\d{2}-01$/.test(mes)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mes"] });
+    return c.json(await deps.banco.rpc<PreviaExportacao>("portal_financeiro_exportacao_previa", { ...quem(c), p_mes: mes }));
+  });
+
+  app.post("/v1/escritorio/financeiro/exportacoes", async (c) => {
+    const d = await lerCorpo(c, exportarSchema);
+    return c.json(await deps.banco.rpc<DadosExportacao>("portal_financeiro_exportar", { ...quem(c), p_dados: d }), 201);
   });
 
   // Jurídico (EX-01, EX-03, EX-07, EX-14): casos, ficha e mudar etapa.
