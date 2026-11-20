@@ -19,7 +19,7 @@ import {
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
-  semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, type DadosSimulacao, type ListaAutomacoes, type PaginaAutomacao,
+  semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
@@ -548,6 +548,14 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const d = await lerCorpo(c, simularAutomacaoSchema);
     const dados = await deps.banco.rpc<DadosSimulacao>("portal_automacao_simulacao", { ...quem(c), p_id: idDaRota(c, "id"), p_parcela: d.parcelaId ?? null });
     return c.json(simularFluxo(dados, d.escolha));
+  });
+
+  // Avisos automáticos (F3.64): o que saiu sozinho nos últimos 7 dias, das automações das áreas da pessoa.
+  app.get("/v1/escritorio/avisos-automaticos", async (c) => {
+    const tipo = c.req.query("tipo") || null;
+    const pular = Number(c.req.query("pular") ?? "0");
+    if (!Number.isInteger(pular) || pular < 0 || pular > 10000) throw new ErroDominio("VALIDATION_ERROR", { campos: ["pular"] });
+    return c.json(await deps.banco.rpc<ListaAvisosAutomaticos>("portal_avisos_automaticos", { ...quem(c), p_gatilho: tipo, p_limite: 20, p_pular: pular }));
   });
 
   app.post("/v1/escritorio/clientes/:id/sem-avisos", async (c) => {

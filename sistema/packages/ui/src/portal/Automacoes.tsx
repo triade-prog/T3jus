@@ -977,7 +977,7 @@ function Testar({ p }: { p: PaginaAutomacao }) {
     void chamarPortal<QuemEntraria>(`/v1/escritorio/automacoes/${p.id}/quem-entraria`).then((r) => {
       if (!vivo) return;
       setQuem(r.ok ? r.dados : "erro");
-      if (r.ok) setParcela(r.dados.itens.find((i) => i.entra)?.parcela.id ?? "");
+      if (r.ok) setParcela(r.dados.itens.find((i) => i.entra && i.parcela)?.parcela?.id ?? "");
     });
     return () => { vivo = false; };
   }, [p.id]);
@@ -1004,7 +1004,7 @@ function Testar({ p }: { p: PaginaAutomacao }) {
               <label htmlFor="ts-cli">Simular com</label>
               <select className="entrada" id="ts-cli" value={parcela} onChange={(e) => setParcela(e.target.value)} aria-describedby="ts-cli-aj">
                 <option value="">Cliente de exemplo</option>
-                {itens.map((i) => <option key={i.parcela.id} value={i.parcela.id}>{i.cliente.nome} · {i.parcela.descricao}</option>)}
+                {itens.flatMap((i) => (i.parcela ? [<option key={i.parcela.id} value={i.parcela.id}>{i.cliente.nome} · {i.parcela.descricao}</option>] : []))}
               </select>
               <p className="ajuda" id="ts-cli-aj">{g === "PARCELA_ATRASO" ? "Clientes com parcela em atraso hoje." : g === "PARCELA_VAI_VENCER" ? "Parcelas que entram hoje." : "Para este gatilho, a simulação usa um exemplo."}</p>
             </div>
@@ -1040,24 +1040,24 @@ function Testar({ p }: { p: PaginaAutomacao }) {
         </Folha>
       </div>
       <aside className="au-col" aria-label="Quem entraria">
-        <Folha id="t-quem" titulo="Quem entraria hoje" sub={quem && quem !== "erro" && quem.disponivel ? `${itens.length} ${itens.length === 1 ? "parcela" : "parcelas"}: ${entram.length} ${entram.length === 1 ? "entraria" : "entrariam"}, ${fora.length} ${fora.length === 1 ? "fica" : "ficam"} de fora` : undefined}>
+        <Folha id="t-quem" titulo="Quem entraria hoje" sub={quem && quem !== "erro" && quem.disponivel ? `${itens.length} ${g.startsWith("PARCELA") ? (itens.length === 1 ? "parcela" : "parcelas") : g === "LEMBRETE_AUDIENCIA" ? (itens.length === 1 ? "compromisso nos próximos 7 dias" : "compromissos nos próximos 7 dias") : (itens.length === 1 ? "mudança de etapa nos últimos 7 dias" : "mudanças de etapa nos últimos 7 dias")}: ${entram.length} ${entram.length === 1 ? "entraria" : "entrariam"}, ${fora.length} ${fora.length === 1 ? "fica" : "ficam"} de fora` : undefined}>
           {quem === "erro" ? <div className="au-pe-nota"><Aviso tom="urgencia" titulo="Não deu para carregar">Tente de novo em instantes.</Aviso></div>
             : !quem ? <div className="au-pe-nota"><Carregando rotulo="Carregando quem entraria" linhas={3} /></div>
-            : !quem.disponivel ? <p className="au-pe-nota ajuda">Para os gatilhos do Jurídico, a lista de quem entraria chega com o envio de cada área. A simulação já funciona.</p>
+            : !quem.disponivel ? <p className="au-pe-nota ajuda">Neste gatilho, cada cliente entra na hora em que o registro é feito no Financeiro. A simulação já funciona.</p>
             : !itens.length ? <p className="au-pe-nota ajuda">Hoje ninguém entraria nesta automação.</p>
             : (
               <>
                 <p className="au-sub3">Entrariam · {entram.length}</p>
                 <ul className="au-quem-l">
                   {entram.map((i) => (
-                    <li key={i.parcela.id}><strong>{i.cliente.nome}</strong><Selo tipo="ok" icone="check">Entraria</Selo>
-                      <small>{i.parcela.descricao} · {reais(i.parcela.valor)}{g === "PARCELA_ATRASO" ? ` · ${i.diasAtraso} ${i.diasAtraso === 1 ? "dia" : "dias"}` : ""} · Para {i.contato.nome}{i.contato.papel ? `, ${i.contato.papel}` : ""}{i.jaEmAtraso ? " · já em atraso, só entra se você escolher ao ligar" : ""}</small></li>
+                    <li key={i.origem.id}><strong>{i.cliente.nome}</strong><Selo tipo="ok" icone="check">Entraria</Selo>
+                      <small>{i.parcela ? `${i.parcela.descricao} · ${reais(i.parcela.valor)}` : `${i.origem.descricao} · ${quandoOrigem(i.origem.quando)}`}{g === "PARCELA_ATRASO" ? ` · ${i.diasAtraso} ${i.diasAtraso === 1 ? "dia" : "dias"}` : ""} · Para {i.contato.nome}{i.contato.papel ? `, ${i.contato.papel}` : ""}{i.jaEmAtraso ? " · já em atraso, só entra se você escolher ao ligar" : ""}</small></li>
                   ))}
                 </ul>
                 <p className="au-sub3">Ficam de fora · {fora.length}</p>
                 <ul className="au-quem-l">
                   {fora.map((i) => (
-                    <li key={i.parcela.id}><strong>{i.cliente.nome}</strong><Selo tipo="neutro">Fica de fora</Selo>
+                    <li key={i.origem.id}><strong>{i.cliente.nome}</strong><Selo tipo="neutro">Fica de fora</Selo>
                       <small>{i.motivo === "COMBINADO" ? `${MOTIVO_FORA.COMBINADO}: ${i.detalhe?.oQue ?? ""}${i.detalhe?.data ? `, em ${diaCurto(i.detalhe.data)}` : ""}.`
                         : i.motivo === "SEM_AVISOS" ? `${i.detalhe?.quemPediu ? `${i.detalhe.quemPediu} pediu` : "Pediu"}${i.detalhe?.em ? ` em ${diaCurto(diaDe(i.detalhe.em))}` : ""} para não receber avisos${i.detalhe?.tipo === "COBRANCA" ? " de cobrança" : ""}.`
                         : MOTIVO_FORA.SEM_WHATSAPP}</small>
@@ -1067,12 +1067,15 @@ function Testar({ p }: { p: PaginaAutomacao }) {
                 </ul>
               </>
             )}
-          <p className="pt-pe-folha"><Icone nome="ajuda" className="ico" /><span>Quem já está em atraso só entra se a sócia dona escolher isso ao ligar.</span></p>
+          {g === "PARCELA_ATRASO" ? <p className="pt-pe-folha"><Icone nome="ajuda" className="ico" /><span>Quem já está em atraso só entra se a sócia dona escolher isso ao ligar.</span></p> : null}
         </Folha>
       </aside>
     </div>
   );
 }
+
+/** Dia (vencimento) ou dia e hora (compromisso, mudança de etapa) de quem entraria. */
+const quandoOrigem = (q: string) => (q.length <= 10 ? diaCurto(q) : `${diaCurto(diaDe(q))}, ${horaDe(q)}`);
 
 function Frase({ p }: { p: PaginaAutomacao }) {
   const g = p.gatilho;

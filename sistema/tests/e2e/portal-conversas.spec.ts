@@ -275,15 +275,58 @@ test.describe("Conversas do Portal, Mensagens (PD-07, EX-10, AP-02)", () => {
     await semViolacoes(page);
   });
 
-  test("ninguém esperando: a fila diz que está em dia; Avisos automáticos mostra o que vem", async ({ page }) => {
+  test("ninguém esperando: a fila diz que está em dia", async ({ page }) => {
     await simular(page, comuns({ ...ESCRITORIO, conversasEsperando: 0 }, { ...LISTA, contagem: { precisa: 0, equipe: 0, ia: 2, resolvidas: 14 }, conversas: [] }));
     await page.goto(`${P}/conversas`);
     await expect(page.getByRole("heading", { name: "Ninguém esperando agora" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ver as resolvidas hoje" })).toBeVisible();
     await semViolacoes(page);
+  });
+
+  test("F3.64: Avisos automáticos mostra o que saiu, a situação, a mensagem escolhida e os avisos ligados", async ({ page }) => {
+    const hoje = new Date().toISOString();
+    const aviso = (id: string, gatilho: string, nome: string, extra: Record<string, unknown> = {}) => ({
+      id, mensagemId: id, execucaoId: id, gatilho, automacao: { id: "a-" + gatilho, nome }, nome, detalhe: null,
+      cliente: { id: GAB, nome: "Gabriela Teixeira" }, para: { nome: "Gabriela Teixeira", papel: null }, conversaId: GAB, em: hoje,
+      texto: `Olá, Gabriela. ${nome}.`, situacao: "LIDA", motivo: null, resposta: null, ...extra,
+    });
+    const itens = [
+      aviso("m1", "PARCELA_ATRASO", "Parcela em atraso", { situacao: "NAO_ENTREGUE", motivo: "O número é fixo e não tem WhatsApp", texto: null, conversaId: null,
+        cliente: { id: HEL, nome: "Hélio Batista Corrêa" }, para: null, detalhe: "Parcela 3 de 10 · venceu 15/11" }),
+      aviso("m2", "LEMBRETE_AUDIENCIA", "Lembrete · 1 dia antes", { situacao: "RESPONDEU", resposta: "Confirmo, estarei lá.", detalhe: "Conciliação 18/11, 11:00" }),
+      aviso("m3", "PAGAMENTO_RECEBIDO", "Pagamento recebido"),
+    ];
+    const lista = { itens, total: 3, naoEntregues: 1, porTipo: { PARCELA_ATRASO: 1, LEMBRETE_AUDIENCIA: 1, PAGAMENTO_RECEBIDO: 1 }, socioDono: MARINA, dono: false };
+    const auto = (id: string, gatilho: string, nome: string, situacao = "LIGADA") => ({ id, nome, gatilho, situacao, origem: "PRONTA", fluxo: { passos: [{ id: "g", tipo: "GATILHO", dias: 3 }] } });
+    const pedidos = await simular(page, {
+      ...comuns(PAULA_ESC),
+      "GET /v1/escritorio/avisos-automaticos": { corpo: lista },
+      "GET /v1/escritorio/avisos-automaticos?tipo=LEMBRETE_AUDIENCIA": { corpo: { ...lista, itens: [itens[1]], total: 1, naoEntregues: 0 } },
+      "GET /v1/escritorio/automacoes": { corpo: { dono: false, areas: [], pessoas: [MARINA], automacoes: [auto("a1", "PAGAMENTO_RECEBIDO", "Pagamento recebido"), auto("a2", "ETAPA_CASO", "Etapa do caso", "DESLIGADA")] } },
+    });
     await page.goto(`${P}/conversas/avisos`);
-    await expect(page.getByRole("heading", { level: 1, name: "Avisos automáticos está sendo preparado" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Avisos automáticos" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Seções de Conversas" }).getByRole("link", { name: "Avisos automáticos" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByText("Últimos 7 dias · 3 avisos · 1 não entregue")).toBeVisible();
+    const vis = ehCelular(page) ? page.locator(".cartoes") : page.locator("table.cv-tab");
+    await expect(vis.getByText("O número é fixo e não tem WhatsApp")).toBeVisible();
+    await expect(vis.getByRole("link", { name: "Corrigir na ficha" })).toHaveAttribute("href", `/clientes/${HEL}`);
+    await expect(vis.getByText("“Confirmo, estarei lá.”")).toBeVisible();
+    // A prévia abre no primeiro aviso que saiu; "Ver a mensagem" troca.
+    await expect(page.getByRole("heading", { name: "Mensagem para Gabriela" })).toBeVisible();
+    await expect(page.getByText("Olá, Gabriela. Lembrete · 1 dia antes.")).toBeVisible();
+    await vis.getByRole("button", { name: "Ver a mensagem de pagamento recebido para Gabriela Teixeira" }).click();
+    await expect(page.getByText("Olá, Gabriela. Pagamento recebido.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Abrir a conversa com Gabriela" })).toHaveAttribute("href", `/conversas?c=${GAB}`);
+    // Só as ligadas aparecem em "Quais avisos saem"; quem muda é a sócia dona.
+    const regras = page.locator(".cv-regras");
+    await expect(regras.getByText("Pagamento recebido")).toBeVisible();
+    await expect(regras.getByText("Etapa do caso")).toHaveCount(0);
+    await expect(page.getByText("Quem muda é Marina Ribeiro, a sócia dona.", { exact: false })).toBeVisible();
     await semViolacoes(page);
+    await page.getByRole("button", { name: "Audiência (1)" }).click();
+    await expect(page.getByRole("button", { name: "Audiência (1)" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("Últimos 7 dias · 1 aviso")).toBeVisible();
+    expect(pedidos.some((x) => x.caminho === "/v1/escritorio/avisos-automaticos" && x.busca === "?tipo=LEMBRETE_AUDIENCIA")).toBe(true);
   });
 });

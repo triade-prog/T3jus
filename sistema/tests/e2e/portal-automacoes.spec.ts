@@ -125,9 +125,9 @@ test.beforeEach(async ({ page }, info) => {
 const QUEM = {
   disponivel: true, dias: 3,
   itens: [
-    { parcela: { id: "pa1", descricao: "Mensalidade de novembro", valor: 180000, vencimento: "2026-11-15" }, cliente: { id: "c1", nome: "Farmácia Bom Jesus" },
+    { origem: { id: "pa1", descricao: "Mensalidade de novembro", quando: "2026-11-15" }, parcela: { id: "pa1", descricao: "Mensalidade de novembro", valor: 180000, vencimento: "2026-11-15" }, cliente: { id: "c1", nome: "Farmácia Bom Jesus" },
       contato: { nome: "Sueli Ramos", papel: "gerente" }, diasAtraso: 3, jaEmAtraso: false, entra: true, motivo: null, detalhe: null },
-    { parcela: { id: "pa2", descricao: "Parcela 2 de 6", valor: 50000, vencimento: "2026-11-15" }, cliente: { id: "c2", nome: "Construtora Alves" },
+    { origem: { id: "pa2", descricao: "Parcela 2 de 6", quando: "2026-11-15" }, parcela: { id: "pa2", descricao: "Parcela 2 de 6", valor: 50000, vencimento: "2026-11-15" }, cliente: { id: "c2", nome: "Construtora Alves" },
       contato: { nome: "Rui Alves", papel: null }, diasAtraso: 3, jaEmAtraso: false, entra: false, motivo: "SEM_WHATSAPP", detalhe: null },
   ],
 };

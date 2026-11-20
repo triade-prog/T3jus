@@ -310,7 +310,7 @@ Telas aprovadas em `docs/design/aprovadas/portal-agenda-conversas`. Migration `0
 - **Portal:** `portal_conversas` (fila, contagens e o dia), `portal_conversa` (mensagens e o contexto: próximo contato, caso só com a área Jurídico, compromisso), `portal_conversa_assumir`, `portal_conversa_devolver` (com nota para a IA e, se pedido, o atendimento na ficha do cliente), `portal_conversa_passar` e `portal_conversa_enviar` (só quem assumiu escreve; a mensagem entra na fila de envio). As ações usam a versão lida.
 - **Saída da pessoa (EX-10):** o gatilho `conversas_passar_de_quem_saiu` passa as conversas para quem recebeu o que era dela.
 - **API:** `GET /v1/escritorio/conversas` (`?mostrar=PRECISA|EQUIPE|IA|RESOLVIDAS&q=`), `GET /conversas/:id`, `POST /conversas/:id/assumir`, `/devolver`, `/passar` e `POST /conversas/:id/mensagens` (201).
-- **Tela:** `/conversas` (lista, conversa e contexto; no celular, uma coisa por vez), com o número de quem espera no menu. Automações e Avisos automáticos mostram "em preparo".
+- **Tela:** `/conversas` (lista, conversa e contexto; no celular, uma coisa por vez), com o número de quem espera no menu.
 - **Falta:** o envio e o recebimento pela Meta (F3.58) e o aviso no sino (F3.57). A IA que atende está em F3.53, o número em F3.54 e as automações em F1.17.
 
 ### Escritório › WhatsApp e IA (F3.54; PA-04, PA-02)
@@ -348,7 +348,10 @@ Telas aprovadas em `docs/design/aprovadas/portal-conversas-automacoes`. Migratio
 - **Prontas:** `automacoes_garantir` cria as 6 a partir dos avisos, ligadas na versão 1. A de parcela em atraso sai em 1, 8 e 15 dias.
 - **API:** `GET` e `POST /v1/escritorio/automacoes`, `GET` e `PATCH /automacoes/:id`, `POST /:id/aprovar-texto`, `/:id/ligar`, `/:id/desligar`, `/:id/sugerir-mudanca`, `/:id/simular` (roda `simularFluxo` sobre os dados do banco, nada é enviado), `GET /:id/quem-entraria`, `GET /:id/execucoes` e `POST /v1/escritorio/clientes/:id/sem-avisos`.
 - **Tela:** `/conversas/automacoes` (lista) e `?a=<id>&passo=montar|testar|ligar|historico&b=<passo>` (editor).
-- **Falta:** a IA que monta o fluxo (F3.59), o motor que envia (F3.60), mandar os textos à Meta (F3.61), quem entraria nos gatilhos do Jurídico (F3.62), "não receber avisos" na ficha (F3.63), Avisos automáticos e a edição no celular (F3.64).
+- **Motor (F3.60, migration 0340, teste 034):** `automacoes_rodar` roda a cada 10 minutos (pg_cron) para cada escritório com WhatsApp ligado. Abre uma execução por cliente que chegou ao gatilho (`automacao_candidatos`) ou registra por que ficou de fora (`automacao_fica_de_fora`: pediu para não receber, sem WhatsApp, combinado no Financeiro). `automacao_andar` segue os passos da versão ligada: a mensagem entra na conversa como aviso, na fila de envio; a espera marca `proximo_em`; os caminhos olham se pagou ou respondeu (e encurtam a espera); passar para uma pessoa põe a conversa em "Precisa de alguém". Na hora de cada mensagem confere 8h às 20h em dia útil (`automacao_proximo_horario`, com feriados), 1 cobrança por semana por parcela e o pedido de não receber. Paga, a parcela sai da automação. Desligada, a execução para. A frase com `{link de pagamento}` sai enquanto não há link (decisão da Carol). A rotina lê a lista de números pela política `rotina_automacoes_ler`, só durante a leitura.
+- **Quem entraria (F3.62, migration 0350):** também no lembrete de audiência (compromissos dos próximos 7 dias) e na etapa do caso (mudanças dos últimos 7 dias).
+- **Avisos automáticos (F3.64, migration 0360):** `/conversas/avisos` mostra o que saiu sozinho nos últimos 7 dias, com filtro por tipo, a situação (na fila, enviado, entregue, lido, respondeu ou não entregue com o motivo), a mensagem escolhida, o que disparou e quais avisos estão ligados. `GET /v1/escritorio/avisos-automaticos?tipo=&pular=` chama `portal_avisos_automaticos`; cada aviso guarda em `dados` a execução e o passo que o mandou.
+- **Falta:** a IA que monta o fluxo (F3.59), mandar os textos à Meta (F3.61) e "não receber avisos" na ficha (F3.63).
 
 ### Jurídico do Portal, casos (F3.33; EX-01, EX-03, EX-07, EX-08, EX-14, CH-05)
 

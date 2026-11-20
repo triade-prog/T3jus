@@ -5,7 +5,8 @@
   "refs": [
     "PA-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 600,
-  "proximo": "Agendar pela fila do servidor e enviar pelo serviço do WhatsApp (F3.53); registrar cada passo com automacao_execucao_registrar (já pronta e testada)"
+  "evidencia": "Migration 0340 (automacoes_rodar a cada 10 minutos pelo pg_cron: entra quem chegou ao gatilho, com quem fica de fora e o motivo; automacao_andar segue mensagem, espera em dias ou horas antes, caminhos pagou/respondeu/não respondeu, IA e passar para uma pessoa; 8h às 20h em dia útil, 1 cobrança por semana por parcela e o pedido de não receber conferidos na hora; a mensagem entra na conversa como aviso, na fila), pgTAP 034 (32 testes).",
+  "nota": "A frase com {link de pagamento} sai da mensagem enquanto o T3jus não gera link (decisão da Carol, 20/11). A entrega ao WhatsApp da fila de envio é o serviço da Meta (F3.58). Na mudança de etapa, o aviso vai para o primeiro cliente do caso."
 }
