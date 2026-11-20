@@ -2,7 +2,7 @@
 
 Fonte única do que vale construir (DC9). Cada ideia tem um código por seção. Cada entrega do painel de execução cita em `refs` os códigos que atende, e cada regra vira teste automático com o código no nome (ex.: `PT-01: usuário do escritório A não vê nada do B`).
 
-As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As da seção 11 são do Portal do advogado e saíram das decisões da Carol sobre os três sistemas (17/11/2026); PA-03 veio de uma referência de editor de fluxos que a Carol enviou (19/11/2026); PA-04 (ligar o WhatsApp do escritório e configurar a IA) a Carol aprovou desenhar em 19/11/2026. FI-22 (DRE) a Carol pediu para registrar em 19/11/2026, a partir de um post sobre o CPC 51/IFRS 18. IN-15 (quanto rendeu cada cliente) a Carol aprovou com o desenho dos relatórios do sócio (20/11/2026). As ideias CH-06 a CH-09, FI-07 a FI-21, EX-06 a EX-14, IN-07 a IN-14, VA-08, PT-25 e PT-26 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
+As ideias das seções 1 a 6 saíram do `docs/01-ideias-e-direcionamento.md` (primeira versão, 06/11/2026). As da seção 7 são hipóteses da análise crítica (`docs/03-analise-critica.md`, 10/11/2026) que precisam dos pilotos antes de virar construção. As da seção 8 são os princípios técnicos que vieram da fundação do TRÍADE Condo (17/11/2026). As da seção 9 são do site comercial e da entrada de clientes (Carol, 17/11/2026). As da seção 10 são do Console T3jus, o sistema interno da equipe, e vieram do passo 1 do TRÍADE Condo (18/11/2026). As da seção 11 são do Portal do advogado e saíram das decisões da Carol sobre os três sistemas (17/11/2026); PA-03 veio de uma referência de editor de fluxos que a Carol enviou (19/11/2026); PA-04 (ligar o WhatsApp do escritório e configurar a IA) a Carol aprovou desenhar em 19/11/2026. FI-22 (DRE) a Carol pediu para registrar em 19/11/2026, a partir de um post sobre o CPC 51/IFRS 18. IN-15 (quanto rendeu cada cliente) a Carol aprovou com o desenho dos relatórios do sócio (20/11/2026). FI-23 (carnê dos honorários no Portal) a Carol pediu em 20/11/2026. As ideias CH-06 a CH-09, FI-07 a FI-21, EX-06 a EX-14, IN-07 a IN-14, VA-08, PT-25 e PT-26 vieram da análise de dois TCCs (Carol aprovou em 18/11/2026; ver `docs/04-analise-tccs.md`).
 
 Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] princípio técnico que vale para tudo.
 
@@ -69,6 +69,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | FI-20 | Categorias simples de entradas e saídas: honorários por tipo, valores de terceiros, reembolso de custas, fornecedores, impostos, pessoal, retiradas dos sócios, taxas bancárias, empréstimos | [V1] |
 | FI-21 | Exportação mensal para o contador (recebimentos, despesas, notas e comprovantes) | [V1] |
 | FI-22 | DRE no formato do CPC 51/IFRS 18 (grupos Operacional, Investimento, Financiamento e Tributos, com os dois subtotais obrigatórios), por competência a partir do mês de referência de cada parcela, como relatório no Caixa ou junto da exportação ao contador. Conferir o mapeamento das categorias com o contador de um piloto antes de desenhar | [VAL] |
+| FI-23 | Carnê de pagamento dos honorários parcelados, num modelo do T3jus: o escritório gera no Portal, a partir das parcelas do contrato, um PDF em A4 com várias parcelas destacáveis (canhoto do escritório e via do cliente), com o Pix do próprio escritório, para imprimir ou mandar ao cliente pelo WhatsApp, sem depender de boleto registrado nem de provedor de pagamento | [V1] |
 
 ## 5. Execução jurídica
 
@@ -192,7 +193,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 1. Painel do dia | 7 |
 | 2. Atendimento e propostas | 6 |
 | 3. Contratos e honorários | 9 |
-| 4. Financeiro e repasses | 22 |
+| 4. Financeiro e repasses | 23 |
 | 5. Execução jurídica | 14 |
 | 6. Indicadores | 15 |
 | 7. A validar com os pilotos | 8 |
@@ -200,4 +201,4 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 6 |
 | 11. Portal do advogado | 5 |
-| **Total** | **124** |
+| **Total** | **125** |
