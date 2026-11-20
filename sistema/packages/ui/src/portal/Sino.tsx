@@ -29,11 +29,15 @@ export function rotuloDia(iso: string, agora = new Date()): string {
   return d === hoje ? "Hoje" : d === ontem ? `Ontem · ${curto}` : curto;
 }
 
+/** "a petição “Recurso ordinário”" (sem artigo do modelo, que pode ser masculino ou feminino). */
+const minuscula = (m?: string) => (m ? `a petição “${m}”` : "a petição");
+
 /** O que cada aviso diz: ícone, título, detalhe, destino e selo. */
 export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactNode; detalhe: ReactNode; onde: string; href: string; selo?: { tom: string; texto: string } } {
   const d = a.dados;
   const conversa = `/conversas?c=${a.origemId}`;
   const automacao = `/conversas/automacoes?a=${a.origemId}`;
+  const peticao = `/juridico/peticoes/${a.origemId}`;
   const fala = (t?: string) => (t ? <q>{t}</q> : null);
   switch (a.tipo) {
     case "CONVERSA_IA":
@@ -67,6 +71,28 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
       return {
         icone: "check", titulo: <>A Meta aprovou os textos de “{d.automacao}”</>,
         detalhe: `A automação ${d.automacao} já está funcionando.`, onde: "Ver a automação", href: automacao, selo: { tom: "ok", texto: "Aprovado" },
+      };
+    case "PETICAO_REVISAR":
+      return {
+        icone: "pena",
+        titulo: d.passadaPor
+          ? <><b>{d.passadaPor}</b> passou para você a revisão de {minuscula(d.modelo)} de {d.caso}</>
+          : <><b>{d.quem ?? "Alguém da equipe"}</b> mandou {minuscula(d.modelo)} de {d.caso} para você revisar</>,
+        detalhe: d.motivo ? fala(d.motivo) : d.versao && d.versao > 1 ? `Versão ${d.versao}, depois do ajuste.` : "Só fica pronta depois que você aprovar.",
+        onde: "Revisar a petição", href: peticao, selo: { tom: "andamento", texto: "Revisar" },
+      };
+    case "PETICAO_DECIDIDA":
+      return {
+        icone: d.decisao === "APROVADA" ? "check" : d.decisao === "AJUSTE" ? "lapis" : "xis",
+        titulo: <><b>{d.quem ?? "Quem revisou"}</b> {d.decisao === "APROVADA" ? "aprovou" : d.decisao === "AJUSTE" ? "pediu ajuste em" : "reprovou"} {minuscula(d.modelo)} de {d.caso}</>,
+        detalhe: d.decisao === "APROVADA" ? "Ficou pronta e entrou nos documentos do caso." : d.decisao === "AJUSTE" ? "Veja os comentários e mande a versão nova." : "Ficou guardada com o motivo.",
+        onde: d.decisao === "AJUSTE" ? "Ver o que ajustar" : "Abrir a petição", href: peticao,
+        selo: d.decisao === "APROVADA" ? { tom: "ok", texto: "Aprovada" } : d.decisao === "AJUSTE" ? { tom: "atencao", texto: "Ajuste pedido" } : { tom: "neutro", texto: "Reprovada" },
+      };
+    case "PETICAO_PASSADA":
+      return {
+        icone: "trocar", titulo: <><b>{d.quem ?? "Quem revisava"}</b> passou a revisão de {minuscula(d.modelo)} de {d.caso} para {d.para ?? "outro advogado"}</>,
+        detalhe: "Ela continua em revisão.", onde: "Abrir a petição", href: peticao,
       };
     case "PRAZO_2_DIAS":
       return {

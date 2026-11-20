@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CasosJuridicoPortal, EtapasJuridicoPortal, FichaCasoPortal, NovoCasoPortal, PeticoesJuridicoPortal, PrazosJuridicoPortal, TarefasJuridicoPortal } from "@t3jus/ui";
+import {
+  CasosJuridicoPortal, EtapasJuridicoPortal, FichaCasoPortal, ModelosPeticaoPortal, NovaPeticaoPortal, NovoCasoPortal, PeticaoPortal, PeticoesJuridicoPortal,
+  PrazosJuridicoPortal, TarefasJuridicoPortal, VersaoPeticaoPortal,
+} from "@t3jus/ui";
 import { paginaDa } from "../../_area/pagina";
 
 // Área Jurídico do Portal (EX-01, EX-03, EX-07, EX-14): Casos e processos (lista, novo caso e
-// ficha com mudar etapa), Prazos e Tarefas (EX-02, EX-04), Etapas do escritório (EX-07) e o lugar reservado de
-// Petições (EX-09). O escritório vem da
+// ficha com mudar etapa), Prazos e Tarefas (EX-02, EX-04), Etapas do escritório (EX-07) e Petições
+// (EX-09: lista, modelos, nova petição, a petição com a revisão e a versão nova). O escritório vem da
 // sessão; um caso de outro escritório responde como não encontrado. A tela confere a área; o
 // servidor confere de novo.
 export const metadata: Metadata = { title: "Jurídico" };
@@ -25,6 +28,15 @@ export default async function Pagina({ params }: { params: Promise<{ secao?: str
   }
   if (secao === "prazos" && s.length === 1) return <PrazosJuridicoPortal />;
   if (secao === "tarefas" && s.length === 1) return <TarefasJuridicoPortal />;
-  if (secao === "peticoes" && s.length === 1) return <PeticoesJuridicoPortal />;
+  if (secao === "peticoes") {
+    if (s.length === 1) return <PeticoesJuridicoPortal />;
+    if (a === "modelos" && s.length === 2) return <ModelosPeticaoPortal />;
+    if (a === "nova" && s.length === 2) return <NovaPeticaoPortal />;
+    if (a && UUID.test(a)) {
+      if (s.length === 2) return <PeticaoPortal id={a.toLowerCase()} />;
+      if (s.length === 3 && s[2] === "versao") return <VersaoPeticaoPortal id={a.toLowerCase()} />;
+    }
+    notFound();
+  }
   return paginaDa("JURIDICO", params);
 }

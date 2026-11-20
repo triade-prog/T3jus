@@ -51,7 +51,9 @@ export { CaixaDoFinanceiro, ResumoDoFinanceiro } from "./portal/FinanceiroResumo
 export { abasContador, arquivoContador, crc32, csvContador, planilhaXlsx, zipar } from "./portal/planilha.ts";
 export { CasosJuridicoPortal, FichaCasoPortal, NovoCasoPortal } from "./portal/Juridico.tsx";
 export { PrazosJuridicoPortal, TarefasJuridicoPortal } from "./portal/JuridicoPrazos.tsx";
-export { EtapasJuridicoPortal, PeticoesJuridicoPortal } from "./portal/JuridicoEtapas.tsx";
+export { EtapasJuridicoPortal } from "./portal/JuridicoEtapas.tsx";
+export { ModelosPeticaoPortal, NovaPeticaoPortal, PeticoesJuridicoPortal } from "./portal/Peticoes.tsx";
+export { PeticaoPortal, VersaoPeticaoPortal } from "./portal/PeticaoPagina.tsx";
 export { ROTAS_JURIDICO } from "./portal/juridico.ts";
 export { ROTAS_FINANCEIRO } from "./portal/financeiro.ts";
 export { NovoContratoPortal, MudarContratoPortal } from "./portal/FormContrato.tsx";

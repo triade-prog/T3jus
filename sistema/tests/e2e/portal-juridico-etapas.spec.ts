@@ -1,8 +1,8 @@
 // Jurídico do Portal, parte 3a (telas aprovadas em docs/design/aprovadas/portal-juridico,
-// estados etapas e peticoes): as etapas do escritório editadas no lugar, com a prévia do
-// WhatsApp, subir e descer, a final fixa e tirar com os casos indo para outra etapa; a equipe só
-// vê; e a pergunta de Petições. A API é simulada; aqui se testa a tela, a acessibilidade e o que
-// ela manda.
+// estado etapas): as etapas do escritório editadas no lugar, com a prévia do WhatsApp, subir e
+// descer, a final fixa e tirar com os casos indo para outra etapa; a equipe só vê. As Petições
+// têm o próprio teste (portal-peticoes.spec.ts). A API é simulada; aqui se testa a tela, a
+// acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
 import { semViolacoes } from "./console-dados.ts";
 
@@ -55,10 +55,9 @@ const LISTA = { podeEditar: true, escritorio: "Ribeiro & Matos", etapas: ETAPAS 
 const comuns = (escritorio: unknown = ESCRITORIO, lista: unknown = LISTA) => ({
   "/v1/escritorio": { corpo: escritorio },
   "GET /v1/escritorio/juridico/etapas": { corpo: lista },
-  "GET /v1/escritorio/juridico/peticoes": { corpo: { minhaResposta: null } },
 });
 
-test.describe("Jurídico do Portal, etapas do escritório e Petições (EX-07, EX-09)", () => {
+test.describe("Jurídico do Portal, etapas do escritório (EX-07)", () => {
   test("Etapas: lista com casos, final fixa, editar no lugar com a prévia e o que vai ao servidor", async ({ page }) => {
     const pedidos = await simular(page, { ...comuns(), [`PUT /v1/escritorio/juridico/etapas/${eid(5)}`]: { corpo: { id: eid(5), versao: 2 } } });
     await page.goto(`${P}/juridico/casos/etapas`);
@@ -139,27 +138,6 @@ test.describe("Jurídico do Portal, etapas do escritório e Petições (EX-07, E
     await expect(page.getByRole("button", { name: "Adicionar etapa" })).toHaveCount(0);
     await expect(page.getByText("Só a sócia dona muda esta lista. A equipe vê as etapas aqui")).toBeVisible();
     await semViolacoes(page);
-  });
-
-  test("Petições: lugar reservado, a pergunta e a resposta enviada", async ({ page }) => {
-    const pedidos = await simular(page, {
-      ...comuns(),
-      "GET /v1/escritorio/juridico/peticoes": [{ corpo: { minhaResposta: null } }, { corpo: { minhaResposta: { resposta: "AS_VEZES", comoFazHoje: "Copio a última inicial.", em: "2026-11-19T22:00:00Z" } } }],
-      "POST /v1/escritorio/juridico/peticoes": { status: 201, corpo: { resposta: "AS_VEZES", comoFazHoje: "Copio a última inicial.", em: "2026-11-19T22:00:00Z" } },
-    });
-    await page.goto(`${P}/juridico/peticoes`);
-    await expect(page.getByRole("heading", { level: 1, name: "Petições" })).toBeVisible();
-    await expect(page.getByText("Em estudo: o gerador de petições.")).toBeVisible();
-    await expect(page.getByText("Vai para a equipe T3jus.")).toBeVisible();
-    await page.getByRole("button", { name: "Enviar resposta" }).click();
-    await expect(page.getByText("Escolha uma das três respostas.")).toBeVisible();
-    await semViolacoes(page);
-    await page.getByRole("radio", { name: /Usaria às vezes/ }).check();
-    await page.getByLabel("Como você faz hoje?").fill("Copio a última inicial.");
-    await page.getByRole("button", { name: "Enviar resposta" }).click();
-    await expect(page.getByText("Resposta enviada. Obrigado!")).toBeVisible();
-    await expect(page.getByText(/Você respondeu “Usaria às vezes”/)).toBeVisible();
-    expect(pedidos.find((p) => p.metodo === "POST")!.corpo).toEqual({ resposta: "AS_VEZES", comoFazHoje: "Copio a última inicial." });
   });
 
   test("Casos e processos: a sócia dona vê o botão das etapas", async ({ page }) => {
