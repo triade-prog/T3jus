@@ -1,5 +1,6 @@
-// Início do Portal com os contatos do dia (F1.14, AP-06), tela aprovada em
-// docs/design/aprovadas/portal-clientes-pendencias (estados inicio-*). A API é simulada.
+// Início do Portal por áreas (F3.26; PD-01 a PD-07, PA-01, PA-02), tela aprovada em
+// docs/design/aprovadas/portal-inicio-areas. O bloco Comercial é o de contatos do dia (F1.14,
+// AP-06). A API é simulada.
 import { expect, test, type Page } from "@playwright/test";
 import { semViolacoes } from "./console-dados.ts";
 
@@ -8,7 +9,6 @@ const ESC = "e0000000-0000-4000-8000-0000000000a1";
 const cid = (n: number) => `c1000000-0000-4000-8000-0000000002${String(n).padStart(2, "0")}`;
 const DIEGO = { id: "a0000000-0000-4000-8000-000000000103", nome: "Diego Almeida" };
 const MARINA = { id: "a0000000-0000-4000-8000-000000000101", nome: "Marina Ribeiro" };
-const FELIPE = { id: "a0000000-0000-4000-8000-000000000105", nome: "Felipe Matos" };
 
 const BASE = {
   id: ESC, nome: "Ribeiro & Matos", socios: ["Marina Ribeiro"], pessoas: 5, outrosEscritorios: 0, cnpj: null, cidade: "São Paulo", uf: "SP",
@@ -16,6 +16,8 @@ const BASE = {
 };
 const ESC_DIEGO = { ...BASE, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
 const ESC_MARINA = { ...BASE, pessoa: "Marina Ribeiro", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"], funcoes: ["SOCIO"] };
+const ESC_BIANCA = { ...BASE, pessoa: "Bianca Torres", dono: false, areas: ["CONTRATOS", "FINANCEIRO"], funcoes: ["EQUIPE"] };
+const ESC_PAULA = { ...BASE, pessoa: "Paula Nunes", dono: false, areas: [], funcoes: ["EQUIPE"] };
 const ESC_LARISSA = { ...BASE, pessoa: "Larissa Costa", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] };
 
 const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
@@ -56,34 +58,212 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
   });
   return pedidos;
 }
-const bloco = (page: Page) => page.getByRole("region", { name: "Contatos de hoje" });
+const bloco = (page: Page, nome = "Comercial") => page.getByRole("region", { name: nome, exact: true });
+const vazioBloco = { total: 0, mostrando: 0, grupos: [] };
+const resumo = (x: Record<string, unknown> = {}) => ({ areas: ["COMERCIAL"], dono: false, pedem: { COMERCIAL: 5 }, total: 5, compromissos: 2,
+  proximoCompromisso: { tipo: "AUDIENCIA", tipoEscrito: null, inicio: `${dia(0)}T23:30:00-03:00` }, ...x });
+const COMUNS = {
+  [`GET /v1/escritorio/agenda?de=${dia(0)}&ate=${dia(0)}`]: { corpo: { juridico: false, algum: true, feriados: [], prazos: null, tiposEscritos: [], compromissos: [
+    { id: "a1", tipo: "AUDIENCIA", tipoEscrito: null, titulo: "Conciliação · Ferreira x Banco Horizonte", inicio: `${dia(0)}T23:30:00-03:00`, fim: `${dia(0)}T23:50:00-03:00`,
+      modalidade: "VIRTUAL", local: null, situacao: "MARCADO", lembrete: false, responsavel: MARINA, tambemVai: [], cliente: null }] } },
+  "GET /v1/escritorio/conversas?mostrar=PRECISA": { corpo: { whatsapp: { situacao: "LIGADO", numero: null, quemLiga: null }, eu: MARINA.id,
+    contagem: { precisa: 1, equipe: 0, ia: 0, resolvidas: 0 }, hoje: { resolvidas: 0, respondidas: 0, avisos: 0 }, conversas: [
+      { id: "v1", nome: "Daniela Souza", telefone: "+5511999990000", cliente: null, quemEscreve: null, papel: null, situacao: "PRECISA", resolvidaEm: null,
+        motivo: "CLIENTE_NOVO", responsavel: null, assumidaPor: null, esperandoDesde: new Date(Date.now() - 2 * 3600e3).toISOString(), ultimaEm: new Date().toISOString(),
+        ultima: { autor: "CLIENTE", texto: "Fui demitida grávida, vocês atendem esse tipo de caso?", anexo: null } }] } },
+};
 
-test.describe("Início do Portal: contatos do dia (F1.14, AP-06)", () => {
+const D = { id: "z", nome: "Diego Almeida" };
+const contratosDados = (de = "MEUS") => ({
+  de, pedem: 1, paradas: 1, assinaturas: 1, esperandoEtapa: 4, proximo: null, total: 2, mostrando: 2,
+  grupos: [
+    { chave: "VENCIDOS", total: 1, itens: [{ tipo: "BASE", id: "b1", em: dia(-8), pedirEm: dia(-13), responsavel: MARINA, percentual: 3000, sobre: "do benefício",
+      contrato: { id: "c22", numero: "C-2026-022" }, cliente: { id: cid(1), nome: "Hélio Batista Corrêa" } }] },
+    { chave: "ACOMPANHAR", total: 1, itens: [{ tipo: "ASSINATURA", id: "c33", em: dia(2), responsavel: MARINA, contrato: { id: "c33", numero: "C-2026-033" },
+      cliente: { id: cid(2), nome: "Benedito Souza Lima" }, compromisso: { id: "m1", inicio: `${dia(2)}T15:00:00-03:00`, responsavel: D } }] },
+  ],
+});
+const financeiroDados = (de = "MEUS") => ({
+  de, pedem: 2,
+  escritorio: { total: 1, mostrando: 1, vencidas: 1, valorVencido: 120000, escritorioVencidas: de === "MEUS" ? 4 : null, proximo: null, grupos: [
+    { chave: "VENCIDOS", total: 1, itens: [{ tipo: "PARCELA", id: "p1", em: dia(-74), responsavel: MARINA, descricao: "entrada 2/5", valor: 120000, forma: "PIX",
+      contrato: { id: "c9", numero: "C-2026-009" }, cliente: { id: cid(3), nome: "Daniela Rocha Mendes" },
+      cobranca: { motivo: "está desempregada", proxData: dia(8), proxOque: "propor descontar do valor do acordo" } }] }] },
+  terceiros: { total: 1, mostrando: 1, atrasados: 1, prazoMaisLonge: dia(-1), grupos: [
+    { chave: "VENCIDOS", total: 1, itens: [{ tipo: "REPASSE", id: "d1", em: dia(-1), responsavel: MARINA, para: "CLIENTE", nome: "Gabriela Teixeira", valor: 490000,
+      levantamento: { id: "l1", tipo: "ACORDO", entrouEm: dia(-6) }, caso: { id: "s1", nome: "Teixeira x Construtora" }, cliente: null }] }] },
+});
+const juridicoDados = (x: Record<string, unknown> = {}) => ({
+  de: "MEUS", pedem: 2, atrasadas: 1, prazosHoje: 1, escritorioPrazosHoje: { n: 2, com: ["Felipe Matos", "Larissa Costa"] }, proximo: null, total: 3, mostrando: 3,
+  grupos: [
+    { chave: "VENCIDOS", total: 1, itens: [{ tipo: "TAREFA", id: "t1", em: dia(-1), responsavel: MARINA, titulo: "Devolver a minuta de acordo", esperando: null, esperandoDesde: null,
+      caso: { id: "s2", nome: "Ferreira x Banco Horizonte" } }] },
+    { chave: "HOJE", total: 1, itens: [{ tipo: "PRAZO", id: "z1", em: dia(0), responsavel: MARINA, descricao: "Recurso ordinário", fazerAte: dia(0), dataFinal: dia(1),
+      caso: { id: "s3", nome: "Pereira x Mercado Bom Preço", numero: "1001022-33.2026.5.02.0045", tribunal: "TRT-2" } }] },
+    { chave: "ESPERANDO", total: 1, itens: [{ tipo: "TAREFA", id: "t2", em: dia(7), responsavel: MARINA, titulo: "Assinar e protocolar a petição inicial",
+      esperando: "o cliente: procuração assinada", esperandoDesde: dia(-7), caso: { id: "s4", nome: "Vale Alto x Prefeitura" } }] },
+  ],
+  ...x,
+});
+const gab = item(6, "Gabriela Teixeira", 0, "Retorno sobre o acordo", MARINA);
+const marina = (x: Record<string, Resp | Resp[]> = {}) => ({
+  ...COMUNS,
+  "/v1/escritorio": { corpo: ESC_MARINA },
+  "GET /v1/escritorio/inicio/resumo": { corpo: resumo({ areas: ESC_MARINA.areas, dono: true, pedem: { COMERCIAL: 1, CONTRATOS: 1, FINANCEIRO: 2, JURIDICO: 2 }, total: 6 }) },
+  "GET /v1/escritorio/inicio/contatos?de=MEUS": { corpo: contatos({ dono: true, vencidos: [], hoje: [gab], totalVencidos: 0, totalHoje: 1, maisAntigo: null, equipeVencidos: 4,
+    pedidosExclusao: [], propostasEsperando: 1, propostaMaisAntiga: { id: "pp", numero: "P-2026-016", cliente: "Gabriela Teixeira", clienteId: cid(6), retornoHoje: true } }) },
+  "GET /v1/escritorio/inicio/contatos?de=EQUIPE": { corpo: contatos({ de: "EQUIPE", dono: true, vencidos: [VENCIDOS[0]], hoje: [gab], totalVencidos: 1, totalHoje: 1 }) },
+  "GET /v1/escritorio/inicio/contratos?de=MEUS": { corpo: contratosDados() },
+  "GET /v1/escritorio/inicio/contratos?de=EQUIPE": { corpo: contratosDados("EQUIPE") },
+  "GET /v1/escritorio/inicio/financeiro?de=MEUS": { corpo: financeiroDados() },
+  "GET /v1/escritorio/inicio/financeiro?de=EQUIPE": { corpo: financeiroDados("EQUIPE") },
+  "GET /v1/escritorio/inicio/juridico?de=MEUS": { corpo: juridicoDados() },
+  "GET /v1/escritorio/inicio/juridico?de=EQUIPE": { corpo: juridicoDados({ de: "EQUIPE", escritorioPrazosHoje: null }) },
+  ...x,
+});
+
+test.describe("Início do Portal por áreas (F3.26)", () => {
+  test("a dona vê a faixa com as 4 áreas, os blocos na ordem do menu e a parte comum", async ({ page }) => {
+    await simular(page, marina());
+    await page.goto(P);
+    await expect(page.getByRole("heading", { level: 1, name: /^(Bom dia|Boa tarde|Boa noite), Marina\.$/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /6 pedem você hoje nas suas 4 áreas/ })).toBeVisible();
+    const faixa = page.getByRole("region", { name: "Hoje nas suas áreas" });
+    const cartoes = faixa.getByRole("link");
+    await expect(cartoes).toHaveCount(4);
+    await expect(cartoes.nth(2)).toContainText("1 parcela vencida");
+    await expect(cartoes.nth(2)).toContainText("De terceiros: 1 repasse atrasado");
+    await expect(cartoes.nth(3)).toHaveAttribute("href", "#area-juridico");
+    const titulos = page.locator(".ar-bloco h2");
+    await expect(titulos).toHaveText(["Comercial", "Contratos", "Financeiro", "Jurídico"]);
+    // Contratos: a cobrança parada e a assinatura de sexta, cada uma levando ao registro.
+    await expect(bloco(page, "Contratos").getByRole("link", { name: "Hélio Batista Corrêa · C-2026-022" })).toHaveAttribute("href", "/contratos/honorarios");
+    await expect(bloco(page, "Contratos")).toContainText("cobrança parada há 8 dias");
+    await expect(bloco(page, "Contratos")).toContainText("4 condições esperam uma etapa do caso");
+    // Financeiro: do escritório e, à parte, de terceiros (FI-06).
+    await expect(bloco(page, "Financeiro")).toContainText("Próxima ação em");
+    await expect(bloco(page, "Financeiro")).toContainText("R$ 1.200,00");
+    await expect(bloco(page, "Financeiro")).toContainText("No escritório todo, 4 parcelas estão vencidas");
+    const terc = page.getByRole("region", { name: "Repasses pendentes" });
+    await expect(terc).toContainText("De terceiros · não é do escritório");
+    await expect(terc.getByRole("link", { name: "Gabriela Teixeira · cliente" })).toHaveAttribute("href", "/financeiro/repasses/l1");
+    // Jurídico: atrasado, para hoje e esperando alguém (PD-04, PD-05).
+    await expect(page.getByRole("list", { name: "Esperando alguém · 1" })).toContainText("Esperando o cliente: procuração assinada");
+    await expect(bloco(page, "Jurídico")).toContainText("Fazer até hoje: o prazo final é amanhã");
+    await expect(bloco(page, "Jurídico")).toContainText("No escritório, 2 prazos vencem hoje: com Felipe e Larissa.");
+    // Comercial: o bloco de contatos aprovado, com a proposta esperando no rodapé.
+    await expect(bloco(page).getByText(/Nenhum contato seu está vencido. Na equipe há 4 vencidos/)).toBeVisible();
+    await expect(bloco(page)).toContainText("Proposta sua esperando resposta: P-2026-016, de Gabriela Teixeira. O retorno dela é um contato de hoje.");
+    // A parte comum.
+    const comum = page.getByRole("complementary", { name: "Parte comum do escritório" });
+    await expect(comum.getByRole("region", { name: "Agenda de hoje" })).toContainText("Conciliação · Ferreira x Banco Horizonte");
+    await expect(comum.getByRole("region", { name: "Esperando alguém" })).toContainText("Possível cliente novo");
+    await semViolacoes(page);
+  });
+
+  test("decisão 9: “Da equipe” troca a página inteira e mostra o responsável", async ({ page }) => {
+    const pedidos = await simular(page, marina());
+    await page.goto(P);
+    await expect(page.getByRole("button", { name: "Os meus" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Da equipe" }).click();
+    await expect(page.getByRole("heading", { name: "Hoje nas áreas da equipe" })).toBeVisible();
+    await expect(bloco(page, "Contratos").getByText("Marina Ribeiro").first()).toBeVisible();
+    await expect(bloco(page).getByText("Diego Almeida")).toBeVisible();
+    for (const a of ["contatos", "contratos", "financeiro", "juridico"]) {
+      expect(pedidos.some((p) => p.caminho === `/v1/escritorio/inicio/${a}` && p.busca === "?de=EQUIPE")).toBe(true);
+    }
+    await semViolacoes(page);
+  });
+
+  test("decisão 12: Bianca vê só Contratos e Financeiro, sem o botão da equipe", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...COMUNS,
+      "/v1/escritorio": { corpo: ESC_BIANCA },
+      "GET /v1/escritorio/inicio/resumo": { corpo: resumo({ areas: ["CONTRATOS", "FINANCEIRO"], pedem: { CONTRATOS: 0, FINANCEIRO: 2 }, total: 2 }) },
+      "GET /v1/escritorio/inicio/contratos?de=MEUS": { corpo: { ...contratosDados(), ...vazioBloco, pedem: 0, assinaturas: 0, esperandoEtapa: 0,
+        proximo: { em: dia(5), cliente: "Hélio Batista Corrêa", descricao: "x" } } },
+      "GET /v1/escritorio/inicio/financeiro?de=MEUS": { corpo: financeiroDados() },
+    });
+    await page.goto(P);
+    await expect(page.locator(".ar-bloco h2")).toHaveText(["Contratos", "Financeiro"]);
+    await expect(page.getByRole("button", { name: "Da equipe" })).toHaveCount(0);
+    await expect(bloco(page, "Contratos").getByRole("status")).toContainText("Nada seu em Contratos hoje.");
+    await expect(page.getByRole("link", { name: /Registrar recebimento/ })).toBeVisible();
+    expect(pedidos.some((p) => p.caminho.includes("/inicio/juridico") || p.caminho.includes("/inicio/contatos"))).toBe(false);
+    await semViolacoes(page);
+  });
+
+  test("decisão 12: com uma área só (Larissa) a faixa sai; sem área (Paula) só a parte comum", async ({ page }) => {
+    await simular(page, {
+      ...COMUNS,
+      "/v1/escritorio": { corpo: ESC_LARISSA },
+      "GET /v1/escritorio/inicio/resumo": { corpo: resumo({ areas: ["JURIDICO"], pedem: { JURIDICO: 2 }, total: 2 }) },
+      "GET /v1/escritorio/inicio/juridico?de=MEUS": { corpo: juridicoDados({ escritorioPrazosHoje: null }) },
+    });
+    await page.goto(P);
+    await expect(bloco(page, "Jurídico")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Hoje nas suas áreas" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Novo prazo/ })).toBeVisible();
+    await semViolacoes(page);
+
+    const pedidos = await simular(page, { ...COMUNS, "/v1/escritorio": { corpo: ESC_PAULA },
+      "GET /v1/escritorio/inicio/resumo": { corpo: resumo({ areas: [], pedem: {}, total: 0 }) } });
+    await page.goto(P);
+    await expect(page.getByText("O seu Início mostra o que é de todo o escritório.")).toBeVisible();
+    await expect(page.locator(".ar-bloco")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Agenda de hoje" })).toBeVisible();
+    expect(pedidos.some((p) => /inicio\/(contatos|contratos|financeiro|juridico)/.test(p.caminho))).toBe(false);
+    await semViolacoes(page);
+  });
+
+  test("decisão 14: um bloco que falha fica com o erro dentro; o resto do Início continua", async ({ page }) => {
+    await simular(page, marina({
+      "GET /v1/escritorio/inicio/juridico?de=MEUS": [{ status: 500, corpo: { erro: { codigo: "INTERNAL" } } }, { corpo: juridicoDados() }],
+    }));
+    await page.goto(P);
+    await expect(bloco(page, "Jurídico").getByRole("alert")).toContainText("Não deu para carregar o Jurídico");
+    await expect(page.getByRole("region", { name: "Hoje nas suas áreas" }).getByRole("link").nth(3)).toContainText("Não carregou");
+    await expect(bloco(page, "Contratos")).toContainText("Hélio Batista Corrêa");
+    await bloco(page, "Jurídico").getByRole("button", { name: "Tentar de novo" }).click();
+    await expect(bloco(page, "Jurídico")).toContainText("Recurso ordinário");
+    await semViolacoes(page);
+  });
+
+  test("limite de 5: o rodapé diz quantos faltam e de que tipo", async ({ page }) => {
+    const j = juridicoDados();
+    await simular(page, marina({ "GET /v1/escritorio/inicio/juridico?de=MEUS": { corpo: { ...j, total: 9, mostrando: 3,
+      grupos: [{ ...j.grupos[0], total: 1 }, { ...j.grupos[1], total: 4 }, { ...j.grupos[2], total: 4 }] } } }));
+    await page.goto(P);
+    await expect(bloco(page, "Jurídico")).toContainText("Mostrando 3 de 9. Os outros 6: 3 para hoje e 3 esperando alguém.");
+  });
+});
+
+test.describe("Início: bloco Comercial com os contatos do dia (F1.14, AP-06)", () => {
+  const diego = (x: Record<string, Resp | Resp[]> = {}) => ({ ...COMUNS, "/v1/escritorio": { corpo: ESC_DIEGO },
+    "GET /v1/escritorio/inicio/resumo": { corpo: resumo() }, ...x });
+
   test("os vencidos do mais antigo e depois os de hoje, com selo escrito e o contato", async ({ page }) => {
-    await simular(page, { "/v1/escritorio": { corpo: ESC_DIEGO }, "GET /v1/escritorio/inicio/contatos?de=MEUS": { corpo: contatos() } });
+    await simular(page, diego({ "GET /v1/escritorio/inicio/contatos?de=MEUS": { corpo: contatos() } }));
     await page.goto(P);
     await expect(page.getByRole("heading", { level: 1, name: /^(Bom dia|Boa tarde|Boa noite), Diego\.$/ })).toBeVisible();
-    await expect(bloco(page).getByText("Os seus: 3 vencidos e 2 para hoje")).toBeVisible();
-    const vencidos = page.getByRole("list", { name: "Vencidos · 3" });
+    await expect(bloco(page).getByText("Os seus: 3 contatos vencidos e 2 contatos para hoje")).toBeVisible();
+    const vencidos = page.getByRole("list", { name: "Contatos vencidos · 3" });
     await expect(vencidos.getByRole("listitem")).toHaveCount(3);
     await expect(vencidos.getByRole("listitem").first()).toContainText("vencido há 8 dias");
     await expect(vencidos.getByRole("listitem").last()).toContainText("vencido ontem");
-    await expect(page.getByRole("list", { name: "Para hoje · 2" }).getByText("Hoje", { exact: true }).first()).toBeVisible();
     await expect(vencidos.getByText(/Antônia · filha · /)).toBeVisible();
-    await expect(page.getByRole("link", { name: /3 contatos vencidos/ })).toBeVisible();
     await expect(page.getByRole("link", { name: "Antônia Ferreira Prado" })).toHaveAttribute("href", `/clientes/${cid(2)}`);
-    await expect(page.getByRole("link", { name: /Ver todos/ })).toHaveAttribute("href", "/clientes?filtro=vencidos");
+    await expect(page.getByRole("region", { name: "Hoje nas suas áreas" })).toHaveCount(0);
     await semViolacoes(page);
   });
 
   test("registrar atendimento abre a janela da ficha e o contato sai do bloco", async ({ page }) => {
-    const pedidos = await simular(page, {
-      "/v1/escritorio": { corpo: ESC_DIEGO },
+    const pedidos = await simular(page, diego({
       "GET /v1/escritorio/inicio/contatos?de=MEUS": [{ corpo: contatos() }, { corpo: contatos({ vencidos: [VENCIDOS[0], VENCIDOS[2]], totalVencidos: 2 }) }],
       [`GET /v1/escritorio/clientes/${cid(2)}`]: { corpo: FICHA },
       "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
       [`POST /v1/escritorio/clientes/${cid(2)}/atendimentos`]: { status: 201, corpo: { id: "f1" } },
-    });
+    }));
     await page.goto(P);
     await page.getByRole("button", { name: "Registrar atendimento de Antônia Ferreira Prado" }).click();
     const janela = page.getByRole("dialog");
@@ -92,60 +272,28 @@ test.describe("Início do Portal: contatos do dia (F1.14, AP-06)", () => {
     await janela.getByRole("checkbox", { name: /Sem próximo contato/ }).check();
     await janela.getByRole("button", { name: /Registrar/ }).last().click();
     await expect(page.getByRole("status").filter({ hasText: "Atendimento de Antônia registrado." })).toBeVisible();
-    await expect(page.getByRole("list", { name: "Vencidos · 2" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Contatos vencidos · 2" })).toBeVisible();
     const post = pedidos.find((p) => p.metodo === "POST")!;
     expect((post.corpo as { resumo: string }).resumo).toBe("Joana vai mandar a carta amanhã.");
   });
 
   test("limite de 5 com o pé dizendo quantos faltam", async ({ page }) => {
-    await simular(page, {
-      "/v1/escritorio": { corpo: ESC_DIEGO },
-      "GET /v1/escritorio/inicio/contatos?de=MEUS": { corpo: contatos({ hoje: HOJE.slice(0, 2), totalVencidos: 7, totalHoje: 3 }) },
-    });
+    await simular(page, diego({ "GET /v1/escritorio/inicio/contatos?de=MEUS": { corpo: contatos({ hoje: HOJE.slice(0, 2), totalVencidos: 7, totalHoje: 3 }) } }));
     await page.goto(P);
     await expect(bloco(page).getByText("Mostrando 5 de 10. Os outros 5: 4 vencidos e 1 de hoje.")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ver todos os vencidos em Clientes" })).toBeVisible();
   });
 
-  test("decisão 1: a dona vê os dela, o aviso da equipe, e “Da equipe” com o responsável", async ({ page }) => {
-    const gab = item(6, "Gabriela Teixeira", 0, "Retorno sobre o acordo", MARINA);
-    const ser = item(7, "Sérgio Nogueira Pires", 2, "Avisar sobre a audiência", FELIPE);
-    await simular(page, {
-      "/v1/escritorio": { corpo: ESC_MARINA },
-      "GET /v1/escritorio/inicio/contatos?de=MEUS": { corpo: contatos({ dono: true, vencidos: [], hoje: [gab], totalVencidos: 0, totalHoje: 1, maisAntigo: null, equipeVencidos: 4, pedidosExclusao: [] }) },
-      "GET /v1/escritorio/inicio/contatos?de=EQUIPE": { corpo: contatos({ de: "EQUIPE", dono: true, vencidos: [VENCIDOS[0], ser], hoje: [gab], totalVencidos: 2, totalHoje: 1 }) },
-    });
-    await page.goto(P);
-    await expect(page.getByRole("button", { name: "Meus" })).toHaveAttribute("aria-pressed", "true");
-    await expect(bloco(page).getByText(/Nenhum contato seu está vencido. Na equipe há 4 vencidos/)).toBeVisible();
-    await expect(page.getByRole("link", { name: /4 vencidos na equipe/ })).toBeVisible();
-    await page.getByRole("button", { name: "Da equipe" }).click();
-    await expect(bloco(page).getByText("Da equipe: 2 vencidos e 1 para hoje, com o responsável de cada um")).toBeVisible();
-    await expect(bloco(page).getByText("Felipe Matos")).toBeVisible();
-    await semViolacoes(page);
-  });
-
-  test("vazio com o próximo contato marcado; erro dentro do bloco com tentar de novo", async ({ page }) => {
-    await simular(page, {
-      "/v1/escritorio": { corpo: ESC_DIEGO },
+  test("em dia com o próximo contato; erro dentro do bloco com tentar de novo", async ({ page }) => {
+    await simular(page, diego({
       "GET /v1/escritorio/inicio/contatos?de=MEUS": [{ status: 500, corpo: { erro: { codigo: "INTERNAL" } } },
         { corpo: contatos({ vencidos: [], hoje: [], totalVencidos: 0, totalHoje: 0, maisAntigo: null, proximo: { em: "2026-11-20", nome: "Benedito Souza Lima" } }) }],
-    });
+    }));
     await page.goto(P);
-    await expect(bloco(page).getByRole("alert")).toContainText("Não deu para carregar os seus contatos");
+    await expect(bloco(page).getByRole("alert")).toContainText("Não deu para carregar os contatos");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await page.getByRole("button", { name: "Tentar de novo" }).click();
-    await expect(bloco(page).getByRole("heading", { name: "Tudo em dia com os seus clientes." })).toBeVisible();
-    await expect(bloco(page).getByText("sexta, 20/11")).toBeVisible();
-    await semViolacoes(page);
-  });
-
-  test("PT-02: sem a área Comercial, nada de contatos; a saudação e os atalhos", async ({ page }) => {
-    const pedidos = await simular(page, { "/v1/escritorio": { corpo: ESC_LARISSA } });
-    await page.goto(P);
-    await expect(page.getByRole("heading", { level: 2, name: "O seu Início ganha blocos com as suas áreas" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Contatos de hoje" })).toHaveCount(0);
-    expect(pedidos.some((p) => p.caminho.includes("/inicio/"))).toBe(false);
+    await bloco(page).getByRole("button", { name: "Tentar de novo" }).click();
+    await expect(bloco(page).getByRole("status")).toContainText("Nada seu em Comercial hoje.");
+    await expect(bloco(page).getByText("Próximo contato: Benedito Souza Lima, 20/11.")).toBeVisible();
     await semViolacoes(page);
   });
 });

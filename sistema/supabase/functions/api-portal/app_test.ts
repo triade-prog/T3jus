@@ -76,6 +76,14 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (a.p_de === "EQUIPE" && opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
       return { de: a.p_de, dono: !opcoes.naoDono, vencidos: [], hoje: [], totalVencidos: 0, totalHoje: 0, maisAntigo: null, equipeVencidos: null, pedidosExclusao: null };
     },
+    portal_inicio_resumo: () => ({ areas: ["JURIDICO"], dono: false, pedem: { JURIDICO: 2 }, total: 2, compromissos: 0, proximoCompromisso: null }),
+    portal_inicio_juridico: (a) => {
+      if (a.p_de === "EQUIPE" && opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
+      return { de: a.p_de, total: 0, mostrando: 0, grupos: [] };
+    },
+    portal_inicio_contratos: (a) => ({ de: a.p_de, total: 0, mostrando: 0, grupos: [] }),
+    portal_inicio_financeiro: (a) => ({ de: a.p_de }),
+    portal_financeiro_repasse_responsavel: () => ({ id: ANA, nome: "Ana" }),
     portal_cliente_pedir_exclusao: (a) => ({ id: "p1", estado: "PENDENTE", ...(a.p_dados as Record<string, unknown>) }),
     portal_cliente_recusar_exclusao: (a) => ({ id: "p1", estado: "RECUSADO", motivoRecusa: a.p_motivo }),
     portal_cliente_excluir_dados: (a) => {
@@ -629,6 +637,34 @@ Deno.test("F1.14: o Início pede os contatos da pessoa; \"Da equipe\" só para a
   const n = montar({ naoDono: true });
   const e = await n.pedir("/v1/escritorio/inicio/contatos?de=EQUIPE", { cookie: await noEscritorio(n) });
   assertEquals([e.status, (await erro(e)).detalhes?.motivo], [403, "SO_SOCIO_DONO"]);
+});
+
+Deno.test("F3.26: o Início por áreas tem uma rota por área, do escritório da sessão; \"Da equipe\" só para a dona", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/inicio/resumo", { cookie })).json()).total, 2);
+  for (const area of ["contratos", "financeiro", "juridico"]) {
+    const r = await m.pedir(`/v1/escritorio/inicio/${area}?de=EQUIPE`, { cookie });
+    assertEquals(r.status, 200);
+    const ch = m.chamadas.find((c) => c.funcao === `portal_inicio_${area}`)!;
+    assertEquals(ch.args.p_de, "EQUIPE");
+    assertEquals(typeof ch.args.p_escritorio, "string");
+  }
+  assertEquals((await erro(await m.pedir("/v1/escritorio/inicio/juridico?de=TODOS", { cookie }))).detalhes?.campos, ["de"]);
+  const n = montar({ naoDono: true });
+  const e = await n.pedir("/v1/escritorio/inicio/juridico?de=EQUIPE", { cookie: await noEscritorio(n) });
+  assertEquals([e.status, (await erro(e)).detalhes?.motivo], [403, "SO_SOCIO_DONO"]);
+});
+
+Deno.test("F3.26: trocar o responsável pelo repasse pede alguém e vai ao banco com o repasse da rota", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const ruim = await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/responsavel`, { metodo: "PUT", corpo: {}, cookie });
+  assertEquals((await erro(ruim)).detalhes?.campos, ["responsavelId"]);
+  const ok = await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/responsavel`, { metodo: "PUT", corpo: { responsavelId: ANA }, cookie });
+  assertEquals((await ok.json()).responsavel.nome, "Ana");
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_repasse_responsavel")!;
+  assertEquals([ch.args.p_levantamento, ch.args.p_responsavel], [CLIENTE, ANA]);
 });
 
 Deno.test("F1.15: o pedido de exclusão confere data, canal e quem pediu", async () => {
