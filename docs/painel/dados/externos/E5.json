@@ -1,0 +1,9 @@
+{
+  "id": "E5",
+  "texto": "Supabase hospedado mandando e-mail pelo Resend: chave do Resend no SMTP, modelos colados e endereços permitidos (docs/EMAILS.md)",
+  "quem": "Carol",
+  "precisa_em": "F1",
+  "refs": [],
+  "status": "pendente",
+  "ordem": 50
+}

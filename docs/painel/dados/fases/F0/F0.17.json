@@ -1,0 +1,12 @@
+{
+  "id": "F0.17",
+  "texto": "E-mails do login (convite, nova senha e link de acesso) em português, saindo como T3jus <nao-responda@t3jus.pro> pelo Resend",
+  "peca": "B1",
+  "refs": [
+    "PT-08",
+    "PT-20"
+  ],
+  "status": "feito",
+  "evidencia": "Modelos em sistema/supabase/templates (link {{ .RedirectTo }}?token_hash, 1 hora, uso único), SMTP do Resend e modelos no config.toml, passo a passo em docs/EMAILS.md",
+  "ordem": 170
+}

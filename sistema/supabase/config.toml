@@ -62,6 +62,34 @@ secure_password_change = true
 otp_expiry = 3600
 max_frequency = "60s"
 
+# E-mails do login saem pelo Resend (domínio t3jus.pro verificado em São Paulo), como
+# "T3jus <nao-responda@t3jus.pro>". A senha do SMTP é a chave da API do Resend: localmente vem
+# de RESEND_API_KEY; no projeto hospedado, a Carol cola no painel (Authentication > Emails >
+# SMTP Settings). Passo a passo em docs/EMAILS.md. Aqui fica desligado para o ambiente local não
+# mandar e-mail de verdade (os e-mails param na caixa de teste do Supabase local); ligar só para
+# testar o Resend de propósito.
+[auth.email.smtp]
+enabled = false
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "nao-responda@t3jus.pro"
+sender_name = "T3jus"
+
+# Modelos em português (docs/EMAILS.md). O link é sempre {{ .RedirectTo }}?token_hash={{ .TokenHash }}.
+[auth.email.template.invite]
+subject = "Seu convite para o T3jus"
+content_path = "./supabase/templates/convite.html"
+
+[auth.email.template.recovery]
+subject = "Crie uma nova senha no T3jus"
+content_path = "./supabase/templates/nova-senha.html"
+
+[auth.email.template.magic_link]
+subject = "Seu link para entrar no T3jus"
+content_path = "./supabase/templates/link-de-acesso.html"
+
 # Autenticador (TOTP): obrigatório para a equipe no Console; opcional para o sócio.
 [auth.mfa]
 max_enrolled_factors = 4
