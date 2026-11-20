@@ -12,15 +12,20 @@ export type Resposta<T> = { ok: true; dados: T } | { ok: false; status: number; 
 
 export async function chamarApi<T>(
   caminho: string,
-  opcoes: { metodo?: "GET" | "POST" | "PUT" | "PATCH"; corpo?: unknown; sinal?: AbortSignal; buscar?: typeof fetch } = {},
+  opcoes: {
+    metodo?: "GET" | "POST" | "PUT" | "PATCH"; corpo?: unknown; sinal?: AbortSignal; buscar?: typeof fetch;
+    /** Um arquivo, enviado como está (application/octet-stream), no lugar do JSON. */
+    bruto?: Blob;
+  } = {},
 ): Promise<Resposta<T>> {
   const buscar = opcoes.buscar ?? fetch;
+  const temCorpo = opcoes.corpo !== undefined || opcoes.bruto !== undefined;
   let r: Response;
   try {
     r = await buscar(`/api${caminho}`, {
-      method: opcoes.metodo ?? (opcoes.corpo === undefined ? "GET" : "POST"),
-      headers: opcoes.corpo === undefined ? undefined : { "content-type": "application/json" },
-      body: opcoes.corpo === undefined ? undefined : JSON.stringify(opcoes.corpo),
+      method: opcoes.metodo ?? (temCorpo ? "POST" : "GET"),
+      headers: opcoes.bruto ? { "content-type": "application/octet-stream" } : temCorpo ? { "content-type": "application/json" } : undefined,
+      body: opcoes.bruto ?? (opcoes.corpo === undefined ? undefined : JSON.stringify(opcoes.corpo)),
       credentials: "same-origin",
       cache: "no-store",
       signal: opcoes.sinal,

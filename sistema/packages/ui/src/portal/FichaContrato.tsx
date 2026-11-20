@@ -18,6 +18,7 @@ import { fraseDoContrato, janelaProgramacao, juntarItens, nomeSituacaoContrato, 
 import { Toast } from "./FichaCliente.tsx";
 import { CondicoesLeitura, SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
+import { OrigemPlanilha } from "./Importacao.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
 type Aba = "contrato" | "recebimentos" | "documentos";
@@ -442,6 +443,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
               <p className="meta">
                 <span className={`selo selo-${s.tom === "andamento" ? "ativo" : s.tom}`}>{nomeSituacaoContrato(f.situacao)}</span>
                 <span>{f.objeto}</span>
+                <OrigemPlanilha id={f.id} />
               </p>
             </div>
           </div>

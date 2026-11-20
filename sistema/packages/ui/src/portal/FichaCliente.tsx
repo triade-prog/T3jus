@@ -22,6 +22,7 @@ import {
 import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
+import { OrigemPlanilha } from "./Importacao.tsx";
 import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
 export type AbaCliente = "ficha" | "atendimentos";
@@ -900,6 +901,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
                   <span className="num">{formatarDocumento(f.documento)}</span>
                 </>
               ) : null}
+              <OrigemPlanilha id={excluido ? null : f.id} />
             </p>
           </div>
         </div>

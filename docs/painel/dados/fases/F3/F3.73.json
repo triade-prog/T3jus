@@ -1,0 +1,11 @@
+{
+  "id": "F3.73",
+  "texto": "Mostrar na aba Recebimentos do contrato as parcelas pagas antes do T3jus, vindas da importação de planilha",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 730,
+  "proximo": "Na ficha do contrato, listar as parcelas com pago_antes (canceladas como \"Paga antes do T3jus\") como informação, fora dos totais"
+}

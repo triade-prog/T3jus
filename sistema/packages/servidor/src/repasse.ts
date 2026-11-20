@@ -30,6 +30,11 @@ export function opcoesConsole(env: Ambiente): OpcoesRepasse {
 
 const METODOS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const CAMINHO_VALIDO = /^v1(\/[A-Za-z0-9_-]+)+$/;
+// A planilha da importação (F3.55) é o único corpo que não é JSON: vai como está, até 5 MB.
+const ENVIO_PLANILHA = /^v1\/escritorio\/importacoes$/;
+const MAX_PLANILHA_BYTES = 5 * 1024 * 1024;
+// Importar grava até 2.000 linhas numa transação: espera mais que o normal.
+const DEMORADO = /^v1\/escritorio\/importacoes(\/[0-9a-f-]+\/(importar|colunas|desfazer))?$/;
 
 function erro(codigo: CodigoErro): Response {
   const e = new ErroDominio(codigo);
@@ -93,10 +98,11 @@ export function criarRepasse(obterOpcoes: () => OpcoesRepasse) {
     let corpo: ArrayBuffer | undefined;
     if (req.method !== "GET" && req.method !== "DELETE") {
       const tipo = req.headers.get("content-type") ?? "";
-      if (!tipo.startsWith("application/json")) return erro("VALIDATION_ERROR");
+      const planilha = req.method === "POST" && ENVIO_PLANILHA.test(caminho) && tipo.startsWith("application/octet-stream");
+      if (!planilha && !tipo.startsWith("application/json")) return erro("VALIDATION_ERROR");
       corpo = await req.arrayBuffer();
-      if (corpo.byteLength > (op.maxCorpoBytes ?? 64 * 1024)) return erro("VALIDATION_ERROR");
-      headers.set("content-type", "application/json");
+      if (corpo.byteLength > (planilha ? MAX_PLANILHA_BYTES : (op.maxCorpoBytes ?? 64 * 1024))) return erro("VALIDATION_ERROR");
+      headers.set("content-type", planilha ? "application/octet-stream" : "application/json");
     }
 
     const url = new URL(`${op.destino.replace(/\/$/, "")}/${caminho}`);
@@ -109,7 +115,7 @@ export function criarRepasse(obterOpcoes: () => OpcoesRepasse) {
         headers,
         body: corpo,
         redirect: "manual",
-        signal: AbortSignal.timeout(op.tempoLimiteMs ?? 10_000),
+        signal: AbortSignal.timeout(DEMORADO.test(caminho) ? Math.max(op.tempoLimiteMs ?? 10_000, 60_000) : (op.tempoLimiteMs ?? 10_000)),
       });
     } catch {
       return erro("UPSTREAM_UNAVAILABLE");

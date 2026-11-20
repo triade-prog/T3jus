@@ -5,7 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 550,
-  "proximo": "Programar a importação de planilha seguindo docs/design/aprovadas/portal-importacao/NOTAS.md (tabelas e API descritas lá)"
+  "evidencia": "Migration 0420_portal_importacao.sql (importacoes e importacao_linhas, ligação das colunas, pares, prévia com correção e decisões, importar tudo ou nada, desfazer em 7 dias, limpeza em 24 horas), teste 042_portal_importacao_test.sql (53), leitura do .xlsx e .csv na API (domain importacao.ts, 5 testes), rotas /v1/escritorio/importacoes/*, telas Importacao.tsx (4 passos, resultado, histórico, desfazer, \"veio da planilha\" nas fichas) e e2e portal-importacao.spec.ts (celular e computador, com axe)"
 }

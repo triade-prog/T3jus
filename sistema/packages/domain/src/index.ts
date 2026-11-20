@@ -22,3 +22,4 @@ export * from "./montar.ts";
 export * from "./ia.ts";
 export * from "./inicio.ts";
 export * from "./relatorios.ts";
+export * from "./importacao.ts";

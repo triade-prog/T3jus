@@ -72,6 +72,21 @@ describe("F0.8: repasse /api", () => {
     expect((await repassar(grande, ctx(["v1", "x"]))).status).toBe(400);
   });
 
+  it("F3.55: a planilha passa como arquivo, até 5 MB, só no envio da importação", async () => {
+    const f = mockFetch(new Response("{}", { status: 201 }));
+    const caminho = ["v1", "escritorio", "importacoes"];
+    const arq = new Request("https://portal.exemplo/api/v1/escritorio/importacoes?oQue=CLIENTES&nome=a.xlsx", {
+      method: "POST", body: new Uint8Array(200_000), headers: { "content-type": "application/octet-stream" } });
+    expect((await repassar(arq, ctx(caminho))).status).toBe(201);
+    expect(new Headers(f.mock.calls[0]![1].headers).get("content-type")).toBe("application/octet-stream");
+    expect(String(f.mock.calls[0]![0])).toContain("oQue=CLIENTES");
+    const outro = new Request("https://portal.exemplo/api/v1/x", { method: "POST", body: new Uint8Array(10), headers: { "content-type": "application/octet-stream" } });
+    expect((await repassar(outro, ctx(["v1", "x"]))).status).toBe(400);
+    const grande = new Request("https://portal.exemplo/api/v1/escritorio/importacoes", {
+      method: "POST", body: new Uint8Array(5 * 1024 * 1024 + 1), headers: { "content-type": "application/octet-stream" } });
+    expect((await repassar(grande, ctx(caminho))).status).toBe(400);
+  });
+
   it("função fora do ar vira UPSTREAM_UNAVAILABLE", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("fetch failed"); }));
     const r = await repassar(new Request("https://portal.exemplo/api/v1/saude"), ctx(["v1", "saude"]));
