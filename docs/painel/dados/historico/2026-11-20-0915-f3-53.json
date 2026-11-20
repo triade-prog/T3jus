@@ -1,0 +1,10 @@
+{
+  "data": "20/11/2026",
+  "inicio": "09:15",
+  "fim": "09:25",
+  "texto": "A IA que atende passa a usar a OpenAI (decisão da Carol), com o segredo OPENAI_API_KEY.",
+  "refs": [
+    "F3.53",
+    "PA-05"
+  ]
+}

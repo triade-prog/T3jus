@@ -311,7 +311,7 @@ Telas aprovadas em `docs/design/aprovadas/portal-agenda-conversas`. Migration `0
 - **Saída da pessoa (EX-10):** o gatilho `conversas_passar_de_quem_saiu` passa as conversas para quem recebeu o que era dela.
 - **API:** `GET /v1/escritorio/conversas` (`?mostrar=PRECISA|EQUIPE|IA|RESOLVIDAS&q=`), `GET /conversas/:id`, `POST /conversas/:id/assumir`, `/devolver`, `/passar` e `POST /conversas/:id/mensagens` (201).
 - **Tela:** `/conversas` (lista, conversa e contexto; no celular, uma coisa por vez), com o número de quem espera no menu. Automações e Avisos automáticos mostram "em preparo".
-- **Falta:** a IA e o envio e recebimento pelo provedor (F3.53), ligar o número em Escritório › WhatsApp e IA (F3.54), o aviso no sino (F3.57) e as automações (F1.17).
+- **Falta:** o envio e o recebimento pela Meta (F3.58) e o aviso no sino (F3.57). A IA que atende está em F3.53, o número em F3.54 e as automações em F1.17.
 
 ### Escritório › WhatsApp e IA (F3.54; PA-04, PA-02)
 
@@ -323,7 +323,19 @@ Telas aprovadas em `docs/design/aprovadas/portal-whatsapp`. Migration `0310_port
 - **Regras:** o texto do aviso não começa nem termina com campo (`CAMPO_NO_INICIO_OU_FIM`); desligar pede motivo e confirmação e pausa a IA; a IA só liga com o número ligado e depois de um teste (`SEM_TESTE`); pausar é um clique.
 - **API:** `GET /v1/escritorio/whatsapp`, `PUT /whatsapp/rascunho`, `POST /whatsapp/conferir-numero` (o número brasileiro vira E.164; fixo por SMS recusa `FIXO_SEM_SMS`), `POST /whatsapp/desligar`, `POST /whatsapp/avisos/:chave`, `GET` e `PATCH /v1/escritorio/ia`, `POST /ia/ligar`, `POST /ia/pausar`, `POST /ia/respostas` e `PATCH /ia/respostas/:id`.
 - **Tela:** `/meu-escritorio/whatsapp` (abas Número e Como a IA atende; `?ligar=1`, `?aviso=CHAVE`, `?parte=ia&ia=passar|saber|testar`). Escritório ganhou a barra de seções.
-- **Falta:** a ligação real com a Meta, o webhook e trocar o número (F3.58); Testar sem enviar e a IA que responde (F3.53).
+- **Falta:** a ligação real com a Meta, o webhook e trocar o número (F3.58). Testar sem enviar e a IA que responde estão em F3.53.
+
+### A IA que atende e Testar sem enviar (F3.53; PA-05, PA-04, PD-07, PT-11)
+
+Tela aprovada em `docs/design/aprovadas/portal-whatsapp` (estado `ia-testar`). Migration `0330_portal_ia_atende.sql`, teste `033_portal_ia_atende_test.sql`, domínio `packages/domain/src/ia.ts` (com `ia.test.ts`), serviço `supabase/functions/_shared/ia.ts` e `_shared/atendimento.ts` (com `atendimento_test.ts`), e2e `portal-whatsapp.spec.ts`.
+
+- **Modelo:** OpenAI (decisão da Carol em 20/11/2026), `gpt-4.1-mini` por padrão, pela API de Chat Completions com saída em JSON Schema estrito. Os segredos `OPENAI_API_KEY` e, para trocar de modelo sem mexer no código, `IA_MODELO`. Sem a chave, o teste responde `UPSTREAM_UNAVAILABLE` e a conversa vai para a equipe. O resto do serviço só conhece a interface `Cerebro`; os testes usam um falso.
+- **Antes do modelo (`decidirAntes`):** fica em silêncio em conversa com a equipe ou já respondida por uma pessoa (inclusive pelo app no celular, `whatsapp_mensagem_do_app`); com a IA desligada ou pausada, passa direto sem responder; com palavra do escritório, passa sem chamar o modelo.
+- **O que o modelo recebe:** as regras fixas, a configuração do escritório e só os dados de quem escreve (`ia_contexto_json`: casos, compromissos não internos, parcelas abertas e documentos pedidos, filtrados pelos assuntos ligados). Número desconhecido não recebe dado de cliente e vai para o Comercial. A IA não aprende com as conversas.
+- **Depois do modelo (`finalizarResposta`):** a resposta passa pela conferência das regras fixas (opinião, negociar, prometer, fingir ser pessoa, longa ou vazia); barrada, não sai e a conversa passa (`REGRA_FIXA`). A primeira resposta e a pergunta "é robô?" se apresentam como assistente virtual. Fora do horário, ao passar, diz quando uma pessoa vai ver (`proximoAtendimento`, com feriados). O que ela não soube vira pergunta para o escritório responder.
+- **Serviço:** `ia_atendimento` monta o atendimento; `atenderConversa` grava por `conversa_ia_respondeu`, `conversa_ia_nao_soube` e `conversa_ia_passou`. Os motivos novos (`URGENCIA`, `NAO_SOUBE`, `IA_DESLIGADA`, `PALAVRA`, `REGRA_FIXA`) e a razão `APP_CELULAR` entraram nas listas do banco e do domínio.
+- **Testar sem enviar:** `GET /v1/escritorio/ia/teste/clientes?q=` e `POST /v1/escritorio/ia/testar`, só a sócia dona. Usa o mesmo contexto e o mesmo caminho da IA de verdade, sem enviar nem gravar na ficha; grava só `ia_config.testada_em` e "como" (um contato da ficha ou um número desconhecido, nunca o nome). A tela mostra a fonte de cada resposta e para quem passaria, com o motivo.
+- **Falta:** ligar o serviço às mensagens que chegam pela Meta e o envio com entregue, lida ou falha (F3.58).
 
 ### Conversas › Automações (F1.17; PA-03)
 

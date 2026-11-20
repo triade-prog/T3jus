@@ -26,6 +26,11 @@ export const MOTIVOS_CONVERSA = {
   RECLAMACAO: "Reclamação",
   PEDIU_PESSOA: "Pediu para falar com alguém",
   OUTRO: "Precisa de alguém",
+  URGENCIA: "Urgência",
+  NAO_SOUBE: "A IA não soube",
+  IA_DESLIGADA: "IA desligada",
+  PALAVRA: "Palavra do escritório",
+  REGRA_FIXA: "Barrada por regra fixa",
 } as const;
 export type MotivoConversa = keyof typeof MOTIVOS_CONVERSA;
 
@@ -38,6 +43,7 @@ export const RAZOES_RESPONSAVEL = {
   PASSADA: "a conversa foi passada para essa pessoa",
   ASSUMIU: "assumiu a conversa",
   SAIU_DA_EQUIPE: "recebeu as conversas de quem saiu da equipe",
+  APP_CELULAR: "respondeu pelo app do WhatsApp no celular",
 } as const;
 export type RazaoResponsavel = keyof typeof RAZOES_RESPONSAVEL;
 
@@ -81,11 +87,11 @@ export interface ListaConversas {
   conversas: LinhaConversa[];
 }
 
-export type EventoConversa = "IA_PASSOU" | "ASSUMIU" | "DEVOLVEU" | "PASSOU" | "IA_RESOLVEU" | "RESPONSAVEL_SAIU";
+export type EventoConversa = "IA_PASSOU" | "ASSUMIU" | "DEVOLVEU" | "PASSOU" | "IA_RESOLVEU" | "RESPONSAVEL_SAIU" | "APP_RESPONDEU";
 
 export interface MensagemConversa {
   id: string;
-  autor: "CLIENTE" | "IA" | "EQUIPE" | "AVISO" | "SISTEMA";
+  autor: "CLIENTE" | "IA" | "EQUIPE" | "AVISO" | "SISTEMA" | "APP";
   pessoa?: PessoaRef;
   evento?: EventoConversa;
   para?: PessoaRef;

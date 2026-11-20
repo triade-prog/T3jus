@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import {
   ASSUNTOS_IA, AVISOS_WHATSAPP, DIAS_SEMANA, QUALIDADES, telefoneBr, telefoneE164, textoAvisoValido, TONS_IA,
   type AssuntoIa, type AvisoWhatsapp, type ChaveAviso, type ConfigIa, type EventoWhatsapp, type PaginaIa, type PaginaWhatsapp,
-  type RespostaIa, type TomIa,
+  MOTIVOS_CONVERSA, type ClienteTesteIa, type MotivoConversa, type PlanoIa, type RegraBarrada, type RespostaIa, type RespostaTesteIa, type TomIa,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
@@ -1226,25 +1226,202 @@ function IaSaber({ ia, aoMudar }: { ia: PaginaIa; aoMudar: (ia: PaginaIa, feito?
   );
 }
 
-function IaTestar({ ia }: { ia: PaginaIa }) {
+const REGRA_BARRADA_TEXTO: Record<RegraBarrada, string> = {
+  OPINIAO: "Regra fixa: nunca dá opinião sobre o resultado.",
+  NEGOCIAR: "Regra fixa: nunca negocia valor nem desconto.",
+  PROMETER: "Regra fixa: nunca promete prazo nem resultado.",
+  FINGIR_PESSOA: "Regra fixa: nunca diz que é uma pessoa.",
+  LONGA: "A resposta ficou longa demais para o WhatsApp.",
+  VAZIA: "A IA não montou uma resposta.",
+};
+const EXPERIMENTE = ["Manda a segunda via do boleto", "Quero falar com a doutora", "Meu filho foi preso agora", "Quanto custa uma ação?"];
+type MsgTeste = { autor: "CLIENTE" | "IA"; texto: string; hora: string; plano?: PlanoIa };
+const agoraHora = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+/** Testar sem enviar (F3.53): a mesma IA que atende, com o contexto de um contato da ficha ou de um
+ * número desconhecido, sem enviar nada nem gravar na ficha. Só a sócia dona testa. */
+function IaTestar({ ia, aoTestar }: { ia: PaginaIa; aoTestar: (ia: PaginaIa) => void }) {
+  const [clientes, setClientes] = useState<ClienteTesteIa[] | null>(null);
+  const [busca, setBusca] = useState("");
+  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [quem, setQuem] = useState<string>("novo");
+  const [msgs, setMsgs] = useState<MsgTeste[]>([]);
+  const [texto, setTexto] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [erroTexto, setErroTexto] = useState(false);
+  const fim = useRef<HTMLLIElement>(null);
+
+  async function buscar(q: string) {
+    const r = await chamarPortal<{ clientes: ClienteTesteIa[] }>(`/v1/escritorio/ia/teste/clientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+    if (!r.ok) { setErro(textoDoErro(r.erro)); setClientes([]); return; }
+    setClientes(r.dados.clientes);
+    const c = r.dados.clientes[0];
+    if (c && !r.dados.clientes.some((x) => x.id === clienteId)) escolher(c);
+  }
+  useEffect(() => { if (ia.dono) void Promise.resolve().then(() => buscar("")); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fim.current?.scrollIntoView({ block: "nearest" }); }, [msgs.length]);
+
+  function escolher(c: ClienteTesteIa | null) {
+    setClienteId(c?.id ?? null);
+    const principal = c?.contatos.find((x) => x.principal) ?? c?.contatos[0];
+    setQuem(principal?.id ?? "novo");
+    setMsgs([]);
+  }
+  const cliente = clientes?.find((c) => c.id === clienteId) ?? null;
+  const contato = quem === "novo" ? null : cliente?.contatos.find((x) => x.id === quem) ?? null;
+  const nomeTeste = contato ? primeiro(contato.nome) : "o número desconhecido";
+
+  async function enviar(t: string) {
+    const limpo = t.trim();
+    if (!limpo) { setErroTexto(true); return; }
+    setErroTexto(false);
+    setErro(null);
+    const novas: MsgTeste[] = [...msgs, { autor: "CLIENTE", texto: limpo, hora: agoraHora() }];
+    setMsgs(novas);
+    setTexto("");
+    setEnviando(true);
+    const r = await chamarPortal<RespostaTesteIa>("/v1/escritorio/ia/testar", {
+      corpo: {
+        clienteId: contato ? clienteId : null, contatoId: contato?.id ?? null,
+        mensagens: novas.slice(-20).map((m) => ({ autor: m.autor, texto: m.texto })),
+      },
+    });
+    setEnviando(false);
+    if (!r.ok) {
+      setErro(r.erro.codigo === "UPSTREAM_UNAVAILABLE"
+        ? "A IA não respondeu agora. Nada foi enviado; tente de novo em alguns minutos."
+        : textoDoErro(r.erro));
+      return;
+    }
+    setMsgs([...novas, { autor: "IA", texto: r.dados.plano.enviar ?? "", hora: agoraHora(), plano: r.dados.plano }]);
+    aoTestar(r.dados.ia);
+  }
+
+  if (!ia.dono) {
+    return (
+      <div className="wa-grade">
+        <div className="wa-col">
+          <Estado icone="olho" moldura nivel={2} titulo="Só a sócia dona testa a IA">
+            {ia.quemCuida?.nome ?? "A sócia dona"} testa a IA antes de ligar. Você pode sugerir respostas em “O que ela sabe”.
+          </Estado>
+        </div>
+      </div>
+    );
+  }
+
+  const respostas = msgs.filter((m) => m.plano);
   return (
     <div className="wa-grade">
       <div className="wa-col">
-        <Estado icone="olho" moldura nivel={2} titulo="O teste chega junto com a IA que responde">
-          Aqui você vai conversar como um cliente da ficha, como um contato autorizado ou como um número desconhecido, sem enviar nada, e ver de onde veio cada resposta e quando ela passaria para alguém. A IA só liga depois de um teste.
-        </Estado>
+        <section className="folha" aria-labelledby="t-ts" style={{ overflow: "hidden" }}>
+          <div className="folha-cab"><div><h2 id="t-ts"><Icone nome="olho" className="ico" />Testar sem enviar</h2><p className="sub">Escreva como se fosse o cliente</p></div></div>
+          <div className="wa-sim-ctl" style={{ display: "grid", gap: 12 }}>
+            <form className="wa-compor" style={{ padding: 0, border: 0 }} role="search" onSubmit={(e) => { e.preventDefault(); void buscar(busca.trim()); }}>
+              <div className="campo">
+                <label htmlFor="ts-busca">Cliente do teste</label>
+                <input className="entrada" id="ts-busca" type="search" placeholder="Nome do cliente" autoComplete="off" maxLength={80} value={busca} onChange={(e) => setBusca(e.target.value)} />
+              </div>
+              <button className="btn btn-sec" type="submit"><Icone nome="busca" className="ico" />Buscar</button>
+            </form>
+            {clientes && clientes.length > 1 ? (
+              <div className="campo" style={{ margin: 0 }}>
+                <label htmlFor="ts-cliente">Escolha o cliente</label>
+                <select className="entrada" id="ts-cliente" value={clienteId ?? ""} onChange={(e) => escolher(clientes.find((c) => c.id === e.target.value) ?? null)}>
+                  {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </select>
+              </div>
+            ) : null}
+            {clientes === null ? <Carregando rotulo="Buscando clientes…" linhas={1} /> : null}
+            <fieldset className="x-ops">
+              <legend>Conversar como</legend>
+              <div className="x-ops-l">
+                {(cliente?.contatos ?? []).map((x) => (
+                  <label key={x.id} className="opcao">
+                    <input className="marcar" type="radio" name="ts-quem" value={x.id} checked={quem === x.id} onChange={() => { setQuem(x.id); setMsgs([]); }} />
+                    <span>{x.nome}<small>{x.principal ? "Cliente · contato principal" : `${x.papel ? `${x.papel[0]!.toUpperCase()}${x.papel.slice(1)} · ` : ""}contato autorizado`}</small></span>
+                  </label>
+                ))}
+                <label className="opcao">
+                  <input className="marcar" type="radio" name="ts-quem" value="novo" checked={quem === "novo"} onChange={() => { setQuem("novo"); setMsgs([]); }} />
+                  <span>Número desconhecido<small>Fora de qualquer ficha</small></span>
+                </label>
+              </div>
+            </fieldset>
+            {clientes && !clientes.length ? <p className="wa-nota"><Icone nome="ajuda" className="ico" /><span>Nenhum cliente com contato na ficha{busca ? " com esse nome" : ""}. Dá para testar como número desconhecido.</span></p> : null}
+          </div>
+          <p className="wa-simfaixa"><Icone nome="escudo" className="ico" /><span><b>Simulação.</b> Nada é enviado {contato ? `a ${primeiro(contato.nome)}` : "a ninguém"}, e nada fica na ficha{contato ? " dele ou dela" : ""}.</span></p>
+          <ol className="cv-msgs" aria-label="Conversa de teste" aria-live="polite">
+            {msgs.length ? null : <li className="cv-sis"><Icone nome="conversas" className="ico" /><span>Escreva a primeira mensagem como {nomeTeste} e veja o que a IA responderia.</span></li>}
+            {msgs.map((m, i) => m.autor === "CLIENTE" ? (
+              <li key={i} className="cv-m cli"><div className="cv-b"><span className="de">{contato ? primeiro(contato.nome) : "Número desconhecido"} (teste)</span>{m.texto}<time>{m.hora}</time></div></li>
+            ) : (
+              <MsgIaTeste key={i} m={m} />
+            ))}
+            {enviando ? <li className="cv-sis"><Icone nome="ia" className="ico" /><span>A IA está pensando…</span></li> : null}
+            <li ref={fim} aria-hidden="true" style={{ height: 0 }} />
+          </ol>
+          {erro ? <div className="wa-corpo"><Aviso tom="urgencia" titulo="Não deu para testar">{erro}</Aviso></div> : null}
+          <form className="wa-compor" onSubmit={(e) => { e.preventDefault(); void enviar(texto); }}>
+            <div className="campo">
+              <label htmlFor="ts-txt">Escreva como {contato ? primeiro(contato.nome) : "o número desconhecido"}</label>
+              <input className="entrada" id="ts-txt" placeholder="Ex.: manda a segunda via do boleto" autoComplete="off" maxLength={1000} value={texto}
+                onChange={(e) => setTexto(e.target.value)} aria-invalid={erroTexto ? true : undefined} aria-describedby={descritoPor(erroTexto && "ts-txt-er")} />
+              {erroTexto ? <ErroCampo id="ts-txt-er">Escreva a mensagem do teste.</ErroCampo> : null}
+            </div>
+            <button className="btn btn-pri" type="submit" disabled={enviando}><Icone nome="enviar" className="ico" />Enviar no teste</button>
+          </form>
+        </section>
       </div>
       <aside className="wa-col" aria-label="Explicação">
-        <Folha id="t-por" titulo="O que o teste vai mostrar" icone="fonte">
-          <ListaX itens={[
-            ["fonte", <><b>De onde veio cada resposta</b>: a etapa do caso, a Agenda, o Financeiro ou uma resposta do escritório.</>],
-            ["mao", <><b>Quando ela passaria para alguém</b>, com o motivo e para quem.</>],
-            ["escudo", <><b>Nada é enviado</b> e nada fica na ficha do cliente.</>],
-          ]} />
+        <Folha id="t-por" titulo="Por que respondeu assim" sub="Cada resposta, com a regra e a fonte" icone="fonte">
+          {respostas.length ? (
+            <ol className="wa-por">
+              {respostas.map((m, i) => {
+                const p = m.plano!;
+                return (
+                  <li key={i}>
+                    <span className="disco"><span>{i + 1}</span></span>
+                    {p.passar ? (
+                      <span className="passa"><b>Passaria para {primeiro(p.passariaPara) || "a equipe"}.</b>
+                        <small>{p.barrada ? REGRA_BARRADA_TEXTO[p.barrada] : p.motivoTexto ?? MOTIVOS_CONVERSA[p.passar as MotivoConversa] ?? "Precisa de alguém da equipe."}{p.foraDoHorario ? " Fora do horário: a resposta diz quando alguém vai ver." : ""}</small></span>
+                    ) : (
+                      <span><b>Respondeu sozinha.</b><small>{p.fonte ? `Com o que está em ${p.fonte}.` : "Com as respostas do escritório."}{contato ? ` ${primeiro(contato.nome)} é ${contato.principal ? "contato principal" : "contato autorizado"} da ficha.` : ""}</small></span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <div className="wa-corpo"><p className="wa-nota"><Icone nome="fonte" className="ico" /><span>Depois de cada resposta, aqui aparece de onde ela veio e, quando for o caso, para quem a conversa passaria e por quê.</span></p></div>
+          )}
           {ia.testadaEm ? <div className="wa-corpo" style={{ paddingTop: 0 }}><Nota icone="historico">Último teste: {quando(ia.testadaEm)}{ia.testadaComo ? `, como ${ia.testadaComo}` : ""}.</Nota></div> : null}
+        </Folha>
+        <Folha id="t-exp" titulo="Experimente também">
+          <div className="wa-corpo">
+            <div className="au-chips" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {EXPERIMENTE.map((t) => <button key={t} className="btn btn-sec" type="button" style={{ minHeight: 44, fontSize: 13 }} disabled={enviando} onClick={() => void enviar(t)}>{t}</button>)}
+            </div>
+            <p className="wa-nota"><Icone nome="ajuda" className="ico" /><span>Como “Número desconhecido”, a IA só se apresenta, pergunta nome e assunto e passa para o Comercial, sem falar de nenhum caso.</span></p>
+          </div>
         </Folha>
       </aside>
     </div>
+  );
+}
+
+function MsgIaTeste({ m }: { m: MsgTeste }) {
+  const p = m.plano!;
+  return (
+    <>
+      {p.enviar ? (
+        <li className="cv-m ia"><div className="cv-b"><span className="de"><Icone nome="ia" className="ico" />IA do escritório</span><span style={{ whiteSpace: "pre-line" }}>{p.enviar}</span><time>{m.hora}</time></div></li>
+      ) : null}
+      {p.fonte && !p.passar ? <li className="wa-fonte"><Icone nome="fonte" className="ico" /><span>De onde veio: <b>{p.fonte}</b>.</span></li> : null}
+      {p.passar ? (
+        <li className="cv-sis"><Icone nome="mao" className="ico" /><span>Aqui a IA <b>passaria</b> a conversa para <b>{p.passariaPara ?? "a equipe"}</b>. Motivo: {(p.barrada ? REGRA_BARRADA_TEXTO[p.barrada] : MOTIVOS_CONVERSA[p.passar as MotivoConversa] ?? "precisa de alguém").replace(/\.$/, "").toLowerCase()}.</span></li>
+      ) : null}
+    </>
   );
 }
 
@@ -1401,7 +1578,7 @@ export function WhatsappPortal() {
             : secao === "apresentacao" ? <IaApresentacao key={ia.versao} ia={ia} aoSalvar={salvarIa} />
             : secao === "passar" ? <IaPassar key={ia.versao} ia={ia} aoSalvar={salvarIa} />
             : secao === "saber" ? <IaSaber ia={ia} aoMudar={(x, f) => { setIa(x); if (f) setFeito(f); }} />
-            : <IaTestar ia={ia} />}
+            : <IaTestar ia={ia} aoTestar={setIa} />}
           <JanelaLigarIa key={`l${ia.versao}${janela}`} ia={ia} aberta={janela === "ligar-ia"} aoFechar={() => setJanela(null)}
             aoFeito={(x) => { setIa(x); setW({ ...w, ia: { situacao: x.situacao } }); setJanela(null); ir({ parte: "ia" }); setFeito({ titulo: "IA ligada", texto: "Ela entra nas conversas novas. Pausar fica no alto da página." }); }} />
         </>

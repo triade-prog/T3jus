@@ -18,4 +18,5 @@ export * from "./juridico.ts";
 export * from "./conversas.ts";
 export * from "./whatsapp.ts";
 export * from "./automacoes.ts";
+export * from "./ia.ts";
 export * from "./inicio.ts";
