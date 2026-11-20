@@ -18,6 +18,11 @@ import {
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
+  ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
+  semAvisosSchema, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, type DadosSimulacao, type ListaAutomacoes, type PaginaAutomacao,
+  conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
+  respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
+  devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -352,6 +357,162 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
       ...quem(c), p_compromisso: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo, p_avisar: d.avisar,
     });
     return c.json({ versao });
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Conversas, Mensagens (PD-07, EX-10, AP-02): todos da equipe veem; o contexto segue as áreas
+  // (o banco decide). Receber e a IA responder ficam com o serviço do WhatsApp, fora daqui.
+
+  app.get("/v1/escritorio/conversas", async (c) => {
+    const mostrar = (c.req.query("mostrar") || "PRECISA").toUpperCase();
+    if (!(mostrar in FILTROS_CONVERSA)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
+    const q = c.req.query("q") || null;
+    if (q && q.length > 80) throw new ErroDominio("VALIDATION_ERROR", { campos: ["q"] });
+    return c.json(await deps.banco.rpc<ListaConversas>("portal_conversas", { ...quem(c), p_filtro: mostrar, p_busca: q }));
+  });
+
+  app.get("/v1/escritorio/conversas/:id", async (c) => {
+    return c.json(await deps.banco.rpc<Conversa>("portal_conversa", { ...quem(c), p_conversa: idDaRota(c, "id") }));
+  });
+
+  app.post("/v1/escritorio/conversas/:id/assumir", async (c) => {
+    const d = await lerCorpo(c, versaoConversaSchema);
+    const versao = await deps.banco.rpc<number>("portal_conversa_assumir", { ...quem(c), p_conversa: idDaRota(c, "id"), p_versao: d.versao });
+    return c.json({ versao });
+  });
+
+  app.post("/v1/escritorio/conversas/:id/devolver", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, devolverConversaSchema);
+    const v = await deps.banco.rpc<number>("portal_conversa_devolver", { ...quem(c), p_conversa: idDaRota(c, "id"), p_versao: versao, p_dados: d });
+    return c.json({ versao: v });
+  });
+
+  app.post("/v1/escritorio/conversas/:id/passar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, passarConversaSchema);
+    const v = await deps.banco.rpc<number>("portal_conversa_passar", {
+      ...quem(c), p_conversa: idDaRota(c, "id"), p_versao: versao, p_dados: { ...d, pessoa: d.pessoa.toLowerCase() },
+    });
+    return c.json({ versao: v });
+  });
+
+  app.post("/v1/escritorio/conversas/:id/mensagens", async (c) => {
+    const d = await lerCorpo(c, enviarConversaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; envio: string }>("portal_conversa_enviar", { ...quem(c), p_conversa: idDaRota(c, "id"), p_dados: d }), 201);
+  });
+
+  // Escritório › WhatsApp e IA (F3.54; PA-04). O token da Meta nunca passa por aqui: a troca do
+  // código da janela da Meta e os avisos da Meta são do serviço do WhatsApp (F3.53).
+  app.get("/v1/escritorio/whatsapp", async (c) =>
+    c.json(await deps.banco.rpc<PaginaWhatsapp>("portal_whatsapp", quem(c))));
+
+  app.put("/v1/escritorio/whatsapp/rascunho", async (c) => {
+    const d = await lerCorpo(c, rascunhoLigacaoSchema);
+    return c.json(await deps.banco.rpc("portal_whatsapp_rascunho", { ...quem(c), p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/whatsapp/conferir-numero", async (c) => {
+    const d = await lerCorpo(c, conferirNumeroSchema);
+    return c.json(await deps.banco.rpc("portal_whatsapp_conferir_numero", { ...quem(c), p_dados: { ...d, telefone: telefoneE164(d.telefone) } }));
+  });
+
+  app.post("/v1/escritorio/whatsapp/desligar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, desligarWhatsappSchema);
+    return c.json(await deps.banco.rpc<PaginaWhatsapp>("portal_whatsapp_desligar", { ...quem(c), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/whatsapp/avisos/:chave", async (c) => {
+    const chave = c.req.param("chave");
+    if (!(chave in AVISOS_WHATSAPP)) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, ajustarAvisoSchema);
+    return c.json(await deps.banco.rpc<PaginaWhatsapp>("portal_whatsapp_aviso_ajustar", { ...quem(c), p_chave: chave, p_versao: d.versao, p_texto: d.texto }));
+  });
+
+  app.get("/v1/escritorio/ia", async (c) => c.json(await deps.banco.rpc<PaginaIa>("portal_ia", quem(c))));
+
+  app.patch("/v1/escritorio/ia", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, salvarIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_salvar", { ...quem(c), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/ia/ligar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, ligarIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_ligar", { ...quem(c), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/ia/pausar", async (c) => {
+    const { versao } = await lerCorpo(c, pausarIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_pausar", { ...quem(c), p_versao: versao }));
+  });
+
+  app.post("/v1/escritorio/ia/respostas", async (c) => {
+    const d = await lerCorpo(c, respostaIaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_resposta_salvar", { ...quem(c), p_dados: d }));
+  });
+
+  app.patch("/v1/escritorio/ia/respostas/:id", async (c) => {
+    const d = await lerCorpo(c, situacaoRespostaSchema);
+    return c.json(await deps.banco.rpc<PaginaIa>("portal_ia_resposta_situacao", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_situacao: d.situacao }));
+  });
+
+  // ------------------------------------------------------------------ Conversas › Automações (PA-03)
+  // Cada pessoa vê as automações das suas áreas; só a sócia dona aprova o texto, liga e desliga.
+
+  app.get("/v1/escritorio/automacoes", async (c) => c.json(await deps.banco.rpc<ListaAutomacoes>("portal_automacoes", quem(c))));
+
+  app.post("/v1/escritorio/automacoes", async (c) => {
+    const d = await lerCorpo(c, criarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/automacoes/:id", async (c) =>
+    c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.patch("/v1/escritorio/automacoes/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, salvarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_salvar", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/aprovar-texto", async (c) => {
+    const d = await lerCorpo(c, aprovarTextoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_aprovar_texto", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_passo: d.passo }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/ligar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, ligarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_ligar", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/desligar", async (c) => {
+    const d = await lerCorpo(c, desligarAutomacaoSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_desligar", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  app.post("/v1/escritorio/automacoes/:id/sugerir-mudanca", async (c) => {
+    const d = await lerCorpo(c, sugerirMudancaSchema);
+    return c.json(await deps.banco.rpc<PaginaAutomacao>("portal_automacao_sugerir", { ...quem(c), p_id: idDaRota(c, "id"), p_texto: d.texto }));
+  });
+
+  app.get("/v1/escritorio/automacoes/:id/quem-entraria", async (c) =>
+    c.json(await deps.banco.rpc("portal_automacao_quem_entraria", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.get("/v1/escritorio/automacoes/:id/execucoes", async (c) => {
+    const sit = c.req.query("situacao") || null;
+    if (sit && !["AGENDADA", "EM_ANDAMENTO", "CONCLUIDA", "FALHOU", "FICOU_DE_FORA"].includes(sit)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["situacao"] });
+    const antes = c.req.query("antes") || null;
+    if (antes && Number.isNaN(Date.parse(antes))) throw new ErroDominio("VALIDATION_ERROR", { campos: ["antes"] });
+    return c.json(await deps.banco.rpc("portal_automacao_execucoes", { ...quem(c), p_id: idDaRota(c, "id"), p_situacao: sit, p_antes: antes }));
+  });
+
+  // Simular sem enviar: o banco entrega só o que a pessoa pode ver; o caminho e a conversa saem aqui.
+  app.post("/v1/escritorio/automacoes/:id/simular", async (c) => {
+    const d = await lerCorpo(c, simularAutomacaoSchema);
+    const dados = await deps.banco.rpc<DadosSimulacao>("portal_automacao_simulacao", { ...quem(c), p_id: idDaRota(c, "id"), p_parcela: d.parcelaId ?? null });
+    return c.json(simularFluxo(dados, d.escolha));
+  });
+
+  app.post("/v1/escritorio/clientes/:id/sem-avisos", async (c) => {
+    const d = await lerCorpo(c, semAvisosSchema);
+    return c.json(await deps.banco.rpc("portal_cliente_sem_avisos", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d }));
   });
 
   // ------------------------------------------------------------------ Comercial (AP-02 a AP-06)

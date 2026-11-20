@@ -13,6 +13,7 @@ import { formatarCnpj, formatarTelefone } from "../console/ficha.ts";
 import { dataLonga, hora, iniciais } from "../console/tempo.ts";
 import { listaAreas, primeiroNome } from "./equipe.ts";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
+import { BarraEscritorio } from "./WhatsApp.tsx";
 
 const LEVA = [
   "Dados do escritório e equipe",
@@ -471,7 +472,7 @@ export function EscritorioDoPortal() {
   const abrirExportar = useRef<(() => void) | null>(null);
   const trilha = [{ nome: "Escritório" }];
   return (
-    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={e} pagina="co-equipe">
+    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={e} pagina="co-equipe" barra={<BarraEscritorio secao="dados" />}>
       <div className="cabeca-ambar campo-ambar cabeca-equipe">
         <div>
           <p className="sobretitulo">Escritório</p>

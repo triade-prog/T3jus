@@ -1,0 +1,11 @@
+{
+  "id": "F3.53",
+  "texto": "A IA que atende pelo WhatsApp do escritório e o envio e o recebimento pelo provedor: a mensagem que chega abre ou acha a conversa, a IA responde o que está no T3jus ou passa para uma pessoa, e o que a equipe escreve sai com entregue, lida ou o motivo da falha",
+  "peca": "B3",
+  "refs": [
+    "PA-05"
+  ],
+  "status": "pendente",
+  "ordem": 530,
+  "proximo": "Ligar o serviço do WhatsApp às peças whatsapp_mensagem_recebida, conversa_ia_respondeu, conversa_ia_passou e conversa_ia_nao_soube; a IA segue a configuração de ia_config (F3.54) e as regras fixas conferidas no servidor; com a IA desligada ou pausada, a conversa vai direto para a equipe; Testar sem enviar grava ia_config.testada_em"
+}

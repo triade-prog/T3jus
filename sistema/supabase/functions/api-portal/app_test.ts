@@ -155,6 +155,60 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_repasses: () => ({ algum: false, levantamentos: [] }),
     portal_financeiro_resumo: (a) => ({ algum: false, escritorio: a.p_escritorio }),
     portal_financeiro_caixa: (a) => ({ saldo: 0, escritorio: a.p_escritorio }),
+    portal_conversas: (a) => ({ filtro: a.p_filtro, busca: a.p_busca, escritorio: a.p_escritorio }),
+    portal_conversa: (a) => ({ id: a.p_conversa }),
+    portal_whatsapp: (a) => ({ escritorio: a.p_escritorio }),
+    portal_whatsapp_rascunho: (a) => a.p_dados,
+    portal_whatsapp_conferir_numero: (a) => {
+      const d = a.p_dados as { telefone: string; receberCodigo: string };
+      if (d.receberCodigo === "SMS" && /^\+551130/.test(d.telefone)) erroBanco("TC422", { campos: ["receberCodigo"], motivos: { receberCodigo: "FIXO_SEM_SMS" } });
+      return { passo: 2, telefone: d.telefone };
+    },
+    portal_whatsapp_desligar: (a) => ({ versao: a.p_versao, dados: a.p_dados }),
+    portal_whatsapp_aviso_ajustar: (a) => ({ chave: a.p_chave, texto: a.p_texto }),
+    portal_ia: (a) => ({ escritorio: a.p_escritorio }),
+    portal_automacoes: (a) => ({ escritorio: a.p_escritorio, automacoes: [] }),
+    portal_automacao: (a) => ({ id: a.p_id }),
+    portal_automacao_criar: (a) => ({ dados: a.p_dados }),
+    portal_automacao_salvar: (a) => ({ versao: (a.p_versao as number) + 1, dados: a.p_dados }),
+    portal_automacao_aprovar_texto: (a) => ({ passo: a.p_passo }),
+    portal_automacao_ligar: (a) => {
+      if (!(a.p_dados as { desligarConflitos: boolean }).desligarConflitos) erroBanco("TC422", { motivo: "CONFLITO_LIMITE_SEMANAL" });
+      return { situacao: "EM_APROVACAO", dados: a.p_dados };
+    },
+    portal_automacao_desligar: (a) => ({ situacao: "DESLIGADA", motivo: a.p_motivo }),
+    portal_automacao_sugerir: (a) => ({ texto: a.p_texto }),
+    portal_automacao_quem_entraria: () => ({ disponivel: true, itens: [] }),
+    portal_automacao_execucoes: (a) => ({ situacao: a.p_situacao, itens: [] }),
+    portal_automacao_simulacao: (a) => ({
+      gatilho: "PARCELA_ATRASO", nome: "Cobrança", escritorio: "Aurora", hoje: "2026-11-18T13:12:00Z", parcela: a.p_parcela,
+      exemplo: { cliente: "Farmácia Bom Jesus", contato: "Sueli Ramos", papel: "gerente", parcela: "Mensalidade de novembro", valor: 180000, vencimento: "2026-11-15", quemCuida: null },
+      fluxo: { passos: [{ id: "g", tipo: "GATILHO", dias: 3 }, { id: "m", tipo: "MENSAGEM", nome: "Cobrança", modeloId: "x" }, { id: "e", tipo: "ESPERA", dias: 5 },
+        { id: "r", tipo: "RAMOS", ramos: [{ quando: "PAGOU", passos: [{ id: "f", tipo: "FIM" }] }, { quando: "NADA", passos: [{ id: "p", tipo: "PESSOA", regra: "SOCIA_DONA" }] }] }] },
+      textos: { x: "Olá, {nome}. A parcela {parcela}, de {valor}, venceu em {vencimento}. Qualquer dúvida, é só responder." },
+      aviso: null, pessoas: {}, socioDono: { id: "1", nome: "Marina Ribeiro" }, quemTemArea: null,
+    }),
+    portal_cliente_sem_avisos: (a) => ({ dados: a.p_dados }),
+    portal_ia_salvar: (a) => {
+      const d = a.p_dados as { nome?: string };
+      if (d.nome && !/^assistente virtual/i.test(d.nome)) erroBanco("TC422", { campos: ["nome"], motivo: "NOME_SEM_ASSISTENTE_VIRTUAL" });
+      return { versao: (a.p_versao as number) + 1 };
+    },
+    portal_ia_ligar: () => erroBanco("TC422", { motivo: "SEM_TESTE" }),
+    portal_ia_pausar: (a) => ({ situacao: "PAUSADA", versao: a.p_versao }),
+    portal_ia_resposta_salvar: (a) => ({ dados: a.p_dados }),
+    portal_ia_resposta_situacao: (a) => ({ id: a.p_id, situacao: a.p_situacao }),
+    portal_conversa_assumir: (a) => (a.p_versao as number) + 1,
+    portal_conversa_devolver: (a) => {
+      const d = a.p_dados as { nota?: string; registrarAtendimento?: boolean };
+      if (d.registrarAtendimento && !d.nota) erroBanco("TC422", { campos: ["nota"] });
+      return (a.p_versao as number) + 1;
+    },
+    portal_conversa_passar: (a) => (a.p_versao as number) + 1,
+    portal_conversa_enviar: (a) => {
+      if (a.p_conversa !== CLIENTE) erroBanco("TC422", { motivo: "ASSUMA_PRIMEIRO" });
+      return { id: CLIENTE, envio: "NA_FILA" };
+    },
     portal_financeiro_exportacao_previa: (a) => ({ mes: a.p_mes, aberto: false }),
     portal_financeiro_exportar: (a) => {
       const d = a.p_dados as { mes?: string; formato?: string };
@@ -804,6 +858,106 @@ Deno.test("FI-09, FI-21: Resumo, Caixa e exportação para o contador; o escrit�
   const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_exportar")!;
   assertEquals(ch.args.p_escritorio, AURORA);
   assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/exportacoes", { corpo: { mes: "2026-10-01", formato: "PDF" }, cookie }))).detalhes?.campos, ["formato"]);
+});
+
+Deno.test("PD-07, AP-02: Conversas, lista, conversa, assumir, devolver, passar e escrever; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const l = await (await m.pedir("/v1/escritorio/conversas?mostrar=resolvidas&q=Marta", { cookie })).json();
+  assertEquals([l.filtro, l.busca, l.escritorio], ["RESOLVIDAS", "Marta", AURORA]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/conversas?mostrar=todas", { cookie }))).detalhes?.campos, ["mostrar"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/conversas/${CLIENTE}`, { cookie })).json()).id, CLIENTE);
+  assertEquals((await (await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/assumir`, { corpo: { versao: 2 }, cookie })).json()).versao, 3);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/devolver`, { corpo: { versao: 3, registrarAtendimento: true }, cookie }))).detalhes?.campos, ["nota"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/devolver`, { corpo: { versao: 3, nota: "Liga às 14h", registrarAtendimento: true }, cookie })).json()).versao, 4);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/passar`, { corpo: { versao: 4, pessoa: "Paula" }, cookie }))).detalhes?.campos, ["pessoa"]);
+  await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/passar`, { corpo: { versao: 4, pessoa: AURORA.toUpperCase(), recado: "Confere?" }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_conversa_passar")!.args.p_dados as { pessoa: string }).pessoa, AURORA);
+  const e = await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/mensagens`, { corpo: { texto: "Oi, Marta" }, cookie });
+  assertEquals(e.status, 201);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/mensagens`, { corpo: { texto: "  " }, cookie }))).detalhes?.campos, ["texto"]);
+});
+
+Deno.test("PA-04: WhatsApp e IA, o número do Brasil vira E.164, nada de token, e o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp", { cookie })).json()).escritorio, AURORA);
+  const ok = await (await m.pedir("/v1/escritorio/whatsapp/conferir-numero", { corpo: { telefone: "(11) 97405-2210", receberCodigo: "SMS", confirmouNumero: true }, cookie })).json();
+  assertEquals(ok.telefone, "+5511974052210");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/whatsapp/conferir-numero", { corpo: { telefone: "(11) 3032-4410", receberCodigo: "SMS" }, cookie }))).detalhes?.motivos,
+    { receberCodigo: "FIXO_SEM_SMS" });
+  assertEquals((await erro(await m.pedir("/v1/escritorio/whatsapp/rascunho", { metodo: "PUT", corpo: { passo: 9 }, cookie }))).detalhes?.campos, ["passo"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp/rascunho", { metodo: "PUT", corpo: { passo: 1, receberCodigo: "VOZ" }, cookie })).json()).receberCodigo, "VOZ");
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp/desligar", { corpo: { versao: 3, motivo: "Trocar", entendi: true }, cookie })).json()).dados,
+    { motivo: "Trocar", entendi: true });
+  assertEquals((await (await m.pedir("/v1/escritorio/whatsapp/avisos/PARCELA_ATRASO", { corpo: { versao: 2, texto: "Olá, {nome}." }, cookie })).json()).chave, "PARCELA_ATRASO");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/whatsapp/avisos/OUTRO", { corpo: { versao: 2, texto: "Olá" }, cookie }))).codigo, "NOT_FOUND");
+  assertEquals((await (await m.pedir("/v1/escritorio/ia", { cookie })).json()).escritorio, AURORA);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia", { metodo: "PATCH", corpo: { versao: 1, nome: "Carla" }, cookie }))).detalhes?.motivo, "NOME_SEM_ASSISTENTE_VIRTUAL");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia", { metodo: "PATCH", corpo: { versao: 1, tom: "SECO" }, cookie }))).detalhes?.campos, ["tom"]);
+  assertEquals((await (await m.pedir("/v1/escritorio/ia", { metodo: "PATCH", corpo: { versao: 1, palavras: ["penhora"] }, cookie })).json()).versao, 2);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/ia/ligar", { corpo: { versao: 2, revisou: true }, cookie }))).detalhes?.motivo, "SEM_TESTE");
+  assertEquals((await (await m.pedir("/v1/escritorio/ia/pausar", { corpo: { versao: 2 }, cookie })).json()).situacao, "PAUSADA");
+  assertEquals((await (await m.pedir("/v1/escritorio/ia/respostas", { corpo: { pergunta: "Sábados", resposta: "Não atendemos." }, cookie })).json()).dados.pergunta, "Sábados");
+  assertEquals((await (await m.pedir(`/v1/escritorio/ia/respostas/${CLIENTE}`, { metodo: "PATCH", corpo: { versao: 1, situacao: "ARQUIVADA" }, cookie })).json()).situacao, "ARQUIVADA");
+  const tudo = JSON.stringify(m.chamadas.map((c) => c.args));
+  assertEquals(/token/i.test(tudo), false);
+});
+
+Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sai do serviço e nada é enviado", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/automacoes", { cookie })).json()).escritorio, AURORA);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/automacoes", { corpo: { gatilho: "SMS", nome: "x" }, cookie }))).detalhes?.campos, ["gatilho"]);
+  const criada = await m.pedir("/v1/escritorio/automacoes", { corpo: { gatilho: "PARCELA_ATRASO", nome: "Cobrança gentil" }, cookie });
+  assertEquals(criada.status, 201);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}`, { metodo: "PATCH", corpo: { versao: 1, fluxo: { passos: [], extra: 1 } }, cookie }))).codigo, "VALIDATION_ERROR");
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}`, { metodo: "PATCH", corpo: { versao: 1, fluxo: { passos: [{ id: "g", tipo: "GATILHO", dias: 3 }] } }, cookie })).json()).versao, 2);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/aprovar-texto`, { corpo: { versao: 2, passo: "Msg!" }, cookie }))).detalhes?.campos, ["passo"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/ligar`, { corpo: { versao: 2, revisou: true }, cookie }))).detalhes?.motivo, "CONFLITO_LIMITE_SEMANAL");
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/ligar`, { corpo: { versao: 2, revisou: true, desligarConflitos: true }, cookie })).json()).situacao, "EM_APROVACAO");
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/desligar`, { corpo: { versao: 3, motivo: "Pausa" }, cookie })).json()).motivo, "Pausa");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/execucoes?situacao=TALVEZ`, { cookie }))).detalhes?.campos, ["situacao"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/execucoes?situacao=FALHOU`, { cookie })).json()).situacao, "FALHOU");
+  const sim = await (await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/simular`, { corpo: { parcelaId: CLIENTE, escolha: "NADA" }, cookie })).json();
+  assertEquals(sim.caminho.map((c: { rotulo: string }) => c.rotulo), ["1 Gatilho", "2 Mensagem", "3 Espera", "4 Ramos", "Nem pagou, nem respondeu", "5 Passar para Marina"]);
+  assertEquals(sim.conversa[1].texto, "Olá, Sueli. A parcela Mensalidade de novembro, de R$ 1.800,00, venceu em 15/11. Qualquer dúvida, é só responder.");
+  // A passagem cai na segunda, 23/11 (5 dias corridos depois de quarta, 18/11, dentro do horário).
+  assertEquals(sim.conversa.at(-1).em, "2026-11-23T10:20:00-03:00");
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_automacao_simulacao")!.args as { p_parcela: string }).p_parcela, CLIENTE);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/automacoes/${CLIENTE}/simular`, { corpo: { escolha: "TALVEZ" }, cookie }))).detalhes?.campos, ["escolha"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "COBRANCA", origem: "CONVERSA" }, cookie })).json()).dados.tipo, "COBRANCA");
+  assertEquals(m.chamadas.every((c) => !("p_escritorio" in c.args) || c.args.p_escritorio === AURORA), true);
+});
+
+Deno.test("PA-03: gatilhos e tipos de passo do domínio são os mesmos do banco", async () => {
+  const { GATILHOS, TIPOS_PASSO } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0320_portal_automacoes.sql", import.meta.url));
+  for (const [g, info] of Object.entries(GATILHOS)) {
+    const linha = new RegExp(`when '${g}' then array\\[([^\\]]+)\\]`).exec(sql)?.[1];
+    assertEquals(linha?.match(/'([^']+)'/g)?.map((x) => x.slice(1, -1)), info.campos, g);
+  }
+  const tipos = /v_ok := case v_tipo([\s\S]+?) end;/.exec(sql)?.[1]?.match(/when '([A-Z]+)'/g)?.map((x) => x.slice(6, -1));
+  assertEquals(tipos, Object.keys(TIPOS_PASSO));
+});
+
+Deno.test("PA-04: avisos, assuntos e tons do domínio são os mesmos do banco", async () => {
+  const { AVISOS_WHATSAPP, ASSUNTOS_IA, TONS_IA, textoAvisoValido } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0310_portal_whatsapp_ia.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/chave\s+text not null check \(chave in \(([^)]+)\)/), Object.keys(AVISOS_WHATSAPP));
+  assertEquals(lista(/assuntos <@ array\[([^\]]+)\]/), Object.keys(ASSUNTOS_IA));
+  assertEquals(lista(/tom\s+text not null default 'CORDIAL' check \(tom in \(([^)]+)\)/), Object.keys(TONS_IA));
+  assertEquals([textoAvisoValido("{nome}, venceu."), textoAvisoValido("Olá, {nome}. Pague: {link}"), textoAvisoValido("Olá, {nome}. Venceu.")], [false, false, true]);
+});
+
+Deno.test("PD-07: motivos e razões do domínio são os mesmos do banco", async () => {
+  const { MOTIVOS_CONVERSA, RAZOES_RESPONSAVEL, ENVIO_MENSAGEM } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0300_portal_conversas_mensagens.sql", import.meta.url));
+  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/motivo\s+text check \(motivo in \(([^)]+)\)/), Object.keys(MOTIVOS_CONVERSA));
+  assertEquals(lista(/responsavel_razao\s+text check \(responsavel_razao in \(([^)]+)\)/), Object.keys(RAZOES_RESPONSAVEL));
+  assertEquals(lista(/envio\s+text check \(envio in \(([^)]+)\)/), Object.keys(ENVIO_MENSAGEM));
 });
 
 Deno.test("IN-10: os grupos de honorário cobrem todos os tipos do banco, e o alerta de queda", async () => {
