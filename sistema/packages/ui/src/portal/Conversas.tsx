@@ -15,6 +15,8 @@ import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { diaCurto, diaDe, horaDe, nomeDoTipo } from "./agenda.ts";
 import { Toast, type Feito } from "./FichaCliente.tsx";
+import { JanelaPedido, JanelaRetirar, SeloSemAvisos, type ClienteDoPedido, type PedidoNaConversa } from "./SemAvisos.tsx";
+import { dataLonga, hora as horaCurta } from "../console/tempo.ts";
 import type { Pessoa } from "./JanelaCompromisso.tsx";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
 
@@ -191,6 +193,22 @@ function Momento({ m, eu }: { m: MensagemConversa; eu: string }): ReactNode {
       return <>A IA marcou a conversa como <b>resolvida</b>.</>;
     case "RESPONSAVEL_SAIU":
       return <><b>{m.de?.nome}</b> saiu da equipe; a conversa passou para <b>{m.para?.nome}</b>.</>;
+    case "SEM_AVISOS_REGISTRADO":
+    case "SEM_AVISOS_MUDADO":
+    case "SEM_AVISOS_RETIRADO": {
+      const de = m.quemPediu ? primeiro(m.quemPediu) : null;
+      const oque = m.tipoAvisos === "TODOS" ? "sem avisos automáticos" : "sem avisos de cobrança";
+      const quemFez = m.pessoa?.id === eu ? "Você" : m.pessoa?.nome ?? "Alguém da equipe";
+      if (m.evento === "SEM_AVISOS_RETIRADO") {
+        return <><b>{quemFez} retirou</b> o pedido de avisos{de ? <> a pedido de {de}</> : null}: o cliente volta a receber {m.tipoAvisos === "TODOS" ? "os avisos automáticos" : "os avisos de cobrança"}.</>;
+      }
+      return (
+        <>
+          <b>{quemFez} {m.evento === "SEM_AVISOS_MUDADO" ? "mudou" : "registrou"}</b> o pedido{de ? <> de {de}</> : null}: {oque}.
+          {m.tipoAvisos === "TODOS" ? " As mensagens escritas pela equipe continuam." : " Lembretes de audiência e avisos de etapa continuam."}
+        </>
+      );
+    }
     case "APP_RESPONDEU":
       return <>Alguém respondeu <b>pelo app do WhatsApp no celular</b>. A conversa ficou com <b>{m.para?.nome}</b>, e a IA fica em silêncio até devolverem.</>;
     default:
@@ -200,6 +218,7 @@ function Momento({ m, eu }: { m: MensagemConversa; eu: string }): ReactNode {
 
 const ICONE_MOMENTO: Record<string, NomeIcone> = {
   IA_PASSOU: "mao", ASSUMIU: "pessoas", DEVOLVEU: "devolver", PASSOU: "trocar", IA_RESOLVEU: "check", RESPONSAVEL_SAIU: "trocar", APP_RESPONDEU: "celular",
+  SEM_AVISOS_REGISTRADO: "sino-mudo", SEM_AVISOS_MUDADO: "sino-mudo", SEM_AVISOS_RETIRADO: "sino-volta",
 };
 
 function Anexo({ a }: { a: NonNullable<MensagemConversa["anexo"]> }) {
@@ -225,10 +244,15 @@ function Mensagens({ c, hoje }: { c: Conversa; hoje: string }) {
     }
     const hora = <time dateTime={m.em}>{horaDe(m.em)}</time>;
     if (m.autor === "SISTEMA") {
+      const avisos = m.evento?.startsWith("SEM_AVISOS_");
       itens.push(
-        <li key={m.id} className="cv-sis">
+        <li key={m.id} className={avisos ? "cv-sis ca-sis" : "cv-sis"}>
           <Icone nome={ICONE_MOMENTO[m.evento ?? ""] ?? "mao"} className="ico" />
-          <span><Momento m={m} eu={c.eu} /><time dateTime={m.em}>{horaDe(m.em)}</time></span>
+          <span>
+            <Momento m={m} eu={c.eu} />
+            <time dateTime={m.em}>{horaDe(m.em)}</time>
+            {avisos ? <small>Só a equipe vê esta linha. Nada foi enviado ao cliente; se quiser, responda abaixo.</small> : null}
+          </span>
         </li>,
       );
     } else if (m.autor === "AVISO") {
@@ -384,6 +408,7 @@ function CabConversa({ c }: { c: Conversa }) {
       <div>
         <p className="sobretitulo">WhatsApp · <span className="num">{telefoneBr(c.telefone)}</span></p>
         <h2 id="cv-ct" tabIndex={-1}>{c.nome}</h2>
+        {c.avisos?.ativo ? <p className="ca-selos"><SeloSemAvisos ativo={c.avisos.ativo} /></p> : null}
       </div>
       <p className="cv-quem">
         {quem ?? <>Quem escreve: <b>{c.quemEscreve}</b>{c.papel ? `, ${c.papel}` : ""}{c.principal ? ", contato principal" : ""}</>}
@@ -412,7 +437,78 @@ function diasDesde(dia: string, hoje: string): number {
   return Math.round((Date.parse(`${hoje}T12:00:00Z`) - Date.parse(`${dia}T12:00:00Z`)) / 86_400_000);
 }
 
-function secoesDoContexto(c: Conversa, hoje: string): ReactNode[] {
+type JanelaAvisos = "avisos" | "avisos-mudar" | "avisos-retirar";
+
+/** O cliente da conversa, no formato das janelas de "não receber avisos". */
+function clienteDoPedido(c: Conversa): ClienteDoPedido | null {
+  if (!c.cliente || !c.avisos) return null;
+  return { id: c.cliente.id, nome: c.cliente.nome, tipo: c.avisos.tipo, contatos: c.avisos.contatos };
+}
+
+/** Quem escreve e a última mensagem do cliente, que fica ligada ao pedido (pergunta 2). */
+function pedidoNaConversa(c: Conversa): PedidoNaConversa {
+  const ultima = [...c.mensagens].reverse().find((m) => m.autor === "CLIENTE" && m.texto);
+  const titular = !c.quemEscreve || c.quemEscreve === c.cliente?.nome;
+  return {
+    conversaId: c.id,
+    contatoId: c.contatoId ?? null,
+    titular,
+    quemEscreve: c.contatoId ? null : c.quemEscreve,
+    mensagem: ultima ? { id: ultima.id, texto: ultima.texto!, em: ultima.em, de: c.quemEscreve ?? c.cliente?.nome ?? telefoneBr(c.telefone) } : null,
+  };
+}
+
+/** Os avisos automáticos do cliente, logo depois de Cliente (F3.65). */
+function SecAvisos({ c, aoAbrir }: { c: Conversa; aoAbrir: (j: JanelaAvisos) => void }) {
+  const av = c.avisos!;
+  const a = av.ativo;
+  const ficha = `${ROTAS_PORTAL.clientes}/${c.cliente!.id}`;
+  if (!a) {
+    const principal = av.contatos.find((x) => x.principal);
+    const para = principal ? (principal.nome === c.cliente!.nome ? "o próprio cliente" : `${primeiro(principal.nome)}, o contato principal`) : "o contato principal";
+    return (
+      <Sec titulo="Avisos automáticos" icone="sino">
+        <p className="ca-linha">
+          <Icone nome="sino" className="ico" />
+          <span><b>Recebe os avisos automáticos.</b> Saem para {para}. Se pedirem para não receber, registre aqui.</span>
+        </p>
+        {av.podeMudar ? (
+          <div className="ca-acoes">
+            <button className="btn btn-sec" type="button" onClick={() => aoAbrir("avisos")}><Icone nome="sino-mudo" className="ico" />Não receber avisos</button>
+          </div>
+        ) : null}
+      </Sec>
+    );
+  }
+  const reg = a.registradoPor;
+  const quem = reg ? (reg.id === c.eu ? "você" : reg.nome) : "alguém da equipe";
+  const quando = dataLonga(a.registradoEm) === dataLonga(new Date().toISOString()) ? `hoje às ${horaCurta(a.registradoEm)}` : `em ${dataLonga(a.registradoEm).slice(0, 5)} às ${horaCurta(a.registradoEm)}`;
+  const como = { WHATSAPP: "pelo WhatsApp", TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", EMAIL: "por e-mail" }[a.canal ?? "WHATSAPP"];
+  return (
+    <Sec titulo="Avisos automáticos" icone="sino-mudo">
+      <div className="ca-fora">
+        <strong><Icone nome="sino-mudo" className="ico" />{a.tipo === "COBRANCA" ? "Fora dos avisos de cobrança" : "Fora de todos os avisos automáticos"} desde {dataLonga(a.pedidoEm)}</strong>
+        <p>
+          {a.quemPediu ? <>Pedido de <b>{a.quemPediu}</b>{a.quemPapel ? ` (${a.quemPapel.split(" · ")[0]!.toLowerCase()})` : ""}, {como}. </> : null}
+          Registrado por {quem}, {a.origem === "CONVERSA" ? "na conversa" : "na ficha"}, {quando}.
+        </p>
+      </div>
+      <p className="ca-linha">
+        <Icone nome="check" className="ico" />
+        <span><b>Continua:</b> {a.tipo === "COBRANCA" ? "lembrete de audiência, aviso de etapa e prestação de contas, e o que a equipe escreve aqui." : "o que a equipe escreve aqui."}</span>
+      </p>
+      {av.podeMudar ? (
+        <div className="ca-acoes">
+          <button className="btn btn-sec" type="button" onClick={() => aoAbrir("avisos-mudar")}><Icone nome="lapis" className="ico" />Mudar o pedido</button>
+          <button className="btn btn-sec" type="button" onClick={() => aoAbrir("avisos-retirar")}><Icone nome="sino-volta" className="ico" />Retirar o pedido</button>
+        </div>
+      ) : null}
+      <a className="ver" href={ficha}>Ver o histórico na ficha<Icone nome="dir" className="ico ico-s" /></a>
+    </Sec>
+  );
+}
+
+function secoesDoContexto(c: Conversa, hoje: string, aoAvisos: (j: JanelaAvisos) => void): ReactNode[] {
   const s: ReactNode[] = [];
   if (c.situacao !== "IA" && c.motivo) {
     const razao = c.responsavelRazao && c.responsavelRazao !== "ASSUMIU" ? RAZOES_RESPONSAVEL[c.responsavelRazao] : null;
@@ -452,6 +548,7 @@ function secoesDoContexto(c: Conversa, hoje: string): ReactNode[] {
         <a className="btn btn-sec" href={`${ROTAS_PORTAL.clientes}/${c.cliente.id}`}><Icone nome="pessoas" className="ico" />Abrir a ficha</a>
       </Sec>,
     );
+    if (c.avisos) s.push(<SecAvisos key="avisos" c={c} aoAbrir={aoAvisos} />);
   } else {
     s.push(
       <Sec key="novo" titulo="Contato novo" icone="pessoa-mais">
@@ -711,7 +808,8 @@ export function ConversasPortal() {
   const [lista, setLista] = useState<ListaConversas | "erro" | null>(null);
   const [conversa, setConversa] = useState<Conversa | "erro" | null>(null);
   const [vez, setVez] = useState(0);
-  const [janela, setJanela] = useState<"devolver" | "passar" | null>(null);
+  const [janela, setJanela] = useState<"devolver" | "passar" | JanelaAvisos | null>(null);
+  const [vezJanela, setVezJanela] = useState(0);
   const [mudando, setMudando] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
@@ -792,7 +890,10 @@ export function ConversasPortal() {
       miolo = <NaoLigado lista={lista} dono={escritorio.dono} />;
     } else {
       const hoje = diaDe(new Date().toISOString());
-      const ctx = atual ? secoesDoContexto(atual, hoje) : [];
+      const abrirAvisos = (j: JanelaAvisos) => { setVezJanela((v) => v + 1); setJanela(j); };
+      const ctx = atual ? secoesDoContexto(atual, hoje, abrirAvisos) : [];
+      const cliPedido = atual ? clienteDoPedido(atual) : null;
+      const feitoAvisos = (x: Feito) => depois(x);
       miolo = (
         <div className="cv">
           {falha ? <Aviso tom="urgencia" titulo="Nada mudou.">{falha}</Aviso> : null}
@@ -820,8 +921,12 @@ export function ConversasPortal() {
                 <Mensagens c={atual} hoje={hoje} />
                 {ctx.length ? (
                   <details className="cv-ctx-cel">
-                    <summary><Icone nome="pessoas" className="ico" />Sobre {primeiro(atual.nome)}{atual.contexto.caso ? " e o caso" : ""}<Icone nome="baixo" className="ico ico-s" /></summary>
-                    <div className="cv-ctx" role="group" aria-label={`Sobre ${primeiro(atual.nome)}, no celular`}>{secoesDoContexto(atual, hoje)}</div>
+                    <summary>
+                      <Icone nome="pessoas" className="ico" />
+                      Sobre {primeiro(atual.nome)}{atual.contexto.caso && atual.avisos ? ", o caso e os avisos" : atual.contexto.caso ? " e o caso" : atual.avisos ? " e os avisos" : ""}
+                      <Icone nome="baixo" className="ico ico-s" />
+                    </summary>
+                    <div className="cv-ctx" role="group" aria-label={`Sobre ${primeiro(atual.nome)}, no celular`}>{secoesDoContexto(atual, hoje, abrirAvisos)}</div>
                   </details>
                 ) : null}
                 <RodapeConversa c={atual} mudando={mudando} aoAssumir={() => void assumir(atual)} aoEnviado={() => setVez((v) => v + 1)} />
@@ -831,6 +936,14 @@ export function ConversasPortal() {
           </div>
           {atual && janela === "devolver" ? <JanelaDevolver c={atual} aoFechar={() => setJanela(null)} aoFeito={depois} /> : null}
           {atual && janela === "passar" ? <JanelaPassar c={atual} aoFechar={() => setJanela(null)} aoFeito={depois} /> : null}
+          {atual && cliPedido && (janela === "avisos" || janela === "avisos-mudar") ? (
+            <JanelaPedido key={`ap-${vezJanela}`} aberta f={cliPedido} atual={janela === "avisos-mudar" ? atual.avisos!.ativo : null}
+              agora={pedidoNaConversa(atual)} aoFechar={() => setJanela(null)} aoFeito={feitoAvisos} />
+          ) : null}
+          {atual && cliPedido && janela === "avisos-retirar" && atual.avisos?.ativo ? (
+            <JanelaRetirar key={`ar-${vezJanela}`} aberta f={cliPedido} atual={atual.avisos.ativo}
+              agora={pedidoNaConversa(atual)} aoFechar={() => setJanela(null)} aoFeito={feitoAvisos} />
+          ) : null}
         </div>
       );
     }

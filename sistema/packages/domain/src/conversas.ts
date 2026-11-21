@@ -5,6 +5,7 @@
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import type { TipoCompromisso } from "./agenda.ts";
+import type { PedidoSemAvisos } from "./avisos.ts";
 
 export const FILTROS_CONVERSA = {
   PRECISA: "Precisa de alguém",
@@ -87,7 +88,8 @@ export interface ListaConversas {
   conversas: LinhaConversa[];
 }
 
-export type EventoConversa = "IA_PASSOU" | "ASSUMIU" | "DEVOLVEU" | "PASSOU" | "IA_RESOLVEU" | "RESPONSAVEL_SAIU" | "APP_RESPONDEU";
+export type EventoConversa = "IA_PASSOU" | "ASSUMIU" | "DEVOLVEU" | "PASSOU" | "IA_RESOLVEU" | "RESPONSAVEL_SAIU" | "APP_RESPONDEU"
+  | "SEM_AVISOS_REGISTRADO" | "SEM_AVISOS_MUDADO" | "SEM_AVISOS_RETIRADO";
 
 export interface MensagemConversa {
   id: string;
@@ -103,6 +105,9 @@ export interface MensagemConversa {
   avisoTipo?: string;
   envio?: EnvioMensagem;
   envioMotivo?: string;
+  /** Nas linhas da equipe do pedido de avisos (F3.65). */
+  tipoAvisos?: "TODOS" | "COBRANCA";
+  quemPediu?: string;
   em: string;
 }
 
@@ -116,6 +121,10 @@ export interface Conversa extends LinhaConversa {
   whatsappLigado: boolean;
   principal: boolean;
   juridico: boolean;
+  /** O contato que escreve, na ficha do cliente. */
+  contatoId?: string | null;
+  /** Os avisos automáticos do cliente (F3.65); nulo para quem não está em Clientes. */
+  avisos?: AvisosDaConversa | null;
   mensagens: MensagemConversa[];
   contexto: {
     proxContato: { em: string; oque: string; vencido: boolean; responsavel: PessoaRef } | null;
@@ -163,4 +172,12 @@ export function haQuanto(desde: string, agora: Date = new Date()): string {
 export function telefoneBr(e164: string): string {
   const m = /^\+55(\d{2})(\d{4,5})(\d{4})$/.exec(e164);
   return m ? `(${m[1]}) ${m[2]}-${m[3]}` : e164;
+}
+
+/** O que a conversa traz para o atalho "Não receber avisos" (F3.65). */
+export interface AvisosDaConversa {
+  tipo: "PF" | "PJ";
+  contatos: { id: string; nome: string; papel: string | null; principal: boolean }[];
+  ativo: PedidoSemAvisos | null;
+  podeMudar: boolean;
 }
