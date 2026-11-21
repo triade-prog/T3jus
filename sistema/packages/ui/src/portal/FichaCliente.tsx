@@ -27,7 +27,7 @@ import { FolhaSemAvisos, SeloSemAvisos, useAvisosCliente } from "./SemAvisos.tsx
 import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaArquivar, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
 export type AbaCliente = "ficha" | "atendimentos";
-export type Feito = { titulo: string; texto: string };
+export type Feito = { titulo: string; texto: string; acoes?: ReactNode };
 
 export function Toast({ feito, aoFechar }: { feito: Feito; aoFechar: () => void }) {
   return (
@@ -36,6 +36,7 @@ export function Toast({ feito, aoFechar }: { feito: Feito; aoFechar: () => void 
       <div>
         <strong className="aviso-titulo">{feito.titulo}</strong>
         <p>{feito.texto}</p>
+        {feito.acoes ? <div className="aviso-acoes">{feito.acoes}</div> : null}
       </div>
       <button className="fechar" type="button" aria-label="Fechar aviso" onClick={aoFechar}>
         <Icone nome="xis" className="ico" />

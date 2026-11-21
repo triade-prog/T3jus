@@ -5,7 +5,8 @@
   "refs": [
     "FI-14"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 190,
-  "proximo": "Gerar o PDF no timbrado a partir do recibo já numerado; o envio pelo WhatsApp vem com Conversas"
+  "proximo": "Mandar o PDF ao cliente pelo WhatsApp (vem com Conversas) e pôr no timbrado o logo do escritório e o registro da sociedade na OAB quando o Escritório guardar esses dados",
+  "evidencia": "Página /recibos/:id do Portal com o recibo em A4 no timbrado do escritório e \"Baixar PDF ou imprimir\" (o PDF sai do navegador); \"Quem pagou\" em Registrar recebimento (cliente, contato principal ou outra pessoa, com CPF ou CNPJ conferido); cópia do que foi no papel guardada junto do número; \"Ver o recibo\" no aviso e \"Recibo 0187\" na tabela abrem o recibo em outra aba (migration 0533, pgTAP 056, Deno app_test e recibo.test, e2e portal-financeiro F3.19)."
 }

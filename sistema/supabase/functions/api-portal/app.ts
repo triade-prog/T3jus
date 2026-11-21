@@ -9,8 +9,8 @@ import {
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
-  type FichaContrato, type HonorariosContratos, type PedidoContrato, type ListaContratos, type PropostaParaContrato,
-  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
+  type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
+  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
@@ -811,9 +811,14 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Registrar recebimento: baixa a parcela do mês dela; o dinheiro conta no dia em que entrou.
   app.post("/v1/escritorio/financeiro/parcelas/:id/recebimentos", async (c) => {
     const d = await lerCorpo(c, registrarRecebimentoSchema);
-    return c.json(await deps.banco.rpc<RecebimentoRegistrado>("portal_financeiro_receber_registrar", {
+    return c.json(await deps.banco.rpc<RecebimentoRegistrado>("portal_financeiro_receber_registrar_recibo", {
       ...quem(c), p_parcela: idDaRota(c, "id"), p_dados: d,
     }), 201);
+  });
+
+  // FI-14, F3.19: o recibo de um recebimento, como foi emitido, para imprimir ou salvar em PDF.
+  app.get("/v1/escritorio/recibos/:pagamento", async (c) => {
+    return c.json(await deps.banco.rpc<ReciboParaImprimir>("portal_recibo", { ...quem(c), p_pagamento: idDaRota(c, "pagamento") }));
   });
 
   // Anotar cobrança: o que foi feito, o motivo do atraso e a próxima ação.
@@ -858,6 +863,24 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<{ id: string; reembolsadoEm: string }>("portal_financeiro_conta_reembolsada", {
       ...quem(c), p_conta: idDaRota(c, "id"), p_dados: d,
     }));
+  });
+
+  // ------------------------------------------------------------------ Contas que repetem (FI-13, F3.24)
+  // Mudar o valor ou o dia a partir de um mês e encerrar com motivo. A conta do mês já lançada
+  // muda só se a pessoa escolher o mês dela; conta paga nunca muda (0534).
+  app.get("/v1/escritorio/financeiro/recorrencias", async (c) => {
+    return c.json(await deps.banco.rpc<ListaRecorrencias>("portal_recorrencias", quem(c)));
+  });
+
+  app.get("/v1/escritorio/financeiro/recorrencias/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaRecorrencia>("portal_recorrencia", { ...quem(c), p_rec: idDaRota(c, "id") }));
+  });
+
+  app.post("/v1/escritorio/financeiro/recorrencias/:id/mudancas", async (c) => {
+    const d = await lerCorpo(c, mudarRecorrenciaSchema);
+    return c.json(await deps.banco.rpc<RecorrenciaMudada>("portal_recorrencia_mudar", {
+      ...quem(c), p_rec: idDaRota(c, "id"), p_dados: d,
+    }), 201);
   });
 
   // ------------------------------------------------------------------ Repasses (FI-05, FI-06, FI-12)

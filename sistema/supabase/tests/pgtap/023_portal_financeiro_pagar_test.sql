@@ -51,7 +51,7 @@ create temp table cs as select
      'valor', 2100, 'vencimento', '2026-11-10')) ->> 'id')::uuid tarifa
   from ids, cli;
 
-select is((select portal_financeiro_pagar(diego, rm) -> 'totais' from ids),
+select is((select ((portal_financeiro_pagar(diego, rm) -> 'totais') #- '{recorrentes,ativas}' #- '{recorrentes,encerradasMes}') from ids),
   '{"semana": {"valor": 408500, "contas": 2}, "vencidas": {"valor": 2100, "contas": 1}, "recorrentes": {"contas": 1, "sozinhas": 0}, "reembolsar": {"valor": 48500, "clientes": 1}}'::jsonb,
   'os quatro números do alto');
 select is((select jsonb_path_query_array(portal_financeiro_pagar(diego, rm) -> 'contas', '$[*].descricao') from ids),
@@ -60,7 +60,7 @@ select is((select portal_financeiro_pagar(diego, rm) -> 'depois' from ids), '{"a
   'o que falta no mês depois da semana');
 select is((select portal_financeiro_pagar(diego, rm, 'VENCIDAS') -> 'contas' -> 0 ->> 'situacao' from ids), 'VENCIDA', 'vencida no filtro');
 select is((select jsonb_array_length(portal_financeiro_pagar(diego, rm, 'MES') -> 'contas') from ids), 4, 'o mês todo');
-select is((select portal_financeiro_pagar(diego, rm) -> 'contas' -> 1 -> 'recorrente' from ids),
+select is((select (portal_financeiro_pagar(diego, rm) -> 'contas' -> 1 -> 'recorrente') - 'id' from ids),
   '{"dia": 20, "mes": "2026-11-01", "lancadaSozinha": false}'::jsonb, 'FI-13: a origem diz que repete todo dia 20');
 select is((select portal_financeiro_pagar(diego, rm) -> 'adiantados' -> 0 -> 'adiantada' ->> 'como' from ids), 'LEVANTAMENTO',
   'FI-07: o adiantado por cliente diz como volta');
@@ -95,7 +95,7 @@ select is((teste.erro($$ select portal_financeiro_conta_paga(intrusa, outro, cs.
 
 -- O tempo passa: em fevereiro, dezembro, janeiro e fevereiro já nasceram sozinhos, uma vez só.
 select ajustar_relogio(('2027-02-03 09:00-03'::timestamptz - now()));
-select is((select portal_financeiro_pagar(diego, rm, 'RECORRENTES') -> 'contas' -> 0 -> 'recorrente' from ids),
+select is((select (portal_financeiro_pagar(diego, rm, 'RECORRENTES') -> 'contas' -> 0 -> 'recorrente') - 'id' from ids),
   '{"dia": 20, "mes": "2027-02-01", "lancadaSozinha": true}'::jsonb, 'FI-13: a recorrente do mês nasceu sozinha');
 select is((select count(*)::integer from contas_pagar c, ids where c.escritorio_id = ids.rm and c.descricao = 'Aluguel da sala'), 4,
   'novembro, dezembro, janeiro e fevereiro, uma vez cada (a lista abriu duas vezes)');

@@ -165,7 +165,8 @@ test.describe("Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17)", (
     await j.getByRole("button", { name: "Registrar recebimento" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." })).toContainText("Recibo nº 2026-0187");
     const corpo = pedidos.filter((p) => p.metodo === "POST").at(-1)?.corpo as Record<string, unknown>;
-    expect(corpo).toEqual({ valor: 85000, multaJuros: 2380, recebidoEm: dia(0), forma: "PIX", recibo: true });
+    expect(corpo).toEqual({ valor: 85000, multaJuros: 2380, recebidoEm: dia(0), forma: "PIX", recibo: true, pagador: null });
+    await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." }).getByRole("link", { name: /Ver o recibo/ })).toHaveAttribute("href", "/recibos/p9");
   });
 
   test("Registrar recebimento do alto: escolhe a parcela primeiro", async ({ page }) => {
@@ -327,5 +328,70 @@ test.describe("Financeiro do Portal, comprovante do recebimento (FI-18)", () => 
     await expect(page.getByRole("status").filter({ hasText: "Comprovante anexado." })).toBeVisible();
     expect(pedidos.find((p) => p.caminho === "/v1/escritorio/anexos")?.corpo).toMatchObject({ dono: "RECEBIMENTO", donoId: "p2", tipo: "image/png" });
     expect(envios.filter((e) => e.startsWith("PUT"))).toHaveLength(1);
+  });
+});
+
+const RECIBO = {
+  numero: { ano: 2026, numero: 187 },
+  escritorio: { nome: "Ribeiro & Matos", cnpj: "11222333000181", endereco: "Rua Augusta, 1200", cidade: "São Paulo", uf: "SP", contatos: [], whatsapp: null },
+  cliente: { id: "c22", nome: "Hélio Batista Corrêa", tipo: "PF", documento: "52998224725" },
+  pagador: { tipo: "CONTATO", nome: "Marta Corrêa", documento: "11144477735", papel: "Esposa" },
+  contrato: { id: ct(22), numero: "C-2026-022", objeto: "Ação revisional" },
+  parcela: { id: pc(63), descricao: "Parcela 3 de 4", vencimento: dia(-24), ordem: 3, total: 4 },
+  valor: 85000, multaJuros: 2380, forma: "PIX", pagoEm: dia(0),
+  registradoPor: { nome: "Marina Ribeiro", oab: "OAB/SP 123.456" }, registradoEm: em(0, "15:20"), pagamentoId: "a9000000-0000-4000-8000-000000000009",
+};
+
+test.describe("Recibo em PDF e quem pagou (FI-14, F3.19)", () => {
+  test("Quem pagou: outra pessoa pede nome e CPF ou CNPJ válidos, e vai ao servidor", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`POST /v1/escritorio/financeiro/parcelas/${pc(22)}/recebimentos`]: { status: 201, corpo: { id: "p9", paga: true, falta: 0, recibo: { ano: 2026, numero: 188 } } },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Registrar recebimento de Hélio/ }).click();
+    const j = page.getByRole("dialog", { name: "Registrar recebimento" });
+    const quem = j.getByRole("group", { name: "Quem pagou" });
+    await expect(quem.getByRole("radio", { name: /, o cliente/ })).toBeChecked();
+    await quem.getByRole("radio", { name: /Outra pessoa ou empresa/ }).check();
+    await j.getByRole("button", { name: "Registrar recebimento" }).click();
+    await expect(j.getByText("Escreva o nome de quem pagou.")).toBeVisible();
+    expect(pedidos.some((p) => p.metodo === "POST")).toBe(false);
+    await j.getByRole("textbox", { name: "Nome de quem pagou" }).fill("Construtora Lima");
+    await j.getByRole("textbox", { name: "CPF ou CNPJ de quem pagou" }).fill("11.222.333/0001-00");
+    await j.getByRole("button", { name: "Registrar recebimento" }).click();
+    await expect(j.getByRole("textbox", { name: "CPF ou CNPJ de quem pagou" })).toHaveAttribute("aria-invalid", "true");
+    expect(pedidos.some((p) => p.metodo === "POST")).toBe(false);
+    await semViolacoes(page);
+    await j.getByRole("textbox", { name: "CPF ou CNPJ de quem pagou" }).fill("11.222.333/0001-81");
+    await j.getByRole("button", { name: "Registrar recebimento" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." })).toBeVisible();
+    const corpo = pedidos.filter((p) => p.metodo === "POST").at(-1)?.corpo as Record<string, unknown>;
+    expect(corpo.pagador).toEqual({ tipo: "OUTRO", nome: "Construtora Lima", documento: "11222333000181" });
+  });
+
+  test("A folha do recibo: timbre, valor por extenso, quem pagou em favor do cliente e o botão de PDF", async ({ page }) => {
+    const id = RECIBO.pagamentoId;
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/recibos/${id}`]: { corpo: RECIBO } });
+    await page.goto(`${P}/recibos/${id}`);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Recibo nº 2026-0187");
+    const folha = page.getByRole("article", { name: "Recibo nº 2026-0187" });
+    await expect(folha).toContainText("Ribeiro & Matos");
+    await expect(folha).toContainText("Marta Corrêa");
+    await expect(folha).toContainText("Hélio Batista Corrêa");
+    await expect(folha).toContainText("873,80");
+    await expect(folha).toContainText("oitocentos e setenta e três reais e oitenta centavos");
+    await expect(page.getByRole("button", { name: "Baixar PDF ou imprimir" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Voltar ao contrato" })).toHaveAttribute("href", new RegExp(ct(22)));
+    await expect(page).toHaveTitle(/Recibo/);
+    await semViolacoes(page);
+  });
+
+  test("Recibo de outro escritório ou que não existe: avisa e não mostra nada", async ({ page }) => {
+    const id = "a9000000-0000-4000-8000-000000000010";
+    await simular(page, comuns());
+    await page.goto(`${P}/recibos/${id}`);
+    await expect(page.getByText(/Ele não existe ou é de outro escritório/)).toBeVisible();
+    await expect(page.getByRole("article")).toHaveCount(0);
   });
 });

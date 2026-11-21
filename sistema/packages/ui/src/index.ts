@@ -42,10 +42,12 @@ export { ContratosPortal, HonorariosContratosPortal } from "./portal/Contratos.t
 export { FichaContratoPortal } from "./portal/FichaContrato.tsx";
 export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financeiro.tsx";
 export { PagarFinanceiro } from "./portal/FinanceiroPagar.tsx";
+export { RecorrenteFinanceiro } from "./portal/Recorrentes.tsx";
 export { RepasseFinanceiro, RepassesFinanceiro } from "./portal/FinanceiroRepasses.tsx";
 export { BarraConversas, ConversasPortal, ROTAS_CONVERSAS } from "./portal/Conversas.tsx";
 export { AvisosAutomaticosPortal } from "./portal/AvisosAutomaticos.tsx";
 export { BarraEscritorio, ROTAS_ESCRITORIO, WhatsappPortal } from "./portal/WhatsApp.tsx";
+export { FolhaRecibo, ReciboImprimir } from "./portal/Recibo.tsx";
 export { BotaoCarne, CarneImprimir, FolhaCarne, FolhasCarne, QrPix, RecebimentoPortal, rotaCarne } from "./portal/Carne.tsx";
 export { AutomacoesPortal, hrefAutomacao } from "./portal/Automacoes.tsx";
 export { CaixaDoFinanceiro, ResumoDoFinanceiro } from "./portal/FinanceiroResumo.tsx";

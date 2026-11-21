@@ -24,6 +24,7 @@ import { comoVolta, origemConta, quandoConta } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { ListaRecorrentes } from "./Recorrentes.tsx";
 
 type Feito = { titulo: string; texto: string };
 
@@ -141,8 +142,9 @@ function PagarConteudo() {
       <div className="fi-nums" role="group" aria-label="Mostrar">
         {numero("SEMANA", "Vencem esta semana", reais(t.semana.valor), nenhumaOu(t.semana.contas))}
         {numero("VENCIDAS", <>{t.vencidas.contas ? <Icone nome="alerta" className="ico" /> : null}Vencidas</>, reais(t.vencidas.valor), nenhumaOu(t.vencidas.contas))}
-        {numero("RECORRENTES", `Recorrentes de ${nomeDoMes(dados.mes)}`, t.recorrentes.contas,
-          t.recorrentes.sozinhas ? `${t.recorrentes.sozinhas === 1 ? "lançada sozinha" : "lançadas sozinhas"} em ${diaCurto(dados.mes)}` : "as próximas nascem sozinhas no dia 1º")}
+        {numero("RECORRENTES", `Recorrentes de ${nomeDoMes(dados.mes)}`, t.recorrentes.ativas ?? t.recorrentes.contas,
+          t.recorrentes.encerradasMes ? `ativas · ${contar(t.recorrentes.encerradasMes, "encerrada", "encerradas")} este mês`
+            : t.recorrentes.sozinhas ? `${t.recorrentes.sozinhas === 1 ? "lançada sozinha" : "lançadas sozinhas"} em ${diaCurto(dados.mes)}` : "as próximas nascem sozinhas no dia 1º")}
         <a href="#t-reemb">
           <span className="r">A reembolsar por clientes</span>
           <b className="num">{reais(t.reembolsar.valor)}</b>
@@ -150,6 +152,7 @@ function PagarConteudo() {
         </a>
       </div>
 
+      {mostrar === "RECORRENTES" ? <ListaRecorrentes aoMudou={recarregar} /> : (
       <section className="folha" aria-labelledby="t-contas" style={{ overflow: "hidden" }}>
         <div className="folha-cab">
           <div>
@@ -227,6 +230,7 @@ function PagarConteudo() {
           </span>
         </div>
       </section>
+      )}
 
       <div className="fi-grade fi-grade-meio">
         <div className="fi-col">

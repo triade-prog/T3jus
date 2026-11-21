@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CaixaDoFinanceiro, PagarFinanceiro, ParcelasContratoFinanceiro, ReceberFinanceiro, RelatoriosFinanceiro, RepasseFinanceiro, RepassesFinanceiro, ResumoDoFinanceiro } from "@t3jus/ui";
+import { CaixaDoFinanceiro, PagarFinanceiro, ParcelasContratoFinanceiro, RecorrenteFinanceiro, ReceberFinanceiro, RelatoriosFinanceiro, RepasseFinanceiro, RepassesFinanceiro, ResumoDoFinanceiro } from "@t3jus/ui";
 
 // Área Financeiro do Portal. A receber (FI-01 a FI-04, FI-14, FI-17): a lista e as parcelas de
-// um contrato. A pagar (FI-01, FI-02, FI-07, FI-13, FI-20). Repasses (FI-05, FI-06, FI-12): a
+// um contrato. A pagar (FI-01, FI-02, FI-07, FI-13, FI-20) e a ficha da conta que repete. Repasses (FI-05, FI-06, FI-12): a
 // lista e a ficha de um repasse. Resumo (FI-03, PD-03, PD-06, IN-02 a IN-14) e Caixa (FI-09, FI-21).
 // Relatórios do sócio (F3.70, IN-15): visão geral, por cliente, um cliente, por área e por
 // responsável; só a sócia dona (a tela confere e o servidor confere de novo). O
@@ -22,7 +22,12 @@ export default async function Pagina({ params }: { params: Promise<{ secao?: str
     if (a === "contratos" && b && UUID.test(b)) return <ParcelasContratoFinanceiro id={b.toLowerCase()} />;
     notFound();
   }
-  if (secao === "a-pagar" && s.length === 1) return <PagarFinanceiro />;
+  if (secao === "a-pagar") {
+    if (!a) return <PagarFinanceiro />;
+    // A ficha de uma conta que repete todo mês (F3.24, FI-13).
+    if (a === "recorrentes" && b && UUID.test(b)) return <RecorrenteFinanceiro id={b.toLowerCase()} />;
+    notFound();
+  }
   if (secao === "repasses") {
     if (!a) return <RepassesFinanceiro />;
     if (UUID.test(a) && !b) return <RepasseFinanceiro id={a.toLowerCase()} />;
