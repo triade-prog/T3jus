@@ -28,3 +28,4 @@ export * from "./zip.ts";
 export * from "./docx.ts";
 export * from "./peticoes.ts";
 export * from "./pix.ts";
+export * from "./anexos.ts";

@@ -118,7 +118,7 @@ test.describe("Financeiro do Portal, A pagar (FI-01, FI-02, FI-07, FI-13, FI-20)
     await j.getByLabel("Como o dinheiro volta").selectOption("PROXIMA_PARCELA");
     await j.getByRole("button", { name: "Lançar conta" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Conta lançada." })).toContainText("Vira reembolso de Daniela Rocha Mendes.");
-    const corpo = pedidos.find((p) => p.metodo === "POST")?.corpo;
+    const corpo = pedidos.find((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/contas")?.corpo;
     expect(corpo).toEqual({
       descricao: "Custas da apelação", valor: 124836, vencimento: dia(3), categoria: "CUSTAS", forma: "BOLETO", repete: false, adiantada: true,
       clienteId: DANI.id, reembolsoComo: "PROXIMA_PARCELA",
@@ -158,5 +158,78 @@ test.describe("Financeiro do Portal, A pagar (FI-01, FI-02, FI-07, FI-13, FI-20)
     await simular(page, comuns(SEM_AREA));
     await page.goto(`${P}/financeiro/a-pagar`);
     await expect(page.getByRole("heading", { name: "Esta área não está liberada para você" })).toBeVisible();
+  });
+});
+
+// Nota, guia ou boleto em cada conta (F3.22, FI-18).
+test.describe("Financeiro do Portal, nota ou guia de cada conta (FI-18)", () => {
+  const ANEXO = "f9000000-0000-4000-8000-000000000011";
+  const GUIA = { id: "f9000000-0000-4000-8000-000000000010", categoria: "GUIA", nome: "guia-preparo.pdf", tipo: "application/pdf", tamanho: 212000,
+    donoId: cid(1), enviadoPor: DANI, enviadoEm: `${dia(-1)}T12:00:00Z` };
+  async function storage(page: Page) {
+    const envios: string[] = [];
+    await page.route("**/arquivos-falsos/**", async (rota) => {
+      envios.push(`${rota.request().method()} ${new URL(rota.request().url()).pathname}`);
+      await rota.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
+    return envios;
+  }
+  const rotas = {
+    "POST /v1/escritorio/financeiro/anexos/buscar": { corpo: { anexos: [GUIA] } },
+    "POST /v1/escritorio/anexos": { status: 201, corpo: { id: ANEXO, enderecoDeEnvio: `${P}/arquivos-falsos/${ESC}/${ANEXO}?token=uso-unico` } },
+    [`POST /v1/escritorio/anexos/${ANEXO}/concluir`]: { corpo: { id: ANEXO, categoria: "BOLETO", nome: "boleto.pdf" } },
+    [`POST /v1/escritorio/anexos/${GUIA.id}/abrir`]: { corpo: { url: `${P}/arquivos-falsos/ler?download=guia.pdf`, validadeSegundos: 60 } },
+  };
+
+  test("A lista mostra a guia anexada; a conta sem nota tem o selo e recebe o boleto depois", async ({ page }) => {
+    const envios = await storage(page);
+    const pedidos = await simular(page, { ...comuns(), ...rotas });
+    await page.goto(`${P}/financeiro/a-pagar`);
+    const tabela = page.getByRole("table", { name: "Vencem esta semana" });
+    await expect(tabela.getByRole("columnheader", { name: "Nota ou guia" })).toBeVisible();
+    const custas = tabela.getByRole("row", { name: /Custas recursais/ });
+    await expect(custas.getByRole("button", { name: /Guia anexada/ })).toBeVisible();
+    const aluguel = tabela.getByRole("row", { name: /Aluguel da sala/ });
+    await expect(aluguel).toContainText("Falta a nota fiscal");
+    await semViolacoes(page);
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/financeiro/anexos/buscar")?.corpo).toEqual({ contas: [cid(1), cid(2)], pagamentos: [] });
+
+    const aba = page.waitForEvent("popup");
+    await custas.getByRole("button", { name: /Guia anexada/ }).click();
+    await aba;
+
+    await aluguel.getByRole("button", { name: /Anexar/ }).click();
+    const j = page.getByRole("dialog", { name: "Anexar nota, guia ou boleto" });
+    await j.getByLabel(/Guia, boleto ou nota fiscal/).setInputFiles({ name: "boleto.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(800, 1) });
+    await j.getByLabel("O que é o arquivo").selectOption("BOLETO");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Anexar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Boleto anexado." })).toBeVisible();
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/anexos")?.corpo).toEqual({
+      dono: "CONTA", donoId: cid(2), categoria: "BOLETO", nome: "boleto.pdf", tipo: "application/pdf", tamanho: 800,
+    });
+    expect(envios).toEqual([`PUT /arquivos-falsos/${ESC}/${ANEXO}`]);
+  });
+
+  test("Lançar conta com a guia: a conta vai primeiro e o arquivo depois, ligado a ela", async ({ page }) => {
+    await storage(page);
+    const NOVA = cid(9);
+    const pedidos = await simular(page, { ...comuns(), ...rotas, "POST /v1/escritorio/financeiro/contas": { status: 201, corpo: { id: NOVA, recorrenteId: null } } });
+    await page.goto(`${P}/financeiro/a-pagar`);
+    await page.locator(".pt-cab").getByRole("button", { name: "Lançar conta" }).click();
+    const j = page.getByRole("dialog", { name: "Lançar conta" });
+    await j.getByLabel("O que é", { exact: true }).fill("Preparo da apelação");
+    await j.getByLabel("Valor", { exact: true }).fill("212,00");
+    await j.getByLabel("Vencimento").fill(br(3));
+    await j.getByLabel("Categoria").selectOption("CUSTAS");
+    await j.getByLabel(/Guia, boleto ou nota fiscal/).setInputFiles({ name: "guia-preparo-apelacao.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(700, 1) });
+    await j.getByLabel("O que é o arquivo").selectOption("GUIA");
+    await expect(j).toContainText("Vai junto na exportação para o contador.");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Lançar conta" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Conta lançada." })).toContainText("Guia anexada.");
+    const posts = pedidos.filter((p) => p.metodo === "POST" && p.caminho !== "/v1/escritorio/financeiro/anexos/buscar").map((p) => p.caminho);
+    expect(posts).toEqual(["/v1/escritorio/financeiro/contas", "/v1/escritorio/anexos", `/v1/escritorio/anexos/${ANEXO}/concluir`]);
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/anexos")?.corpo).toMatchObject({ dono: "CONTA", donoId: NOVA, categoria: "GUIA" });
   });
 });

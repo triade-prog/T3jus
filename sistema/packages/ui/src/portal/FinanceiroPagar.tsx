@@ -4,12 +4,16 @@
 // quatro números do alto, as contas com categoria e origem, o adiantado por cliente que vira
 // reembolso, as saídas do mês por categoria, e as janelas de lançar conta, marcar paga e
 // registrar o reembolso. Nada se apaga: a conta só ganha o pagamento e o reembolso.
+// A coluna "Nota ou guia" e o arquivo em Lançar conta são do F3.22 (FI-18): conta sem nota
+// ganha o selo de atenção e pode receber o arquivo depois.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   CATEGORIAS_SAIDA, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, reais, REEMBOLSO_COMO,
+  textoAnexado, type Anexo, type CategoriaAnexo,
   type CategoriaSaida, type ContaPagar, type FormaPagamento, type ListaClientes, type ListaPagar, type MostrarPagar, type ReembolsoComo,
 } from "@t3jus/domain";
+import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -69,20 +73,31 @@ function PagarConteudo() {
   }, []);
   const [pagar, setPagar] = useState<ContaPagar | null>(null);
   const [reembolso, setReembolso] = useState<ContaPagar | null>(null);
+  const [anexar, setAnexar] = useState<ContaPagar | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
+  const [falhaAbrir, setFalhaAbrir] = useState<string | null>(null);
   const { dados, recarregar } = useCarga<ListaPagar>(`/v1/escritorio/financeiro/pagar?mostrar=${mostrar}`);
+  const anexos = useAnexosFinanceiro(dados && dados !== "erro" ? dados.contas.map((c) => c.id) : [], []);
   const terminar = (f: Feito) => {
     setLancar(false);
     setPagar(null);
     setReembolso(null);
+    setAnexar(null);
     setFeito(f);
     recarregar();
+    anexos.recarregar();
   };
+  async function abrir(a: Anexo) {
+    setFalhaAbrir(null);
+    const e = await abrirAnexo(a.id);
+    if (e) setFalhaAbrir(e);
+  }
   const janelas = (
     <>
       {lancar ? <JanelaLancar aoFechar={() => setLancar(false)} aoFeito={terminar} /> : null}
       {pagar ? <JanelaPaga conta={pagar} aoFechar={() => setPagar(null)} aoFeito={terminar} /> : null}
       {reembolso ? <JanelaReembolso conta={reembolso} aoFechar={() => setReembolso(null)} aoFeito={terminar} /> : null}
+      {anexar ? <JanelaAnexarConta conta={anexar} aoFechar={() => setAnexar(null)} aoFeito={terminar} /> : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </>
   );
@@ -141,13 +156,14 @@ function PagarConteudo() {
             <p className="sub">{cab.sub}</p>
           </div>
         </div>
+        {falhaAbrir ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="O arquivo não abriu.">{falhaAbrir}</Aviso></div> : null}
         {dados.contas.length ? (
           <table className="hn-tab fi-tab fi-tab-pagar">
             <caption className="sr">{cab.titulo}</caption>
-            <colgroup>{["10%", "25%", "17%", "24%", "13%", "11%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+            <colgroup>{["9%", "21%", "14%", "20%", "14%", "11%", "11%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
             <thead>
               <tr>
-                <th scope="col">Vence</th><th scope="col">Conta</th><th scope="col">Categoria</th><th scope="col">Origem</th>
+                <th scope="col">Vence</th><th scope="col">Conta</th><th scope="col">Categoria</th><th scope="col">Origem</th><th scope="col">Nota ou guia</th>
                 <th scope="col" style={{ textAlign: "right" }}>Valor</th><th scope="col"><span className="sr">Ação</span></th>
               </tr>
             </thead>
@@ -170,6 +186,9 @@ function PagarConteudo() {
                         <b>{o.repete || c.adiantada ? <Icone nome="reenviar" className="ico" /> : null}{o.titulo}</b>
                         <small>{o.detalhe}</small>
                       </div>
+                    </td>
+                    <td data-r="Nota ou guia">
+                      <NotaDaConta c={c} anexos={anexos.porDono.get(c.id)} aoAbrir={(a) => void abrir(a)} aoAnexar={() => setAnexar(c)} />
                     </td>
                     <td data-r="Valor" className="fi-v num">
                       {reais(c.valorPago ?? c.valor)}
@@ -296,6 +315,10 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [tipoArq, setTipoArq] = useState<CategoriaAnexo>("NOTA_FISCAL");
+  const [erroArq, setErroArq] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
   const corpo = useRef<HTMLDivElement>(null);
   const tem = (c: string) => erros.includes(c);
 
@@ -315,7 +338,7 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
     if (adiantada && !cliente) e.push("clienteId");
     if (adiantada && !como) e.push("reembolsoComo");
     setFalha(null);
-    if (e.length) {
+    if (e.length || erroArq) {
       setErros(e);
       return focarPrimeiroErro(corpo.current);
     }
@@ -327,12 +350,21 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
         clienteId: adiantada ? cliente : null, reembolsoComo: adiantada ? como : null,
       },
     });
-    setEnviando(false);
     if (r.ok) {
       const nome = clientes?.find((x) => x.id === cliente)?.nome;
       const extra = repete ? ` Repete todo dia ${Number(d!.slice(8, 10))}; os próximos meses nascem sozinhos.` : adiantada && nome ? ` Vira reembolso de ${nome}.` : "";
-      return aoFeito({ titulo: "Conta lançada.", texto: `${descricao.trim()}, ${reais(c!)}, vence em ${dataBr(d!)}.${extra}` });
+      // A conta já existe; o arquivo vai depois, e a falha dele não desfaz a conta.
+      let arq = "";
+      if (arquivo) {
+        setProgresso(0);
+        const erro = await enviarAnexo("CONTA", r.dados.id, arquivo, tipoArq, setProgresso);
+        setProgresso(null);
+        arq = erro ? " O arquivo não foi guardado; anexe de novo pela lista, em “Nota ou guia”." : ` ${textoAnexado(tipoArq)}.`;
+      }
+      setEnviando(false);
+      return aoFeito({ titulo: "Conta lançada.", texto: `${descricao.trim()}, ${reais(c!)}, vence em ${dataBr(d!)}.${extra}${arq}` });
     }
+    setEnviando(false);
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       setErros(campos.map(String));
@@ -435,6 +467,75 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
             </div>
           ) : null}
         </fieldset>
+        <CampoAnexo rotulo="Guia, boleto ou nota fiscal" ajuda="Vai junto na exportação para o contador."
+          arquivo={arquivo} aoEscolher={(a, er) => { setArquivo(er ? null : a); setErroArq(er); }}
+          categoria={tipoArq} aoCategoria={setTipoArq} erro={erroArq} progresso={progresso} />
+      </div>
+    </Janela>
+  );
+}
+
+// ------------------------------------------------------------------------- Nota ou guia (FI-18)
+
+/** A coluna "Nota ou guia": o arquivo mais novo da conta, ou o selo de atenção com "Anexar". */
+function NotaDaConta({ c, anexos, aoAbrir, aoAnexar }: { c: ContaPagar; anexos: Anexo[] | undefined; aoAbrir: (a: Anexo) => void; aoAnexar: () => void }) {
+  const a = anexos?.[0];
+  if (a) {
+    return (
+      <span className="fi-docs">
+        <button className="jr-link fi-doc-bt" type="button" onClick={() => aoAbrir(a)}>
+          <Icone nome="doc" className="ico" />{textoAnexado(a.categoria)}<span className="sr">: abrir {a.nome} de {c.descricao}</span>
+        </button>
+      </span>
+    );
+  }
+  return (
+    <span className="fi-docs">
+      <Selo tom="atencao" icone="alerta">Falta a nota fiscal</Selo>
+      <button className="jr-link fi-doc-bt" type="button" onClick={aoAnexar}>
+        <Icone nome="enviar" className="ico" />Anexar<span className="sr"> a nota, guia ou boleto de {c.descricao}</span>
+      </button>
+    </span>
+  );
+}
+
+function JanelaAnexarConta({ conta, aoFechar, aoFeito }: { conta: ContaPagar; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [tipoArq, setTipoArq] = useState<CategoriaAnexo>("NOTA_FISCAL");
+  const [erro, setErro] = useState<string | null>(null);
+  const [falha, setFalha] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
+  const corpo = useRef<HTMLDivElement>(null);
+  async function enviar() {
+    setFalha(null);
+    if (!arquivo || erro) {
+      setErro(erro ?? "Escolha o arquivo da nota, guia ou boleto.");
+      return focarPrimeiroErro(corpo.current);
+    }
+    setProgresso(0);
+    const e = await enviarAnexo("CONTA", conta.id, arquivo, tipoArq, setProgresso);
+    setProgresso(null);
+    if (e) return setFalha(e);
+    aoFeito({ titulo: `${textoAnexado(tipoArq)}.`, texto: `${conta.descricao}: o arquivo vai junto na exportação para o contador.` });
+  }
+  return (
+    <Janela id="j-anexo-conta" aberta aoFechar={aoFechar} sobretitulo={`A pagar · ${conta.descricao}`} titulo="Anexar nota, guia ou boleto" descricao="j-anexo-conta-d"
+      aoEnviar={() => void enviar()}
+      pe={
+        <>
+          <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
+          <button className="btn btn-pri" type="submit" disabled={progresso !== null} aria-busy={progresso !== null || undefined}>
+            <Icone nome="enviar" className="ico" />
+            Anexar
+          </button>
+        </>
+      }>
+      <div ref={corpo} style={{ display: "grid", gap: 16 }}>
+        <p id="j-anexo-conta-d">{reais(conta.valorPago ?? conta.valor)}, vence em {dataBr(conta.vencimento)}. O arquivo fica na conta e vai junto na exportação para o contador.</p>
+        {falha ? <Aviso tom="urgencia" titulo="O arquivo não foi anexado.">{falha}</Aviso> : null}
+        <CampoAnexo rotulo="Guia, boleto ou nota fiscal" opcional={false}
+          arquivo={arquivo} aoEscolher={(a, er) => { setArquivo(er ? null : a); setErro(er); }}
+          categoria={tipoArq} aoCategoria={setTipoArq} erro={erro} progresso={progresso} />
       </div>
     </Janela>
   );

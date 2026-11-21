@@ -199,9 +199,17 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await semViolacoes(page);
   });
 
-  test("Ficha em elaboração: registrar a assinatura ativa e conta os recebimentos", async ({ page }) => {
+  test("Ficha em elaboração: registrar a assinatura com o arquivo assinado ativa e conta os recebimentos (CH-01)", async ({ page }) => {
+    const ANEXO = "f9000000-0000-4000-8000-000000000033";
+    const envios: string[] = [];
+    await page.route("**/arquivos-falsos/**", async (rota) => {
+      envios.push(`${rota.request().method()} ${new URL(rota.request().url()).pathname}`);
+      await rota.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
     const pedidos = await simular(page, {
       ...comuns(),
+      "POST /v1/escritorio/anexos": { status: 201, corpo: { id: ANEXO, enderecoDeEnvio: `${P}/arquivos-falsos/${ESC}/${ANEXO}?token=uso-unico` } },
+      [`POST /v1/escritorio/anexos/${ANEXO}/concluir`]: { corpo: { id: ANEXO, categoria: "CONTRATO_ASSINADO", nome: "contrato-assinado.pdf" } },
       [`POST /v1/escritorio/contratos/${ct(33)}/assinatura`]: [
         { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["assinadoEm"] } } } },
         { corpo: { id: ct(33), versao: 2, recebimentos: 3 } },
@@ -216,13 +224,26 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await page.getByRole("button", { name: "Registrar assinatura" }).click();
     const j = page.getByRole("dialog", { name: "Registrar assinatura" });
     await j.getByLabel("Data da assinatura").fill(br(-1));
+    // Sem o arquivo assinado, nada vai ao servidor.
+    await j.getByRole("button", { name: "Registrar e ativar" }).click();
+    await expect(j.getByLabel(/Contrato assinado/)).toHaveAttribute("aria-invalid", "true");
+    await expect(j).toContainText("Anexe o contrato assinado");
+    expect(pedidos.some((p) => p.caminho.endsWith("/assinatura"))).toBe(false);
+    await j.getByLabel(/Contrato assinado/).setInputFiles({ name: "contrato-assinado.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(1200, 1) });
+    await expect(j.getByRole("button", { name: "Tirar o anexo contrato-assinado.pdf" })).toBeVisible();
     await j.getByRole("button", { name: "Registrar e ativar" }).click();
     await expect(j.getByLabel("Data da assinatura")).toHaveAttribute("aria-invalid", "true");
+    await expect(j).toContainText("O arquivo assinado já está guardado.");
     await semViolacoes(page);
     await j.getByRole("button", { name: "Registrar e ativar" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Assinatura registrada" })).toContainText("3 recebimentos foram programados");
     const corpo = pedidos.filter((p) => p.caminho === `/v1/escritorio/contratos/${ct(33)}/assinatura`).at(-1)?.corpo;
     expect(corpo).toEqual({ versao: 1, assinadoEm: dia(-1) });
+    // O arquivo foi uma vez só, antes da assinatura, ligado ao contrato.
+    expect(envios).toEqual([`PUT /arquivos-falsos/${ESC}/${ANEXO}`]);
+    expect(pedidos.filter((p) => p.caminho === "/v1/escritorio/anexos").map((p) => p.corpo)).toEqual([
+      { dono: "CONTRATO", donoId: ct(33), categoria: null, nome: "contrato-assinado.pdf", tipo: "application/pdf", tamanho: 1200 },
+    ]);
   });
 
   test("Recebimentos sem Financeiro: programação dos 3 meses, cancelado riscado e quem libera", async ({ page }) => {
@@ -305,5 +326,59 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await simular(page, comuns(SEM_AREA));
     await page.goto(`${P}/contratos/honorarios`);
     await expect(page.getByRole("heading", { name: "Esta área não está liberada para você" })).toBeVisible();
+  });
+});
+
+// O arquivo assinado na ficha do contrato ativo (F3.12, CH-01).
+test.describe("Contratos do Portal, arquivo assinado (CH-01)", () => {
+  const ASSINADO = { id: "f9000000-0000-4000-8000-000000000019", categoria: "CONTRATO_ASSINADO", nome: "contrato-assinado.pdf", tipo: "application/pdf",
+    tamanho: 86000, donoId: ct(19), enviadoPor: FELIPE, enviadoEm: em(-72, "16:00") };
+  const NOVO = "f9000000-0000-4000-8000-000000000020";
+
+  test("Com o assinado: mostra o arquivo, quem anexou e abre numa aba nova", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${ct(19)}/anexos`]: { corpo: { anexos: [ASSINADO] } },
+      [`POST /v1/escritorio/anexos/${ASSINADO.id}/abrir`]: { corpo: { url: `${P}/arquivos-falsos/ler?download=contrato.pdf`, validadeSegundos: 60 } },
+    });
+    await page.route("**/arquivos-falsos/**", (rota) => rota.fulfill({ status: 200, contentType: "application/pdf", body: "%PDF" }));
+    await page.goto(`${P}/contratos/contratos/${ct(19)}`);
+    const as = page.getByRole("region", { name: "Assinatura" });
+    await expect(as).toContainText("Arquivo assinado");
+    await expect(as).toContainText("anexado por Felipe Matos");
+    await expect(as.getByRole("button", { name: "Anexar outro assinado" })).toBeVisible();
+    await semViolacoes(page);
+    const aba = page.waitForEvent("popup");
+    await as.getByRole("button", { name: /contrato-assinado\.pdf/ }).click();
+    await aba;
+    expect(pedidos.some((p) => p.caminho === `/v1/escritorio/anexos/${ASSINADO.id}/abrir`)).toBe(true);
+  });
+
+  test("Ativo sem o assinado: o selo diz que falta, e anexar guarda o arquivo no contrato", async ({ page }) => {
+    const envios: string[] = [];
+    await page.route("**/arquivos-falsos/**", async (rota) => {
+      envios.push(`${rota.request().method()} ${new URL(rota.request().url()).pathname}`);
+      await rota.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${ct(19)}/anexos`]: [{ corpo: { anexos: [] } }, { corpo: { anexos: [{ ...ASSINADO, id: NOVO }] } }],
+      "POST /v1/escritorio/anexos": { status: 201, corpo: { id: NOVO, enderecoDeEnvio: `${P}/arquivos-falsos/${ESC}/${NOVO}?token=uso-unico` } },
+      [`POST /v1/escritorio/anexos/${NOVO}/concluir`]: { corpo: { ...ASSINADO, id: NOVO } },
+    });
+    await page.goto(`${P}/contratos/contratos/${ct(19)}`);
+    const as = page.getByRole("region", { name: "Assinatura" });
+    await expect(as).toContainText("Falta anexar o assinado");
+    await as.getByRole("button", { name: "Anexar o assinado" }).click();
+    const j = page.getByRole("dialog", { name: "Anexar o contrato assinado" });
+    await j.getByRole("button", { name: "Anexar" }).click();
+    await expect(j.getByText("Escolha o arquivo do contrato assinado.")).toBeVisible();
+    await j.getByLabel(/Contrato assinado/).setInputFiles({ name: "contrato-assinado.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(900, 1) });
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Anexar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Contrato assinado anexado" })).toBeVisible();
+    await expect(as).toContainText("anexado por Felipe Matos");
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/anexos")?.corpo).toMatchObject({ dono: "CONTRATO", donoId: ct(19) });
+    expect(envios).toEqual([`PUT /arquivos-falsos/${ESC}/${NOVO}`]);
   });
 });

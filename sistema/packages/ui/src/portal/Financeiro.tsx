@@ -4,13 +4,16 @@
 // decisões 4 a 7): a lista por vencimento com os quatro números que também são filtros, a ficha
 // de parcelas de um contrato com a cobrança, e as janelas de registrar recebimento e de anotar
 // cobrança. As parcelas nascem dos contratos; nada se digita nem se apaga aqui.
+// O comprovante de cada recebimento (FI-18, F3.22) vai na janela de registrar ou depois, na
+// coluna do recibo.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
-  type RecebimentoRegistrado, type TipoCobranca,
+  type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido,
 } from "@t3jus/domain";
+import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -255,6 +258,9 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
   const [forma, setForma] = useState<FormaPagamento>(parcela?.forma ?? "PIX");
   const [multa, setMulta] = useState("");
   const [recibo, setRecibo] = useState(true);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erroArq, setErroArq] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [motivos, setMotivos] = useState<Record<string, string>>({});
   const [falha, setFalha] = useState<string | null>(null);
@@ -290,7 +296,7 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
     else if (d > hoje) { e.push("recebidoEm"); m.recebidoEm = "FUTURO"; }
     if (multa.trim() && !mj) e.push("multaJuros");
     setFalha(null);
-    if (e.length || !p) {
+    if (e.length || !p || erroArq) {
       setErros(e);
       setMotivos(m);
       return focarPrimeiroErro(corpo.current);
@@ -299,8 +305,19 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
     const r = await chamarPortal<RecebimentoRegistrado>(`/v1/escritorio/financeiro/parcelas/${p.id}/recebimentos`, {
       metodo: "POST", corpo: { valor: c, multaJuros: mj, recebidoEm: d, forma, recibo },
     });
+    if (r.ok) {
+      const t = textoRecebido(p, r.dados, c!, hoje);
+      // O recebimento já existe; a falha do arquivo não o desfaz.
+      if (arquivo) {
+        setProgresso(0);
+        const erro = await enviarAnexo("RECEBIMENTO", r.dados.id, arquivo, "COMPROVANTE", setProgresso);
+        setProgresso(null);
+        t.texto += erro ? " O comprovante não foi guardado; anexe de novo nas parcelas do contrato." : " Comprovante anexado.";
+      }
+      setEnviando(false);
+      return aoFeito(t);
+    }
     setEnviando(false);
-    if (r.ok) return aoFeito(textoRecebido(p, r.dados, c!, hoje));
     const det = r.erro.detalhes;
     const campos = det?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
@@ -404,6 +421,8 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
           <Icone nome="coluna" className="ico" />
           <span>Entra no caixa <b>do escritório</b>: é honorário. Valores de terceiros se registram em Repasses.</span>
         </p>
+        <CampoAnexo rotulo="Comprovante" arquivo={arquivo} aoEscolher={(a, er) => { setArquivo(er ? null : a); setErroArq(er); }}
+          erro={erroArq} progresso={progresso} />
         <label className="opcao">
           <input className="marcar" type="checkbox" checked={recibo} onChange={(e) => setRecibo(e.target.checked)} />
           <span>
@@ -691,6 +710,9 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   const [anotar, setAnotar] = useState(false);
   const [carne, setCarne] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
+  const [comprovante, setComprovante] = useState<{ p: ParcelaDoContrato; pg: PagamentoRecebido } | null>(null);
+  const [falhaAbrir, setFalhaAbrir] = useState<string | null>(null);
+  const anexos = useAnexosFinanceiro([], dados && dados !== "erro" ? dados.parcelas.flatMap((p) => p.pagamentos.map((x) => x.id)) : []);
   const nome = dados && dados !== "erro" ? dados.cliente.nome : null;
   useEffect(() => {
     if (nome) aoNome(nome);
@@ -699,6 +721,11 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   if (dados === "erro") return <ErroAoCarregar oque="as parcelas do contrato" aoTentar={recarregar} />;
   if (!dados) return <Carregando rotulo="Carregando as parcelas…" linhas={5} />;
   const f = dados;
+  async function abrir(a: Anexo) {
+    setFalhaAbrir(null);
+    const e = await abrirAnexo(a.id);
+    if (e) setFalhaAbrir(e);
+  }
   const emCobranca = f.parcelas.find((p) => p.situacao === "VENCIDA") ?? f.parcelas.find((p) => p.situacao === "PARCIAL" || p.situacao === "A_VENCER") ?? null;
   const verContrato = escritorio.areas.includes("CONTRATOS") ? (
     <a className="btn btn-sec" href={ROTAS_CONTRATOS.contrato(f.id)}><Icone nome="pena" className="ico" />Ver o contrato</a>
@@ -747,6 +774,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
               <div><dt>Em atraso</dt><dd className={f.totais.atraso ? "num urg" : "num"}>{reais(f.totais.atraso)}</dd></div>
               <div><dt>A vencer</dt><dd className="num">{reais(f.totais.aVencer)}</dd></div>
             </dl>
+            {falhaAbrir ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="O comprovante não abriu.">{falhaAbrir}</Aviso></div> : null}
             {f.parcelas.length ? (
               <table className="hn-tab fi-tab">
                 <caption className="sr">Parcelas do contrato</caption>
@@ -760,6 +788,8 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                 <tbody>
                   {f.parcelas.map((p) => {
                     const recibos = p.pagamentos.filter((x) => x.recibo);
+                    const comprovantes = p.pagamentos.flatMap((x) => (anexos.porDono.get(x.id) ?? []).slice(0, 1));
+                    const semComprovante = p.pagamentos.find((x) => !anexos.porDono.has(x.id));
                     const cls = p.situacao === "VENCIDA" ? "fi-atraso" : p.situacao === "PAGA" ? "fi-pago" : p.situacao === "CANCELADA" ? "fi-cancelada" : undefined;
                     return (
                       <tr key={p.id} className={cls}>
@@ -769,13 +799,23 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                         <td data-r="Situação"><SituacaoNaFicha p={p} hoje={hoje} /></td>
                         <td data-r="Valor" className="fi-v num">{reais(p.valor)}</td>
                         <td data-r="Recibo">
-                          {recibos.length ? (
+                          {recibos.length || p.pagamentos.length ? (
                             <div className="fi-docs">
                               {recibos.map((x) => (
                                 <span key={x.id} className="fi-pq" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 32 }}>
                                   <Icone nome="doc" className="ico ico-s" />Recibo {numeroRecibo(x.recibo!)}
                                 </span>
                               ))}
+                              {comprovantes.map((a) => (
+                                <button key={a.id} className="jr-link fi-doc-bt" type="button" onClick={() => void abrir(a)}>
+                                  <Icone nome="doc" className="ico" />Comprovante<span className="sr">: abrir {a.nome} da {p.descricao.toLowerCase()}</span>
+                                </button>
+                              ))}
+                              {semComprovante ? (
+                                <button className="jr-link fi-doc-bt" type="button" onClick={() => setComprovante({ p, pg: semComprovante })}>
+                                  <Icone nome="enviar" className="ico" />Anexar comprovante<span className="sr"> da {p.descricao.toLowerCase()}</span>
+                                </button>
+                              ) : null}
                             </div>
                           ) : p.situacao === "VENCIDA" || p.situacao === "PARCIAL" ? (
                             <button className="btn btn-sec btn-compacto" type="button" onClick={() => setRegistrar(p)}>
@@ -805,7 +845,11 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
       </div>
       {registrar ? (
         <JanelaRegistrar parcela={registrar} aoFechar={() => setRegistrar(null)}
-          aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); }} />
+          aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); }} />
+      ) : null}
+      {comprovante ? (
+        <JanelaComprovante p={comprovante.p} pg={comprovante.pg} aoFechar={() => setComprovante(null)}
+          aoFeito={(x) => { setComprovante(null); setFeito(x); anexos.recarregar(); }} />
       ) : null}
       {anotar && emCobranca ? (
         <JanelaCobranca p={emCobranca} pessoas={pessoas} eu={escritorio.pessoa} aoFechar={() => setAnotar(false)}
@@ -813,6 +857,46 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
       ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
+  );
+}
+
+function JanelaComprovante({ p, pg, aoFechar, aoFeito }: { p: ParcelaDoContrato; pg: PagamentoRecebido; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [falha, setFalha] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
+  const corpo = useRef<HTMLDivElement>(null);
+  async function enviar() {
+    setFalha(null);
+    if (!arquivo || erro) {
+      setErro(erro ?? "Escolha o arquivo do comprovante.");
+      return focarPrimeiroErro(corpo.current);
+    }
+    setProgresso(0);
+    const e = await enviarAnexo("RECEBIMENTO", pg.id, arquivo, "COMPROVANTE", setProgresso);
+    setProgresso(null);
+    if (e) return setFalha(e);
+    aoFeito({ titulo: "Comprovante anexado.", texto: `${p.descricao}: ${reais(pg.valor)} recebidos em ${dataBr(pg.recebidoEm)}.` });
+  }
+  return (
+    <Janela id="j-comprovante" aberta aoFechar={aoFechar} sobretitulo={`${p.cliente.nome} · ${p.descricao.toLowerCase()}`} titulo="Anexar comprovante" descricao="j-comprovante-d"
+      aoEnviar={() => void enviar()}
+      pe={
+        <>
+          <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
+          <button className="btn btn-pri" type="submit" disabled={progresso !== null} aria-busy={progresso !== null || undefined}>
+            <Icone nome="enviar" className="ico" />
+            Anexar
+          </button>
+        </>
+      }>
+      <div ref={corpo} style={{ display: "grid", gap: 16 }}>
+        <p id="j-comprovante-d">O recebimento de {reais(pg.valor)} em {dataBr(pg.recebidoEm)}, por {FORMAS_PAGAMENTO[pg.forma]}. O comprovante vai junto na exportação para o contador.</p>
+        {falha ? <Aviso tom="urgencia" titulo="O comprovante não foi anexado.">{falha}</Aviso> : null}
+        <CampoAnexo rotulo="Comprovante" opcional={false} arquivo={arquivo} aoEscolher={(a, er) => { setArquivo(er ? null : a); setErro(er); }}
+          erro={erro} progresso={progresso} />
+      </div>
+    </Janela>
   );
 }
 

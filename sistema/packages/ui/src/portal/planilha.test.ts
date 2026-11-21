@@ -78,3 +78,19 @@ describe("Resumo (IN-09, IN-10, FI-06)", () => {
     expect(quemEspera({ saldo: 1, honorarios: 1, clientes: 0, peritos: 0, parceiros: 0, outros: 0 })).toBe("");
   });
 });
+
+describe("Despesas sem nota na exportação (FI-18, FI-21)", () => {
+  const semNota = [{ dia: "2026-10-05", descricao: "Aluguel; sala 2", valor: 150000 }];
+  it("a aba Despesas ganha a coluna Nota ou guia e marca a falta", () => {
+    const desp = abasContador(dados, semNota).find((a) => a.nome === "Despesas")!;
+    expect(desp.linhas[0]).toContain("Nota ou guia");
+    expect(desp.linhas[1]?.at(-1)).toBe("Falta a nota");
+    expect(abasContador(dados, []).find((a) => a.nome === "Despesas")!.linhas[1]?.at(-1)).toBe("Anexada");
+  });
+  it("o .csv diz a falta na situação", () => {
+    expect(csvContador(dados, semNota)).toContain("1500,00;Falta a nota");
+  });
+  it("sem a lista, a planilha fica como antes", () => {
+    expect(abasContador(dados).find((a) => a.nome === "Despesas")!.linhas[0]).not.toContain("Nota ou guia");
+  });
+});

@@ -4122,3 +4122,9 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .ca-barra .ico{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .ca-barra .ca-dica{flex-basis:100%;font-size:12px;color:var(--ambar-3)}
 @media print{.ca-folhas>.ca-aviso-tela{display:none!important}}
+
+/* Nota ou guia na lista de A pagar e anexos do contrato (F3.12, F3.22) */
+.fi-docs .fi-doc-bt{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px;font-weight:500;text-decoration:none}
+.fi-docs .fi-doc-bt:hover{text-decoration:underline}
+.fi-docs .fi-doc-bt .ico{width:16px;height:16px}
+.fi-check li.rs-falta .ico{color:var(--vinho)}

@@ -40,6 +40,7 @@ import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao
 import { lerCorpo } from "../_shared/validar.ts";
 import { rotasPeticoes } from "./peticoes.ts";
 import { rotasCarne } from "./carne.ts";
+import { rotasAnexos } from "./anexos.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
 import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
@@ -1181,6 +1182,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Gerador de petições (EX-09).
   rotasPeticoes(app, deps);
   rotasCarne(app, deps);
+  rotasAnexos(app, deps);
 
   return app;
 }

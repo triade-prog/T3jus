@@ -1,0 +1,12 @@
+{
+  "id": "F3.22b",
+  "texto": "Pasta com os arquivos (.zip) na exportação para o contador: comprovantes, notas e guias do mês junto da planilha",
+  "peca": "S3",
+  "refs": [
+    "FI-18",
+    "FI-21"
+  ],
+  "status": "pendente",
+  "ordem": 221,
+  "proximo": "Montar o .zip com a planilha e os anexos do mês (a lista já sai de /v1/escritorio/financeiro/exportacoes/anexos); conferir no Storage de verdade o limite de tamanho"
+}

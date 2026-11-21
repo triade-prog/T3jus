@@ -5,7 +5,7 @@
   "refs": [
     "CH-01"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 120,
-  "proximo": "Upload de arquivo no Portal (privado, aberto por link temporário), ligado ao contrato; hoje a assinatura registra só a data"
+  "evidencia": "Migration 0520_portal_anexos.sql (tabela anexos, envio em duas etapas no bucket documentos-portal, nada se apaga, área Contratos), teste 052_portal_anexos_test.sql (27), rotas /v1/escritorio/anexos e /v1/escritorio/contratos/:id/anexos (api-portal/anexos.ts, teste Deno), ficha do contrato com \"Arquivo assinado\" (abrir, anexar outro) e a janela Registrar assinatura pedindo o arquivo antes de ativar (FichaContrato.tsx, Anexos.tsx); e2e portal-contratos.spec.ts (celular e computador, com axe)"
 }

@@ -230,3 +230,83 @@ test.describe("Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17)", (
     await expect(page.getByRole("heading", { name: "Esta área não está liberada para você" })).toBeVisible();
   });
 });
+
+// O comprovante de cada recebimento (F3.22, FI-18): na janela de registrar e depois, na ficha.
+test.describe("Financeiro do Portal, comprovante do recebimento (FI-18)", () => {
+  const ANEXO = "f9000000-0000-4000-8000-000000000022";
+  async function storage(page: Page) {
+    const envios: string[] = [];
+    await page.route("**/arquivos-falsos/**", async (rota) => {
+      envios.push(`${rota.request().method()} ${new URL(rota.request().url()).pathname}`);
+      await rota.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
+    return envios;
+  }
+  const anexoRotas = {
+    "POST /v1/escritorio/anexos": { status: 201, corpo: { id: ANEXO, enderecoDeEnvio: `${P}/arquivos-falsos/x/${ANEXO}?token=uso-unico` } },
+    [`POST /v1/escritorio/anexos/${ANEXO}/concluir`]: { corpo: { id: ANEXO, categoria: "COMPROVANTE", nome: "pix-helio.pdf" } },
+  };
+
+  test("Registrar com o comprovante: o recebimento vai primeiro e o arquivo depois, ligado a ele", async ({ page }) => {
+    const envios = await storage(page);
+    const pedidos = await simular(page, {
+      ...comuns(), ...anexoRotas,
+      [`POST /v1/escritorio/financeiro/parcelas/${pc(22)}/recebimentos`]: { status: 201, corpo: { id: "a9000000-0000-4000-8000-000000000001", paga: true, falta: 0, recibo: null } },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Registrar recebimento de Hélio/ }).click();
+    const j = page.getByRole("dialog", { name: "Registrar recebimento" });
+    await j.getByLabel(/Comprovante/).setInputFiles({ name: "pix-helio.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(900, 1) });
+    await expect(j.getByRole("group", { name: /Comprovante/ })).toContainText("pix-helio.pdf");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Registrar recebimento" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." })).toContainText("Comprovante anexado.");
+    expect(pedidos.filter((p) => p.metodo === "POST").map((p) => p.caminho)).toEqual([
+      `/v1/escritorio/financeiro/parcelas/${pc(22)}/recebimentos`, "/v1/escritorio/anexos", `/v1/escritorio/anexos/${ANEXO}/concluir`,
+    ]);
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/anexos")?.corpo).toMatchObject({ dono: "RECEBIMENTO", donoId: "a9000000-0000-4000-8000-000000000001", categoria: "COMPROVANTE" });
+    expect(envios).toHaveLength(1);
+  });
+
+  test("Arquivo fora do aceito não vai, e o erro fica preso ao campo", async ({ page }) => {
+    const pedidos = await simular(page, comuns());
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Registrar recebimento de Hélio/ }).click();
+    const j = page.getByRole("dialog", { name: "Registrar recebimento" });
+    await j.getByLabel(/Comprovante/).setInputFiles({ name: "planilha.xlsx", mimeType: "application/vnd.ms-excel", buffer: Buffer.alloc(10, 1) });
+    await expect(j.getByText("Tipo não aceito. Envie PDF, JPG ou PNG.")).toBeVisible();
+    await j.getByRole("button", { name: "Registrar recebimento" }).click();
+    expect(pedidos.some((p) => p.metodo === "POST")).toBe(false);
+  });
+
+  test("Ficha do contrato: o comprovante abre, e o recebimento sem ele ganha Anexar comprovante", async ({ page }) => {
+    const envios = await storage(page);
+    const pedidos = await simular(page, {
+      ...comuns(), ...anexoRotas,
+      "POST /v1/escritorio/financeiro/anexos/buscar": { corpo: { anexos: [
+        { id: "f9000000-0000-4000-8000-000000000001", categoria: "COMPROVANTE", nome: "pix-agosto.pdf", tipo: "application/pdf", tamanho: 1000, donoId: "p1", enviadoPor: MARINA, enviadoEm: em(-85, "15:21") },
+      ] } },
+      "POST /v1/escritorio/anexos/f9000000-0000-4000-8000-000000000001/abrir": { corpo: { url: `${P}/arquivos-falsos/ler?download=pix.pdf`, validadeSegundos: 60 } },
+    });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${ct(22)}`);
+    const tabela = page.getByRole("table", { name: "Parcelas do contrato" });
+    const p1 = tabela.getByRole("row", { name: /Parcela 1 de 4/ });
+    await expect(p1.getByRole("button", { name: /Comprovante.*pix-agosto\.pdf/ })).toBeVisible();
+    const p2 = tabela.getByRole("row", { name: /Parcela 2 de 4/ });
+    await semViolacoes(page);
+    const aba = page.waitForEvent("popup");
+    await p1.getByRole("button", { name: /Comprovante/ }).click();
+    await aba;
+    expect(pedidos.some((p) => p.caminho.endsWith("/abrir"))).toBe(true);
+    await p2.getByRole("button", { name: /Anexar comprovante/ }).click();
+    const j = page.getByRole("dialog", { name: "Anexar comprovante" });
+    await j.getByRole("button", { name: "Anexar" }).click();
+    await expect(j.getByText("Escolha o arquivo do comprovante.")).toBeVisible();
+    await j.getByLabel(/Comprovante/).setInputFiles({ name: "pix-setembro.png", mimeType: "image/png", buffer: Buffer.alloc(500, 1) });
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Anexar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Comprovante anexado." })).toBeVisible();
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/anexos")?.corpo).toMatchObject({ dono: "RECEBIMENTO", donoId: "p2", tipo: "image/png" });
+    expect(envios.filter((e) => e.startsWith("PUT"))).toHaveLength(1);
+  });
+});
