@@ -5,7 +5,7 @@
   "refs": [
     "FI-23"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 63,
-  "proximo": "Carol aprovar o desenho do carnê do Portal; depois programar"
+  "evidencia": "Desenho em docs/design/aprovadas/portal-carne/ (22 estados, computador e celular, axe sem violação, PDF A4 de exemplo com QR Pix conferido), aprovado pela Carol em 20/11/2026 às 22h20 (Bahia) com as 12 recomendações do NOTAS.md"
 }

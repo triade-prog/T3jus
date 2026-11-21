@@ -23,6 +23,7 @@
   "dependencies": {
     "@fontsource/alegreya": "^5.3.0",
     "@fontsource/poppins": "^5.3.0",
-    "@t3jus/domain": "workspace:*"
+    "@t3jus/domain": "workspace:*",
+    "qrcode-generator": "2.0.4"
   }
 }

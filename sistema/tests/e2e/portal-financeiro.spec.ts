@@ -89,6 +89,11 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
   "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA, FELIPE] } },
   "GET /v1/escritorio/financeiro/receber": { corpo: LISTA },
   [`GET /v1/escritorio/financeiro/contratos/${ct(22)}`]: { corpo: FICHA },
+  // A folha "Carnê" (FI-23) da ficha: os detalhes ficam em portal-carne.spec.ts.
+  [`GET /v1/escritorio/contratos/${ct(22)}/carnes`]: { corpo: {
+    contrato: { id: ct(22), numero: "C-2026-022", objeto: "Ação revisional", situacao: "ATIVO" }, cliente: { id: "c22", nome: "Hélio Batista Corrêa" },
+    parcelas: [], recebimento: { pixTipo: null, pixChave: null, recebedor: null, cidade: null, instrucoes: null }, dono: true, socioDono: null, carnes: [],
+  } },
 });
 
 test.describe("Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17)", () => {

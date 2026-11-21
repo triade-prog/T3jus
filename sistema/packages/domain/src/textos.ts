@@ -108,6 +108,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   DIVISAO_NAO_FECHA: "A soma da divisão precisa ser igual ao valor levantado.",
   REPASSE_JA_RESOLVIDO: "Este repasse já foi feito ou dispensado. Recarregue a página.",
   CLIENTE_NAO_DISPENSA: "O que é do cliente não se dispensa: registre o repasse quando ele for feito.",
+  CONTRATO_NAO_VIGENTE: "O contrato não está vigente: o carnê sai só de contrato assinado e em andamento.",
+  SEM_PARCELAS: "Escolha ao menos uma parcela para o carnê.",
+  PARCELA_PAGA: "Uma das parcelas escolhidas já foi paga. Recarregue a página e escolha de novo.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

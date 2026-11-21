@@ -3846,3 +3846,279 @@ a.oe-nome{display:inline-flex;align-items:center;min-height:24px}
   .pe-versoes li.pe-v-atual{margin:0 -8px;padding-left:8px;padding-right:8px}
 }
 /* <<< Petições */
+
+/* ==========================================================================
+   Portal · Carnê (FI-23), docs/design/aprovadas/portal-carne. Telas com cn-, o A4 com ca-.
+   ========================================================================== */
+.janela.cn-janela{width:min(920px,calc(100vw - 32px))}
+.cn-j{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:24px;align-items:start}
+.cn-j-op{display:grid;gap:18px;min-width:0}
+.cn-dois{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.cn-parcs{list-style:none;margin:4px 0 0 34px;padding:8px 12px;display:grid;gap:0;border-left:2px solid var(--borda-folha)}
+.cn-parcs li+li{border-top:1px solid var(--divisor)}
+.cn-parcs .opcao{margin:0}
+.cn-parcs .opcao>span{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%}
+.cn-parcs .opcao>span>b{font-weight:500}
+.cn-parcs .opcao>span>.num{text-align:right;font-weight:500}
+.cn-parcs .opcao>span>small{grid-column:1/-1}
+.cn-parcs .cn-paga{color:var(--texto-2)}
+.cn-parcs .cn-paga .opcao{cursor:default}
+.cn-pixbox{display:grid;gap:10px;padding:14px 16px;border-radius:var(--raio);background:var(--sal-2)}
+.cn-pixbox h3{display:flex;align-items:center;gap:8px;font-size:18px;line-height:1.2}
+.cn-pixbox h3 .ico{color:var(--vinho)}
+.cn-pixbox dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:13px}
+.cn-pixbox dt{color:var(--texto-2)}
+.cn-pixbox dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.cn-pixbox p{font-size:13px;line-height:1.5}
+.cn-pixbox .cn-quem{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--texto-2)}
+.cn-pixbox .cn-quem .ico{width:16px;height:16px;color:var(--vinho-4);flex:none;margin-top:1px}
+.cn-pixbox .cn-quem a{font-weight:500}
+.cn-mini{margin:0;display:grid;gap:10px;position:sticky;top:0}
+.cn-mini a.cn-mini-img{display:block;border-radius:6px;box-shadow:0 8px 22px -12px rgba(42,26,34,.45);border:1px solid var(--borda-folha);overflow:hidden;background:#fff}
+.cn-mini-img{aspect-ratio:210/297;position:relative}
+.cn-mini-img>div{position:absolute;left:0;top:0;transform-origin:0 0}
+.cn-mini figcaption{font-size:13px;line-height:1.5}
+.cn-mini figcaption b{font-weight:500;display:block}
+.cn-mini figcaption a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:500}
+.cn-envio{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--texto-2)}
+.cn-envio .ico{color:var(--vinho);flex:none;margin-top:1px}
+.cn-envio b{color:var(--texto);font-weight:500}
+.cn-j .aviso{margin:0}
+.cn-sobre-pe{margin-right:auto;align-self:center;font-size:12px;color:var(--texto-2);max-width:330px;line-height:1.45}
+.cn-anexo{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--sal-2);font-size:12px}
+.cn-anexo .ico{color:var(--vinho)}
+.cn-anexo b{display:block;font-weight:500;font-size:13px}
+
+/* Folha "Carnê" na ficha do contrato */
+.cn-folha-corpo{padding:0 24px 18px;display:grid;gap:14px}
+.cn-folha-corpo>p{font-size:13px;line-height:1.5;color:var(--texto-2)}
+.cn-folha-corpo .btn{justify-self:start}
+.cn-chave{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.45}
+.cn-chave .ico{color:var(--vinho);flex:none;margin-top:1px}
+.cn-chave b{font-weight:500}
+.cn-hist{list-style:none;margin:0;padding:0;display:grid}
+.cn-hist li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:12px 0;border-top:1px solid var(--divisor)}
+.cn-hist li:first-child{border-top:0;padding-top:0}
+.cn-hist li>.ico{color:var(--vinho);margin-top:2px}
+.cn-hist strong{display:block;font-weight:500;line-height:1.4}
+.cn-hist small{display:block;font-size:12px;color:var(--texto-2);line-height:1.5}
+.cn-hist .cn-acoes{grid-column:2;display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.cn-hist .selo{margin-top:4px}
+.cn-mudou{display:block;font-size:12px;color:var(--vinho-3);font-weight:500}
+.cn-folha .aviso{margin:0}
+section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.contador.cn-passou{color:var(--vinho-3);font-weight:600}
+
+/* Escritório › Recebimento */
+.cn-form{display:grid;gap:18px;padding:0 24px 22px}
+.cn-campo-linha{display:flex;align-items:baseline;gap:8px}
+.cn-teste{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:center;padding:14px;border-radius:var(--raio);border:1px solid var(--borda-folha);background:var(--papel)}
+.cn-teste .cn-qr{width:120px;height:120px;display:block}
+.cn-teste p{font-size:13px;line-height:1.5}
+.cn-teste p b{font-weight:500}
+.cn-teste h3{font-size:18px;margin-bottom:4px}
+.cn-teste-vazio{grid-template-columns:48px minmax(0,1fr);background:var(--sal-2);border-style:dashed}
+.cn-teste-vazio .ico{width:40px;height:40px;color:var(--vinho-4)}
+.cn-marca-esc{display:grid;gap:6px}
+.cn-marca-prev{display:inline-grid;gap:0;padding:10px 14px;border:1px solid var(--borda-folha);border-radius:var(--raio);background:#fff;justify-self:start}
+.cn-marca-prev b{font-family:var(--serifa);font-size:22px;font-weight:600;color:var(--vinho);line-height:1}
+.cn-marca-prev span{font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--texto-2)}
+.cn-ro{margin:0;display:grid;gap:0}
+.cn-ro div{display:grid;grid-template-columns:220px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--divisor)}
+.cn-ro div:first-child{border-top:0}
+.cn-ro dt{font-size:13px;color:var(--texto-2)}
+.cn-ro dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.cn-lista{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.cn-lista li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.45}
+.cn-lista li .ico{color:var(--vinho);flex:none;margin-top:1px}
+.cn-lista b{font-weight:500}
+
+@media (max-width:760px){
+  .janela.cn-janela{width:100%}
+  .cn-j{grid-template-columns:minmax(0,1fr);gap:18px}
+  .cn-mini{position:static;grid-template-columns:110px minmax(0,1fr);align-items:start;gap:12px}
+  .cn-dois{grid-template-columns:1fr}
+  .cn-parcs{margin-left:0}
+  .cn-sobre-pe{max-width:none;flex:1 1 100%}
+  .janela-pe .btn{flex:1 1 100%}
+  .cn-janela .janela-pe .btn-sec{flex:1 1 calc(50% - 5px)}
+  .cn-janela .cn-sobre-pe{display:none}
+  .cn-folha-corpo{padding:0 16px 16px}
+  .cn-form{padding:0 16px 18px}
+  .cn-teste{grid-template-columns:96px minmax(0,1fr);gap:12px}
+  .cn-teste .cn-qr{width:96px;height:96px}
+  .cn-ro div{grid-template-columns:1fr;gap:2px}
+  .cn-folha-corpo .btn,.cn-hist .cn-acoes .btn{flex:1 1 auto}
+}
+
+/* ==========================================================================
+   Carnê de pagamento, o modelo A4 (FI-23). Prefixo ca-.
+   ========================================================================== */
+
+.ca-pagina{--vinho:#692746;--vinho-2:#87335B;--vinho-3:#AC3F6B;--ambar:#DD9760;--ambar-3:#F2CDB3;--sal:#F1E6DF;--sal-2:#F2ECE8;--tinta:#2A1A22;--tinta-2:#5E4A54;
+  --serifa:var(--font-titulo);--sans:var(--font-sans);--mono:"DejaVu Sans Mono",Menlo,Consolas,monospace}
+.ca-pagina{min-height:100vh;background:#E7DCD5;color:var(--tinta);font-family:var(--sans);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.ca-pagina :is(p,dl,dd,h1,h2,h3,ol,ul){margin:0}
+.ca-pagina :is(ol,ul){padding:0}
+.ca-pagina *{box-sizing:border-box}
+
+/* ---------- barra da prévia (só na tela) ---------- */
+.ca-barra{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 24px;background:var(--vinho);color:#fff;font-size:14px}
+.ca-barra h1{font-family:var(--serifa);font-weight:500;font-size:22px;line-height:1.2}
+.ca-barra h1 small{display:block;font-family:var(--sans);font-size:12px;color:var(--ambar-3);letter-spacing:.04em}
+.ca-barra nav{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.ca-barra a,.ca-barra button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:22px;color:#fff;text-decoration:none;font:inherit;font-size:13px;font-weight:500;border:1px solid rgba(242,205,179,.45);background:transparent;cursor:pointer}
+.ca-barra a[aria-current]{background:var(--ambar-3);color:var(--vinho);border-color:var(--ambar-3)}
+.ca-barra button{background:#fff;color:var(--vinho);border-color:#fff}
+.ca-barra a:focus-visible,.ca-barra button:focus-visible{outline:3px solid var(--ambar-3);outline-offset:2px}
+.ca-aviso-tela{max-width:210mm;margin:16px auto 0;padding:10px 14px;border-radius:8px;background:#fff;border-left:4px solid var(--vinho);font-size:13px;line-height:1.5}
+.ca-aviso-tela b{font-weight:600}
+.ca-folhas{display:grid;gap:24px;justify-content:center;padding:24px 16px 48px}
+
+/* ---------- a folha A4 ---------- */
+.ca-folha{width:210mm;height:296.8mm;padding:10mm;background:#fff;box-shadow:0 10px 30px -12px rgba(42,26,34,.35);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.pb .ca-folha{filter:grayscale(1)}
+.ca-faixa{position:relative;height:calc(277mm / 3);flex:none;display:grid;grid-template-columns:47mm 9mm minmax(0,1fr);padding:4mm 0 3.6mm;border-bottom:.3mm dashed #6E5562}
+.ca-faixa:first-child{border-top:.3mm dashed #6E5562}
+.ca-faixa.ca-sem-corte-topo{border-top:0}
+.ca-corte-v{position:relative}
+.ca-corte-v::before{content:"";position:absolute;left:50%;top:-4mm;bottom:-3.6mm;border-left:.3mm dashed #6E5562}
+.ca-tesoura{width:4.2mm;height:4.2mm;fill:none;stroke:#2A1A22;stroke-width:1.6;stroke-linecap:round;background:#fff}
+.ca-faixa>.ca-tesoura{position:absolute;left:3mm;bottom:-2.3mm;padding:0 .6mm}
+.ca-faixa:first-child>.ca-tesoura-topo{position:absolute;left:3mm;top:-2.3mm;padding:0 .6mm}
+.ca-corte-v .ca-tesoura{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(90deg);padding:.6mm 0}
+
+/* ---------- canhoto do escritório ---------- */
+.ca-canhoto{display:flex;flex-direction:column;gap:1.7mm;font-size:7.6pt;line-height:1.3;padding-right:1mm}
+.ca-rot{font-size:6.2pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--tinta-2)}
+.ca-canhoto .ca-esc-c{font-family:var(--serifa);font-size:11pt;font-weight:600;color:var(--vinho);line-height:1.1}
+.ca-canhoto .ca-parc{font-family:var(--serifa);font-size:13pt;font-weight:600;line-height:1;color:var(--tinta)}
+.ca-canhoto .ca-parc small{display:block;font-family:var(--sans);font-size:7pt;font-weight:400;color:var(--tinta-2);margin-top:.8mm}
+.ca-canhoto dl{display:grid;gap:1.1mm}
+.ca-canhoto dt{font-size:6.2pt;color:var(--tinta-2);text-transform:uppercase;letter-spacing:.08em}
+.ca-canhoto dd{font-weight:500}
+.ca-pago{margin-top:auto;display:grid;gap:2.6mm;padding-top:2mm;border-top:.25mm solid var(--vinho)}
+.ca-pago span{display:flex;align-items:flex-end;gap:1.5mm;font-size:7pt;color:var(--tinta-2);white-space:nowrap}
+.ca-pago span i{flex:1;border-bottom:.25mm solid var(--tinta);height:3.4mm}
+
+/* ---------- via do cliente ---------- */
+.ca-via{display:flex;flex-direction:column;gap:2mm;font-size:8pt;line-height:1.32;min-width:0}
+.ca-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:4mm}
+.ca-marca{display:grid;gap:.4mm}
+.ca-esc{font-family:var(--serifa);font-size:15pt;font-weight:600;line-height:1;color:var(--vinho)}
+.ca-esc-sub{font-size:6pt;letter-spacing:.32em;text-transform:uppercase;color:var(--tinta-2);font-weight:500}
+.ca-doc{font-size:6.6pt;color:var(--tinta-2);margin-top:.6mm}
+.ca-num{text-align:right;display:grid;justify-items:end;gap:.6mm}
+.ca-num .ca-rot{letter-spacing:.14em}
+.ca-num b{font-family:var(--serifa);font-size:17pt;font-weight:600;line-height:1;color:var(--tinta)}
+.ca-fio{position:relative;height:.35mm;background:var(--vinho)}
+.ca-fio::before{content:"";position:absolute;left:0;top:-.45mm;width:14mm;height:1.25mm;background:var(--ambar)}
+.ca-corpo{display:grid;grid-template-columns:minmax(0,1fr) 63mm;gap:4mm;align-items:start}
+.ca-dados{display:grid;grid-template-columns:1fr 1fr;gap:1.7mm 3mm}
+.ca-enc dd{font-size:7pt!important;font-weight:600!important;line-height:1.25;color:var(--vinho-3)}
+.ca-dados div{min-width:0}
+.ca-dados .ca-largo{grid-column:1/-1}
+.ca-dados dt{font-size:6.2pt;color:var(--tinta-2);text-transform:uppercase;letter-spacing:.1em}
+.ca-dados dd{font-weight:500;font-size:8.2pt}
+.ca-dados dd small{font-weight:400;color:var(--tinta-2);font-size:7pt}
+.ca-valor dd{white-space:nowrap;font-family:var(--serifa);font-size:18pt;font-weight:600;line-height:1.05;color:var(--tinta)}
+.ca-valor dd small{display:inline;margin-left:1.5mm;font-family:var(--sans);font-size:7pt;font-weight:500;color:var(--tinta)}
+.ca-venc-box{display:inline-flex;align-items:center;gap:1.2mm;margin-top:.6mm;padding:.5mm 1.6mm;border:.35mm solid var(--vinho-3);border-radius:1mm;color:var(--vinho-3);font-size:6.6pt;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.ca-pix{display:grid;grid-template-columns:27mm minmax(0,1fr);gap:2.6mm;align-items:start;padding:2mm;border:.25mm solid #CDBFC6;border-radius:1.6mm}
+.ca-qr{display:block;width:27mm;height:27mm;shape-rendering:crispEdges}
+.ca-simb{width:2.6mm;height:2.7mm}
+.ca-pix-txt{display:grid;gap:1.3mm;font-size:7pt;line-height:1.3;min-width:0}
+.ca-pix-txt .ca-pix-t{font-family:var(--serifa);font-size:10.5pt;font-weight:600;color:var(--vinho);line-height:1.05}
+.ca-pix-txt dt{font-size:6pt;color:var(--tinta-2);text-transform:uppercase;letter-spacing:.08em}
+.ca-pix-txt dd{font-weight:500;overflow-wrap:anywhere}
+.ca-pix-txt .ca-nota{font-size:6.6pt;color:var(--tinta);font-weight:500}
+.ca-cc{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.6mm 2.5mm;align-items:baseline}
+.ca-cc .ca-rot{grid-row:1/3}
+.ca-cc code{font-family:var(--mono);font-size:6.3pt;line-height:1.3;color:var(--tinta);word-break:break-all}
+.ca-id{display:flex;flex-wrap:wrap;gap:1mm 4mm;align-items:baseline;font-size:7pt}
+.ca-id b{font-family:var(--mono);font-size:8pt;letter-spacing:.04em;font-weight:700}
+.ca-pe{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:4mm;padding-top:1.6mm;border-top:.2mm solid #CDBFC6;font-size:6.6pt;line-height:1.35;color:var(--tinta-2)}
+.ca-pe b{color:var(--tinta);font-weight:600}
+.ca-t3{display:inline-flex;align-items:center;gap:.8mm;white-space:nowrap;font-size:5.8pt;color:var(--tinta-2);letter-spacing:.06em}
+.ca-simb{width:2.6mm;height:2.7mm}
+.ca-como{padding:2.4mm 2.6mm;border:.25mm solid #CDBFC6;border-radius:1.6mm;display:grid;gap:1.4mm;font-size:7.2pt;line-height:1.4}
+.ca-como .ca-pix-t{font-family:var(--serifa);font-size:10.5pt;font-weight:600;color:var(--vinho);line-height:1.05}
+
+/* ---------- capa (primeira faixa) ---------- */
+.ca-capa{grid-template-columns:56mm minmax(0,1fr) 56mm;gap:0 5mm}
+.ca-capa .ca-col{display:flex;flex-direction:column;gap:2.2mm;min-width:0;font-size:7.6pt;line-height:1.38}
+.ca-capa h2{font-family:var(--serifa);font-size:19pt;font-weight:600;line-height:1.02;color:var(--tinta);margin-top:1.4mm}
+.ca-capa .ca-fio{margin:1mm 0 .6mm}
+.ca-capa dl{display:grid;gap:1.3mm}
+.ca-capa dt{font-size:6.2pt;color:var(--tinta-2);text-transform:uppercase;letter-spacing:.1em}
+.ca-capa dd{font-weight:500}
+.ca-capa h3{font-family:var(--serifa);font-size:11pt;font-weight:600;color:var(--vinho);line-height:1.1}
+.ca-tab{width:100%;border-collapse:collapse;font-size:7.6pt}
+.ca-tab th{padding-right:2mm!important;font-size:6pt;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-2);text-align:left;padding:0 0 1mm;border-bottom:.3mm solid var(--vinho)}
+.ca-tab td{padding:1.15mm 0;border-bottom:.2mm solid #DDD0D6;vertical-align:top}
+.ca-tab td:last-child,.ca-tab th:last-child{text-align:right;white-space:nowrap}
+.ca-tab td:first-child{white-space:nowrap;padding-right:2mm}.ca-tab td:nth-child(3){white-space:nowrap;padding-right:2mm}.ca-tab td:nth-child(2){padding-right:2mm}
+.ca-tab tfoot td{border-bottom:0;padding-top:1.6mm;font-weight:600}
+.ca-tab tfoot td:last-child{font-family:var(--serifa);font-size:12pt}
+.ca-tab .ca-v{white-space:normal;font-size:6.2pt;font-weight:600;color:var(--vinho-3);text-transform:uppercase;letter-spacing:.06em;display:block}
+.ca-passos{list-style:none;counter-reset:p;display:grid;gap:1.3mm}
+.ca-passos li{counter-increment:p;display:grid;grid-template-columns:4.2mm minmax(0,1fr);gap:1.6mm}
+.ca-passos li::before{content:counter(p);display:grid;place-items:center;width:4.2mm;height:4.2mm;border-radius:50%;border:.3mm solid var(--vinho);color:var(--vinho);font-size:6.4pt;font-weight:600}
+.ca-caixa{padding:2mm 2.4mm;border-radius:1.4mm;background:var(--sal-2);border-left:.8mm solid var(--ambar)}
+.ca-caixa b{font-weight:600}
+
+/* ---------- 1 parcela por folha ---------- */
+.ca-uma{display:flex;flex-direction:column}
+.ca-uma .ca-via{flex:1;padding:2mm 0 7mm;font-size:11pt;gap:6mm}
+.ca-como-uma{display:grid;grid-template-columns:minmax(0,1fr) 70mm;gap:8mm;align-items:start;padding-top:4mm;border-top:.2mm solid #CDBFC6;font-size:9.5pt;line-height:1.45}
+.ca-como-uma .ca-pix-t{font-family:var(--serifa);font-size:14pt;font-weight:600;color:var(--vinho);margin-bottom:2.5mm}
+.ca-uma .ca-passos{gap:2.4mm}.ca-uma .ca-passos li{grid-template-columns:6mm minmax(0,1fr);gap:2.4mm}.ca-uma .ca-passos li::before{width:6mm;height:6mm;font-size:8.5pt}
+.ca-uma .ca-caixa{padding:3.5mm 4mm}
+.ca-uma .ca-esc{font-size:22pt}.ca-uma .ca-esc-sub{font-size:7.5pt}.ca-uma .ca-doc{font-size:8.5pt}
+.ca-uma .ca-num b{font-size:26pt}
+.ca-uma .ca-corpo{grid-template-columns:minmax(0,1fr) 98mm;gap:6mm}
+.ca-uma .ca-dados{gap:4mm 5mm}
+.ca-uma .ca-dados dt,.ca-uma .ca-rot{font-size:7.6pt}
+.ca-uma .ca-dados dd{font-size:11pt}
+.ca-uma .ca-valor dd{font-size:28pt}
+.ca-uma .ca-pix{grid-template-columns:48mm minmax(0,1fr);padding:4mm}
+.ca-uma .ca-qr{width:48mm;height:48mm}
+.ca-uma .ca-pix-txt{font-size:8.6pt}.ca-uma .ca-pix-txt dt{font-size:7pt}.ca-uma .ca-pix-txt .ca-pix-t{font-size:14pt}
+.ca-uma .ca-cc code{font-size:8pt}
+.ca-uma .ca-id{font-size:9pt}.ca-uma .ca-id b{font-size:11pt}
+.ca-uma .ca-pe{font-size:8pt}.ca-uma .ca-t3{font-size:7pt}.ca-uma .ca-simb{width:3.4mm;height:3.5mm}
+.ca-uma .ca-corte-h{position:relative;border-top:.3mm dashed #6E5562;height:0;margin:0}
+.ca-uma .ca-corte-h .ca-tesoura{position:absolute;left:3mm;top:-2.3mm;padding:0 .6mm}
+.ca-uma .ca-canhoto{height:60mm;flex:none;padding:6mm 0 0;display:grid;grid-template-columns:56mm minmax(0,1fr);grid-template-areas:'rot rot' 'esc dl' 'parc dl' 'pago pago';grid-template-rows:auto auto 1fr auto;gap:2.5mm 8mm;font-size:9pt}
+.ca-uma .ca-canhoto .ca-rot{grid-area:rot}.ca-uma .ca-canhoto .ca-esc-c{grid-area:esc}.ca-uma .ca-canhoto .ca-parc{grid-area:parc}
+.ca-uma .ca-canhoto dl{grid-area:dl;grid-template-columns:repeat(3,minmax(0,1fr));gap:3mm 6mm;align-content:start}
+.ca-uma .ca-canhoto dt{font-size:7pt}
+.ca-uma .ca-pago{grid-area:pago;margin-top:0;grid-template-columns:repeat(3,minmax(0,1fr));gap:6mm;padding-top:5mm;align-self:end}
+.ca-uma .ca-pago span{font-size:8.5pt}
+.ca-uma .ca-canhoto .ca-esc-c{font-size:15pt}.ca-uma .ca-canhoto .ca-parc{font-size:18pt}
+
+/* ---------- impressão ---------- */
+.ca-folha{page:carne}
+@page carne{size:A4;margin:0}
+@media print{
+  html:has(.ca-pagina),html:has(.ca-pagina) body,.ca-pagina{background:#fff}
+  .ca-barra,.ca-aviso-tela{display:none!important}
+  .ca-folhas{display:block;padding:0}
+  .ca-folha{box-shadow:none;break-after:page;page-break-after:always}
+  .ca-folha:last-child{break-after:auto;page-break-after:auto}
+}
+/* No celular, a prévia mostra a folha inteira reduzida (o documento é o PDF) */
+@media screen and (max-width:760px){
+  .ca-barra{padding:10px 16px;gap:8px}
+  .ca-barra h1{font-size:19px}
+  .ca-barra nav{margin-left:0}
+  .ca-barra a,.ca-barra button{padding:0 12px}
+  .ca-folhas{padding:16px 16px 40px;gap:16px}
+  .ca-folha{zoom:.45}
+  .ca-aviso-tela{margin:12px 16px 0}
+}
+.cn-mini .ca-folha{zoom:1!important;box-shadow:none}
+.ca-barra a.ca-voltar{background:transparent}
+.ca-barra .ico{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ca-barra .ca-dica{flex-basis:100%;font-size:12px;color:var(--ambar-3)}
+@media print{.ca-folhas>.ca-aviso-tela{display:none!important}}

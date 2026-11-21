@@ -40,6 +40,21 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
   const db = bancoFalso({
     acesso_portal: (a) => a.p_pessoa === ANA && vinculos.size > 0,
     registrar_acesso: () => 1,
+    portal_recebimento: () => ({ dono: true, versao: 0, pixTipo: null, pixChave: null }),
+    portal_recebimento_salvar: (a) => ({ versao: Number((a.p_dados as { versao: number }).versao) + 1, desatualizados: 0 }),
+    portal_carne_opcoes: (a) => ({ contrato: { id: a.p_contrato }, area: a.p_area, parcelas: [], carnes: [] }),
+    portal_carne_gerar: () => ({ id: CLIENTE, parcelas: 2 }),
+    portal_carne: () => ({
+      id: CLIENTE, formato: "TRES", capa: true, geradoEm: "2026-11-20T15:00:00-03:00",
+      escritorio: { nome: "Aurora Advocacia", cnpj: "11222333000181", endereco: null, cidade: "São Paulo", uf: "SP", whatsapp: null },
+      cliente: { nome: "Hélio Batista Corrêa", documento: "52998224725", tipo: "PF" }, contrato: { numero: "C-2026-014", objeto: "Ação revisional" },
+      pix: { tipo: "CNPJ", chave: "11222333000181", recebedor: "AURORA ADVOCACIA", cidade: "SAO PAULO" }, instrucoes: null,
+      parcelas: [
+        { descricao: "Parcela 3/6", ordem: 3, total: 6, vencimento: "2026-10-25", valor: 85000, semValor: true, txid: "C2026014P03" },
+        { descricao: "Parcela 4/6", ordem: 4, total: 6, vencimento: "2026-11-25", valor: 85000, semValor: false, txid: "C2026014P04" },
+      ],
+      mudancas: [],
+    }),
     meus_escritorios: () => [...vinculos].map((id) => ({ escritorio_id: id, nome: id === AURORA ? "Aurora Advocacia" : "Bela Vista Advogados", funcoes: ["SOCIO"] })),
     escolher_escritorio: (a) => {
       if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
@@ -1382,4 +1397,37 @@ Deno.test("EX-09: a versão editada no Word passa pela conferência e a prévia 
   assertEquals(a.p_dados, { origem: "DOCX_EDITADO", resolvidos: [VERSAO_PET], recado: "Pronto" });
   assertEquals((a.p_resultado as { previa: unknown }).previa, [[{ t: "fixo", texto: "Corrigido." }], [{ t: "fixo", texto: "RG " }, { t: "falta", texto: "[RG: falta]" }]]);
   assertEquals((a.p_resultado as { arquivo: string }).arquivo, "juntada-de-documentos-pereira-x-mercado-v2.docx");
+});
+
+Deno.test("FI-23: Escritório › Recebimento normaliza a chave Pix, o recebedor e a cidade antes do banco", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/recebimento", { cookie })).json()).versao, 0);
+  const r = await m.pedir("/v1/escritorio/recebimento", { metodo: "PUT", cookie,
+    corpo: { versao: 0, pixTipo: "CNPJ", pixChave: "11.222.333/0001-81", recebedor: "Aurora Advocacia", cidade: "São Paulo", instrucoes: "  Pague no escritório.  " } });
+  assertEquals((await r.json()).versao, 1);
+  const a = m.chamadas.find((c) => c.funcao === "portal_recebimento_salvar")!.args;
+  assertEquals(a.p_escritorio, AURORA);
+  assertEquals(a.p_dados, { versao: 0, pixTipo: "CNPJ", pixChave: "11222333000181", recebedor: "AURORA ADVOCACIA", cidade: "SAO PAULO", instrucoes: "Pague no escritório." });
+  const e = await erro(await m.pedir("/v1/escritorio/recebimento", { metodo: "PUT", cookie,
+    corpo: { versao: 1, pixTipo: "CPF", pixChave: "123", recebedor: "Advocacia Ribeiro Matos e Associados", cidade: "" } }));
+  assertEquals(e.detalhes?.campos, ["pixChave", "recebedor", "cidade"]);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_recebimento_salvar").length, 1);
+});
+
+Deno.test("FI-23: gerar o carnê e imprimir com o Pix de cada parcela; a vencida sai sem valor e o CPF pela metade", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const o = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/carnes?area=contratos`, { cookie })).json();
+  assertEquals(o.area, "CONTRATOS");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/carnes?area=juridico`, { cookie }))).detalhes?.campos, ["area"]);
+  const g = await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/carnes`, { cookie, corpo: { area: "FINANCEIRO", parcelas: [CLIENTE.toUpperCase()] } });
+  assertEquals(g.status, 201);
+  const a = m.chamadas.find((c) => c.funcao === "portal_carne_gerar")!.args;
+  assertEquals(a.p_dados, { area: "FINANCEIRO", parcelas: [CLIENTE], formato: "TRES", capa: true });
+  const k = await (await m.pedir(`/v1/escritorio/carnes/${CLIENTE}`, { cookie })).json();
+  assertEquals(k.cliente.documento, "***.982.247-**");
+  assertMatch(k.parcelas[1].pix, /^000201.*5406850\.00.*0511C2026014P04.*6304[0-9A-F]{4}$/);
+  assert(!k.parcelas[0].pix.includes("5406"), "a vencida sai sem valor");
+  assertEquals((await m.pedir("/v1/escritorio/carnes/nao-e-id", { cookie })).status, 404);
 });

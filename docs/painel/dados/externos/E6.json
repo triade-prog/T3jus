@@ -1,0 +1,11 @@
+{
+  "id": "E6",
+  "texto": "Conferir com os bancos dos escritórios piloto se o identificador da parcela (txid, como C2026014P04) aparece no extrato do Pix recebido",
+  "quem": "Carol e pilotos",
+  "precisa_em": "F3",
+  "refs": [
+    "FI-23"
+  ],
+  "status": "pendente",
+  "ordem": 60
+}

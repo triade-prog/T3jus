@@ -1,0 +1,11 @@
+{
+  "id": "F3.79",
+  "texto": "Carnê pelo WhatsApp do escritório: prévia da mensagem com o PDF para o contato principal, envio, entregue e lido na folha \"Carnê\", e o PDF guardado no servidor",
+  "peca": "S4",
+  "refs": [
+    "FI-23"
+  ],
+  "status": "pendente",
+  "ordem": 790,
+  "proximo": "Precisa gerar o PDF no servidor (hoje sai pela impressão do navegador) e, fora da janela de 24 horas, de um aviso \"Carnê de pagamento\" aprovado pela Meta"
+}

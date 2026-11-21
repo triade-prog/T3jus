@@ -110,6 +110,14 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
   "GET /v1/escritorio/clientes": { corpo: CLIENTES },
   "GET /v1/escritorio/contratos": { corpo: LISTA },
   [`GET /v1/escritorio/contratos/${ct(19)}`]: { corpo: F19 },
+  // A folha "Carnê" (FI-23) da aba Recebimentos: os detalhes ficam em portal-carne.spec.ts.
+  [`GET /v1/escritorio/contratos/${ct(19)}/carnes`]: { corpo: {
+    contrato: { id: ct(19), numero: "C-2026-019", objeto: "Assessoria", situacao: "ATIVO" }, cliente: { id: "c19", nome: "Cliente" },
+    parcelas: [{ id: rc(1), descricao: "Mensalidade 1", ordem: 1, total: 12, vencimento: dia(10), valor: 87300, situacao: "A_VENCER", pagaEm: null }],
+    recebimento: { pixTipo: null, pixChave: null, recebedor: null, cidade: null, instrucoes: null }, dono: true, socioDono: null,
+    carnes: [{ id: "c4000000-0000-4000-8000-000000000019", formato: "TRES", capa: true, geradoPor: { id: "x", nome: "Marina Ribeiro" }, geradoEm: em(-2, "15:32"), comPix: false,
+      parcelas: [{ descricao: "Mensalidade 1", ordem: 1, total: 12, vencimento: dia(10), valor: 87300, semValor: false }], mudancas: [] }],
+  } },
   [`GET /v1/escritorio/contratos/${ct(33)}`]: { corpo: F33 },
   [`GET /v1/escritorio/contratos/da-proposta/${prop(14)}`]: { corpo: PROPOSTA14 },
   "GET /v1/escritorio/contratos/honorarios": { corpo: HONORARIOS },
@@ -225,6 +233,9 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await expect(tab.getByRole("row", { name: /Mensalidade 6/ })).toContainText("Cancelado: Condição mudada: reajuste");
     await expect(page.getByText("que não está liberado para você. Quem libera é Marina Ribeiro, sócio dono.")).toBeVisible();
     await expect(page.getByRole("link", { name: /Recebimentos/ })).toHaveAttribute("aria-current", "page");
+    const carne = page.getByRole("region", { name: "Carnê" });
+    await expect(carne).toContainText("Parcela 1/12 · com capa · 1 folha A4");
+    await expect(carne.getByRole("link", { name: "Abrir para imprimir" })).toHaveAttribute("href", "/carnes/c4000000-0000-4000-8000-000000000019?area=contratos");
     await semViolacoes(page);
   });
 
