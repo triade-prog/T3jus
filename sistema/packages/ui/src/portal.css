@@ -4392,6 +4392,7 @@ img.lg-uma-cor{filter:brightness(0)}
   .oe-pe-ins{padding:12px 16px 16px}
   .oe-pe-ins .btn{width:100%;min-height:44px}
 }
+/* ==========================================================================
    Portal · Início: próximas audiências (F3.2, EX-06). Prefixo pa-. Desenho aprovado em
    docs/design/aprovadas/portal-inicio-audiencias. Mora dentro da folha "Agenda de hoje";
    reaproveita .agenda, .ev, --t e .ar-pe.

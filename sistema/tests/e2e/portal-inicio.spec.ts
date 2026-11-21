@@ -354,6 +354,10 @@ test.describe("Próximas audiências no Início (F3.2, EX-06)", () => {
     await expect(lista.getByRole("listitem").first()).toContainText("Presencial · TRT-2, Barra Funda · Marina e Gustavo");
     await expect(lista.getByRole("link").first()).toHaveAttribute("href", "/agenda/a2");
     await expect(page.getByText(/^Nenhuma outra até .+ A seguinte é .+: Instrução · Lima x Padaria Estrela\.$/)).toBeVisible();
+    // o título tem o mesmo recuo do da Agenda de hoje e o fio em cima (a regra .pa-cab chegou a sumir do CSS)
+    const recuo = (sel: string) => page.locator(sel).evaluate((e) => Math.round(e.getBoundingClientRect().left));
+    expect(await recuo("#t-aud")).toBe(await recuo("#t-agenda"));
+    await expect(page.locator(".pa-cab")).toHaveCSS("border-top-style", "solid");
     await semViolacoes(page);
   });
 

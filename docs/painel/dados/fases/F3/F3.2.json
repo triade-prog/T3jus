@@ -7,5 +7,5 @@
   ],
   "status": "feito",
   "ordem": 20,
-  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-inicio-audiencias (Carol, 21/11/2026); migration 0501_portal_inicio_audiencias.sql (portal_inicio_audiencias: audiências marcadas de amanhã até 7 dias, até 3, com o total e a seguinte), teste 051_portal_inicio_audiencias_test.sql, rota GET /v1/escritorio/inicio/audiencias, trecho \"Próximas audiências\" na Agenda de hoje (Inicio.tsx) e e2e portal-inicio.spec.ts"
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-inicio-audiencias (Carol, 21/11/2026); migration 0501_portal_inicio_audiencias.sql (portal_inicio_audiencias: audiências marcadas de amanhã até 7 dias, até 3, com o total e a seguinte), teste 051_portal_inicio_audiencias_test.sql, rota GET /v1/escritorio/inicio/audiencias, trecho \"Próximas audiências\" na Agenda de hoje (Inicio.tsx) e e2e portal-inicio.spec.ts; correção do alinhamento em 21/11/2026 (comentário quebrado no portal.css apagava a regra .pa-cab; teste css.test.ts confere comentários e chaves de todos os estilos, e o e2e confere o recuo igual ao da Agenda de hoje)"
 }
