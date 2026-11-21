@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ReciboParaImprimir } from "./financeiro.ts";
-import { documentoFormatado, localEData, numeroDoRecibo, textoDoRecibo, tituloDoRecibo, totalDoRecibo } from "./recibo.ts";
+import { detalheDoReembolso, documentoFormatado, linhaDoReembolso, localEData, numeroDoRecibo, reembolsoDoRecibo, textoDoRecibo, tituloDoRecibo, totalDoRecibo } from "./recibo.ts";
 
 const R: ReciboParaImprimir = {
   numero: { ano: 2026, numero: 187 },
@@ -39,5 +39,16 @@ describe("recibo em PDF (FI-14)", () => {
   it("pago por outra pessoa: de quem veio e em favor do cliente", () => {
     const t = { ...R, pagador: { tipo: "CONTATO" as const, nome: "Marta Corrêa", documento: "20577138499", papel: "Esposa" } };
     expect(corrido(t)).toMatch(/^Recebemos de Marta Corrêa, CPF 205\.771\.384-99, em favor de Hélio Batista Corrêa, CPF 318\.482\.617-13, a quantia/);
+  });
+  it("FI-07: o reembolso pago junto soma no total e vira a segunda linha (F3.95)", () => {
+    const rb = { ...R, forma: "CHEQUE_PRE" as const, reembolsos: [{ descricao: "Custas da apelação", valor: 124836, forma: "PIX" as const, adiantadoEm: "2026-11-21", caso: "Dias x Mercado" }] };
+    expect(reembolsoDoRecibo(rb)).toBe(124836);
+    expect(totalDoRecibo(rb)).toBe(209836);
+    expect(linhaDoReembolso(rb.reembolsos[0]!)).toBe("Reembolso · custas da apelação");
+    expect(detalheDoReembolso(rb.reembolsos[0]!)).toBe("Despesa adiantada pelo escritório em 21/11/2026 no caso Dias x Mercado");
+    expect(corrido(rb)).toContain("e ao reembolso de R$ 1.248,36 de despesa adiantada pelo escritório (custas da apelação), pagos por Cheque pré-datado (honorários) e Pix (reembolso) em 18/11/2026");
+    const mesma = { ...rb, forma: "PIX" as const };
+    expect(corrido(mesma)).toContain("(custas da apelação), pagos por Pix em 18/11/2026");
+    expect(corrido(R)).toContain(", paga por Pix em");
   });
 });

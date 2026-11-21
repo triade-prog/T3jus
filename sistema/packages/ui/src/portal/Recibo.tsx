@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  dataBr, documentoComNome, FORMAS_PAGAMENTO, linhasTimbrado, localEData, mesDeReferencia, numeroDoRecibo, parcelaDoRecibo, reais,
+  dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasTimbrado, localEData, mesDeReferencia, numeroDoRecibo, parcelaDoRecibo, reais,
   textoDoRecibo, tituloDoRecibo, totalDoRecibo, type ReciboParaImprimir,
 } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
@@ -55,6 +55,10 @@ export function FolhaRecibo({ r }: { r: ReciboParaImprimir }) {
           <tbody>
             <tr><td>Honorários · {parcelaDoRecibo(r)}<small>Mês de referência: {mesDeReferencia(r.parcela.vencimento)} · vencimento {venc}</small></td><td>{reais(r.valor)}</td></tr>
             {r.multaJuros ? <tr><td>Multa e juros<small>Pelo atraso, como registrado no recebimento</small></td><td>{reais(r.multaJuros)}</td></tr> : null}
+            {/* O reembolso pago junto (F3.95, FI-07): não é honorário, vai em linha própria. */}
+            {(r.reembolsos ?? []).map((x, i) => (
+              <tr key={i}><td>{linhaDoReembolso(x)}<small>{detalheDoReembolso(x)} · {FORMAS_PAGAMENTO[x.forma] ?? x.forma}</small></td><td>{reais(x.valor)}</td></tr>
+            ))}
           </tbody>
           <tfoot><tr><td>Total recebido</td><td>{reais(total)}</td></tr></tfoot>
         </table>
@@ -67,7 +71,7 @@ export function FolhaRecibo({ r }: { r: ReciboParaImprimir }) {
           ) : null}
           <div><dt>Contrato</dt><dd>{r.contrato.numero}<small>Honorários · {r.contrato.objeto}</small></dd></div>
           <div><dt>Parcela</dt><dd>{r.parcela.ordem && r.parcela.total ? `${r.parcela.ordem} de ${r.parcela.total}` : r.parcela.descricao}<small>{mesDeReferencia(r.parcela.vencimento)}</small></dd></div>
-          <div><dt>Forma</dt><dd>{FORMAS_PAGAMENTO[r.forma] ?? r.forma}<small>registrada no escritório</small></dd></div>
+          <div><dt>Forma</dt><dd>{FORMAS_PAGAMENTO[r.forma] ?? r.forma}<small>{r.reembolsos?.some((x) => x.forma !== r.forma) ? "dos honorários · o reembolso, como na linha dele" : "registrada no escritório"}</small></dd></div>
           <div><dt>Data do pagamento</dt><dd>{dataBr(r.pagoEm)}<small>vencia em {venc}</small></dd></div>
         </dl>
       </section>

@@ -5,7 +5,8 @@
   "refs": [
     "FI-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 950,
-  "proximo": "O reembolso já é registrado junto com a parcela e sai de \"A reembolsar\" (F3.85); falta ele aparecer no Caixa e como segunda linha do recibo, e a sugestão \"o valor cobre a parcela e o reembolso; marcar?\" na janela de registrar"
+  "evidencia": "Migration 0650 (caixa_entradas soma reembolsos_recebidos; portal_recibo traz os reembolsos pagos junto; prévia e exportação para o contador com a linha do reembolso e o número do recibo da parcela), pgTAP 080, Vitest packages/domain/src/recibo.test.ts (total, segunda linha e texto corrido com a forma de cada um), e2e tests/e2e/portal-financeiro-exito.spec.ts (sugestão \"o valor cobre a parcela e o reembolso\" que só marca quando a pessoa aperta; recibo com a segunda linha). Desenho aprovado em docs/design/aprovadas/portal-exito-conferir (decisão 11 e pergunta 4).",
+  "nota": "A caixa continua desmarcada: a sugestão aparece quando o valor digitado cobre a parcela e o reembolso, e só marca quando a pessoa aperta \"Marcar o reembolso\". O recibo lê o reembolso de reembolsos_recebidos (só inserção), porque a cópia do recibo nasce antes dele na mesma transação."
 }
