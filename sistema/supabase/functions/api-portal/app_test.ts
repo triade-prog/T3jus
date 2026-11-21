@@ -1451,11 +1451,11 @@ Deno.test("PA-04: avisos, assuntos e tons do domínio são os mesmos do banco", 
   const { AVISOS_WHATSAPP, ASSUNTOS_IA, TONS_IA, textoAvisoValido } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0310_portal_whatsapp_ia.sql", import.meta.url));
   const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
-  // A 0670 acrescenta o aviso de cancelamento do compromisso (F3.3); a 0721, o pedido de documento e o recibo.
-  const sql670 = await Deno.readTextFile(new URL("../../migrations/0721_documento_recibo_fila.sql", import.meta.url));
+  // A 0670 acrescenta o aviso de cancelamento do compromisso (F3.3); a 0721, o pedido de documento e o recibo; a 0722, a base do mês.
+  const sql670 = await Deno.readTextFile(new URL("../../migrations/0722_base_mes_whatsapp.sql", import.meta.url));
   assertEquals(/whatsapp_avisos_chave_check\s+check \(chave in \(([^)]+)\)/.exec(sql670)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1)),
     Object.keys(AVISOS_WHATSAPP));
-  assertEquals(lista(/chave\s+text not null check \(chave in \(([^)]+)\)/), Object.keys(AVISOS_WHATSAPP).filter((k) => !["COMPROMISSO_CANCELADO", "DOCUMENTO_PEDIDO", "RECIBO_PAGAMENTO"].includes(k)));
+  assertEquals(lista(/chave\s+text not null check \(chave in \(([^)]+)\)/), Object.keys(AVISOS_WHATSAPP).filter((k) => !["COMPROMISSO_CANCELADO", "DOCUMENTO_PEDIDO", "RECIBO_PAGAMENTO", "BASE_DO_MES"].includes(k)));
   assertEquals(lista(/assuntos <@ array\[([^\]]+)\]/), Object.keys(ASSUNTOS_IA));
   assertEquals(lista(/tom\s+text not null default 'CORDIAL' check \(tom in \(([^)]+)\)/), Object.keys(TONS_IA));
   assertEquals([textoAvisoValido("{nome}, venceu."), textoAvisoValido("Olá, {nome}. Pague: {link}"), textoAvisoValido("Olá, {nome}. Venceu.")], [false, false, true]);
