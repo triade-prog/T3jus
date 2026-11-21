@@ -22,10 +22,11 @@ export const ROTAS_ESCRITORIO = {
   dados: ROTAS_PORTAL.escritorio,
   whatsapp: `${ROTAS_PORTAL.escritorio}/whatsapp`,
   recebimento: `${ROTAS_PORTAL.escritorio}/recebimento`,
+  financeiro: `${ROTAS_PORTAL.escritorio}/financeiro`,
 } as const;
 
 /** A barra de seções do Escritório (decisão 1 do desenho). */
-export function BarraEscritorio({ secao }: { secao: keyof typeof ROTAS_ESCRITORIO }) {
+export function BarraEscritorio({ secao, financeiro = false }: { secao: keyof typeof ROTAS_ESCRITORIO; financeiro?: boolean }) {
   return (
     <div className="pt-barra-area">
       <p className="pt-area-nome">
@@ -36,6 +37,7 @@ export function BarraEscritorio({ secao }: { secao: keyof typeof ROTAS_ESCRITORI
         <a href={ROTAS_ESCRITORIO.dados} aria-current={secao === "dados" ? "page" : undefined}>Dados do escritório</a>
         <a href={ROTAS_ESCRITORIO.whatsapp} aria-current={secao === "whatsapp" ? "page" : undefined}>WhatsApp e IA</a>
         <a href={ROTAS_ESCRITORIO.recebimento} aria-current={secao === "recebimento" ? "page" : undefined}>Recebimento</a>
+        {financeiro ? <a href={ROTAS_ESCRITORIO.financeiro} aria-current={secao === "financeiro" ? "page" : undefined}>Ajustes do financeiro</a> : null}
       </nav>
     </div>
   );
@@ -1622,7 +1624,7 @@ export function WhatsappPortal() {
   }
 
   return (
-    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={escritorio} pagina="co-equipe co-carteira" barra={<BarraEscritorio secao="whatsapp" />}>
+    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={escritorio} pagina="co-equipe co-carteira" barra={<BarraEscritorio secao="whatsapp" financeiro={!!escritorio?.areas.includes("FINANCEIRO")} />}>
       {corpo}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </MolduraPortal>

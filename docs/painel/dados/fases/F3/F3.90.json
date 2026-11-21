@@ -1,0 +1,11 @@
+{
+  "id": "F3.90",
+  "texto": "Tirar a meta do mês (voltar a não ter meta a partir de um mês)",
+  "peca": "S4",
+  "refs": [
+    "IN-09"
+  ],
+  "status": "pendente",
+  "ordem": 900,
+  "proximo": "O desenho aprovado (mt-definir) tem \"Tirar a meta\"; a primeira entrega só define e troca. Falta a versão sem valor que encerra a meta de todo mês a partir de um mês, sem mudar os fechados"
+}

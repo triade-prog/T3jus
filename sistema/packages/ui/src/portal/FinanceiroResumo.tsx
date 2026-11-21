@@ -9,8 +9,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  alertaDeQueda, FORMAS_PAGAMENTO, PARA_DESTINACAO, quemEspera, reais, receitaPorGrupo, TIPOS_LEVANTAMENTO,
-  type AnexosDaExportacao, type CaixaFinanceiro, type DadosExportacao, type FormatoExportacao, type MesCaixa, type ParcelaLinha, type PreviaExportacao,
+  alertaDeQueda, FORMAS_PAGAMENTO, PARA_DESTINACAO, quemEspera, reais, receitaPorGrupo, TIPOS_LEVANTAMENTO, TIPOS_REQUISICAO,
+  type AnexosDaExportacao, type CaixaFinanceiro, type DadosExportacao, type EnvioContador, type FormatoExportacao, type MesCaixa, type ParcelaLinha, type PreviaExportacao,
   type RepassePendente, type ResumoFinanceiro, type TerceirosNaConta,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -18,16 +18,21 @@ import { Icone, type NomeIcone } from "../Icone.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { Aviso, Carregando, ErroAoCarregar, Estado, Janela } from "../console/pecas.tsx";
 import { rotaArea } from "./areas.ts";
-import { contar, diaCurto, diaLongo, nomeDoMes, somarDias } from "./agenda.ts";
+import { contar, diaBr, diaCurto, diaLongo, nomeDoMes, somarDias } from "./agenda.ts";
 import { Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
 import { mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela } from "./financeiro.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { FolhaACaminho } from "./ACaminho.tsx";
 import { arquivoContador, nomeMesAno } from "./planilha.ts";
 
 type Feito = { titulo: string; texto: string };
 const fuso = { timeZone: "America/Sao_Paulo" } as const;
+const horaDoInstante = (em: string) => {
+  const [h, m] = new Intl.DateTimeFormat("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(em)).split(":");
+  return `${Number(h)}h${m}`;
+};
 const diaDoInstante = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
 const MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const maiuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -180,7 +185,56 @@ function FolhaVencido({ r }: { r: ResumoFinanceiro }) {
   );
 }
 
-function FolhaPrevisto({ r, mes }: { r: ResumoFinanceiro; mes: string }) {
+/** A meta do mês no Resumo (F3.49): o valor, a barra com o traço e quanto falta. */
+function MetaDoMes({ r, mes, previsto, aoMudar }: { r: ResumoFinanceiro; mes: string; previsto: number; aoMudar?: () => void }) {
+  const mt = r.meta;
+  if (!mt) return null;
+  const m = mt.mes;
+  const dona = mt.socioDono?.nome ?? "a sócia dona";
+  if (!m) {
+    return (
+      <div className="mt-meta mt-vazia" id="t-meta">
+        <div>
+          <p className="mt-rot">Meta de {mes}</p>
+          <p className="mt-txt">{aoMudar ? "Sem meta. Com uma meta, o Resumo mostra quanto falta para chegar nela, ao lado dos meses anteriores." : `Sem meta. Quem define é ${dona}, a sócia dona.`}</p>
+        </div>
+        {aoMudar ? <button className="btn btn-sec" type="button" onClick={aoMudar}><Icone nome="mais" className="ico" />Definir a meta</button> : null}
+      </div>
+    );
+  }
+  const rec = r.escritorio.recebido;
+  const mx = Math.max(m.valor, previsto, rec, 1) * 1.04;
+  const pctMeta = Math.round((rec / m.valor) * 100);
+  const fimMes = somarDias(proximoMes(r.mes), -1);
+  const dias = Math.max(0, Math.round((Date.parse(`${fimMes}T12:00:00Z`) - Date.parse(`${r.hoje}T12:00:00Z`)) / 864e5));
+  const falta = Math.max(0, m.valor - rec);
+  const dif = previsto - m.valor;
+  return (
+    <div className="mt-meta" id="t-meta">
+      <div className="mt-topo">
+        <div>
+          <p className="mt-rot">Meta de {mes}</p>
+          <p className="mt-valor"><b className="num">{reais(m.valor)}</b><span>{m.soMes ? "só este mês" : `todo mês, desde ${nomeDoMes(m.deMes)}`}</span></p>
+        </div>
+        {aoMudar ? <button className="btn btn-sec btn-compacto" type="button" onClick={aoMudar}><Icone nome="lapis" className="ico" />Mudar a meta</button>
+          : <span className="fi-pq">Definida por {dona}, a sócia dona</span>}
+      </div>
+      <div className="mt-barra" role="img"
+        aria-label={`Recebido ${reais(rec)}, ${pctMeta}% da meta de ${reais(m.valor)}. Se todo o previsto entrar, ${reais(previsto)}, ${Math.round((previsto / m.valor) * 100)}% da meta.`}>
+        <span className="fi-trilho"><i className="prev" style={{ width: largura(previsto, mx) }} /><i className="real" style={{ width: largura(rec, mx) }} /></span>
+        <span className="mt-traco" style={{ left: largura(m.valor, mx) }}><span>meta</span></span>
+      </div>
+      <p className="mt-txt">
+        <b>{pctMeta}% da meta.</b>{" "}
+        {falta ? `Faltam ${reais(falta)} em ${dias === 1 ? "1 dia" : `${dias} dias`}. ` : "A meta já foi batida. "}
+        Se todo o previsto entrar, {mes} fecha em {reais(previsto)}:{" "}
+        <b>{dif === 0 ? "exatamente a meta" : dif > 0 ? `${reais(dif)} acima da meta` : `${reais(-dif)} abaixo da meta`}</b>.
+      </p>
+    </div>
+  );
+}
+
+function FolhaPrevisto({ r, mes, aoMeta }: { r: ResumoFinanceiro; mes: string; aoMeta?: () => void }) {
   const e = r.escritorio;
   const previsto = e.recebido + e.vencidoMes + e.seteDias + e.restoMes;
   const fim = diaCurto(somarDias(proximoMes(r.mes), -1));
@@ -190,7 +244,8 @@ function FolhaPrevisto({ r, mes }: { r: ResumoFinanceiro; mes: string }) {
     { v: e.seteDias, cor: "var(--ambar)", t: "Próximos 7 dias" },
     { v: e.restoMes, cor: "var(--ambar-3)", t: `Até ${fim}`, contorno: true },
   ];
-  const max = Math.max(...r.meses.flatMap((m) => [m.previsto, m.realizado]), 1);
+  const comMeta = r.meses.some((m) => m.meta);
+  const max = Math.max(...r.meses.flatMap((m) => [m.previsto, m.realizado, m.meta ?? 0]), 1) * (comMeta ? 1.04 : 1);
   const grupos = receitaPorGrupo(r.porTipo);
   const queda = alertaDeQueda(grupos);
   const anteriores = r.meses.slice(0, 3);
@@ -209,22 +264,31 @@ function FolhaPrevisto({ r, mes }: { r: ResumoFinanceiro; mes: string }) {
           ))}
         </p>
       </div>
-      <p className="fi-sub3">Comparado com os meses anteriores</p>
-      <div className="fi-barras" role="group" aria-label={`Realizado contra previsto, de ${nomeDoMes(r.meses[0]!.mes)} a ${mes}`}>
+      <MetaDoMes r={r} mes={mes} previsto={previsto} aoMudar={aoMeta} />
+      <p className="fi-sub3">Comparado com os meses anteriores{comMeta ? " e com a meta" : ""}</p>
+      <div className="fi-barras" role="group" aria-label={`Realizado contra previsto${comMeta ? " e contra a meta" : ""}, de ${nomeDoMes(r.meses[0]!.mes)} a ${mes}`}>
         {r.meses.map((m) => (
           <div className="fi-barra" key={m.mes}>
             <span className="rot">{maiuscula(nomeDoMes(m.mes))}{m.mes === r.mes ? <small>até hoje</small> : null}</span>
-            <span className="fi-duplo" aria-hidden="true">
+            <span className={comMeta ? "fi-duplo mt-duplo" : "fi-duplo"} aria-hidden="true">
               <span className="fi-trilho"><i className="prev" style={{ width: largura(m.previsto, max) }} /></span>
               <span className="fi-trilho"><i className="real" style={{ width: largura(m.realizado, max) }} /></span>
+              {comMeta && m.meta ? <span className="mt-traco mt-traco-p" style={{ left: largura(m.meta, max) }} /> : null}
             </span>
-            <span className="val"><b className="num">{reais(m.realizado)}</b><small>de {reais(m.previsto)}{m.previsto ? ` · ${pct(m.realizado, m.previsto)}%` : ""}</small></span>
+            <span className="val"><b className="num">{reais(m.realizado)}</b><small>{
+              !comMeta || !m.meta
+                ? <>de {reais(m.previsto)}{m.previsto ? ` · ${pct(m.realizado, m.previsto)}%` : ""}{comMeta ? " · sem meta" : ""}</>
+                : m.mes === r.mes ? `meta ${reais(m.meta)} · ${pct(m.realizado, m.meta)}% até hoje`
+                : m.realizado >= m.meta ? <>meta {reais(m.meta)} · <b>bateu</b></>
+                : `meta ${reais(m.meta)} · ${pct(m.realizado, m.meta)}%`
+            }</small></span>
           </div>
         ))}
       </div>
       <p className="legenda fi-leg">
         <span><i style={{ background: "var(--ambar-3)", boxShadow: "inset 0 0 0 1px var(--vinho-4)" }} />Previsto (barra de cima)</span>
         <span><i style={{ background: "var(--vinho)" }} />Realizado (barra de baixo)</span>
+        {comMeta ? <span><i className="mt-leg-traco" />Meta do mês (traço)</span> : null}
       </p>
       {queda ? (
         <div className="fi-aviso-in">
@@ -405,6 +469,8 @@ function ResumoVazio() {
 
 function ResumoConteudo() {
   const { dados, recarregar } = useCarga<ResumoFinanceiro>("/v1/escritorio/financeiro/resumo");
+  const [meta, setMeta] = useState(false);
+  const [feito, setFeito] = useState<Feito | null>(null);
   const lede = "Do honorário contratado ao dinheiro recebido e repassado.";
   if (dados === "erro") return <div className="fi"><Cab titulo="Resumo" lede={lede} /><ErroAoCarregar oque="o resumo" aoTentar={recarregar} /></div>;
   if (!dados) return <div className="fi"><Cab titulo="Resumo" lede={lede} /><Carregando rotulo="Carregando o resumo…" linhas={5} /></div>;
@@ -416,8 +482,8 @@ function ResumoConteudo() {
       <Abertura r={dados} mes={mes} />
       <div className="fi-grade">
         <div className="fi-col">
+          <FolhaPrevisto r={dados} mes={mes} aoMeta={dados.meta?.dono ? () => setMeta(true) : undefined} />
           <FolhaVencido r={dados} />
-          <FolhaPrevisto r={dados} mes={mes} />
         </div>
         <div className="fi-col">
           <FolhaProximas r={dados} />
@@ -425,8 +491,110 @@ function ResumoConteudo() {
           <FolhaNumeros r={dados} mes={mes} />
         </div>
       </div>
+      {meta && dados.meta ? (
+        <JanelaMeta r={dados} aoFechar={() => setMeta(false)} aoFeito={(f) => { setMeta(false); setFeito(f); recarregar(); }} />
+      ) : null}
+      {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );
+}
+
+/** Definir ou mudar a meta (F3.49): valor e de quando vale. Meses fechados não mudam. */
+function JanelaMeta({ r, aoFechar, aoFeito }: { r: ResumoFinanceiro; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+  const mt = r.meta!;
+  const opcoes = [0, 1, 2, 3].map((n) => somarMeses(r.mes, n));
+  const [valor, setValor] = useState(mt.mes ? valorCampo(mt.mes.valor) : "");
+  const [so, setSo] = useState(false);
+  const [mesSo, setMesSo] = useState(opcoes[1]!);
+  const [erros, setErros] = useState<string[]>([]);
+  const [falha, setFalha] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const corpo = useRef<HTMLDivElement>(null);
+  const tem = (c: string) => erros.includes(c);
+  const atual = nomeMesAno(r.mes);
+  const todo = mt.todoMes;
+  const prevMes = r.escritorio.recebido + r.escritorio.vencidoMes + r.escritorio.seteDias + r.escritorio.restoMes;
+  const de3 = r.meses.filter((m) => m.mes < r.mes).slice(-3);
+
+  async function enviar() {
+    if (enviando) return;
+    const v = lerCentavosMeta(valor);
+    const e = !v ? ["valor"] : [];
+    setFalha(null);
+    if (e.length) { setErros(e); return focarErro(corpo.current); }
+    setEnviando(true);
+    const x = await chamarPortal("/v1/escritorio/financeiro/meta", { metodo: "PUT", corpo: { valor: v, mes: so ? mesSo : r.mes, soMes: so } });
+    setEnviando(false);
+    if (x.ok) {
+      return aoFeito({
+        titulo: "Meta salva.",
+        texto: so ? `${maiuscula(nomeMesAno(mesSo))} tem a meta de ${reais(v!)}, só esse mês.` : `A meta agora é ${reais(v!)} todo mês, a partir de ${atual}. Os meses que já fecharam continuam com a meta deles.`,
+      });
+    }
+    const cs = x.erro.detalhes?.campos;
+    if (x.erro.codigo === "VALIDATION_ERROR" && Array.isArray(cs) && cs.length) { setErros(cs.map(String)); return focarErro(corpo.current); }
+    setFalha(`${textoDoErro(x.erro)} Nada foi salvo: ${nomeDoMes(r.mes)} continua com a meta de antes. O valor que você escreveu continua aqui; tente de novo.`);
+  }
+
+  return (
+    <Janela id="j-meta" aberta aoFechar={aoFechar} sobretitulo="Resumo" titulo="Meta de receita" descricao="j-meta-d" aoEnviar={() => void enviar()}
+      pe={<><button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button><button className="btn btn-pri" type="submit" aria-busy={enviando || undefined}><Icone nome="check" className="ico" />Salvar a meta</button></>}>
+      <div ref={corpo} style={{ display: "grid", gap: 16 }}>
+        <p id="j-meta-d">Quanto o escritório quer receber de honorários no mês.</p>
+        {erros.length ? <Aviso tom="urgencia" titulo={erros.length === 1 ? "Falta acertar 1 ponto, marcado abaixo." : `Falta acertar ${erros.length} pontos, marcados abaixo.`}>A meta ainda não foi salva.</Aviso> : null}
+        {falha ? <Aviso tom="urgencia" titulo="Não deu para salvar a meta.">{falha}</Aviso> : null}
+        <div className="campo">
+          <label htmlFor="mt-valor">Meta de receita do mês</label>
+          <input className="entrada" id="mt-valor" inputMode="decimal" autoComplete="off" value={valor} onChange={(e) => { setValor(e.target.value); setErros((x) => x.filter((c) => c !== "valor")); }} data-foco=""
+            aria-invalid={tem("valor") || undefined} aria-describedby={tem("valor") ? "mt-valor-er" : "mt-valor-aj"} />
+          {tem("valor") ? <p className="erro-msg" id="mt-valor-er"><Icone nome="alerta" className="ico ico-s" />Escreva um valor maior que zero.</p>
+            : <p className="ajuda" id="mt-valor-aj">Honorários que entram no caixa do escritório no mês. Valores de terceiros não contam.</p>}
+        </div>
+        <fieldset className="fi-grupo-op">
+          <legend>Vale para</legend>
+          <label className="opcao">
+            <input className="marcar" type="radio" name="mt-v" checked={!so} onChange={() => setSo(false)} />
+            <span>Todo mês, a partir de {atual}<small>{todo && todo.deMes < r.mes ? `Substitui a de ${reais(todo.valor)}, que valia desde ${nomeMesAno(todo.deMes)}. Os meses que já fecharam continuam comparados com ela.` : "Os meses que já fecharam não mudam."}</small></span>
+          </label>
+          <label className="opcao">
+            <input className="marcar" type="radio" name="mt-v" checked={so} onChange={() => setSo(true)} />
+            <span>Só em um mês<small>Os outros meses continuam com a meta de todo mês.</small></span>
+          </label>
+          {so ? (
+            <div className="pd-op-dentro campo">
+              <label htmlFor="mt-mes">Qual mês</label>
+              <select className="entrada" id="mt-mes" value={mesSo} onChange={(e) => setMesSo(e.target.value)} aria-invalid={tem("mes") || undefined} aria-describedby={tem("mes") ? "mt-mes-er" : undefined}>
+                {opcoes.map((m) => <option key={m} value={m}>{maiuscula(nomeMesAno(m))}</option>)}
+              </select>
+              {tem("mes") ? <p className="erro-msg" id="mt-mes-er"><Icone nome="alerta" className="ico ico-s" />Este mês já fechou. A meta de um mês fechado não muda, para a comparação continuar verdadeira.</p> : null}
+            </div>
+          ) : null}
+        </fieldset>
+        <dl className="fi-dl mt-ref">
+          {de3.length ? <div><dt>Média de {nomeDoMes(de3[0]!.mes)} a {nomeDoMes(de3[de3.length - 1]!.mes)}</dt><dd className="num">{reais(mt.media3)}</dd></div> : null}
+          <div><dt>Previsto para {nomeDoMes(r.mes)}</dt><dd className="num">{reais(prevMes)}</dd></div>
+          {mt.umMes.length ? <div><dt>Meses com meta só deles</dt><dd>{mt.umMes.map((x) => <span key={x.deMes}>{maiuscula(nomeMesAno(x.deMes))}: {reais(x.valor)}<br /></span>)}<span className="fi-pq">continuam como estão</span></dd></div> : null}
+        </dl>
+        <p className="fi-ref"><Icone nome="historico" className="ico" /><span>Quem vê o Financeiro vê a meta. Só você, a sócia dona, muda. Cada mudança fica no histórico, e a meta de um mês que já fechou não muda.</span></p>
+      </div>
+    </Janela>
+  );
+}
+
+const somarMeses = (mes: string, n: number) => {
+  const [a, m] = mes.split("-").map(Number);
+  const d = new Date(Date.UTC(a!, m! - 1 + n, 1));
+  return d.toISOString().slice(0, 10);
+};
+const valorCampo = (c: number) => new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(c / 100);
+function lerCentavosMeta(t: string): number | null {
+  const x = t.replace(/[R$\s.]/g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(x)) return null;
+  const v = Math.round(Number(x) * 100);
+  return v > 0 ? v : null;
+}
+function focarErro(el: HTMLElement | null) {
+  el?.querySelector<HTMLElement>("[aria-invalid=true]")?.focus();
 }
 
 export function ResumoDoFinanceiro() {
@@ -434,6 +602,21 @@ export function ResumoDoFinanceiro() {
 }
 
 // -------------------------------------------------------------------------------------- Caixa
+
+/** Passou da data estimada: saiu da previsão até alguém mudar a data em Repasses. */
+function PassouDaData({ c }: { c: CaixaFinanceiro }) {
+  const lista = c.aCaminho.itens.filter((r) => r.passou);
+  const n = c.aCaminho.passou.n;
+  return (
+    <div className="fi-aviso-in">
+      <Aviso tom="atencao" icone="alerta"
+        titulo={n === 1 ? `1 ${TIPOS_REQUISICAO[lista[0]?.tipo ?? "RPV"].titulo} passou da data estimada e saiu da previsão.` : `${n} RPVs e precatórios passaram da data estimada e saíram da previsão.`}
+        acoes={<a className="btn btn-sec btn-compacto" href={`${ROTAS_FINANCEIRO.repasses}#t-cam`}><Icone nome="agenda" className="ico" />Mudar a data</a>}>
+        {lista.map((r) => `${r.cliente.nome}, ${TIPOS_REQUISICAO[r.tipo].titulo}: ${reais(r.parteEscritorio)} do escritório, era ${nomeDoMes(r.estimadaMes)}`).join("; ")}. Volta à previsão quando tiver data nova.
+      </Aviso>
+    </div>
+  );
+}
 
 function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
   const max = Math.max(...c.meses.flatMap((m) => [m.entradasPrevistas, m.entradasRealizadas ?? 0]), 1);
@@ -450,12 +633,17 @@ function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
           <div className={m.mes === c.mes ? "fi-mes fi-hoje" : "fi-mes"} key={m.mes}>
             <span className="rot">{maiuscula(nomeDoMes(m.mes))}{sub(m) ? <small>{sub(m)}</small> : null}</span>
             <span className="fi-duplo" aria-hidden="true">
-              <span className="fi-trilho"><i className="prev" style={{ width: largura(m.entradasPrevistas, max) }} /></span>
+              <span className="fi-trilho">
+                <i className="prev" style={{ width: largura(m.entradasPrevistas, max) }} />
+                {futuro(m) && m.aCaminho ? (
+                  <i className="rpv" style={{ left: largura(m.entradasPrevistas - m.aCaminho, max), width: largura(m.aCaminho, max), borderRadius: "0 4px 4px 0" }} />
+                ) : null}
+              </span>
               {futuro(m) ? null : <span className="fi-trilho"><i className="real" style={{ width: largura(m.entradasRealizadas ?? 0, max) }} /></span>}
             </span>
             <span className="val">
               {futuro(m)
-                ? <><b className="num">{reais(m.entradasPrevistas)}</b> previstos</>
+                ? <><b className="num">{reais(m.entradasPrevistas)}</b> previstos{m.aCaminho ? <><br />dos quais {reais(m.aCaminho)} de RPV</> : null}</>
                 : <><b className="num">{reais(m.entradasRealizadas ?? 0)}</b> realizados<br />de {reais(m.entradasPrevistas)} previstos</>}
             </span>
           </div>
@@ -464,7 +652,9 @@ function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
       <p className="legenda fi-leg">
         <span><i style={{ background: "var(--ambar-3)", boxShadow: "inset 0 0 0 1px var(--vinho-4)" }} />Previsto</span>
         <span><i style={{ background: "var(--vinho)" }} />Realizado</span>
+        {c.aCaminho.n ? <span><i style={{ background: "var(--ambar)" }} />RPV ou precatório com data estimada</span> : null}
       </p>
+      {c.aCaminho.passou.n ? <PassouDaData c={c} /> : null}
       <p className="fi-sub3" style={{ marginTop: 0 }}>Mês a mês</p>
       <div style={{ overflowX: "auto" }} className="so-pc">
         <table className="fi-tab fi-tab-caixa">
@@ -510,21 +700,38 @@ function FolhaContador({ c, aoExportar }: { c: CaixaFinanceiro; aoExportar: () =
   const ultima = c.exportacoes[0];
   const anterior = c.mesesExportar.find((m) => m < c.mes);
   const anteriorFeita = anterior ? c.exportacoes.some((e) => e.mes === anterior) : false;
+  const ct = c.contador ?? null;
+  const quando = (em: string) => `${diaCurto(diaDoInstante(em))}, às ${horaDoInstante(em)}`;
   return (
     <Folha id="t-exp" titulo="Para o contador" icone="doc" sub="Recebimentos, despesas e recibos do mês, com terceiros à parte">
       <dl className="fi-dl">
         {ultima ? (
           <div>
             <dt>{maiuscula(nomeMesAno(ultima.mes))}</dt>
-            <dd>Exportado em {diaCurto(diaDoInstante(ultima.em))}<br /><span className="fi-pq">por {ultima.por?.nome ?? "alguém da equipe"}</span></dd>
+            {ultima.envio ? (
+              <dd>
+                {ultima.envio.situacao === "ENVIADO" ? `Enviado por e-mail em ${quando(ultima.envio.em)}` : `O e-mail não saiu em ${quando(ultima.envio.em)}`}
+                <br /><span className="fi-pq">por {ultima.envio.por?.nome ?? "alguém da equipe"}{ultima.envio.situacao === "ENVIADO" ? " · entregue ao envio" : " · exporte de novo para mandar"}</span>
+              </dd>
+            ) : (
+              <dd>Exportado em {diaCurto(diaDoInstante(ultima.em))}<br /><span className="fi-pq">por {ultima.por?.nome ?? "alguém da equipe"}</span></dd>
+            )}
           </div>
         ) : null}
         {anterior && !anteriorFeita ? (
           <div><dt>{maiuscula(nomeMesAno(anterior))}</dt><dd>Pronto para exportar</dd></div>
         ) : null}
-        <div><dt>{maiuscula(nomeMesAno(c.mes))}</dt><dd>Pronto a partir de {diaCurto(proximoMes(c.mes))}</dd></div>
+        <div>
+          <dt>{maiuscula(nomeMesAno(c.mes))}</dt>
+          <dd>Pronto a partir de {diaCurto(proximoMes(c.mes))}{c.lembrete ? <><br /><span className="fi-pq">lembrete no sino em {diaCurto(c.lembrete)}</span></> : null}</dd>
+        </div>
+        {ct ? <div><dt>Para quem vai</dt><dd>{ct.nome}{ct.firma ? ` · ${ct.firma}` : ""}<br /><span className="fi-pq">{ct.email}</span></dd></div> : null}
       </dl>
+      {ct === null && c.contador !== undefined ? (
+        <p className="ct-sem"><Icone nome="envelope" className="ico" /><span><b>Nenhum contador cadastrado.</b> Com o nome e o e-mail dele, a exportação vai por e-mail sem você anexar nada.</span></p>
+      ) : null}
       <div className="fi-cob">
+        {ct === null && c.contador !== undefined && c.dono ? <a className="btn btn-sec" href={ROTA_AJUSTES}><Icone nome="mais" className="ico" />Cadastrar o contador</a> : null}
         <button className="btn btn-sec" type="button" onClick={aoExportar}><Icone nome="baixar" className="ico" />Exportar um mês</button>
       </div>
     </Folha>
@@ -554,6 +761,14 @@ function CaixaConteudo() {
           <p className="sobretitulo" id="t-s1">Do escritório · hoje</p>
           <p><span className="fi-big num">{reais(c.saldo)}</span></p>
           <p>Saldo do caixa do escritório, pelos registros do T3jus. Se tudo o que está previsto entrar e sair, fecha {mes} em <b>{reais(c.fechaMes)}</b>.</p>
+          {c.abertura ? (
+            <p className="ct-abertura"><Icone nome="historico" className="ico" /><span>Começa no saldo de abertura de <b>{reais(c.abertura.valor)}</b>, em {diaBr(c.abertura.data)}.</span> <a href={ROTA_AJUSTES}>Ver em Escritório</a></p>
+          ) : c.abertura === null ? (
+            <>
+              <p className="ct-abertura ct-falta"><Icone nome="alerta" className="ico" /><span><b>O saldo começa em R$ 0,00.</b> Falta o saldo de abertura: o que havia na conta antes do primeiro lançamento.</span></p>
+              {c.dono ? <a className="btn btn-escuro ct-bot" href={ROTA_AJUSTES}><Icone nome="lapis" className="ico" />Lançar o saldo de abertura</a> : null}
+            </>
+          ) : null}
         </section>
         <section className="fi-saldo campo-ambar" aria-labelledby="t-s2" style={{ position: "relative" }}>
           <p className="fi-terc-rot" id="t-s2"><Icone nome="escudo" className="ico" />De terceiros · hoje</p>
@@ -569,16 +784,7 @@ function CaixaConteudo() {
       <div className="fi-grade">
         <div className="fi-col"><FolhaPrevistoCaixa c={c} /></div>
         <aside className="fi-col" aria-label="A caminho e contador">
-          <Folha id="t-rpvs" titulo="RPVs e precatórios a caminho" icone="balanca" sub="Só a parte do escritório entra na previsão. A do cliente vai para Repasses quando chegar.">
-            <div className="fi-reserva">
-              <Icone nome="cadeado" className="ico" />
-              <span><b>O RPV ou precatório expedido</b>, com a data estimada e a parte do escritório na previsão, chega numa próxima entrega. Quando o valor entrar, registre em Repasses.</span>
-            </div>
-            <div className="fi-reserva">
-              <Icone nome="cadeado" className="ico" />
-              <span><b>Atualização do valor</b> entre a requisição e o pagamento, com a diferença entre o previsto e o recebido, ainda está em validação com os pilotos.</span>
-            </div>
-          </Folha>
+          <FolhaACaminho a={c.aCaminho} titulo="RPVs e precatórios a caminho" ateMes={c.meses[c.meses.length - 1]!.mes} verEm={`${ROTAS_FINANCEIRO.repasses}#t-cam`} />
           <FolhaContador c={c} aoExportar={() => setExportar(true)} />
           <section className="folha" aria-labelledby="t-conc" style={{ overflow: "hidden" }}>
             <div className="folha-cab"><div><h2 id="t-conc"><Icone nome="sincronia" className="ico" />Conferência com o extrato</h2></div></div>
@@ -603,6 +809,16 @@ export function CaixaDoFinanceiro() {
 }
 
 // ----------------------------------------------------------------------- Exportar para o contador
+
+/** Os bytes do arquivo em base64, para ir anexado ao e-mail do contador. */
+function emBase64(d: Uint8Array | string): string {
+  const b = typeof d === "string" ? new TextEncoder().encode(d) : d;
+  let s = "";
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+const ROTA_AJUSTES = "/meu-escritorio/financeiro";
 
 export function salvar(nome: string, tipo: string, dados: Uint8Array | string) {
   const blob = new Blob([dados as BlobPart], { type: tipo });
@@ -637,14 +853,42 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
     });
   }, [mes]);
 
+  const ct = c.contador ?? null;
+  const [mandar, setMandar] = useState(!!ct?.mandarAoExportar);
+  // O e-mail que não saiu (F3.50): o arquivo já foi gerado e baixado; "Mandar de novo" manda o mesmo.
+  const [naoSaiu, setNaoSaiu] = useState<{ id: string; nome: string; base64: string; mes: string } | null>(null);
+
+  async function mandarAoContador(x: { id: string; nome: string; base64: string; mes: string }): Promise<boolean> {
+    const e = await chamarPortal<EnvioContador>(`/v1/escritorio/financeiro/exportacoes/${x.id}/enviar`, { metodo: "POST", corpo: { nome: x.nome, arquivo: x.base64 } });
+    if (e.ok && e.dados.situacao === "ENVIADO") return true;
+    setNaoSaiu(x);
+    return false;
+  }
+
   async function enviar() {
+    if (enviando) return;
     setFalha(null);
     setEnviando(true);
+    if (naoSaiu) {
+      const ok = await mandarAoContador(naoSaiu);
+      setEnviando(false);
+      if (ok) aoFeito({ titulo: `Exportação de ${nomeMesAno(naoSaiu.mes)} mandada a ${ct?.nome ?? "o contador"}.`, texto: "O envio ficou no histórico do escritório." });
+      return;
+    }
     const r = await chamarPortal<DadosExportacao>("/v1/escritorio/financeiro/exportacoes", { metodo: "POST", corpo: { mes, formato } });
-    setEnviando(false);
-    if (!r.ok) return setFalha(textoDoErro(r.erro));
+    if (!r.ok) {
+      setEnviando(false);
+      return setFalha(textoDoErro(r.erro));
+    }
     const a = arquivoContador(r.dados, formato, an?.semNota);
     salvar(a.nome, a.tipo, a.dados);
+    if (mandar && ct) {
+      const ok = await mandarAoContador({ id: r.dados.id, nome: a.nome, base64: emBase64(a.dados), mes });
+      setEnviando(false);
+      if (!ok) return;
+      return aoFeito({ titulo: `Exportação de ${nome} mandada a ${ct.nome}.`, texto: `O arquivo ${a.nome} também foi salvo no seu aparelho. A exportação e o envio ficaram no histórico.` });
+    }
+    setEnviando(false);
     aoFeito({ titulo: `Exportação de ${nome} gerada.`, texto: `O arquivo ${a.nome} foi salvo, e a exportação ficou no histórico do escritório.` });
   }
 
@@ -656,13 +900,18 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
         <>
           <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
           <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined} data-foco="">
-            <Icone nome="baixar" className="ico" />Exportar {nomeDoMes(mes)}
+            <Icone nome={ct && (mandar || naoSaiu) ? "envelope" : "baixar"} className="ico" />{naoSaiu ? "Mandar de novo" : ct && mandar ? "Exportar e mandar" : `Exportar ${nomeDoMes(mes)}`}
           </button>
         </>
       }>
       <div style={{ display: "grid", gap: 18 }}>
         <p id="j-exp-d">Tudo o que o contador pede do mês, num arquivo só.</p>
         {falha ? <Aviso tom="urgencia" titulo="O arquivo não foi gerado.">{falha}</Aviso> : null}
+        {naoSaiu ? (
+          <Aviso tom="urgencia" titulo="O arquivo foi gerado, mas o e-mail não saiu.">
+            A exportação de {nomeMesAno(naoSaiu.mes)} está no histórico e já baixou no seu aparelho. Só o envio a {ct?.nome ?? "o contador"} falhou; nada mais mudou. Tente mandar de novo.
+          </Aviso>
+        ) : null}
         <div className="campo">
           <label htmlFor="ex-mes">Mês</label>
           <select className="entrada" id="ex-mes" value={mes} onChange={(e) => setMes(e.target.value)}>
@@ -680,6 +929,9 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
               <li><Icone nome="check" className="ico" /><span>{contar(rec.n, "recebimento", "recebimentos")}, por tipo de honorário<small>{reais(rec.valor)}</small></span></li>
               <li><Icone nome="check" className="ico" /><span>{contar(p.despesas.n, "despesa paga", "despesas pagas")}, por categoria<small>{reais(p.despesas.valor)}</small></span></li>
               <li><Icone nome="check" className="ico" /><span>{p.recibos ? `${contar(p.recibos, "recibo emitido", "recibos emitidos")}, com o número na planilha` : "Nenhum recibo emitido no mês"}</span></li>
+              {formato === "XLSX" ? (
+                <li><Icone nome="check" className="ico" /><span>Saldo do caixa no começo e no fim do mês<small>{c.abertura ? "A partir do saldo de abertura" : "Sem saldo de abertura, o saldo começa em R$ 0,00"}</small></span></li>
+              ) : null}
               <li>
                 <Icone nome="escudo" className="ico" />
                 <span>
@@ -724,7 +976,18 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
             <span>Só a planilha (.csv)<small>Uma tabela só, para abrir em qualquer programa</small></span>
           </label>
         </fieldset>
-        <p className="fi-ref"><Icone nome="historico" className="ico" /><span>A exportação fica no histórico do escritório, com quem gerou e quando.</span></p>
+        {ct ? (
+          <label className="opcao">
+            <input className="marcar" type="checkbox" checked={mandar} onChange={(e) => setMandar(e.target.checked)} disabled={!!naoSaiu} />
+            <span>Mandar por e-mail a {ct.nome}{ct.firma ? `, da ${ct.firma}` : ""}<small>{ct.email} · a planilha vai anexada.</small></span>
+          </label>
+        ) : (
+          <>
+            <p className="ct-sem"><Icone nome="envelope" className="ico" /><span><b>Sem contador cadastrado:</b> o arquivo só baixa no seu aparelho. Cadastre o contador para mandar por e-mail.</span></p>
+            {c.dono ? <a className="btn btn-sec" href={ROTA_AJUSTES} style={{ justifySelf: "start" }}><Icone nome="mais" className="ico" />Cadastrar o contador</a> : null}
+          </>
+        )}
+        <p className="fi-ref"><Icone nome="historico" className="ico" /><span>A exportação{ct ? " e o envio ficam" : " fica"} no histórico do escritório, com quem gerou{ct ? ", para quem foi" : ""} e quando.</span></p>
       </div>
     </Janela>
   );

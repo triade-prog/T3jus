@@ -1022,7 +1022,7 @@ export function RecebimentoPortal() {
     );
   }
   return (
-    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={escritorio} pagina="co-equipe co-carteira" barra={<BarraEscritorio secao="recebimento" />}>
+    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={escritorio} pagina="co-equipe co-carteira" barra={<BarraEscritorio secao="recebimento" financeiro={!!escritorio?.areas.includes("FINANCEIRO")} />}>
       {corpo}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </MolduraPortal>

@@ -20,14 +20,17 @@ const SEM_AREA = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: [
 type Resp = { status?: number; corpo: unknown };
 type Pedido = { metodo: string; caminho: string; busca: string; corpo: unknown };
 
-async function simular(page: Page, rotas: Record<string, Resp>) {
+async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
   const pedidos: Pedido[] = [];
   await page.route("**/api/v1/**", async (rota) => {
     const url = new URL(rota.request().url());
     const caminho = url.pathname.replace(/^\/api/, "");
     const metodo = rota.request().method();
     pedidos.push({ metodo, caminho, busca: url.search, corpo: rota.request().postDataJSON() });
-    const x = rotas[`${metodo} ${caminho}${url.search}`] ?? rotas[`${metodo} ${caminho}`] ?? rotas[caminho] ?? { status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } };
+    const r = rotas[`${metodo} ${caminho}${url.search}`] ?? rotas[`${metodo} ${caminho}`] ?? rotas[caminho] ?? { status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } };
+    const lista = Array.isArray(r) ? r : [r];
+    const vez = pedidos.filter((p) => p.caminho === caminho && p.metodo === metodo).length - 1;
+    const x = lista[Math.min(vez, lista.length - 1)]!;
     await rota.fulfill({ status: x.status ?? 200, contentType: "application/json", body: JSON.stringify(x.corpo) });
   });
   return pedidos;
@@ -109,11 +112,19 @@ const CAIXA = {
     { mes: "2026-10-01", entradasPrevistas: 4720000, entradasRealizadas: 4505000, saidasPrevistas: 4140000, saidasRealizadas: 4087000, saldo: 3245000 },
     { mes: "2026-11-01", entradasPrevistas: 4830000, entradasRealizadas: 3124000, saidasPrevistas: 4090000, saidasRealizadas: 2338000, saldo: 4031000 },
     { mes: "2026-12-01", entradasPrevistas: 4690000, entradasRealizadas: null, saidasPrevistas: 4660000, saidasRealizadas: null, saldo: 4015000 },
-    { mes: "2027-01-01", entradasPrevistas: 4966000, entradasRealizadas: null, saidasPrevistas: 4130000, saidasRealizadas: null, saldo: 4851000 },
+    { mes: "2027-01-01", entradasPrevistas: 4966000, aCaminho: 486000, entradasRealizadas: null, saidasPrevistas: 4130000, saidasRealizadas: null, saldo: 4851000 },
     { mes: "2027-02-01", entradasPrevistas: 4520000, entradasRealizadas: null, saidasPrevistas: 4130000, saidasRealizadas: null, saldo: 5241000 },
   ],
   exportacoes: [{ mes: "2026-09-01", formato: "XLSX", em: "2026-10-05T14:00:00Z", por: MARINA }],
   mesesExportar: ["2026-11-01", "2026-10-01", "2026-09-01"],
+  aCaminho: { total: 675000, n: 2, naPrevisao: 486000, passou: { valor: 189000, n: 1 }, itens: [
+    { id: "ad000000-0000-4000-8000-000000000001", tipo: "RPV", tribunal: "TRF3", devedor: "INSS", numero: null, valorRequisitado: 630000, parteEscritorio: 189000,
+      parteRegra: "30% de êxito", expedidoEm: "2026-08-03", estimadaMes: "2026-10-01", situacao: "A_CAMINHO", passou: true, criadoEm: "2026-08-03T12:00:00Z",
+      caso: { id: "ca1", nome: "Castro x INSS" }, cliente: { id: "c1", nome: "Irene Castro" }, contratoId: null, levantamentoId: null },
+    { id: "ad000000-0000-4000-8000-000000000002", tipo: "RPV", tribunal: "TJSP", devedor: "Prefeitura", numero: null, valorRequisitado: 1620000, parteEscritorio: 486000,
+      parteRegra: "30% de êxito", expedidoEm: "2026-11-10", estimadaMes: "2027-01-01", situacao: "A_CAMINHO", passou: false, criadoEm: "2026-11-10T12:00:00Z",
+      caso: { id: "ca2", nome: "Nascimento x Prefeitura" }, cliente: { id: "c2", nome: "Eduardo Nascimento" }, contratoId: null, levantamentoId: null },
+  ] },
 };
 const PREVIA_OUT = {
   mes: "2026-10-01", aberto: false, recebimentos: { n: 41, valor: 4382000 }, honorariosTransferidos: { n: 1, valor: 123000 },
@@ -189,8 +200,10 @@ test.describe("Financeiro do Portal, Resumo e Caixa (FI-03, FI-06, FI-09, FI-21,
     await simular(page, {
       ...comuns(),
       "GET /v1/escritorio/financeiro/repasses": { corpo: {
-        hoje: HOJE, prazoDias: 3, algum: false, totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0 },
+        hoje: HOJE, prazoDias: 3, algum: false, eu: "aa000000-0000-4000-8000-000000000001", podeEditar: true, podemCuidar: [],
+        totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0, atrasados: 0, repassesAtrasados: 0, semMotivo: 0 },
         repassadoMes: { valor: 0, clientes: 0 }, repassados: [], levantamentos: [], casos: [],
+        aCaminho: { total: 0, n: 0, naPrevisao: 0, passou: { valor: 0, n: 0 }, itens: [] },
       } },
     });
     await page.goto(`${P}/financeiro/repasses?registrar=1`);
@@ -224,7 +237,16 @@ test.describe("Financeiro do Portal, Resumo e Caixa (FI-03, FI-06, FI-09, FI-21,
     await expect(cont).toContainText("Exportado em 05/10");
     await expect(cont).toContainText("Outubro de 2026Pronto para exportar");
     await expect(cont).toContainText("Pronto a partir de 01/12");
-    await expect(page.getByRole("region", { name: "RPVs e precatórios a caminho" })).toContainText("ainda está em validação com os pilotos");
+    // F3.48: o RPV com data estimada em âmbar no mês dele; o que passou sai da previsão, com aviso.
+    await expect(meses).toContainText("dos quais R$ 4.860,00 de RPV");
+    await expect(prev).toContainText("RPV ou precatório com data estimada");
+    await expect(prev.getByRole("alert").or(prev.getByRole("status")).filter({ hasText: "1 RPV passou da data estimada e saiu da previsão." })).toBeVisible();
+    await expect(prev).toContainText("Irene Castro, RPV: R$ 1.890,00 do escritório, era outubro");
+    const rpvs = page.getByRole("region", { name: "RPVs e precatórios a caminho" });
+    await expect(rpvs).toContainText("Eduardo Nascimento · RPV");
+    await expect(rpvs).toContainText("Passou da data estimada");
+    await expect(rpvs.getByRole("link", { name: "Ver em Repasses" })).toHaveAttribute("href", "/financeiro/repasses#t-cam");
+    await expect(rpvs.getByRole("button", { name: /Mudar a data/ })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Conferência com o extrato" })).toContainText("Este é o lugar dela.");
     await semViolacoes(page);
   });
@@ -288,5 +310,115 @@ test.describe("Financeiro do Portal, exportação com as notas (FI-18, FI-21)", 
     await j.getByRole("button", { name: "Exportar outubro" }).click();
     const texto = readFileSync((await (await baixou).path())!, "utf8");
     expect(texto).toContain("Falta a nota");
+  });
+
+  // ------------------------------------------------------------------ F3.50 e F3.49
+
+  test("F3.50: o Caixa começa no saldo de abertura, diz para quem vai e quando é o lembrete", async ({ page }) => {
+    const caixa = { ...CAIXA, dono: true, lembrete: "2026-12-05",
+      abertura: { id: id(80), data: "2026-08-31", valor: 1248000, motivo: null, por: MARINA, em: "2026-09-01T14:02:00Z" },
+      contador: { nome: "Paulo Serra", firma: "Contabilidade Silva", email: "contato@exemplo.com.br", mandarAoExportar: true, lembrarDia5: true },
+      exportacoes: [{ id: id(81), mes: "2026-10-01", formato: "XLSX", em: "2026-11-05T12:10:00Z", por: MARINA,
+        envio: { para: "contato@exemplo.com.br", situacao: "ENVIADO", em: "2026-11-05T12:12:00Z", por: MARINA } }] };
+    await simular(page, { ...comuns(), "GET /v1/escritorio/financeiro/caixa": { corpo: caixa } });
+    await page.goto(`${P}/financeiro/caixa`);
+    const esc = page.getByRole("region", { name: "Do escritório · hoje" });
+    await expect(esc).toContainText("Começa no saldo de abertura de R$ 12.480,00, em 31/08/2026.");
+    await expect(esc.getByRole("link", { name: "Ver em Escritório" })).toHaveAttribute("href", "/meu-escritorio/financeiro");
+    const cont = page.getByRole("region", { name: "Para o contador" });
+    await expect(cont).toContainText("Enviado por e-mail em 05/11, às 9h12");
+    await expect(cont).toContainText("lembrete no sino em 05/12");
+    await expect(cont).toContainText("Paulo Serra · Contabilidade Silva");
+    await semViolacoes(page);
+  });
+
+  test("F3.50: sem saldo de abertura nem contador, o Caixa avisa e leva a Escritório", async ({ page }) => {
+    await simular(page, { ...comuns(), "GET /v1/escritorio/financeiro/caixa": { corpo: { ...CAIXA, dono: true, abertura: null, contador: null, lembrete: null } } });
+    await page.goto(`${P}/financeiro/caixa`);
+    const esc = page.getByRole("region", { name: "Do escritório · hoje" });
+    await expect(esc).toContainText("O saldo começa em R$ 0,00.");
+    await expect(esc.getByRole("link", { name: "Lançar o saldo de abertura" })).toHaveAttribute("href", "/meu-escritorio/financeiro");
+    await expect(page.getByRole("region", { name: "Para o contador" })).toContainText("Nenhum contador cadastrado.");
+    await page.getByRole("button", { name: "Exportar para o contador" }).click();
+    const j = page.getByRole("dialog", { name: "Exportar para o contador" });
+    await expect(j).toContainText("Sem contador cadastrado: o arquivo só baixa no seu aparelho.");
+    await expect(j.getByRole("link", { name: "Cadastrar o contador" })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("F3.50: exportar e mandar ao contador; o e-mail que não sai é falha parcial, com Mandar de novo", async ({ page }) => {
+    const caixa = { ...CAIXA, dono: true, abertura: null, lembrete: null,
+      contador: { nome: "Paulo Serra", firma: "Contabilidade Silva", email: "contato@exemplo.com.br", mandarAoExportar: true, lembrarDia5: true } };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/caixa": { corpo: caixa },
+      "POST /v1/escritorio/financeiro/exportacoes": { status: 201, corpo: { ...DADOS, formato: "XLSX", saldoInicio: 2827000, saldoFim: 3245000 } },
+      [`POST /v1/escritorio/financeiro/exportacoes/${id(90)}/enviar`]: [
+        { corpo: { para: "contato@exemplo.com.br", situacao: "FALHOU", em: "2026-11-18T13:00:00Z", por: MARINA } },
+        { corpo: { para: "contato@exemplo.com.br", situacao: "ENVIADO", em: "2026-11-18T13:01:00Z", por: MARINA } },
+      ],
+    });
+    await page.goto(`${P}/financeiro/caixa`);
+    await page.getByRole("button", { name: "Exportar para o contador" }).click();
+    const j = page.getByRole("dialog", { name: "Exportar para o contador" });
+    await expect(j.getByRole("checkbox", { name: /Mandar por e-mail a Paulo Serra, da Contabilidade Silva/ })).toBeChecked();
+    await expect(j).toContainText("Saldo do caixa no começo e no fim do mês");
+    const baixou = page.waitForEvent("download");
+    await j.getByRole("button", { name: "Exportar e mandar" }).click();
+    await baixou;
+    await expect(j.getByRole("alert").filter({ hasText: "O arquivo foi gerado, mas o e-mail não saiu." })).toBeVisible();
+    await semViolacoes(page);
+    const envio = pedidos.find((p) => p.caminho.endsWith("/enviar"))!;
+    expect((envio.corpo as { nome: string }).nome).toBe("contador-ribeiro-matos-2026-10.xlsx");
+    expect((envio.corpo as { arquivo: string }).arquivo.startsWith("UEsDB")).toBe(true);
+    await j.getByRole("button", { name: "Mandar de novo" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Exportação de outubro de 2026 mandada a Paulo Serra." })).toBeVisible();
+    expect(pedidos.filter((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/exportacoes")).toHaveLength(1);
+  });
+
+  test("F3.49: a meta no alto do Resumo; a dona muda, só em um mês; meses fechados comparados com a meta deles", async ({ page }) => {
+    const meta = (valor: number, deMes: string, soMes = false) => ({ valor, deMes, soMes, por: MARINA, em: "2026-11-02T12:00:00Z" });
+    const resumo = { ...RESUMO,
+      meses: [
+        { mes: "2026-08-01", previsto: 4410000, realizado: 4238000, meta: null },
+        { mes: "2026-09-01", previsto: 4560000, realizado: 3991000, meta: 4500000 },
+        { mes: "2026-10-01", previsto: 4720000, realizado: 4505000, meta: 4500000 },
+        { mes: "2026-11-01", previsto: 4830000, realizado: 3124000, meta: 5000000 },
+      ],
+      meta: { mes: meta(5000000, "2026-11-01"), todoMes: meta(5000000, "2026-11-01"), antes: meta(4500000, "2026-09-01"), umMes: [],
+              dono: true, socioDono: MARINA, media3: 4244667 } };
+    const pedidos = await simular(page, { ...comuns(), "GET /v1/escritorio/financeiro/resumo": { corpo: resumo },
+      "PUT /v1/escritorio/financeiro/meta": { corpo: resumo.meta } });
+    await page.goto(`${P}/financeiro`);
+    const prev = page.getByRole("region", { name: "Previsto e realizado" });
+    await expect(prev).toContainText("Meta de novembro");
+    await expect(prev).toContainText("R$ 50.000,00todo mês, desde novembro");
+    await expect(prev.getByRole("img", { name: /Recebido R\$ 31\.240,00, 62% da meta de R\$ 50\.000,00/ })).toBeVisible();
+    await expect(prev).toContainText("62% da meta. Faltam R$ 18.760,00 em 12 dias.");
+    await expect(prev).toContainText("meta R$ 45.000,00 · bateu");
+    await expect(prev).toContainText("sem meta");
+    await semViolacoes(page);
+    await prev.getByRole("button", { name: "Mudar a meta" }).click();
+    const j = page.getByRole("dialog", { name: "Meta de receita" });
+    await expect(j.getByLabel("Meta de receita do mês")).toBeFocused();
+    await j.getByLabel("Meta de receita do mês").fill("0");
+    await j.getByRole("button", { name: "Salvar a meta" }).click();
+    await expect(j.getByText("Escreva um valor maior que zero.")).toBeVisible();
+    await semViolacoes(page);
+    await j.getByLabel("Meta de receita do mês").fill("40.000,00");
+    await j.getByRole("radio", { name: /Só em um mês/ }).check();
+    await j.getByLabel("Qual mês").selectOption("2026-12-01");
+    await j.getByRole("button", { name: "Salvar a meta" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Dezembro de 2026 tem a meta de R$ 40.000,00, só esse mês." })).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toEqual({ valor: 4000000, mes: "2026-12-01", soMes: true });
+  });
+
+  test("F3.49: quem tem o Financeiro sem ser dona vê a meta, sem botão; sem meta, a faixa diz quem define", async ({ page }) => {
+    const resumo = { ...RESUMO, meta: { mes: null, todoMes: null, antes: null, umMes: [], dono: false, socioDono: MARINA, media3: 0 } };
+    await simular(page, { ...comuns(), "GET /v1/escritorio/financeiro/resumo": { corpo: resumo } });
+    await page.goto(`${P}/financeiro`);
+    const prev = page.getByRole("region", { name: "Previsto e realizado" });
+    await expect(prev).toContainText("Sem meta. Quem define é Marina Ribeiro, a sócia dona.");
+    await expect(prev.getByRole("button", { name: /meta/ })).toHaveCount(0);
   });
 });

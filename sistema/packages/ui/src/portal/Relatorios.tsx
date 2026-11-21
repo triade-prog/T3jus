@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  reais, TIPOS_LEVANTAMENTO,
+  reais, TIPOS_LEVANTAMENTO, TIPOS_REQUISICAO,
   type AreaRelatorio, type ClienteRelatorio, type CompararCom, type DadosRelatorioExportado, type FormatoRelatorio, type PeriodoRelatorio,
   type RelatorioAreas, type RelatorioCliente, type RelatorioClientes, type RelatorioResponsaveis, type ResumoRelatorio, type VisaoRelatorio,
 } from "@t3jus/domain";
@@ -22,6 +22,7 @@ import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { Cab, Folha, salvar } from "./FinanceiroResumo.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { mesAno } from "./ACaminho.tsx";
 import { planilhaXlsx } from "./planilha.ts";
 import {
   abasRelatorio, atalho, atalhoAtual, comparacao, comparaTexto, conferirPeriodo, consultaPeriodo, diaBr, filtrarClientes, fimDoMes, nomeArea,
@@ -346,8 +347,15 @@ function Tres({ r }: { r: ResumoRelatorio }) {
             <span>{comparaTexto(r.falta.valor, r.falta.anterior, `em ${diaCurto(p.cate)}`)} ({reais(r.falta.anterior)}). Vencido era {reais(r.falta.vencidoAnterior ?? 0)}.</span>
           </p>
         ) : null}
-        {r.falta.aparte.valor ? (
-          <p className="re-aparte">Mais <b>{reais(r.falta.aparte.valor)}</b> de RPV e precatório, à parte: só a parte do escritório, ainda a transferir.</p>
+        {r.falta.aparte.valor || r.falta.aparte.caminho?.valor ? (
+          <p className="re-aparte">
+            Mais <b>{reais(r.falta.aparte.valor + (r.falta.aparte.caminho?.valor ?? 0))}</b> de RPV e precatório, à parte:{" "}
+            {r.falta.aparte.caminho?.valor
+              ? r.falta.aparte.valor
+                ? `${reais(r.falta.aparte.valor)} que já entrou e ${reais(r.falta.aparte.caminho.valor)} a caminho, só a parte do escritório.`
+                : "a caminho, com data estimada, só a parte do escritório."
+              : "só a parte do escritório, ainda a transferir."}
+          </p>
         ) : null}
       </section>
       <section className="re-n" aria-labelledby="n-rendeu">
@@ -472,20 +480,50 @@ function FolhaTopAreas({ r, q }: { r: ResumoRelatorio; q: string }) {
   );
 }
 
-function ListaAparte({ itens, total }: { itens: { id: string; tipo: keyof typeof TIPOS_LEVANTAMENTO; valor: number; prazo: string; cliente: string; caso: string }[]; total: number }) {
-  if (!itens.length) return null;
+type Aparte = ResumoRelatorio["falta"]["aparte"];
+
+function ListaAparte({ a }: { a: Aparte }) {
+  const cam = a.caminho?.lista ?? [];
+  if (!a.lista.length && !cam.length) return null;
+  const mes = mesAno;
   return (
     <div className="re-aparte-f">
       <p><Icone nome="balanca" className="ico" />À parte · não soma acima</p>
-      <ul>
-        {itens.map((a) => (
-          <li key={a.id}>
-            <span><b>{a.cliente} · {TIPOS_LEVANTAMENTO[a.tipo]}</b><small>{a.caso} · transferir até {diaCurto(a.prazo)}</small></span>
-            <span className="fi-v num">{reais(a.valor)}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="re-pe"><span>Parte do escritório em RPV e precatório</span><b className="num">{reais(total)}</b></p>
+      {cam.length && a.lista.length ? <p className="re-grupo">Já entrou, falta transferir ao escritório</p> : null}
+      {a.lista.length ? (
+        <ul>
+          {a.lista.map((x) => (
+            <li key={x.id}>
+              <span><b>{x.cliente} · {TIPOS_LEVANTAMENTO[x.tipo]}</b><small>{x.caso} · transferir até {diaCurto(x.prazo)}</small></span>
+              <span className="fi-v num">{reais(x.valor)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {cam.length ? (
+        <>
+          <p className="re-grupo">A caminho, com data estimada</p>
+          <ul>
+            {cam.map((x) => (
+              <li key={x.id} className={x.passou ? "re-passou" : undefined}>
+                <span>
+                  <b>{x.cliente} · {TIPOS_REQUISICAO[x.tipo].titulo}</b>
+                  <small>{x.caso} · {x.passou ? `era ${mes(x.estimadaMes)}` : `estimada para ${mes(x.estimadaMes)}`}</small>
+                  {x.passou ? <Selo tom="urgente" icone="alerta">Passou da data estimada</Selo> : null}
+                </span>
+                <span className="fi-v num">{reais(x.valor)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      <p className="re-pe"><span>Parte do escritório em RPV e precatório</span><b className="num">{reais(a.valor + (a.caminho?.valor ?? 0))}</b></p>
+      {cam.some((x) => x.passou) ? (
+        <p className="re-nota">
+          <Icone nome="agenda" className="ico" />
+          <span>O que passou da data estimada continua aqui, marcado, até alguém mudar a data ou registrar que entrou. <a href={`${ROTAS_FINANCEIRO.repasses}#t-cam`}>Ver em Repasses</a></span>
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -512,7 +550,7 @@ function FolhaFalta({ r }: { r: ResumoRelatorio }) {
       </p>
       <p className="re-sub"><span><b>A vencer depois</b>, até o fim dos contratos</span><span className="fi-v num">{reais(f.aVencerDepois.valor)}</span></p>
       <p className="fi-total"><span>Parcelas em aberto</span><b className="num">{reais(f.valor)}</b></p>
-      <ListaAparte itens={f.aparte.lista} total={f.aparte.valor} />
+      <ListaAparte a={f.aparte} />
     </Folha>
   );
 }

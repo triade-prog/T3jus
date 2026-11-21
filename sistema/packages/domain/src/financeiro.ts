@@ -389,6 +389,8 @@ export const registrarLevantamentoSchema = z.object({
   valor: z.number().int().nullish(),
   entrouEm: txt(20),
   divisao: z.array(linhaDivisaoSchema).max(20).default([]),
+  /** Quando vem de um RPV ou precatório a caminho (F3.48): liga os dois. */
+  requisicaoId: txt(40),
 });
 export type RegistrarLevantamento = z.input<typeof registrarLevantamentoSchema>;
 
@@ -415,7 +417,107 @@ export interface Destinacao {
   feitoPor: { id: string; nome: string } | null;
   dispensa: { motivo: string; em: string; por: { id: string; nome: string } } | null;
   contaId: string | null;
+  /** A anotação mais nova do atraso (F3.46), quando há. */
+  atraso?: AtrasoRepasse | null;
 }
+
+export type MotivoAtrasoRepasse = "DOCUMENTO" | "SEM_RESPOSTA" | "DECISAO" | "OUTRO";
+export const MOTIVOS_ATRASO_REPASSE: Record<MotivoAtrasoRepasse, { titulo: string; ajuda: string; curto: string }> = {
+  DOCUMENTO: { titulo: "Esperando um documento de quem recebe", ajuda: "Nota fiscal, recibo ou os dados do banco.", curto: "esperando um documento" },
+  SEM_RESPOSTA: { titulo: "Quem recebe não respondeu", ajuda: "Mensagens e ligações sem resposta.", curto: "quem recebe não respondeu" },
+  DECISAO: { titulo: "Esperando uma decisão", ajuda: "Do cliente, do parceiro ou do juiz.", curto: "esperando uma decisão" },
+  OUTRO: { titulo: "Outro motivo", ajuda: "Escreva abaixo.", curto: "outro motivo" },
+};
+
+/** Por que o repasse passou do prazo e a próxima ação (F3.46). O prazo não muda. */
+export interface AtrasoRepasse {
+  id: string;
+  motivo: MotivoAtrasoRepasse;
+  texto: string | null;
+  proximaEm: string;
+  proximaCom: { id: string; nome: string };
+  oQue: string;
+  em: string;
+  por: { id: string; nome: string };
+}
+
+export const anotarAtrasoSchema = z.object({
+  motivo: z.enum(["DOCUMENTO", "SEM_RESPOSTA", "DECISAO", "OUTRO"]).nullish(),
+  texto: z.string().max(300).nullish(),
+  proximaEm: txt(20),
+  proximaComId: txt(40),
+  oQue: z.string().max(200).nullish(),
+});
+export type AnotarAtraso = z.input<typeof anotarAtrasoSchema>;
+
+// ------------------------------------------------------------------ RPV e precatório a caminho (F3.48)
+
+export type TipoRequisicao = "RPV" | "PRECATORIO";
+export const TIPOS_REQUISICAO: Record<TipoRequisicao, { titulo: string; ajuda: string }> = {
+  RPV: { titulo: "RPV", ajuda: "Requisição de pequeno valor. Costuma ser paga em até 2 meses depois de expedida." },
+  PRECATORIO: { titulo: "Precatório", ajuda: "Entra no orçamento de quem paga. Apresentado até 2 de abril, costuma ser pago até o fim do ano seguinte." },
+};
+
+export interface RequisicaoACaminho {
+  id: string;
+  tipo: TipoRequisicao;
+  tribunal: string;
+  devedor: string;
+  numero: string | null;
+  valorRequisitado: number;
+  parteEscritorio: number;
+  parteRegra: string | null;
+  expedidoEm: string;
+  /** Primeiro dia do mês estimado. */
+  estimadaMes: string;
+  situacao: "A_CAMINHO" | "ENTROU" | "NAO_VAI_ENTRAR";
+  levantamentoId: string | null;
+  passou: boolean;
+  criadoEm: string;
+  caso: { id: string; nome: string; parteContraria: string | null };
+  cliente: { id: string; nome: string };
+}
+
+export interface ACaminho {
+  total: number;
+  n: number;
+  naPrevisao: number;
+  passou: { valor: number; n: number };
+  itens: RequisicaoACaminho[];
+}
+
+export const registrarRequisicaoSchema = z.object({
+  tipo: txt(20),
+  casoId: txt(40),
+  clienteId: txt(40),
+  tribunal: txt(80),
+  devedor: txt(120),
+  numero: txt(60),
+  valor: z.number().int().nullish(),
+  expedidoEm: txt(20),
+  estimadaMes: txt(20),
+});
+export type RegistrarRequisicao = z.input<typeof registrarRequisicaoSchema>;
+
+export const dataRequisicaoSchema = z.object({
+  situacao: z.enum(["A_CAMINHO", "NAO_VAI_ENTRAR"]).nullish(),
+  estimadaMes: txt(20),
+  motivo: z.string().max(300).nullish(),
+});
+
+/** A data estimada sugerida (aaaa-mm-01): RPV, 2 meses depois; precatório até 2/4, dezembro do ano seguinte; depois, do outro. */
+export function estimadaSugerida(tipo: TipoRequisicao, expedidoEm: string): string {
+  const ano = Number(expedidoEm.slice(0, 4));
+  const mes = Number(expedidoEm.slice(5, 7));
+  if (tipo === "PRECATORIO") return `${expedidoEm.slice(5, 10) <= "04-02" ? ano + 1 : ano + 2}-12-01`;
+  const m = mes + 2;
+  return `${m > 12 ? ano + 1 : ano}-${String(((m - 1) % 12) + 1).padStart(2, "0")}-01`;
+}
+
+export const prazoRepasseSchema = z.object({ prazoRepasseDias: z.number().int().nullish() });
+
+/** Quem pode cuidar de um repasse: da equipe, com a área Financeiro (F3.71). */
+export interface PodeCuidarRepasse { id: string; nome: string; dono: boolean; areas: string[] }
 
 export interface Levantamento {
   id: string;
@@ -424,6 +526,8 @@ export interface Levantamento {
   entrouEm: string;
   criadoEm: string;
   autor: { id: string; nome: string };
+  /** Quem cuida do repasse (F3.71): nasce o responsável pelo contrato. */
+  responsavel: { id: string; nome: string };
   prestacaoEm: string | null;
   prestacaoPor: { id: string; nome: string } | null;
   caso: { id: string; nome: string; parteContraria: string | null; area: string };
@@ -437,7 +541,18 @@ export interface ListaRepasses {
   hoje: string;
   prazoDias: number;
   algum: boolean;
-  totais: { aRepassar: number; repassesPendentes: number; honorarios: number; casos: number };
+  totais: {
+    aRepassar: number; repassesPendentes: number; honorarios: number; casos: number;
+    /** F3.46: o que passou do prazo, em quantos repasses e quantas partes sem motivo anotado. */
+    atrasados: number; repassesAtrasados: number; semMotivo: number;
+  };
+  /** Quem está vendo, para o filtro "Os meus". */
+  eu: string;
+  podeEditar: boolean;
+  /** RPV e precatório expedidos que ainda não entraram (F3.48). */
+  aCaminho: ACaminho;
+  /** Quem pode ser a próxima ação de um atraso (tem a área Financeiro). */
+  podemCuidar: PodeCuidarRepasse[];
   repassadoMes: { valor: number; clientes: number };
   repassados: { levantamentoId: string; cliente: string; tipo: TipoLevantamento; valor: number; feitoEm: string }[];
   levantamentos: Levantamento[];
@@ -447,6 +562,12 @@ export interface ListaRepasses {
 export interface FichaRepasse extends Levantamento {
   hoje: string;
   escritorio: string;
+  eu: string;
+  podeEditar: boolean;
+  prazoDias: number;
+  /** O responsável pelo contrato, de onde o repasse nasceu. */
+  doContrato: { id: string; nome: string } | null;
+  podemCuidar: PodeCuidarRepasse[];
   historico: { acao: string; em: string; por: { id: string; nome: string } | null; dados: Record<string, unknown> }[];
   /** O acerto do caso, para o fechamento (F3.45). */
   acerto: AcertoCaso;
@@ -479,15 +600,48 @@ export interface AcertoCaso {
 }
 
 /** Soma dos dias úteis (segunda a sexta), como o banco faz. Os feriados ainda não entram. */
+/** O domingo de Páscoa do ano (Meeus/Jones/Butcher), para a Sexta-feira Santa. */
+function domingoDePascoa(ano: number): string {
+  const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+/** Feriado nacional (o mesmo cálculo do banco, 0552): 1/1, Sexta-feira Santa, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11 e 25/12. */
+export function feriadoNacional(dia: string): boolean {
+  const md = dia.slice(5, 10);
+  const ano = Number(dia.slice(0, 4));
+  if (["01-01", "04-21", "05-01", "09-07", "10-12", "11-02", "11-15", "12-25"].includes(md)) return true;
+  if (md === "11-20" && ano >= 2024) return true;
+  const p = new Date(`${domingoDePascoa(ano)}T12:00:00Z`);
+  p.setUTCDate(p.getUTCDate() - 2);
+  return p.toISOString().slice(0, 10) === dia;
+}
+
+/** Soma dias úteis (segunda a sexta, sem os feriados nacionais), como o banco. */
 export function somarDiasUteis(dia: string, dias: number): string {
   const d = new Date(`${dia}T12:00:00Z`);
   let n = 0;
   while (n < dias) {
     d.setUTCDate(d.getUTCDate() + 1);
     const s = d.getUTCDay();
-    if (s !== 0 && s !== 6) n += 1;
+    if (s !== 0 && s !== 6 && !feriadoNacional(d.toISOString().slice(0, 10))) n += 1;
   }
   return d.toISOString().slice(0, 10);
+}
+
+/** Quantos dias úteis depois de `de` cai `ate` (para o "1 dia útil de atraso"). */
+export function diasUteisEntre(de: string, ate: string): number {
+  const d = new Date(`${de}T12:00:00Z`);
+  let n = 0;
+  while (d.toISOString().slice(0, 10) < ate) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const s = d.getUTCDay();
+    if (s !== 0 && s !== 6 && !feriadoNacional(d.toISOString().slice(0, 10))) n += 1;
+  }
+  return n;
 }
 
 const O_SEU_LEVANTAMENTO: Record<TipoLevantamento, string> = {
@@ -558,15 +712,64 @@ export interface ResumoFinanceiro {
   proximas: { valor: number; n: number; ate: string | null; parcelas: ParcelaLinha[] };
   terceiros: TerceirosNaConta;
   repasses: { valor: number; n: number; lista: RepassePendente[] };
-  meses: { mes: string; previsto: number; realizado: number }[];
+  meses: { mes: string; previsto: number; realizado: number; meta?: number | null }[];
+  /** F3.49: a meta do mês, as outras e quem define. */
+  meta?: MetasReceita & { dono: boolean; socioDono: PessoaRef | null; media3: number };
   porTipo: { tipo: TipoHonorario; valor: number; anteriores: number; restante: number }[];
   contratado: { n: number; valor: number };
   clientesReceberam: { n: number; valor: number };
   fixas: { receita: number; despesas: number };
 }
 
+// ------------------------------------------------------- Ajustes do financeiro (F3.50, F3.49)
+
+/** O contador do escritório (F3.50, FI-21). Não entra no T3jus: recebe só o e-mail. */
+export interface Contador {
+  nome: string; firma: string | null; email: string; telefone: string | null;
+  mandarAoExportar: boolean; lembrarDia5: boolean; por?: PessoaRef | null; em?: string;
+}
+/** O saldo do caixa do escritório no dia antes do primeiro lançamento (F3.50, FI-09). */
+export interface SaldoAbertura { id: string; data: string; valor: number; motivo: string | null; por: PessoaRef | null; em: string }
+/** Uma meta de receita (F3.49, IN-09): de todo mês a partir de deMes, ou só de um mês. */
+export interface MetaReceita { valor: number; deMes: string; soMes: boolean; por: PessoaRef | null; em: string }
+export interface MetasReceita { mes: MetaReceita | null; todoMes: MetaReceita | null; antes: MetaReceita | null; umMes: MetaReceita[] }
+
+export interface AjustesFinanceiro {
+  dono: boolean;
+  socioDono: PessoaRef | null;
+  contador: Contador | null;
+  abertura: SaldoAbertura | null;
+  primeiroLancamento: string | null;
+  saldoHoje: number;
+  prazoRepasseDias: number;
+  meta: MetasReceita;
+  historico: { acao: string; em: string; por: PessoaRef | null; dados: Record<string, unknown> }[];
+}
+
+export const contadorSchema = z.object({
+  nome: z.string().nullish(), firma: z.string().nullish(), email: z.string().nullish(), telefone: z.string().nullish(),
+  mandarAoExportar: z.boolean().nullish(), lembrarDia5: z.boolean().nullish(),
+});
+export const salvarAjustesSchema = z.object({
+  contador: contadorSchema.nullish(),
+  prazoRepasseDias: z.number().int().nullish(),
+  abertura: z.object({ data: z.string().nullish(), valor: z.number().int().nullish() }).nullish(),
+});
+export type SalvarAjustes = z.input<typeof salvarAjustesSchema>;
+export const corrigirAberturaSchema = z.object({ data: z.string().nullish(), valor: z.number().int().nullish(), motivo: z.string().nullish() });
+export const definirMetaSchema = z.object({ valor: z.number().int().nullish(), mes: z.string().nullish(), soMes: z.boolean().nullish() });
+/** A planilha que vai anexada ao e-mail do contador, em base64 (até uns 4 MB). */
+export const enviarContadorSchema = z.object({ nome: z.string().min(1).max(120), arquivo: z.string().min(1).max(6_000_000) });
+
+export interface EnvioContador { para: string; situacao: "ENVIADO" | "FALHOU"; em: string; por: PessoaRef | null }
+
+/** Pessoa de contato: e-mail com o final (como .com.br). */
+export const emailCompleto = (t: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.trim());
+
 export interface MesCaixa {
   mes: string;
+  /** Já somado em entradasPrevistas: a parte do escritório nos RPVs e precatórios a caminho (F3.48). */
+  aCaminho?: number;
   entradasPrevistas: number;
   entradasRealizadas: number | null;
   saidasPrevistas: number;
@@ -581,8 +784,15 @@ export interface CaixaFinanceiro {
   fechaMes: number;
   terceiros: TerceirosNaConta;
   meses: MesCaixa[];
-  exportacoes: { mes: string; formato: FormatoExportacao; em: string; por: PessoaRef | null }[];
+  /** F3.48: a parte do escritório nos RPVs e precatórios a caminho. */
+  aCaminho: ACaminho;
+  exportacoes: { id?: string; mes: string; formato: FormatoExportacao; em: string; por: PessoaRef | null; envio?: EnvioContador | null }[];
   mesesExportar: string[];
+  /** F3.50: onde o saldo começa, o contador e o próximo lembrete do dia 5. */
+  abertura?: SaldoAbertura | null;
+  contador?: Pick<Contador, "nome" | "firma" | "email" | "mandarAoExportar" | "lembrarDia5"> | null;
+  lembrete?: string | null;
+  dono?: boolean;
 }
 
 export const FORMATOS_EXPORTACAO = { XLSX: "Planilha (.xlsx)", CSV: "Só a planilha (.csv)" } as const;
@@ -607,6 +817,9 @@ export interface PreviaExportacao {
 export interface DadosExportacao {
   id: string;
   mes: string;
+  /** F3.50: o saldo do caixa do escritório no começo e no fim do mês. */
+  saldoInicio?: number;
+  saldoFim?: number;
   formato: FormatoExportacao;
   escritorio: string;
   recebimentos: {

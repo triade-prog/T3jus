@@ -175,6 +175,10 @@ export function abasContador(d: DadosExportacao, semNota?: SemNota): Aba[] {
         ["Recebimentos do escritório", { reais: receita }],
         ["Despesas pagas", { reais: despesa }],
         ["Resultado do mês", { reais: receita - despesa }],
+        ...(d.saldoInicio !== undefined && d.saldoFim !== undefined ? [
+          ["Saldo do caixa do escritório no começo do mês", { reais: d.saldoInicio }],
+          ["Saldo do caixa do escritório no fim do mês", { reais: d.saldoFim }],
+        ] as Aba["linhas"] : []),
         [null, null],
         ["Valores de terceiros estão na aba Terceiros. Não são receita do escritório.", null],
         ["Gerado pelo T3jus, pelo dia em que o dinheiro entrou ou saiu.", null],

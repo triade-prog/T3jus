@@ -26,7 +26,10 @@ const RESUMO = {
     valor: 4207000, vencido: 705000, vencidas: 4, anterior: 3890000, vencidoAnterior: 410000,
     faixas: [{ valor: 585000, n: 3 }, { valor: 120000, n: 1 }, { valor: 0, n: 0 }, { valor: 0, n: 0 }],
     aVencerMes: { valor: 1206000, n: 8 }, aVencerDepois: { valor: 2296000, n: 14 },
-    aparte: { valor: 2130000, lista: [{ id: "d1", tipo: "PRECATORIO", valor: 2130000, prazo: "2027-07-01", cliente: "Hélio Batista Corrêa", caso: "Corrêa x Estado" }] },
+    aparte: { valor: 2130000, lista: [{ id: "d1", tipo: "PRECATORIO", valor: 2130000, prazo: "2027-07-01", cliente: "Hélio Batista Corrêa", caso: "Corrêa x Estado" }],
+      caminho: { valor: 675000, lista: [
+        { id: "r1", tipo: "RPV", valor: 486000, estimadaMes: "2027-01-01", passou: false, cliente: "Eduardo Nascimento", caso: "Nascimento x Prefeitura" },
+        { id: "r2", tipo: "RPV", valor: 189000, estimadaMes: "2026-10-01", passou: true, cliente: "Irene Castro", caso: "Castro x INSS" }] } },
   },
   rendeu: { valor: 11481500, adiantado: 138500, anterior: 12100000, despesas: [
     { id: "x1", descricao: "Perícia", valor: 90000, cliente: "Hélio Batista Corrêa" }, { id: "x2", descricao: "Custas", valor: 48500, cliente: "Daniela Rocha Mendes" }] },
@@ -128,6 +131,13 @@ test.describe("F3.70: Relatórios do sócio", () => {
     await expect(folha(page, "Passou pelo escritório")).toContainText("Já contados em Entrou");
     await expect(folha(page, "Passou pelo escritório")).toContainText("R$ 30.284,96");
     await expect(folha(page, "Falta receber")).toContainText("À parte · não soma acima");
+    // F3.72: a caminho, com data estimada, num grupo à parte; o que passou fica marcado.
+    await expect(folha(page, "Falta receber")).toContainText("Já entrou, falta transferir ao escritório");
+    await expect(folha(page, "Falta receber")).toContainText("A caminho, com data estimada");
+    await expect(folha(page, "Falta receber")).toContainText("Eduardo Nascimento · RPVNascimento x Prefeitura · estimada para janeiro de 2027");
+    await expect(folha(page, "Falta receber")).toContainText("era outubro de 2026Passou da data estimada");
+    await expect(folha(page, "Falta receber")).toContainText("R$ 28.050,00");
+    await expect(page.getByRole("region", { name: "Falta receber · hoje" })).toContainText("R$ 21.300,00 que já entrou e R$ 6.750,00 a caminho");
     await expect(page.locator("details.re-como")).toHaveAttribute("open", "");
     await semViolacoes(page);
   });

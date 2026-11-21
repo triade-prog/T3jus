@@ -97,7 +97,16 @@ const FUNIL = {
     negociacao: [{ id: prop(16), numero: "P-2026-016", clienteId: cli(16), nome: "Gabriela Teixeira", retorno: { em: dia(0), vencido: false }, valorCerto: 400000, condicoes: [PARC] }],
     aceita: [{ id: prop(14), numero: "P-2026-014", clienteId: cli(14), nome: "Benedito Souza Lima", retorno: null, valorCerto: 400000, condicoes: [PARC, EXITO] }],
   },
+  sairam: {
+    total: 8,
+    itens: [
+      { id: "f1000000-0000-4000-8000-000000000001", clienteId: cli(21), nome: "Renata Gomes", motivo: "NAO_PEGOU", nota: "Inventário em Portugal, fora da área.", marcadoPor: MARINA, marcadoEm: em(-6, "10:00") },
+      { id: "f1000000-0000-4000-8000-000000000002", clienteId: cli(22), nome: "Paulo Henrique Sá", motivo: "NAO_VOLTOU", marcadoPor: DIEGO, marcadoEm: em(-12, "10:00") },
+      ...[23, 24, 25, 26, 27, 28].map((n) => ({ id: `f1000000-0000-4000-8000-0000000000${n}`, clienteId: cli(n), nome: `Contato ${n}`, motivo: "NAO_PEGOU", marcadoPor: MARINA, marcadoEm: em(-20, "10:00") })),
+    ],
+  },
 };
+const SAIDA_EDU = { id: "f1000000-0000-4000-8000-000000000099", motivo: "NAO_VOLTOU", nota: "Liguei duas vezes.", marcadoPor: MARINA, marcadoEm: new Date().toISOString() };
 const ORIGEM = {
   de: dia(-90), ate: dia(0), total: 24,
   linhas: [
@@ -409,23 +418,82 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     expect(corpo).toMatchObject({ versao: 3, condicoes: [{ tipo: "PARCELADO", total: 400000, parcelas: 5, primeiro: dia(27) }], retorno: { em: dia(0), responsavelId: MARINA.id } });
   });
 
-  test("Funil: faixas que estreitam, quem ficou de fora e agora no funil; período vai ao servidor", async ({ page }) => {
+  test("Funil: três números e uma barra, quem saiu sem proposta e agora no funil; período vai ao servidor", async ({ page }) => {
     const pedidos = await simular(page, comuns());
     await page.goto(`${P}/comercial/funil`);
     await expect(page.getByRole("heading", { level: 1, name: "Funil" })).toBeVisible();
-    const f = page.locator(".cm-f");
-    await expect(f).toContainText("24");
-    await expect(f).toContainText("58% passam");
-    await expect(f).toContainText("10 não receberam proposta");
+    const f = page.locator(".fb");
+    await expect(f.locator(".fb-nums")).toContainText("24");
+    await expect(f.locator(".fb-nums")).toContainText("58%");
+    await expect(f.locator(".fb-nums")).toContainText("64%");
+    await expect(page.getByRole("img", { name: /Dos 24: 9 viraram contrato, 4 com proposta em andamento, 1 recusou a proposta, o escritório não pegou 5, 3 não voltaram e 2 ainda em atendimento/ })).toBeVisible();
     await expect(f).toContainText("o escritório não pegou o caso");
     await expect(f).toContainText("fechou com outro escritório");
-    await expect(page.locator(".cm-f-total")).toContainText("38% dos primeiros contatos viraram contrato no período.");
+    await expect(f.getByRole("link", { name: "marcar o motivo" })).toHaveAttribute("href", "#t-ag");
     await expect(page.locator(".cm-colunas")).toContainText("Sem retorno marcado");
     await expect(page.getByRole("link", { name: "Daniela Rocha Mendes" })).toHaveAttribute("href", `/comercial/propostas/${prop(15)}`);
+    const sairam = page.getByRole("region", { name: "Saíram sem proposta" });
+    await expect(sairam.getByRole("listitem")).toHaveCount(6);
+    await expect(sairam).toContainText("Inventário em Portugal, fora da área.");
+    await expect(sairam).toContainText("Mostrando 6 de 8");
+    await sairam.getByRole("button", { name: "Mostrar as outras 2" }).click();
+    await expect(sairam.getByRole("listitem")).toHaveCount(8);
     await expect(page.getByRole("complementary", { name: "Regra da OAB" })).toContainText("Provimento 205/2021");
     await semViolacoes(page);
     await page.getByRole("button", { name: "12 meses" }).click();
     await expect.poll(() => pedidos.some((p) => p.caminho === "/v1/escritorio/comercial/funil" && p.busca === "?periodo=12")).toBe(true);
+  });
+
+  test("Funil: encerrar sem proposta pede o motivo, manda ao servidor e deixa desfazer; voltar ao funil", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`PUT /v1/escritorio/clientes/${cli(6)}/funil`]: [{ status: 503, corpo: { erro: { codigo: "INTERNAL_ERROR" } } }, { corpo: SAIDA_EDU }],
+      [`POST /v1/escritorio/clientes/${cli(6)}/funil/voltar`]: { corpo: { ...SAIDA_EDU, voltouPor: MARINA, voltouEm: new Date().toISOString() } },
+      [`POST /v1/escritorio/clientes/${cli(21)}/funil/voltar`]: { corpo: {} },
+    });
+    await page.goto(`${P}/comercial/funil`);
+    await page.getByRole("button", { name: /Encerrar sem proposta\s*: Eduardo Nascimento/ }).click();
+    const j = page.getByRole("dialog", { name: "Encerrar sem proposta" });
+    await expect(j).toContainText("Eduardo Nascimento");
+    await j.getByRole("button", { name: "Tirar do funil" }).click();
+    await expect(j).toContainText("Falta acertar 1 ponto");
+    await expect(j).toContainText("Escolha um dos dois motivos. É ele que o Funil conta.");
+    await semViolacoes(page);
+    await j.getByRole("radio", { name: /O cliente não voltou/ }).check();
+    await j.getByLabel("Anotação (opcional)").fill("Liguei duas vezes.");
+    await j.getByRole("button", { name: "Tirar do funil" }).click();
+    await expect(j.getByRole("alert")).toContainText("Nada foi salvo: Eduardo continua em “Primeiro contato”");
+    await j.getByRole("button", { name: "Tirar do funil" }).click();
+    await expect(j).toBeHidden();
+    const put = pedidos.filter((p) => p.metodo === "PUT").at(-1)!;
+    expect(put.corpo).toEqual({ motivo: "NAO_VOLTOU", nota: "Liguei duas vezes." });
+    const aviso = page.getByRole("status").filter({ hasText: "Eduardo Nascimento saiu do funil." });
+    await expect(aviso).toContainText("Passou a contar em “não voltou”");
+    await aviso.getByRole("button", { name: "Desfazer" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Eduardo Nascimento voltou ao funil." })).toBeVisible();
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/clientes/${cli(6)}/funil/voltar`)).toBe(true);
+
+    await page.getByRole("region", { name: "Saíram sem proposta" }).getByRole("button", { name: /Voltar ao funil\s*: Renata Gomes/ }).click();
+    const v = page.getByRole("dialog", { name: "Voltar Renata ao funil?" });
+    await expect(v).toContainText("o escritório não pegou o caso · marcado por Marina Ribeiro");
+    await semViolacoes(page);
+    await v.getByRole("button", { name: "Voltar ao funil" }).click();
+    await expect(v).toBeHidden();
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/clientes/${cli(21)}/funil/voltar`)).toBe(true);
+  });
+
+  test("Atendimentos: quem está sem próximo contato e ainda sem proposta pode sair do funil", async ({ page }) => {
+    const r = structuredClone(RETORNOS);
+    Object.assign(r.grupos.semData[0]!, { podeSairDoFunil: true });
+    const pedidos = await simular(page, { ...comuns(), "GET /v1/escritorio/comercial/retornos": { corpo: r },
+      [`PUT /v1/escritorio/clientes/${cli(6)}/funil`]: { corpo: { ...SAIDA_EDU, motivo: "NAO_PEGOU" } } });
+    await page.goto(`${P}/comercial/atendimentos`);
+    await page.getByRole("button", { name: /Encerrar sem proposta\s*: Eduardo Nascimento/ }).click();
+    const j = page.getByRole("dialog", { name: "Encerrar sem proposta" });
+    await j.getByRole("radio", { name: /O escritório não pegou o caso/ }).check();
+    await j.getByRole("button", { name: "Tirar do funil" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Eduardo Nascimento saiu do funil." })).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "PUT")?.corpo).toEqual({ motivo: "NAO_PEGOU", nota: null });
   });
 
   test("Origem dos contatos: por origem, poucos dados e quem mais indicou", async ({ page }) => {

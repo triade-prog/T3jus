@@ -40,7 +40,11 @@ export interface ResumoRelatorio {
   falta: {
     valor: number; vencido: number; vencidas: number; anterior: number | null; vencidoAnterior: number | null;
     faixas: [Faixa, Faixa, Faixa, Faixa]; aVencerMes: Faixa; aVencerDepois: Faixa;
-    aparte: { valor: number; lista: { id: string; tipo: TipoLevantamento; valor: number; prazo: string; cliente: string; caso: string }[] };
+    aparte: {
+      valor: number; lista: { id: string; tipo: TipoLevantamento; valor: number; prazo: string; cliente: string; caso: string }[];
+      /** F3.72: RPV e precatório a caminho, com a data estimada (a parte do escritório). */
+      caminho?: { valor: number; lista: { id: string; tipo: "RPV" | "PRECATORIO"; valor: number; estimadaMes: string; passou: boolean; cliente: string; caso: string }[] };
+    };
   };
   rendeu: { valor: number; adiantado: number; anterior: number | null; despesas: { id: string; descricao: string; valor: number; cliente: string }[] };
   contratado: number;

@@ -5,7 +5,7 @@
   "refs": [
     "AP-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 80,
-  "proximo": "Desenho aprovado (docs/design/aprovadas/portal-comercial-financeiro-pendencias, seção 1): programar Encerrar sem proposta no Funil, em Atendimentos e na ficha, Voltar ao funil e o funil em três números e uma barra (migration 0550)"
+  "evidencia": "Migration 0550_funil_sem_proposta (tabela funil_saidas, encerrar e voltar ao funil, lista \"Saíram sem proposta\", situação na ficha), rotas PUT /v1/escritorio/clientes/:id/funil e POST .../funil/voltar, Funil em três números e uma barra, botão no Funil, em Atendimentos e na ficha; testes 061_funil_sem_proposta_test.sql, api-portal app_test e e2e portal-comercial e portal-clientes"
 }

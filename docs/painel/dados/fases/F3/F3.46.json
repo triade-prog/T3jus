@@ -5,7 +5,7 @@
   "refs": [
     "FI-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 460,
-  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 3): prazo em Escritório › Ajustes do financeiro, feriados nacionais e Anotar o atraso com a próxima ação (migrations 0552, 0553)"
+  "evidencia": "Migrations 0552_prazo_repasse (prazo do escritório em dias úteis, fora os feriados nacionais) e 0553_atraso_repasse (motivo do atraso e próxima ação, com sino); a sócia dona muda o prazo em Escritório › Ajustes do financeiro (0556); testes 062, 064_ajustes_contador_meta_test.sql, api-portal app_test e e2e portal-financeiro-repasses e portal-financeiro-ajustes"
 }

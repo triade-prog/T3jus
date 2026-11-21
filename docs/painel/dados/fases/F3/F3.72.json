@@ -5,7 +5,7 @@
   "refs": [
     "IN-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 720,
-  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 4, re-visao): somar os RPVs e precatórios a caminho no Falta receber à parte, junto do F3.48"
+  "evidencia": "Migration 0555 (grupo \"a caminho\" no Falta receber à parte do resumo); Relatórios com \"Já entrou, falta transferir\" e \"A caminho, com data estimada\", o que passou marcado; testes 063_requisicoes_a_caminho_test.sql e e2e portal-relatorios"
 }

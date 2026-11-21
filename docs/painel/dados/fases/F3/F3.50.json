@@ -6,7 +6,7 @@
     "FI-21",
     "FI-09"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 500,
-  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 5): contador e saldo de abertura em Escritório › Ajustes do financeiro, envio da exportação por e-mail e .zip por link de 30 dias (migrations 0556-0558)"
+  "evidencia": "Migrations 0556_ajustes_financeiro (contador, saldo de abertura que muda só por Corrigir com motivo, o Caixa começa nele) e 0557_envio_contador (exportação mandada por e-mail pelo Resend com a planilha anexada, falha parcial com Mandar de novo, lembrete do dia 5 no sino); tela Escritório › Ajustes do financeiro; testes 064_ajustes_contador_meta_test.sql, api-portal app_test e e2e portal-financeiro-caixa e portal-financeiro-ajustes. O .zip dos comprovantes por link fica no F3.89"
 }

@@ -6,7 +6,7 @@
     "PD-06",
     "PD-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 710,
-  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 2): programar a folha Quem cuida deste repasse com a troca, só para quem tem Financeiro, motivo opcional e aviso (migration 0551)"
+  "evidencia": "Migration 0551_repasse_quem_cuida (só quem tem a área Financeiro cuida, motivo opcional no histórico, aviso no sino a quem entra e a quem sai), folha \"Quem cuida deste repasse\" com a janela de troca, \"Cuida:\" e filtro Todos/Os meus/pessoa em Repasses; testes 062_repasse_quem_cuida_atraso_test.sql, api-portal app_test e e2e portal-financeiro-repasses"
 }

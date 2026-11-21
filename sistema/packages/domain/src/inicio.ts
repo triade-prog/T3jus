@@ -134,4 +134,8 @@ export interface AudienciasInicio {
 
 export type DeInicio = "MEUS" | "EQUIPE";
 export const deInicioSchema = z.object({ de: z.enum(["MEUS", "EQUIPE"]).default("MEUS") });
-export const responsavelRepasseSchema = z.object({ responsavelId: z.string().uuid().transform((s) => s.toLowerCase()) });
+export const responsavelRepasseSchema = z.object({
+  responsavelId: z.string().uuid().transform((s) => s.toLowerCase()),
+  /** Por quê (F3.71): opcional, vai ao histórico e ao aviso de quem passa a cuidar. */
+  motivo: z.string().max(200).nullish(),
+});

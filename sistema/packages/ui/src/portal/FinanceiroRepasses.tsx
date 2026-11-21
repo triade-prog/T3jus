@@ -10,8 +10,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  contaPrestacao, dataBr, hojeBrasilia, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
-  type AcertoCaso, type Destinacao, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
+  contaPrestacao, dataBr, hojeBrasilia, TIPOS_REQUISICAO, MOTIVOS_ATRASO_REPASSE, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
+  type AcertoCaso, type Destinacao, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -25,6 +25,8 @@ import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { FolhaACaminho, JanelaExpedido, JanelaDataRequisicao, mesAno } from "./ACaminho.tsx";
+import { atrasada, FolhaQuemCuida, JanelaAnotarAtraso, JanelaTrocarResponsavel, NotaAtraso, SeloAtraso } from "./RepasseCuida.tsx";
 
 type Feito = { titulo: string; texto: string };
 const fuso = { timeZone: "America/Sao_Paulo" } as const;
@@ -45,7 +47,7 @@ function quemE(d: Destinacao): string {
 export function SeloDestinacao({ d, hoje }: { d: Destinacao; hoje: string }) {
   if (d.situacao === "FEITO") return <Selo tom="ok" icone="check">{d.escritorio ? "Transferido" : "Repassado"} {diaCurto(d.feitoEm!)}</Selo>;
   if (d.situacao === "DISPENSADO") return <Selo tom="neutro">Dispensado</Selo>;
-  if (d.prazo < hoje) return <Selo tom="urgente" icone="alerta">Era {diaCurto(d.prazo)}</Selo>;
+  if (d.prazo < hoje) return <SeloAtraso d={d} />;
   return <Selo tom={d.prazo === hoje ? "atencao" : "neutro"} icone={d.prazo === hoje ? "relogio" : undefined}>Até {diaCurto(d.prazo)}</Selo>;
 }
 
@@ -59,26 +61,32 @@ function SeloFeitos({ l, hoje }: { l: Pick<Levantamento, "feitos" | "total" | "d
   );
 }
 
-function CabRepasses({ aoRegistrar }: { aoRegistrar?: () => void }) {
+function CabRepasses({ aoRegistrar, aoExpedido }: { aoRegistrar?: () => void; aoExpedido?: () => void }) {
   return (
     <div className="pt-cab">
       <div>
         <p className="sobretitulo">Financeiro</p>
         <h1>Repasses</h1>
         <span className="fio" aria-hidden="true" />
-        <p className="lede">Dinheiro de terceiros que entra pelo escritório: quanto é de cada um, o que já foi repassado e o que falta.</p>
+        <p className="lede">Dinheiro de terceiros que entra pelo escritório: quanto é de cada um, o que já foi repassado, o que falta e o que ainda está a caminho.</p>
       </div>
       {aoRegistrar ? (
-        <button className="btn btn-pri" type="button" onClick={aoRegistrar} style={{ marginBottom: 6 }}>
-          <Icone nome="escudo" className="ico" />
-          Registrar alvará ou RPV
-        </button>
+        <span className="rv-cab-bot" style={{ marginBottom: 6 }}>
+          {aoExpedido ? (
+            <button className="btn btn-sec" type="button" onClick={aoExpedido}><Icone nome="balanca" className="ico" />Registrar RPV expedido</button>
+          ) : null}
+          <button className="btn btn-pri" type="button" onClick={aoRegistrar}>
+            <Icone nome="escudo" className="ico" />
+            Registrar alvará ou RPV
+          </button>
+        </span>
       ) : null}
     </div>
   );
 }
 
 function ComoFunciona({ prazo }: { prazo: number }) {
+  const dias = prazo === 1 ? "1 dia útil" : `${prazo} dias úteis`;
   return (
     <section className="explica campo-ambar" aria-labelledby="t-rp-cf">
       <p className="sobretitulo">Como funciona</p>
@@ -86,7 +94,9 @@ function ComoFunciona({ prazo }: { prazo: number }) {
       <ul>
         <li><Icone nome="escudo" className="ico" /><span>Alvará, RPV, precatório e depósito de acordo entram como <b>valor de terceiros</b>, separados do caixa do escritório.</span></li>
         <li><Icone nome="pena" className="ico" /><span>O sistema propõe a divisão pelo contrato: honorários, reembolsos do caso e o que fica para o cliente. Perito e parceiro entram à mão.</span></li>
-        <li><Icone nome="relogio" className="ico" /><span>Cada parte tem prazo de {prazo} dias úteis depois que o dinheiro entrou. O que não vai acontecer se dispensa com o motivo.</span></li>
+        <li><Icone nome="relogio" className="ico" /><span>Cada parte tem prazo: <b>{dias}</b> depois que o dinheiro entra, sem contar sábado, domingo e feriado nacional. Quem muda é a sócia dona, em Escritório › Ajustes do financeiro.</span></li>
+        <li><Icone nome="alerta" className="ico" /><span>Passou do prazo, a parte fica atrasada até ser feita. Anote o motivo e a próxima ação, como na cobrança das parcelas. O que não vai acontecer se dispensa com o motivo.</span></li>
+        <li><Icone nome="pessoas" className="ico" /><span>Cada repasse tem quem cuida: no começo, o responsável pelo contrato. Dá para trocar na ficha do repasse.</span></li>
         <li><Icone nome="whats" className="ico" /><span>A prestação de contas vai ao cliente pelo WhatsApp, depois que alguém revisa.</span></li>
       </ul>
     </section>
@@ -95,9 +105,10 @@ function ComoFunciona({ prazo }: { prazo: number }) {
 
 // ------------------------------------------------------------------------- Lista
 
-function Bloco({ l, hoje, prazo, aoFeito, aoDispensar, aoPrestacao }: {
-  l: Levantamento; hoje: string; prazo: number;
+function Bloco({ l, hoje, prazo, eu, aoFeito, aoDispensar, aoPrestacao, aoAnotar }: {
+  l: Levantamento; hoje: string; prazo: number; eu: string;
   aoFeito: (l: Levantamento, d: Destinacao) => void; aoDispensar: (l: Levantamento, d: Destinacao) => void; aoPrestacao: (l: Levantamento) => void;
+  aoAnotar?: (l: Levantamento, d: Destinacao) => void;
 }) {
   const t = `t-lv-${l.id}`;
   const feitas = l.destinacoes.filter((d) => d.situacao === "FEITO");
@@ -108,6 +119,7 @@ function Bloco({ l, hoje, prazo, aoFeito, aoDispensar, aoPrestacao }: {
         <div>
           <h2 id={t}><a className="fi-h2-link" href={ROTAS_FINANCEIRO.repasse(l.id)}>{l.cliente.nome}</a></h2>
           <p className="sub">{l.caso.nome}{l.caso.parteContraria ? ` × ${l.caso.parteContraria}` : ""} · entrou em {diaCurto(l.entrouEm)}</p>
+          <p className="rp-resp"><Icone nome="pessoas" className="ico" /><span>Cuida: <b>{l.responsavel.nome}{l.responsavel.id === eu ? " (você)" : ""}</b></span></p>
         </div>
         <div className="fi-lado">
           <span className="fi-v forte num">{reais(l.valor)}</span>
@@ -116,7 +128,7 @@ function Bloco({ l, hoje, prazo, aoFeito, aoDispensar, aoPrestacao }: {
       </div>
       <ul className="fi-linhas">
         {l.destinacoes.map((d) => (
-          <li key={d.id} className="fi-linha rp-linha">
+          <li key={d.id} className={atrasada(d, hoje) ? "fi-linha rp-linha pz-linha-atraso" : "fi-linha rp-linha"}>
             <div className="fi-quem">
               <strong>{d.nome}</strong>
               <small>{quemE(d)}</small>
@@ -124,6 +136,7 @@ function Bloco({ l, hoje, prazo, aoFeito, aoDispensar, aoPrestacao }: {
                 <p className="fi-prox"><Icone nome="whats" className="ico" />Prestação de contas: <b>{l.prestacaoEm ? `enviada em ${diaCurto(diaDoInstante(l.prestacaoEm))}` : "ainda não enviada"}</b></p>
               ) : null}
               {d.dispensa ? <p className="fi-prox"><Icone nome="alerta" className="ico" />Dispensado: <b>{d.dispensa.motivo}</b></p> : null}
+              <NotaAtraso d={d} hoje={hoje} prazoDias={prazo} aoAnotar={aoAnotar ? (x) => aoAnotar(l, x) : undefined} />
             </div>
             <div className="fi-lado">
               <span className="fi-v num">{reais(d.valor)}</span>
@@ -146,7 +159,7 @@ function Bloco({ l, hoje, prazo, aoFeito, aoDispensar, aoPrestacao }: {
       </ul>
       <div className="mais">
         <span>
-          {feitas.length ? `${contar(feitas.length, "parte feita", "partes feitas")}.` : "Nada repassado ainda."} O prazo do escritório é de {prazo} dias úteis.
+          {feitas.length ? `${contar(feitas.length, "parte feita", "partes feitas")}.` : "Nada repassado ainda."} O prazo do escritório é de {prazo === 1 ? "1 dia útil" : `${prazo} dias úteis`}.
         </span>
         <span className="rp-acoes">
           <button className="btn btn-sec" type="button" onClick={() => aoPrestacao(l)}>
@@ -176,8 +189,17 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
   const [feitoEm, setFeitoEm] = useState<{ l: Levantamento; d: Destinacao } | null>(null);
   const [dispensar, setDispensar] = useState<{ l: Levantamento; d: Destinacao } | null>(null);
   const [prestacao, setPrestacao] = useState<Levantamento | null>(null);
+  const [anotar, setAnotar] = useState<{ l: Levantamento; d: Destinacao } | null>(null);
+  const [quem, setQuem] = useState<string>("TODOS");
+  const [expedido, setExpedido] = useState(false);
+  const [mudarData, setMudarData] = useState<RequisicaoACaminho | null>(null);
+  const [entrou, setEntrou] = useState<RequisicaoACaminho | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const terminar = (f: Feito) => {
+    setExpedido(false);
+    setMudarData(null);
+    setEntrou(null);
+    setAnotar(null);
     setRegistrar(false);
     setFeitoEm(null);
     setDispensar(null);
@@ -187,7 +209,14 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
   };
   const janelas = (
     <>
-      {registrar && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} aoFechar={() => setRegistrar(false)} aoFeito={terminar} /> : null}
+      {anotar && dados && dados !== "erro" ? (
+        <JanelaAnotarAtraso d={anotar.d} l={anotar.l} pessoas={dados.podemCuidar} responsavelId={anotar.l.responsavel.id} hoje={hoje}
+          aoFechar={() => setAnotar(null)} aoFeito={terminar} />
+      ) : null}
+      {registrar && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} aoFechar={() => setRegistrar(false)} aoFeito={terminar} /> : null}
+      {entrou && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} de={entrou} aoFechar={() => setEntrou(null)} aoFeito={terminar} /> : null}
+      {expedido && dados && dados !== "erro" ? <JanelaExpedido casos={dados.casos} aoFechar={() => setExpedido(false)} aoFeito={terminar} /> : null}
+      {mudarData ? <JanelaDataRequisicao r={mudarData} hoje={hoje} aoFechar={() => setMudarData(null)} aoFeito={terminar} /> : null}
       {feitoEm ? <JanelaFeito l={feitoEm.l} d={feitoEm.d} aoFechar={() => setFeitoEm(null)} aoFeito={terminar} /> : null}
       {dispensar ? <JanelaDispensar d={dispensar.d} aoFechar={() => setDispensar(null)} aoFeito={terminar} /> : null}
       {prestacao ? <JanelaPrestacao l={prestacao} escritorio={escritorio} aoFechar={() => setPrestacao(null)} aoFeito={terminar} /> : null}
@@ -199,9 +228,18 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
   if (!dados) return <div className="fi"><CabRepasses /><Carregando rotulo="Carregando os repasses…" linhas={5} /></div>;
   const t = dados.totais;
   const mes = nomeDoMes(dados.hoje);
+  // Os filtros por quem cuida: Todos, Os meus e cada outra pessoa que cuida de algum repasse aberto.
+  const outros = [...new Map(dados.levantamentos.filter((l) => l.responsavel.id !== dados.eu).map((l) => [l.responsavel.id, l.responsavel])).values()]
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const chips = [
+    { chave: "TODOS", rotulo: "Todos", n: dados.levantamentos.length },
+    { chave: "EU", rotulo: "Os meus", n: dados.levantamentos.filter((l) => l.responsavel.id === dados.eu).length },
+    ...outros.map((p) => ({ chave: p.id, rotulo: primeiroNome(p.nome), n: dados.levantamentos.filter((l) => l.responsavel.id === p.id).length })),
+  ];
+  const visiveis = dados.levantamentos.filter((l) => quem === "TODOS" || (quem === "EU" ? l.responsavel.id === dados.eu : l.responsavel.id === quem));
   return (
     <div className="fi">
-      <CabRepasses aoRegistrar={() => setRegistrar(true)} />
+      <CabRepasses aoRegistrar={() => setRegistrar(true)} aoExpedido={dados.podeEditar ? () => setExpedido(true) : undefined} />
       <div className="fi-nums" role="group" aria-label="Números dos repasses">
         <a href="#t-blocos">
           <span className="r">A repassar</span>
@@ -209,29 +247,49 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
           <small>{t.repassesPendentes ? contar(t.repassesPendentes, "repasse", "repasses") : "nenhum"}</small>
         </a>
         <a href="#t-blocos">
+          <span className="r"><Icone nome="alerta" className="ico" />Atrasados</span>
+          <b className="num">{reais(t.atrasados)}</b>
+          <small>
+            {t.repassesAtrasados
+              ? `${contar(t.repassesAtrasados, "repasse", "repasses")} · ${t.semMotivo ? `${t.semMotivo} sem motivo` : "todos com motivo"}`
+              : "nenhum"}
+          </small>
+        </a>
+        <a href="#t-blocos">
           <span className="r">Honorários a transferir</span>
           <b className="num">{reais(t.honorarios)}</b>
           <small>para a conta do escritório</small>
         </a>
-        <a href="#t-blocos">
-          <span className="r">Casos para fechar</span>
-          <b className="num">{t.casos}</b>
-          <small>{t.casos === 1 ? "espera repasse" : "esperam repasse"}</small>
-        </a>
-        <a href="#t-repassados">
-          <span className="r">Repassado em {mes}</span>
-          <b className="num">{reais(dados.repassadoMes.valor)}</b>
-          <small>{dados.repassadoMes.clientes ? contar(dados.repassadoMes.clientes, "cliente", "clientes") : "nenhum cliente ainda"}</small>
+        <a href="#t-cam">
+          <span className="r">A caminho</span>
+          <b className="num">{reais(dados.aCaminho.total)}</b>
+          <small>{dados.aCaminho.n ? "do escritório, em RPV e precatório" : "nenhum RPV ou precatório"}</small>
         </a>
       </div>
       <div className="fi-grade">
         <div className="fi-col">
           <h2 id="t-blocos" className="sr" tabIndex={-1}>Valores esperando repasse</h2>
-          {dados.levantamentos.length ? (
-            dados.levantamentos.map((l) => (
-              <Bloco key={l.id} l={l} hoje={hoje} prazo={dados.prazoDias}
-                aoFeito={(lv, d) => setFeitoEm({ l: lv, d })} aoDispensar={(lv, d) => setDispensar({ l: lv, d })} aoPrestacao={setPrestacao} />
+          {chips.length > 2 || dados.levantamentos.some((l) => l.responsavel.id !== dados.eu) ? (
+            <div className="rp-filtro">
+              <div className="chips rp-chips" role="group" aria-label="Quem cuida">
+                {chips.map((c) => (
+                  <button key={c.chave} type="button" aria-pressed={quem === c.chave} onClick={() => setQuem(c.chave)}>{c.rotulo} ({c.n})</button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {visiveis.length ? (
+            visiveis.map((l) => (
+              <Bloco key={l.id} l={l} hoje={hoje} prazo={dados.prazoDias} eu={dados.eu}
+                aoFeito={(lv, d) => setFeitoEm({ l: lv, d })} aoDispensar={(lv, d) => setDispensar({ l: lv, d })} aoPrestacao={setPrestacao}
+                aoAnotar={dados.podeEditar ? (lv, d) => setAnotar({ l: lv, d }) : undefined} />
             ))
+          ) : dados.levantamentos.length ? (
+            <section className="folha" aria-label="Nada neste filtro" style={{ overflow: "hidden" }}>
+              <Estado icone="pessoas" titulo="Nenhum repasse aqui" acoes={<button className="btn btn-sec" type="button" onClick={() => setQuem("TODOS")}>Ver todos</button>}>
+                Ninguém deste filtro cuida de um repasse aberto agora.
+              </Estado>
+            </section>
           ) : (
             <section className="folha" aria-label="Nada a repassar" style={{ overflow: "hidden" }}>
               <Estado icone="escudo" titulo={dados.algum ? "Nada esperando repasse" : "Nenhum alvará ou RPV registrado ainda"}
@@ -242,6 +300,8 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
               </Estado>
             </section>
           )}
+          <FolhaACaminho a={dados.aCaminho} aoRegistrar={dados.podeEditar ? () => setExpedido(true) : undefined}
+            aoData={dados.podeEditar ? setMudarData : undefined} aoEntrou={dados.podeEditar ? setEntrou : undefined} />
         </div>
         <aside className="fi-col" aria-label="Como funciona e repassados">
           <ComoFunciona prazo={dados.prazoDias} />
@@ -284,11 +344,15 @@ export function RepassesFinanceiro() {
 
 type LinhaTela = { chave: string; para: ParaDestinacao; nome: string; regra: string | null; valor: string; contaId?: string; proposta: boolean };
 
-function JanelaRegistrar({ casos, aoFechar, aoFeito }: { casos: ListaRepasses["casos"]; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
+  casos: ListaRepasses["casos"]; prazoDias: number; aoFechar: () => void; aoFeito: (f: Feito) => void;
+  /** "Entrou na conta" de um RPV ou precatório a caminho (F3.48): já vem preenchida e liga os dois. */
+  de?: RequisicaoACaminho;
+}) {
   const hoje = hojeBrasilia();
   const opcoes = casos.flatMap((c) => (c.clientes ?? []).map((k) => ({ valor: `${c.id}|${k.id}`, rotulo: `${k.nome} · ${c.nome}`, cliente: k.nome })));
-  const [tipo, setTipo] = useState<TipoLevantamento | "">("");
-  const [alvo, setAlvo] = useState(opcoes.length === 1 ? opcoes[0]!.valor : "");
+  const [tipo, setTipo] = useState<TipoLevantamento | "">(de ? de.tipo : "");
+  const [alvo, setAlvo] = useState(de ? `${de.caso.id}|${de.cliente.id}` : opcoes.length === 1 ? opcoes[0]!.valor : "");
   const [valor, setValor] = useState("");
   const [dia, setDia] = useState(diaBr(hoje));
   const [div, setDiv] = useState<{ chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[] } | null>(null);
@@ -351,13 +415,13 @@ function JanelaRegistrar({ casos, aoFechar, aoFeito }: { casos: ListaRepasses["c
       ...(linhas ?? []).map((x) => ({ para: x.para, nome: x.nome.trim(), regra: x.regra, valor: lerCentavos(x.valor), contaId: x.contaId ?? null })),
     ];
     const r = await chamarPortal<{ id: string }>("/v1/escritorio/financeiro/repasses", {
-      metodo: "POST", corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao },
+      metodo: "POST", corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, ...(de ? { requisicaoId: de.id } : {}) },
     });
     setEnviando(false);
     if (r.ok) {
       return aoFeito({
         titulo: `${TIPOS_LEVANTAMENTO[tipo as TipoLevantamento]} registrado.`,
-        texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, 3))}.`,
+        texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.${de ? " Saiu de “A caminho” e da previsão do Caixa." : ""}`,
       });
     }
     const campos = r.erro.detalhes?.campos;
@@ -370,7 +434,7 @@ function JanelaRegistrar({ casos, aoFechar, aoFeito }: { casos: ListaRepasses["c
   }
 
   return (
-    <Janela id="j-rpv" classe="fi-larga" aberta aoFechar={aoFechar} sobretitulo="Repasses" titulo="Registrar alvará ou RPV" descricao="j-rpv-d"
+    <Janela id="j-rpv" classe="fi-larga" aberta aoFechar={aoFechar} sobretitulo="Repasses" titulo={de ? "Registrar o levantamento" : "Registrar alvará ou RPV"} descricao="j-rpv-d"
       aoEnviar={() => void enviar()}
       pe={
         <>
@@ -382,7 +446,13 @@ function JanelaRegistrar({ casos, aoFechar, aoFeito }: { casos: ListaRepasses["c
         </>
       }>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
-        <p id="j-rpv-d">Diga o que entrou e de qual caso. A divisão sai do contrato, e você pode ajustar antes de registrar.</p>
+        <p id="j-rpv-d">{de ? "O dinheiro entrou na conta." : "Diga o que entrou e de qual caso."} A divisão sai do contrato, e você pode ajustar antes de registrar.</p>
+        {de ? (
+          <p className="rv-de">
+            <Icone nome="balanca" className="ico" />
+            <span>Vem do {TIPOS_REQUISICAO[de.tipo].titulo} a caminho: <b>{de.cliente.nome}</b>, requisitado {reais(de.valorRequisitado)}, estimado para {mesAno(de.estimadaMes)}. Ao registrar, ele sai de “A caminho” e da previsão do Caixa.</span>
+          </p>
+        ) : null}
         {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>Nada foi registrado ainda.</Aviso> : null}
         {falha ? <Aviso tom="urgencia" titulo="Nada foi registrado.">{falha}</Aviso> : null}
         <div className="fi-dois">
@@ -409,8 +479,9 @@ function JanelaRegistrar({ casos, aoFechar, aoFeito }: { casos: ListaRepasses["c
           <div className="campo">
             <label htmlFor="rp-valor">Valor levantado</label>
             <input className="entrada" id="rp-valor" type="text" inputMode="decimal" autoComplete="off" value={valor} onChange={(e) => setValor(e.target.value)}
-              aria-invalid={tem("valor") || undefined} aria-describedby={descritoPor(tem("valor") && "rp-valor-er")} />
-            {tem("valor") ? <ErroCampo id="rp-valor-er">Escreva o valor em reais. Ex.: 12.700,00.</ErroCampo> : null}
+              aria-invalid={tem("valor") || undefined} aria-describedby={descritoPor(!!de && !tem("valor") && "rp-valor-aj", tem("valor") && "rp-valor-er")} />
+            {tem("valor") ? <ErroCampo id="rp-valor-er">Escreva o valor em reais. Ex.: 12.700,00.</ErroCampo>
+              : de ? <p className="ajuda" id="rp-valor-aj">Requisitado: {reais(de.valorRequisitado)}. O que entra costuma vir corrigido.</p> : null}
           </div>
           <div className="campo">
             <label htmlFor="rp-dia">Dia em que entrou</label>
@@ -734,16 +805,24 @@ const FRASES: Record<string, (d: Record<string, unknown>) => string> = {
   "financeiro.repasse_feito": (d) => `registrou ${reais(Number(d.valor))} para ${d.para === "CLIENTE" ? "o cliente" : PARA_DESTINACAO[d.para as ParaDestinacao]?.toLowerCase() ?? "uma parte"}`,
   "financeiro.repasse_dispensado": (d) => `dispensou ${reais(Number(d.valor))} de ${PARA_DESTINACAO[d.para as ParaDestinacao]?.toLowerCase() ?? "uma parte"}`,
   "financeiro.prestacao_enviada": () => "marcou a prestação de contas como enviada",
+  "financeiro.repasse_atraso": (d) => `anotou o atraso de ${String(d.parte ?? "uma parte")}: ${MOTIVOS_ATRASO_REPASSE[d.motivo as MotivoAtrasoRepasse]?.curto ?? "motivo"}`,
 };
 
 function detalheHistorico(acao: string, d: Record<string, unknown>): string | null {
   if (acao === "financeiro.levantamento") return d.seguiuProposta ? "divisão do contrato aceita sem mudança" : "divisão ajustada à mão";
   if (acao === "financeiro.repasse_dispensado") return String(d.motivo ?? "");
   if (acao === "financeiro.repasse_feito" && d.feitoEm) return `dinheiro saiu em ${dataBr(String(d.feitoEm))}`;
+  if (acao === "financeiro.repasse_responsavel") return d.motivo ? `“${String(d.motivo)}”` : null;
+  if (acao === "financeiro.repasse_atraso") return `${d.texto ? `${String(d.texto)} ` : ""}Próxima ação em ${diaCurto(String(d.proximaEm))}: ${String(d.oQue ?? "")}`.trim();
   return null;
 }
 
 function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
+  const nomes = new Map<string, string>([
+    ...f.podemCuidar.map((p) => [p.id, p.nome] as [string, string]),
+    ...(f.doContrato ? [[f.doContrato.id, f.doContrato.nome] as [string, string]] : []),
+    [f.responsavel.id, f.responsavel.nome],
+  ]);
   const dias: { dia: string; itens: FichaRepasse["historico"] }[] = [];
   for (const e of f.historico) {
     const dia = diaDoInstante(e.em);
@@ -767,7 +846,12 @@ function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
                   <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
                   <span className="pto" aria-hidden="true" />
                   <div>
-                    <p>{e.por ? <><b>{e.por.nome}</b> </> : null}{(FRASES[e.acao] ?? (() => e.acao))(e.dados)}</p>
+                    <p>
+                      {e.por ? <><b>{e.por.nome}</b> </> : null}
+                      {e.acao === "financeiro.repasse_responsavel"
+                        ? <>passou o repasse para <b>{nomes.get(String(e.dados.para)) ?? "outra pessoa"}</b></>
+                        : (FRASES[e.acao] ?? (() => e.acao))(e.dados)}
+                    </p>
                     {det ? <small>{det}</small> : null}
                   </div>
                 </li>
@@ -787,6 +871,8 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
   const [dispensar, setDispensar] = useState<Destinacao | null>(null);
   const [prestacao, setPrestacao] = useState(false);
   const [encerrar, setEncerrar] = useState(false);
+  const [trocar, setTrocar] = useState(false);
+  const [anotar, setAnotar] = useState<Destinacao | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const nome = dados && dados !== "erro" ? dados.cliente.nome : null;
   useEffect(() => {
@@ -797,6 +883,8 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
     setDispensar(null);
     setPrestacao(false);
     setEncerrar(false);
+    setTrocar(false);
+    setAnotar(null);
     setFeito(x);
     recarregar();
   };
@@ -831,6 +919,8 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
                 <span>levantado em {dataBr(f.entrouEm)}</span>
                 <span className="sep" aria-hidden="true" />
                 <span className="num">{reais(f.valor)}</span>
+                <span className="sep" aria-hidden="true" />
+                <span>responsável {f.responsavel.nome}</span>
               </p>
             </div>
           </div>
@@ -869,7 +959,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
             </div>
             <table className="hn-tab fi-tab fi-dest">
               <caption className="sr">Partes do valor levantado</caption>
-              <colgroup>{["40%", "22%", "18%", "20%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+              <colgroup>{["34%", "32%", "16%", "18%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
               <thead>
                 <tr>
                   <th scope="col">Para quem</th><th scope="col">Situação</th><th scope="col" style={{ textAlign: "right" }}>Valor</th><th scope="col"><span className="sr">Ação</span></th>
@@ -877,7 +967,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
               </thead>
               <tbody>
                 {f.destinacoes.map((d) => (
-                  <tr key={d.id} className={pendente(d) && d.prazo < hoje ? "fi-atraso" : d.situacao === "FEITO" ? "fi-pago" : undefined}>
+                  <tr key={d.id} className={atrasada(d, hoje) ? "fi-atraso" : d.situacao === "FEITO" ? "fi-pago" : undefined}>
                     <td>
                       <div className="fi-quem">
                         <strong>{d.nome}</strong>
@@ -886,7 +976,12 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
                         {d.feitoPor ? <small>Registrado por {d.feitoPor.nome}</small> : null}
                       </div>
                     </td>
-                    <td data-r="Situação"><SeloDestinacao d={d} hoje={hoje} /></td>
+                    <td data-r="Situação">
+                      <div className="fi-sit">
+                        <SeloDestinacao d={d} hoje={hoje} />
+                        <NotaAtraso d={d} hoje={hoje} prazoDias={f.prazoDias} aoAnotar={f.podeEditar ? setAnotar : undefined} />
+                      </div>
+                    </td>
                     <td data-r="Valor" className="fi-v num">{reais(d.valor)}</td>
                     <td data-r="" className="fi-acao hn-acao">
                       {pendente(d) ? (
@@ -933,7 +1028,8 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
           </section>
         </div>
 
-        <aside className="fi-col" aria-label="Fechamento e histórico">
+        <aside className="fi-col" aria-label="Responsável, fechamento e histórico">
+          <FolhaQuemCuida f={f} aoTrocar={() => setTrocar(true)} />
           <section className="folha" aria-labelledby="t-rp-fecha" style={{ overflow: "hidden" }}>
             <div className="folha-cab">
               <div>
@@ -985,6 +1081,10 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
       {feitoEm ? <JanelaFeito l={f} d={feitoEm} aoFechar={() => setFeitoEm(null)} aoFeito={terminar} /> : null}
       {dispensar ? <JanelaDispensar d={dispensar} aoFechar={() => setDispensar(null)} aoFeito={terminar} /> : null}
       {prestacao ? <JanelaPrestacao l={f} escritorio={f.escritorio} aoFechar={() => setPrestacao(false)} aoFeito={terminar} /> : null}
+      {trocar ? <JanelaTrocarResponsavel f={f} aoFechar={() => setTrocar(false)} aoFeito={terminar} /> : null}
+      {anotar ? (
+        <JanelaAnotarAtraso d={anotar} l={f} pessoas={f.podemCuidar} responsavelId={f.responsavel.id} hoje={hoje} aoFechar={() => setAnotar(null)} aoFeito={terminar} />
+      ) : null}
       {encerrar ? (
         <JanelaEncerrar f={f} aoFechar={() => setEncerrar(false)} aoFeito={terminar}
           aoRegistrar={(id) => { const d = f.destinacoes.find((x) => x.id === id); setEncerrar(false); if (d) setFeitoEm(d); }} />

@@ -5,7 +5,7 @@
   "refs": [
     "FI-09"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 480,
-  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 4): programar A caminho em Repasses, registrar, mudar a data, entrou na conta e a previsão do Caixa (migrations 0554, 0555)"
+  "evidencia": "Migrations 0554_requisicoes_a_caminho (registrar o expedido com a parte do escritório pelo contrato, mudar a data com motivo, não vai entrar, entrou vira levantamento) e 0555_a_caminho_caixa_relatorios (previsão do Caixa no mês estimado, o que passou sai dela); folha \"A caminho\" e janelas em Repasses, barra âmbar e aviso no Caixa; testes 063_requisicoes_a_caminho_test.sql, api-portal app_test e e2e portal-financeiro-repasses e portal-financeiro-caixa"
 }
