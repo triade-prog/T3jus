@@ -1,0 +1,13 @@
+{
+  "id": "D19",
+  "texto": "Desenho do botão “Não foi paga” na folha “Pago antes do T3jus” e do logo do escritório (com o registro da sociedade na OAB) no carnê e no recibo",
+  "peca": "S4",
+  "refs": [
+    "VA-05",
+    "FI-23",
+    "FI-14"
+  ],
+  "status": "feito",
+  "ordem": 69,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-nao-paga-logo/ (25 estados, computador e celular, axe sem violação, carnê e recibo A4 em PDF), aprovado pela Carol em 21/11/2026 às 17h16 (Bahia) com as 10 recomendações do NOTAS.md"
+}

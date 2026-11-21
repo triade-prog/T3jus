@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 840,
-  "proximo": "Por ora, parcela que não foi paga se corrige desfazendo a importação em até 7 dias (pergunta 5 do desenho aprovado). Desenhar o botão e a regra quando a Carol pedir"
+  "proximo": "Desenho aprovado em docs/design/aprovadas/portal-nao-paga-logo (parte A): programar o botão, a janela com motivo, “Foi paga, sim” e a regra dos avisos (migration 0600)"
 }
