@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 80,
-  "proximo": "O banco já guarda o motivo (funil_motivo) e o Funil já conta; falta desenhar e aprovar onde a pessoa marca, provavelmente na ficha do cliente"
+  "proximo": "Desenho aprovado (docs/design/aprovadas/portal-comercial-financeiro-pendencias, seção 1): programar Encerrar sem proposta no Funil, em Atendimentos e na ficha, Voltar ao funil e o funil em três números e uma barra (migration 0550)"
 }

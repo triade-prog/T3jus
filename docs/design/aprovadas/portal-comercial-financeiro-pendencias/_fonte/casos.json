@@ -1,0 +1,218 @@
+[
+ {
+  "nome": "fu-funil",
+  "url": "comercial.html?estado=fu-funil"
+ },
+ {
+  "nome": "fu-marcar",
+  "url": "comercial.html?estado=fu-marcar"
+ },
+ {
+  "nome": "fu-erros",
+  "url": "comercial.html?estado=fu-erros"
+ },
+ {
+  "nome": "fu-falha",
+  "url": "comercial.html?estado=fu-falha"
+ },
+ {
+  "nome": "fu-marcado",
+  "url": "comercial.html?estado=fu-marcado"
+ },
+ {
+  "nome": "fu-voltar",
+  "url": "comercial.html?estado=fu-voltar"
+ },
+ {
+  "nome": "fu-vazio",
+  "url": "comercial.html?estado=fu-vazio"
+ },
+ {
+  "nome": "fu-atendimentos",
+  "url": "comercial.html?estado=fu-atendimentos"
+ },
+ {
+  "nome": "fu-ficha-aberta",
+  "url": "clientes.html?estado=fu-ficha-aberta"
+ },
+ {
+  "nome": "fu-ficha",
+  "url": "clientes.html?estado=fu-ficha"
+ },
+ {
+  "nome": "fu-ficha-larissa",
+  "url": "clientes.html?estado=fu-ficha-larissa"
+ },
+ {
+  "nome": "rp-ficha",
+  "url": "financeiro.html?estado=rp-ficha"
+ },
+ {
+  "nome": "rp-trocar",
+  "url": "financeiro.html?estado=rp-trocar"
+ },
+ {
+  "nome": "rp-trocar-erro",
+  "url": "financeiro.html?estado=rp-trocar-erro"
+ },
+ {
+  "nome": "rp-trocar-falha",
+  "url": "financeiro.html?estado=rp-trocar-falha"
+ },
+ {
+  "nome": "rp-trocado",
+  "url": "financeiro.html?estado=rp-trocado"
+ },
+ {
+  "nome": "pz-repasses",
+  "url": "financeiro.html?estado=pz-repasses"
+ },
+ {
+  "nome": "pz-ficha",
+  "url": "financeiro.html?estado=pz-ficha"
+ },
+ {
+  "nome": "pz-anotar",
+  "url": "financeiro.html?estado=pz-anotar"
+ },
+ {
+  "nome": "pz-anotar-erros",
+  "url": "financeiro.html?estado=pz-anotar-erros"
+ },
+ {
+  "nome": "pz-anotar-falha",
+  "url": "financeiro.html?estado=pz-anotar-falha"
+ },
+ {
+  "nome": "pz-anotado",
+  "url": "financeiro.html?estado=pz-anotado"
+ },
+ {
+  "nome": "rv-caminho",
+  "url": "financeiro.html?estado=rv-caminho"
+ },
+ {
+  "nome": "rv-registrar",
+  "url": "financeiro.html?estado=rv-registrar"
+ },
+ {
+  "nome": "rv-registrar-erros",
+  "url": "financeiro.html?estado=rv-registrar-erros"
+ },
+ {
+  "nome": "rv-registrar-falha",
+  "url": "financeiro.html?estado=rv-registrar-falha"
+ },
+ {
+  "nome": "rv-registrado",
+  "url": "financeiro.html?estado=rv-registrado"
+ },
+ {
+  "nome": "rv-data",
+  "url": "financeiro.html?estado=rv-data"
+ },
+ {
+  "nome": "rv-entrou",
+  "url": "financeiro.html?estado=rv-entrou"
+ },
+ {
+  "nome": "rv-vazio",
+  "url": "financeiro.html?estado=rv-vazio"
+ },
+ {
+  "nome": "rv-caixa",
+  "url": "financeiro.html?estado=rv-caixa"
+ },
+ {
+  "nome": "re-visao",
+  "url": "relatorios.html?estado=re-visao"
+ },
+ {
+  "nome": "es-ajustes",
+  "url": "escritorio.html?estado=es-ajustes"
+ },
+ {
+  "nome": "es-vazio",
+  "url": "escritorio.html?estado=es-vazio"
+ },
+ {
+  "nome": "es-erros",
+  "url": "escritorio.html?estado=es-erros"
+ },
+ {
+  "nome": "es-falha",
+  "url": "escritorio.html?estado=es-falha"
+ },
+ {
+  "nome": "es-salvo",
+  "url": "escritorio.html?estado=es-salvo"
+ },
+ {
+  "nome": "es-abertura",
+  "url": "escritorio.html?estado=es-abertura"
+ },
+ {
+  "nome": "es-equipe",
+  "url": "escritorio.html?estado=es-equipe"
+ },
+ {
+  "nome": "es-sem-area",
+  "url": "escritorio.html?estado=es-sem-area"
+ },
+ {
+  "nome": "ct-caixa",
+  "url": "financeiro.html?estado=ct-caixa"
+ },
+ {
+  "nome": "ct-exportar",
+  "url": "financeiro.html?estado=ct-exportar"
+ },
+ {
+  "nome": "ct-exportar-falha",
+  "url": "financeiro.html?estado=ct-exportar-falha"
+ },
+ {
+  "nome": "ct-enviado",
+  "url": "financeiro.html?estado=ct-enviado"
+ },
+ {
+  "nome": "ct-sem-contador",
+  "url": "financeiro.html?estado=ct-sem-contador"
+ },
+ {
+  "nome": "ct-sem-abertura",
+  "url": "financeiro.html?estado=ct-sem-abertura"
+ },
+ {
+  "nome": "mt-resumo",
+  "url": "financeiro.html?estado=mt-resumo"
+ },
+ {
+  "nome": "mt-definir",
+  "url": "financeiro.html?estado=mt-definir"
+ },
+ {
+  "nome": "mt-um-mes",
+  "url": "financeiro.html?estado=mt-um-mes"
+ },
+ {
+  "nome": "mt-erros",
+  "url": "financeiro.html?estado=mt-erros"
+ },
+ {
+  "nome": "mt-falha",
+  "url": "financeiro.html?estado=mt-falha"
+ },
+ {
+  "nome": "mt-sem-meta",
+  "url": "financeiro.html?estado=mt-sem-meta"
+ },
+ {
+  "nome": "mt-equipe",
+  "url": "financeiro.html?estado=mt-equipe"
+ },
+ {
+  "nome": "fi-sem-area",
+  "url": "financeiro.html?estado=fi-sem-area"
+ }
+]

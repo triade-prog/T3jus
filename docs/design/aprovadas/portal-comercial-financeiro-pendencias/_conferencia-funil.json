@@ -1,0 +1,140 @@
+[
+ {
+  "nome": "funil-opcao-a",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\"",
+   "fu-link 110x24 \"marcar o motivo\"",
+   "A 166x24 \"Marcos Vinícius Duarte\"",
+   "A 166x24 \"Eduardo Nascimento\"",
+   "A 166x24 \"Daniela Rocha Mendes\"",
+   "A 166x24 \"Gabriela Teixeira\"",
+   "A 166x24 \"Construtora Vale Alto\"",
+   "A 166x24 \"Benedito Souza Lima\"",
+   "A 166x24 \"Antônia Ferreira Prado\"",
+   "A 166x24 \"Hélio Batista Corrêa\"",
+   "A 166x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "funil-opcao-a",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "fu-link 110x24 \"marcar o motivo\"",
+   "A 320x24 \"Marcos Vinícius Duarte\"",
+   "A 320x24 \"Eduardo Nascimento\"",
+   "A 320x24 \"Daniela Rocha Mendes\"",
+   "A 320x24 \"Gabriela Teixeira\"",
+   "A 320x24 \"Construtora Vale Alto\"",
+   "A 320x24 \"Benedito Souza Lima\"",
+   "A 320x24 \"Antônia Ferreira Prado\"",
+   "A 320x24 \"Hélio Batista Corrêa\"",
+   "A 320x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "funil-opcao-b",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\"",
+   "A 166x24 \"Marcos Vinícius Duarte\"",
+   "A 166x24 \"Eduardo Nascimento\"",
+   "A 166x24 \"Daniela Rocha Mendes\"",
+   "A 166x24 \"Gabriela Teixeira\"",
+   "A 166x24 \"Construtora Vale Alto\"",
+   "A 166x24 \"Benedito Souza Lima\"",
+   "A 166x24 \"Antônia Ferreira Prado\"",
+   "A 166x24 \"Hélio Batista Corrêa\"",
+   "A 166x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "funil-opcao-b",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "A 320x24 \"Marcos Vinícius Duarte\"",
+   "A 320x24 \"Eduardo Nascimento\"",
+   "A 320x24 \"Daniela Rocha Mendes\"",
+   "A 320x24 \"Gabriela Teixeira\"",
+   "A 320x24 \"Construtora Vale Alto\"",
+   "A 320x24 \"Benedito Souza Lima\"",
+   "A 320x24 \"Antônia Ferreira Prado\"",
+   "A 320x24 \"Hélio Batista Corrêa\"",
+   "A 320x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "funil-opcao-c",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\"",
+   "fu-link 101x24 \"marcar o motivo\"",
+   "A 166x24 \"Marcos Vinícius Duarte\"",
+   "A 166x24 \"Eduardo Nascimento\"",
+   "A 166x24 \"Daniela Rocha Mendes\"",
+   "A 166x24 \"Gabriela Teixeira\"",
+   "A 166x24 \"Construtora Vale Alto\"",
+   "A 166x24 \"Benedito Souza Lima\"",
+   "A 166x24 \"Antônia Ferreira Prado\"",
+   "A 166x24 \"Hélio Batista Corrêa\"",
+   "A 166x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "funil-opcao-c",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "fu-link 101x24 \"marcar o motivo\"",
+   "A 320x24 \"Marcos Vinícius Duarte\"",
+   "A 320x24 \"Eduardo Nascimento\"",
+   "A 320x24 \"Daniela Rocha Mendes\"",
+   "A 320x24 \"Gabriela Teixeira\"",
+   "A 320x24 \"Construtora Vale Alto\"",
+   "A 320x24 \"Benedito Souza Lima\"",
+   "A 320x24 \"Antônia Ferreira Prado\"",
+   "A 320x24 \"Hélio Batista Corrêa\"",
+   "A 320x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "funil-opcoes",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\"",
+   "fu-link 110x24 \"marcar o motivo\"",
+   "fu-link 101x24 \"marcar o motivo\""
+  ]
+ },
+ {
+  "nome": "funil-opcoes",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "fu-link 110x24 \"marcar o motivo\"",
+   "fu-link 101x24 \"marcar o motivo\""
+  ]
+ }
+]
