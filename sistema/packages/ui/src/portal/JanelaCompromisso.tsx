@@ -5,7 +5,7 @@
 // confere tudo de novo e devolve os campos errados. Remarcar (mudar dia ou hora) pede motivo.
 
 import { useEffect, useId, useRef, useState } from "react";
-import { TIPOS_COMPROMISSO, type ClienteLinha, type FichaCompromisso, type TipoCompromisso } from "@t3jus/domain";
+import { formatarCnj, TIPOS_COMPROMISSO, type CasoDoCompromisso, type ClienteLinha, type FichaCompromisso, type TipoCompromisso } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { formatarTelefone } from "../console/ficha.ts";
@@ -30,6 +30,8 @@ export interface Rascunho {
   local: string;
   linkSala: string;
   clienteId: string;
+  /** O processo (F3.4), só para quem tem o Jurídico. */
+  casoId: string;
   responsavelId: string;
   tambemVai: string;
   lembrete: boolean;
@@ -42,14 +44,14 @@ export function rascunhoNovo(dia: string, ini: string, responsavelId: string): R
   const fim = `${String(Math.min(23, h! + 1)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   return {
     tipo: "AUDIENCIA", tipoEscrito: "", titulo: "", dia: diaBr(dia), ini, fim, modalidade: "PRESENCIAL", local: "", linkSala: "",
-    clienteId: "", responsavelId, tambemVai: "", lembrete: true, observacoes: "", motivo: "",
+    clienteId: "", casoId: "", responsavelId, tambemVai: "", lembrete: true, observacoes: "", motivo: "",
   };
 }
 
 export function rascunhoDe(f: FichaCompromisso): Rascunho {
   return {
     tipo: f.tipo, tipoEscrito: f.tipoEscrito ?? "", titulo: f.titulo, dia: diaBr(diaDe(f.inicio)), ini: horaDe(f.inicio), fim: horaDe(f.fim),
-    modalidade: f.modalidade, local: f.local ?? "", linkSala: f.linkSala ?? "", clienteId: f.cliente?.id ?? "", responsavelId: f.responsavel.id,
+    modalidade: f.modalidade, local: f.local ?? "", linkSala: f.linkSala ?? "", clienteId: f.cliente?.id ?? "", casoId: f.caso?.id ?? "", responsavelId: f.responsavel.id,
     tambemVai: f.tambemVai[0]?.id ?? "", lembrete: f.lembrete, observacoes: f.observacoes ?? "", motivo: "",
   };
 }
@@ -67,6 +69,7 @@ const TEXTO_ERRO: Erros = {
   linkSala: "Cole o link da sala virtual, ou marque Presencial.",
   local: "Confira o endereço.",
   clienteId: "Escolha um cliente da lista.",
+  casoId: "Escolha um caso da lista, ou deixe sem processo.",
   responsavelId: "Escolha quem responde pelo compromisso.",
   tambemVai: "Escolha alguém da equipe.",
   observacoes: "As observações passam de 1.000 caracteres.",
@@ -92,9 +95,11 @@ export function conferirRascunho(r: Rascunho, original?: { dia: string; ini: str
   return e;
 }
 
-export function corpoDoRascunho(r: Rascunho) {
+/** O corpo do pedido. O caso só vai de quem tem o Jurídico (`comCaso`); sem o campo, o servidor mantém o que estava. */
+export function corpoDoRascunho(r: Rascunho, comCaso = false) {
   const dia = lerDia(r.dia)!;
   return {
+    ...(comCaso ? { casoId: r.casoId || null } : {}),
     tipo: r.tipo, tipoEscrito: r.tipo === "OUTRO" ? r.tipoEscrito.trim() : null, titulo: r.titulo.trim(),
     inicio: instante(dia, lerHorario(r.ini)!), fim: instante(dia, lerHorario(r.fim)!), modalidade: r.modalidade,
     local: r.local.trim() || null, linkSala: r.modalidade === "VIRTUAL" ? r.linkSala.trim() : null, clienteId: r.clienteId || null,
@@ -121,13 +126,31 @@ const TITULO_FEITO: Record<TipoCompromisso, string> = {
   AUDIENCIA: "Audiência marcada", CLIENTE: "Reunião marcada", ASSINATURA: "Assinatura marcada", INTERNO: "Compromisso marcado", OUTRO: "Compromisso marcado",
 };
 
-export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, tiposEscritos, eu, aoFechar, aoFeito, aoMudar }: {
+/** Os casos para o campo Processo: só para quem tem o Jurídico (sem a área, `undefined`, e o campo some). */
+export function useCasosDoCompromisso(areas: readonly string[] | undefined): CasoDoCompromisso[] | null | undefined {
+  const juridico = Boolean(areas?.includes("JURIDICO"));
+  const [casos, setCasos] = useState<CasoDoCompromisso[] | null>(null);
+  useEffect(() => {
+    if (!juridico) return;
+    void chamarPortal<CasoDoCompromisso[]>("/v1/escritorio/agenda/casos").then((r) => setCasos(r.ok ? r.dados : []));
+  }, [juridico]);
+  return juridico ? casos : undefined;
+}
+
+/** Nome do caso com o número do processo, para a lista e a ficha. */
+export function nomeDoCaso(c: CasoDoCompromisso): string {
+  return c.numero ? `${c.nome} · ${formatarCnj(c.numero)}` : c.nome;
+}
+
+export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, casos, tiposEscritos, eu, aoFechar, aoFeito, aoMudar }: {
   aberta: boolean;
   inicial: Rascunho;
   /** Editar ou remarcar: o compromisso lido (versão e horário original). */
   editar?: FichaCompromisso;
   pessoas: Pessoa[];
   clientes: ClienteLinha[] | null;
+  /** Os casos em andamento, só para quem tem o Jurídico (sem a área, não vem: a janela não mostra o campo). */
+  casos?: CasoDoCompromisso[] | null;
   tiposEscritos: string[];
   eu: string | null;
   aoFechar: () => void;
@@ -174,7 +197,7 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
     setErros(e);
     if (Object.keys(e).length) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
-    const dados = corpoDoRascunho(r);
+    const dados = corpoDoRascunho(r, casos !== undefined);
     const res = editar
       ? await chamarPortal<{ id: string; versao: number }>(`/v1/escritorio/compromissos/${editar.id}`, {
           metodo: "PUT", corpo: { ...dados, versao: editar.versao, motivo: remarcando ? r.motivo.trim() : null },
@@ -266,6 +289,10 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
     ...(cliente && !clientes?.some((c) => c.id === cliente.id) ? [{ v: cliente.id, t: cliente.nome }] : []),
     ...(clientes ?? []).map((c) => ({ v: c.id, t: c.nome }))];
   const comLink = r.modalidade === "VIRTUAL";
+  const casoAtual = editar?.caso && !casos?.some((c) => c.id === editar.caso!.id) ? editar.caso : null;
+  const casosOps = [{ v: "", t: "Sem processo" },
+    ...(casoAtual ? [{ v: casoAtual.id, t: nomeDoCaso(casoAtual) }] : []),
+    ...(casos ?? []).map((c) => ({ v: c.id, t: nomeDoCaso(c) }))];
 
   return (
     <Janela id={`${ids}-jan`} classe="x-larga" aberta={aberta} aoFechar={aoFechar} aoEnviar={() => void enviar()}
@@ -307,7 +334,9 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
           : campo("local", "Endereço", { opcional: true, ajuda: "Vai no lembrete ao cliente." })}
         <div className="x-dois">
           {selecao("clienteId", "Cliente", clientesOps, { ajuda: clientes === null ? "Carregando os clientes…" : "Da lista de Clientes." })}
-          <span />
+          {casos !== undefined
+            ? selecao("casoId", "Processo", casosOps, { opcional: true, ajuda: casos === null ? "Carregando os casos…" : "Dos casos em andamento no Jurídico." })
+            : <span />}
         </div>
         <div className="x-dois">
           {selecao("responsavelId", "Responsável", [...(r.responsavelId ? [] : [{ v: "", t: "Escolha" }]), ...pessoasOps], { ajuda: "Quem responde pelo compromisso." })}

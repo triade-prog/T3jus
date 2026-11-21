@@ -4,9 +4,10 @@
   "peca": "S5",
   "refs": [
     "EX-02",
-    "EX-04"
+    "EX-04",
+    "PT-19"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 390,
-  "proximo": "Jurídico, parte 3"
+  "evidencia": "Migration 0510 (portal_juridico_prazo_editar e portal_juridico_tarefa_editar pela versão lida, com o histórico do caso: quem era o responsável e a data antes; cumprido e concluída não mudam); rotas PUT de prazo e tarefa; botão Editar nas listas e na ficha do caso; pgTAP 051, teste do api-portal e e2e dos prazos."
 }

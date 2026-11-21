@@ -192,6 +192,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_tarefa_criar: () => ({ id: CLIENTE }),
     portal_juridico_tarefa_concluir: (a) => ({ id: a.p_tarefa, concluida: a.p_concluir }),
     portal_juridico_tarefa_chegou: (a) => ({ id: a.p_tarefa }),
+    portal_juridico_prazo_editar: (a) => ({ id: a.p_prazo, versao: Number(a.p_versao) + 1, campos: Object.keys(a.p_dados as object) }),
+    portal_juridico_tarefa_editar: (a) => ({ id: a.p_tarefa, versao: Number(a.p_versao) + 1, campos: Object.keys(a.p_dados as object) }),
+    portal_agenda_casos: () => [{ id: CLIENTE, nome: "Pereira x Mercado Bom Preço", numero: null, parteContraria: null }],
     portal_juridico_etapas: () => ({ podeEditar: true, escritorio: "Ribeiro & Matos", etapas: [] }),
     portal_juridico_etapa_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, dados: a.p_dados }),
     portal_juridico_etapa_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
@@ -1234,6 +1237,20 @@ Deno.test("EX-02, EX-04: prazos e tarefas, filtros, cadastrar, cumprir, concluir
   assertEquals((await (await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/concluida`, { corpo: { concluir: false }, cookie })).json()).concluida, false);
   assertEquals((await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/chegou`, { corpo: {}, cookie })).status, 200);
   assertEquals((await m.pedir("/v1/escritorio/juridico/tarefas/nao-e-id/chegou", { corpo: {}, cookie })).status, 404);
+});
+
+Deno.test("F3.39, F3.4: editar prazo e tarefa pela versão (sem trocar o caso) e os casos para o compromisso", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const p = await m.pedir(`/v1/escritorio/juridico/prazos/${CLIENTE}`, {
+    metodo: "PUT", corpo: { versao: 1, casoId: AURORA, descricao: "Recurso", dataFinal: "2026-11-20", responsavelId: CLIENTE }, cookie });
+  assertEquals((await p.json()).versao, 2);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_juridico_prazo_editar")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_versao, "casoId" in (ch.args.p_dados as object), "versao" in (ch.args.p_dados as object)], [AURORA, 1, false, false]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/prazos/${CLIENTE}`, { metodo: "PUT", corpo: { descricao: "x" }, cookie }))).detalhes?.campos, ["versao"]);
+  const t = await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}`, { metodo: "PUT", corpo: { versao: 3, titulo: "Minuta", venceEm: "2026-11-21" }, cookie });
+  assertEquals((await t.json()).versao, 4);
+  assertEquals((await (await m.pedir("/v1/escritorio/agenda/casos", { cookie })).json())[0].nome, "Pereira x Mercado Bom Preço");
 });
 
 Deno.test("EX-07, EX-09: etapas do escritório (adicionar, editar com versão, mover, tirar) e a resposta de Petições", async () => {

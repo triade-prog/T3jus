@@ -5,7 +5,7 @@ import type { MiddlewareHandler } from "hono";
 import {
   areasSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
-  cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso,
+  cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
@@ -16,7 +16,7 @@ import {
   exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
-  type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
+  type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, editarPrazoSchema, editarTarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
   semAvisosSchema, avisosLidosSchema, type AvisosDoCliente, type ListaAvisosSino, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, pedirIaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
@@ -402,6 +402,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<Agenda>("portal_agenda", {
       ...quem(c), p_de: r.data.de, p_ate: r.data.ate, p_de_quem: r.data.pessoa?.toLowerCase() ?? null,
     }));
+  });
+
+  // Os casos em andamento, para ligar o compromisso ao processo (F3.4; só com o Jurídico).
+  app.get("/v1/escritorio/agenda/casos", async (c) => {
+    return c.json(await deps.banco.rpc<CasoDoCompromisso[]>("portal_agenda_casos", quem(c)));
   });
 
   app.post("/v1/escritorio/compromissos", async (c) => {
@@ -1080,6 +1085,21 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/juridico/prazos", async (c) => {
     const d = await lerCorpo(c, prazoSchema);
     return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_prazo_criar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  // Editar prazo e tarefa (F3.39): pela versão lida (PT-19); o caso não muda.
+  app.put("/v1/escritorio/juridico/prazos/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarPrazoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; campos: string[] }>("portal_juridico_prazo_editar", {
+      ...quem(c), p_prazo: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  app.put("/v1/escritorio/juridico/tarefas/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarTarefaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; campos: string[] }>("portal_juridico_tarefa_editar", {
+      ...quem(c), p_tarefa: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
   });
 
   app.post("/v1/escritorio/juridico/prazos/:id/cumprido", async (c) => {
