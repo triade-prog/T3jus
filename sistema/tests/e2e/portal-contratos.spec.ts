@@ -15,6 +15,16 @@ const ct = (n: number) => `f1000000-0000-4000-8000-0000000001${String(n).padStar
 const prop = (n: number) => `d1000000-0000-4000-8000-0000000001${String(n).padStart(2, "0")}`;
 const rc = (n: number) => `b1000000-0000-4000-8000-0000000001${String(n).padStart(2, "0")}`;
 
+// A OAB de cada advogado (EX-12): Marina com uma, Felipe com duas, Diego sem.
+const oab = (id: string, uf: string, numero: string, letra: string | null, tipo: string) => ({
+  id, uf, numero: numero.replace(".", ""), letra, tipo, versao: 1,
+  texto: `OAB/${uf} ${numero}${letra ? `-${letra}` : ""}`, documento: `OAB/${uf} nº ${numero}${letra ? `-${letra}` : ""}`,
+});
+const OAB_MA = oab("0ab00000-0000-4000-8000-000000000001", "SP", "214.538", null, "PRINCIPAL");
+const OAB_FSP = oab("0ab00000-0000-4000-8000-000000000002", "SP", "287.104", null, "PRINCIPAL");
+const OAB_FRJ = oab("0ab00000-0000-4000-8000-000000000003", "RJ", "245.880", "S", "SUPLEMENTAR");
+const PESSOAS_OAB = [{ ...DIEGO, oab: [] }, { ...MARINA, oab: [OAB_MA] }, { ...FELIPE, oab: [OAB_FSP, OAB_FRJ] }];
+
 const ESCRITORIO = {
   id: ESC, nome: "Ribeiro & Matos", pessoa: "Marina Ribeiro", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"],
   socios: ["Marina Ribeiro"], pessoas: 5, outrosEscritorios: 0, funcoes: ["SOCIO"], cnpj: null, cidade: "São Paulo", uf: "SP", endereco: null,
@@ -47,6 +57,8 @@ const recebimento = (n: number, desc: string, d: number, valor: number | null, e
 const F19 = {
   ...L19, observacoes: "Custas ficam por conta do cliente.", versao: 4, assinadoEm: dia(-72), assinaturaPor: FELIPE, encerradoEm: null, motivoEncerramento: null,
   proposta: { id: prop(6), numero: "P-2026-006" }, advogados: [FELIPE], financeiro: false,
+  inscricoes: [{ pessoaId: FELIPE.id, frase: "OAB/SP nº 287.104 e OAB/RJ nº 245.880-S", usaTodas: false,
+                 inscricoes: [{ ...OAB_FSP, escolhida: true }, { ...OAB_FRJ, escolhida: true }] }],
   recebimentos: [
     recebimento(1, "Mensalidade 1", -70, 180000), recebimento(2, "Mensalidade 2", -40, 180000), recebimento(3, "Mensalidade 3", -10, 180000),
     recebimento(4, "Mensalidade 4", 10, 180000), recebimento(5, "Mensalidade 5", 40, 180000),
@@ -73,6 +85,10 @@ const F41 = {
 const F33 = {
   ...L33, observacoes: null, versao: 1, assinadoEm: null, assinaturaPor: null, encerradoEm: null, motivoEncerramento: null,
   proposta: { id: prop(14), numero: "P-2026-014" }, advogados: [MARINA, FELIPE], financeiro: true, recebimentos: [],
+  inscricoes: [
+    { pessoaId: FELIPE.id, frase: "OAB/SP nº 287.104", usaTodas: false, inscricoes: [{ ...OAB_FSP, escolhida: true }, { ...OAB_FRJ, escolhida: false }] },
+    { pessoaId: MARINA.id, frase: "OAB/SP nº 214.538", usaTodas: false, inscricoes: [{ ...OAB_MA, escolhida: true }] },
+  ],
   historico: [{ em: em(0, "15:02"), acao: "contrato.criado", autor: "Marina Ribeiro", dados: { numero: "C-2026-033", proposta: "P-2026-014" } }],
 };
 const PROPOSTA14 = {
@@ -119,6 +135,7 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
 const comuns = (escritorio: unknown = ESCRITORIO) => ({
   "/v1/escritorio": { corpo: escritorio },
   "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA, FELIPE] } },
+  "/v1/escritorio/pessoas/oab": { corpo: { pessoas: PESSOAS_OAB } },
   "GET /v1/escritorio/clientes": { corpo: CLIENTES },
   "GET /v1/escritorio/contratos": { corpo: LISTA },
   [`GET /v1/escritorio/contratos/${ct(19)}`]: { corpo: F19 },
@@ -193,6 +210,7 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await expect(page.getByRole("status").filter({ hasText: "Contrato criado" })).toBeVisible();
     const corpo = pedidos.filter((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/contratos").at(-1)?.corpo as Record<string, unknown>;
     expect([corpo.clienteId, corpo.propostaId, corpo.advogados, corpo.responsavelId]).toEqual([cli(33), prop(14), [MARINA.id], DIEGO.id]);
+    expect(corpo.inscricoes).toEqual({ [MARINA.id]: [OAB_MA.id] });
     expect(corpo.condicoes).toEqual([PARC, EXITO]);
   });
 
@@ -328,6 +346,62 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await page.waitForURL(`**/contratos/contratos/${ct(19)}`);
     const corpo = pedidos.filter((p) => p.metodo === "PUT").at(-1)?.corpo as Record<string, unknown>;
     expect([corpo.versao, corpo.motivo, corpo.advogados, corpo.condicoes]).toEqual([4, "Reajuste pelo IPCA", [FELIPE.id], [MENSAL]]);
+  });
+
+  test("EX-12: só quem tem OAB é advogado; de quem tem duas se escolhem as que vão, pelo menos uma", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "POST /v1/escritorio/contratos": [
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: [`inscricoes.${FELIPE.id}`], motivos: { [`inscricoes.${FELIPE.id}`]: "INSCRICAO_OBRIGATORIA" } } } } },
+        { status: 201, corpo: { id: ct(33), numero: "C-2026-033", versao: 1 } },
+      ],
+    });
+    await page.goto(`${P}/contratos/contratos/novo?proposta=${prop(14)}`);
+    const adv = page.getByRole("group", { name: "Advogados no contrato e na procuração" });
+    await expect(adv).toContainText("Sem OAB cadastrada: Diego Almeida.");
+    await expect(adv.getByRole("link", { name: "Cadastrar a OAB na Equipe" })).toHaveAttribute("href", "/equipe");
+    await adv.getByRole("checkbox", { name: /^Felipe Matos/ }).check();
+    const insc = page.getByRole("group", { name: "Inscrições de Felipe que vão no documento" });
+    await expect(insc.getByRole("checkbox")).toHaveCount(2);
+    await expect(insc.getByRole("checkbox", { name: /OAB\/RJ 245.880-S/ })).toBeChecked();
+    await expect(adv.locator(".oe-previa")).toContainText("No contrato e na procuração: Felipe Matos, OAB/SP nº 287.104 e OAB/RJ nº 245.880-S.");
+    await insc.getByRole("checkbox", { name: /OAB\/RJ/ }).uncheck();
+    await insc.getByRole("checkbox", { name: /OAB\/SP/ }).uncheck();
+    await expect(adv.locator(".oe-previa")).toContainText("[falta escolher a inscrição]");
+    await page.getByRole("button", { name: "Criar contrato" }).click();
+    const erro = page.getByRole("alert").filter({ hasText: "Falta acertar 1 ponto" });
+    await erro.getByRole("link", { name: "Advogados: marque pelo menos uma inscrição de Felipe Matos" }).click();
+    await expect(insc.getByRole("checkbox", { name: /OAB\/SP/ })).toBeFocused();
+    await expect(insc.getByRole("checkbox", { name: /OAB\/SP/ })).toHaveAttribute("aria-invalid", "true");
+    await semViolacoes(page);
+    await insc.getByRole("checkbox", { name: /OAB\/SP/ }).check();
+    await page.getByRole("button", { name: "Criar contrato" }).click();
+    await page.waitForURL(`**/contratos/contratos/${ct(33)}`);
+    const corpo = pedidos.filter((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/contratos").at(-1)?.corpo as Record<string, unknown>;
+    expect([corpo.advogados, corpo.inscricoes]).toEqual([[FELIPE.id], { [FELIPE.id]: [OAB_FSP.id] }]);
+  });
+
+  test("EX-12: a ficha mostra a inscrição que fica fora e Mudar inscrições manda a versão", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`PUT /v1/escritorio/contratos/${ct(33)}/advogados/${FELIPE.id}/inscricoes`]: { corpo: { id: ct(33), versao: 2, frase: "OAB/SP nº 287.104 e OAB/RJ nº 245.880-S" } },
+    });
+    await page.goto(`${P}/contratos/contratos/${ct(33)}`);
+    const rs = page.locator(".hn-pessoas");
+    await expect(rs).toContainText("No documento: OAB/SP 287.104");
+    await expect(rs).toContainText("OAB/RJ 245.880-S fica fora deste contrato");
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Mudar inscrições deste contrato" }).click();
+    const j = page.getByRole("dialog", { name: "Inscrições no contrato e na procuração" });
+    await j.getByRole("checkbox", { name: /OAB\/SP/ }).uncheck();
+    await j.getByRole("button", { name: "Salvar inscrições" }).click();
+    await expect(j.getByRole("checkbox", { name: /OAB\/SP/ })).toHaveAttribute("aria-invalid", "true");
+    await semViolacoes(page);
+    await j.getByRole("checkbox", { name: /OAB\/RJ/ }).check();
+    await j.getByRole("checkbox", { name: /OAB\/SP/ }).check();
+    await j.getByRole("button", { name: "Salvar inscrições" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Inscrições salvas" })).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "PUT")?.corpo).toEqual({ versao: 1, inscricoes: [OAB_FSP.id, OAB_FRJ.id] });
   });
 
   test("Honorários: base parada em destaque; informar a base faz a conta e manda os centavos", async ({ page }) => {

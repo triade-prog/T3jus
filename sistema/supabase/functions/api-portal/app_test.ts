@@ -150,8 +150,21 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_proposta_enviada: () => 3,
     portal_comercial_funil: (a) => ({ periodo: a.p_periodo }),
     portal_contratos: (a) => ({ algum: false, contagem: { ativos: 0, elaboracao: 0, encerrados: 0, base: 0 }, contratos: [], mostrar: a.p_mostrar }),
-    portal_contrato_criar: () => ({ id: CLIENTE, numero: "C-2026-001", versao: 1 }),
-    portal_contrato_condicoes: (a) => {
+    portal_contrato_criar_oab: () => ({ id: CLIENTE, numero: "C-2026-001", versao: 1 }),
+    portal_proposta: (a) => ({
+      id: a.p_proposta, numero: "P-2026-014", cliente: { id: CLIENTE, nome: "Gabriela Teixeira", tipo: "PF" }, servico: "Revisão do benefício",
+      responsavel: { id: ANA, nome: "Ana" }, situacao: "ENVIADA", vencida: false, retorno: null, criadaEm: "2026-11-18T10:00:00-03:00",
+      condicoes: [{ tipo: "PARCELADO", total: 300000, parcelas: 3, primeiro: "2026-12-10" }], escopo: "Pedido no INSS.\nRecurso, se negado.",
+      validaAte: "2026-11-30", enviadaEm: null, respondidaEm: null, motivoRecusa: null, origem: null, versao: 2, retornoCompleto: null,
+      podeContrato: true, quemTemContratos: [], contratoPedidoEm: null, historico: [],
+    }),
+    portal_pessoas_oab: () => [{ id: ANA, nome: "Ana", oab: [] }],
+    portal_contrato_inscricoes: () => [],
+    portal_contrato_inscricoes_mudar: (a) => {
+      if (!(a.p_ids as string[]).length) erroBanco("TC422", { campos: [`inscricoes.${a.p_alvo}`], motivos: { [`inscricoes.${a.p_alvo}`]: "INSCRICAO_OBRIGATORIA" } });
+      return { id: a.p_contrato, versao: Number(a.p_versao) + 1, frase: "OAB/SP nº 287.104" };
+    },
+    portal_contrato_condicoes_oab: (a) => {
       if (a.p_dados && !(a.p_dados as Record<string, unknown>).motivo) erroBanco("TC422", { campos: ["motivo"] });
       return { id: a.p_contrato, versao: Number(a.p_versao) + 1, cancelados: 2, novos: 2 };
     },
@@ -192,6 +205,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_tarefa_criar: () => ({ id: CLIENTE }),
     portal_juridico_tarefa_concluir: (a) => ({ id: a.p_tarefa, concluida: a.p_concluir }),
     portal_juridico_tarefa_chegou: (a) => ({ id: a.p_tarefa }),
+    portal_juridico_prazo_editar: (a) => ({ id: a.p_prazo, versao: Number(a.p_versao) + 1, campos: Object.keys(a.p_dados as object) }),
+    portal_juridico_tarefa_editar: (a) => ({ id: a.p_tarefa, versao: Number(a.p_versao) + 1, campos: Object.keys(a.p_dados as object) }),
+    portal_agenda_casos: () => [{ id: CLIENTE, nome: "Pereira x Mercado Bom Preço", numero: null, parteContraria: null }],
     portal_juridico_etapas: () => ({ podeEditar: true, escritorio: "Ribeiro & Matos", etapas: [] }),
     portal_juridico_etapa_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, dados: a.p_dados }),
     portal_juridico_etapa_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
@@ -943,19 +959,54 @@ Deno.test("CH-01, CH-04, IN-01: criar o contrato da proposta, registrar a assina
   };
   const novo = await m.pedir("/v1/escritorio/contratos", { corpo: dados, cookie });
   assertEquals(novo.status, 201);
-  const ch = m.chamadas.find((c) => c.funcao === "portal_contrato_criar")!;
+  const ch = m.chamadas.find((c) => c.funcao === "portal_contrato_criar_oab")!;
   assertEquals([ch.args.p_escritorio, (ch.args.p_dados as { advogados: string[] }).advogados], [AURORA, [ANA]]);
   const a = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/assinatura`, { corpo: { versao: 1, assinadoEm: "2026-11-18" }, cookie })).json();
   assertEquals([a.versao, a.recebimentos, a.em], [2, 3, "2026-11-18"]);
   const sem = await erro(await m.pedir(`/v1/escritorio/contratos/${CLIENTE}`, { metodo: "PUT", corpo: { versao: 2, ...dados }, cookie }));
   assertEquals(sem.detalhes?.campos, ["motivo"]);
-  const ed = m.chamadas.find((c) => c.funcao === "portal_contrato_condicoes")!;
+  const ed = m.chamadas.find((c) => c.funcao === "portal_contrato_condicoes_oab")!;
   assertEquals([ed.args.p_versao, (ed.args.p_dados as Record<string, unknown>).versao, (ed.args.p_dados as Record<string, unknown>).clienteId], [2, undefined, undefined]);
   const b = await (await m.pedir(`/v1/escritorio/recebimentos/${CLIENTE}/base`, { corpo: { valor: 211800, fonte: "EXTRATO", vencimento: "2026-12-15" }, cookie })).json();
   assertEquals(b.valor, 63540);
   assertEquals((await erro(await m.pedir("/v1/escritorio/contratos?mostrar=todos", { cookie }))).detalhes?.campos, ["mostrar"]);
   assertEquals((await (await m.pedir("/v1/escritorio/contratos?mostrar=base", { cookie })).json()).mostrar, "BASE");
   assertEquals((await m.pedir("/v1/escritorio/contratos/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("EX-12: as inscrições de cada advogado no contrato; a pessoa e o escritório vêm da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const insc = "1b4e28ba-2fa1-11d2-883f-0016d3cca427";
+  await m.pedir("/v1/escritorio/contratos", {
+    corpo: { clienteId: CLIENTE, objeto: "Aposentadoria", responsavelId: ANA, advogados: [ANA], inscricoes: { [ANA]: [insc.toUpperCase()] },
+             condicoes: [{ tipo: "FIXO", valor: 100000, vencimento: "2026-12-10" }] }, cookie,
+  });
+  const ch = m.chamadas.find((c) => c.funcao === "portal_contrato_criar_oab")!;
+  assertEquals((ch.args.p_dados as { inscricoes: Record<string, string[]> }).inscricoes, { [ANA]: [insc.toUpperCase()] });
+  const ok = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/advogados/${ANA}/inscricoes`, { metodo: "PUT", corpo: { versao: 3, inscricoes: [insc.toUpperCase()] }, cookie })).json();
+  assertEquals([ok.versao, ok.frase], [4, "OAB/SP nº 287.104"]);
+  const mu = m.chamadas.find((c) => c.funcao === "portal_contrato_inscricoes_mudar")!;
+  assertEquals([mu.args.p_escritorio, mu.args.p_alvo, mu.args.p_ids], [AURORA, ANA, [insc]]);
+  const vazio = await erro(await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/advogados/${ANA}/inscricoes`, { metodo: "PUT", corpo: { versao: 3, inscricoes: [] }, cookie }));
+  assertEquals(vazio.detalhes?.motivos, { [`inscricoes.${ANA}`]: "INSCRICAO_OBRIGATORIA" });
+  assertEquals((await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/advogados/nao-e-id/inscricoes`, { metodo: "PUT", corpo: { versao: 3, inscricoes: [insc] }, cookie })).status, 404);
+  assertEquals((await (await m.pedir("/v1/escritorio/pessoas/oab", { cookie })).json()).pessoas[0].id, ANA);
+});
+
+Deno.test("AP-05: baixar a proposta em .docx no timbrado, na pasta do escritório da sessão, por link temporário", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await (await m.pedir(`/v1/escritorio/propostas/${CLIENTE}/docx`, { corpo: {}, cookie })).json();
+  assertMatch(r.url, /^https:\/\/storage\.exemplo\/ler\//);
+  const caminho = `${AURORA}/propostas/${CLIENTE}-v2.docx`;
+  assertEquals(m.storage.leituras.at(-1), { caminho, segundos: 60, nome: "proposta-p-2026-014-gabriela-teixeira.docx" });
+  const texto = await paragrafosDocx(m.storage.bytes.get(caminho)!);
+  assert(texto.includes("Revisão do benefício"));
+  assert(texto.includes("Recurso, se negado."));
+  assert(texto.some((t) => t.startsWith("Parcelado: R$ 3.000,00 em 3 parcelas")));
+  assert(texto.includes("Esta proposta vale até 30/11/2026."));
+  assertEquals((await m.pedir("/v1/escritorio/propostas/nao-e-id/docx", { corpo: {}, cookie })).status, 404);
 });
 
 Deno.test("CH-01: situações do contrato e fontes da base no domínio são as mesmas do banco", async () => {
@@ -1234,6 +1285,20 @@ Deno.test("EX-02, EX-04: prazos e tarefas, filtros, cadastrar, cumprir, concluir
   assertEquals((await (await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/concluida`, { corpo: { concluir: false }, cookie })).json()).concluida, false);
   assertEquals((await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}/chegou`, { corpo: {}, cookie })).status, 200);
   assertEquals((await m.pedir("/v1/escritorio/juridico/tarefas/nao-e-id/chegou", { corpo: {}, cookie })).status, 404);
+});
+
+Deno.test("F3.39, F3.4: editar prazo e tarefa pela versão (sem trocar o caso) e os casos para o compromisso", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const p = await m.pedir(`/v1/escritorio/juridico/prazos/${CLIENTE}`, {
+    metodo: "PUT", corpo: { versao: 1, casoId: AURORA, descricao: "Recurso", dataFinal: "2026-11-20", responsavelId: CLIENTE }, cookie });
+  assertEquals((await p.json()).versao, 2);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_juridico_prazo_editar")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_versao, "casoId" in (ch.args.p_dados as object), "versao" in (ch.args.p_dados as object)], [AURORA, 1, false, false]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/prazos/${CLIENTE}`, { metodo: "PUT", corpo: { descricao: "x" }, cookie }))).detalhes?.campos, ["versao"]);
+  const t = await m.pedir(`/v1/escritorio/juridico/tarefas/${CLIENTE}`, { metodo: "PUT", corpo: { versao: 3, titulo: "Minuta", venceEm: "2026-11-21" }, cookie });
+  assertEquals((await t.json()).versao, 4);
+  assertEquals((await (await m.pedir("/v1/escritorio/agenda/casos", { cookie })).json())[0].nome, "Pereira x Mercado Bom Preço");
 });
 
 Deno.test("EX-07, EX-09: etapas do escritório (adicionar, editar com versão, mover, tirar) e a resposta de Petições", async () => {

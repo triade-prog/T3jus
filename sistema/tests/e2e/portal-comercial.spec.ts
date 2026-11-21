@@ -240,6 +240,21 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await expect(page.locator(".dir")).toContainText("Achou o valor alto.");
   });
 
+  test("AP-05: Baixar a proposta (.docx) pede o arquivo no timbrado e abre o link temporário", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/propostas/${prop(16)}`]: { corpo: F16 },
+      [`POST /v1/escritorio/propostas/${prop(16)}/docx`]: { corpo: { url: `${P}/arquivo-falso.docx`, validadeSegundos: 60 } },
+    });
+    await page.route(`${P}/arquivo-falso.docx`, (r) => r.fulfill({ status: 200, contentType: "text/plain", body: "ok" }));
+    await page.goto(`${P}/comercial/propostas/${prop(16)}`);
+    const botao = page.getByRole("button", { name: "Baixar a proposta (.docx)" });
+    await expect(botao).toBeVisible();
+    await semViolacoes(page);
+    await botao.click();
+    await expect.poll(() => pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/propostas/${prop(16)}/docx`)).toBe(true);
+  });
+
   test("Aceitou com as condições leva a gerar o contrato; desmarcado, leva a editar", async ({ page }) => {
     const pedidos = await simular(page, { ...comuns(), [`POST /v1/escritorio/propostas/${prop(16)}/resposta`]: { corpo: { id: prop(16), versao: 4, situacao: "ACEITA" } } });
     await page.goto(`${P}/comercial/propostas/${prop(16)}`);

@@ -36,6 +36,9 @@ import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
+import { avisoAutenticadorTirado, type Emails } from "../_shared/email.ts";
+import { pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
+import { registrar } from "../_shared/registro.ts";
 
 export interface DepsConsole extends DepsSessao {
   admin: AdminAuth;
@@ -45,7 +48,14 @@ export interface DepsConsole extends DepsSessao {
   urlPortal: string;
   /** Storage dos anexos do cliente (CO-05). */
   arquivos: Arquivos;
+  /** E-mails do sistema pelo Resend (F1.12). Sem o segredo, não manda. */
+  emails?: Emails;
+  /** Apagar as pastas do Storage no fim da guarda (F0.15). */
+  limpeza?: LimpezaArquivos;
 }
+
+/** Quantos arquivos cada chamada da rotina apaga por pasta, para caber no tempo do repasse. */
+const ARQUIVOS_POR_PASTA = 1000;
 
 interface LinhaCarteira {
   escritorio_id: string;
@@ -121,6 +131,27 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   }
 
   app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-console" }));
+
+  // F0.15: a rotina da noite do banco chama esta rota quando há pasta do Storage para apagar
+  // no fim da guarda. Ela só faz o que o banco já decidiu (a fila), então não pede sessão.
+  app.post("/v1/rotina/arquivos-da-guarda", async (c) => {
+    if (!deps.limpeza) return c.json({ pastas: 0, concluidas: 0, apagados: 0 });
+    const pendentes = await rpc<{ id: string; escritorioId: string; bucket: string }[]>("rotina_guarda_arquivos_pendentes", { p_limite: 4 });
+    let concluidas = 0;
+    let apagados = 0;
+    for (const p of pendentes) {
+      try {
+        if (!pastaValida(p.escritorioId)) throw new Error("Pasta inválida");
+        const r = await deps.limpeza.apagarPasta(p.bucket, p.escritorioId, ARQUIVOS_POR_PASTA);
+        await rpc("rotina_guarda_arquivos_registrar", { p_id: p.id, p_apagados: r.apagados, p_concluido: !r.restam });
+        apagados += r.apagados;
+        if (!r.restam) concluidas++;
+      } catch (e) {
+        await rpc("rotina_guarda_arquivos_registrar", { p_id: p.id, p_apagados: 0, p_concluido: false, p_erro: e instanceof Error ? e.message : "Falhou" });
+      }
+    }
+    return c.json({ pastas: pendentes.length, concluidas, apagados });
+  });
   sessao.rotas(app);
 
   for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*"]) app.use(rota, sessao.exigirSessao);
@@ -431,7 +462,18 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
       throw new ErroDominio("UPSTREAM_UNAVAILABLE");
     }
     const aparelhos = await rpc<number>("console_suporte_desconectar", { p_pessoa: pessoa(c), p_alvo: alvo, p_motivo: motivo, p_tirar_autenticador: true });
-    return c.json({ aparelhos });
+    // F1.12: a própria pessoa fica sabendo na hora, pelo e-mail cadastrado. Se o e-mail não
+    // sair, a ação continua feita (já está no histórico).
+    let avisoEnviado = false;
+    if (deps.emails) {
+      try {
+        await deps.emails.enviar({ para: ficha.email, ...avisoAutenticadorTirado(ficha.nome) });
+        avisoEnviado = true;
+      } catch (e) {
+        registrar("aviso", { funcao: "api-console", rota: "tirar-autenticador", erro: e });
+      }
+    }
+    return c.json({ aparelhos, avisoEnviado });
   });
 
   // Reenviar o convite de quem ainda não criou a senha (o link anterior deixa de valer).

@@ -1133,7 +1133,7 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
         <div className="hn-col">
           <Dados f={f} aoEditar={andamento ? () => setJanela("editar") : undefined} />
           <Clientes f={f} aoAdicionar={andamento ? () => setJanela("cliente") : undefined} />
-          <PrazosETarefas f={f} aoNovoPrazo={andamento ? () => setJanela("prazo") : undefined} aoNovaTarefa={andamento ? () => setJanela("tarefa") : undefined}
+          <PrazosETarefas f={f} escritorio={andamento ? escritorio : undefined} aoNovoPrazo={andamento ? () => setJanela("prazo") : undefined} aoNovaTarefa={andamento ? () => setJanela("tarefa") : undefined}
             aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} />
           <DocumentosDoCaso f={f} andamento={andamento} aoPedir={() => setJanela("pedir")} aoEnviar={() => setJanela("enviar")}
             aoPedirDeNovo={(d) => setDoc({ d, acao: "denovo" })} aoChegou={(d) => setDoc({ d, acao: "chegou" })} />

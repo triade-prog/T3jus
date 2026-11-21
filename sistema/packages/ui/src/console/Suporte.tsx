@@ -920,7 +920,8 @@ function FichaPessoa({ id, termo, aoNome, aoProibido }: { id: string; termo: str
                   </span>
                 ),
                 entrou ? `em ${dataLonga(f.senhaCriadaEm!)}` : valeAte ? `${sit === "CONVITE_PENDENTE" ? "vale até" : "venceu em"} ${dataHora(valeAte, agora)}` : null)}
-              {celula("Senha", entrou ? "Criada" : "Ainda não criada", entrou ? `em ${dataLonga(f.senhaCriadaEm!)}` : null)}
+              {celula("Senha", entrou ? "Criada" : "Ainda não criada",
+                entrou ? (f.senhaTrocadaEm ? `última troca em ${dataLonga(f.senhaTrocadaEm)}` : `em ${dataLonga(f.senhaCriadaEm!)}`) : null)}
               {celula("Autenticador", f.autenticadorDesde ? "Cadastrado" : "Não cadastrado", f.autenticadorDesde ? `desde ${dataLonga(f.autenticadorDesde)}` : null)}
               {celula("Última entrada", f.ultimaEntrada ? haQuanto(f.ultimaEntrada, agora) : "Nunca entrou", f.ultimaEntrada ? "no Portal" : null)}
               {celula("Aparelhos conectados", <span className="sa-num">{f.aparelhos}</span>,

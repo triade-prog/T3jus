@@ -6,6 +6,7 @@ import { z } from "zod";
 import { condicaoSchema } from "./comercial.ts";
 import type { Condicao, TipoHonorario } from "./honorarios.ts";
 import type { PessoaRef } from "./clientes.ts";
+import type { InscricaoOab } from "./portal.ts";
 
 export const SITUACOES_CONTRATO = { ELABORACAO: "Em elaboração", ATIVO: "Ativo", ENCERRADO: "Encerrado" } as const;
 export type SituacaoContrato = keyof typeof SITUACOES_CONTRATO;
@@ -27,6 +28,8 @@ export const dadosContratoSchema = z.object({
   responsavelId: id,
   advogados: z.array(z.string().max(40)).max(20).default([]),
   condicoes: z.array(condicaoSchema).max(7).default([]),
+  /** Quais inscrições na OAB de cada advogado vão no documento (EX-12): {pessoaId: [inscrição]}. Sem a pessoa, vão todas. */
+  inscricoes: z.record(z.string().max(40), z.array(z.string().max(40)).max(30)).nullish(),
 });
 export type DadosContrato = z.input<typeof dadosContratoSchema>;
 
@@ -34,6 +37,8 @@ export const editarContratoSchema = dadosContratoSchema.omit({ clienteId: true, 
   versao: z.number().int().min(1),
   motivo: texto(500),
 });
+
+export const inscricoesContratoSchema = z.object({ versao: z.number().int().min(1), inscricoes: z.array(z.string().max(40)).max(30) });
 
 export const assinaturaContratoSchema = z.object({ versao: z.number().int().min(1), assinadoEm: z.string().max(20).nullish() });
 export const encerrarContratoSchema = z.object({ versao: z.number().int().min(1), motivo: texto(500) });
@@ -82,6 +87,8 @@ export interface FichaContrato extends ContratoLinha {
   motivoEncerramento: string | null;
   proposta: { id: string; numero: string } | null;
   advogados: PessoaRef[];
+  /** A OAB de cada advogado neste contrato (EX-12, decisões 16, 18 e 20). */
+  inscricoes?: AdvogadoNoContrato[];
   financeiro: boolean;
   recebimentos: RecebimentoPrevisto[];
   historico: EventoContrato[];
@@ -98,6 +105,19 @@ export interface OrigemImportacaoContrato {
   desfazerAte: string | null;
   desfeita: boolean;
 }
+
+/** Inscrição da pessoa com a marca de escolhida neste contrato. */
+export interface InscricaoNoContrato extends InscricaoOab { escolhida: boolean }
+export interface AdvogadoNoContrato {
+  pessoaId: string;
+  /** "OAB/SP nº 287.104 e OAB/RJ nº 245.880-S", ou null sem OAB. */
+  frase: string | null;
+  inscricoes: InscricaoNoContrato[];
+  /** As escolhidas foram removidas na Equipe e o contrato passou a usar as que restam. */
+  usaTodas: boolean;
+}
+/** Pessoa da equipe com as inscrições, para marcar os advogados do contrato. */
+export interface PessoaComOab { id: string; nome: string; oab: InscricaoOab[] }
 
 export interface PropostaParaContrato {
   id: string;

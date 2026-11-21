@@ -15,7 +15,7 @@ const pessoaRenata = {
   escritorios: [{ ...RM, id: "e0000000-0000-4000-8000-000000000007", nome: "Cedro & Lima Advocacia", conviteEnviadoEm: h(26), telefone: "(81) 3421-0098" }],
 };
 const fichaMarina = (extra: Record<string, unknown> = {}) => ({
-  ...pessoaMarina, podeAgir: true, aparelhos: 2, emailConfirmado: true, ultimaEntrada: h(3), autenticadorDesde: d(199), ...extra,
+  ...pessoaMarina, podeAgir: true, aparelhos: 2, emailConfirmado: true, ultimaEntrada: h(3), autenticadorDesde: d(199), senhaTrocadaEm: d(7), ...extra,
 });
 const fichaRenata = { ...pessoaRenata, podeAgir: true, aparelhos: 0, emailConfirmado: false, ultimaEntrada: null, autenticadorDesde: null };
 const HIST = {
@@ -75,6 +75,8 @@ test.describe("Console: suporte de acesso", () => {
     await expect(page.locator(".sa-email")).toHaveText("marina@ribeiromatos.adv.br");
     await expect(page.getByText("verificado · não muda por aqui")).toBeVisible();
     await expect(page.locator(".sa-num")).toHaveText("2");
+    // F1.12: a data da última troca de senha, como no desenho aprovado.
+    await expect(page.getByText(/^última troca em \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
     await expect(page.getByText("Ligou dizendo que esqueceu a senha.")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Escritórios · 2" })).toBeVisible();
     await semViolacoes(page);

@@ -74,22 +74,36 @@ const MSG_PRAZO: Record<string, string> = {
   responsavelId: "Escolha quem cuida do prazo.",
 };
 
-/** Novo prazo (EX-04): do caso escolhido ou do caso da ficha. */
-export function JanelaPrazo({ caso, escritorio, aoFechar, aoFeito }: {
+const diaParaTela = (d: string | null | undefined) => (d ? dataBr(d) : "");
+const MSG_CONFLITO = "Outra pessoa mudou isto enquanto você editava. Feche a janela e abra de novo para ver como ficou.";
+
+/** O caso que a janela mostra fixo: o da ficha ou, ao editar, o do próprio prazo ou tarefa. */
+function casoFixo(caso: { id: string; nome: string; linha: string } | undefined, editado: { caso: { id: string; nome: string; numero?: string | null; vara?: string | null } } | undefined) {
+  if (caso) return caso;
+  if (!editado) return undefined;
+  const c = editado.caso;
+  return { id: c.id, nome: c.nome, linha: [c.numero ? formatarCnj(c.numero) : null, c.vara].filter(Boolean).join(" · ") || "Sem número ainda" };
+}
+
+/** Novo prazo (EX-04): do caso escolhido ou do caso da ficha. Com `editar`, a mesma janela
+ *  abre preenchida (F3.39): muda o que é, as datas e o responsável; o caso fica. */
+export function JanelaPrazo({ caso: casoDado, editar, escritorio, aoFechar, aoFeito }: {
   caso?: { id: string; nome: string; linha: string };
+  editar?: Prazo;
   escritorio: EscritorioPortal;
   aoFechar: () => void;
   aoFeito: (descricao: string) => void;
 }) {
   const pessoas = usePessoas();
   const casos = useCasosAbertos();
+  const caso = casoFixo(casoDado, editar);
   const [casoId, setCasoId] = useState(caso?.id ?? "");
-  const [descricao, setDescricao] = useState("");
-  const [dataFinal, setDataFinal] = useState("");
-  const [fazerAte, setFazerAte] = useState("");
-  const [intimacao, setIntimacao] = useState("");
-  const [resp, setResp] = useState("");
-  const [lembrar, setLembrar] = useState(true);
+  const [descricao, setDescricao] = useState(editar?.descricao ?? "");
+  const [dataFinal, setDataFinal] = useState(diaParaTela(editar?.dataFinal));
+  const [fazerAte, setFazerAte] = useState(diaParaTela(editar?.fazerAte));
+  const [intimacao, setIntimacao] = useState(diaParaTela(editar?.intimacaoEm));
+  const [resp, setResp] = useState(editar?.responsavel.id ?? "");
+  const [lembrar, setLembrar] = useState(editar?.lembrar ?? true);
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -111,15 +125,16 @@ export function JanelaPrazo({ caso, escritorio, aoFechar, aoFeito }: {
     setErros(e);
     if (e.length) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
-    const r = await chamarPortal<{ id: string }>("/v1/escritorio/juridico/prazos", {
-      metodo: "POST",
-      corpo: {
-        casoId, descricao: descricao.trim(), dataFinal: lerDia(dataFinal), fazerAte: fazerAte.trim() ? lerDia(fazerAte) : null,
-        intimacaoEm: intimacao.trim() ? lerDia(intimacao) : null, responsavelId, lembrar,
-      },
-    });
+    const campos_ = {
+      descricao: descricao.trim(), dataFinal: lerDia(dataFinal), fazerAte: fazerAte.trim() ? lerDia(fazerAte) : null,
+      intimacaoEm: intimacao.trim() ? lerDia(intimacao) : null, responsavelId, lembrar,
+    };
+    const r = editar
+      ? await chamarPortal<{ id: string }>(`/v1/escritorio/juridico/prazos/${editar.id}`, { metodo: "PUT", corpo: { versao: editar.versao, ...campos_ } })
+      : await chamarPortal<{ id: string }>("/v1/escritorio/juridico/prazos", { metodo: "POST", corpo: { casoId, ...campos_ } });
     setEnviando(false);
     if (r.ok) return aoFeito(descricao.trim());
+    if (r.erro.codigo === "VERSION_CONFLICT") return setFalha(MSG_CONFLITO);
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length && !r.erro.detalhes?.motivo) {
       setErros(campos.map(String));
@@ -139,20 +154,20 @@ export function JanelaPrazo({ caso, escritorio, aoFechar, aoFeito }: {
   );
 
   return (
-    <Janela id="j-prazo" aberta aoFechar={aoFechar} sobretitulo="Jurídico · Prazos" titulo="Novo prazo" descricao="j-prazo-d" aoEnviar={() => void enviar()}
+    <Janela id="j-prazo" aberta aoFechar={aoFechar} sobretitulo="Jurídico · Prazos" titulo={editar ? "Editar prazo" : "Novo prazo"} descricao="j-prazo-d" aoEnviar={() => void enviar()}
       pe={
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
           <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
             <Icone nome="check" className="ico" />
-            Cadastrar prazo
+            {editar ? "Salvar prazo" : "Cadastrar prazo"}
           </button>
         </>
       }>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
-        <p id="j-prazo-d">Fica no caso, na lista de prazos e com o responsável.</p>
-        {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>O prazo ainda não foi cadastrado.</Aviso> : null}
-        {falha ? <Aviso tom="urgencia" titulo="O prazo não foi cadastrado.">{falha}</Aviso> : null}
+        <p id="j-prazo-d">{editar ? "A mudança fica no histórico do caso, com seu nome e a hora." : "Fica no caso, na lista de prazos e com o responsável."}</p>
+        {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>{editar ? "O prazo ainda não foi salvo." : "O prazo ainda não foi cadastrado."}</Aviso> : null}
+        {falha ? <Aviso tom="urgencia" titulo={editar ? "O prazo não foi salvo." : "O prazo não foi cadastrado."}>{falha}</Aviso> : null}
         <div className="hn-campos">
           {caso ? (
             <div className="campo c6">
@@ -187,7 +202,7 @@ export function JanelaPrazo({ caso, escritorio, aoFechar, aoFeito }: {
               {pessoas === null ? <option value="">Carregando a equipe…</option> : null}
               {(pessoas ?? []).map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
             </select>
-            <p className="ajuda" id="pz-resp-aj">Vê o prazo na lista dele e responde por ele.</p>
+            <p className="ajuda" id="pz-resp-aj">{editar ? "Trocar o responsável fica no histórico do caso, com quem era antes." : "Vê o prazo na lista dele e responde por ele."}</p>
             {tem("responsavelId") ? <ErroCampo id="pz-resp-er">{MSG_PRAZO.responsavelId}</ErroCampo> : null}
           </div>
           <div className="campo c6">
@@ -219,21 +234,24 @@ const MSG_TAREFA: Record<string, string> = {
   esperando: "Escreva no máximo 200 letras.",
 };
 
-/** Nova tarefa (EX-02): com responsável, vencimento e, se for o caso, o que ela espera. */
-export function JanelaTarefa({ caso, escritorio, aoFechar, aoFeito }: {
+/** Nova tarefa (EX-02): com responsável, vencimento e, se for o caso, o que ela espera. Com
+ *  `editar`, a mesma janela abre preenchida (F3.39); o caso fica. */
+export function JanelaTarefa({ caso: casoDado, editar, escritorio, aoFechar, aoFeito }: {
   caso?: { id: string; nome: string; linha: string };
+  editar?: Tarefa;
   escritorio: EscritorioPortal;
   aoFechar: () => void;
   aoFeito: (titulo: string) => void;
 }) {
   const pessoas = usePessoas();
   const casos = useCasosAbertos();
+  const caso = casoFixo(casoDado, editar);
   const [casoId, setCasoId] = useState(caso?.id ?? "");
-  const [titulo, setTitulo] = useState("");
-  const [vence, setVence] = useState("");
-  const [resp, setResp] = useState("");
-  const [espera, setEspera] = useState(false);
-  const [esperando, setEsperando] = useState("");
+  const [titulo, setTitulo] = useState(editar?.titulo ?? "");
+  const [vence, setVence] = useState(diaParaTela(editar?.venceEm));
+  const [resp, setResp] = useState(editar?.responsavel.id ?? "");
+  const [espera, setEspera] = useState(Boolean(editar?.esperando));
+  const [esperando, setEsperando] = useState(editar?.esperando ?? "");
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -253,12 +271,13 @@ export function JanelaTarefa({ caso, escritorio, aoFechar, aoFeito }: {
     setErros(e);
     if (e.length) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
-    const r = await chamarPortal<{ id: string }>("/v1/escritorio/juridico/tarefas", {
-      metodo: "POST",
-      corpo: { casoId, titulo: titulo.trim(), venceEm: lerDia(vence), responsavelId, esperando: espera ? esperando.trim() : null },
-    });
+    const campos_ = { titulo: titulo.trim(), venceEm: lerDia(vence), responsavelId, esperando: espera ? esperando.trim() : null };
+    const r = editar
+      ? await chamarPortal<{ id: string }>(`/v1/escritorio/juridico/tarefas/${editar.id}`, { metodo: "PUT", corpo: { versao: editar.versao, ...campos_ } })
+      : await chamarPortal<{ id: string }>("/v1/escritorio/juridico/tarefas", { metodo: "POST", corpo: { casoId, ...campos_ } });
     setEnviando(false);
     if (r.ok) return aoFeito(titulo.trim());
+    if (r.erro.codigo === "VERSION_CONFLICT") return setFalha(MSG_CONFLITO);
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length && !r.erro.detalhes?.motivo) {
       setErros(campos.map(String));
@@ -268,20 +287,20 @@ export function JanelaTarefa({ caso, escritorio, aoFechar, aoFeito }: {
   }
 
   return (
-    <Janela id="j-tarefa" aberta aoFechar={aoFechar} sobretitulo="Jurídico · Tarefas" titulo="Nova tarefa" descricao="j-tarefa-d" aoEnviar={() => void enviar()}
+    <Janela id="j-tarefa" aberta aoFechar={aoFechar} sobretitulo="Jurídico · Tarefas" titulo={editar ? "Editar tarefa" : "Nova tarefa"} descricao="j-tarefa-d" aoEnviar={() => void enviar()}
       pe={
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
           <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
             <Icone nome="check" className="ico" />
-            Criar tarefa
+            {editar ? "Salvar tarefa" : "Criar tarefa"}
           </button>
         </>
       }>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
-        <p id="j-tarefa-d">Cada tarefa tem um caso, quem faz e até quando.</p>
-        {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>A tarefa ainda não foi criada.</Aviso> : null}
-        {falha ? <Aviso tom="urgencia" titulo="A tarefa não foi criada.">{falha}</Aviso> : null}
+        <p id="j-tarefa-d">{editar ? "A mudança fica no histórico do caso, com seu nome e a hora." : "Cada tarefa tem um caso, quem faz e até quando."}</p>
+        {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>{editar ? "A tarefa ainda não foi salva." : "A tarefa ainda não foi criada."}</Aviso> : null}
+        {falha ? <Aviso tom="urgencia" titulo={editar ? "A tarefa não foi salva." : "A tarefa não foi criada."}>{falha}</Aviso> : null}
         <div className="hn-campos">
           {caso ? (
             <div className="campo c6">
@@ -372,7 +391,7 @@ function JanelaCumprido({ p, aoFechar, aoFeito }: { p: Prazo; aoFechar: () => vo
 
 // ------------------------------------------------------------------------- Prazos
 
-function LinhaPrazo({ p, hoje, aoCumprir }: { p: Prazo; hoje: string; aoCumprir?: () => void }) {
+function LinhaPrazo({ p, hoje, aoCumprir, aoEditar }: { p: Prazo; hoje: string; aoCumprir?: () => void; aoEditar?: () => void }) {
   const u = urgenciaPrazo(p.dataFinal, hoje);
   const sub = [p.caso.numero ? formatarCnj(p.caso.numero) : "Sem número ainda", p.caso.vara].filter(Boolean).join(" · ");
   return (
@@ -394,11 +413,21 @@ function LinhaPrazo({ p, hoje, aoCumprir }: { p: Prazo; hoje: string; aoCumprir?
         {p.cumpridoEm ? <Selo tom="ativo" icone="check">Cumprido</Selo> : <SeloUrgencia u={u} />}
         <Quem p={p.responsavel} />
       </div>
-      {aoCumprir ? (
-        <button className="btn btn-sec btn-compacto" type="button" onClick={aoCumprir} aria-label={`Cumprido: ${p.descricao}, ${p.caso.nome}`}>
-          <Icone nome="check" className="ico" />
-          Cumprido
-        </button>
+      {aoCumprir || aoEditar ? (
+        <span className="jr-fpz-acao">
+          {aoEditar ? (
+            <button className="btn btn-fantasma btn-compacto" type="button" onClick={aoEditar} aria-label={`Editar: ${p.descricao}, ${p.caso.nome}`}>
+              <Icone nome="pena" className="ico" />
+              Editar
+            </button>
+          ) : null}
+          {aoCumprir ? (
+            <button className="btn btn-sec btn-compacto" type="button" onClick={aoCumprir} aria-label={`Cumprido: ${p.descricao}, ${p.caso.nome}`}>
+              <Icone nome="check" className="ico" />
+              Cumprido
+            </button>
+          ) : null}
+        </span>
       ) : null}
     </li>
   );
@@ -417,6 +446,7 @@ function PrazosConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
     void Promise.resolve().then(() => setNovo(true));
   }, []);
   const [cumprir, setCumprir] = useState<Prazo | null>(null);
+  const [editar, setEditar] = useState<Prazo | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const filtros = new URLSearchParams({ mostrar });
   if (resp && mostrar !== "MEUS") filtros.set("responsavel", resp);
@@ -431,6 +461,8 @@ function PrazosConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
         aoFeito={(d) => { setNovo(false); setFeito({ titulo: "Prazo cadastrado", texto: `${d} está na lista e na ficha do caso.` }); recarregar(); }} /> : null}
       {cumprir ? <JanelaCumprido p={cumprir} aoFechar={() => setCumprir(null)}
         aoFeito={() => { setFeito({ titulo: "Prazo cumprido", texto: `${cumprir.descricao} ficou no histórico do caso.` }); setCumprir(null); recarregar(); }} /> : null}
+      {editar ? <JanelaPrazo editar={editar} escritorio={escritorio} aoFechar={() => setEditar(null)}
+        aoFeito={(d) => { setEditar(null); setFeito({ titulo: "Prazo salvo", texto: `${d}: a mudança ficou no histórico do caso.` }); recarregar(); }} /> : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </>
   );
@@ -470,7 +502,8 @@ function PrazosConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
             <div key={g.chave} className="jr-grupo">
               <h3 className="sobretitulo">{g.titulo} <span className="jr-n">{g.itens.length}</span></h3>
               <ul className="jr-pzs">
-                {g.itens.map((p) => <LinhaPrazo key={p.id} p={p} hoje={dados.hoje} aoCumprir={p.cumpridoEm ? undefined : () => setCumprir(p)} />)}
+                {g.itens.map((p) => <LinhaPrazo key={p.id} p={p} hoje={dados.hoje} aoCumprir={p.cumpridoEm ? undefined : () => setCumprir(p)}
+                  aoEditar={p.cumpridoEm ? undefined : () => setEditar(p)} />)}
               </ul>
             </div>
           )) : (
@@ -518,8 +551,8 @@ async function chegou(t: Tarefa): Promise<string | null> {
   return r.ok ? null : textoDoErro(r.erro);
 }
 
-function LinhaTarefa({ t, hoje, comCaso = true, comQuem = true, aoMarcar, aoChegou }: {
-  t: Tarefa; hoje: string; comCaso?: boolean; comQuem?: boolean; aoMarcar: (sim: boolean) => Promise<boolean>; aoChegou?: () => void;
+function LinhaTarefa({ t, hoje, comCaso = true, comQuem = true, aoMarcar, aoChegou, aoEditar }: {
+  t: Tarefa; hoje: string; comCaso?: boolean; comQuem?: boolean; aoMarcar: (sim: boolean) => Promise<boolean>; aoChegou?: () => void; aoEditar?: () => void;
 }) {
   // A caixa muda na hora; se o servidor recusar, volta como estava.
   const [marcada, setMarcada] = useState<boolean | null>(null);
@@ -546,6 +579,12 @@ function LinhaTarefa({ t, hoje, comCaso = true, comQuem = true, aoMarcar, aoCheg
           : t.esperando && !comCaso ? <Selo tom="atencao">Travada</Selo>
           : u.tom === "neutro" ? <span className="jr-data">{u.texto}</span> : <SeloUrgencia u={u} />}
         {comQuem ? <Quem p={t.responsavel} /> : null}
+        {aoEditar && !feita ? (
+          <button className="btn btn-fantasma btn-compacto" type="button" onClick={aoEditar} aria-label={`Editar: ${t.titulo}`}>
+            <Icone nome="pena" className="ico" />
+            Editar
+          </button>
+        ) : null}
       </div>
     </li>
   );
@@ -589,6 +628,7 @@ function TarefasConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
   const [visao, setVisao] = useState<VisaoTarefas>("MINHAS");
   const [resp, setResp] = useState("");
   const [nova, setNova] = useState(false);
+  const [editar, setEditar] = useState<Tarefa | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
   const filtros = new URLSearchParams({ visao });
@@ -602,6 +642,8 @@ function TarefasConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
     <>
       {nova ? <JanelaTarefa escritorio={escritorio} aoFechar={() => setNova(false)}
         aoFeito={(x) => { setNova(false); setFeito({ titulo: "Tarefa criada", texto: `${x} está na lista e na ficha do caso.` }); recarregar(); }} /> : null}
+      {editar ? <JanelaTarefa editar={editar} escritorio={escritorio} aoFechar={() => setEditar(null)}
+        aoFeito={(x) => { setEditar(null); setFeito({ titulo: "Tarefa salva", texto: `${x}: a mudança ficou no histórico do caso.` }); recarregar(); }} /> : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </>
   );
@@ -660,7 +702,8 @@ function TarefasConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
             <div key={g.chave} className="jr-grupo">
               <h3 className="sobretitulo">{g.titulo} <span className="jr-n">{g.itens.length}</span></h3>
               <ul className="jr-tfs">
-                {g.itens.map((x) => <LinhaTarefa key={x.id} t={x} hoje={dados.hoje} comQuem={visao === "EQUIPE"} aoMarcar={(s) => marcar(x, s)} aoChegou={() => void jaChegou(x)} />)}
+                {g.itens.map((x) => <LinhaTarefa key={x.id} t={x} hoje={dados.hoje} comQuem={visao === "EQUIPE"} aoMarcar={(s) => marcar(x, s)} aoChegou={() => void jaChegou(x)}
+                  aoEditar={() => setEditar(x)} />)}
               </ul>
             </div>
           )) : (
@@ -696,10 +739,12 @@ export function TarefasJuridicoPortal() {
 // ------------------------------------------------------------------------- Na ficha do caso
 
 /** "Prazos e tarefas" na ficha (EX-02, EX-04): os abertos primeiro, os feitos nos últimos 30 dias depois. */
-export function PrazosETarefas({ f, aoNovoPrazo, aoNovaTarefa, aoMudou }: {
-  f: FichaCaso; aoNovoPrazo?: () => void; aoNovaTarefa?: () => void; aoMudou: (feito: Feito) => void;
+export function PrazosETarefas({ f, escritorio, aoNovoPrazo, aoNovaTarefa, aoMudou }: {
+  f: FichaCaso; escritorio?: EscritorioPortal; aoNovoPrazo?: () => void; aoNovaTarefa?: () => void; aoMudou: (feito: Feito) => void;
 }) {
   const [cumprir, setCumprir] = useState<Prazo | null>(null);
+  const [editarPz, setEditarPz] = useState<Prazo | null>(null);
+  const [editarTf, setEditarTf] = useState<Tarefa | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
   const abertos = f.prazos.filter((p) => !p.cumpridoEm).length;
   const tarefas = f.tarefas.filter((t) => !t.concluidaEm).length;
@@ -743,6 +788,12 @@ export function PrazosETarefas({ f, aoNovoPrazo, aoNovaTarefa, aoMudou }: {
                 {p.cumpridoEm ? <Selo tom="ativo" icone="check">Cumprido</Selo> : (
                   <span className="jr-fpz-acao">
                     <SeloUrgencia u={u} />
+                    {escritorio ? (
+                      <button className="btn btn-fantasma btn-compacto" type="button" onClick={() => setEditarPz(p)} aria-label={`Editar: ${p.descricao}`}>
+                        <Icone nome="pena" className="ico" />
+                        Editar
+                      </button>
+                    ) : null}
                     <button className="btn btn-sec btn-compacto" type="button" onClick={() => setCumprir(p)} aria-label={`Cumprido: ${p.descricao}`}>
                       <Icone nome="check" className="ico" />
                       Cumprido
@@ -760,11 +811,16 @@ export function PrazosETarefas({ f, aoNovoPrazo, aoNovaTarefa, aoMudou }: {
       </div>
       {f.tarefas.length ? (
         <ul className="jr-tfs jr-tfs-ficha">
-          {f.tarefas.map((t) => <LinhaTarefa key={t.id} t={t} hoje={f.hoje} comCaso={false} comQuem={false} aoMarcar={(s) => marcar(t, s)} />)}
+          {f.tarefas.map((t) => <LinhaTarefa key={t.id} t={t} hoje={f.hoje} comCaso={false} comQuem={false} aoMarcar={(s) => marcar(t, s)}
+            aoEditar={escritorio ? () => setEditarTf(t) : undefined} />)}
         </ul>
       ) : <p className="jr-vazio">Nenhuma tarefa neste caso.</p>}
       {cumprir ? <JanelaCumprido p={cumprir} aoFechar={() => setCumprir(null)}
         aoFeito={() => { const d = cumprir.descricao; setCumprir(null); aoMudou({ titulo: "Prazo cumprido", texto: `${d} ficou no histórico do caso.` }); }} /> : null}
+      {editarPz && escritorio ? <JanelaPrazo editar={editarPz} escritorio={escritorio} aoFechar={() => setEditarPz(null)}
+        aoFeito={(d) => { setEditarPz(null); aoMudou({ titulo: "Prazo salvo", texto: `${d}: a mudança ficou no histórico do caso.` }); }} /> : null}
+      {editarTf && escritorio ? <JanelaTarefa editar={editarTf} escritorio={escritorio} aoFechar={() => setEditarTf(null)}
+        aoFeito={(d) => { setEditarTf(null); aoMudou({ titulo: "Tarefa salva", texto: `${d}: a mudança ficou no histórico do caso.` }); }} /> : null}
     </section>
   );
 }

@@ -208,6 +208,10 @@ export const prazoSchema = z.object({
 });
 export type NovoPrazo = z.input<typeof prazoSchema>;
 
+/** Editar prazo (F3.39): os mesmos campos, menos o caso, pela versão lida. */
+export const editarPrazoSchema = prazoSchema.omit({ casoId: true }).extend({ versao: z.number().int().min(1) });
+export type EditarPrazo = z.input<typeof editarPrazoSchema>;
+
 export const tarefaSchema = z.object({
   casoId: id,
   titulo: texto(200),
@@ -216,6 +220,10 @@ export const tarefaSchema = z.object({
   esperando: texto(200),
 });
 export type NovaTarefa = z.input<typeof tarefaSchema>;
+
+/** Editar tarefa (F3.39): os mesmos campos, menos o caso, pela versão lida. */
+export const editarTarefaSchema = tarefaSchema.omit({ casoId: true }).extend({ versao: z.number().int().min(1) });
+export type EditarTarefa = z.input<typeof editarTarefaSchema>;
 
 export const concluirTarefaSchema = z.object({ concluir: z.boolean().default(true) });
 
@@ -229,6 +237,7 @@ export interface Prazo {
   cumpridoEm: string | null;
   cumpridoPor: PessoaRef | null;
   responsavel: PessoaRef;
+  versao: number;
   caso: { id: string; nome: string; numero: string | null; vara: string | null };
 }
 
@@ -241,6 +250,7 @@ export interface Tarefa {
   concluidaEm: string | null;
   concluidaPor: PessoaRef | null;
   responsavel: PessoaRef;
+  versao: number;
   caso: { id: string; nome: string };
 }
 
