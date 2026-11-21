@@ -1,0 +1,12 @@
+{
+  "id": "F2.6",
+  "texto": "Pedido novo do site avisa no sino de quem vê Interessados",
+  "peca": "C4",
+  "refs": [
+    "SC-02",
+    "SC-05"
+  ],
+  "status": "pendente",
+  "ordem": 60,
+  "proximo": "O Console ainda não tem sino; hoje o pedido novo aparece no contador de Comercial no menu. Ligar quando o sino do Console existir."
+}
