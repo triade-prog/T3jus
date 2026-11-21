@@ -46,6 +46,7 @@ import {
   type Chip,
   type FiltroInteressados,
 } from "./interessados.ts";
+import { JanelaCadastrarInteressado } from "./CadastrarInteressado.tsx";
 import { chamarConsole, INTERESSADOS, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
 import { dataLonga, hora, iniciais } from "./tempo.ts";
@@ -133,6 +134,7 @@ export function ListaInteressadosConsole() {
   const [dados, setDados] = useState<ListaInteressados | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [f, setF] = useState<FiltroInteressados>({ chip: "ANDAMENTO", busca: "", responsavel: "", origem: "" });
+  const [cadastrando, setCadastrando] = useState(false);
   const carregado = useRef(false);
 
   const carregar = useCallback(async () => {
@@ -178,13 +180,21 @@ export function ListaInteressadosConsole() {
               <p className="lede">Os escritórios que pediram demonstração pelo site ou chegaram por indicação, do primeiro contato até virarem clientes.</p>
               {hoje ? <p className="cb-cab-linha"><span className="cb-peq" style={{ color: "var(--tinta)" }}>Hoje: {dataBrInteira(hoje)}</span></p> : null}
             </div>
+            {dados?.podeEditar && sessao ? (
+              <div className="in-cab-acao">
+                <button className="btn btn-pri" type="button" onClick={() => setCadastrando(true)}><Icone nome="mais" className="ico" />Cadastrar interessado</button>
+              </div>
+            ) : null}
           </div>
+          {cadastrando && dados && sessao ? (
+            <JanelaCadastrarInteressado aberta hoje={dados.hoje} eu={sessao.pessoaId} pessoas={dados.pessoas} aoFechar={() => setCadastrando(false)} />
+          ) : null}
 
           {erro ? <ErroLista aoTentar={() => void carregar()} /> : !dados ? <Carregando rotulo="Carregando os interessados…" linhas={5} /> : dados.interessados.length === 0 ? (
             <div className="estado" role="status">
               <span className="icone-estado"><Icone nome="maleta" className="ico" /></span>
               <h3>Nenhum interessado ainda</h3>
-              <p>Os pedidos de demonstração do site entram aqui sozinhos, com a data, a origem e a autorização que a pessoa marcou.</p>
+              <p>Os pedidos de demonstração do site entram aqui sozinhos, com a data, a origem e a autorização que a pessoa marcou. Quem chega por indicação, evento ou contato direto você cadastra em “Cadastrar interessado”.</p>
             </div>
           ) : (
             <>
@@ -598,8 +608,8 @@ function JanelaConverter({ f, aberta, aoFechar, aoFeito, aoConflito }: JanelaPro
           </Campo>
         </div>
         <ul className="in-vai" aria-label="Também vai para a ficha do escritório">
-          <li><Icone nome="pessoas" className="ico" /><span><b>Contato:</b> {f.nome}, {f.email}, {whatsLegivel(f.whats)}</span></li>
-          <li><Icone nome="historico" className="ico" /><span>O pedido, a autorização, as notas e o histórico do interessado ficam ligados à ficha</span></li>
+          <li><Icone nome="pessoas" className="ico" /><span><b>Contato:</b> {[f.nome, f.email, f.whats ? whatsLegivel(f.whats) : null].filter(Boolean).join(", ")}</span></li>
+          <li><Icone nome="historico" className="ico" /><span>{f.origem === "SITE" ? "O pedido, a autorização" : "O contato, de onde veio"}, as notas e o histórico do interessado ficam ligados à ficha</span></li>
           {f.responsavel ? <li><Icone nome="cracha" className="ico" /><span>{f.responsavel.nome} fica atribuído como Implantação</span></li> : null}
         </ul>
         <Campo id={`${ids}-m`} rotulo="Como fechou" erro={e.erros.motivo} ajuda="Obrigatório. Vai para o histórico do interessado e do escritório.">
@@ -784,6 +794,7 @@ export function FichaInteressadoConsole({ id }: { id: string }) {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [janela, setJanela] = useState<Janelas>(null);
   const [aviso, setAviso] = useState<{ tom: "sucesso" | "atencao"; titulo: string; texto?: string; escritorio?: string } | null>(null);
+  const [vindo, setVindo] = useState<"novo" | "juntado" | null>(null);
   const carregado = useRef(false);
 
   const carregar = useCallback(async () => {
@@ -797,7 +808,14 @@ export function FichaInteressadoConsole({ id }: { id: string }) {
   useEffect(() => {
     if (carregado.current) return;
     carregado.current = true;
-    void carregar();
+    // Vindo do cadastro à mão (F2.5): o aviso de cadastrado, de juntado ou a janela de reabrir.
+    const q = new URLSearchParams(window.location.search);
+    const vindo = q.get("novo") ? "novo" : q.get("juntado") ? "juntado" : q.get("reabrir") ? "reabrir" : null;
+    if (vindo) window.history.replaceState(null, "", window.location.pathname);
+    void carregar().then(() => {
+      if (vindo === "reabrir") setJanela("reabrir");
+      else if (vindo) setVindo(vindo);
+    });
   }, [carregar]);
 
   const feito = (titulo: string, texto?: string) => () => {
@@ -841,7 +859,10 @@ export function FichaInteressadoConsole({ id }: { id: string }) {
   const t = prazo(f, f.hoje);
   const meta = [f.nome, cidadeUf(f), `${TAMANHOS_INTERESSADO[f.tamanho]} ${f.tamanho === "SO_EU" ? "" : "pessoas"}`.trim()].filter(Boolean) as string[];
   const deOnde = f.origem === "SITE" ? "pelo site" : `por ${ORIGENS_INTERESSADO[f.origem].toLowerCase()}`;
-  const sobre = `Interessado · chegou ${deOnde} ${dataBrInteira(f.chegouEm.slice(0, 10)) === dataBrInteira(f.hoje) ? `hoje, às ${hora(f.chegouEm)}` : `em ${dataLonga(f.chegouEm)}`}`;
+  const ehHoje = (iso: string) => dataLonga(iso) === dataBrInteira(f.hoje);
+  const quandoFoi = (iso: string) => (ehHoje(iso) ? `hoje, às ${hora(iso)}` : `em ${dataLonga(iso)}`);
+  const sobre = f.cadastradoPor && f.cadastradoEm ? `Interessado · cadastrado à mão por ${f.cadastradoPor} ${quandoFoi(f.cadastradoEm)}` : `Interessado · chegou ${deOnde} ${quandoFoi(f.chegouEm)}`;
+  const detalheOrigem = f.origemDetalhe?.detalhe ?? null;
 
   let direita: ReactNode;
   if (f.estagio === "CLIENTE") {
@@ -901,6 +922,14 @@ export function FichaInteressadoConsole({ id }: { id: string }) {
         <section className="dir campo-ambar" aria-labelledby={`${ids}-dir`}>{direita}</section>
       </div>
 
+      {vindo === "novo" ? (
+        <Aviso tom="sucesso" titulo={`${f.escritorio} entrou em Interessados.`}>
+          Está em {ESTAGIOS_INTERESSADO[f.estagio]}{f.responsavel ? `, com ${f.responsavel.id === sessao?.pessoaId ? "você" : f.responsavel.nome} como responsável` : ""}.
+          {f.proximo?.data ? ` O próximo passo é ${f.proximo.passo.replace(/^./, (c) => c.toLowerCase())} até ${diaMes(f.proximo.data, f.hoje)}.` : ""}
+        </Aviso>
+      ) : vindo === "juntado" ? (
+        <Aviso tom="sucesso" titulo="O contato novo foi juntado a este interessado.">O que foi escrito está nas notas e contou como novo contato. Nenhum interessado novo foi criado.</Aviso>
+      ) : null}
       {aviso ? (
         <Aviso tom={aviso.tom} titulo={aviso.titulo}
           acoes={f.estagio === "CLIENTE" && f.clienteEscritorio ? <a className="btn btn-sec btn-compacto" href={`/clientes/${f.clienteEscritorio}/socio`}><Icone nome="mais" className="ico" />Convidar o sócio</a> : undefined}>
@@ -915,12 +944,13 @@ export function FichaInteressadoConsole({ id }: { id: string }) {
         <div className="col">
           <section className="folha" aria-labelledby={`${ids}-ped`} style={{ overflow: "hidden" }}>
             <div className="folha-cab"><div><h2 id={`${ids}-ped`}>{f.origem === "SITE" ? "Pedido de demonstração" : "Contato"}</h2>
-              <p className="sub">{f.origem === "SITE" ? `Como chegou do site em ${dataLonga(f.chegouEm)}, às ${hora(f.chegouEm)}. O que a pessoa escreveu não muda.` : `Cadastrado em ${dataLonga(f.chegouEm)}.`}</p></div></div>
+              <p className="sub">{f.origem === "SITE" ? `Como chegou do site em ${dataLonga(f.chegouEm)}, às ${hora(f.chegouEm)}. O que a pessoa escreveu não muda.`
+                : f.cadastradoPor && f.cadastradoEm ? `Cadastrado à mão por ${f.cadastradoPor} em ${dataLonga(f.cadastradoEm)}, às ${hora(f.cadastradoEm)}.` : `Cadastrado em ${dataLonga(f.chegouEm)}.`}</p></div></div>
             <dl className="in-dl">
               <dt>Nome</dt><dd>{f.nome}</dd>
               <dt>Escritório</dt><dd>{f.escritorio}</dd>
-              <dt>E-mail</dt><dd><a href={`mailto:${f.email}`}>{f.email}</a></dd>
-              <dt>WhatsApp</dt><dd>{whatsLegivel(f.whats)}</dd>
+              <dt>E-mail</dt><dd>{f.email ? <a href={`mailto:${f.email}`}>{f.email}</a> : <span className="cb-peq">não informado</span>}</dd>
+              <dt>WhatsApp</dt><dd>{f.whats ? whatsLegivel(f.whats) : <span className="cb-peq">não informado</span>}</dd>
               <dt>Tamanho</dt><dd>{TAMANHOS_INTERESSADO[f.tamanho]}{f.tamanho === "SO_EU" ? "" : " pessoas"}</dd>
               <dt>Área de atuação</dt><dd>{f.area ?? <span className="cb-peq">não informada</span>}</dd>
               <dt>Cidade</dt><dd>{cidadeUf(f) ?? <span className="cb-peq">não informada</span>}{f.cidadeCompletadaEm ? <small>completado pela equipe em {dataLonga(f.cidadeCompletadaEm)}</small> : null}</dd>
@@ -941,6 +971,23 @@ export function FichaInteressadoConsole({ id }: { id: string }) {
                 <ul>
                   <li><b>Texto aceito:</b> versão {aut.versao}</li>
                   <li><b>Para quê:</b> responder ao pedido e marcar a demonstração. Nada de propaganda.</li>
+                  <li><b>Até quando:</b> se não virar cliente, os dados são apagados 12 meses depois do último contato, ou antes, se a pessoa pedir.</li>
+                </ul>
+              </div>
+            </section>
+          ) : f.baseLegal === "LEGITIMO_INTERESSE" ? (
+            <section className="folha" aria-labelledby={`${ids}-lgpd`} style={{ overflow: "hidden" }}>
+              <div className="folha-cab"><div><h2 id={`${ids}-lgpd`}>De onde veio o contato</h2><p className="sub">Guardado com o cadastro. Não dá para editar.</p></div></div>
+              <div className="in-lgpd">
+                <p className="in-l-topo">
+                  <span className="selo selo-neutro"><Icone nome="escudo" className="ico" />Legítimo interesse</span>
+                  {f.cadastradoEm ? <b>cadastrado em {dataLonga(f.cadastradoEm)}, às {hora(f.cadastradoEm)}</b> : null}
+                  <span className="cb-peq">{f.cadastradoPor ? `por ${f.cadastradoPor} · ` : ""}sem a autorização do site</span>
+                </p>
+                {detalheOrigem ? <blockquote>“{detalheOrigem}”</blockquote> : null}
+                <ul>
+                  <li><b>A pessoa sabe:</b> {f.sabeDoContato ? "sim, ela pediu ou aceitou o contato. Se pedir para não ser mais procurada, encerre como descartado." : "ainda não. No primeiro contato, conte de onde veio o contato e que ela pode pedir para não ser mais procurada."}</li>
+                  <li><b>Para quê:</b> apresentar o T3jus e marcar uma demonstração. Nada de propaganda.</li>
                   <li><b>Até quando:</b> se não virar cliente, os dados são apagados 12 meses depois do último contato, ou antes, se a pessoa pedir.</li>
                 </ul>
               </div>
@@ -1002,6 +1049,9 @@ export function FichaInteressadoConsole({ id }: { id: string }) {
               <div><dt>Como chegou</dt><dd>{ORIGENS_INTERESSADO[f.origem]}</dd></div>
               {f.origemDetalhe?.pagina ? <div><dt>Página</dt><dd>t3jus.pro{f.origemDetalhe.pagina}</dd></div> : null}
               {f.origem === "SITE" ? <div><dt>Campanha</dt><dd>{f.origemDetalhe?.campanha ?? "nenhuma"}</dd></div> : null}
+              {f.origem !== "SITE" && detalheOrigem ? <div><dt>De onde veio</dt><dd>{detalheOrigem}</dd></div> : null}
+              {f.cadastradoPor ? <div><dt>Cadastro</dt><dd>À mão, por {f.cadastradoPor}</dd></div> : null}
+              {f.origem !== "SITE" ? <div><dt>Data do contato</dt><dd>{dataLonga(f.chegouEm)}</dd></div> : null}
               {f.clienteEscritorio && f.clienteNome ? <div><dt>Escritório cliente</dt><dd><a href={`/clientes/${f.clienteEscritorio}/ficha`}>{f.clienteNome}</a></dd></div> : null}
             </dl>
           </section>
