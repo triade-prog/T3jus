@@ -33,8 +33,20 @@ const PEDIDO_PETICAO = {
   enderecamento: "Excelentíssimo(a) Senhor(a) Juiz(íza) da 45ª Vara do Trabalho de São Paulo", cidadeData: "São Paulo, 20 de novembro de 2026",
 };
 
+// O recibo como o banco devolve (F3.19, F3.93), com o reembolso pago junto (F3.95).
+const RECIBO_TESTE = {
+  numero: { ano: 2026, numero: 187 },
+  escritorio: { nome: "Aurora Advocacia", cnpj: "11222333000181", endereco: "Rua A, 1", cidade: "Salvador", uf: "BA", contatos: [], whatsapp: null },
+  cliente: { id: "c1", nome: "Hélio Batista Corrêa", tipo: "PF", documento: "31848261713" }, pagador: null,
+  contrato: { id: "k1", numero: "C-2026-014", objeto: "Ação revisional" },
+  parcela: { id: "p1", descricao: "Parcela 3 de 6", vencimento: "2026-10-25", ordem: 3, total: 6 },
+  valor: 85000, multaJuros: null, forma: "PIX", pagoEm: "2026-10-15",
+  registradoPor: { nome: "Ana", oab: null }, registradoEm: "2026-10-15T15:00:00Z", pagamentoId: "x",
+  reembolsos: [{ descricao: "Custas", valor: 12000, forma: "PIX", adiantadoEm: "2026-10-01", caso: null }],
+};
+
 function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean; ia?: Cerebro | null;
-  emails?: Emails; comprovantes?: boolean } = {}) {
+  emails?: Emails; comprovantes?: boolean; recibos?: boolean } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
@@ -87,6 +99,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
         { id: ANEXO_NOTA, nome: "nota.pdf", tipo: "application/pdf", tamanho: 9, categoria: "NOTA_FISCAL", dia: "2026-10-05", lancamento: "Aluguel da sala" },
         { id: ANEXO_SUMIU, nome: "guia.pdf", tipo: "application/pdf", tamanho: 9, categoria: "GUIA", dia: "2026-10-06", lancamento: "DAS" },
       ] : [],
+      recibos: opcoes.recibos ? [RECIBO_TESTE] : [],
     }),
     portal_financeiro_pasta_registrar: (a) => {
       const partes = a.p_partes as { caminho: string; nome: string; tamanho: number; arquivos: number }[];
@@ -208,7 +221,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { id: CLIENTE, paga: true, falta: 0, recibo: { ano: 2026, numero: 1 } };
     },
     portal_financeiro_cobranca_anotar: () => ({ id: CLIENTE }),
-    portal_recibo: (a) => ({ numero: { ano: 2026, numero: 187 }, pagamentoId: a.p_pagamento }),
+    portal_recibo: (a) => ({ ...RECIBO_TESTE, pagamentoId: a.p_pagamento }),
     portal_recorrencias: () => ({ mes: "2026-11-01", ativas: [], encerradas: [] }),
     portal_recorrencia: (a) => ({ id: a.p_rec, mudancas: [] }),
     portal_recorrencia_mudar: (a) => {
@@ -1136,6 +1149,11 @@ Deno.test("FI-01 a FI-04, FI-14: A receber, ficha de parcelas, registrar recebim
     { tipo: "OUTRO", nome: "Marta", documento: "20577138499" });
   const rb = await m.pedir(`/v1/escritorio/recibos/${CLIENTE}`, { cookie });
   assertEquals((await rb.json()).numero.numero, 187);
+  // F3.93: o PDF do recibo sai do servidor, fica guardado no escritório da sessão e abre por link curto.
+  const pdf = await (await m.pedir(`/v1/escritorio/recibos/${CLIENTE}/pdf`, { cookie })).json();
+  assertEquals([pdf.nome, m.storage.guardados.get(`${AURORA}/recibos/${CLIENTE}.pdf`)?.tipo], ["recibo-2026-0187-helio-correa.pdf", "application/pdf"]);
+  assertEquals(new TextDecoder().decode(m.storage.bytes.get(`${AURORA}/recibos/${CLIENTE}.pdf`)!.slice(0, 5)), "%PDF-");
+  assertEquals(m.storage.leituras.at(-1)!.segundos, 60);
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_recibo")!.args, { p_pessoa: ANA, p_escritorio: AURORA, p_pagamento: CLIENTE });
   assertEquals((await m.pedir("/v1/escritorio/recibos/nao-e-id", { cookie })).status, 404);
   const acima = await erro(await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/recebimentos`, { corpo: { valor: 90000, recebidoEm: "2026-11-18", forma: "PIX" }, cookie }));
@@ -1858,6 +1876,21 @@ Deno.test("F3.89: os comprovantes do mês vão num .zip guardado no escritório,
   assertEquals(mandados[0]!.anexos?.length, 1);
   const ate = m.chamadas.find((c) => c.funcao === "portal_financeiro_envio_registrar")!.args.p_link_ate as string;
   assertEquals(Math.round((new Date(ate).getTime() - Date.now()) / 864e5), 30);
+});
+
+Deno.test("F3.93: os recibos do mês vão em PDF na pasta Recibos do .zip, mesmo sem comprovante anexado", async () => {
+  const m = montar({ recibos: true });
+  const cookie = await noEscritorio(m);
+  const p = await (await m.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/pasta`, { metodo: "POST", corpo: {}, cookie })).json();
+  assertEquals(p.pasta.arquivos, 1);
+  const zip = lerZip(m.storage.bytes.get(`${AURORA}/exportacoes/${CLIENTE}-1.zip`)!);
+  assertEquals([...zip.keys()], ["Recibos/2026-10-15 - Recibo 2026-0187 - Hélio Batista Corrêa.pdf"]);
+  const com = montar({ recibos: true, comprovantes: true });
+  com.storage.bytes.set(`${AURORA}/${ANEXO_NOTA}`, new TextEncoder().encode("%PDF-nota"));
+  const c2 = await noEscritorio(com);
+  await com.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/pasta`, { metodo: "POST", corpo: {}, cookie: c2 });
+  assertEquals([...lerZip(com.storage.bytes.get(`${AURORA}/exportacoes/${CLIENTE}-1.zip`)!).keys()],
+    ["2026-10-05 - Aluguel da sala - Nota fiscal.pdf", "Recibos/2026-10-15 - Recibo 2026-0187 - Hélio Batista Corrêa.pdf"]);
 });
 
 Deno.test("F3.22b: baixar os comprovantes monta a pasta e devolve links curtos; sem comprovantes, nada", async () => {

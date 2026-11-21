@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dividirPasta, nomeDaPasta, nomesNaPasta, type AnexoDaPasta } from "./pasta_contador.ts";
+import { dividirPasta, nomeDaPasta, nomeDoReciboNaPasta, nomesNaPasta, type AnexoDaPasta } from "./pasta_contador.ts";
 import { abrirEntrada, escreverZip, lerZip } from "./zip.ts";
 
 const a = (x: Partial<AnexoDaPasta>): AnexoDaPasta => ({
@@ -38,5 +38,9 @@ describe("pasta do contador (F3.89, FI-21)", () => {
     const e = lerZip(z).get("2026-10-05 - Aluguel - Nota fiscal.pdf")!;
     expect(e.metodo).toBe(0);
     expect(await abrirEntrada(z, e)).toEqual(dados);
+  });
+  it("F3.93: o recibo vai na pasta Recibos, com o dia, o número e o cliente", () => {
+    expect(nomeDoReciboNaPasta({ pagoEm: "2026-11-28", numero: { ano: 2026, numero: 190 }, cliente: { nome: "Construtora Vale/Alto: Ltda." } }))
+      .toBe("Recibos/2026-11-28 - Recibo 2026-0190 - Construtora Vale Alto Ltda..pdf");
   });
 });

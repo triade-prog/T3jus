@@ -6,11 +6,12 @@
 
 import type { Context, Hono } from "hono";
 import {
-  dividirPasta, ErroDominio, escreverZip, nomeDaPasta, nomesNaPasta,
-  type AnexoDaPasta, type PartePasta, type PastaContador, type PastaParaBaixar,
+  dividirPasta, ErroDominio, escreverZip, nomeDaPasta, nomeDoReciboNaPasta, nomesNaPasta,
+  type AnexoDaPasta, type PartePasta, type PastaContador, type PastaParaBaixar, type ReciboParaImprimir,
 } from "@t3jus/domain";
 import { VALIDADE_LEITURA_S } from "../_shared/arquivos.ts";
 import type { DepsPortal, VarsPortal } from "./app.ts";
+import { logoDoRecibo, pdfDoRecibo } from "./recibo_pdf.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -20,24 +21,34 @@ interface Preparo {
   formato: "XLSX" | "CSV";
   pasta: PastaContador | null;
   anexos: AnexoDaPasta[];
+  /** Os recibos do mês (F3.93), que viram PDF na pasta "Recibos". */
+  recibos?: ReciboParaImprimir[];
 }
 
 /**
- * A pasta da exportação: a que já existe ou, se o mês tem anexos, uma nova. Nulo quando não há
- * nenhum comprovante no mês (ou a exportação é só a planilha .csv).
+ * A pasta da exportação: a que já existe ou, se o mês tem anexos ou recibos, uma nova. Nulo quando não há
+ * nenhum comprovante nem recibo no mês (ou a exportação é só a planilha .csv).
  */
 export async function garantirPasta(deps: DepsPortal, quem: { p_pessoa: string; p_escritorio: string }, exportacao: string): Promise<PastaContador | null> {
   const p = await deps.banco.rpc<Preparo>("portal_financeiro_pasta_preparar", { ...quem, p_exportacao: exportacao });
   if (p.pasta) return p.pasta;
-  if (p.formato !== "XLSX" || !p.anexos.length) return null;
+  const recibos = p.recibos ?? [];
+  if (p.formato !== "XLSX" || (!p.anexos.length && !recibos.length)) return null;
   const nomes = nomesNaPasta(p.anexos);
-  const comNome = p.anexos.map((a, i) => ({ ...a, naPasta: nomes[i]! }));
-  const grupos = dividirPasta(comNome);
+  // Cada item sabe de onde vem: o anexo, do Storage; o recibo, gerado aqui (F3.93).
+  type Item = { naPasta: string; tamanho: number; pegar: () => Promise<Uint8Array | null> };
+  const itens: Item[] = p.anexos.map((a, i) => ({ naPasta: nomes[i]!, tamanho: a.tamanho, pegar: () => deps.arquivos.baixar(`${quem.p_escritorio}/${a.id}`) }));
+  const logos = new Map<string, Uint8Array | null>();
+  for (const r of recibos) {
+    const pdf = await pdfDoRecibo(r, await logoDoRecibo(deps, quem.p_escritorio, r, logos));
+    itens.push({ naPasta: nomeDoReciboNaPasta(r), tamanho: pdf.length, pegar: () => Promise.resolve(pdf) });
+  }
+  const grupos = dividirPasta(itens);
   const partes: PartePasta[] = [];
   for (const grupo of grupos) {
     const entradas: { nome: string; dados: Uint8Array }[] = [];
     for (const a of grupo) {
-      const dados = await deps.arquivos.baixar(`${quem.p_escritorio}/${a.id}`);
+      const dados = await a.pegar();
       // Um arquivo que sumiu do Storage não impede a pasta; o resto vai.
       if (dados) entradas.push({ nome: a.naPasta, dados });
     }

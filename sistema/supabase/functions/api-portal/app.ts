@@ -43,6 +43,7 @@ import { rotasPeticoes } from "./peticoes.ts";
 import { rotasCarne } from "./carne.ts";
 import { rotasAnexos } from "./anexos.ts";
 import { garantirPasta, linksDaPasta, rotasPastaContador } from "./pasta_contador.ts";
+import { logoDoRecibo, nomeDoPdfRecibo, pdfDoRecibo } from "./recibo_pdf.ts";
 import { rotasContratosOab } from "./contratos_oab.ts";
 import { rotasPropostaDocx } from "./proposta_docx.ts";
 import { rotasPagoAntesLogo } from "./pago_antes_logo.ts";
@@ -858,6 +859,27 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // FI-14, F3.19: o recibo de um recebimento, como foi emitido, para imprimir ou salvar em PDF.
   app.get("/v1/escritorio/recibos/:pagamento", async (c) => {
     return c.json(await deps.banco.rpc<ReciboParaImprimir>("portal_recibo", { ...quem(c), p_pagamento: idDaRota(c, "pagamento") }));
+  });
+
+  // F3.93: o PDF do recibo, gerado no servidor uma vez e guardado em <escritório>/recibos/<recebimento>.pdf
+  // (o recibo não muda). Quem pode ver o recibo pode baixar; o link vale pouco.
+  app.get("/v1/escritorio/recibos/:pagamento/pdf", async (c) => {
+    const id = idDaRota(c, "pagamento");
+    const r = await deps.banco.rpc<ReciboParaImprimir>("portal_recibo", { ...quem(c), p_pagamento: id });
+    const caminho = `${c.get("escritorioId")}/recibos/${id}.pdf`;
+    const nome = nomeDoPdfRecibo(r);
+    let tamanho = (await deps.arquivos.info(caminho))?.tamanho;
+    if (!tamanho) {
+      let pdf: Uint8Array;
+      try {
+        pdf = await pdfDoRecibo(r, await logoDoRecibo(deps, c.get("escritorioId"), r));
+      } catch {
+        throw new ErroDominio("VALIDATION_ERROR", { motivo: "RECIBO_PDF_FALHOU" });
+      }
+      await deps.arquivos.enviar(caminho, pdf, "application/pdf", true);
+      tamanho = pdf.length;
+    }
+    return c.json({ url: await deps.arquivos.enderecoDeLeitura(caminho, VALIDADE_LEITURA_S, nome), nome, tamanho });
   });
 
   // Anotar cobrança: o que foi feito, o motivo do atraso e a próxima ação.
