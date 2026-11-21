@@ -5,7 +5,7 @@
   "refs": [
     "PA-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 830,
-  "proximo": "Combinado no desenho aprovado das pendências pequenas (pergunta 4): fica para uma próxima entrega, depois do atalho da conversa (F3.65)"
+  "evidencia": "Desenho aprovado (docs/design/aprovadas/portal-pendencias-pequenas, pergunta 4): a IA passa a conversa para a equipe com o motivo \"Pedido para não receber avisos\" e não registra sozinha. Domínio ia.ts (pedeSemAvisos reconhece as frases claras sem chamar o modelo; o modelo recebe o motivo SEM_AVISOS só para quem é cliente; a resposta não diz que o pedido foi registrado); migration 0626 (motivo SEM_AVISOS nas conversas); \"Por que a IA passou\" aponta o atalho \"Não receber avisos\", que já abre com a mensagem do cliente; vitest ia.test, Deno atendimento_test F3.83, pgTAP 078 e e2e portal-conversa-avisos (+1)"
 }

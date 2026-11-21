@@ -5,7 +5,7 @@
 // resposta é conferida pelas regras fixas e, se precisar, a conversa passa para uma pessoa.
 
 import {
-  decidirAntes, finalizarResposta, instrucoesIa, mensagensParaIa, planoSemModelo,
+  decidirAntes, finalizarResposta, instrucoesIa, mensagensParaIa, pedeSemAvisos, planoSemModelo,
   type AtendimentoIa, type ContextoIa, type MensagemIa, type PlanoIa,
 } from "@t3jus/domain";
 import type { Banco } from "./banco.ts";
@@ -13,6 +13,8 @@ import type { Cerebro } from "./ia.ts";
 
 /** A resposta para um contexto e uma conversa, sem gravar nada (também é o Testar sem enviar). */
 export async function planejarResposta(cerebro: Cerebro | null, ctx: ContextoIa, msgs: MensagemIa[], notaIa: string | null = null): Promise<PlanoIa> {
+  // F3.83: o pedido claro de não receber avisos passa direto, sem o modelo.
+  if (ctx.cliente && pedeSemAvisos(msgs.filter((m) => m.autor === "CLIENTE").at(-1)?.texto ?? null)) return planoSemModelo("SEM_AVISOS", ctx, msgs);
   if (!cerebro) return planoSemModelo("OUTRO", ctx, msgs);
   const pedido = { instrucoes: instrucoesIa(ctx, { notaIa }), mensagens: mensagensParaIa(msgs) };
   if (!pedido.mensagens.length) return planoSemModelo("OUTRO", ctx, msgs);

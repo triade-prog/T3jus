@@ -32,6 +32,7 @@ export const MOTIVOS_CONVERSA = {
   IA_DESLIGADA: "IA desligada",
   PALAVRA: "Palavra do escritório",
   REGRA_FIXA: "Barrada por regra fixa",
+  SEM_AVISOS: "Pedido para não receber avisos",
 } as const;
 export type MotivoConversa = keyof typeof MOTIVOS_CONVERSA;
 

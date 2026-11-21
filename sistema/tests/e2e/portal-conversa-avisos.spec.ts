@@ -183,6 +183,21 @@ test.describe("Conversa: não receber avisos (F3.65, PA-03)", () => {
     await semViolacoes(page);
   });
 
+  test("F3.83: a IA passou o pedido de não receber avisos; o atalho já vem preenchido", async ({ page }) => {
+    const rotas = comuns();
+    rotas[`GET /v1/escritorio/conversas/${HEL}`] = { corpo: { ...CONV_HELIO, situacao: "PRECISA", assumidaPor: null, motivo: "SEM_AVISOS", responsavelRazao: "CASO",
+      motivoTexto: "Confira a mensagem e, se for isso, registre em Avisos automáticos › Não receber avisos. A IA não registra sozinha." } };
+    await simular(page, rotas);
+    await page.goto(`${P}/conversas?c=${HEL}`);
+    const ctx = await contexto(page, "Hélio");
+    await expect(ctx).toContainText("Pedido para não receber avisos. Confira a mensagem e, se for isso, registre em Avisos automáticos › Não receber avisos.");
+    await semViolacoes(page);
+    await ctx.getByRole("button", { name: "Não receber avisos" }).click();
+    const j = page.getByRole("dialog", { name: "Não receber avisos automáticos" });
+    await expect(j.locator("q")).toHaveText(PEDIDO);
+    await expect(j.getByRole("radio", { name: /Pelo WhatsApp/ })).toBeChecked();
+  });
+
   test("já fora dos avisos: Larissa, só com Jurídico, muda e retira na conversa", async ({ page }) => {
     const rotas = comuns(LARISSA_ESC);
     const pedidos = await simular(page, rotas);
