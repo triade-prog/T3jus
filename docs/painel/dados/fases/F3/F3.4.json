@@ -3,10 +3,11 @@
   "texto": "Prazos do Jurídico na Agenda (faixa no alto do dia) e processo e parte contrária no compromisso",
   "peca": "S5",
   "refs": [
-    "EX-06"
+    "EX-06",
+    "PD-04",
+    "PD-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 40,
-  "nota": "A Agenda já devolve a lista de prazos (vazia) para quem tem o Jurídico e esconde a faixa de quem não tem.",
-  "proximo": "Quando o Jurídico for programado, preencher os prazos na portal_agenda e pôr o processo na janela do compromisso"
+  "evidencia": "Migration 0510 (prazos abertos do período na portal_agenda, com o número do processo, só para quem tem o Jurídico; compromisso com caso_id, rota GET /v1/escritorio/agenda/casos); campo Processo na janela do compromisso e na ficha com a parte contrária; pgTAP 051, teste do api-portal e e2e da Agenda."
 }
