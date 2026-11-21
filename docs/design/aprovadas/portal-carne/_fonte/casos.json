@@ -1,0 +1,90 @@
+[
+ {
+  "nome": "a4-padrao",
+  "url": "carne-a4.html?estado=padrao"
+ },
+ {
+  "nome": "a4-vencida",
+  "url": "carne-a4.html?estado=vencida"
+ },
+ {
+  "nome": "a4-uma",
+  "url": "carne-a4.html?estado=uma"
+ },
+ {
+  "nome": "a4-sem-pix",
+  "url": "carne-a4.html?estado=sem-pix"
+ },
+ {
+  "nome": "a4-pb",
+  "url": "carne-a4.html?estado=pb"
+ },
+ {
+  "nome": "contrato-carne",
+  "url": "financeiro.html?estado=contrato-carne"
+ },
+ {
+  "nome": "carne",
+  "url": "financeiro.html?estado=carne"
+ },
+ {
+  "nome": "carne-escolher",
+  "url": "financeiro.html?estado=carne-escolher"
+ },
+ {
+  "nome": "carne-gerando",
+  "url": "financeiro.html?estado=carne-gerando"
+ },
+ {
+  "nome": "carne-erro",
+  "url": "financeiro.html?estado=carne-erro"
+ },
+ {
+  "nome": "carne-whats",
+  "url": "financeiro.html?estado=carne-whats"
+ },
+ {
+  "nome": "carne-gerado",
+  "url": "financeiro.html?estado=carne-gerado"
+ },
+ {
+  "nome": "carne-desatualizado",
+  "url": "financeiro.html?estado=carne-desatualizado"
+ },
+ {
+  "nome": "carne-sem-pix",
+  "url": "financeiro.html?estado=carne-sem-pix"
+ },
+ {
+  "nome": "carne-sem-pix-equipe",
+  "url": "financeiro.html?estado=carne-sem-pix-equipe"
+ },
+ {
+  "nome": "contratos-carne",
+  "url": "contratos.html?estado=contrato-carne"
+ },
+ {
+  "nome": "recebimento",
+  "url": "escritorio.html?estado=recebimento"
+ },
+ {
+  "nome": "recebimento-vazio",
+  "url": "escritorio.html?estado=recebimento-vazio"
+ },
+ {
+  "nome": "recebimento-erros",
+  "url": "escritorio.html?estado=recebimento-erros"
+ },
+ {
+  "nome": "recebimento-trocar",
+  "url": "escritorio.html?estado=recebimento-trocar"
+ },
+ {
+  "nome": "recebimento-salvo",
+  "url": "escritorio.html?estado=recebimento-salvo"
+ },
+ {
+  "nome": "recebimento-equipe",
+  "url": "escritorio.html?estado=recebimento-equipe"
+ }
+]

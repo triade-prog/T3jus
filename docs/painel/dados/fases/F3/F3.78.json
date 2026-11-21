@@ -1,0 +1,11 @@
+{
+  "id": "F3.78",
+  "texto": "Carnê de pagamento dos honorários no Portal: gerar o PDF A4 com Pix estático do escritório na ficha do contrato, histórico e aviso de carnê desatualizado, e Escritório › Recebimento (chave Pix)",
+  "peca": "S4",
+  "refs": [
+    "FI-23"
+  ],
+  "status": "pendente",
+  "ordem": 780,
+  "proximo": "Programar seguindo docs/design/aprovadas/portal-carne/NOTAS.md; o envio fora da janela de 24 horas do WhatsApp depende de um aviso novo aprovado pela Meta"
+}
