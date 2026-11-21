@@ -38,10 +38,10 @@ create temp table cs as select
   from ids, cli, ct;
 create temp table cp as select
   (portal_financeiro_conta_lancar(diego, rm, jsonb_build_object('descricao', 'Perícia médica', 'categoria', 'CUSTAS',
-     'valor', 80000, 'vencimento', '2026-10-10', 'adiantada', true, 'clienteId', cli.ben, 'reembolsoComo', 'LEVANTAMENTO')) ->> 'id')::uuid pericia,
+     'valor', 80000, 'vencimento', '2026-10-10', 'adiantada', true, 'clienteId', cli.ben, 'casoId', cs.lima, 'reembolsoComo', 'LEVANTAMENTO')) ->> 'id')::uuid pericia,
   (portal_financeiro_conta_lancar(diego, rm, jsonb_build_object('descricao', 'Cópias do processo', 'categoria', 'CUSTAS',
-     'valor', 5000, 'vencimento', '2026-10-12', 'adiantada', true, 'clienteId', cli.ben, 'reembolsoComo', 'PROXIMA_PARCELA')) ->> 'id')::uuid copias
-  from ids, cli;
+     'valor', 5000, 'vencimento', '2026-10-12', 'adiantada', true, 'clienteId', cli.ben, 'casoId', cs.lima, 'reembolsoComo', 'PROXIMA_PARCELA')) ->> 'id')::uuid copias
+  from ids, cli, cs;
 
 -- Área e isolamento.
 select is((teste.erro($$ select portal_financeiro_repasses(paula, rm) from ids $$)) -> 'detalhe' ->> 'motivo', 'AREA_NAO_LIBERADA',

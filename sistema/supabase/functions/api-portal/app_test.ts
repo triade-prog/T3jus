@@ -172,6 +172,8 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_contrato_base: (a) => ({ id: a.p_recebimento, valor: 63540, vencimento: "2026-12-15" }),
     portal_financeiro_receber: (a) => ({ algum: true, parcelas: [], mostrar: a.p_mostrar, forma: a.p_forma, responsavel: a.p_responsavel }),
     portal_financeiro_contrato: (a) => ({ id: a.p_contrato, parcelas: [] }),
+    portal_financeiro_contrato_adiantados: () => [{ id: "conta", descricao: "Custas da apelação" }],
+    portal_financeiro_adiantar: (a) => ({ cliente: a.p_cliente, casos: [], proximaParcela: null }),
     portal_financeiro_receber_registrar: (a) => {
       if ((a.p_dados as Record<string, unknown>).valor === 90000) erroBanco("TC422", { motivo: "VALOR_ACIMA_DO_SALDO", campos: ["valor"], falta: 85000 });
       return { id: CLIENTE, paga: true, falta: 0, recibo: { ano: 2026, numero: 1 } };
@@ -1062,6 +1064,21 @@ Deno.test("FI-01, FI-07, FI-13: A pagar, lançar conta, marcar paga e reembolso;
   assertEquals(fut.detalhes?.motivo, "DATA_NO_FUTURO");
   assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/contas/${CLIENTE}/reembolso`, { corpo: { reembolsadoEm: "2026-11-18" }, cookie })).json()).reembolsadoEm, "2026-11-18");
   assertEquals((await m.pedir("/v1/escritorio/financeiro/contas/nao-e-id/paga", { corpo: {}, cookie })).status, 404);
+});
+
+Deno.test("F3.23, FI-07: o caso na conta adiantada, a parcela em que volta e o adiantado na ficha do contrato", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const a = await (await m.pedir(`/v1/escritorio/financeiro/adiantar?cliente=${CLIENTE.toUpperCase()}`, { cookie })).json();
+  assertEquals(a.cliente, CLIENTE);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/adiantar?cliente=x", { cookie }))).detalhes?.campos, ["cliente"]);
+  await m.pedir("/v1/escritorio/financeiro/contas", {
+    corpo: { descricao: "Custas da apelação", categoria: "CUSTAS", valor: 124836, vencimento: "2026-11-21", adiantada: true, clienteId: CLIENTE, casoId: ANA, reembolsoComo: "PROXIMA_PARCELA" }, cookie });
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_conta_lancar")!;
+  assertEquals((ch.args.p_dados as { casoId: string }).casoId, ANA);
+  const f = await (await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie })).json();
+  assertEquals([f.id, f.adiantados[0].descricao], [CLIENTE, "Custas da apelação"]);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_financeiro_contrato_adiantados")!.args.p_escritorio, AURORA);
 });
 
 Deno.test("FI-05, FI-06, FI-12: Repasses, proposta, registrar, feito, dispensar e prestação; o escritório vem da sessão", async () => {
