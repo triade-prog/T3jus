@@ -3,6 +3,7 @@
 // errados de uma vez; aqui o esquema só confere a forma do pedido.
 
 import { z } from "zod";
+import type { EnvioMensagem } from "./conversas.ts";
 
 export const TIPOS_COMPROMISSO = {
   AUDIENCIA: "Audiência",
@@ -110,6 +111,8 @@ export interface Agenda {
   /** Só para quem tem a área Jurídico (para quem não tem, vem nulo). */
   prazos: PrazoAgenda[] | null;
   tiposEscritos: string[];
+  /** Os lembretes já saem pelo WhatsApp do escritório (F3.3). */
+  whatsappLigado?: boolean;
 }
 
 export interface EventoCompromisso {
@@ -131,6 +134,42 @@ export interface FichaCompromisso extends CompromissoLinha {
   /** Há um caso ligado, mesmo quando quem vê não tem o Jurídico. */
   temCaso: boolean;
   contatoCliente: { id: string; nome: string; papel?: string | null; telefone?: string | null; email?: string | null } | null;
-  cancelamento: { em: string; por: PessoaAgenda | null; motivo: string; avisar: boolean | null } | null;
+  cancelamento: {
+    em: string; por: PessoaAgenda | null; motivo: string; avisar: boolean | null;
+    /** O aviso de cancelamento ao cliente: a mensagem que entrou na fila, ou por que não saiu (F3.3). */
+    aviso?: { motivo: string | null; mensagem: (MensagemDoLembrete & { conversaId: string }) | null } | null;
+  } | null;
   historico: EventoCompromisso[];
+  /** O WhatsApp do escritório está ligado (os lembretes saem). */
+  whatsappLigado?: boolean;
+  /** O lembrete ao cliente (F3.3, EX-11); nulo sem cliente. */
+  lembretes?: LembreteDoCompromisso | null;
+}
+
+export interface MensagemDoLembrete {
+  id: string;
+  nome?: string | null;
+  em: string;
+  envio: EnvioMensagem;
+  envioEm?: string | null;
+  envioMotivo?: string | null;
+  texto: string;
+}
+
+export interface LembreteDoCompromisso {
+  /** Quando sai o de 1 dia antes (no dia útil anterior, das 8h às 20h). */
+  umDia: string;
+  horasAntes: number;
+  /** Quando sai o de horas antes; nulo quando faltaria menos de 30 minutos. */
+  antes: string | null;
+  /** A execução da automação "Lembrete de audiência" (nula antes de entrar). */
+  situacao: "AGENDADA" | "EM_ANDAMENTO" | "CONCLUIDA" | "FALHOU" | "FICOU_DE_FORA" | null;
+  motivo: string | null;
+  proximoEm: string | null;
+  automacaoLigada: boolean;
+  mensagens: MensagemDoLembrete[];
+  conversaId: string | null;
+  resposta: { em: string; texto: string } | null;
+  /** O texto do lembrete com os dados deste compromisso (o que vai sair). */
+  previa: string | null;
 }

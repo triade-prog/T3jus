@@ -13,13 +13,14 @@ export type SituacaoIa = "DESLIGADA" | "LIGADA" | "PAUSADA";
 
 export const QUALIDADES: Record<Qualidade, string> = { ALTA: "Alta", MEDIA: "Média", BAIXA: "Baixa", SEM_NOTA: "Ainda sem nota" };
 
-/** Os 6 avisos prontos, na ordem da tela (o banco usa as mesmas chaves). */
+/** Os 7 avisos prontos, na ordem da tela (o banco usa as mesmas chaves). */
 export const AVISOS_WHATSAPP = {
   PAGAMENTO_RECEBIDO: { nome: "Pagamento recebido", quando: "Financeiro · quando o recebimento é registrado", icone: "moeda" },
   PARCELA_VAI_VENCER: { nome: "Parcela vai vencer", quando: "Financeiro · 3 dias antes do vencimento", icone: "moeda" },
   PARCELA_ATRASO: { nome: "Parcela em atraso", quando: "Financeiro · 1, 8 e 15 dias depois", icone: "alerta" },
   ETAPA_CASO: { nome: "Etapa do caso", quando: "Jurídico · um texto por etapa", icone: "balanca" },
   LEMBRETE_AUDIENCIA: { nome: "Lembrete de audiência", quando: "Jurídico · 1 dia e 2 horas antes", icone: "relogio" },
+  COMPROMISSO_CANCELADO: { nome: "Compromisso cancelado", quando: "Agenda · quando a equipe cancela e marca “Avisar”", icone: "relogio" },
   PRESTACAO_CONTAS: { nome: "Prestação de contas", quando: "Financeiro · quando o repasse é registrado", icone: "carteira" },
 } as const;
 export type ChaveAviso = keyof typeof AVISOS_WHATSAPP;

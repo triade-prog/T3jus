@@ -223,7 +223,7 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
     let texto = editar ? "" : `Está na agenda de ${resp}.`;
     if (dados.lembrete && contato) {
       const l = horariosDoLembrete(dados.inicio);
-      texto += ` O lembrete a ${primeiroNome(contato.nome)} fica marcado para ${quandoCurto(l.umDia)}, e ${quandoCurto(l.duasHoras)}; sai quando o WhatsApp do escritório estiver ligado.`;
+      texto += ` O lembrete a ${primeiroNome(contato.nome)} fica marcado para ${quandoCurto(l.umDia)}${l.duasHoras ? `, e ${quandoCurto(l.duasHoras)}` : ""}; sai pelo WhatsApp do escritório, quando ele estiver ligado.`;
     }
     aoFeito({
       id: res.dados.id,

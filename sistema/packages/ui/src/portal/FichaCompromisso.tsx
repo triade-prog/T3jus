@@ -5,7 +5,7 @@
 // lembrete ao cliente; quem vai; o histórico; e cancelar, que não apaga.
 
 import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
-import { TIPOS_COMPROMISSO, type ClienteLinha, type FichaCompromisso, type ListaClientes } from "@t3jus/domain";
+import { TIPOS_COMPROMISSO, type ClienteLinha, type EnvioMensagem, type FichaCompromisso, type ListaClientes } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { formatarTelefone } from "../console/ficha.ts";
@@ -15,6 +15,7 @@ import { DIAS_SEMANA, diaBr, diaCurto, diaDaSemana, diaDe, horaDe, horariosDoLem
 import { primeiroNome } from "./equipe.ts";
 import { JanelaCompromisso, nomeDoCaso, rascunhoDe, useCasosDoCompromisso, type Marcado, type Pessoa } from "./JanelaCompromisso.tsx";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
+import { ROTAS_CONVERSAS } from "./Conversas.tsx";
 
 function Folha({ titulo, sub, acoes, pequena, icone, children }: { titulo: string; sub?: ReactNode; acoes?: ReactNode; pequena?: boolean; icone?: "whats"; children: ReactNode }) {
   const id = useId();
@@ -47,6 +48,23 @@ export function textoDoLembrete(f: Pick<FichaCompromisso, "tipo" | "tipoEscrito"
   const multa = f.tipo === "AUDIENCIA" ? " Faltar sem justificativa pode gerar multa." : "";
   return `Olá, ${primeiroNome(nome)}. Aqui é do escritório ${escritorio}. ${oque} é amanhã, ${nomeDia(d)}, ${diaCurto(d)}, às ${h}, ${onde}${multa} Responda CONFIRMO, ou escreva se tiver dúvida.`;
 }
+
+/** O aviso de cancelamento, no texto pronto do servidor (aviso "Compromisso cancelado", F3.3). */
+export function textoDoCancelamento(f: Pick<FichaCompromisso, "titulo" | "inicio">, escritorio: string, nome: string): string {
+  return `Olá, ${primeiroNome(nome)}. Aqui é do escritório ${escritorio}. Avisamos que foi cancelado: ${f.titulo}, no dia ${diaCurto(diaDe(f.inicio))}, às ${horaDe(f.inicio)}. Se houver nova data, avisamos por aqui. Qualquer dúvida, é só responder esta mensagem.`;
+}
+
+const ENVIO: Record<EnvioMensagem, string> = { NA_FILA: "Na fila", ENVIADA: "Enviado", ENTREGUE: "Entregue", LIDA: "Lido", FALHOU: "Não entregue" };
+
+/** "Lembrete · 1 dia antes" vira "Lembrete de 1 dia antes"; "Lembrete · nova data", "Lembrete com a nova data". */
+export function nomeDoLembrete(nome: string | null | undefined): string {
+  const n = (nome ?? "Lembrete").trim();
+  if (/nova data/i.test(n)) return "Lembrete com a nova data";
+  return n.replace(/^Lembrete\s*·\s*/, "Lembrete de ");
+}
+
+/** A resposta do cliente confirma a presença (“Confirmo”). */
+export const confirmou = (texto: string | null | undefined) => /\bconfirm/i.test(texto ?? "");
 
 /** Frase de cada evento do histórico do compromisso. */
 export function fraseDoEvento(e: FichaCompromisso["historico"][number], nomes: Record<string, string>): { quem: string; oque: string; detalhe?: string } {
@@ -126,7 +144,8 @@ function JanelaCancelar({ aberta, f, escritorio, aoFechar, aoFeito }: { aberta: 
           <span>
             Avisar {primeiroNome(f.cliente.nome)} pelo WhatsApp
             <small>
-              Mensagem: “Olá, {primeiroNome(f.contatoCliente?.nome ?? f.cliente.nome)}. Aqui é do escritório {escritorio}. {maiuscula(nomeTipo)} de {diaCurto(d)}, às {horaDe(f.inicio).replace(":00", "h")}, foi cancelad{nomeTipo.startsWith("a ") ? "a" : "o"}. Se houver nova data, avisamos por aqui. Qualquer dúvida, é só responder esta mensagem.” Sai quando o WhatsApp do escritório estiver ligado.
+              Mensagem: “{textoDoCancelamento(f, escritorio, f.contatoCliente?.nome ?? f.cliente.nome)}”{" "}
+              {f.whatsappLigado ? "Sai agora pelo WhatsApp do escritório." : "O WhatsApp do escritório ainda não está ligado: o aviso não sai. Avise por outro meio."}
             </small>
           </span>
         </label>
@@ -318,11 +337,74 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
   );
 
   const contato = f.contatoCliente;
-  const l = horariosDoLembrete(f.inicio);
+  const lb = f.lembretes ?? null;
+  const ligado = !!f.whatsappLigado;
+  // Quando sai cada lembrete: do servidor; sem ele, a mesma regra calculada aqui.
+  const l = lb ? { umDia: lb.umDia, duasHoras: lb.antes } : horariosDoLembrete(f.inicio);
+  const horas = lb?.horasAntes ?? 2;
+  const msgs = lb?.mensagens ?? [];
+  const saiu = (q: string) => msgs.some((m) => (m.nome ?? "").includes(q));
+  const ativo = f.lembrete && !cancelado && !passou && lb?.situacao !== "FICOU_DE_FORA" && lb?.situacao !== "FALHOU";
+  type Item = { em: string; chave: string; corpo: ReactNode };
+  const itens: Item[] = msgs.map((m) => ({
+    em: m.em, chave: m.id,
+    corpo: (
+      <div>
+        <p>
+          {nomeDoLembrete(m.nome)}{m.envio === "NA_FILA" ? "" : " enviado"} <span className="selo selo-neutro">{ENVIO[m.envio]}</span>
+        </p>
+        <small>{m.envio === "FALHOU" ? m.envioMotivo ?? "Não foi entregue." : m.envio === "NA_FILA" ? "Na fila do WhatsApp do escritório" : "Pelo WhatsApp do escritório"}</small>
+      </div>
+    ),
+  }));
+  if (lb?.resposta) {
+    itens.push({
+      em: lb.resposta.em, chave: "resposta",
+      corpo: (
+        <div>
+          <p>{primeiroNome(contato?.nome ?? f.cliente?.nome ?? "O cliente")} respondeu: “{lb.resposta.texto}”</p>
+          <small>Em Conversas</small>
+        </div>
+      ),
+    });
+  }
+  if (ativo) {
+    const futuros: [string, string | null, boolean][] = [
+      ["1 dia antes", l.umDia, saiu("1 dia antes")],
+      [`${horas} horas antes`, l.duasHoras, saiu("horas antes")],
+    ];
+    for (const [q, em, foi] of futuros) {
+      if (foi) continue;
+      if (!em) {
+        itens.push({ em: f.inicio, chave: q, corpo: <div><p>Lembrete de {q} <span className="selo selo-neutro">Não sai</span></p><small>Faltaria menos de 30 minutos para o compromisso.</small></div> });
+        continue;
+      }
+      if (new Date(em).getTime() < agora - 15 * 60000) continue;
+      itens.push({
+        em, chave: q,
+        corpo: (
+          <div>
+            <p>
+              Lembrete de {q}{q !== "1 dia antes" && virtual ? ", com o link da sala" : ""}{" "}
+              <span className="selo selo-neutro">{ligado ? "Agendado" : "Ainda não sai"}</span>
+            </p>
+            <small>Pelo WhatsApp do escritório, {quandoCurto(em)}</small>
+          </div>
+        ),
+      });
+    }
+  }
+  itens.sort((a, b) => a.em.localeCompare(b.em));
+  const ultima = msgs.length ? msgs[msgs.length - 1]! : null;
+  const fim = cancelado || passou ? null : lb?.situacao === "FICOU_DE_FORA" || lb?.situacao === "FALHOU" ? lb.motivo : null;
+  const aviso = f.cancelamento?.aviso ?? null;
+  const conversa = lb?.conversaId ?? aviso?.mensagem?.conversaId ?? null;
   const lembrete = f.cliente ? (
     <Folha titulo="Lembrete ao cliente" icone="whats"
       sub={contato ? <>Para {contato.nome}{contato.telefone ? <>, <span className="num">{formatarTelefone(contato.telefone)}</span></> : null}, contato principal da ficha</> : "O cliente não tem contato principal."}
-      acoes={f.lembrete && !cancelado ? <span className="selo selo-implant"><Icone nome="whats" className="ico" />Lembrete marcado</span> : <span className="selo selo-neutro">Sem lembrete</span>}>
+      acoes={confirmou(lb?.resposta?.texto) && !cancelado
+        ? <span className="selo selo-implant"><Icone nome="check" className="ico" />Confirmou presença</span>
+        : f.lembrete && !cancelado ? <span className="selo selo-implant"><Icone nome="whats" className="ico" />Lembrete marcado</span> : <span className="selo selo-neutro">Sem lembrete</span>}>
       {f.tipo === "AUDIENCIA" ? (
         <p className="ag-por">
           <Icone nome="balanca" className="ico" />
@@ -331,47 +413,64 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
           </span>
         </p>
       ) : null}
-      {f.lembrete && !cancelado ? (
-        <>
-          <div className="ag-hist">
-            <div className="eventos-dia">
-              <ol className="eventos">
-                {[["1 dia antes", l.umDia], ["2 horas antes", l.duasHoras]].map(([q, em]) => (
-                  <li key={q}>
-                    <time dateTime={em}>{diaCurto(diaDe(em!))} {horaDe(em!)}</time>
-                    <span className="pto" aria-hidden="true" />
-                    <div>
-                      <p>
-                        Lembrete de {q}{q === "2 horas antes" && virtual ? ", com o link da sala" : ""} <span className="selo selo-neutro">Ainda não sai</span>
-                      </p>
-                      <small>Pelo WhatsApp do escritório, {quandoCurto(em!)}</small>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
+      {itens.length ? (
+        <div className="ag-hist">
+          <div className="eventos-dia">
+            <ol className="eventos">
+              {itens.map((it) => (
+                <li key={it.chave}>
+                  <time dateTime={it.em}>{diaCurto(diaDe(it.em))} {horaDe(it.em)}</time>
+                  <span className="pto" aria-hidden="true" />
+                  {it.corpo}
+                </li>
+              ))}
+            </ol>
           </div>
-          <p className="ag-hist-nota">
-            O WhatsApp do escritório ainda não está ligado. O lembrete fica marcado e sai quando o número for ligado; até lá, avise o cliente por outro meio.
-          </p>
-          {contato ? (
-            <div className="ag-msg">
-              <small>Mensagem que vai sair 1 dia antes</small>
-              <p className="ag-balao">
-                <span className="de">
-                  <Icone nome="whats" className="ico" />
-                  {escritorio.nome}
-                </span>
-                {textoDoLembrete(f, escritorio.nome, contato.nome)}
-              </p>
-            </div>
-          ) : null}
-        </>
-      ) : (
+        </div>
+      ) : null}
+      {cancelado ? (
         <p className="ag-hist-nota">
-          {cancelado ? "O compromisso foi cancelado; nenhum lembrete sai." : "O lembrete pelo WhatsApp está desmarcado. Para marcar, use “Editar ou remarcar”."}
+          O compromisso foi cancelado; nenhum lembrete sai.
+          {aviso?.mensagem ? <> O aviso de cancelamento a {primeiroNome(contato?.nome ?? f.cliente.nome)} está {aviso.mensagem.envio === "NA_FILA" ? "na fila do WhatsApp do escritório" : ENVIO[aviso.mensagem.envio].toLowerCase()} desde {quandoCurto(aviso.mensagem.em)}.</>
+            : aviso?.motivo ? <> O aviso de cancelamento não saiu: {aviso.motivo.charAt(0).toLowerCase() + aviso.motivo.slice(1)}</> : null}
         </p>
-      )}
+      ) : !f.lembrete ? (
+        <p className="ag-hist-nota">O lembrete pelo WhatsApp está desmarcado. Para marcar, use “Editar ou remarcar”.</p>
+      ) : fim ? (
+        <p className="ag-hist-nota">O lembrete parou: {fim.charAt(0).toLowerCase() + fim.slice(1)}</p>
+      ) : !ligado && !passou ? (
+        <p className="ag-hist-nota">
+          O WhatsApp do escritório ainda não está ligado. O lembrete fica marcado e sai quando o número for ligado; até lá, avise o cliente por outro meio.
+        </p>
+      ) : null}
+      {ultima ? (
+        <div className="ag-msg">
+          <small>{ultima.envio === "NA_FILA" ? "Mensagem na fila desde" : "Mensagem enviada em"} {diaCurto(diaDe(ultima.em))}, às {horaDe(ultima.em)}</small>
+          <p className="ag-balao">
+            <span className="de">
+              <Icone nome="whats" className="ico" />
+              {escritorio.nome}
+            </span>
+            {ultima.texto}
+          </p>
+        </div>
+      ) : contato && ativo ? (
+        <div className="ag-msg">
+          <small>Mensagem que vai sair 1 dia antes</small>
+          <p className="ag-balao">
+            <span className="de">
+              <Icone nome="whats" className="ico" />
+              {escritorio.nome}
+            </span>
+            {lb?.previa ?? textoDoLembrete(f, escritorio.nome, contato.nome)}
+          </p>
+        </div>
+      ) : null}
+      {conversa ? (
+        <p className="ag-hist-nota">
+          <a href={`${ROTAS_CONVERSAS.mensagens}?c=${conversa}`}>Ver a conversa com {primeiroNome(contato?.nome ?? f.cliente.nome)}<Icone nome="seta" className="ico ico-s" /></a>
+        </p>
+      ) : null}
     </Folha>
   ) : null;
 

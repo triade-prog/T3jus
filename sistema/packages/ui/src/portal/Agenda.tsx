@@ -559,7 +559,7 @@ function MesCelular({ dia, escolhido, d }: { dia: string; escolhido: string; d: 
   );
 }
 
-function Lembretes({ itens, dia }: { itens: CompromissoLinha[]; dia: string }) {
+function Lembretes({ itens, dia, ligado }: { itens: CompromissoLinha[]; dia: string; ligado: boolean }) {
   const lista = itens.filter((c) => c.lembrete && c.cliente && c.situacao === "MARCADO" && !jaPassou(c) && diaDe(c.inicio) >= dia && diaDe(c.inicio) <= somarDias(dia, 1));
   return (
     <section className="folha" aria-labelledby="t-lemb">
@@ -585,12 +585,15 @@ function Lembretes({ itens, dia }: { itens: CompromissoLinha[]; dia: string }) {
                     {horaDe(c.inicio)}
                   </strong>
                   <small>
-                    Marcado para {quandoCurto(l.umDia)} (1 dia antes) e {quandoCurto(l.duasHoras)} (2 horas antes). Sai quando o WhatsApp do escritório estiver ligado.
+                    Marcado para {quandoCurto(l.umDia)} (1 dia antes){l.duasHoras ? <> e {quandoCurto(l.duasHoras)} (2 horas antes)</> : null}.
+                    {ligado ? " Sai pelo WhatsApp do escritório." : " Sai quando o WhatsApp do escritório estiver ligado."}
                   </small>
-                  <span className="selo selo-neutro">
-                    <Icone nome="whats" className="ico" />
-                    WhatsApp não ligado
-                  </span>
+                  {ligado ? null : (
+                    <span className="selo selo-neutro">
+                      <Icone nome="whats" className="ico" />
+                      WhatsApp não ligado
+                    </span>
+                  )}
                 </div>
               </li>
             );
@@ -836,7 +839,7 @@ export function AgendaPortal({ ver = "semana", dia: diaPedido, pessoa = null, ma
               )}
             </div>
             <aside className="ag-col2" aria-label="Lembretes e agenda externa">
-              <Lembretes itens={agenda.compromissos} dia={dia} />
+              <Lembretes itens={agenda.compromissos} dia={dia} ligado={!!agenda.whatsappLigado} />
               {RESERVA_SYNC}
             </aside>
           </div>
