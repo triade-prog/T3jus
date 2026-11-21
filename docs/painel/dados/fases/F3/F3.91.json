@@ -1,0 +1,13 @@
+{
+  "id": "F3.91",
+  "texto": "Aplicar os textos no tom aprovado (D5): avisos prontos e IA do WhatsApp, motivos de recusa com texto próprio e avisos das telas",
+  "peca": "B3",
+  "refs": [
+    "EX-14",
+    "PA-03",
+    "PA-04"
+  ],
+  "status": "andamento",
+  "ordem": 910,
+  "proximo": "Programar os 95 textos de docs/design/aprovadas/textos-tom/textos.json (migration 0610)"
+}
