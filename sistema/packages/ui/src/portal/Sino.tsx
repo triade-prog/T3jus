@@ -119,6 +119,31 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         detalhe: `O contrato ${d.contrato} nasceu da proposta ${d.proposta}, que você pediu.`,
         onde: "Ver a proposta", href: ROTAS_CONTRATOS.proposta(a.origemId), selo: { tom: "ok", texto: "Contrato gerado" },
       };
+    case "REPASSE_PASSADO":
+      // F3.71: quem entra recebe o aviso novo; quem sai, o aviso já lido.
+      return d.entrou
+        ? {
+            icone: "trocar", titulo: <><b>{d.quem ?? "Alguém da equipe"}</b> passou para você o repasse de <b>{d.cliente}</b></>,
+            detalhe: [d.motivo ? `“${d.motivo}”` : null, d.partes ? `${d.partes === 1 ? "Falta 1 parte" : `Faltam ${d.partes} partes`}.` : null].filter(Boolean).join(" ") || "Agora os prazos e atrasos deste repasse chegam para você.",
+            onde: "Abrir o repasse", href: `/financeiro/repasses/${a.origemId}`,
+          }
+        : {
+            icone: "trocar", titulo: <><b>{d.quem ?? "Alguém da equipe"}</b> passou o repasse de {d.cliente} para {d.para ?? "outra pessoa"}</>,
+            detalhe: "Você deixa de receber os avisos deste repasse.", onde: "Abrir o repasse", href: `/financeiro/repasses/${a.origemId}`,
+          };
+    case "REPASSE_ATRASADO":
+      // F3.46: a parte passou do prazo; quem cuida anota o motivo e a próxima ação.
+      return {
+        icone: "alerta", titulo: <>O repasse de <b>{d.parte}</b>{d.cliente && d.cliente !== d.parte ? ` (${d.cliente})` : ""} passou do prazo</>,
+        detalhe: `${d.prazo ? `Era ${d.prazo.split("-").reverse().slice(0, 2).join("/")}. ` : ""}Anote o motivo e a próxima ação na ficha do repasse.`,
+        onde: "Anotar o atraso", href: `/financeiro/repasses/${a.origemId}`, selo: { tom: "urgente", texto: "Atrasado" },
+      };
+    case "REPASSE_PROXIMA_ACAO":
+      return {
+        icone: "relogio", titulo: <>Hoje: {d.oQue ? d.oQue.replace(/^./, (c) => c.toLowerCase()) : "a próxima ação"} · <b>{d.parte}</b></>,
+        detalhe: `Repasse atrasado${d.cliente ? ` de ${d.cliente}` : ""}. Se mudou, atualize a anotação.`,
+        onde: "Abrir o repasse", href: `/financeiro/repasses/${a.origemId}`, selo: { tom: "atencao", texto: "Próxima ação" },
+      };
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,

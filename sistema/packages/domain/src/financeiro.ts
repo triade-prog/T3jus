@@ -415,7 +415,43 @@ export interface Destinacao {
   feitoPor: { id: string; nome: string } | null;
   dispensa: { motivo: string; em: string; por: { id: string; nome: string } } | null;
   contaId: string | null;
+  /** A anotação mais nova do atraso (F3.46), quando há. */
+  atraso?: AtrasoRepasse | null;
 }
+
+export type MotivoAtrasoRepasse = "DOCUMENTO" | "SEM_RESPOSTA" | "DECISAO" | "OUTRO";
+export const MOTIVOS_ATRASO_REPASSE: Record<MotivoAtrasoRepasse, { titulo: string; ajuda: string; curto: string }> = {
+  DOCUMENTO: { titulo: "Esperando um documento de quem recebe", ajuda: "Nota fiscal, recibo ou os dados do banco.", curto: "esperando um documento" },
+  SEM_RESPOSTA: { titulo: "Quem recebe não respondeu", ajuda: "Mensagens e ligações sem resposta.", curto: "quem recebe não respondeu" },
+  DECISAO: { titulo: "Esperando uma decisão", ajuda: "Do cliente, do parceiro ou do juiz.", curto: "esperando uma decisão" },
+  OUTRO: { titulo: "Outro motivo", ajuda: "Escreva abaixo.", curto: "outro motivo" },
+};
+
+/** Por que o repasse passou do prazo e a próxima ação (F3.46). O prazo não muda. */
+export interface AtrasoRepasse {
+  id: string;
+  motivo: MotivoAtrasoRepasse;
+  texto: string | null;
+  proximaEm: string;
+  proximaCom: { id: string; nome: string };
+  oQue: string;
+  em: string;
+  por: { id: string; nome: string };
+}
+
+export const anotarAtrasoSchema = z.object({
+  motivo: z.enum(["DOCUMENTO", "SEM_RESPOSTA", "DECISAO", "OUTRO"]).nullish(),
+  texto: z.string().max(300).nullish(),
+  proximaEm: txt(20),
+  proximaComId: txt(40),
+  oQue: z.string().max(200).nullish(),
+});
+export type AnotarAtraso = z.input<typeof anotarAtrasoSchema>;
+
+export const prazoRepasseSchema = z.object({ prazoRepasseDias: z.number().int().nullish() });
+
+/** Quem pode cuidar de um repasse: da equipe, com a área Financeiro (F3.71). */
+export interface PodeCuidarRepasse { id: string; nome: string; dono: boolean; areas: string[] }
 
 export interface Levantamento {
   id: string;
@@ -424,6 +460,8 @@ export interface Levantamento {
   entrouEm: string;
   criadoEm: string;
   autor: { id: string; nome: string };
+  /** Quem cuida do repasse (F3.71): nasce o responsável pelo contrato. */
+  responsavel: { id: string; nome: string };
   prestacaoEm: string | null;
   prestacaoPor: { id: string; nome: string } | null;
   caso: { id: string; nome: string; parteContraria: string | null; area: string };
@@ -437,7 +475,16 @@ export interface ListaRepasses {
   hoje: string;
   prazoDias: number;
   algum: boolean;
-  totais: { aRepassar: number; repassesPendentes: number; honorarios: number; casos: number };
+  totais: {
+    aRepassar: number; repassesPendentes: number; honorarios: number; casos: number;
+    /** F3.46: o que passou do prazo, em quantos repasses e quantas partes sem motivo anotado. */
+    atrasados: number; repassesAtrasados: number; semMotivo: number;
+  };
+  /** Quem está vendo, para o filtro "Os meus". */
+  eu: string;
+  podeEditar: boolean;
+  /** Quem pode ser a próxima ação de um atraso (tem a área Financeiro). */
+  podemCuidar: PodeCuidarRepasse[];
   repassadoMes: { valor: number; clientes: number };
   repassados: { levantamentoId: string; cliente: string; tipo: TipoLevantamento; valor: number; feitoEm: string }[];
   levantamentos: Levantamento[];
@@ -447,6 +494,12 @@ export interface ListaRepasses {
 export interface FichaRepasse extends Levantamento {
   hoje: string;
   escritorio: string;
+  eu: string;
+  podeEditar: boolean;
+  prazoDias: number;
+  /** O responsável pelo contrato, de onde o repasse nasceu. */
+  doContrato: { id: string; nome: string } | null;
+  podemCuidar: PodeCuidarRepasse[];
   historico: { acao: string; em: string; por: { id: string; nome: string } | null; dados: Record<string, unknown> }[];
   /** O acerto do caso, para o fechamento (F3.45). */
   acerto: AcertoCaso;
@@ -479,15 +532,48 @@ export interface AcertoCaso {
 }
 
 /** Soma dos dias úteis (segunda a sexta), como o banco faz. Os feriados ainda não entram. */
+/** O domingo de Páscoa do ano (Meeus/Jones/Butcher), para a Sexta-feira Santa. */
+function domingoDePascoa(ano: number): string {
+  const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+/** Feriado nacional (o mesmo cálculo do banco, 0552): 1/1, Sexta-feira Santa, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11 e 25/12. */
+export function feriadoNacional(dia: string): boolean {
+  const md = dia.slice(5, 10);
+  const ano = Number(dia.slice(0, 4));
+  if (["01-01", "04-21", "05-01", "09-07", "10-12", "11-02", "11-15", "12-25"].includes(md)) return true;
+  if (md === "11-20" && ano >= 2024) return true;
+  const p = new Date(`${domingoDePascoa(ano)}T12:00:00Z`);
+  p.setUTCDate(p.getUTCDate() - 2);
+  return p.toISOString().slice(0, 10) === dia;
+}
+
+/** Soma dias úteis (segunda a sexta, sem os feriados nacionais), como o banco. */
 export function somarDiasUteis(dia: string, dias: number): string {
   const d = new Date(`${dia}T12:00:00Z`);
   let n = 0;
   while (n < dias) {
     d.setUTCDate(d.getUTCDate() + 1);
     const s = d.getUTCDay();
-    if (s !== 0 && s !== 6) n += 1;
+    if (s !== 0 && s !== 6 && !feriadoNacional(d.toISOString().slice(0, 10))) n += 1;
   }
   return d.toISOString().slice(0, 10);
+}
+
+/** Quantos dias úteis depois de `de` cai `ate` (para o "1 dia útil de atraso"). */
+export function diasUteisEntre(de: string, ate: string): number {
+  const d = new Date(`${de}T12:00:00Z`);
+  let n = 0;
+  while (d.toISOString().slice(0, 10) < ate) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const s = d.getUTCDay();
+    if (s !== 0 && s !== 6 && !feriadoNacional(d.toISOString().slice(0, 10))) n += 1;
+  }
+  return n;
 }
 
 const O_SEU_LEVANTAMENTO: Record<TipoLevantamento, string> = {

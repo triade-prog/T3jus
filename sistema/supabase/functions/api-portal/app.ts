@@ -11,7 +11,7 @@ import {
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
-  propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
+  propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
@@ -951,8 +951,24 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.put("/v1/escritorio/financeiro/repasses/:id/responsavel", async (c) => {
     const d = await lerCorpo(c, responsavelRepasseSchema);
     return c.json({ responsavel: await deps.banco.rpc<{ id: string; nome: string }>("portal_financeiro_repasse_responsavel", {
-      ...quem(c), p_levantamento: idDaRota(c, "id"), p_responsavel: d.responsavelId,
+      ...quem(c), p_levantamento: idDaRota(c, "id"), p_responsavel: d.responsavelId, p_motivo: d.motivo ?? null,
     }) });
+  });
+
+  // O atraso de uma parte (F3.46): o motivo e a próxima ação. O prazo não muda.
+  app.post("/v1/escritorio/financeiro/destinacoes/:id/atraso", async (c) => {
+    const d = await lerCorpo(c, anotarAtrasoSchema);
+    return c.json(await deps.banco.rpc<Destinacao>("portal_financeiro_destinacao_atraso", {
+      ...quem(c), p_destinacao: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  // O prazo do repasse do escritório (F3.46): só a sócia dona; vale para o que entrar depois.
+  app.put("/v1/escritorio/financeiro/ajustes/prazo-repasse", async (c) => {
+    const d = await lerCorpo(c, prazoRepasseSchema);
+    return c.json(await deps.banco.rpc<{ prazoRepasseDias: number }>("portal_financeiro_prazo_repasse", {
+      ...quem(c), p_dias: d.prazoRepasseDias ?? null,
+    }));
   });
 
   app.get("/v1/escritorio/financeiro/resumo", async (c) => {

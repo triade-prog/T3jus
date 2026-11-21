@@ -8,6 +8,58 @@
 -- - clientes_escritorio.funil_motivo e funil_encerrado_em (0190) seguem como o que vale agora, e o
 --   Funil já os conta. Cada marcação vira uma linha de funil_saidas, com quem, quando e a anotação.
 
+-- A trava dos 30 dias só de consulta (0210) tinha saído de proteger_tabela_escritorio quando a 0540
+-- a reescreveu. Volta aqui, para esta tabela e as próximas.
+create or replace procedure proteger_tabela_escritorio(p_tabela regclass)
+language plpgsql
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from pg_attribute
+     where attrelid = p_tabela and attname = 'escritorio_id' and atttypid = 'uuid'::regtype
+       and attnotnull and not attisdropped
+  ) then
+    raise exception 'A tabela % precisa de escritorio_id uuid not null', p_tabela;
+  end if;
+  if not exists (
+    select 1 from pg_constraint c
+     where c.conrelid = p_tabela and c.contype = 'f' and c.confrelid = 'public.escritorios'::regclass
+       and c.conkey = array[(select attnum from pg_attribute where attrelid = p_tabela and attname = 'escritorio_id')]
+  ) then
+    raise exception 'O escritorio_id de % precisa referenciar escritorios', p_tabela;
+  end if;
+
+  execute format('alter table %s enable row level security', p_tabela);
+  execute format('alter table %s force row level security', p_tabela);
+  if not exists (select 1 from pg_policy where polrelid = p_tabela and polname = 'isolamento_escritorio') then
+    execute format(
+      'create policy isolamento_escritorio on %s using (escritorio_id = contexto_escritorio()) with check (escritorio_id = contexto_escritorio())',
+      p_tabela);
+  end if;
+  if not exists (select 1 from pg_policy where polrelid = p_tabela and polname = 'fim_da_guarda') then
+    execute format('create policy fim_da_guarda on %s using (current_setting(''t3jus.fim_da_guarda'', true) = ''on'') '
+                   'with check (current_setting(''t3jus.fim_da_guarda'', true) = ''on'')', p_tabela);
+  end if;
+  if exists (select 1 from pg_attribute where attrelid = p_tabela and attname = 'versao' and not attisdropped)
+     and not exists (select 1 from pg_trigger where tgrelid = p_tabela and tgname = 'controle_versao') then
+    execute format('create trigger controle_versao before update on %s for each row execute function controle_versao()', p_tabela);
+  end if;
+  if not exists (select 1 from pg_trigger where tgrelid = p_tabela and tgname = 'contrato_aceita_escrita') then
+    execute format('create trigger contrato_aceita_escrita before insert or update or delete on %s for each row execute function contrato_aceita_escrita()', p_tabela);
+  end if;
+end $$;
+
+-- As tabelas criadas entre a 0540 e aqui, se houver, ganham a trava também.
+do $$
+declare t regclass;
+begin
+  for t in select polrelid::regclass from pg_policy p where p.polname = 'isolamento_escritorio'
+             and not exists (select 1 from pg_trigger g where g.tgrelid = p.polrelid and g.tgname = 'contrato_aceita_escrita') loop
+    execute format('create trigger contrato_aceita_escrita before insert or update or delete on %s for each row execute function contrato_aceita_escrita()', t);
+  end loop;
+end $$;
+
 create table funil_saidas (
   id             uuid primary key default gen_random_uuid(),
   escritorio_id  uuid not null references escritorios (id) on delete restrict,

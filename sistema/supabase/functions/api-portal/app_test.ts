@@ -1194,7 +1194,7 @@ Deno.test("FI-05: tipos de levantamento e destinações do domínio são os mesm
   assertEquals(lista(/tipo\s+text not null check \(tipo in \(([^)]+)\)/), Object.keys(TIPOS_LEVANTAMENTO));
   assertEquals(lista(/para\s+text not null check \(para in \(([^)]+)\)/), Object.keys(PARA_DESTINACAO));
   assertEquals(/prazo_repasse_dias\(\) returns integer\s+language sql immutable\s+as \$\$ select (\d+)/.exec(sql)?.[1], String(PRAZO_REPASSE_DIAS));
-  assertEquals(somarDiasUteis("2026-11-19", 3), "2026-11-24");
+  assertEquals(somarDiasUteis("2026-11-19", 3), "2026-11-25"); // 20/11 é feriado nacional (0552)
 });
 
 Deno.test("FI-09, FI-21: Resumo, Caixa e exportação para o contador; o escritório vem da sessão", async () => {
@@ -1665,4 +1665,34 @@ Deno.test("CH-01, FI-18: anexos do contrato, da conta e do recebimento, enviados
   assertEquals((await (await m.pedir("/v1/escritorio/financeiro/exportacoes/anexos?mes=2026-11-01", { cookie })).json()).mes, "2026-11-01");
   assertEquals((await m.pedir("/v1/escritorio/financeiro/exportacoes/anexos?mes=novembro", { cookie })).status, 400);
   assert(m.chamadas.filter((c) => c.funcao.includes("anexo")).every((c) => c.args.p_escritorio === AURORA));
+});
+
+Deno.test("F3.71: trocar quem cuida do repasse leva o motivo opcional ao banco", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/responsavel`, { metodo: "PUT", corpo: { responsavelId: ANA, motivo: "Férias até 30/11." }, cookie });
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_repasse_responsavel")!;
+  assertEquals([ch.args.p_levantamento, ch.args.p_responsavel, ch.args.p_motivo], [CLIENTE, ANA, "Férias até 30/11."]);
+  const longo = await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/responsavel`, { metodo: "PUT", corpo: { responsavelId: ANA, motivo: "x".repeat(201) }, cookie });
+  assertEquals((await erro(longo)).detalhes?.campos, ["motivo"]);
+});
+
+Deno.test("F3.46: anotar o atraso passa a parte da rota e os dados; o prazo do escritório vai com o número", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { motivo: "DOCUMENTO", texto: "Falta a nota.", proximaEm: "2026-11-20", proximaComId: ANA, oQue: "Cobrar a nota por e-mail" };
+  await m.pedir(`/v1/escritorio/financeiro/destinacoes/${CLIENTE}/atraso`, { metodo: "POST", corpo, cookie });
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_destinacao_atraso")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_destinacao, (ch.args.p_dados as { oQue: string }).oQue], [AURORA, CLIENTE, "Cobrar a nota por e-mail"]);
+  const ruim = await m.pedir(`/v1/escritorio/financeiro/destinacoes/${CLIENTE}/atraso`, { metodo: "POST", corpo: { motivo: "PREGUICA" }, cookie });
+  assertEquals((await erro(ruim)).detalhes?.campos, ["motivo"]);
+  await m.pedir("/v1/escritorio/financeiro/ajustes/prazo-repasse", { metodo: "PUT", corpo: { prazoRepasseDias: 5 }, cookie });
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_financeiro_prazo_repasse")!.args.p_dias, 5);
+});
+
+Deno.test("F3.46: os motivos do atraso no domínio são os mesmos do banco", async () => {
+  const { MOTIVOS_ATRASO_REPASSE } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0553_repasse_atraso.sql", import.meta.url));
+  const lista = /motivo\s+text not null check \(motivo in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista, Object.keys(MOTIVOS_ATRASO_REPASSE));
 });

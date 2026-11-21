@@ -43,12 +43,19 @@ const id = (n: number) => `f5000000-0000-4000-8000-0000000001${String(n).padStar
 const CASO = { id: "ca000000-0000-4000-8000-000000000001", nome: "Revisão de aposentadoria", parteContraria: "INSS", area: "PREVIDENCIARIO" };
 const BEN = { id: "be000000-0000-4000-8000-000000000001", nome: "Benedito Souza Lima", telefone: "+5511974561180" };
 const MARINA = { id: "aa000000-0000-4000-8000-000000000001", nome: "Marina Ribeiro" };
+const BIANCA = { id: "aa000000-0000-4000-8000-000000000002", nome: "Bianca Torres" };
+const DIEGO = { id: "aa000000-0000-4000-8000-000000000003", nome: "Diego Almeida" };
+const PODEM = [
+  { ...BIANCA, dono: false, areas: ["CONTRATOS", "FINANCEIRO"] },
+  { ...DIEGO, dono: false, areas: ["COMERCIAL", "FINANCEIRO"] },
+  { ...MARINA, dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"] },
+];
 const parte = (n: number, para: string, nome: string, valor: number, extra = {}) => ({
   id: id(n), para, nome, regra: null, valor, prazo: dia(1), escritorio: para === "HONORARIOS" || para === "REEMBOLSO",
   situacao: "PENDENTE", feitoEm: null, feitoPor: null, dispensa: null, contaId: null, ...extra,
 });
 const LEV = {
-  id: id(1), tipo: "RPV", valor: 2156656, entrouEm: dia(-2), criadoEm: `${dia(-2)}T19:12:00Z`, autor: MARINA, prestacaoEm: null, prestacaoPor: null,
+  id: id(1), tipo: "RPV", valor: 2156656, entrouEm: dia(-2), criadoEm: `${dia(-2)}T19:12:00Z`, autor: MARINA, responsavel: MARINA, prestacaoEm: null, prestacaoPor: null,
   caso: CASO, cliente: BEN, feitos: 0, total: 3,
   destinacoes: [
     parte(10, "CLIENTE", BEN.nome, 1424259),
@@ -57,14 +64,14 @@ const LEV = {
   ],
 };
 const LISTA = {
-  hoje: dia(0), prazoDias: 3, algum: true,
-  totais: { aRepassar: 1509659, repassesPendentes: 2, honorarios: 646997, casos: 1 },
+  hoje: dia(0), prazoDias: 3, algum: true, eu: MARINA.id, podeEditar: true, podemCuidar: PODEM,
+  totais: { aRepassar: 1509659, repassesPendentes: 2, honorarios: 646997, casos: 1, atrasados: 85400, repassesAtrasados: 1, semMotivo: 1 },
   repassadoMes: { valor: 2512800, clientes: 1 },
   repassados: [{ levantamentoId: id(2), cliente: "Irene Castro", tipo: "RPV", valor: 2512800, feitoEm: dia(-3) }],
   levantamentos: [LEV],
   casos: [{ id: CASO.id, nome: CASO.nome, parteContraria: "INSS", clientes: [{ id: BEN.id, nome: BEN.nome }] }],
 };
-const VAZIA = { ...LISTA, algum: false, totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0 }, repassadoMes: { valor: 0, clientes: 0 }, repassados: [], levantamentos: [] };
+const VAZIA = { ...LISTA, algum: false, totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0, atrasados: 0, repassesAtrasados: 0, semMotivo: 0 }, repassadoMes: { valor: 0, clientes: 0 }, repassados: [], levantamentos: [] };
 const ACERTO = {
   casoId: CASO.id, entrou: 2156656, destinadoPago: 0, faltaPagar: 2156656,
   parcelas: { total: 6, pagas: 6, ultima: dia(-40), falta: 0 }, prestacoesPendentes: 1,
@@ -75,7 +82,7 @@ const ACERTO = {
   falta: 1509659, fechado: null,
 };
 const FICHA = {
-  ...LEV, hoje: dia(0), escritorio: "Ribeiro & Matos", acerto: ACERTO,
+  ...LEV, hoje: dia(0), escritorio: "Ribeiro & Matos", acerto: ACERTO, eu: MARINA.id, podeEditar: true, prazoDias: 3, doContrato: MARINA, podemCuidar: PODEM,
   historico: [{ acao: "financeiro.levantamento", em: `${dia(-2)}T19:12:00Z`, por: MARINA, dados: { tipo: "RPV", valor: 2156656, seguiuProposta: true } }],
 };
 const PROPOSTA = {
@@ -107,7 +114,11 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(bloco).toContainText(`Revisão de aposentadoria × INSS · entrou em ${ddmm(-2)}`);
     await expect(bloco).toContainText("0 de 3 feitos");
     await expect(bloco).toContainText(`Até ${ddmm(1)}`);
-    await expect(bloco).toContainText(`Era ${ddmm(-1)}`);
+    await expect(bloco).toContainText(`Atrasado · era ${ddmm(-1)}`);
+    await expect(bloco).toContainText("Cuida: Marina Ribeiro (você)");
+    await expect(bloco).toContainText("Sem motivo anotado.");
+    await expect(nums).toContainText("Atrasados");
+    await expect(nums).toContainText("1 repasse · 1 sem motivo");
     await expect(bloco).toContainText("Prestação de contas: ainda não enviada");
     await expect(bloco).toContainText("O prazo do escritório é de 3 dias úteis.");
     await expect(page.getByRole("region", { name: /Repassado em/ })).toContainText("Irene Castro");
@@ -217,7 +228,9 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(page.getByText("Ainda com o escritório")).toBeVisible();
     const partes = page.getByRole("table", { name: "Partes do valor levantado" });
     await expect(partes.getByRole("row", { name: /Honorários de êxito/ })).toContainText("Escritório · 30%");
-    await expect(partes.getByRole("row", { name: /Dr. Rui Tavares/ })).toContainText(`Era ${ddmm(-1)}`);
+    await expect(partes.getByRole("row", { name: /Dr. Rui Tavares/ })).toContainText(`Atrasado · era ${ddmm(-1)}`);
+    await expect(page.getByRole("region", { name: "Quem cuida deste repasse" })).toContainText("Marina Ribeiro (você)");
+    await expect(page.getByRole("region", { name: "Quem cuida deste repasse" })).toContainText("É a responsável pelo contrato de Benedito.");
     const fecha = page.getByRole("region", { name: "Fechamento do caso" });
     await expect(fecha).toContainText("R$ 21.566,56");
     await expect(fecha).toContainText("Perito: falta pagar R$ 854,00");
@@ -260,6 +273,84 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(page.getByRole("status").filter({ hasText: "Caso encerrado no financeiro." })).toBeVisible();
     expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/financeiro/casos/${CASO.id}/encerrar`)).toBe(true);
     await expect(page.getByRole("region", { name: "Fechamento do caso" })).toContainText(`Caso encerrado no financeiro em ${ddmm(0)}, por Marina Ribeiro.`);
+  });
+
+  test("F3.71: os repasses de cada um, e trocar quem cuida (só quem tem o Financeiro; o motivo vai junto)", async ({ page }) => {
+    const LEV2 = { ...LEV, id: id(5), cliente: { ...BEN, id: "be000000-0000-4000-8000-000000000002", nome: "Irene Castro" }, responsavel: BIANCA };
+    const trocado = { ...FICHA, responsavel: DIEGO, historico: [
+      { acao: "financeiro.repasse_responsavel", em: new Date().toISOString(), por: MARINA, dados: { de: MARINA.id, para: DIEGO.id, motivo: "Bianca está de férias até 30/11." } },
+      ...FICHA.historico] };
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, { ...LISTA, levantamentos: [LEV, LEV2] }),
+      [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: [{ corpo: FICHA }, { corpo: trocado }],
+      [`PUT /v1/escritorio/financeiro/repasses/${id(1)}/responsavel`]: [
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "SEM_AREA_FINANCEIRO" } } } },
+        { corpo: { responsavel: DIEGO } },
+      ],
+    });
+    await page.goto(`${P}/financeiro/repasses`);
+    const chips = page.getByRole("group", { name: "Quem cuida" });
+    await expect(chips.getByRole("button", { name: "Todos (2)" })).toHaveAttribute("aria-pressed", "true");
+    await chips.getByRole("button", { name: "Bianca (1)" }).click();
+    await expect(page.getByRole("region", { name: "Irene Castro" })).toContainText("Cuida: Bianca Torres");
+    await expect(page.getByRole("region", { name: BEN.nome })).toHaveCount(0);
+    await chips.getByRole("button", { name: "Os meus (1)" }).click();
+    await expect(page.getByRole("region", { name: BEN.nome })).toBeVisible();
+    await semViolacoes(page);
+
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    await page.getByRole("button", { name: "Trocar o responsável" }).click();
+    const j = page.getByRole("dialog", { name: "Trocar o responsável" });
+    await expect(j.getByRole("radio", { name: /Bianca Torres/ })).toBeFocused();
+    await expect(j).toContainText("Só aparece quem tem a área Financeiro.");
+    await expect(j.getByText("responsável agora")).toBeVisible();
+    await j.getByRole("radio", { name: /Diego Almeida/ }).check();
+    await j.getByLabel(/Por quê/).fill("Bianca está de férias até 30/11.");
+    await j.getByRole("button", { name: "Trocar o responsável" }).click();
+    await expect(j.getByRole("alert").filter({ hasText: "Falta acertar 1 ponto" })).toBeVisible();
+    await expect(j.getByText("Diego Almeida não tem mais a área Financeiro")).toBeVisible();
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Trocar o responsável" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Diego Almeida passou a cuidar do repasse." })).toBeVisible();
+    const put = pedidos.filter((p) => p.metodo === "PUT" && p.caminho.endsWith("/responsavel")).pop()!;
+    expect(put.corpo).toEqual({ responsavelId: DIEGO.id, motivo: "Bianca está de férias até 30/11." });
+    await expect(page.getByRole("region", { name: "Histórico" })).toContainText("Marina Ribeiro passou o repasse para Diego Almeida");
+    await expect(page.getByRole("region", { name: "Histórico" })).toContainText("“Bianca está de férias até 30/11.”");
+  });
+
+  test("F3.46: anotar o atraso com o motivo e a próxima ação; o prazo não muda", async ({ page }) => {
+    const anotada = { ...LEV.destinacoes[2], atraso: {
+      id: "ab000000-0000-4000-8000-000000000001", motivo: "DOCUMENTO", texto: null, proximaEm: dia(1), proximaCom: BIANCA,
+      oQue: "Cobrar a nota por e-mail", em: new Date().toISOString(), por: MARINA } };
+    const depois = { ...LISTA, totais: { ...LISTA.totais, semMotivo: 0 }, levantamentos: [{ ...LEV, destinacoes: [LEV.destinacoes[0], LEV.destinacoes[1], anotada] }] };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/repasses": [{ corpo: LISTA }, { corpo: depois }],
+      [`POST /v1/escritorio/financeiro/destinacoes/${id(12)}/atraso`]: { corpo: anotada },
+    });
+    await page.goto(`${P}/financeiro/repasses`);
+    await page.getByRole("button", { name: "Anotar o atraso de Dr. Rui Tavares" }).click();
+    const j = page.getByRole("dialog", { name: "Anotar o atraso" });
+    await expect(j.getByRole("radio", { name: /Esperando um documento/ })).toBeFocused();
+    await expect(j).toContainText(`prazo era ${ddmm(-1)}`);
+    await j.getByLabel("Quando").fill(br(-1));
+    await j.getByRole("button", { name: "Salvar a anotação" }).click();
+    await expect(j.getByRole("alert").filter({ hasText: "Falta acertar 2 pontos" })).toBeVisible();
+    await expect(j.getByText(`A próxima ação é hoje ou depois. Hoje é ${br(0)}.`)).toBeVisible();
+    await expect(j.getByText("Diga o que vai ser feito")).toBeVisible();
+    await semViolacoes(page);
+    await j.getByLabel("Quando").fill(br(1));
+    await j.getByLabel("Com quem").selectOption(BIANCA.id);
+    await j.getByLabel("O que fazer").fill("Cobrar a nota por e-mail");
+    await j.getByRole("button", { name: "Salvar a anotação" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Anotação do atraso salva." })).toBeVisible();
+    const post = pedidos.find((p) => p.metodo === "POST" && p.caminho.endsWith("/atraso"))!;
+    expect(post.corpo).toEqual({ motivo: "DOCUMENTO", texto: null, proximaEm: dia(1), proximaComId: BIANCA.id, oQue: "Cobrar a nota por e-mail" });
+    const bloco = page.getByRole("region", { name: BEN.nome });
+    await expect(bloco).toContainText("Motivo do atraso: esperando um documento");
+    await expect(bloco).toContainText(`Próxima ação: ${ddmm(1)}, cobrar a nota por e-mail · Bianca`);
+    await expect(bloco.getByRole("button", { name: "Mudar a anotação de Dr. Rui Tavares" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Números dos repasses" })).toContainText("todos com motivo");
   });
 
   test("Sem a área Financeiro, Repasses não abre", async ({ page }) => {

@@ -130,8 +130,8 @@ select is((select (r -> 'falta') - 'aparte' - 'faixas' from rs),
 select is((select r -> 'falta' -> 'faixas' from rs),
   '[{"n": 1, "valor": 100000}, {"n": 1, "valor": 100000}, {"n": 0, "valor": 0}, {"n": 0, "valor": 0}]'::jsonb, 'IN-07: o vencido por idade');
 select is((select (r -> 'falta' -> 'aparte' -> 'lista' -> 0) - 'id' from rs),
-  '{"caso": "Lima x INSS", "tipo": "RPV", "prazo": "2026-11-20", "valor": 15000, "cliente": "Benedito Souza Lima"}'::jsonb,
-  'IN-05: a parte do escritório no RPV fica à parte, com a data');
+  '{"caso": "Lima x INSS", "tipo": "RPV", "prazo": "2026-11-23", "valor": 15000, "cliente": "Benedito Souza Lima"}'::jsonb,
+  'IN-05: a parte do escritório no RPV fica à parte, com a data (20/11 é feriado nacional)');
 select is((select (r -> 'rendeu') - 'despesas' from rs), '{"valor": 441500, "anterior": 540000, "adiantado": 48500}'::jsonb,
   'IN-15, decisão 2, FI-07: rendeu é o que entrou menos as custas adiantadas que não voltaram');
 select is((select r ->> 'contratado' from rs), '660000', 'IN-02: o contratado que venceu no período');

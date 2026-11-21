@@ -1493,6 +1493,7 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 
 /* Janela de registrar */
 .janela.fi-larga{width:min(760px,calc(100vw - 32px))}
+@media (max-width:760px){.janela.fi-larga{width:100%}}
 .fi-alvo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2)}
 .fi-alvo strong{display:block;font-weight:500}
 .fi-alvo small{display:block;font-size:12px;color:var(--texto-2)}
@@ -4426,4 +4427,110 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
   .rc-nota{padding:10px 16px 16px}
   .rc-acoes{flex-wrap:wrap;justify-content:stretch}
   .rc-acoes .btn{flex:1 1 auto}
+}
+
+/* ==========================================================================
+   Pendências do Comercial e do Financeiro (F3.46, F3.48, F3.49, F3.50, F3.71, F3.72): peças comuns.
+   Desenho aprovado em docs/design/aprovadas/portal-comercial-financeiro-pendencias (CSS_PEND, com
+   .pd-quem chamado aqui de .pd-pessoa, porque .pd-quem já é o grupo da exclusão do cliente).
+   ========================================================================== */
+.pd-campo-linha{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pd-fs-erro{padding:10px 12px;border-radius:var(--raio);box-shadow:inset 0 0 0 1.5px var(--vinho-3)}
+.pd-fs-erro>.erro-msg{margin:0 0 6px}
+.pd-pessoa{display:flex;align-items:center;gap:12px}
+.pd-pessoa .av-p{width:40px;height:40px;font-size:13px;flex:none}
+.pd-pessoa strong{display:block;font-weight:500;line-height:1.3}
+.pd-pessoa small{display:block;font-size:12px;color:var(--texto-2);line-height:1.45}
+.pd-corpo{padding:0 24px 20px;display:grid;gap:14px}
+.pd-corpo>p{font-size:13px;line-height:1.5;color:var(--texto-2)}
+.pd-corpo .btn{justify-self:start}
+.pd-nota{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--texto-2)}
+.pd-nota .ico{width:16px;height:16px;color:var(--vinho-4);flex:none;margin-top:2px}
+.pd-nota b{color:var(--texto);font-weight:500}
+.pd-ro{margin:0;padding:0 24px 18px;display:grid}
+.pd-ro div{display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--divisor)}
+.pd-ro div:first-child{border-top:0}
+.pd-ro dt{font-size:13px;color:var(--texto-2)}
+aside .pd-ro div{grid-template-columns:110px minmax(0,1fr)}
+.pd-ro dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.pd-ro dd small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+.pd-selo-linha{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+@media (max-width:760px){
+  .pd-corpo{padding:0 16px 16px}
+  .pd-ro{padding:0 16px 16px}
+  .pd-ro div{grid-template-columns:1fr;gap:2px}
+  .pd-corpo .btn{justify-self:stretch}
+}
+
+/* ===== F3.71 responsável, F3.46 atraso, F3.48 a caminho, F3.49 meta, F3.50 caixa ===== */
+.rp-resp{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--texto-2)}
+.rp-resp .ico{width:16px;height:16px;color:var(--vinho-4)}
+.rp-resp b{font-weight:500;color:var(--texto)}
+.rp-agora{display:inline-block;margin-left:8px;padding:0 8px;border-radius:10px;background:var(--sal-2);color:var(--vinho);font-size:11px;font-weight:500;vertical-align:1px}
+.rp-filtro{display:flex;justify-content:flex-start}
+.rp-filtro .chips{margin:0}
+aside.fi-col .folha-cab{flex-wrap:wrap}
+aside.fi-col .rv-item{grid-template-columns:minmax(0,1fr)!important}
+aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flow:column;justify-content:start;align-items:baseline;gap:8px}
+.pz-linha-atraso{box-shadow:inset 3px 0 0 var(--vinho-3)}
+.pz-mot b,.pz-sem b{color:var(--texto)}
+.pz-sem .ico,.pz-mot .ico{color:var(--vinho-3)!important}
+.pz-bot{margin-top:8px}
+.fi-sit .btn{margin-top:2px}
+.fi-docs .btn{margin-top:4px}
+.pz-cartao-atraso{border-color:var(--vinho-3)!important;box-shadow:inset 3px 0 0 var(--vinho-3)}
+.rv-cab-bot{display:flex;gap:8px;flex-wrap:wrap}
+.rv-item{grid-template-columns:minmax(0,1fr) auto!important}
+.rv-passou{box-shadow:inset 3px 0 0 var(--vinho-3)}
+.rv-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.rv-dois-op{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rv-dois-op .opcao{border:1px solid var(--borda-folha);border-radius:var(--raio);padding:10px 12px}
+.rv-dois-op .opcao:has(input:checked){border-color:var(--vinho);background:var(--sal-2)}
+.rv-parte{display:grid;gap:0;border:1px solid var(--borda-folha);border-radius:var(--raio);padding:10px 14px}
+.rv-parte .fi-rotulo{margin-bottom:4px}
+.rv-parte-l{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--divisor);font-size:13px}
+.rv-parte-l b{display:block;font-weight:500}
+.rv-parte-l small{display:block;font-size:12px;color:var(--texto-2)}
+.rv-parte-l.rv-cli{color:var(--texto-2)}
+.rv-prev{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio);background:var(--ambar-3);color:var(--tinta);font-size:13px;line-height:1.5}
+.rv-prev .ico{color:var(--vinho);flex:none;margin-top:1px}
+.rv-prev b{font-weight:600}
+.rv-de{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;padding:10px 14px;border-radius:var(--raio);background:var(--sal-2)}
+.rv-de .ico{color:var(--vinho);flex:none;margin-top:1px}
+.rv-de b{font-weight:500}
+.mt-meta{margin:16px 24px 0;padding:14px 16px;border-radius:var(--raio);border:1px solid var(--borda-folha);display:grid;gap:10px}
+.mt-vazia{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:var(--sal-2);border-style:dashed;border-color:var(--vinho-4)}
+.mt-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.mt-rot{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2)}
+.mt-valor{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mt-valor b{font-family:var(--serifa);font-size:28px;font-weight:500;color:var(--vinho);line-height:1.1}
+.mt-valor span,.mt-txt{font-size:13px;color:var(--texto-2);line-height:1.5}
+.mt-txt b{color:var(--texto);font-weight:600}
+.mt-barra{position:relative;padding:18px 0 2px}
+.mt-barra .fi-trilho{display:block;height:16px}
+.mt-traco{position:absolute;top:10px;bottom:-2px;width:0;border-left:2.5px solid var(--vinho-escuro)}
+.mt-traco span{position:absolute;top:-12px;left:4px;font-size:11px;font-weight:600;color:var(--vinho-escuro);white-space:nowrap}
+.mt-duplo{position:relative}
+.mt-traco-p{top:-3px;bottom:-3px}
+.mt-leg-traco{width:3px!important;height:14px!important;background:var(--vinho-escuro)!important;border-radius:0!important}
+.mt-ref{padding:0}
+.ct-abertura{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;font-size:12px!important;color:var(--ambar-3)!important;margin-top:2px}
+.ct-abertura .ico{width:16px;height:16px;color:var(--ambar-2);flex:none;margin-top:1px}
+.ct-abertura b{color:var(--papel)}
+.ct-abertura a{color:var(--papel);font-weight:500;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:24px}
+.ct-falta{padding:10px 12px;border-radius:var(--raio);background:var(--vinho-2);font-size:13px!important;color:var(--papel)!important;position:relative;z-index:1}
+.ct-bot{justify-self:start;position:relative;z-index:1;background:var(--papel)!important;color:var(--vinho)!important}
+.ct-sem{display:flex;gap:10px;align-items:flex-start;margin:0 24px 12px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.janela .ct-sem{margin:0}
+.ct-sem .ico{color:var(--vinho);flex:none;margin-top:1px}
+.ct-sem b{font-weight:600}
+@media (max-width:760px){
+  .rv-dois-op{grid-template-columns:1fr}
+  .pz-l,.rv-item{grid-template-columns:minmax(0,1fr)!important}
+  .pz-l .fi-lado,.rv-item .fi-lado{grid-column:1!important;justify-items:start;text-align:left;grid-auto-flow:column;justify-content:start;align-items:center;gap:10px}
+  .rv-cab-bot{flex:1 1 100%}
+  .rv-cab-bot .btn{flex:1 1 100%}
+  .mt-meta{margin:14px 16px 0}
+  .ct-sem{margin:0 16px 12px}
+  .rv-acoes .btn{flex:1 1 auto}
 }

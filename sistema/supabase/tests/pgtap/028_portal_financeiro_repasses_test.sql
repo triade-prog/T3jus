@@ -92,12 +92,12 @@ create temp table lv as select
 
 create temp table fx as select portal_financeiro_repasse(diego, rm, lv.id) f from ids, lv;
 select is((select f -> 'destinacoes' -> 0 ->> 'nome' from fx), 'Benedito Souza Lima', 'a parte do cliente leva o nome dele');
-select is((select f -> 'destinacoes' -> 0 ->> 'prazo' from fx), '2026-11-20', 'FI-05: prazo de 3 dias úteis depois que entrou');
+select is((select f -> 'destinacoes' -> 0 ->> 'prazo' from fx), '2026-11-23', 'FI-05: prazo de 3 dias úteis depois que entrou (20/11 é feriado nacional)');
 select is((select f ->> 'feitos' from fx), '0', 'nada feito ainda');
 select is((select f -> 'cliente' ->> 'telefone' from fx), '+5511996027736', 'o WhatsApp do cliente, para a prestação de contas');
 
 create temp table lista as select portal_financeiro_repasses(diego, rm) l from ids;
-select is((select l -> 'totais' from lista),
+select is((select (l -> 'totais') - 'atrasados'::text - 'repassesAtrasados'::text - 'semMotivo'::text from lista),
   '{"aRepassar": 2916000, "repassesPendentes": 2, "honorarios": 1364000, "casos": 1}'::jsonb,
   'FI-06: o que é de terceiros fica separado da parte do escritório');
 select is((select jsonb_array_length(l -> 'levantamentos') from lista), 1, 'o bloco aparece na lista');

@@ -5,7 +5,7 @@
   "refs": [
     "FI-05"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 460,
-  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 3): prazo em Escritório › Ajustes do financeiro, feriados nacionais e Anotar o atraso com a próxima ação (migrations 0552, 0553)"
+  "proximo": "Servidor pronto (0552 prazo do escritório e feriados nacionais, 0553 anotação do atraso e sino) e atraso anotado na lista e na ficha. Falta a tela Escritório › Ajustes do financeiro para a sócia dona mudar o prazo, que vem junto com o contador (F3.50)."
 }
