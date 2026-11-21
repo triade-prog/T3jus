@@ -7,6 +7,6 @@
   ],
   "status": "andamento",
   "ordem": 130,
-  "proximo": "Falta o pedido opcional ao cliente pelo WhatsApp, que vem com Conversas",
+  "proximo": "Falta o pedido opcional ao cliente pelo WhatsApp. Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79)",
   "evidencia": "Rotina diária lembrar_bases_do_mes (7h de Brasília) põe no sino de quem foi escolhido, ou do responsável, o aviso \"Pedir a base do mês\" uma vez por cobrança (migration 0531, pgTAP 054)."
 }

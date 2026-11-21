@@ -4,6 +4,7 @@
   "refs": [
     "PT-07"
   ],
-  "status": "pendente",
-  "ordem": 40
+  "status": "feito",
+  "ordem": 40,
+  "evidencia": "Buckets privados documentos-console (10 MB) e documentos-portal (12 MB) criados no Supabase t3jus em 21/11/2026, com ok da Carol, iguais ao config.toml"
 }

@@ -6,6 +6,6 @@
     "PT-11"
   ],
   "status": "pendente",
-  "proximo": "Mandar os dois e-mails pela rotina da noite; falta o e-mail de contato real do T3jus (o provisório é atendimento@exemplo.com.br)",
+  "proximo": "Ainda não programado: a rotina da noite deve mandar os dois e-mails pelo Resend. O texto cita o contato do T3jus, que hoje é provisório (atendimento@exemplo.com.br, CONTATO_T3JUS); falta a Carol dizer o e-mail real",
   "ordem": 160
 }
