@@ -1,0 +1,42 @@
+[
+ {
+  "nome": "receber-conferir",
+  "url": "financeiro.html?estado=receber-conferir"
+ },
+ {
+  "nome": "conferir",
+  "url": "financeiro.html?estado=conferir"
+ },
+ {
+  "nome": "conferir-erro",
+  "url": "financeiro.html?estado=conferir-erro"
+ },
+ {
+  "nome": "conferir-erro-valor",
+  "url": "financeiro.html?estado=conferir-erro-valor"
+ },
+ {
+  "nome": "nao-cobrar",
+  "url": "financeiro.html?estado=nao-cobrar"
+ },
+ {
+  "nome": "conferido",
+  "url": "financeiro.html?estado=conferido"
+ },
+ {
+  "nome": "conferido-contrato",
+  "url": "financeiro.html?estado=conferido-contrato"
+ },
+ {
+  "nome": "receber-reembolso",
+  "url": "financeiro.html?estado=receber-reembolso"
+ },
+ {
+  "nome": "registrar-reembolso",
+  "url": "financeiro.html?estado=registrar-reembolso"
+ },
+ {
+  "nome": "registrar-reembolso-junto",
+  "url": "financeiro.html?estado=registrar-reembolso-junto"
+ }
+]

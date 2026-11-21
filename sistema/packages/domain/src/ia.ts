@@ -20,7 +20,7 @@ export const CASOS_PASSAR = {
 export type CasoPassar = keyof typeof CASOS_PASSAR;
 
 /** Os motivos que a IA usa ao passar (os sete casos, mais os que o serviço decide sozinho). */
-export const MOTIVOS_PASSAR = [...Object.keys(CASOS_PASSAR), "VALOR", "ESTRATEGIA", "PALAVRA", "REGRA_FIXA", "IA_DESLIGADA", "OUTRO"] as const;
+export const MOTIVOS_PASSAR = [...Object.keys(CASOS_PASSAR), "VALOR", "ESTRATEGIA", "SEM_AVISOS", "PALAVRA", "REGRA_FIXA", "IA_DESLIGADA", "OUTRO"] as const;
 export type MotivoPassar = (typeof MOTIVOS_PASSAR)[number];
 
 /** O que ela nunca faz (fixo no T3jus). */
@@ -148,6 +148,27 @@ export function palavraDoEscritorio(texto: string | null, palavras: string[]): s
   }) ?? null;
 }
 
+/**
+ * O cliente pede para não receber mais avisos (F3.83; pergunta 4 do desenho aprovado das
+ * pendências pequenas). Só reconhece frases claras; o resto fica com o modelo, que tem o motivo
+ * SEM_AVISOS nas instruções. A IA nunca registra o pedido: passa para a equipe, que registra
+ * com o atalho da conversa, já preenchido com esta mensagem.
+ */
+const FRASES_SEM_AVISOS = [
+  /\bpar(e|em|a) de (me |nos )?(mandar|enviar|cobrar)\b/,
+  /\bnao (me |nos )?(mande|mandem|envie|enviem) mais\b/,
+  /\bnao (quero|queremos|desejo) (mais )?receber\b/,
+  /\bnao (quero|queremos) mais (essas |estas |esses |estes |as |os )?(mensagens|avisos|cobrancas|lembretes)\b/,
+  /\b(tirar|tire|tira|remover|remova|cancelar|cancele) (o meu numero|meu numero|o numero|os avisos|as mensagens|as cobrancas|os lembretes)\b/,
+  /\b(sair|me tirem|me tire) d(a|essa|esta) lista\b/,
+  /\bdescadastr/,
+];
+export function pedeSemAvisos(texto: string | null): boolean {
+  if (!texto) return false;
+  const t = semAcento(texto).replace(/[^a-z0-9]+/g, " ");
+  return FRASES_SEM_AVISOS.some((r) => r.test(t));
+}
+
 export type DecisaoAntes =
   | { acao: "SILENCIO"; razao: "COM_EQUIPE" | "PESSOA_RESPONDEU" | "SEM_MENSAGEM_NOVA" }
   | { acao: "PASSAR"; motivo: "IA_DESLIGADA" | "PALAVRA"; palavra?: string }
@@ -212,6 +233,7 @@ export function instrucoesIa(ctx: ContextoIa, opcoes: { notaIa?: string | null }
     "Passe para uma pessoa (acao PASSAR) sempre que cair num destes casos, com o motivo entre parênteses:",
     ...Object.entries(CASOS_PASSAR).map(([k, v]) => `- ${v} (${k}).`),
     "- Pergunta sobre valor de honorário ou quanto custa (VALOR); pergunta sobre estratégia ou o que fazer no caso (ESTRATEGIA); pedido de opinião ou chance (ESTRATEGIA).",
+    ctx.cliente ? "- Pedido para não receber mais mensagens automáticas, avisos ou cobranças pelo WhatsApp (SEM_AVISOS). Não diga que o pedido foi registrado: quem registra é uma pessoa da equipe." : "",
     `Ao passar, escreva ao cliente uma frase curta dizendo que passou para ${ctx.cliente ? ctx.quemResponde.nome ?? "a equipe" : ctx.comercial ?? "a equipe"} e que a resposta chega por aqui. Não prometa quando.`,
     c.telefoneUrgencia ? `Só em urgência de prisão, liminar ou audiência no mesmo dia, informe também o telefone de urgência ${c.telefoneUrgencia}.` : "",
     fora ? "Agora é fora do horário da equipe. Responda o que souber; o serviço acrescenta sozinho quando uma pessoa vai ver." : "",
@@ -290,6 +312,7 @@ const MOTIVO_TEXTO: Partial<Record<MotivoPassar, string>> = {
   REGRA_FIXA: "A resposta da IA ia contra uma regra fixa e não foi enviada.",
   PALAVRA: "A mensagem tem uma palavra que o escritório pediu para passar.",
   IA_DESLIGADA: "A IA está desligada: a conversa vem direto para a equipe.",
+  SEM_AVISOS: "Confira a mensagem e, se for isso, registre em Avisos automáticos › Não receber avisos. A IA não registra sozinha.",
 };
 
 /** Para quem a conversa iria, pela regra (contato novo vai para o Comercial). */
@@ -301,6 +324,12 @@ export function textoAoPassar(ctx: ContextoIa): string {
   return nome
     ? `Vou passar a sua mensagem para ${nome.split(" ")[0]}, da equipe do escritório ${ctx.escritorio}. A resposta chega por aqui.`
     : `Vou passar a sua mensagem para a equipe do escritório ${ctx.escritorio}. A resposta chega por aqui.`;
+}
+
+/** Ao passar o pedido de não receber avisos: sem dizer que já foi registrado (pergunta 3). */
+export function textoPedidoSemAvisos(ctx: ContextoIa): string {
+  const nome = quemRecebeConversa(ctx);
+  return `Entendi. Vou passar o seu pedido para ${nome ? `${nome.split(" ")[0]}, da equipe do escritório ${ctx.escritorio}` : `a equipe do escritório ${ctx.escritorio}`}. A resposta chega por aqui.`;
 }
 
 /** Junta a resposta do modelo às regras: confere, apresenta, passa e diz quando alguém vê. */
@@ -331,12 +360,12 @@ export function finalizarResposta(saida: SaidaIa, ctx: ContextoIa, msgs: Mensage
 }
 
 /** Quando o serviço passa sem chamar o modelo (desligada, palavra do escritório, IA fora do ar). */
-export function planoSemModelo(motivo: "IA_DESLIGADA" | "PALAVRA" | "OUTRO", ctx: ContextoIa, msgs: MensagemIa[]): PlanoIa {
+export function planoSemModelo(motivo: "IA_DESLIGADA" | "PALAVRA" | "SEM_AVISOS" | "OUTRO", ctx: ContextoIa, msgs: MensagemIa[]): PlanoIa {
   const fora = !dentroDoHorario(ctx.config, ctx.agora, ctx.feriados);
   // Desligada, nada sai automático: a conversa só vai para a equipe.
   let texto: string | null = null;
   if (motivo !== "IA_DESLIGADA") {
-    texto = textoAoPassar(ctx);
+    texto = motivo === "SEM_AVISOS" ? textoPedidoSemAvisos(ctx) : textoAoPassar(ctx);
     if (precisaApresentar(msgs)) texto = `${ctx.config.apresentacao}\n\n${texto}`;
     if (fora) texto = `${texto}\n\n${textoForaHorario(ctx.config, ctx.agora, ctx.feriados)}`;
   }

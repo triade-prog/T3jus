@@ -7,13 +7,14 @@
 // só no sino (sem e-mail), 30 dias, sem desligar tipos, abrir marca lido.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { AvisoSino, ListaAvisosSino } from "@t3jus/domain";
+import { MOTIVOS_NAO_COBRAR, reais, type AvisoSino, type ListaAvisosSino, type MotivoNaoCobrar } from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Aviso, Estado } from "../console/pecas.tsx";
 import { hora } from "../console/tempo.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 import { valorDaProposta } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
+import { ROTAS_JURIDICO } from "./juridico.ts";
 
 const FUSO = "America/Sao_Paulo";
 const diaDe = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: FUSO, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
@@ -179,6 +180,18 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         icone: "moeda", titulo: <><b>{d.quem ?? "Alguém da equipe"}</b> pediu a chave Pix do escritório</>,
         detalhe: `${d.cliente ? `Para o carnê de ${d.cliente}. ` : ""}Sem a chave, os carnês saem com as instruções de pagamento em texto, sem o QR.`,
         onde: "Cadastrar a chave Pix", href: `${ROTAS_PORTAL.escritorio}/recebimento`, selo: { tom: "andamento", texto: "Pedido" },
+      };
+    case "EXITO_VALOR_MUDOU":
+      return {
+        icone: "balanca", titulo: <><b>{d.quem ?? "O Financeiro"}</b> mudou o êxito de {d.cliente ?? "um cliente"}{typeof d.valor === "number" ? ` para ${reais(d.valor)}` : ""}</>,
+        detalhe: <>{typeof d.calculado === "number" ? `Era ${reais(d.calculado)}, pelo contrato. ` : ""}{d.motivo ? fala(d.motivo) : null}{d.caso ? ` ${d.caso}.` : ""}</>,
+        onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "atencao", texto: "Valor mudou" },
+      };
+    case "EXITO_NAO_COBRADO":
+      return {
+        icone: "balanca", titulo: <><b>{d.quem ?? "O Financeiro"}</b> não vai cobrar o êxito de {d.cliente ?? "um cliente"}</>,
+        detalhe: <>{d.motivo && d.motivo in MOTIVOS_NAO_COBRAR ? `${MOTIVOS_NAO_COBRAR[d.motivo as MotivoNaoCobrar]}. ` : ""}{d.explicacao ? fala(d.explicacao) : null}{d.caso ? ` ${d.caso}.` : ""}</>,
+        onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "neutro", texto: "Não cobrado" },
       };
     case "PRAZO_2_DIAS":
       return {

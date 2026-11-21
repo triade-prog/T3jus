@@ -260,6 +260,33 @@ test("PA-03: testar sem enviar, quem entraria hoje e ligar desligando a pronta",
   await expect(page.getByText("Esperando a aprovação do WhatsApp")).toBeVisible();
 });
 
+test("F3.87: testar o lembrete de documento com um cliente de verdade", async ({ page }) => {
+  const doc = { ...PRONTA_PAG, gatilho: "DOCUMENTO_PENDENTE", area: "JURIDICO", conflitos: [] };
+  const docs = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `d${i}`, descricao: i ? "Holerites de 2025" : "CTPS digital", caso: { id: "cs1", nome: "Pereira x Mercado" },
+    pedidoEm: "2026-11-10", repedidoEm: null, pedidoPor: MARINA }));
+  const pedidos = await simular(page, {
+    "/v1/escritorio": { corpo: ESCRITORIO },
+    "GET /v1/escritorio/automacoes": { corpo: LISTA },
+    [`GET /v1/escritorio/automacoes/${ID}`]: { corpo: doc },
+    [`GET /v1/escritorio/automacoes/${ID}/quem-entraria`]: { corpo: { disponivel: true, dias: 5, itens: [
+      { origem: { id: "d0", descricao: "CTPS digital", quando: "2026-11-15" }, cliente: { id: "c3000000-0000-4000-8000-000000000001", nome: "Carlos Henrique Dias" },
+        contato: { nome: "Carlos Henrique Dias", papel: null }, documentos: docs(1), quando: "HOJE", entra: true, motivo: null, detalhe: null },
+      { origem: { id: "d0", descricao: "CTPS digital e Holerites", quando: "2026-11-16" }, cliente: { id: "c3000000-0000-4000-8000-000000000002", nome: "Antônia Ferreira Prado" },
+        contato: { nome: "Joana Prado", papel: "filha" }, documentos: docs(2), quando: "AMANHA", entra: true, motivo: null, detalhe: null },
+    ] } },
+    [`POST /v1/escritorio/automacoes/${ID}/simular`]: { corpo: { ...SIM, cliente: "Carlos Henrique Dias", contato: "Carlos Henrique Dias" } },
+  });
+  await page.goto(`${P}/conversas/automacoes?a=${ID}&passo=testar`);
+  const sel = page.getByRole("combobox", { name: "Simular com" });
+  await expect(sel.getByRole("option", { name: "Carlos Henrique Dias · CTPS digital" })).toHaveCount(1);
+  await expect(sel.getByRole("option", { name: "Antônia Ferreira Prado · 2 documentos" })).toHaveCount(1);
+  await expect(page.getByText("Clientes com documento pendente hoje.")).toBeVisible();
+  await page.getByRole("button", { name: "Simular" }).click();
+  await expect(page.getByText("Esta conversa não foi enviada.")).toBeVisible();
+  expect(pedidos.find((x) => x.caminho.endsWith("/simular"))?.corpo).toEqual({ clienteId: "c3000000-0000-4000-8000-000000000001", escolha: "NADA" });
+  await semViolacoes(page);
+});
+
 test("PA-03: o histórico mostra as falhas e a sócia dona desliga com motivo", async ({ page }) => {
   let atual: object = { ...PRONTA_PAG, situacao: "LIGADA", versaoLigada: 2, rascunhoMudou: false, ligada: { numero: 2, em: hoje("08:00"), por: MARINA },
     execucoes: { total: 2, concluidas: 1, andamento: 0, falhas: 1 },

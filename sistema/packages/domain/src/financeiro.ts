@@ -45,6 +45,8 @@ export const registrarRecebimentoSchema = z.object({
     documento: txt(20),
     papel: txt(60),
   }).nullish(),
+  /** O reembolso pago junto com a parcela (F3.85): só quando a caixa é marcada. */
+  reembolso: z.object({ valor: z.number().int().nullish(), forma: txt(30) }).nullish(),
 });
 export type RegistrarRecebimento = z.input<typeof registrarRecebimentoSchema>;
 
@@ -93,7 +95,72 @@ export interface ParcelaLinha {
   eraPagoAntes?: boolean;
   /** Nenhum aviso automático sai por esta parcela até ela ter nova data (pergunta 3). */
   semAvisoAutomatico?: boolean;
+  /** A parcela do êxito: de onde veio e quem conferiu (F3.14). */
+  exito?: ExitoDaParcela | null;
+  /** O reembolso que vai junto com a parcela e ainda não foi pago (F3.85). */
+  reembolso?: ReembolsoDaParcela | null;
 }
+
+export interface ExitoDaParcela {
+  id: string;
+  encerradoEm: string;
+  conferido: { por: PessoaRef; em: string };
+  calculado: number;
+  base: number;
+  percentual: number;
+  motivoAjuste: string | null;
+  caso: { id: string; nome: string };
+}
+
+export interface ReembolsoDaParcela {
+  valor: number;
+  contas: { id: string; descricao: string; valor: number; pagaEm: string | null; caso: { id: string; nome: string } | null }[];
+}
+
+// ------------------------------------------------------------------ O êxito para conferir (F3.14: CH-07, EX-08)
+// 0640_exito_conferir.sql.
+
+/** Por que não cobrar o êxito (decisão 1: "virá por alvará" não é motivo; o êxito é lançado). */
+export const MOTIVOS_NAO_COBRAR = {
+  PERDOADO: "Perdoado ou renegociado com o cliente",
+  INDEVIDO: "Não é devido (o contrato não prevê, ou o valor não é do cliente)",
+  OUTRO: "Outro motivo",
+} as const;
+export type MotivoNaoCobrar = keyof typeof MOTIVOS_NAO_COBRAR;
+
+export interface ExitoParaConferir {
+  id: string;
+  situacao: "PARA_CONFERIR" | "LANCADO" | "NAO_COBRADO";
+  cliente: { id: string; nome: string };
+  caso: { id: string; nome: string; numero: string | null; resultado: "GANHO" | "ACORDO" | "PERDA" | null };
+  contrato: { id: string; numero: string; assinadoEm: string | null; responsavel: PessoaRef };
+  base: number;
+  percentual: number;
+  sobre: string;
+  calculado: number;
+  previstoEm: string;
+  encerrado: { por: PessoaRef; em: string; motivo: string };
+  valorLancado: number | null;
+  vencimento: string | null;
+  motivoAjuste: string | null;
+  motivoNaoCobrar: MotivoNaoCobrar | null;
+  explicacao: string | null;
+  recebimentoId: string | null;
+  conferido: { por: PessoaRef; em: string } | null;
+}
+
+export interface ExitosParaConferir { total: number; n: number; itens: ExitoParaConferir[] }
+
+export const lancarExitoSchema = z.object({
+  valor: z.number().int().nullish(),
+  vencimento: txt(20),
+  forma: txt(30),
+  motivoAjuste: txt(500),
+});
+export type LancarExito = z.input<typeof lancarExitoSchema>;
+
+export const naoCobrarExitoSchema = z.object({ motivo: txt(20), explicacao: txt(1000) });
+export type NaoCobrarExito = z.input<typeof naoCobrarExitoSchema>;
 
 export interface TotalReceber { valor: number; n: number }
 export interface ListaReceber {
@@ -163,7 +230,10 @@ export interface ReciboParaImprimir {
   pagamentoId: string;
 }
 
-export interface RecebimentoRegistrado { id: string; paga: boolean; falta: number; recibo: { ano: number; numero: number } | null }
+export interface RecebimentoRegistrado {
+  id: string; paga: boolean; falta: number; recibo: { ano: number; numero: number } | null;
+  reembolso?: { valor: number; forma: FormaPagamento } | null;
+}
 
 /** O número do recibo como aparece na tela: 0098. */
 export function numeroRecibo(r: { numero: number }): string {
@@ -585,7 +655,7 @@ export interface FichaRepasse extends Levantamento {
 
 /** O que ainda segura o fechamento do caso no financeiro (F3.45, FI-08). */
 export interface PendenciaCaso {
-  tipo: "REPASSE" | "PARCELA" | "PARCELA_SEM_VALOR" | "REEMBOLSO";
+  tipo: "REPASSE" | "EXITO" | "PARCELA" | "PARCELA_SEM_VALOR" | "REEMBOLSO";
   nome: string;
   valor: number | null;
   para?: ParaDestinacao;
@@ -594,6 +664,7 @@ export interface PendenciaCaso {
   levantamentoId?: string;
   contratoId?: string;
   contaId?: string;
+  exitoId?: string;
 }
 
 /** O acerto do caso: o que entrou, o que foi pago, o que falta e se já foi encerrado. */

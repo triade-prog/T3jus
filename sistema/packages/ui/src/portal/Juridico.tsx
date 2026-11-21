@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AREAS_DIREITO, dataBr, formatarCnj, numeroCnjValido, PAPEIS_CASO, reais, RESULTADOS_CASO, textoAvisoEtapa,
   type AreaDireito, type ClienteLinha, type DocumentoFaltando, type Etapa, type FichaCaso, type ListaCasos, type ListaClientes, type OpcoesCaso,
-  type PapelCaso, type ResultadoCaso, type SituacaoCaso,
+  type PapelCaso, type ResultadoCaso, type SituacaoCaso, percentual,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -589,11 +589,22 @@ function JanelaEtapa({ f, escritorio, aberta, aoFechar, aoFeito }: {
   const [avisar, setAvisar] = useState(f.avisarCliente);
   const [ajustando, setAjustando] = useState(false);
   const [meio, setMeio] = useState("");
+  const [valores, setValores] = useState<Record<string, string>>({});
+  const [previsto, setPrevisto] = useState("");
+  const [faltam, setFaltam] = useState<string[]>([]);
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const corpo = useRef<HTMLDivElement>(null);
   const para = f.etapas.find((e) => e.id === etapaId) ?? null;
+  // Ao encerrar com ganho ou acordo, cada cliente com contrato informa o valor dele (F3.14, EX-08).
+  const comValor = Boolean(para?.final) && (resultado === "GANHO" || resultado === "ACORDO");
+  const comContrato = f.clientes.filter((c) => c.contrato);
+  const exitos = comContrato.flatMap((c) => {
+    const k = c.contrato?.condicoes?.find((x) => x.tipo === "EXITO");
+    const base = lerCentavos(valores[c.id] ?? "");
+    return k && k.tipo === "EXITO" && base ? [{ c, pb: k.percentual, base, exito: Math.round((base * k.percentual) / 10000) }] : [];
+  });
   const atual = f.etapas.find((e) => e.id === f.etapa.id);
   const ultima = f.mudancas.find((m) => m.para.ordem === f.etapa.ordem);
   const primeiro = f.clientes[0];
@@ -612,7 +623,11 @@ function JanelaEtapa({ f, escritorio, aberta, aoFechar, aoFeito }: {
     if (para?.final && !resultado) e.push("resultado");
     if (motivo.trim().length < 3) e.push("motivo");
     if (avisar && ajustando && (meio.trim().length < 10 || meio.trim().length > 240)) e.push("textoAviso");
+    const sem = comValor ? comContrato.filter((c) => !lerCentavos(valores[c.id] ?? "")).map((c) => c.id) : [];
+    if (sem.length) e.push("valores");
+    if (comValor && comContrato.length && !lerDia(previsto)) e.push("previstoEm");
     setFalha(null);
+    setFaltam(sem);
     if (e.length) {
       setErros(e);
       return focarPrimeiroErro(corpo.current);
@@ -620,12 +635,18 @@ function JanelaEtapa({ f, escritorio, aberta, aoFechar, aoFeito }: {
     setEnviando(true);
     const r = await chamarPortal<{ encerrado: boolean; aviso: string | null }>(`/v1/escritorio/juridico/casos/${f.id}/etapa`, {
       metodo: "POST",
-      corpo: { versao: f.versao, etapaId, motivo: motivo.trim(), avisar, textoAviso: avisar && ajustando ? meio.trim() : null, resultado: para?.final ? resultado : null },
+      corpo: {
+        versao: f.versao, etapaId, motivo: motivo.trim(), avisar, textoAviso: avisar && ajustando ? meio.trim() : null, resultado: para?.final ? resultado : null,
+        valores: comValor ? Object.fromEntries(f.clientes.flatMap((c) => { const v = lerCentavos(valores[c.id] ?? ""); return v ? [[c.id, v]] : []; })) : null,
+        previstoEm: comValor ? lerDia(previsto) : null,
+      },
     });
     setEnviando(false);
     if (r.ok) return aoFeito({ encerrado: r.dados.encerrado, para: para!.nome, aviso: r.dados.aviso });
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
+      const cl = r.erro.detalhes?.clientes;
+      if (Array.isArray(cl)) setFaltam(cl.map(String));
       setErros(campos.map(String));
       return focarPrimeiroErro(corpo.current);
     }
@@ -693,9 +714,54 @@ function JanelaEtapa({ f, escritorio, aberta, aoFechar, aoFeito }: {
             {tem("resultado") ? <ErroCampo id="je-res-er">Diga como o caso terminou.</ErroCampo> : null}
           </fieldset>
         ) : null}
-        {para?.final || para?.avisaFinanceiro ? (
-          <Aviso tom="info" titulo="O Financeiro ainda não recebe o êxito sozinho.">
-            O valor do êxito e do acordo vai ao Financeiro numa próxima entrega. Por ora, avise quem cuida do Financeiro.
+        {comValor && comContrato.length ? (
+          <>
+            <div className="fi-sub-par">
+              {comContrato.map((c) => {
+                const errou = tem("valores") && faltam.includes(c.id);
+                return (
+                  <div className="campo" key={c.id}>
+                    <label htmlFor={`je-v-${c.id}`}>Valor {resultado === "ACORDO" ? "do acordo" : "ganho"} para {c.nome.split(/\s+/)[0]}</label>
+                    <input className="entrada" id={`je-v-${c.id}`} inputMode="decimal" value={valores[c.id] ?? ""} placeholder="R$ 0,00"
+                      onChange={(e) => setValores({ ...valores, [c.id]: e.target.value })}
+                      aria-invalid={errou || undefined} aria-describedby={descritoPor(errou && `je-v-${c.id}-er`)} />
+                    {errou ? <ErroCampo id={`je-v-${c.id}-er`}>Diga o valor de {c.nome.split(/\s+/)[0]}, em reais.</ErroCampo> : null}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="campo">
+              <label htmlFor="je-prev">Pagamento previsto</label>
+              <input className="entrada" id="je-prev" inputMode="numeric" value={previsto} placeholder="dd/mm/aaaa" onChange={(e) => setPrevisto(e.target.value)}
+                aria-invalid={tem("previstoEm") || undefined} aria-describedby={descritoPor("je-prev-aj", tem("previstoEm") && "je-prev-er")} />
+              <p className="ajuda" id="je-prev-aj">dd/mm/aaaa. Data em que a outra parte deve pagar.</p>
+              {tem("previstoEm") ? <ErroCampo id="je-prev-er">Escreva uma data que exista, como 15/12/2026.</ErroCampo> : null}
+            </div>
+            {f.veHonorarios && exitos.length ? (
+              <div className="jr-exito">
+                <p className="jr-exito-t"><Icone nome="moeda" className="ico" />Vai para o Financeiro, para conferir</p>
+                <table className="jr-exito-tab">
+                  <caption className="sr">O êxito calculado pelo contrato de cada cliente</caption>
+                  <thead><tr><th scope="col">Cliente e contrato</th><th scope="col">Êxito</th></tr></thead>
+                  <tbody>
+                    {exitos.map((x) => (
+                      <tr key={x.c.id}><td>{x.c.nome.split(/\s+/)[0]} · {percentual(x.pb)} de {reais(x.base)}</td><td className="num">{reais(x.exito)}</td></tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr><th scope="row">A receber{lerDia(previsto) ? ` em ${dataBr(lerDia(previsto)!)}` : ""}</th><td className="num">{reais(exitos.reduce((a, x) => a + x.exito, 0))}</td></tr>
+                  </tfoot>
+                </table>
+                <p>O caso fica “Encerrado · acerto pendente” até o Financeiro conferir, receber e repassar a {juntarNomes(comContrato.map((c) => c.nome.split(/\s+/)[0] ?? c.nome))}.</p>
+              </div>
+            ) : (
+              <p className="ajuda">O T3jus calcula o êxito pelo contrato de cada cliente e manda ao Financeiro, para conferir antes de cobrar.</p>
+            )}
+          </>
+        ) : null}
+        {!para?.final && para?.avisaFinanceiro ? (
+          <Aviso tom="info" titulo="O Financeiro ainda não recebe o valor desta etapa sozinho.">
+            O valor a receber da etapa vai ao Financeiro numa próxima entrega. Por ora, avise quem cuida do Financeiro.
           </Aviso>
         ) : null}
         <div className="campo">

@@ -4,7 +4,7 @@
 -- chegou" sai na hora, o lembrete sem resposta passa para quem pediu, a linha na ficha do caso e
 -- "Quem entraria".
 begin;
-select plan(34);
+select plan(38);
 
 select ajustar_relogio(('2026-11-03 09:00-03'::timestamptz - now()));
 
@@ -166,6 +166,17 @@ select is((select c.responsavel_id from conversas c join automacao_execucoes x o
 select portal_juridico_documento_chegou(larissa, rm, pd.holerites) from ids, pd;
 select is((select (automacao_campos_execucao(x, a)) ->> 'documentos' from automacao_execucoes x join automacoes a on a.id = x.automacao_id, au, cli
             where x.automacao_id = au.doc and x.cliente_id = cli.carlos), 'CTPS digital', '{documentos} só lista o que ainda falta');
+
+-- F3.87: testar com um cliente de verdade.
+select is((select portal_automacao_simulacao(larissa, rm, au.doc, null, cli.carlos) -> 'exemplo' from ids, au, cli),
+  jsonb_build_object('cliente', 'Carlos Henrique Dias', 'contato', 'Carlos Henrique Dias', 'papel', null, 'documentos', 'CTPS digital',
+                     'caso', 'Pereira x Mercado Bom Preço', 'pedidoEm', '2026-11-03', 'quemPediu', jsonb_build_object('id', (select larissa from ids), 'nome', 'Larissa Costa')),
+  'F3.87: a simulação do documento pendente usa o que falta de Carlos e quem pediu');
+select is((teste.erro($$ select portal_automacao_simulacao(larissa, rm, au.doc, null, cli.joana) from ids, au, cli $$)) -> 'detalhe' ->> 'motivo',
+  'CLIENTE_FORA_DO_GATILHO', 'F3.87: Joana já mandou tudo: fora do gatilho');
+select is((select portal_automacao_simulacao(socia, rm, au.boas, null, cli.paulo) -> 'exemplo' ->> 'cliente' from ids, au, cli),
+  'Paulo Henrique Saraiva', 'F3.87: a boas-vindas simula com Paulo');
+select is((select portal_automacao_simulacao(socia, rm, au.boas) -> 'exemplo' from ids, au), 'null'::jsonb, 'sem escolher, continua o cliente de exemplo');
 
 select * from finish();
 rollback;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   conferirResposta, decidirAntes, horarioDeAtendimento, dentroDoHorario, finalizarResposta, instrucoesIa, mensagensParaIa, palavraDoEscritorio,
-  planoSemModelo, precisaApresentar, proximoAtendimento, type AtendimentoIa, type ContextoIa, type MensagemIa, type SaidaIa,
+  pedeSemAvisos, planoSemModelo, precisaApresentar, proximoAtendimento, type AtendimentoIa, type ContextoIa, type MensagemIa, type SaidaIa,
 } from "./ia.ts";
 
 const config: ContextoIa["config"] = {
@@ -156,5 +156,23 @@ describe("D5 fora do horário", () => {
     expect(horarioDeAtendimento({ dias: [1, 2, 3, 4, 5], horaInicio: "09:00", horaFim: "18:00" })).toBe("de segunda a sexta, das 9h às 18h");
     expect(horarioDeAtendimento({ dias: [1, 3], horaInicio: "08:30", horaFim: "12:00" })).toBe("segunda e quarta, das 8h30 às 12h");
     expect(horarioDeAtendimento({ dias: [1, 2, 3, 4, 5, 6, 7], horaInicio: "09:00", horaFim: "18:00" })).toBe("todos os dias, das 9h às 18h");
+  });
+});
+
+describe("F3.83 pedido de não receber avisos", () => {
+  it("reconhece as frases claras, sem diferença de acento", () => {
+    for (const t of ["Parem de me mandar cobrança", "não quero mais receber essas mensagens", "Nao me mandem mais aviso", "quero sair dessa lista",
+      "pode tirar o meu número?", "Não quero mais esses lembretes", "me descadastra por favor"]) expect(pedeSemAvisos(t), t).toBe(true);
+    for (const t of ["Quando é a audiência?", "não recebi o boleto", "pode mandar o carnê?", "não quero perder o prazo", null]) expect(pedeSemAvisos(t), String(t)).toBe(false);
+  });
+  it("o modelo também conhece o motivo, só para quem é cliente", () => {
+    expect(instrucoesIa(ctx())).toContain("(SEM_AVISOS)");
+    expect(instrucoesIa(ctx({ cliente: null }))).not.toContain("SEM_AVISOS");
+  });
+  it("ao passar, não diz que o pedido foi registrado e aponta o atalho à equipe", () => {
+    const p = planoSemModelo("SEM_AVISOS", ctx(), [cliente("Oi"), { autor: "IA", texto: "Olá" }, cliente("parem de me mandar mensagem")]);
+    expect(p.enviar).toBe("Entendi. Vou passar o seu pedido para Larissa, da equipe do escritório Ribeiro & Matos. A resposta chega por aqui.");
+    expect(p.motivoTexto).toContain("Não receber avisos");
+    expect(p.passar).toBe("SEM_AVISOS");
   });
 });

@@ -1,0 +1,11 @@
+{
+  "id": "F3.94",
+  "texto": "Baixar a parcela do êxito pela divisão do alvará em Repasses",
+  "peca": "S4",
+  "refs": [
+    "CH-07"
+  ],
+  "status": "pendente",
+  "ordem": 940,
+  "proximo": "O êxito conferido já vira parcela em A receber (F3.14); falta a destinação \"honorários\" da divisão do alvará do mesmo caso baixar essa parcela, com a origem \"da divisão do alvará de dd/mm\""
+}

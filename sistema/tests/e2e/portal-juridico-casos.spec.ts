@@ -231,7 +231,7 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     await expect(page.getByRole("status").filter({ hasText: "Etapa mudada para Recurso" })).toBeVisible();
     const p = pedidos.find((x) => x.metodo === "POST" && x.caminho.endsWith("/etapa"))!.corpo;
     expect(p).toEqual({ versao: 4, etapaId: eid(6), motivo: "Sentença procedente em parte. Joana quer recorrer.", avisar: true,
-      textoAviso: "vamos recorrer da parte das horas extras. Avisamos a cada novidade.", resultado: null });
+      textoAviso: "vamos recorrer da parte das horas extras. Avisamos a cada novidade.", resultado: null, valores: null, previstoEm: null });
   });
 
   test("Etapa final: pede o resultado e encerra", async ({ page }) => {
@@ -248,10 +248,21 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     await j.getByRole("button", { name: "Encerrar o caso" }).click();
     await expect(j).toContainText("Diga como o caso terminou.");
     await j.getByRole("radio", { name: /Acordo/ }).check();
+    // Com acordo, quem tem contrato informa o valor e o pagamento previsto (F3.14, EX-08).
+    await j.getByRole("button", { name: "Encerrar o caso" }).click();
+    await expect(j.getByLabel("Valor do acordo para Joana")).toBeFocused();
+    await expect(j).toContainText("Diga o valor de Joana, em reais.");
+    await expect(j.getByLabel("Valor do acordo para Carlos")).toHaveCount(0);
+    await j.getByLabel("Valor do acordo para Joana").fill("28.000,00");
+    await expect(j.getByRole("table", { name: /êxito calculado/ })).toContainText("Joana · 30% de R$ 28.000,00");
+    await expect(j.getByRole("table", { name: /êxito calculado/ })).toContainText("R$ 8.400,00");
+    await j.getByLabel("Pagamento previsto").fill("15/12/2026");
+    await expect(j).toContainText("A receber em 15/12/2026");
     await semViolacoes(page);
     await j.getByRole("button", { name: "Encerrar o caso" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Caso encerrado" })).toBeVisible();
-    expect(pedidos.find((x) => x.metodo === "POST" && x.caminho.endsWith("/etapa"))!.corpo).toMatchObject({ etapaId: eid(8), resultado: "ACORDO", avisar: false });
+    expect(pedidos.find((x) => x.metodo === "POST" && x.caminho.endsWith("/etapa"))!.corpo).toMatchObject({
+      etapaId: eid(8), resultado: "ACORDO", avisar: false, valores: { [JOANA.id]: 2800000 }, previstoEm: "2026-12-15" });
   });
 
   test("Celular: lista e ficha cabem na tela", async ({ page }) => {

@@ -55,7 +55,7 @@ export function BarraConversas({ secao, esperando }: { secao: SecaoConversas; es
 
 const ICONE_FILTRO: Record<FiltroConversa, NomeIcone> = { PRECISA: "mao", EQUIPE: "pessoas", IA: "ia", RESOLVIDAS: "check" };
 const CONTAGEM: Record<FiltroConversa, keyof ListaConversas["contagem"]> = { PRECISA: "precisa", EQUIPE: "equipe", IA: "ia", RESOLVIDAS: "resolvidas" };
-const ICONE_MOTIVO: Partial<Record<string, NomeIcone>> = { DOCUMENTO_NOVO: "imagem", CLIENTE_NOVO: "pessoa-mais" };
+const ICONE_MOTIVO: Partial<Record<string, NomeIcone>> = { DOCUMENTO_NOVO: "imagem", CLIENTE_NOVO: "pessoa-mais", SEM_AVISOS: "sino-mudo" };
 
 const primeiro = (nome: string) => nome.split(/\s+/)[0] ?? nome;
 const voce = (p: { id: string; nome: string } | null | undefined, eu: string) => (p ? (p.id === eu ? `${p.nome} (você)` : p.nome) : "ninguém");

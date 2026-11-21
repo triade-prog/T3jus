@@ -1,0 +1,10 @@
+{
+  "data": "21/11/2026",
+  "inicio": "18:00",
+  "fim": "18:20",
+  "texto": "Testar as automações de boas-vindas e de documento pendente com um cliente de verdade, sem enviar nada.",
+  "refs": [
+    "F3.87",
+    "PA-06"
+  ]
+}

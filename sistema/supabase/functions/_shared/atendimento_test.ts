@@ -83,3 +83,17 @@ Deno.test("PA-05: palavra do escritório passa sem chamar o modelo; modelo fora 
   await atenderConversa(f.db.banco, f.cerebro, ESC, CONV);
   assertEquals([f.modelo(), f.db.chamadas.at(-1)!.args.p_motivo], [1, "OUTRO"]);
 });
+
+Deno.test("F3.83: o pedido de não receber avisos passa para a equipe sem chamar o modelo, sem dizer que foi registrado", async () => {
+  const p = montar(atendimento({ mensagens: [{ autor: "CLIENTE", texto: "Por favor, parem de me mandar cobrança por aqui." }] }), null);
+  await atenderConversa(p.db.banco, p.cerebro, ESC, CONV);
+  const passou = p.db.chamadas.find((c) => c.funcao === "conversa_ia_passou")!;
+  const respondeu = p.db.chamadas.find((c) => c.funcao === "conversa_ia_respondeu")!;
+  assertEquals([p.modelo(), passou.args.p_motivo], [0, "SEM_AVISOS"]);
+  assertEquals(String(respondeu.args.p_texto).endsWith("Entendi. Vou passar o seu pedido para Larissa, da equipe do escritório Ribeiro & Matos. A resposta chega por aqui."), true);
+  // Contato novo não tem aviso para parar: segue para o modelo.
+  const n = montar(atendimento({ mensagens: [{ autor: "CLIENTE", texto: "Parem de me mandar mensagem" }],
+    contexto: { ...atendimento().contexto, cliente: null } }), { acao: "PASSAR", texto: "Vou passar.", motivo: "CLIENTE_NOVO", fonte: null, resolvida: false, naoSoube: null });
+  await atenderConversa(n.db.banco, n.cerebro, ESC, CONV);
+  assertEquals(n.modelo(), 1);
+});

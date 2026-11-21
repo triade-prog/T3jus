@@ -85,6 +85,9 @@ export const mudarEtapaSchema = z.object({
   avisar: z.boolean().default(false),
   textoAviso: texto(400),
   resultado: texto(20),
+  /** Ao encerrar com ganho ou acordo: o valor de cada cliente (por id) e a data prevista (F3.14). */
+  valores: z.record(z.string().max(40), z.number().int()).nullish(),
+  previstoEm: texto(20),
 });
 export type MudarEtapa = z.input<typeof mudarEtapaSchema>;
 

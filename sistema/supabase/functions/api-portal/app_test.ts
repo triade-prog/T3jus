@@ -348,6 +348,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_repasse_proposta: () => ({ contrato: null, linhas: [], cliente: 100, falta: 0 }),
     portal_financeiro_repasse: (a) => ({ id: a.p_levantamento, caso: { id: ANA } }),
     portal_financeiro_caso_acerto: (a) => ({ casoId: a.p_caso, pendencias: [] }),
+    portal_financeiro_exitos: () => ({ total: 840000, n: 1, itens: [{ id: ANA, calculado: 840000 }] }),
+    portal_financeiro_exito_lancar: (a) => {
+      const d = a.p_dados as { valor?: number | null; motivoAjuste?: string | null };
+      if (d.valor !== 840000 && !d.motivoAjuste) erroBanco("TC422", { motivo: "MOTIVO_OBRIGATORIO", campos: ["motivoAjuste"] });
+      return { id: a.p_id, situacao: "LANCADO", parcela: { id: CLIENTE, tipo: "EXITO" } };
+    },
+    portal_financeiro_exito_nao_cobrar: (a) => ({ id: a.p_id, situacao: "NAO_COBRADO", motivoNaoCobrar: (a.p_dados as { motivo: string }).motivo }),
     portal_financeiro_caso_encerrar: (a) => {
       if (a.p_caso === CLIENTE) erroBanco("TC422", { motivo: "PENDENCIAS", falta: 381840, pendencias: [{ tipo: "REPASSE", nome: "Dr. Rui Tavares", valor: 150000 }] });
       return { casoId: a.p_caso, fechado: { em: "2026-11-21T12:00:00Z", por: { id: ANA, nome: "Ana" } } };
@@ -1351,8 +1358,10 @@ Deno.test("PD-07: motivos e razões do domínio são os mesmos do banco", async 
   const sql = await Deno.readTextFile(new URL("../../migrations/0300_portal_conversas_mensagens.sql", import.meta.url));
   // A 0330 refaz as listas de motivo e de razão (a IA que atende).
   const sql330 = await Deno.readTextFile(new URL("../../migrations/0330_portal_ia_atende.sql", import.meta.url));
+  // A 0626 acrescenta o pedido de não receber avisos (F3.83).
+  const sql626 = await Deno.readTextFile(new URL("../../migrations/0626_ia_pedido_sem_avisos.sql", import.meta.url));
   const lista = (re: RegExp, texto = sql) => re.exec(texto)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
-  assertEquals(lista(/check \(motivo in \(([^)]+)\)/, sql330), Object.keys(MOTIVOS_CONVERSA));
+  assertEquals(lista(/check \(motivo in \(([^)]+)\)/, sql626), Object.keys(MOTIVOS_CONVERSA));
   assertEquals(lista(/check \(responsavel_razao in \(([^)]+)\)/, sql330), Object.keys(RAZOES_RESPONSAVEL));
   assertEquals(lista(/envio\s+text check \(envio in \(([^)]+)\)/), Object.keys(ENVIO_MENSAGEM));
 });
@@ -1665,6 +1674,34 @@ Deno.test("FI-23: gerar o carnê e imprimir com o Pix de cada parcela; a vencida
   assertMatch(k.parcelas[1].pix, /^000201.*5406850\.00.*0511C2026014P04.*6304[0-9A-F]{4}$/);
   assert(!k.parcelas[0].pix.includes("5406"), "a vencida sai sem valor");
   assertEquals((await m.pedir("/v1/escritorio/carnes/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("F3.14, CH-07: o êxito para conferir, lançar com o motivo e não cobrar, sempre no escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/financeiro/exitos", { cookie })).json()).n, 1);
+  const e = await erro(await m.pedir(`/v1/escritorio/financeiro/exitos/${ANA}/lancar`, { corpo: { valor: 700000, vencimento: "2026-12-15" }, cookie }));
+  assertEquals(e.detalhes?.motivo, "MOTIVO_OBRIGATORIO");
+  const ok = await (await m.pedir(`/v1/escritorio/financeiro/exitos/${ANA}/lancar`, {
+    corpo: { valor: 700000, vencimento: "2026-12-15", forma: "PIX", motivoAjuste: "Desconto combinado" }, cookie })).json();
+  assertEquals(ok.parcela.tipo, "EXITO");
+  const nc = await (await m.pedir(`/v1/escritorio/financeiro/exitos/${ANA}/nao-cobrar`, { corpo: { motivo: "PERDOADO", explicacao: "Renegociado" }, cookie })).json();
+  assertEquals(nc.situacao, "NAO_COBRADO");
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/exitos/x/lancar", { corpo: {}, cookie })).status, 404);
+  assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_financeiro_exito")).every((c) => c.args.p_escritorio === AURORA));
+});
+
+Deno.test("F3.85, F3.14: o reembolso vai junto no registrar; o encerramento leva os valores dos clientes", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/recebimentos`, {
+    corpo: { valor: 240000, recebidoEm: "2026-11-28", forma: "CHEQUE_PRE", reembolso: { valor: 124836, forma: "PIX" } }, cookie });
+  assertEquals((m.chamadas.findLast((c) => c.funcao === "portal_financeiro_receber_registrar_recibo")!.args.p_dados as Record<string, unknown>).reembolso,
+    { valor: 124836, forma: "PIX" });
+  await m.pedir(`/v1/escritorio/juridico/casos/${ANA}/etapa`, {
+    corpo: { versao: 1, etapaId: ANA, motivo: "Acordo", resultado: "ACORDO", valores: { [CLIENTE]: 2800000 }, previstoEm: "2026-12-15" }, cookie });
+  const d = m.chamadas.findLast((c) => c.funcao === "portal_juridico_caso_etapa")!.args.p_dados as Record<string, unknown>;
+  assertEquals([d.valores, d.previstoEm], [{ [CLIENTE]: 2800000 }, "2026-12-15"]);
 });
 
 Deno.test("F3.45, FI-08: a ficha do repasse traz o acerto do caso; encerrar devolve as pendências", async () => {

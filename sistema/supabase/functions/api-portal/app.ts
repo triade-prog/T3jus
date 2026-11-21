@@ -10,7 +10,7 @@ import {
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
-  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
+  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema, lancarExitoSchema, naoCobrarExitoSchema, type ExitosParaConferir, type ExitoParaConferir, type ParcelaLinha,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, enviarContadorSchema, salvarAjustesSchema, corrigirAberturaSchema, definirMetaSchema,
@@ -622,7 +622,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Simular sem enviar: o banco entrega só o que a pessoa pode ver; o caminho e a conversa saem aqui.
   app.post("/v1/escritorio/automacoes/:id/simular", async (c) => {
     const d = await lerCorpo(c, simularAutomacaoSchema);
-    const dados = await deps.banco.rpc<DadosSimulacao>("portal_automacao_simulacao", { ...quem(c), p_id: idDaRota(c, "id"), p_parcela: d.parcelaId ?? null });
+    const dados = await deps.banco.rpc<DadosSimulacao>("portal_automacao_simulacao", { ...quem(c), p_id: idDaRota(c, "id"), p_parcela: d.parcelaId ?? null, p_cliente: d.clienteId ?? null });
     return c.json(simularFluxo(dados, d.escolha));
   });
 
@@ -826,6 +826,25 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     // O que o escritório adiantou nos casos do contrato (F3.23), lido à parte.
     const adiantados = await deps.banco.rpc<ContaPagar[]>("portal_financeiro_contrato_adiantados", args);
     return c.json({ ...f, adiantados });
+  });
+
+  // O êxito para conferir (F3.14: CH-07, EX-08): o bloco do alto do A receber, lançar ou não cobrar.
+  app.get("/v1/escritorio/financeiro/exitos", async (c) => {
+    return c.json(await deps.banco.rpc<ExitosParaConferir>("portal_financeiro_exitos", quem(c)));
+  });
+
+  app.post("/v1/escritorio/financeiro/exitos/:id/lancar", async (c) => {
+    const d = await lerCorpo(c, lancarExitoSchema);
+    return c.json(await deps.banco.rpc<ExitoParaConferir & { parcela: ParcelaLinha }>("portal_financeiro_exito_lancar", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/financeiro/exitos/:id/nao-cobrar", async (c) => {
+    const d = await lerCorpo(c, naoCobrarExitoSchema);
+    return c.json(await deps.banco.rpc<ExitoParaConferir>("portal_financeiro_exito_nao_cobrar", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_dados: d,
+    }));
   });
 
   // Registrar recebimento: baixa a parcela do mês dela; o dinheiro conta no dia em que entrou.

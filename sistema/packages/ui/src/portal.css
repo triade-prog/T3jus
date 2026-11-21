@@ -4741,3 +4741,63 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .gn-ju-auto b{font-weight:500;color:var(--texto)}
 .gn-ju-auto a{color:var(--vinho);font-weight:500}
 .gn-cam code{font:inherit;font-size:12.5px;font-weight:600;color:var(--vinho);background:var(--sal-2);border-radius:6px;padding:2px 8px}
+
+/* Encerrar o caso com o valor de cada cliente (F3.14, estado etapa-final do Jurídico aprovado) */
+.jr-exito{background:var(--ambar-3);border-radius:12px;padding:14px 16px;display:grid;gap:10px;font-size:14px}
+.jr-exito-t{display:flex;gap:8px;align-items:center;margin:0;font-weight:600;color:var(--vinho)}
+.jr-exito-tab{width:100%;border-collapse:collapse}
+.jr-exito-tab th,.jr-exito-tab td{text-align:left;padding:7px 0;border-top:1px solid rgba(107,30,52,.14);font-weight:400}
+.jr-exito-tab thead th{font-weight:600;border-top:0}
+.jr-exito-tab .num,.jr-exito-tab th:last-child{text-align:right}
+.jr-exito-tab tfoot th,.jr-exito-tab tfoot td{font-weight:600}
+.jr-exito p{margin:0}
+
+/* ------------------------------------------------ Êxito para conferir e reembolso junto (F3.14, F3.85) */
+.fi-selos{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fi-v .fi-reemb{display:flex;justify-content:flex-end;gap:4px;align-items:center;margin-top:4px;font-family:var(--sans);font-size:12px;color:var(--vinho-2);white-space:nowrap}
+.fi-v .fi-reemb .ico{width:13px;height:13px}
+.ex-bloco{border-left:4px solid var(--vinho);overflow:hidden;margin-bottom:20px}
+.ex-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 12px}
+.ex-cab h2{display:flex;gap:8px;align-items:center;margin:0;font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--vinho)}
+.ex-cab h2 .ico{width:20px;height:20px}
+.ex-cab p{margin:2px 0 0;font-size:13px;color:var(--texto-2)}
+.ex-valor{display:grid;justify-items:end}
+.ex-valor b{font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho)}
+.ex-valor small{font-size:12px;color:var(--texto-2)}
+.ex-pe{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;flex-wrap:wrap}
+.ex-pe-dir{display:flex;gap:10px;margin-left:auto}
+.ex-nao{color:var(--vinho)}
+.ex-origem-cab{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ex-origem-t{display:flex;gap:8px;align-items:center;margin:0;font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--vinho)}
+.ex-origem{display:grid;gap:0;margin:0;border:1px solid var(--vinho-4);border-radius:var(--raio)}
+.ex-origem>div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;padding:10px 14px;border-top:1px solid var(--vinho-4)}
+.ex-origem>div:first-child{border-top:0}
+.ex-origem dt{font-size:13px;color:var(--texto-2)}
+.ex-origem dd{margin:0;display:grid;gap:2px}
+.ex-origem dd b{font-weight:500}
+.ex-origem dd small{font-size:12px;color:var(--texto-2);line-height:1.45}
+.ex-origem .ex-conta{background:var(--ambar-3)}
+.ex-origem .ex-conta b{color:var(--vinho)}
+.ex-rotulo{margin:0 0 6px;font-size:14px;font-weight:500}
+.ex-fixo{margin:0;display:grid;gap:2px;padding:10px 12px;border-radius:var(--raio);background:var(--sal-2)}
+.ex-fixo b{font-weight:500}
+.ex-fixo small{font-size:12px;color:var(--texto-2)}
+.fi-reemb-faixa{display:grid;gap:10px;padding:14px 16px;border:1px solid var(--vinho-4);border-left:4px solid var(--vinho);border-radius:var(--raio)}
+.fi-reemb-faixa>p{display:flex;gap:10px;align-items:flex-start;margin:0;font-size:14px;line-height:1.5}
+.fi-reemb-faixa>p .ico{color:var(--vinho);flex:none;margin-top:3px}
+.fi-reemb-faixa b{font-weight:500}
+.fi-reemb-faixa table{width:100%;border-collapse:collapse;font-size:14px}
+.fi-reemb-faixa th,.fi-reemb-faixa td{padding:8px 0;border-top:1px solid var(--vinho-4);text-align:left;vertical-align:top;font-weight:400}
+.fi-reemb-faixa td{text-align:right;white-space:nowrap;padding-left:12px}
+.fi-reemb-faixa th small{display:block;font-size:12px;color:var(--texto-2)}
+.fi-reemb-faixa tfoot th,.fi-reemb-faixa tfoot td{font-weight:500;color:var(--vinho);border-top:1px solid var(--vinho-2)}
+.fi-reemb-total{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin:4px 0 0;padding-top:10px;border-top:1px solid var(--vinho-4);font-size:13px}
+.fi-reemb-total b{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho)}
+@media (max-width:760px){
+  .ex-cab{flex-direction:column}
+  .ex-origem>div{grid-template-columns:1fr;gap:2px}
+  .ex-valor{justify-items:start}
+  .fi-v .fi-reemb{justify-content:flex-start}
+  .ex-pe{flex-direction:column-reverse;align-items:stretch}
+  .ex-pe-dir{margin-left:0;justify-content:flex-end}
+}
