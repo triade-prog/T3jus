@@ -1,0 +1,11 @@
+---
+// Topo do site: menu do computador e menu do celular, com a página atual marcada.
+interface Props { atual: string }
+const { atual } = Astro.props;
+const marcar = (rota: string) => (rota === atual ? "page" : undefined);
+---
+<header class="topo"><div class="miolo">
+  <a class="marca" href="/"><img src="/marca/logo-completo-sobre-vinho.svg" width="1583" height="512" alt="T3jus, Sistema jurídico, página inicial"></a>
+  <nav class="menu" aria-label="Principal"><a href="/como-funciona" aria-current={marcar("/como-funciona")}>Como funciona</a><a href="/para-quem-e" aria-current={marcar("/para-quem-e")}>Para quem é</a><a class="entrar" href="https://app.t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-sair"/></svg>Entrar</a><a class="btn btn-claro" href="/demonstracao">Pedir demonstração</a></nav>
+  <details class="menu-cel"><summary aria-label="Abrir o menu"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg>Menu</summary><nav class="painel" aria-label="Principal"><a href="/" aria-current={marcar("/")}>Início</a><a href="/como-funciona" aria-current={marcar("/como-funciona")}>Como funciona</a><a href="/para-quem-e" aria-current={marcar("/para-quem-e")}>Para quem é</a><a href="/demonstracao" aria-current={marcar("/demonstracao")}>Demonstração</a><a href="https://app.t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-sair"/></svg>Entrar no T3jus</a><a class="btn btn-pri" href="/demonstracao">Pedir demonstração</a></nav></details>
+</div></header>

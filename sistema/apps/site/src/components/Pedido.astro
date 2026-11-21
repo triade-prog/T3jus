@@ -1,0 +1,33 @@
+---
+// Pedido de demonstração (F2.2, SC-02), como no desenho aprovado em
+// docs/design/aprovadas/site-comercial (estados branco, erros, enviando, enviado e falha).
+// Enquanto a política de privacidade (F2.4) não estiver publicada, o formulário
+// não aparece e a pessoa escreve por e-mail (decisão da Carol, 21/11/2026).
+import { CONTATO, privacidadePronta } from "../config";
+const assunto = encodeURIComponent("Pedido de demonstração");
+---
+{!privacidadePronta && (
+  <section class="form-cartao" aria-labelledby="t-form" id="cartao-form">
+    <h2 id="t-form">Pedir uma demonstração</h2>
+    <p class="sub">O pedido por este formulário abre junto com a nossa política de privacidade, que está em revisão. Enquanto isso, escreva para nós com o nome do escritório, quantas pessoas trabalham nele e o melhor horário. Respondemos em até 1 dia útil.</p>
+    <div class="form-pe"><a class="btn btn-pri" href={`mailto:${CONTATO}?subject=${assunto}`}><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg>Escrever para {CONTATO}</a></div>
+  </section>
+)}
+{privacidadePronta && (
+<section class="form-cartao" aria-labelledby="t-form" id="cartao-form"><h2 id="t-form">Pedir uma demonstração</h2><p class="sub">Leva um minuto. Os campos sem “(opcional)” são obrigatórios.</p>
+<div id="aviso-form"></div>
+<form class="form-d" id="form-pedido" action="/api/pedido-demonstracao" method="post" novalidate aria-labelledby="t-form">
+  <div class="campo" data-campo="nome"><label for="nome">Seu nome</label><input class="entrada" id="nome" name="nome" type="text" maxlength="120" required aria-required="true" autocomplete="name"></div>
+  <div class="campo" data-campo="escritorio"><label for="escritorio">Nome do escritório</label><input class="entrada" id="escritorio" name="escritorio" type="text" maxlength="160" required aria-required="true" autocomplete="organization"></div>
+  <div class="campo" data-campo="email"><label for="email">E-mail</label><input class="entrada" id="email" name="email" type="email" maxlength="200" required aria-required="true" autocomplete="email" inputmode="email"></div>
+  <div class="campo" data-campo="whats"><label for="whats">WhatsApp</label><input class="entrada" id="whats" name="whats" type="tel" maxlength="20" aria-describedby="whats-ajuda" required aria-required="true" autocomplete="tel-national" inputmode="tel"><p class="ajuda" id="whats-ajuda">Com DDD. Só usamos para falar sobre a demonstração.</p></div>
+  <fieldset class="campo inteiro" data-campo="tamanho"><legend>Quantas pessoas trabalham no escritório?</legend><div class="tamanhos"><label><input type="radio" name="tamanho" value="Só eu" required>Só eu</label><label><input type="radio" name="tamanho" value="2 a 5" required>2 a 5</label><label><input type="radio" name="tamanho" value="6 a 10" required>6 a 10</label><label><input type="radio" name="tamanho" value="Mais de 10" required>Mais de 10</label></div></fieldset>
+  <div class="campo inteiro"><label for="area">Área principal de atuação <span class="opc">(opcional)</span></label><select class="entrada" id="area" name="area"><option selected value="">Escolha, se quiser</option><option>Previdenciário</option><option>Trabalhista</option><option>Família e sucessões</option><option>Cível e consumidor</option><option>Empresarial e tributário</option><option>Criminal</option><option>Várias áreas</option><option>Outra</option></select></div>
+  <div class="campo inteiro"><label for="msg">Como vocês se organizam hoje? <span class="opc">(opcional)</span></label><textarea class="entrada" id="msg" name="msg" rows="3" maxlength="1000" aria-describedby="msg-ajuda"></textarea><p class="ajuda" id="msg-ajuda">Planilha, outro sistema, caderno: o que ajudar a preparar a conversa. Não escreva dados de clientes.</p></div>
+  <div class="isca" aria-hidden="true"><label for="site-x">Deixe este campo em branco</label><input id="site-x" name="site" type="text" tabindex="-1" autocomplete="off"></div>
+  <div class="aceite" data-campo="aceite"><input type="checkbox" id="aceite" name="aceite" required aria-required="true">
+    <label for="aceite">Autorizo o T3jus a usar estes dados para responder ao meu pedido de demonstração, como diz a <a href="/privacidade">Política de privacidade</a>.</label></div>
+  <div class="form-pe"><button class="btn btn-pri" type="submit">Pedir demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></button><p class="sr" role="status" id="status-form"></p><small>Não mandamos propaganda. Você pode pedir para apagar seus dados a qualquer momento.</small></div>
+</form></section>
+)}
+{privacidadePronta && <script src="../scripts/pedido.ts"></script>}

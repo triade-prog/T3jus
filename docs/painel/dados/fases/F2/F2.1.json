@@ -1,12 +1,13 @@
 {
   "id": "F2.1",
-  "texto": "Site em sistema/apps/site (Astro, como o do TRÍADE Condo): início, como funciona, para quem é e contato, com a identidade do T3jus (E3)",
+  "texto": "Site em sistema/apps/site (Astro): início, como funciona, para quem é e demonstração, com a identidade do T3jus (E3)",
   "peca": "W1",
   "refs": [
     "SC-01",
     "SC-03",
     "SC-06"
   ],
-  "status": "pendente",
-  "ordem": 10
+  "status": "feito",
+  "ordem": 10,
+  "evidencia": "Site em Astro em sistema/apps/site, programado do desenho aprovado (D16): 4 páginas com título, descrição, endereço canônico, prévia de compartilhamento e dados estruturados, selos \"No T3jus / Em preparação / Planejado\" tirados do painel, sem preço nem depoimento; robots.txt e sitemap.xml. scripts/conferir-site.mjs: axe WCAG 2.2 AA sem violação nas 4 páginas, no computador (1440) e no celular (390), sem rolagem lateral nem erro."
 }
