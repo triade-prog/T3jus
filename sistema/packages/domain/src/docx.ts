@@ -331,8 +331,21 @@ function paragrafoXml(p: ParagrafoDocx): string {
   return `<w:p>${pPr}<w:r>${rPr}${linhas}</w:r></w:p>`;
 }
 
-/** Um .docx simples (Times New Roman 12, A4, margens de 3 e 2 cm), para os modelos padrão. */
-export async function criarDocx(paragrafos: readonly ParagrafoDocx[]): Promise<Uint8Array> {
+/** O timbrado no cabeçalho de cada página: a primeira linha em negrito, as outras menores. */
+function cabecalhoXml(linhas: readonly string[], w: string): string {
+  const ps = linhas.map((l, i) => {
+    const rPr = i === 0 ? '<w:rPr><w:b/><w:sz w:val="26"/></w:rPr>' : '<w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr>';
+    const borda = i === linhas.length - 1 ? '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="6" w:color="6B2346"/></w:pBdr>' : "";
+    return `<w:p><w:pPr>${borda}<w:spacing w:after="0"/><w:jc w:val="center"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${escaparXml(semControle(l))}</w:t></w:r></w:p>`;
+  }).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${w}>${ps}</w:hdr>`;
+}
+
+/**
+ * Um .docx simples (Times New Roman 12, A4, margens de 3 e 2 cm), para os modelos padrão. Com
+ * `timbrado`, as linhas vão no cabeçalho de cada página (nome do escritório, CNPJ e endereço).
+ */
+export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?: readonly string[]): Promise<Uint8Array> {
   const w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
   const r = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
   const cab = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
@@ -343,17 +356,22 @@ export async function criarDocx(paragrafos: readonly ParagrafoDocx[]): Promise<U
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
       '<Default Extension="xml" ContentType="application/xml"/>' +
       '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
-      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'],
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+      (timbrado?.length ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : "") +
+      "</Types>"],
     ["_rels/.rels", `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
     ["word/_rels/document.xml.rels", `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
-      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      (timbrado?.length ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>' : "") +
+      "</Relationships>"],
     ["word/styles.xml", `${cab}<w:styles ${w}><w:docDefaults><w:rPrDefault><w:rPr>` +
       '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="pt-BR"/>' +
       "</w:rPr></w:rPrDefault></w:docDefaults></w:styles>"],
     ["word/document.xml", `${cab}<w:document ${w} ${r}><w:body>${corpo}` +
-      '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>' +
+      `<w:sectPr>${timbrado?.length ? '<w:headerReference w:type="default" r:id="rId2"/>' : ""}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>` +
       "</w:body></w:document>"],
   ];
+  if (timbrado?.length) arquivos.push(["word/header1.xml", cabecalhoXml(timbrado, w)]);
   return await escreverZip(arquivos.map(([nome, t]) => ({ nome, dados: enc.encode(t) })));
 }

@@ -21,6 +21,7 @@ import { CondicoesLeitura } from "./Honorarios.tsx";
 import { geraNaProposta } from "./honorarios.ts";
 import { chamarPortal, irPara, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { useBaixar } from "./Peticoes.tsx";
 
 const EDITAVEL = new Set(["RASCUNHO", "ENVIADA", "NEGOCIACAO"]);
 
@@ -401,6 +402,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
   useEffect(() => {
     void Promise.resolve().then(() => carregar());
   }, [carregar]);
+  const bx = useBaixar();
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const t = q.has("criada") ? { titulo: "Proposta salva", texto: "Ela está na lista de Propostas, com o retorno no próximo contato do cliente." }
@@ -490,14 +492,21 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
               <div><dt>Responsável</dt><dd>{f.responsavel.nome}</dd></div>
               <div><dt>Vale até</dt><dd>{f.validaAte ? dataBr(f.validaAte) : "Sem data"}{f.vencida ? " (vencida)" : ""}</dd></div>
             </dl>
-            {editavel ? (
-              <div className="hn-folha-acao">
+            {bx.falha ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso></div> : null}
+            <div className="hn-folha-acao">
+              {/* AP-05: o arquivo no timbrado do escritório; o escritório envia como já envia (decisão 4). */}
+              <button className="btn btn-sec" type="button" onClick={() => void bx.baixar(`/v1/escritorio/propostas/${f.id}/docx`)}
+                disabled={!!bx.baixando} aria-busy={!!bx.baixando || undefined}>
+                <Icone nome="baixar" className="ico" />
+                Baixar a proposta (.docx)
+              </button>
+              {editavel ? (
                 <a data-muda className="btn btn-sec" href={ROTAS_COMERCIAL.editar(f.id)}>
                   <Icone nome="lapis" className="ico" />
                   Editar a proposta
                 </a>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </section>
           <section className="explica campo-ambar" aria-labelledby="t-pex">
             <p className="sobretitulo">Sem redigitar</p>

@@ -147,6 +147,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_comercial_funil: (a) => ({ periodo: a.p_periodo }),
     portal_contratos: (a) => ({ algum: false, contagem: { ativos: 0, elaboracao: 0, encerrados: 0, base: 0 }, contratos: [], mostrar: a.p_mostrar }),
     portal_contrato_criar_oab: () => ({ id: CLIENTE, numero: "C-2026-001", versao: 1 }),
+    portal_proposta: (a) => ({
+      id: a.p_proposta, numero: "P-2026-014", cliente: { id: CLIENTE, nome: "Gabriela Teixeira", tipo: "PF" }, servico: "Revisão do benefício",
+      responsavel: { id: ANA, nome: "Ana" }, situacao: "ENVIADA", vencida: false, retorno: null, criadaEm: "2026-11-18T10:00:00-03:00",
+      condicoes: [{ tipo: "PARCELADO", total: 300000, parcelas: 3, primeiro: "2026-12-10" }], escopo: "Pedido no INSS.\nRecurso, se negado.",
+      validaAte: "2026-11-30", enviadaEm: null, respondidaEm: null, motivoRecusa: null, origem: null, versao: 2, retornoCompleto: null,
+      podeContrato: true, quemTemContratos: [], contratoPedidoEm: null, historico: [],
+    }),
     portal_pessoas_oab: () => [{ id: ANA, nome: "Ana", oab: [] }],
     portal_contrato_inscricoes: () => [],
     portal_contrato_inscricoes_mudar: (a) => {
@@ -963,6 +970,21 @@ Deno.test("EX-12: as inscrições de cada advogado no contrato; a pessoa e o esc
   assertEquals(vazio.detalhes?.motivos, { [`inscricoes.${ANA}`]: "INSCRICAO_OBRIGATORIA" });
   assertEquals((await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/advogados/nao-e-id/inscricoes`, { metodo: "PUT", corpo: { versao: 3, inscricoes: [insc] }, cookie })).status, 404);
   assertEquals((await (await m.pedir("/v1/escritorio/pessoas/oab", { cookie })).json()).pessoas[0].id, ANA);
+});
+
+Deno.test("AP-05: baixar a proposta em .docx no timbrado, na pasta do escritório da sessão, por link temporário", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await (await m.pedir(`/v1/escritorio/propostas/${CLIENTE}/docx`, { corpo: {}, cookie })).json();
+  assertMatch(r.url, /^https:\/\/storage\.exemplo\/ler\//);
+  const caminho = `${AURORA}/propostas/${CLIENTE}-v2.docx`;
+  assertEquals(m.storage.leituras.at(-1), { caminho, segundos: 60, nome: "proposta-p-2026-014-gabriela-teixeira.docx" });
+  const texto = await paragrafosDocx(m.storage.bytes.get(caminho)!);
+  assert(texto.includes("Revisão do benefício"));
+  assert(texto.includes("Recurso, se negado."));
+  assert(texto.some((t) => t.startsWith("Parcelado: R$ 3.000,00 em 3 parcelas")));
+  assert(texto.includes("Esta proposta vale até 30/11/2026."));
+  assertEquals((await m.pedir("/v1/escritorio/propostas/nao-e-id/docx", { corpo: {}, cookie })).status, 404);
 });
 
 Deno.test("CH-01: situações do contrato e fontes da base no domínio são as mesmas do banco", async () => {
