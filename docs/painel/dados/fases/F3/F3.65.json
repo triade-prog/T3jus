@@ -5,7 +5,7 @@
   "refs": [
     "PA-03"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 650,
-  "proximo": "O servidor já aceita o pedido vindo da conversa (origem CONVERSA). Desenho do atalho em project-files/t3jus/telas/portal-pendencias-pequenas, aguardando a aprovação da Carol; depois, programar"
+  "evidencia": "Seção “Avisos automáticos” no contexto da conversa (no celular, em “Sobre …”), com o atalho que abre a janela da ficha já com a mensagem do cliente, quem escreve e “Pelo WhatsApp, nesta conversa”; selo no cabeçalho e linha só da equipe ao registrar, mudar e retirar. Migration 0470 (mensagem_id ligado ao pedido, eventos SEM_AVISOS_* na conversa); pgTAP 047 e e2e portal-conversa-avisos (computador e celular, axe). Desenho aprovado em docs/design/aprovadas/portal-pendencias-pequenas"
 }
