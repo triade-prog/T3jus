@@ -6,7 +6,7 @@
     "SC-02",
     "SC-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 60,
-  "proximo": "Programar o sino do Console como no desenho aprovado (docs/design/aprovadas/console-interessado-sino): tabela global avisos_console, botão na Moldura e os três avisos (pedido novo do site, interessado passado para você, passo vencido às 7h do dia seguinte)."
+  "evidencia": "Sino do Console (desenho aprovado D18): tabela global avisos_console, botão no topo e na barra do celular, painel com Todos/Não lidos e marcar todos como lidos; avisa pedido novo do site a todos que veem Interessados, interessado passado para você com o recado e próximo passo vencido uma vez às 7h do dia seguinte; quem perde Interessados deixa de ver os avisos. Migration 0590. Testes: pgTAP 065, Deno interessado_mao_sino_test, e2e console-interessado-sino (com axe no celular e no computador)."
 }

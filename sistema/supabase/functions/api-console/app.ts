@@ -38,6 +38,9 @@ import {
   reabrirInteressadoSchema,
   notaInteressadoSchema,
   converterInteressadoSchema,
+  cadastrarInteressadoSchema,
+  juntarInteressadoSchema,
+  avisosLidosSchema,
   whatsLegivel,
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -188,7 +191,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   sessao.rotas(app);
 
-  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*", "/v1/interessados", "/v1/interessados/*"]) app.use(rota, sessao.exigirSessao);
+  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*", "/v1/interessados", "/v1/interessados/*", "/v1/avisos", "/v1/avisos/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -538,6 +541,16 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   // Comercial › Interessados (F2.3, SC-05). Quem vê e quem muda é decidido no banco
   // (Administração e Implantação, decisão 9 do desenho aprovado).
   app.get("/v1/interessados", async (c) => c.json(await rpc("console_interessados", { p_pessoa: pessoa(c) })));
+  // F2.5: cadastrar à mão. Com um repetido (mesmo e-mail ou WhatsApp), nada é gravado e a
+  // resposta traz o existente; "forcar" cadastra mesmo assim (decisão 3).
+  app.post("/v1/interessados", async (c) => {
+    const { forcar, responsavel, passo, passoData, ...dados } = await lerCorpo(c, cadastrarInteressadoSchema);
+    const r = await rpc<{ id: string } | { repetido: Record<string, unknown> }>("console_interessado_cadastrar", {
+      p_pessoa: pessoa(c), p_dados: { ...dados, responsavel, passo, passoData }, p_forcar: forcar,
+    });
+    return c.json(r, "id" in r ? 201 : 200);
+  });
+
   app.get("/v1/interessados/:id", async (c) => c.json(await rpc("console_interessado", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
 
   app.put("/v1/interessados/:id/responsavel", async (c) => {
@@ -581,6 +594,21 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const d = await lerCorpo(c, notaInteressadoSchema);
     return c.json({ id: await rpc<string>("console_interessado_nota", { p_pessoa: pessoa(c), p_id: id, p_texto: d.texto }) }, 201);
   });
+
+  // Juntar ao existente: o que foi escrito vira nota e conta como novo contato.
+  app.post("/v1/interessados/:id/juntar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, juntarInteressadoSchema);
+    return c.json({ nota: await rpc<string>("console_interessado_juntar", { p_pessoa: pessoa(c), p_id: id, p_dados: d }) }, 201);
+  });
+
+  // O sino do Console (F2.6): cada pessoa só os próprios avisos, dos últimos 30 dias.
+  app.get("/v1/avisos", async (c) => c.json(await rpc("console_avisos", { p_pessoa: pessoa(c) })));
+  app.post("/v1/avisos/lidos", async (c) => {
+    const { ate } = await lerCorpo(c, avisosLidosSchema);
+    return c.json(await rpc("console_avisos_lidos", { p_pessoa: pessoa(c), p_ate: ate }));
+  });
+  app.post("/v1/avisos/:id/lido", async (c) => c.json(await rpc("console_aviso_lido", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
 
   // Virar escritório cliente: o cadastro de sempre, já preenchido; o contato vai para a ficha.
   app.post("/v1/interessados/:id/converter", async (c) => {

@@ -113,7 +113,7 @@ export function filtrar(lista: Interessado[], f: FiltroInteressados, hoje: strin
     if (f.responsavel === "MEUS" && i.responsavel?.id !== eu) return false;
     if (f.responsavel === "SEM" && i.responsavel) return false;
     if (f.responsavel && f.responsavel !== "MEUS" && f.responsavel !== "SEM" && i.responsavel?.id !== f.responsavel) return false;
-    if (q && ![i.escritorio, i.nome, i.email, i.cidade ?? ""].some((v) => semAcento(v).includes(q))) return false;
+    if (q && ![i.escritorio, i.nome, i.email ?? "", i.cidade ?? ""].some((v) => semAcento(v).includes(q))) return false;
     return true;
   });
 }
@@ -161,6 +161,17 @@ export function fraseEvento(e: EventoInteressado): { quem: string; texto: string
     case "encerrado":
       return { quem, texto: `encerrou como ${est(d.como)} · ${String(d.porque ?? "")}`, detalhe: [motivo, d.procurar_em ? `Procurar de novo em ${dataBrInteira(String(d.procurar_em))}` : ""].filter(Boolean).join(" · "), forte: true };
     case "reaberto": return { quem, texto: `reabriu (era ${est(d.de)})`, detalhe: motivo, forte: true };
+    case "interessado.cadastrado": {
+      const org = ORIGENS_INTERESSADO[String(d.origem) as OrigemInteressado] ?? "";
+      return {
+        quem, texto: `cadastrou o interessado à mão · ${org}`,
+        detalhe: [d.detalhe ? `De onde veio: “${String(d.detalhe)}”.` : "", d.sabe === false ? "A pessoa ainda não sabe." : d.sabe === true ? "A pessoa sabe do contato." : "",
+          d.responsavel_nome ? `Responsável: ${String(d.responsavel_nome)}.` : "", d.repetido_nome ? `Cadastrado mesmo havendo ${String(d.repetido_nome)} com o mesmo contato.` : ""].filter(Boolean).join(" "),
+        forte: true,
+      };
+    }
+    case "contato.repetido":
+      return { quem, texto: "juntou um contato novo a este interessado", detalhe: d.detalhe ? `De onde veio: “${String(d.detalhe)}”. O que foi escrito está nas notas.` : undefined, forte: false };
     case "convertido": return { quem, texto: `cadastrou o escritório ${String(d.escritorio_nome ?? "")} a partir deste interessado`, detalhe: motivo, forte: true };
     default: return { quem, texto: e.acao, forte: false };
   }
