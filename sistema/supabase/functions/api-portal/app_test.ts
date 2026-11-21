@@ -140,6 +140,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     ],
     dados_convite: () => ({ nome: "Ana", escritorio: "Aurora Advocacia", quem: "Ricardo Almeida", papel: "ESCRITORIO" }),
     aceitar_convite: () => null,
+    portal_cobranca: () => ({ soConsultaDesde: null, socioDono: "Ricardo Almeida", veFaturas: true, atraso: null }),
     portal_escritorio: (a) => {
       if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
       return { id: a.p_escritorio, nome: "Aurora Advocacia", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"] };
@@ -510,6 +511,7 @@ Deno.test("PT-01: o escritório fica na sessão do servidor; o navegador não o 
   assertEquals(await r.json(), {
     id: AURORA, nome: "Aurora Advocacia", funcoes: ["SOCIO"], dono: true,
     areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"], outrosEscritorios: 0,
+    cobranca: { soConsultaDesde: null, socioDono: "Ricardo Almeida", veFaturas: true, atraso: null },
   });
 });
 

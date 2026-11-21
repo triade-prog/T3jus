@@ -1,0 +1,12 @@
+{
+  "id": "F1.21",
+  "texto": "Meio de pagamento da cobrança dos escritórios: Pix e boleto emitidos com baixa automática, PDF do carnê, nota fiscal, preços reais e remetente definitivo",
+  "peca": "C1",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67.3,
+  "nota": "Hoje a fatura guarda Pix copia e cola e linha do boleto vazios, e a baixa é registrada à mão no Console. O e-mail sai pelo Resend com o contato provisório.",
+  "proximo": "Escolher o banco ou intermediador (o mesmo de F3.20) e o emissor de nota fiscal"
+}

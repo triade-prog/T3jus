@@ -1,0 +1,12 @@
+{
+  "id": "F1.20",
+  "texto": "Plano e faturas no Portal: página do sócio dono e as faixas de fatura em atraso e de só consulta",
+  "peca": "S7",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67.2,
+  "nota": "O servidor está pronto (F1.18): GET /v1/escritorio traz a cobrança e GET /v1/escritorio/faturas a página.",
+  "proximo": "Programar Plano e faturas e as faixas do Portal seguindo docs/design/aprovadas/console-cobranca"
+}

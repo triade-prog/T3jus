@@ -79,6 +79,19 @@ A migration `0060_console_clientes.sql` e a `api-console` trazem o Console no se
 - **Histórico administrativo (CO-04).** Os eventos internos vão para o histórico com a marca de interno e não aparecem para o escritório.
 - **Convites (PT-20, PT-22).** O convite do sócio e da equipe interna sai pelo Supabase Auth (`AdminAuth` em `_shared`). A pessoa cria a senha pelo link de uso único em `/criar-senha` do app de destino. Quem já tem conta não recebe e-mail novo, só o vínculo.
 
+## Cobrança dos escritórios (F1.18; CO-06)
+
+A migration `0690_cobranca_escritorios.sql` cobra os escritórios que assinam o T3jus, seguindo o desenho aprovado em `docs/design/aprovadas/console-cobranca`.
+
+- **Planos.** `planos` (nome, preço e pessoas incluídas), `planos_regras` (preço da pessoa a mais) e `planos_eventos` são globais. Só a administração muda; plano arquivado não entra em assinatura nova.
+- **Assinatura.** `assinaturas` guarda plano, dia de vencimento, forma (Pix, boleto ou carnê), e-mail de cobrança, CNPJ da nota e desconto com prazo. É preparada na implantação e começa a cobrar quando o escritório passa a ativo.
+- **Faturas.** A rotina diária (`cobranca_rotina`, pg_cron `t3jus-cobranca`) emite a fatura 20 dias antes do vencimento, com os itens em `fatura_itens` (mensalidade, pessoas a mais e desconto). No carnê, `assinatura_carnes` gera 12 parcelas de uma vez. Atraso é calculado, não guardado.
+- **Régua.** E-mails em -20, -3, 0, 3, 7 e 15 dias, pela fila `fatura_envios`; a `api-console` manda pelo Resend, com o sócio dono em cópia (`/v1/rotina/cobranca-envios`). Aos 7 dias o Portal mostra o aviso; aos 30 a administração decide se passa o escritório a só consulta.
+- **Pagamento manual.** Sem banco ligado, quem é da administração ou do financeiro registra o pagamento com motivo, na fatura ou na parcela do carnê. O pagamento que zera o atraso de 30 dias devolve o Portal ao normal.
+- **Só consulta.** Com `portal_so_consulta_desde` marcado, quem é do escritório lê tudo e não grava nada (`PORTAL_SO_CONSULTA`); mensagens que chegam e rotinas seguem. As tabelas da cobrança gravam com a marca `t3jus.cobrando`, inclusive depois do fim do contrato.
+- **Portal.** `GET /v1/escritorio` traz a situação da cobrança; `GET /v1/escritorio/faturas` traz o plano e as faturas, só para o sócio dono (`portal.faturas.ver`).
+- **Ainda não.** Pix e boleto emitidos com baixa automática, PDF do carnê e nota fiscal (F1.21). As telas estão em F1.19 e F1.20.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).

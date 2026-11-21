@@ -42,6 +42,14 @@ import {
   juntarInteressadoSchema,
   avisosLidosSchema,
   whatsLegivel,
+  CONTATO_T3JUS,
+  planoSalvarSchema,
+  planoArquivarSchema,
+  pessoaAMaisSchema,
+  assinaturaSalvarSchema,
+  mudarPlanoSchema,
+  motivoCobrancaSchema,
+  pagamentoManualSchema,
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
@@ -50,7 +58,7 @@ import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao
 import { lerCorpo } from "../_shared/validar.ts";
 import { ipDaChamada } from "../_shared/repasse.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
-import { avisoAutenticadorTirado, confirmacaoPedidoDemonstracao, type Emails } from "../_shared/email.ts";
+import { avisoAutenticadorTirado, confirmacaoPedidoDemonstracao, emailCobranca, type EnvioCobranca, type Emails } from "../_shared/email.ts";
 import { pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
 import { registrar } from "../_shared/registro.ts";
 
@@ -67,6 +75,9 @@ export interface DepsConsole extends DepsSessao {
   /** Apagar as pastas do Storage no fim da guarda (F0.15). */
   limpeza?: LimpezaArquivos;
 }
+
+/** Quantos e-mails da cobrança cada chamada manda, para caber no tempo do repasse. */
+const ENVIOS_POR_CHAMADA = 20;
 
 /** Quantos arquivos cada chamada da rotina apaga por pasta, para caber no tempo do repasse. */
 const ARQUIVOS_POR_PASTA = 1000;
@@ -166,6 +177,43 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     }
     return c.json({ pastas: pendentes.length, concluidas, apagados });
   });
+  // Cobrança dos escritórios (CO-06, F1.18): manda o que está na fila de e-mails da cobrança e
+  // registra cada resultado. Sem o segredo do Resend, a fila espera (nada se perde). A cópia vai
+  // para o sócio dono, com o e-mail do Auth.
+  async function enviarCobrancas(): Promise<{ enviados: number; falhas: number }> {
+    if (!deps.emails) return { enviados: 0, falhas: 0 };
+    const fila = await rpc<(EnvioCobranca & { id: string; para: string; copiaPessoaId: string | null })[]>(
+      "rotina_cobranca_envios_pendentes", { p_limite: ENVIOS_POR_CHAMADA });
+    let enviados = 0;
+    let falhas = 0;
+    for (const e of fila) {
+      try {
+        const copia = e.copiaPessoaId ? await deps.admin.emailDe(e.copiaPessoaId) : null;
+        await deps.emails.enviar({ para: e.para, ...(copia && copia !== e.para ? { copia: [copia] } : {}), ...emailCobranca(e, deps.urlPortal, CONTATO_T3JUS) });
+        await rpc("rotina_cobranca_envio_registrar", { p_id: e.id, p_enviado: true });
+        enviados++;
+      } catch (erro) {
+        registrar("aviso", { funcao: "api-console", rota: "cobranca-envios", erro });
+        await rpc("rotina_cobranca_envio_registrar", { p_id: e.id, p_enviado: false, p_erro: erro instanceof Error ? erro.message : "Falhou" }).catch(() => undefined);
+        falhas++;
+      }
+    }
+    return { enviados, falhas };
+  }
+
+  /** Depois de uma ação que pôs e-mail na fila: tenta mandar já; se falhar, a rotina manda depois. */
+  async function enviarSemEsperar(): Promise<void> {
+    try {
+      await enviarCobrancas();
+    } catch (erro) {
+      registrar("aviso", { funcao: "api-console", rota: "cobranca-envios", erro });
+    }
+  }
+
+  // A rotina da manhã do banco chama esta rota quando há e-mail da cobrança na fila. Ela só manda
+  // o que o banco já decidiu, então não pede sessão (o repasse confere o segredo).
+  app.post("/v1/rotina/cobranca-envios", async (c) => c.json(await enviarCobrancas()));
+
   // Pedido de demonstração do site (F2.2, SC-02). O site (t3jus.pro) repassa com o segredo e o IP
   // de quem pediu; não há sessão. O banco aplica os limites e guarda a autorização; a resposta
   // automática sai daqui, e se não sair o pedido continua registrado (fica no histórico).
@@ -191,22 +239,28 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   sessao.rotas(app);
 
-  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*", "/v1/interessados", "/v1/interessados/*", "/v1/avisos", "/v1/avisos/*"]) app.use(rota, sessao.exigirSessao);
+  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*", "/v1/interessados", "/v1/interessados/*", "/v1/avisos", "/v1/avisos/*", "/v1/cobranca", "/v1/cobranca/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
   // F2.3: o contador de Comercial (interessados que pedem atenção) vai junto, para a moldura.
   app.get("/v1/sessao", async (c) => {
-    const [s, atencao] = await Promise.all([
+    const [s, atencao, cobranca] = await Promise.all([
       rpc<Record<string, unknown>>("console_sessao", { p_pessoa: pessoa(c) }),
       rpc<number>("console_interessados_atencao", { p_pessoa: pessoa(c) }),
+      rpc<number>("console_cobranca_atencao", { p_pessoa: pessoa(c) }),
     ]);
-    return c.json({ ...s, interessadosAtencao: atencao });
+    return c.json({ ...s, interessadosAtencao: atencao, faturasAtraso: cobranca });
   });
 
   // Carteira (CO-01): só os clientes atribuídos.
   app.get("/v1/clientes", async (c) => {
-    const linhas = await rpc<LinhaCarteira[]>("console_carteira", { p_pessoa: pessoa(c) });
+    const [linhas, cobranca] = await Promise.all([
+      rpc<LinhaCarteira[]>("console_carteira", { p_pessoa: pessoa(c) }),
+      rpc<{ escritorioId: string; atrasoDias: number | null; soConsultaDesde: string | null }[]>("console_carteira_cobranca", { p_pessoa: pessoa(c) }),
+    ]);
+    // F1.18: "Fatura em atraso · N dias" e o só consulta por atraso (só os dias, sem valor).
+    const porEscritorio = new Map(cobranca.map((x) => [x.escritorioId, { atrasoDias: x.atrasoDias, soConsultaDesde: x.soConsultaDesde }]));
     return c.json({
       clientes: linhas.map((l) => ({
         id: l.escritorio_id,
@@ -221,6 +275,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
         equipe: l.equipe,
         ultimaAtividade: l.ultima_atividade,
         encerramento: l.encerramento,
+        cobranca: porEscritorio.get(l.escritorio_id) ?? null,
       })),
     });
   });
@@ -615,6 +670,99 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, converterInteressadoSchema);
     return c.json({ escritorioId: await rpc<string>("console_interessado_converter", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_nome: d.nome, p_cidade: d.cidade, p_uf: d.uf, p_motivo: d.motivo }) }, 201);
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Cobrança dos escritórios (CO-06, F1.18). Quem vê e quem muda é decidido no banco:
+  // Administração e Financeiro nas faturas e assinaturas; só a Administração nos planos e no
+  // só consulta; Implantação e Suporte veem o plano e a situação, sem valores (PT-24).
+  app.get("/v1/cobranca/faturas", async (c) => c.json(await rpc("console_cobranca_faturas", { p_pessoa: pessoa(c) })));
+  app.get("/v1/cobranca/planos", async (c) => c.json(await rpc("console_planos", { p_pessoa: pessoa(c) })));
+  app.post("/v1/cobranca/planos", async (c) => {
+    const { versao: _v, ...d } = await lerCorpo(c, planoSalvarSchema);
+    return c.json(await rpc("console_plano_salvar", { p_pessoa: pessoa(c), p_plano: null, p_versao: null, p_dados: d }), 201);
+  });
+  app.put("/v1/cobranca/planos/:plano", async (c) => {
+    const id = idDaRota(c, "plano");
+    const { versao, ...d } = await lerCorpo(c, planoSalvarSchema);
+    if (!versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return c.json(await rpc("console_plano_salvar", { p_pessoa: pessoa(c), p_plano: id, p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/cobranca/planos/:plano/arquivar", async (c) => {
+    const id = idDaRota(c, "plano");
+    const d = await lerCorpo(c, planoArquivarSchema);
+    return c.json(await rpc("console_plano_arquivar", { p_pessoa: pessoa(c), p_plano: id, p_versao: d.versao, p_arquivar: d.arquivar, p_motivo: d.motivo }));
+  });
+  app.put("/v1/cobranca/pessoa-a-mais", async (c) => {
+    const d = await lerCorpo(c, pessoaAMaisSchema);
+    return c.json(await rpc("console_pessoa_a_mais", { p_pessoa: pessoa(c), p_versao: d.versao, p_centavos: d.centavos }));
+  });
+
+  // A fatura aberta e o que se faz nela. O escritório vai na rota: o banco confere se a pessoa o
+  // atende e se a fatura é dele.
+  app.get("/v1/clientes/:id/faturas/:fatura", async (c) =>
+    c.json(await rpc("console_cobranca_fatura", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id"), p_fatura: idDaRota(c, "fatura") })));
+  app.post("/v1/clientes/:id/faturas/:fatura/pagamento-manual", async (c) => {
+    const id = idDaRota(c, "id");
+    const fatura = idDaRota(c, "fatura");
+    const { versao, ...d } = await lerCorpo(c, pagamentoManualSchema);
+    if (!versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    const r = await rpc("console_fatura_pagamento_manual", { p_pessoa: pessoa(c), p_escritorio: id, p_fatura: fatura, p_versao: versao, p_dados: d });
+    await enviarSemEsperar();
+    return c.json(r);
+  });
+  app.post("/v1/clientes/:id/faturas/:fatura/lembrete", async (c) => {
+    const r = await rpc("console_fatura_lembrete", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id"), p_fatura: idDaRota(c, "fatura") });
+    await enviarSemEsperar();
+    return c.json(r);
+  });
+  app.post("/v1/clientes/:id/faturas/:fatura/cancelar", async (c) => {
+    const id = idDaRota(c, "id");
+    const fatura = idDaRota(c, "fatura");
+    const d = await lerCorpo(c, motivoCobrancaSchema);
+    const r = await rpc("console_fatura_cancelar", { p_pessoa: pessoa(c), p_escritorio: id, p_fatura: fatura, p_versao: d.versao, p_motivo: d.motivo });
+    await enviarSemEsperar();
+    return c.json(r);
+  });
+  // Parcela do carnê paga adiantada: a fatura do mês já nasce paga.
+  app.post("/v1/clientes/:id/carne/parcelas/:parcela/pagamento-manual", async (c) => {
+    const id = idDaRota(c, "id");
+    const parcela = idDaRota(c, "parcela");
+    const { versao: _v, ...d } = await lerCorpo(c, pagamentoManualSchema);
+    const r = await rpc("console_parcela_pagamento_manual", { p_pessoa: pessoa(c), p_escritorio: id, p_parcela: parcela, p_dados: d });
+    await enviarSemEsperar();
+    return c.json(r);
+  });
+
+  // A aba Assinatura da ficha.
+  app.get("/v1/clientes/:id/assinatura", async (c) => c.json(await rpc("console_assinatura", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") })));
+  app.put("/v1/clientes/:id/assinatura", async (c) => {
+    const id = idDaRota(c, "id");
+    const { versao, ...d } = await lerCorpo(c, assinaturaSalvarSchema);
+    const r = await rpc("console_assinatura_salvar", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: versao ?? null, p_dados: d });
+    await enviarSemEsperar();
+    return c.json(r);
+  });
+  app.post("/v1/clientes/:id/assinatura/mudar-plano", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, mudarPlanoSchema);
+    return c.json(await rpc("console_assinatura_mudar_plano", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_plano: d.planoId, p_motivo: d.motivo }));
+  });
+  app.post("/v1/clientes/:id/assinatura/carne-novo", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, motivoCobrancaSchema);
+    return c.json(await rpc("console_carne_novo", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_motivo: d.motivo }));
+  });
+  // Só consulta por atraso e "Devolver o acesso agora": só a Administração, com motivo.
+  app.post("/v1/clientes/:id/portal-so-consulta", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, motivoCobrancaSchema);
+    return c.json(await rpc("console_portal_so_consulta", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_motivo: d.motivo }));
+  });
+  app.post("/v1/clientes/:id/portal-normal", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, motivoCobrancaSchema);
+    return c.json(await rpc("console_portal_normal", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_motivo: d.motivo }));
   });
 
   return app;
