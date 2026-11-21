@@ -3,7 +3,7 @@ import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
 import type { Cerebro } from "../_shared/ia.ts";
 import type { Emails, MensagemEmail } from "../_shared/email.ts";
-import { conferirDocx, criarDocx, paragrafosDocx, type ContextoIa, type DadosPeticao } from "@t3jus/domain";
+import { conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosPeticao } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -12,6 +12,8 @@ const BELA_VISTA = "4f1a7d4c-9b5e-4a6f-9c2d-5e6f7a8b9c0d";
 const LARA = "5a2b8e5d-0c6f-4b7a-8d3e-6f7a8b9c0d1e";
 const VL_LARA = "6b3c9f6e-1d7a-4c8b-9e4f-7a8b9c0d1e2f";
 const CLIENTE = "7c4d0a7f-2e8b-4d9c-8f5a-8b9c0d1e2f3a";
+const ANEXO_NOTA = "1a2b3c4d-0000-4000-8000-00000000a001";
+const ANEXO_SUMIU = "1a2b3c4d-0000-4000-8000-00000000a002";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
 const PETICAO = "8d5e1b8a-3f9c-4e0d-9a6b-9c0d1e2f3a4b";
 const VERSAO_PET = "9e6f2c9b-4a0d-4f1e-8b7c-0d1e2f3a4b5c";
@@ -32,7 +34,7 @@ const PEDIDO_PETICAO = {
 };
 
 function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean; ia?: Cerebro | null;
-  emails?: Emails } = {}) {
+  emails?: Emails; comprovantes?: boolean } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
@@ -72,6 +74,18 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_envio_registrar: (a) => ({ para: "contato@exemplo.com.br", situacao: a.p_situacao, em: "2026-11-18T10:00:00-03:00", por: null }),
     portal_financeiro_ajustes_salvar: (a) => ({ dados: a.p_dados }),
     portal_financeiro_meta: (a) => ({ dados: a.p_dados }),
+    portal_financeiro_meta_tirar: (a) => ({ dados: a.p_dados }),
+    portal_financeiro_pasta_preparar: (a) => ({
+      exportacaoId: a.p_exportacao, mes: "2026-10-01", formato: "XLSX", pasta: null,
+      anexos: opcoes.comprovantes ? [
+        { id: ANEXO_NOTA, nome: "nota.pdf", tipo: "application/pdf", tamanho: 9, categoria: "NOTA_FISCAL", dia: "2026-10-05", lancamento: "Aluguel da sala" },
+        { id: ANEXO_SUMIU, nome: "guia.pdf", tipo: "application/pdf", tamanho: 9, categoria: "GUIA", dia: "2026-10-06", lancamento: "DAS" },
+      ] : [],
+    }),
+    portal_financeiro_pasta_registrar: (a) => {
+      const partes = a.p_partes as { caminho: string; nome: string; tamanho: number; arquivos: number }[];
+      return { id: "pasta-1", partes, arquivos: partes.reduce((s, x) => s + x.arquivos, 0), tamanho: partes.reduce((s, x) => s + x.tamanho, 0), em: "2026-11-18T10:00:00-03:00", por: null };
+    },
     exportar_escritorio: (a) => {
       if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
       return { formato: "t3jus.exportacao.v1", geradoEm: "2026-11-18T10:00:00-03:00", escritorio: { id: a.p_escritorio }, pessoas: [], tabelas: {} };
@@ -1738,6 +1752,42 @@ Deno.test("F3.50: mandar ao contador anexa a planilha, responde para quem export
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_financeiro_envio_registrar")!.args.p_escritorio, AURORA);
 });
 
+Deno.test("F3.89: os comprovantes do mês vão num .zip guardado no escritório, por link de 30 dias no e-mail", async () => {
+  const mandados: MensagemEmail[] = [];
+  const m = montar({ comprovantes: true, emails: { enviar: (x) => { mandados.push(x); return Promise.resolve(); } } });
+  m.storage.bytes.set(`${AURORA}/${ANEXO_NOTA}`, new TextEncoder().encode("%PDF-nota"));
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/enviar`, { metodo: "POST", corpo: { nome: "financeiro-2026-10.xlsx", arquivo: "UEsDBA==" }, cookie });
+  assertEquals((await r.json()).situacao, "ENVIADO");
+  const caminho = `${AURORA}/exportacoes/${CLIENTE}-1.zip`;
+  assertEquals(m.storage.guardados.get(caminho)?.tipo, "application/zip");
+  // O arquivo que sumiu do Storage fica de fora; o resto vai, com a data e o lançamento no nome.
+  const zip = lerZip(m.storage.bytes.get(caminho)!);
+  assertEquals([...zip.keys()], ["2026-10-05 - Aluguel da sala - Nota fiscal.pdf"]);
+  const reg = m.chamadas.find((c) => c.funcao === "portal_financeiro_pasta_registrar")!;
+  assertEquals([reg.args.p_escritorio, (reg.args.p_partes as { nome: string }[])[0]!.nome], [AURORA, "comprovantes-outubro-2026.zip"]);
+  assertEquals(m.storage.leituras.at(-1), { caminho, segundos: 30 * 24 * 60 * 60, nome: "comprovantes-outubro-2026.zip" });
+  assertMatch(mandados[0]!.html, /Baixar os comprovantes/);
+  assertMatch(mandados[0]!.texto, /storage\.exemplo\/ler\/.*exportacoes/);
+  assertEquals(mandados[0]!.anexos?.length, 1);
+  const ate = m.chamadas.find((c) => c.funcao === "portal_financeiro_envio_registrar")!.args.p_link_ate as string;
+  assertEquals(Math.round((new Date(ate).getTime() - Date.now()) / 864e5), 30);
+});
+
+Deno.test("F3.22b: baixar os comprovantes monta a pasta e devolve links curtos; sem comprovantes, nada", async () => {
+  const m = montar({ comprovantes: true });
+  m.storage.bytes.set(`${AURORA}/${ANEXO_NOTA}`, new TextEncoder().encode("%PDF-nota"));
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/pasta`, { metodo: "POST", corpo: {}, cookie });
+  const p = await r.json();
+  assertEquals([p.pasta.arquivos, p.pasta.partes[0].nome], [1, "comprovantes-outubro-2026.zip"]);
+  assertEquals(m.storage.leituras.at(-1)!.segundos, 60);
+  const sem = montar();
+  const c2 = await noEscritorio(sem);
+  assertEquals(await (await sem.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/pasta`, { metodo: "POST", corpo: {}, cookie: c2 })).json(), { pasta: null });
+  assertEquals((await sem.pedir("/v1/escritorio/financeiro/exportacoes/nao-e-id/pasta", { metodo: "POST", corpo: {}, cookie: c2 })).status, 404);
+});
+
 Deno.test("F3.50: sem o Resend, ou se ele recusa, o envio fica como não saiu", async () => {
   const sem = montar();
   const c1 = await noEscritorio(sem);
@@ -1759,6 +1809,9 @@ Deno.test("F3.50 e F3.49: os ajustes e a meta vão ao banco com o escritório da
   assertEquals([a.args.p_escritorio, (a.args.p_dados as { prazoRepasseDias: number }).prazoRepasseDias], [AURORA, 2]);
   await m.pedir("/v1/escritorio/financeiro/meta", { metodo: "PUT", corpo: { valor: 5000000, mes: "2026-11-01", soMes: false }, cookie });
   assertEquals((m.chamadas.find((c) => c.funcao === "portal_financeiro_meta")!.args.p_dados as { valor: number }).valor, 5000000);
+  await m.pedir("/v1/escritorio/financeiro/meta/tirar", { metodo: "POST", corpo: { mes: "2026-12-01" }, cookie });
+  const t = m.chamadas.find((c) => c.funcao === "portal_financeiro_meta_tirar")!;
+  assertEquals([t.args.p_escritorio, (t.args.p_dados as { mes: string }).mes], [AURORA, "2026-12-01"]);
 });
 
 Deno.test("F3.50: o lembrete do contador no domínio é o mesmo tipo do banco", async () => {

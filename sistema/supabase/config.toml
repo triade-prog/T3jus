@@ -23,7 +23,7 @@ import_map = "./functions/deno.json"
 # Contrato e documentos do cliente no Console (CO-05): bucket privado, sem acesso público e
 # sem política para usuário; só a Edge Function, com a chave de serviço, assina envio e leitura.
 [storage]
-file_size_limit = "10MiB"
+file_size_limit = "12MiB"
 
 [storage.buckets.documentos-console]
 public = false
@@ -34,8 +34,9 @@ allowed_mime_types = ["application/pdf", "image/jpeg", "image/png"]
 # porque são dados do escritório. Também só a Edge Function assina envio e leitura.
 [storage.buckets.documentos-portal]
 public = false
-file_size_limit = "10MiB"
-allowed_mime_types = ["application/pdf", "image/jpeg", "image/png"]
+# 12 MB: o anexo continua até 10 MB (o servidor confere); as partes do .zip do contador vão até 11 MB (0621).
+file_size_limit = "12MiB"
+allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/zip"]
 
 # Login (F0.6, PT-08). Ninguém se cadastra sozinho: a equipe T3jus cria o escritório e
 # convida o sócio (passo 1).

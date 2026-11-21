@@ -369,12 +369,22 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
 
   test("F3.48: a folha A caminho, registrar o expedido com a parte do escritório pelo contrato", async ({ page }) => {
     const novo = req(3, { valorRequisitado: 1840000, parteEscritorio: 381000, estimadaMes: mesMais(2), passou: false, cliente: BEN, criadoEm: new Date().toISOString(), expedidoEm: dia(0), tribunal: "TJSP", devedor: "Prefeitura de Santo André" });
-    const depois = { ...COM_CAMINHO, aCaminho: { ...COM_CAMINHO.aCaminho, total: 1056000, n: 3, itens: [PASSOU, EDUARDO, novo] } };
+    const OFICIO = "0f000000-0000-4000-8000-0000000000f1";
+    const oficio = { id: OFICIO, categoria: "OFICIO_REQUISITORIO", nome: "oficio-rpv-vale-alto.pdf", tipo: "application/pdf", tamanho: 312000,
+      donoId: novo.id, enviadoPor: { id: "x", nome: "Marina Ribeiro" }, enviadoEm: new Date().toISOString() };
+    const depois = { ...COM_CAMINHO, aCaminho: { ...COM_CAMINHO.aCaminho, total: 1056000, n: 3, itens: [PASSOU, EDUARDO, { ...novo, oficio }] } };
+    const envios: string[] = [];
+    await page.route("**/arquivos-falsos/**", async (rota) => {
+      envios.push(`${rota.request().method()} ${new URL(rota.request().url()).pathname}`);
+      await rota.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
     const pedidos = await simular(page, {
       ...comuns(ESCRITORIO, COM_CAMINHO),
       "GET /v1/escritorio/financeiro/repasses": [{ corpo: COM_CAMINHO }, { corpo: depois }],
       "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: PROPOSTA },
       "POST /v1/escritorio/financeiro/a-caminho": { status: 201, corpo: novo },
+      "POST /v1/escritorio/anexos": { status: 201, corpo: { id: OFICIO, enderecoDeEnvio: `${P}/arquivos-falsos/${OFICIO}?token=uso-unico` } },
+      [`POST /v1/escritorio/anexos/${OFICIO}/concluir`]: { corpo: oficio },
     });
     await page.goto(`${P}/financeiro/repasses`);
     const nums = page.getByRole("group", { name: "Números dos repasses" });
@@ -406,8 +416,16 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(j).toContainText("Honorários · 30% de êxito");
     await expect(j).toContainText("R$ 3.810,00");
     await expect(j).toContainText(`entram na previsão do Caixa em ${mesAno(mesMais(2))}`);
+    await j.getByLabel(/Ofício requisitório/).setInputFiles({ name: "oficio-rpv-vale-alto.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(900, 1) });
+    await expect(j).toContainText("vai junto ao salvar");
+    await semViolacoes(page);
     await j.getByRole("button", { name: "Registrar a caminho" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "RPV a caminho registrado." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "RPV a caminho registrado." })).toContainText("Ofício anexado.");
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/anexos")?.corpo).toEqual({
+      dono: "REQUISICAO", donoId: novo.id, categoria: null, nome: "oficio-rpv-vale-alto.pdf", tipo: "application/pdf", tamanho: 900,
+    });
+    expect(envios).toEqual([`PUT /arquivos-falsos/${OFICIO}`]);
+    await expect(folha.getByRole("button", { name: /Ofício anexado ?: abrir oficio-rpv-vale-alto\.pdf/ })).toBeVisible();
     const post = pedidos.find((p) => p.metodo === "POST" && p.caminho.endsWith("/a-caminho"))!;
     expect(post.corpo).toEqual({ tipo: "RPV", casoId: CASO.id, clienteId: BEN.id, tribunal: "TJSP", devedor: "Prefeitura de Santo André", numero: null,
       valor: 1840000, expedidoEm: dia(0), estimadaMes: mesMais(2) });
