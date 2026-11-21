@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 50,
-  "proximo": "Desenhar a janela \"Cadastrar interessado\" (o botão está no desenho aprovado, sem o formulário), aprovar com a Carol e programar a função do banco."
+  "proximo": "Programar o cadastro à mão como no desenho aprovado (docs/design/aprovadas/console-interessado-sino): campos base_legal, sabe_do_contato e cadastrado_por, pelo menos e-mail ou WhatsApp, funções console_interessado_cadastrar e console_interessado_juntar."
 }

@@ -1,0 +1,16 @@
+[
+ {"nome":"ci-branco","url":"interessados.html?aba=lista&estado=cadastrar&papel=implantacao","grupo":"cad","t":"Cadastrar · em branco","d":"A janela aberta pelo botão “Cadastrar interessado”: quem é, de onde veio o contato, dados pessoais e quem cuida. Responsável e próximo passo já vêm sugeridos."},
+ {"nome":"ci-erros","url":"interessados.html?aba=lista&estado=cadastrar-erros&papel=implantacao","grupo":"cad","t":"Erros","d":"Resumo no topo, com o foco nele; cada erro preso ao seu campo. O botão nunca fica desabilitado e nada foi cadastrado."},
+ {"nome":"ci-salvando","url":"interessados.html?aba=lista&estado=cadastrar-salvando&papel=implantacao","grupo":"cad","t":"Salvando","d":"Botão ocupado, campos travados, anúncio para o leitor de tela."},
+ {"nome":"ci-repetido","url":"interessados.html?aba=lista&estado=cadastrar-repetido&papel=implantacao","grupo":"cad","t":"Possível repetido","d":"O e-mail é igual ao de um interessado que já existe: juntar ao existente, abrir o existente ou, se for outro escritório, cadastrar mesmo assim."},
+ {"nome":"ci-falha","url":"interessados.html?aba=lista&estado=cadastrar-falha&papel=implantacao","grupo":"cad","t":"Falha de rede","d":"Tudo o que foi escrito continua na janela; tentar de novo, com código para o suporte."},
+ {"nome":"ci-cadastrado","url":"interessados.html?aba=ficha&estado=cadastrado&papel=implantacao","grupo":"cad","t":"Cadastrado · a ficha nova","d":"Cai direto na ficha do interessado novo, com “cadastrado à mão por Rafael Teles”, de onde veio o contato e a base legal."},
+ {"nome":"ci-sem-permissao","url":"interessados.html?aba=lista&papel=financeiro","grupo":"cad","t":"Sem permissão","d":"Financeiro e Suporte não veem Interessados, e por isso também não cadastram."},
+ {"nome":"cs-fechado","url":"interessados.html?aba=lista&estado=ver","grupo":"sino","t":"Sino fechado, com novo","d":"O sino da moldura aprovada com o ponto de novo; o rótulo diz “Avisos, 3 novos”. Clique no sino para abrir."},
+ {"nome":"cs-aberto","url":"interessados.html?aba=lista&estado=ver&sino=aberto","grupo":"sino","t":"Aberto, com não lidos","d":"Carol: o pedido novo do site, o próximo passo vencido e o interessado que Rafael passou para ela, agrupados por dia."},
+ {"nome":"cs-nao-lidos","url":"interessados.html?aba=lista&estado=ver&sino=nao-lidos","grupo":"sino","t":"Só não lidos","d":"O filtro “Não lidos” ligado."},
+ {"nome":"cs-lidos","url":"interessados.html?aba=lista&estado=ver&sino=lidos","grupo":"sino","t":"Todos lidos","d":"Depois de “Marcar todos como lidos”: os avisos continuam, sem o destaque, e o ponto do sino some."},
+ {"nome":"cs-vazio","url":"interessados.html?aba=lista&estado=ver&papel=implantacao&sino=vazio","grupo":"sino","t":"Vazio","d":"Luísa, que acabou de entrar na Implantação: o que chega aqui."},
+ {"nome":"cs-erro","url":"interessados.html?aba=lista&estado=ver&sino=erro","grupo":"sino","t":"Erro","d":"Tentar de novo, com código para o suporte; o ponto continua com a última contagem."},
+ {"nome":"cs-financeiro","url":"cobranca.html?aba=faturas&estado=ver&papel=financeiro&sino=sem-interessados","grupo":"sino","t":"Quem não vê Interessados","d":"Marta, do Financeiro, na Cobrança aprovada: não recebe aviso de interessado; o painel diz o porquê. O Suporte vê o mesmo."}
+]
