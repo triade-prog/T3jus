@@ -49,6 +49,8 @@ export interface FichaAcesso extends PessoaSuporte {
   autenticadorDesde: string | null;
   /** Sem nenhum acesso: quando a entrada some, ou quando sumiu (F0.14). */
   saida?: SaidaPessoa | null;
+  /** A última vez que a pessoa redefiniu a senha; null se nunca trocou (F1.12). */
+  senhaTrocadaEm?: string | null;
 }
 
 export interface EventoSuporte {

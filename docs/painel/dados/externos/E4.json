@@ -4,6 +4,7 @@
   "quem": "Carol",
   "precisa_em": "F2",
   "refs": [],
-  "status": "pendente",
-  "ordem": 40
+  "status": "feito",
+  "ordem": 40,
+  "evidencia": "Domínios verificados na Vercel: t3jus.pro e www.t3jus.pro (site), app.t3jus.pro (Portal) e console.t3jus.pro (Console); /api/v1/saude responde 200 no Portal e no Console"
 }

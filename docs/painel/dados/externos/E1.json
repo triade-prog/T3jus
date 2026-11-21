@@ -4,6 +4,7 @@
   "quem": "Carol",
   "precisa_em": "F1",
   "refs": [],
-  "status": "pendente",
-  "ordem": 10
+  "status": "feito",
+  "ordem": 10,
+  "evidencia": "Projeto Supabase t3jus (ref lfquiekccdofijksrifa, sa-east-1) criado em 20/11/2026, com as migrations aplicadas e as funções api-portal e api-console publicadas"
 }
