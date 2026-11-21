@@ -1,0 +1,979 @@
+[
+ {
+  "nome": "fu-funil",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\"",
+   "A 166x24 \"Marcos Vinícius Duarte\"",
+   "A 166x24 \"Eduardo Nascimento\"",
+   "A 166x24 \"Daniela Rocha Mendes\"",
+   "A 166x24 \"Gabriela Teixeira\"",
+   "A 166x24 \"Construtora Vale Alto\"",
+   "A 166x24 \"Benedito Souza Lima\"",
+   "A 166x24 \"Antônia Ferreira Prado\"",
+   "A 166x24 \"Hélio Batista Corrêa\"",
+   "A 166x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "fu-funil",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "A 320x24 \"Marcos Vinícius Duarte\"",
+   "A 320x24 \"Eduardo Nascimento\"",
+   "A 320x24 \"Daniela Rocha Mendes\"",
+   "A 320x24 \"Gabriela Teixeira\"",
+   "A 320x24 \"Construtora Vale Alto\"",
+   "A 320x24 \"Benedito Souza Lima\"",
+   "A 320x24 \"Antônia Ferreira Prado\"",
+   "A 320x24 \"Hélio Batista Corrêa\"",
+   "A 320x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "fu-marcar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-marcar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-marcado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\"",
+   "A 166x24 \"Marcos Vinícius Duarte\"",
+   "A 166x24 \"Daniela Rocha Mendes\"",
+   "A 166x24 \"Gabriela Teixeira\"",
+   "A 166x24 \"Construtora Vale Alto\"",
+   "A 166x24 \"Benedito Souza Lima\"",
+   "A 166x24 \"Antônia Ferreira Prado\"",
+   "A 166x24 \"Hélio Batista Corrêa\"",
+   "A 166x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "fu-marcado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "A 320x24 \"Marcos Vinícius Duarte\"",
+   "A 320x24 \"Daniela Rocha Mendes\"",
+   "A 320x24 \"Gabriela Teixeira\"",
+   "A 320x24 \"Construtora Vale Alto\"",
+   "A 320x24 \"Benedito Souza Lima\"",
+   "A 320x24 \"Antônia Ferreira Prado\"",
+   "A 320x24 \"Hélio Batista Corrêa\"",
+   "A 320x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "fu-voltar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-voltar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-vazio",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\"",
+   "A 166x24 \"Daniela Rocha Mendes\"",
+   "A 166x24 \"Gabriela Teixeira\"",
+   "A 166x24 \"Construtora Vale Alto\"",
+   "A 166x24 \"Benedito Souza Lima\"",
+   "A 166x24 \"Antônia Ferreira Prado\"",
+   "A 166x24 \"Hélio Batista Corrêa\"",
+   "A 166x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "fu-vazio",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "A 320x24 \"Daniela Rocha Mendes\"",
+   "A 320x24 \"Gabriela Teixeira\"",
+   "A 320x24 \"Construtora Vale Alto\"",
+   "A 320x24 \"Benedito Souza Lima\"",
+   "A 320x24 \"Antônia Ferreira Prado\"",
+   "A 320x24 \"Hélio Batista Corrêa\"",
+   "A 320x24 \"Irene Castro\""
+  ]
+ },
+ {
+  "nome": "fu-atendimentos",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "fu-atendimentos",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-ficha-aberta",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "fu-ficha-aberta",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-ficha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "fu-ficha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fu-ficha-larissa",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "fu-ficha-larissa",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-ficha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "rp-ficha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-trocar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-trocar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-trocar-erro",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-trocar-erro",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-trocar-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-trocar-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rp-trocado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "rp-trocado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-repasses",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "pz-repasses",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-ficha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "pz-ficha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-anotar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-anotar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-anotar-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-anotar-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-anotar-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-anotar-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "pz-anotado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "pz-anotado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-caminho",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "rv-caminho",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-registrar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-registrar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-registrar-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-registrar-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-registrar-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-registrar-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-registrado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "rv-registrado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-data",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-data",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-entrou",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-entrou",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-vazio",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "rv-vazio",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "rv-caixa",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "rv-caixa",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "re-visao",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "re-visao",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-ajustes",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "es-ajustes",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-vazio",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "es-vazio",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "es-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "es-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-salvo",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "es-salvo",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-abertura",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-abertura",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-equipe",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "es-equipe",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "es-sem-area",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "es-sem-area",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-caixa",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "ct-caixa",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-exportar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-exportar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-exportar-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-exportar-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-enviado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "ct-enviado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-sem-contador",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-sem-contador",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "ct-sem-abertura",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "ct-sem-abertura",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-resumo",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "mt-resumo",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-definir",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-definir",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-um-mes",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-um-mes",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-sem-meta",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "mt-sem-meta",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "mt-equipe",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "mt-equipe",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "fi-sem-area",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "fi-sem-area",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ }
+]

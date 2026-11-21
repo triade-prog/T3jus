@@ -5,7 +5,7 @@
   "refs": [
     "PA-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 820,
-  "proximo": "Ver se o desenho aprovado das automações já cobre os dois gatilhos ou se precisa passar pela especialista e pela Carol; depois programar o motor, a lista de gatilhos e as instruções da IA"
+  "evidencia": "Desenho aprovado pela Carol em 21/11/2026 (docs/design/aprovadas/portal-gatilhos-novos); migration 0570 (cliente novo em Conversas, documento pendente no Jurídico, caminho \"Se chegou\", quem pediu, 1 lembrete por semana, lembrete na ficha do caso); teste pgTAP 058 (34 casos), vitest automacoes-gatilhos-novos e teste Deno dos campos"
 }

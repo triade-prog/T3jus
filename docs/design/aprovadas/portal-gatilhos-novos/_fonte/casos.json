@@ -1,0 +1,46 @@
+[
+ {
+  "nome": "gn-escolher",
+  "url": "gatilhos.html?estado=escolher"
+ },
+ {
+  "nome": "gn-cliente-gatilho",
+  "url": "gatilhos.html?estado=cliente-gatilho"
+ },
+ {
+  "nome": "gn-cliente-sugestao",
+  "url": "gatilhos.html?estado=cliente-sugestao"
+ },
+ {
+  "nome": "gn-cliente-testar",
+  "url": "gatilhos.html?estado=cliente-testar"
+ },
+ {
+  "nome": "gn-cliente-ligar",
+  "url": "gatilhos.html?estado=cliente-ligar"
+ },
+ {
+  "nome": "gn-doc-gatilho",
+  "url": "gatilhos.html?estado=doc-gatilho"
+ },
+ {
+  "nome": "gn-doc-mensagem",
+  "url": "gatilhos.html?estado=doc-mensagem"
+ },
+ {
+  "nome": "gn-doc-testar",
+  "url": "gatilhos.html?estado=doc-testar"
+ },
+ {
+  "nome": "gn-doc-ligar",
+  "url": "gatilhos.html?estado=doc-ligar"
+ },
+ {
+  "nome": "gn-erros",
+  "url": "gatilhos.html?estado=erros"
+ },
+ {
+  "nome": "gn-juridico",
+  "url": "juridico-lembrete.html?estado=ficha"
+ }
+]

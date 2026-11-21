@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 500,
-  "proximo": "Desenhar o contador e o saldo de abertura em Escritório; enviar o arquivo por e-mail (precisa do serviço de e-mail com anexo); juntar os comprovantes num .zip quando chegar o envio de arquivos do Financeiro (F3.22)"
+  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 5): contador e saldo de abertura em Escritório › Ajustes do financeiro, envio da exportação por e-mail e .zip por link de 30 dias (migrations 0556-0558)"
 }

@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 710,
-  "proximo": "Desenhar onde a troca do responsável aparece na ficha do repasse; a rota PUT /v1/escritorio/financeiro/repasses/:id/responsavel já existe"
+  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 2): programar a folha Quem cuida deste repasse com a troca, só para quem tem Financeiro, motivo opcional e aviso (migration 0551)"
 }

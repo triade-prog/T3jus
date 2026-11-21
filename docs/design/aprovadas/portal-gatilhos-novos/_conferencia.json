@@ -1,0 +1,198 @@
+[
+ {
+  "nome": "gn-escolher",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-escolher",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-cliente-gatilho",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-cliente-gatilho",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-cliente-sugestao",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-cliente-sugestao",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-cliente-testar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-cliente-testar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-cliente-ligar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-cliente-ligar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-doc-gatilho",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-doc-gatilho",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-doc-mensagem",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-doc-mensagem",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-doc-testar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-doc-testar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-doc-ligar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-doc-ligar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "gn-juridico",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": [
+   "marca-palavra 204x24 \"T3jus\""
+  ]
+ },
+ {
+  "nome": "gn-juridico",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ }
+]
