@@ -1,0 +1,11 @@
+{
+  "id": "F3.80",
+  "texto": "Avisos do carnê no sino: carnê desatualizado (para quem gerou e o responsável do contrato) e \"Pedir a chave Pix\" de quem não é dono para a sócia dona",
+  "peca": "S4",
+  "refs": [
+    "FI-23"
+  ],
+  "status": "pendente",
+  "ordem": 800,
+  "proximo": "Hoje o aviso de desatualizado aparece na folha \"Carnê\" da ficha e quem não é dono vê o nome da sócia dona para pedir a chave"
+}

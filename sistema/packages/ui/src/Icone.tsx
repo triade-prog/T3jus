@@ -349,6 +349,10 @@ const DESENHOS = {
   "sino-mudo": <><path d="M6 16.5V11a6 6 0 0 1 9.2-5.1" /><path d="M18 10.2v6.3l1.5 2H8" /><path d="M10 21h4" /><path d="M4 20 20 4" /></>,
   "sino-volta": <><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z" /><path d="M10 21h4" /><path d="m9.5 11.5 2 2 3.5-3.5" /></>,
   checks: <><path d="m2.5 12.5 4 4 8-9" /><path d="m11.5 16 1 .5 8-9" /></>,
+  // Carnê de pagamento (FI-23, desenho aprovado em 20/11/2026).
+  carne: <><path d="M3.5 5h17v14h-17Z" /><path d="M8.5 5v2M8.5 9.5v2M8.5 14v2M8.5 18.5V19" /><path d="M11.5 9.5h6M11.5 13h6M11.5 16h3.5" /></>,
+  impressora: <><path d="M7 9V3.5h10V9" /><path d="M7 17H4V9h16v8h-3" /><path d="M7 14h10v6.5H7Z" /></>,
+  qr: <><path d="M4 4h6v6H4ZM14 4h6v6h-6ZM4 14h6v6H4Z" /><path d="M14 14h2v2h-2ZM18 18h2v2h-2ZM14 18h2M18 14h2" /></>,
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

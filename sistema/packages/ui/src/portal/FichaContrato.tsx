@@ -16,6 +16,7 @@ import { diaCurto, lerDia } from "./agenda.ts";
 import { Selo } from "./Comercial.tsx";
 import { fraseDoContrato, janelaProgramacao, juntarItens, nomeSituacaoContrato, ROTAS_CONTRATOS, SELO_CONTRATO } from "./contratos.ts";
 import { Toast } from "./FichaCliente.tsx";
+import { FolhaCarne } from "./Carne.tsx";
 import { CondicoesLeitura, SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
@@ -392,6 +393,7 @@ function JanelaEncerrar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: 
 function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba; escritorio: EscritorioPortal; aoNumero: (n: string) => void }) {
   const [f, setF] = useState<FichaContrato | null | "erro" | "nao">(null);
   const [janela, setJanela] = useState<"assinatura" | "encerrar" | null>(null);
+  const [carne, setCarne] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
   const hoje = hojeBrasilia();
 
@@ -455,7 +457,14 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
         <a href={ROTAS_CONTRATOS.recebimentos(f.id)} aria-current={aba === "recebimentos" ? "page" : undefined}>Recebimentos<span className="q">{vivos}</span></a>
         <a href={ROTAS_CONTRATOS.documentos(f.id)} aria-current={aba === "documentos" ? "page" : undefined}>Documentos</a>
       </nav>
-      {aba === "recebimentos" ? <Recebimentos f={f} hoje={hoje} dono={escritorio.socios[0]} />
+      {aba === "recebimentos" ? (
+        <>
+          <Recebimentos f={f} hoje={hoje} dono={escritorio.socios[0]} />
+          {f.situacao !== "ELABORACAO" ? (
+            <FolhaCarne contrato={f.id} area="CONTRATOS" escritorio={escritorio} aberta={carne} aoAbrir={() => setCarne(true)} aoFechar={() => setCarne(false)} />
+          ) : null}
+        </>
+      )
         : aba === "documentos" ? <Documentos />
         : (
           <div className="hn-grade">

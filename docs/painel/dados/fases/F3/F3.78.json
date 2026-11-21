@@ -1,11 +1,11 @@
 {
   "id": "F3.78",
-  "texto": "Carnê de pagamento dos honorários no Portal: gerar o PDF A4 com Pix estático do escritório na ficha do contrato, histórico e aviso de carnê desatualizado, e Escritório › Recebimento (chave Pix)",
+  "texto": "Carnê de pagamento dos honorários no Portal: Escritório › Recebimento (chave Pix, Pix de teste, troca com confirmação), \"Gerar carnê\" e a folha \"Carnê\" na ficha do contrato (Financeiro e Contratos), com histórico e aviso de carnê desatualizado, e o carnê em A4 para imprimir ou salvar em PDF",
   "peca": "S4",
   "refs": [
     "FI-23"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 780,
-  "proximo": "Programar seguindo docs/design/aprovadas/portal-carne/NOTAS.md; o envio fora da janela de 24 horas do WhatsApp depende de um aviso novo aprovado pela Meta"
+  "evidencia": "Migration 0450_portal_carne.sql (escritorio_recebimento, carnes e carne_parcelas, só acréscimo; pgTAP 045 com 32 testes), Pix copia e cola em packages/domain/src/pix.ts (CRC conferido com o exemplo do Banco Central, 14 testes), rotas em api-portal/carne.ts (2 testes Deno), telas em packages/ui/src/portal/Carne.tsx e e2e portal-carne.spec.ts (10 testes, com axe), mais a folha nas e2e de Financeiro e Contratos. O PDF sai pela impressão do navegador (Salvar como PDF), em A4 sem página em branco"
 }

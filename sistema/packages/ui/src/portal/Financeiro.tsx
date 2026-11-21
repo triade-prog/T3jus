@@ -15,6 +15,7 @@ import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { contar, diaBr, diaCurto, lerDia, nomeDoMes } from "./agenda.ts";
+import { BotaoCarne, FolhaCarne } from "./Carne.tsx";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { diasEntre } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
@@ -688,6 +689,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   const pessoas = usePessoas();
   const [registrar, setRegistrar] = useState<ParcelaDoContrato | null>(null);
   const [anotar, setAnotar] = useState(false);
+  const [carne, setCarne] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
   const nome = dados && dados !== "erro" ? dados.cliente.nome : null;
   useEffect(() => {
@@ -734,7 +736,10 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                 <h2 id="t-parc">Parcelas</h2>
                 <p className="sub">Cada parcela guarda o mês a que se refere, mesmo quando é paga depois.</p>
               </div>
-              {verContrato ? <div className="acoes">{verContrato}</div> : null}
+              <div className="acoes">
+                {f.situacao === "ATIVO" && vivas.some((p) => p.situacao !== "PAGA") ? <BotaoCarne aoAbrir={() => setCarne(true)} /> : null}
+                {verContrato}
+              </div>
             </div>
             <dl className="fi-quatro">
               <div><dt>Contratado</dt><dd className="num">{reais(f.totais.contratado)}</dd></div>
@@ -793,7 +798,8 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
             ) : null}
           </section>
         </div>
-        <aside className="fi-col" aria-label="Cobrança">
+        <aside className="fi-col" aria-label="Carnê e cobrança">
+          <FolhaCarne contrato={f.id} area="FINANCEIRO" escritorio={escritorio} aberta={carne} aoAbrir={() => setCarne(true)} aoFechar={() => setCarne(false)} />
           <Cobranca p={emCobranca} hoje={hoje} aoAnotar={() => setAnotar(true)} />
         </aside>
       </div>
