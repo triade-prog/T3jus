@@ -224,7 +224,7 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await page.goto(`${P}/financeiro/repasses`);
     await page.getByRole("button", { name: `Prestação de contas a ${BEN.nome}` }).click();
     const j = page.getByRole("dialog", { name: "Prestação de contas a Benedito" });
-    await expect(j).toContainText("Olá, Benedito. Aqui é o escritório Ribeiro & Matos. O seu RPV foi pago");
+    await expect(j).toContainText("Olá, Benedito. Aqui é do escritório Ribeiro & Matos. O seu RPV foi pago");
     await expect(j.getByRole("table", { name: "A conta da prestação de contas" })).toContainText("Fica para você");
     await expect(j.getByRole("table", { name: "A conta da prestação de contas" })).toContainText("R$ 14.242,59");
     await expect(j).toContainText("(11) 97456-1180");

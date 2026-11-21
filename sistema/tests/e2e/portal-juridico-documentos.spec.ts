@@ -131,7 +131,7 @@ test.describe("Jurídico do Portal, documentos do caso (EX-05, PD-05)", () => {
     await page.goto(`${P}/juridico/casos/${CASO}`);
     await page.getByRole("button", { name: "Pedir de novo: CTPS digital de Carlos" }).click();
     const j = page.getByRole("dialog", { name: "Pedir de novo" });
-    await expect(j).toContainText("Olá, Carlos. Aqui é do escritório Ribeiro & Matos. Para o seu processo contra Mercado Bom Preço andar, ainda precisamos de: CTPS digital de Carlos. Pode enviar por aqui mesmo? Obrigado.");
+    await expect(j).toContainText("Olá, Carlos. Aqui é do escritório Ribeiro & Matos. Para o seu processo contra Mercado Bom Preço andar, ainda precisamos de: CTPS digital de Carlos. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.");
     await expect(j).toContainText("Texto para Carlos · (11) 97108-4426");
     await expect(j.getByRole("link", { name: "Abrir no WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/5511971084426\?text=Ol%C3%A1%2C%20Carlos/);
     await expect(j).toContainText("O WhatsApp do escritório ainda não está ligado ao T3jus.");

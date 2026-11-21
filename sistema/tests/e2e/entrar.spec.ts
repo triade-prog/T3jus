@@ -43,7 +43,7 @@ for (const app of APPS) {
       await page.getByLabel("E-mail").fill("ana@exemplo.invalid");
       await page.getByLabel("Senha", { exact: true }).fill("errada");
       await page.getByRole("button", { name: "Entrar", exact: true }).click();
-      await expect(page.locator(".ac-aviso-erro")).toHaveText("E-mail ou senha não conferem.");
+      await expect(page.locator(".ac-aviso-erro")).toHaveText("O e-mail ou a senha não conferem. Confira e tente de novo.");
     });
 
     test("mostrar a senha e manter conectado vão como a pessoa escolheu", async ({ page }) => {
