@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  analisarLogo, contrasteComPapel, contrasteLegivel, formatoDoLogo, fraseOabSociedade, jeitoPadrao, lerPng, svgInseguro,
+  analisarLogo, contrasteComPapel, contrasteLegivel, formatoDoLogo, fraseOabSociedade, jeitoPadrao, lerPng, pngEmUmaCor, svgInseguro,
 } from "./logo.ts";
 import { linhasTimbrado } from "./proposta_docx.ts";
 
@@ -86,6 +86,14 @@ describe("logo do escritório (F3.81)", () => {
     expect([lido.largura, lido.altura]).toEqual([640, 200]);
     expect(Array.from(lido.rgba.subarray((30 * 640 + 30) * 4, (30 * 640 + 30) * 4 + 4))).toEqual([0x69, 0x27, 0x46, 255]);
     await expect(lerPng(new Uint8Array([1, 2, 3]))).rejects.toThrow();
+  });
+
+  it("F3.92: o logo em uma cor só sai preto, com a mesma transparência", async () => {
+    const px = imagem(640, 200, [{ x: 20, y: 20, l: 600, a: 160, cor: [0x69, 0x27, 0x46] }]);
+    const um = await lerPng(await pngEmUmaCor(await png(640, 200, px)));
+    expect([um.largura, um.altura]).toEqual([640, 200]);
+    expect(Array.from(um.rgba.subarray((30 * 640 + 30) * 4, (30 * 640 + 30) * 4 + 4))).toEqual([0, 0, 0, 255]);
+    expect(um.rgba[3]).toBe(0);
   });
 
   it("pergunta 6: PNG, JPG e SVG; o resto não", () => {

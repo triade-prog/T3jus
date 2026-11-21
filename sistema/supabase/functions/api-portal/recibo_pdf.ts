@@ -9,7 +9,7 @@
 import { PDFDocument, type PDFFont, type PDFImage, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 import {
   dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasTimbrado, localEData, mesDeReferencia,
-  numeroDoRecibo, parcelaDoRecibo, reais, telefoneBr, textoDoRecibo, tituloDoRecibo, totalDoRecibo, type ReciboParaImprimir,
+  numeroDoRecibo, parcelaDoRecibo, pngEmUmaCor, reais, telefoneBr, textoDoRecibo, tituloDoRecibo, totalDoRecibo, type ReciboParaImprimir,
 } from "@t3jus/domain";
 import { A4, AMBAR, limpo, MM, quebrar, SUAVE, TINTA, VINHO } from "./carne_pdf.ts";
 
@@ -209,7 +209,11 @@ export async function logoDoRecibo(deps: { arquivos: { baixar(caminho: string): 
   r: ReciboParaImprimir, cache = new Map<string, Uint8Array | null>()): Promise<Uint8Array | null> {
   const id = r.marca?.tipo === "LOGO" ? r.marca.logoId : null;
   if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return null;
-  if (!cache.has(id)) cache.set(id, await deps.arquivos.baixar(`${escritorio}/logos/${id}.png`));
+  if (!cache.has(id)) {
+    const png = await deps.arquivos.baixar(`${escritorio}/logos/${id}.png`);
+    // Em uma cor só, o desenho sai preto, como na tela.
+    cache.set(id, png && r.marca?.cor === "UMA_COR" ? await pngEmUmaCor(png).catch(() => png) : png);
+  }
   return cache.get(id) ?? null;
 }
 

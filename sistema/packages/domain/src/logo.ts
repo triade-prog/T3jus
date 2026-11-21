@@ -4,6 +4,8 @@
 // chegou, antes de guardar): corta a margem vazia, mede o tamanho e a proporção e acha o
 // contraste com o papel da parte mais clara da borda do desenho, a que encosta no papel.
 
+import { crc32 } from "./zip.ts";
+
 /** Lado maior mínimo, em pixels, depois do corte: menos que isso sai borrado no recibo. */
 export const LOGO_MIN_LADO = 600;
 /** O logo guardado tem até 2400 px no lado maior. */
@@ -281,6 +283,41 @@ export interface MarcaNoDocumento {
   cor?: CorLogo;
   /** "OAB/SP 31.874", o registro da sociedade. */
   oab?: string;
+}
+
+/**
+ * O logo "em uma cor só" (CorLogo UMA_COR) para os documentos feitos no servidor (F3.92, F3.93): o
+ * desenho fica preto, com a mesma transparência, como o filtro da tela (img.lg-uma-cor). Devolve
+ * um PNG RGBA de 8 bits.
+ */
+export async function pngEmUmaCor(bytes: Uint8Array): Promise<Uint8Array> {
+  const { largura, altura, rgba } = await lerPng(bytes);
+  const linhas = new Uint8Array(altura * (largura * 4 + 1));
+  for (let y = 0; y < altura; y++) {
+    const o = y * (largura * 4 + 1);
+    for (let x = 0; x < largura; x++) linhas[o + 1 + x * 4 + 3] = rgba[(y * largura + x) * 4 + 3]!;
+  }
+  const fluxo = new Blob([linhas]).stream().pipeThrough(new CompressionStream("deflate"));
+  const idat = new Uint8Array(await new Response(fluxo).arrayBuffer());
+  const ihdr = new Uint8Array(13);
+  const dv = new DataView(ihdr.buffer);
+  dv.setUint32(0, largura);
+  dv.setUint32(4, altura);
+  ihdr.set([8, 6, 0, 0, 0], 8);
+  const pedaco = (tipo: string, dados: Uint8Array) => {
+    const b = new Uint8Array(12 + dados.length);
+    const v = new DataView(b.buffer);
+    v.setUint32(0, dados.length);
+    b.set(new TextEncoder().encode(tipo), 4);
+    b.set(dados, 8);
+    v.setUint32(8 + dados.length, crc32(b.subarray(4, 8 + dados.length)));
+    return b;
+  };
+  const partes = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), pedaco("IHDR", ihdr), pedaco("IDAT", idat), pedaco("IEND", new Uint8Array())];
+  const out = new Uint8Array(partes.reduce((s, x) => s + x.length, 0));
+  let i = 0;
+  for (const x of partes) { out.set(x, i); i += x.length; }
+  return out;
 }
 
 /** Endereço do PNG do logo (só para o escritório da sessão). */
