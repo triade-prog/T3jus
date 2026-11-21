@@ -5,7 +5,7 @@
 -- fora; desfazer em 7 dias, só para quem importou ou a sócia dona, sem mexer no que foi mexido;
 -- quem pode importar contratos; a prévia de 24 horas; isolamento (PT-01, PT-03, PT-04, PT-11).
 begin;
-select plan(53);
+select plan(56);
 
 select ajustar_relogio(('2026-11-20 12:00-03'::timestamptz - now()));
 
@@ -160,6 +160,14 @@ select is((select portal_importacao_origem(diego, rm, l.cliente_id) ->> 'arquivo
   'clientes-e-contratos-2026.xlsx', 'decisão 29: a ficha do cliente diz que veio da planilha');
 select is((select portal_importacao_origem(diego, rm, l.contrato_id) ->> 'id' from ids, v, importacao_linhas l where l.importacao_id = v.id and l.numero = 2),
   (select id::text from v), 'decisão 29: a ficha do contrato também');
+-- F3.73: a ficha do contrato diz quais foram pagas antes e de que linha da planilha veio.
+create temp table fc as select portal_contrato(diego, rm, l.contrato_id) f from ids, v, importacao_linhas l where l.importacao_id = v.id and l.numero = 2;
+select is((select jsonb_agg(r ->> 'vencimento' order by r ->> 'vencimento') from fc, jsonb_array_elements(f -> 'recebimentos') r where (r ->> 'pagoAntes')::boolean),
+  '["2026-09-10", "2026-10-10"]'::jsonb, 'F3.73: as parcelas pagas antes vêm marcadas na ficha do contrato');
+select is((select (f -> 'importacao') - 'id' - 'em' - 'por' from fc),
+  '{"arquivo": "clientes-e-contratos-2026.xlsx", "linha": 2, "desfazerAte": null, "desfeita": false}'::jsonb || jsonb_build_object('desfazerAte', (select i.desfazer_ate from importacoes i, v where i.id = v.id)),
+  'F3.73: de que planilha e linha veio, e até quando dá para desfazer');
+select is((select f -> 'importacao' -> 'por' ->> 'nome' from fc), 'Marina Ribeiro', 'F3.73: quem importou');
 
 -- Desfazer.
 select is((teste.erro($$ select portal_importacao_desfazer(diego, rm, v.id, 'importei errado') from ids, v $$)) -> 'detalhe' ->> 'motivo', 'SEM_PERMISSAO',

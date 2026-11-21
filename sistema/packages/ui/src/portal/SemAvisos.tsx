@@ -19,6 +19,29 @@ import { primeiroNome } from "./equipe.ts";
 import { chamarPortal } from "./Moldura.tsx";
 
 export type FeitoSemAvisos = { titulo: string; texto: string };
+
+/** O que as janelas precisam do cliente: a ficha inteira serve, e a conversa monta o mesmo. */
+export interface ClienteDoPedido {
+  id: string;
+  nome: string;
+  tipo: "PF" | "PJ";
+  contatos: { id: string; nome: string; papel: string | null; principal: boolean }[];
+}
+
+/**
+ * Quando a janela abre dentro da conversa (F3.65): o pedido fica ligado à conversa e à mensagem
+ * do cliente que o originou; "Pelo WhatsApp, nesta conversa" e quem escreve vêm marcados.
+ */
+export interface PedidoNaConversa {
+  conversaId: string;
+  /** O contato que escreve, na ficha; nulo quando é o próprio cliente ou não se sabe. */
+  contatoId: string | null;
+  /** Quem escreve é o próprio cliente (titular). */
+  titular: boolean;
+  /** O nome dito na conversa, quando o contato não está na ficha. */
+  quemEscreve: string | null;
+  mensagem: { id: string; texto: string; em: string; de: string } | null;
+}
 type Tipo = PedidoSemAvisos["tipo"];
 
 const AUTOS = "Cobrança de parcela, lembrete de audiência, aviso de etapa e prestação de contas";
@@ -232,12 +255,12 @@ export function FolhaSemAvisos({ f, dados, eu, podeEscrever, aoFeito }: {
 
 // ------------------------------------------------------------------ janelas
 
-type Opcao = { v: string; t: string; sub?: string };
+type Opcao = { v: string; t: string; sub?: string; agora?: boolean };
 
 /** Quem pode ter pedido: na PF, o próprio cliente; os contatos da ficha; e outra pessoa. */
-function opcoesQuem(f: FichaCliente): Opcao[] {
+function opcoesQuem(f: ClienteDoPedido, agora?: PedidoNaConversa): Opcao[] {
   const mesmo = (n: string) => n.trim().toLowerCase() === f.nome.trim().toLowerCase();
-  return [
+  const ops: Opcao[] = [
     ...(f.tipo === "PF" ? [{ v: CLIENTE, t: f.nome, sub: "Titular, o próprio cliente" }] : []),
     ...f.contatos.filter((c) => !(f.tipo === "PF" && mesmo(c.nome))).map((c) => ({
       v: c.id, t: c.nome,
@@ -245,6 +268,19 @@ function opcoesQuem(f: FichaCliente): Opcao[] {
     })),
     { v: OUTRA, t: "Outra pessoa", sub: "Escreva o nome" },
   ];
+  if (agora) {
+    const v = quemEscreveNaConversa(f, agora, ops);
+    for (const o of ops) if (o.v === v) o.agora = true;
+  }
+  return ops;
+}
+
+/** Quem está escrevendo na conversa, entre as opções de "quem pediu". */
+function quemEscreveNaConversa(f: ClienteDoPedido, agora: PedidoNaConversa, ops: Opcao[]): string {
+  if (agora.contatoId && ops.some((o) => o.v === agora.contatoId)) return agora.contatoId;
+  const contato = f.contatos.find((c) => c.id === agora.contatoId);
+  if ((agora.titular || contato) && ops.some((o) => o.v === CLIENTE)) return CLIENTE;
+  return OUTRA;
 }
 
 function Radios({ nome, legenda, itens, valor, aoEscolher, cls = "", erro }: {
@@ -260,6 +296,7 @@ function Radios({ nome, legenda, itens, valor, aoEscolher, cls = "", erro }: {
             <span>
               {i.t}
               {i.sub ? <small>{i.sub}</small> : null}
+              {i.agora ? <span className="ca-agora"><Icone nome="conversas" className="ico" />Escrevendo nesta conversa</span> : null}
             </span>
           </label>
         ))}
@@ -270,6 +307,12 @@ function Radios({ nome, legenda, itens, valor, aoEscolher, cls = "", erro }: {
 }
 
 const COMO: Opcao[] = CANAIS_SEM_AVISOS.map((c) => ({ v: c.canal, t: c.nome, sub: c.canal === "WHATSAPP" ? "Na conversa" : undefined }));
+const COMO_NA_CONVERSA: Opcao[] = COMO.map((o) => (o.v === "WHATSAPP" ? { ...o, sub: "Nesta conversa" } : o));
+
+/** O que vai junto ao servidor quando o pedido é feito na conversa. */
+function daConversa(agora: PedidoNaConversa | undefined) {
+  return agora ? { conversaId: agora.conversaId, ...(agora.mensagem ? { mensagemId: agora.mensagem.id } : {}) } : {};
+}
 
 function quemDoValor(v: string, outra: string) {
   if (v === CLIENTE) return { quem: "CLIENTE" as const };
@@ -288,19 +331,22 @@ function errosDoServidor(e: ErroApi, hoje: string): Record<string, string> | nul
   return Object.keys(r).length ? r : null;
 }
 
-function JanelaPedido({ aberta, f, atual, aoFechar, aoFeito }: {
-  aberta: boolean; f: FichaCliente; atual: PedidoSemAvisos | null; aoFechar: () => void; aoFeito: (x: FeitoSemAvisos) => void;
+export function JanelaPedido({ aberta, f, atual, aoFechar, aoFeito, agora }: {
+  aberta: boolean; f: ClienteDoPedido; atual: PedidoSemAvisos | null; aoFechar: () => void; aoFeito: (x: FeitoSemAvisos) => void;
+  /** Aberta na conversa (F3.65). */
+  agora?: PedidoNaConversa;
 }) {
   const ids = useId();
   const corpo = useRef<HTMLDivElement>(null);
   const hoje = hojeBrasilia();
-  const ops = opcoesQuem(f);
+  const ops = opcoesQuem(f, agora);
   const principal = f.contatos.find((c) => c.principal)?.id;
+  const escreve = agora ? quemEscreveNaConversa(f, agora, ops) : null;
   const [v, setV] = useState({
     tipo: (atual ? (atual.tipo === "COBRANCA" ? "TODOS" : "COBRANCA") : "COBRANCA") as Tipo,
-    quem: atual?.quem === "CLIENTE" ? CLIENTE : atual?.contatoId ?? (ops.some((o) => o.v === principal) ? principal! : ops[0]!.v),
-    outra: atual?.quem === "OUTRA" ? atual.quemPediu ?? "" : "",
-    como: (atual?.canal ?? "WHATSAPP") as string,
+    quem: escreve ?? (atual?.quem === "CLIENTE" ? CLIENTE : atual?.contatoId ?? (ops.some((o) => o.v === principal) ? principal! : ops[0]!.v)),
+    outra: escreve === OUTRA ? (agora?.quemEscreve ?? "") : atual?.quem === "OUTRA" ? atual.quemPediu ?? "" : "",
+    como: (agora ? "WHATSAPP" : atual?.canal ?? "WHATSAPP") as string,
     data: dataBr(hoje),
   });
   const [erros, setErros] = useState<Record<string, string>>({});
@@ -320,7 +366,7 @@ function JanelaPedido({ aberta, f, atual, aoFechar, aoFeito }: {
     if (Object.keys(e).length) { focarPrimeiroErro(corpo.current); return; }
     setEnviando(true);
     const r = await chamarPortal(`/v1/escritorio/clientes/${f.id}/sem-avisos`, {
-      corpo: { tipo: v.tipo, origem: "FICHA", canal: v.como, pedidoEm: dia, ...quemDoValor(v.quem, v.outra) },
+      corpo: { tipo: v.tipo, origem: agora ? "CONVERSA" : "FICHA", canal: v.como, pedidoEm: dia, ...quemDoValor(v.quem, v.outra), ...daConversa(agora) },
     });
     setEnviando(false);
     if (!r.ok) {
@@ -364,24 +410,29 @@ function JanelaPedido({ aberta, f, atual, aoFechar, aoFeito }: {
         <p id={`${ids}-d`}>
           {atual
             ? "Use quando o cliente ou um contato pedir outra coisa: por exemplo, parar também os lembretes."
-            : "Registre o pedido feito pelo cliente ou por um contato. Vale para todas as automações do escritório, a partir de agora."}
+            : agora?.mensagem
+              ? `Registre o pedido que ${primeiroNome(agora.mensagem.de)} fez nesta conversa. Vale para todas as automações do escritório, a partir de agora.`
+              : "Registre o pedido feito pelo cliente ou por um contato. Vale para todas as automações do escritório, a partir de agora."}
         </p>
         {n ? <Aviso tom="urgencia" titulo={faltaAcertar(n)}>O pedido ainda não foi registrado.</Aviso> : null}
-        {erro ? <Aviso tom="urgencia" titulo="O pedido não foi registrado.">{textoDoErro(erro)}</Aviso> : null}
+        {erro ? <Aviso tom="urgencia" titulo="O pedido não foi registrado.">{textoDoErro(erro)} Nada foi salvo e o que você escolheu continua aqui.</Aviso> : null}
+        {agora?.mensagem && !atual ? <CitaMensagem m={agora.mensagem} /> : null}
         <Radios nome={`${ids}-tipo`} legenda="O que não quer receber" cls="sa-tipo" valor={v.tipo} aoEscolher={(x) => mudar("tipo", x)} itens={[
           { v: "COBRANCA", t: "Só os avisos de cobrança", sub: "Parcela a vencer e parcela atrasada. Lembretes de audiência e avisos de etapa continuam." },
           { v: "TODOS", t: "Todos os avisos automáticos", sub: "Cobrança, lembrete de audiência, aviso de etapa e prestação de contas. Nada sai sozinho." },
         ]} />
         <Radios nome={`${ids}-quem`} legenda="Quem pediu" valor={v.quem} aoEscolher={(x) => mudar("quem", x)} itens={ops} erro={erros.quem} />
         {v.quem === OUTRA ? campoTexto("outra", "Nome de quem pediu e o que é do cliente", "Ex.: Marta Corrêa, esposa.") : null}
-        <Radios nome={`${ids}-como`} legenda="Como pediu" cls="sa-como" valor={v.como} aoEscolher={(x) => mudar("como", x)} itens={COMO} erro={erros.como} />
+        <Radios nome={`${ids}-como`} legenda="Como pediu" cls="sa-como" valor={v.como} aoEscolher={(x) => mudar("como", x)} itens={agora ? COMO_NA_CONVERSA : COMO} erro={erros.como} />
         {campoTexto("data", "Quando pediu", "dd/mm/aaaa. Se o pedido chegou antes e só agora está sendo registrado, ponha o dia em que chegou.", { numerico: true })}
         <p className="pt-comuns">
           <Icone nome="historico" className="ico" />
           <span>
             {atual
               ? `O pedido atual (${atual.tipo === "COBRANCA" ? "só cobrança" : "todos os avisos"}, desde ${diaDe(atual.pedidoEm).slice(0, 5)}) fica no histórico, e o novo passa a valer agora. Fica registrado com seu nome e a hora.`
-              : "Fica registrado com seu nome e a hora. Mensagens escritas pela equipe na conversa continuam saindo. Para voltar a receber, use “Retirar o pedido” na ficha: nada é apagado."}
+              : agora
+                ? `Fica registrado com seu nome e a hora, como feito na conversa, e aparece também na ficha de ${f.tipo === "PF" ? primeiroNome(f.nome) : f.nome}. O que a equipe escreve nesta conversa continua saindo. Para mudar ou retirar depois, use este mesmo lugar ou a ficha: nada é apagado.`
+                : "Fica registrado com seu nome e a hora. Mensagens escritas pela equipe na conversa continuam saindo. Para voltar a receber, use “Retirar o pedido” na ficha: nada é apagado."}
           </span>
         </p>
       </div>
@@ -389,15 +440,17 @@ function JanelaPedido({ aberta, f, atual, aoFechar, aoFeito }: {
   );
 }
 
-function JanelaRetirar({ aberta, f, atual, aoFechar, aoFeito }: {
-  aberta: boolean; f: FichaCliente; atual: PedidoSemAvisos; aoFechar: () => void; aoFeito: (x: FeitoSemAvisos) => void;
+export function JanelaRetirar({ aberta, f, atual, aoFechar, aoFeito, agora }: {
+  aberta: boolean; f: ClienteDoPedido; atual: PedidoSemAvisos; aoFechar: () => void; aoFeito: (x: FeitoSemAvisos) => void;
+  agora?: PedidoNaConversa;
 }) {
   const ids = useId();
   const corpo = useRef<HTMLDivElement>(null);
-  const ops = opcoesQuem(f);
+  const ops = opcoesQuem(f, agora);
+  const escreve = agora ? quemEscreveNaConversa(f, agora, ops) : null;
   const [v, setV] = useState({
-    quem: atual.quem === "CLIENTE" ? CLIENTE : atual.contatoId ?? (ops.find((o) => o.v !== OUTRA)?.v ?? OUTRA),
-    outra: "", como: "TELEFONE",
+    quem: escreve ?? (atual.quem === "CLIENTE" ? CLIENTE : atual.contatoId ?? (ops.find((o) => o.v !== OUTRA)?.v ?? OUTRA)),
+    outra: escreve === OUTRA ? (agora?.quemEscreve ?? "") : "", como: agora ? "WHATSAPP" : "TELEFONE",
   });
   const [erros, setErros] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -412,7 +465,7 @@ function JanelaRetirar({ aberta, f, atual, aoFechar, aoFeito }: {
     setErros(e);
     if (Object.keys(e).length) { focarPrimeiroErro(corpo.current); return; }
     setEnviando(true);
-    const r = await chamarPortal(`/v1/escritorio/clientes/${f.id}/sem-avisos`, { corpo: { retirar: true, canal: v.como, ...quemDoValor(v.quem, v.outra) } });
+    const r = await chamarPortal(`/v1/escritorio/clientes/${f.id}/sem-avisos`, { corpo: { retirar: true, canal: v.como, ...quemDoValor(v.quem, v.outra), ...(agora ? { conversaId: agora.conversaId } : {}) } });
     setEnviando(false);
     if (!r.ok) {
       const c = errosDoServidor(r.erro, hojeBrasilia());
@@ -448,7 +501,7 @@ function JanelaRetirar({ aberta, f, atual, aoFechar, aoFeito }: {
             {erros.outra ? <ErroCampo id={`${outraId}-er`}>{erros.outra}</ErroCampo> : <p className="ajuda" id={`${outraId}-aj`}>Ex.: Marta Corrêa, esposa.</p>}
           </div>
         ) : null}
-        <Radios nome={`${ids}-como`} legenda="Como pediu" cls="sa-como" valor={v.como} aoEscolher={(x) => setV((o) => ({ ...o, como: x }))} itens={COMO} erro={erros.como} />
+        <Radios nome={`${ids}-como`} legenda="Como pediu" cls="sa-como" valor={v.como} aoEscolher={(x) => setV((o) => ({ ...o, como: x }))} itens={agora ? COMO_NA_CONVERSA : COMO} erro={erros.como} />
         <p className="pt-comuns">
           <Icone nome="historico" className="ico" />
           <span>
@@ -458,5 +511,16 @@ function JanelaRetirar({ aberta, f, atual, aoFechar, aoFeito }: {
         </p>
       </div>
     </Janela>
+  );
+}
+
+/** A fala do cliente que originou o pedido, no alto da janela (F3.65). */
+function CitaMensagem({ m }: { m: NonNullable<PedidoNaConversa["mensagem"]> }) {
+  const quando = ehHoje(m.em) ? `hoje às ${hora(m.em)}` : `em ${diaDe(m.em).slice(0, 5)} às ${hora(m.em)}`;
+  return (
+    <p className="ca-cita">
+      <q>{m.texto}</q>
+      <small><b>{m.de}</b>, nesta conversa, {quando}. A mensagem fica ligada ao registro.</small>
+    </p>
   );
 }
