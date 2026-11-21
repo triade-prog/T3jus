@@ -5,7 +5,8 @@
   "refs": [
     "PT-10"
   ],
-  "status": "pendente",
+  "status": "feito",
   "nota": "Os componentes base vêm do TRÍADE Condo (packages/ui) e seguem a identidade da DC10 (docs/IDENTIDADE.md). As fontes serão servidas pelo próprio app.",
-  "ordem": 20
+  "ordem": 20,
+  "evidencia": "packages/ui/src/tema.css (tokens do Gabinete no claro e no escuro, contrastes de docs/IDENTIDADE.md) e console/pecas.tsx (campos, botões, selos, avisos, janela, vazio, erro e carregando). Conferido em 21/11/2026: os 688 testes ponta a ponta, com axe WCAG 2.2 AA em cada tela, passaram também com o celular e o computador no modo escuro"
 }

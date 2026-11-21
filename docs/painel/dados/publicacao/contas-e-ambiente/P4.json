@@ -1,0 +1,9 @@
+{
+  "id": "P4",
+  "texto": "Criar no Supabase os buckets privados documentos-console e documentos-portal, como no config.toml (sem eles, anexos, petições, pasta do contador e PDF do carnê não funcionam)",
+  "refs": [
+    "PT-07"
+  ],
+  "status": "pendente",
+  "ordem": 40
+}

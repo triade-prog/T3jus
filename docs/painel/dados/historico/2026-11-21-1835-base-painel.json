@@ -1,0 +1,19 @@
+{
+  "data": "21/11/2026",
+  "inicio": "18:35",
+  "fim": "19:05",
+  "texto": "Registrar no painel a base que já existe (servidores no Brasil, arquivos privados, fila de mensagens e padrão de telas) e conferir o design system no modo escuro.",
+  "refs": [
+    "F0.18",
+    "F0.19",
+    "F0.20",
+    "F0.21",
+    "F0.22",
+    "D2",
+    "PT-04",
+    "PT-07",
+    "PT-16",
+    "PT-25",
+    "PT-10"
+  ]
+}

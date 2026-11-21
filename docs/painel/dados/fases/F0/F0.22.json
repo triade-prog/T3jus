@@ -1,0 +1,11 @@
+{
+  "id": "F0.22",
+  "texto": "Padrão único de telas: moldura com trilha, lista, ficha e janela de editar já preenchida, com os mesmos avisos, estados vazio, erro e carregando em todas as áreas",
+  "peca": "B5",
+  "refs": [
+    "PT-25"
+  ],
+  "status": "feito",
+  "evidencia": "packages/ui (console/pecas.tsx: Janela, Aviso, Estado, Carregando, ErroAoCarregar, ErroCampo; Moldura do Portal e do Console com trilha), usado em todas as telas aprovadas em docs/design/aprovadas; e2e com axe em todas as telas",
+  "ordem": 220
+}

@@ -1,0 +1,11 @@
+{
+  "id": "F0.19",
+  "texto": "Arquivos privados: buckets sem acesso público, tipo e tamanho conferidos, links de uso curto e caminho montado pelo servidor, nunca pelo nome do arquivo",
+  "peca": "B1",
+  "refs": [
+    "PT-07"
+  ],
+  "status": "feito",
+  "evidencia": "supabase/config.toml (documentos-console e documentos-portal com public = false, tamanho e tipos permitidos); _shared/arquivos.ts (só a função assina envio e leitura, leitura vale 60 segundos); caminhos {escritório}/{id} nas migrations 0120, 0270, 0520, 0620, 0621 e 0625; teste Deno arquivos_test e pgTAP dos anexos",
+  "ordem": 190
+}
