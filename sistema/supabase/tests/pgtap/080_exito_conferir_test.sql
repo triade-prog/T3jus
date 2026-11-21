@@ -3,7 +3,7 @@
 -- valor com motivo e aviso no sino, não cobrar com explicação, o fechamento do caso esperando a
 -- conferência, o reembolso na parcela e registrado junto só quando pedido. Área e isolamento.
 begin;
-select plan(39);
+select plan(45);
 
 select ajustar_relogio(('2026-11-18 14:50-03'::timestamptz - now()));
 
@@ -133,20 +133,36 @@ select is((teste.erro($$ select portal_financeiro_receber_registrar_recibo(diego
   '{"valor": 240000, "recebidoEm": "2026-11-28", "forma": "CHEQUE_PRE", "reembolso": {"valor": 200000, "forma": "PIX"}}') from ids, p1 $$)) -> 'detalhe' ->> 'motivo',
   'REEMBOLSO_ACIMA_DO_ADIANTADO', 'o reembolso não passa do adiantado');
 select is((select count(*) from pagamentos_recebidos), 0::bigint, 'e nada foi registrado');
-select portal_financeiro_receber_registrar_recibo(diego, rm, p1.id, '{"valor": 240000, "recebidoEm": "2026-11-28", "forma": "CHEQUE_PRE"}') from ids, p1;
+select portal_financeiro_receber_registrar_recibo(diego, rm, p1.id, '{"valor": 240000, "recebidoEm": "2026-11-28", "forma": "CHEQUE_PRE", "recibo": true}') from ids, p1;
 select is((select reembolsado_em from contas_pagar c, cp where c.id = cp.custas), null, 'sem a caixa marcada, o reembolso continua a reembolsar');
 create temp table p2 as select r.id from recebimentos_previstos r, ct where r.contrato_id = ct.carlos and r.vencimento = '2026-12-28';
 select is((select parcela_linha(r) -> 'reembolso' ->> 'valor' from recebimentos_previstos r, p2 where r.id = p2.id), '124836',
   'e passa para a parcela seguinte');
 select ajustar_relogio(('2026-12-28 10:00-03'::timestamptz - now()));
 select is((portal_financeiro_receber_registrar_recibo(diego, rm, p2.id,
-  '{"valor": 240000, "recebidoEm": "2026-12-28", "forma": "CHEQUE_PRE", "reembolso": {"valor": 124836, "forma": "PIX"}}') -> 'reembolso' ->> 'valor'),
+  '{"valor": 240000, "recebidoEm": "2026-12-28", "forma": "CHEQUE_PRE", "recibo": true, "reembolso": {"valor": 124836, "forma": "PIX"}}') -> 'reembolso' ->> 'valor'),
   '124836', 'com a caixa marcada, os dois são registrados') from ids, p2;
 select is((select reembolsado_em from contas_pagar c, cp where c.id = cp.custas), '2026-12-28'::date, 'o reembolso sai de "A reembolsar"');
 select is((select (valor, forma)::text from reembolsos_recebidos), '(124836,PIX)', 'com o valor e a forma do reembolso');
 select is((teste.erro($$ select portal_financeiro_receber_registrar_recibo(diego, rm, r.id,
   '{"valor": 240000, "recebidoEm": "2026-12-28", "forma": "PIX", "reembolso": {"valor": 124836, "forma": "PIX"}}') from ids, ct, recebimentos_previstos r
    where r.contrato_id = ct.carlos and r.vencimento = '2027-01-28' $$)) -> 'detalhe' ->> 'motivo', 'REEMBOLSO_JA_PAGO', 'e não se paga duas vezes');
+
+-- F3.95: o reembolso pago junto entra no caixa, no recibo (segunda linha) e na exportação.
+create temp table pg2 as select p.id from pagamentos_recebidos p, p2 where p.parcela_id = p2.id;
+select is(caixa_entradas(rm, '2026-12-28', '2026-12-28'), 364836::bigint, 'FI-07: o caixa do dia soma a parcela e o reembolso') from ids;
+select is((portal_recibo(diego, rm, pg2.id) -> 'reembolsos' -> 0) - 'adiantadoEm',
+  '{"descricao": "Custas da apelação", "valor": 124836, "forma": "PIX", "caso": "Pereira x Mercado Bom Preço"}'::jsonb,
+  'FI-07: o recibo da parcela traz o reembolso como segunda linha') from ids, pg2;
+select is((select portal_recibo(diego, rm, p.id) -> 'reembolsos' from pagamentos_recebidos p, p1, ids where p.parcela_id = p1.id), '[]'::jsonb,
+  'e o recibo sem reembolso fica como era');
+select is((portal_financeiro_exportacao_previa(diego, rm, '2026-12-01') -> 'recebimentos'), '{"n": 2, "valor": 364836}'::jsonb,
+  'a prévia da exportação conta o reembolso nos recebimentos') from ids;
+create temp table exp as select portal_financeiro_exportar(diego, rm, '{"mes": "2026-12-01", "formato": "XLSX"}') v from ids;
+select is((select l ->> 'parcela' from exp, jsonb_array_elements(v -> 'recebimentos') l where l ->> 'tipo' = 'REEMBOLSO'), 'Reembolso · Custas da apelação',
+  'a exportação tem a linha do reembolso');
+select is((select count(distinct l ->> 'recibo') from exp, jsonb_array_elements(v -> 'recebimentos') l where l ->> 'recibo' is not null), 1::bigint,
+  'com o mesmo recibo da parcela');
 
 select * from finish();
 rollback;

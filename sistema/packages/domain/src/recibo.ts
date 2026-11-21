@@ -41,9 +41,24 @@ export function parcelaDoRecibo(r: Pick<ReciboParaImprimir, "parcela">): string 
   return r.parcela.ordem && r.parcela.total && r.parcela.total > 1 ? `parcela ${r.parcela.ordem} de ${r.parcela.total}` : r.parcela.descricao.toLowerCase();
 }
 
-/** O total do recibo: o valor da parcela mais multa e juros, quando houver. */
-export function totalDoRecibo(r: Pick<ReciboParaImprimir, "valor" | "multaJuros">): number {
-  return r.valor + (r.multaJuros ?? 0);
+/** O total do recibo: o valor da parcela mais multa e juros e o reembolso pago junto, quando houver. */
+export function totalDoRecibo(r: Pick<ReciboParaImprimir, "valor" | "multaJuros" | "reembolsos">): number {
+  return r.valor + (r.multaJuros ?? 0) + reembolsoDoRecibo(r);
+}
+
+/** O reembolso de despesa adiantada pago junto com a parcela (F3.95), somado. */
+export function reembolsoDoRecibo(r: Pick<ReciboParaImprimir, "reembolsos">): number {
+  return (r.reembolsos ?? []).reduce((s, x) => s + x.valor, 0);
+}
+
+/** "Reembolso · custas da apelação": a segunda linha da discriminação. */
+export function linhaDoReembolso(x: { descricao: string }): string {
+  return `Reembolso · ${x.descricao.charAt(0).toLowerCase()}${x.descricao.slice(1)}`;
+}
+
+/** "Despesa adiantada pelo escritório em 21/11/2026 no caso Pereira x Mercado" */
+export function detalheDoReembolso(x: { adiantadoEm: string | null; caso: string | null }): string {
+  return `Despesa adiantada pelo escritório${x.adiantadoEm ? ` em ${br(x.adiantadoEm)}` : ""}${x.caso ? ` no caso ${x.caso}` : ""}`;
 }
 
 export interface PedacoRecibo { texto: string; forte?: boolean; extenso?: boolean }
@@ -61,8 +76,21 @@ export function textoDoRecibo(r: ReciboParaImprimir): PedacoRecibo[] {
     { texto: `${parcelaDoRecibo(r)}`, forte: true }, { texto: " dos honorários advocatícios do contrato " },
     { texto: r.contrato.numero, forte: true }, { texto: ` (${r.contrato.objeto.toLowerCase()}), mês de referência ` },
     { texto: mesDeReferencia(r.parcela.vencimento), forte: true },
-    { texto: `${r.multaJuros ? ", já com multa e juros pelo atraso" : ""}, paga por ` },
-    { texto: FORMAS_PAGAMENTO[r.forma] ?? r.forma, forte: true }, { texto: " em " }, { texto: br(r.pagoEm), forte: true },
+    { texto: `${r.multaJuros ? ", já com multa e juros pelo atraso" : ""}` });
+  const rb = r.reembolsos ?? [];
+  if (rb.length) {
+    const descr = rb.map((x) => x.descricao.toLowerCase()).join(", ");
+    out.push({ texto: ", e ao reembolso de " }, { texto: reais(reembolsoDoRecibo(r)), forte: true },
+      { texto: ` de despesa adiantada pelo escritório (${descr})` });
+  }
+  const formas = [...new Set([r.forma, ...rb.map((x) => x.forma)])];
+  if (formas.length === 1) {
+    out.push({ texto: rb.length ? ", pagos por " : ", paga por " }, { texto: FORMAS_PAGAMENTO[r.forma] ?? r.forma, forte: true });
+  } else {
+    out.push({ texto: ", pagos por " }, { texto: FORMAS_PAGAMENTO[r.forma] ?? r.forma, forte: true }, { texto: " (honorários) e " },
+      { texto: formas.slice(1).map((f) => FORMAS_PAGAMENTO[f] ?? f).join(", "), forte: true }, { texto: " (reembolso)" });
+  }
+  out.push({ texto: " em " }, { texto: br(r.pagoEm), forte: true },
     { texto: ". Por ser verdade, damos quitação do valor acima." });
   return out;
 }

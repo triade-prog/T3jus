@@ -228,7 +228,11 @@ export interface ReciboParaImprimir {
   registradoPor: { nome: string; oab: string | null };
   registradoEm: string;
   pagamentoId: string;
+  /** O reembolso de despesa adiantada pago junto com a parcela (F3.95): a segunda linha do recibo. */
+  reembolsos?: ReembolsoNoRecibo[];
 }
+
+export interface ReembolsoNoRecibo { descricao: string; valor: number; forma: FormaPagamento; adiantadoEm: string | null; caso: string | null }
 
 export interface RecebimentoRegistrado {
   id: string; paga: boolean; falta: number; recibo: { ano: number; numero: number } | null;

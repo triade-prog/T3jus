@@ -207,6 +207,60 @@ test.describe("Êxito para conferir e reembolso junto (F3.14, F3.85)", () => {
     expect(corpo.reembolso).toEqual({ valor: 124836, forma: "TRANSFERENCIA" });
   });
 
+  test("F3.95: o valor que cobre a parcela e o reembolso só sugere marcar", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": { corpo: SEM_EXITOS },
+      "GET /v1/escritorio/financeiro/receber": { corpo: lista([COM_REEMB]) },
+      [`POST /v1/escritorio/financeiro/parcelas/${PARC_R}/recebimentos`]: { status: 201, corpo: { id: "p7", paga: true, falta: 0, recibo: { ano: 2026, numero: 190 }, reembolso: { valor: 124836, forma: "PIX" } } },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("row", { name: /Construtora Vale Alto/ }).getByRole("button", { name: /Registrar/ }).click();
+    const j = page.getByRole("dialog", { name: "Registrar recebimento" });
+    const marcar = j.getByRole("checkbox", { name: /O reembolso também foi pago/ });
+    await expect(j.getByText(/O valor cobre a parcela e o reembolso/)).toHaveCount(0);
+    await j.getByLabel("Valor recebido da parcela").fill("3.648,36");
+    await expect(j.getByText("O valor cobre a parcela e o reembolso (R$ 2.400,00 + R$ 1.248,36). Marcar o reembolso como pago?")).toBeVisible();
+    await expect(marcar).not.toBeChecked();
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Marcar o reembolso" }).click();
+    await expect(marcar).toBeChecked();
+    await expect(j.getByLabel("Valor recebido da parcela")).toHaveValue("2.400,00");
+    await expect(j.getByLabel("Valor do reembolso")).toHaveValue("1.248,36");
+    await expect(j.getByText(/O valor cobre a parcela e o reembolso/)).toHaveCount(0);
+    await j.getByRole("button", { name: "Registrar R$ 3.648,36" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." })).toBeVisible();
+    const corpo = pedidos.filter((p) => p.metodo === "POST").at(-1)!.corpo as Record<string, unknown>;
+    expect(corpo.valor).toBe(240000);
+    expect(corpo.reembolso).toEqual({ valor: 124836, forma: "PIX" });
+  });
+
+  test("F3.95: o recibo mostra o reembolso como segunda linha e soma no total", async ({ page }) => {
+    const id = "a9000000-0000-4000-8000-000000000019";
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/recibos/${id}`]: { corpo: {
+        numero: { ano: 2026, numero: 190 },
+        escritorio: { nome: "Ribeiro & Matos", cnpj: "11222333000181", endereco: "Rua Augusta, 1200", cidade: "São Paulo", uf: "SP", contatos: [], whatsapp: null },
+        cliente: { id: "c2", nome: "Construtora Vale Alto Ltda.", tipo: "PJ", documento: "11222333000181" }, pagador: null,
+        contrato: { id: "k2", numero: "C-2026-020", objeto: "Ação de cobrança" },
+        parcela: { id: PARC_R, descricao: "Parcela 2 de 3", vencimento: dia(0), ordem: 2, total: 3 },
+        valor: 240000, multaJuros: null, forma: "CHEQUE_PRE", pagoEm: dia(0),
+        registradoPor: { nome: "Diego Almeida", oab: null }, registradoEm: new Date().toISOString(), pagamentoId: id,
+        reembolsos: [{ descricao: "Custas da apelação", valor: 124836, forma: "PIX", adiantadoEm: dia(-4), caso: "Ação de cobrança" }],
+      } },
+    });
+    await page.goto(`${P}/recibos/${id}`);
+    const folha = page.getByRole("article", { name: "Recibo nº 2026-0190" });
+    const tab = folha.getByRole("table");
+    await expect(tab.getByRole("row").nth(1)).toContainText("Honorários · parcela 2 de 3");
+    await expect(tab.getByRole("row").nth(2)).toContainText("Reembolso · custas da apelação");
+    await expect(tab.getByRole("row").nth(2)).toContainText(`Despesa adiantada pelo escritório em ${br(-4)} no caso Ação de cobrança · Pix`);
+    await expect(tab).toContainText("R$ 3.648,36");
+    await expect(folha).toContainText("e ao reembolso de R$ 1.248,36 de despesa adiantada pelo escritório (custas da apelação), pagos por Cheque pré-datado (honorários) e Pix (reembolso)");
+    await semViolacoes(page);
+  });
+
   test("Celular: o bloco e a janela de conferir cabem na tela", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await simular(page, {

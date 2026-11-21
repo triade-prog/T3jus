@@ -512,6 +512,16 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
             ) : <p className="ajuda" id="rg-data-aj">dd/mm/aaaa</p>}
           </div>
         </div>
+        {p && reemb && !comReemb && (lerCentavos(valor) ?? 0) >= p.falta + reemb.valor ? (
+          // Pergunta 4 do desenho aprovado: o T3jus só sugere; a caixa continua desmarcada até alguém marcar.
+          <div className="fi-sugere" role="status">
+            <p><Icone nome="devolver" className="ico" /><span>O valor cobre a parcela e o reembolso ({reais(p.falta)} + {reais(reemb.valor)}). Marcar o reembolso como pago?</span></p>
+            <button className="btn btn-sec btn-compacto" type="button"
+              onClick={() => { const c = lerCentavos(valor) ?? 0; setComReemb(true); setValor(paraCampo(c - reemb.valor)); setReembValor(paraCampo(reemb.valor)); }}>
+              Marcar o reembolso
+            </button>
+          </div>
+        ) : null}
         {p ? (
           <p className="fi-ref">
             <Icone nome="check" className="ico" />

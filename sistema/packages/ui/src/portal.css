@@ -4793,6 +4793,10 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .fi-reemb-faixa tfoot th,.fi-reemb-faixa tfoot td{font-weight:500;color:var(--vinho);border-top:1px solid var(--vinho-2)}
 .fi-reemb-total{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin:4px 0 0;padding-top:10px;border-top:1px solid var(--vinho-4);font-size:13px}
 .fi-reemb-total b{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho)}
+/* A sugestão do reembolso (F3.95, pergunta 4): só sugere; a caixa continua desmarcada. */
+.fi-sugere{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 14px;border-radius:var(--raio);background:var(--sal-2)}
+.fi-sugere>p{display:flex;gap:10px;align-items:flex-start;margin:0;font-size:14px;line-height:1.5;flex:1 1 260px}
+.fi-sugere>p .ico{color:var(--vinho);flex:none;margin-top:3px}
 @media (max-width:760px){
   .ex-cab{flex-direction:column}
   .ex-origem>div{grid-template-columns:1fr;gap:2px}

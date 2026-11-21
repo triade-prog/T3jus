@@ -1,0 +1,10 @@
+{
+  "data": "21/11/2026",
+  "inicio": "19:09",
+  "fim": "19:19",
+  "texto": "O reembolso pago junto com a parcela entra no Caixa e na exportação para o contador, vira a segunda linha do recibo, e a janela de registrar sugere marcá-lo quando o valor cobre a parcela e o reembolso.",
+  "refs": [
+    "F3.95",
+    "FI-07"
+  ]
+}
