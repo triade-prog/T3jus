@@ -1,0 +1,18 @@
+{
+  "id": "D17",
+  "texto": "Desenho das pendências do Comercial e do Financeiro: motivo de quem não recebeu proposta, funil em três números e uma barra, quem cuida do repasse, prazo e atraso do repasse, RPV e precatório a caminho, contador e saldo de abertura, meta do mês",
+  "peca": "S4",
+  "refs": [
+    "AP-03",
+    "PD-06",
+    "PD-07",
+    "FI-05",
+    "FI-09",
+    "IN-05",
+    "FI-21",
+    "IN-09"
+  ],
+  "status": "feito",
+  "ordem": 67,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-comercial-financeiro-pendencias/ (54 estados, computador e celular, axe sem violação), aprovado pela Carol em 21/11/2026 às 13h01 (Bahia) com as 12 recomendações do NOTAS.md; funil na opção B escolhida por ela às 12h11"
+}

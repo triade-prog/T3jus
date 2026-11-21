@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 480,
-  "proximo": "Desenhar a janela de registrar o RPV ou precatório expedido (valor requisitado, tribunal, data estimada) e levar a parte do escritório, pelo contrato, à previsão do Caixa em âmbar; quando o valor entrar, vira levantamento em Repasses"
+  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 4): programar A caminho em Repasses, registrar, mudar a data, entrou na conta e a previsão do Caixa (migrations 0554, 0555)"
 }

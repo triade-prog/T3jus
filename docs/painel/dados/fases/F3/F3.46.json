@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 460,
-  "proximo": "Campo prazo_repasse_dias_uteis no escritório (hoje fixo em 3 dias úteis) e anotar o motivo do atraso na parte, como na cobrança das parcelas"
+  "proximo": "Desenho aprovado (portal-comercial-financeiro-pendencias, seção 3): prazo em Escritório › Ajustes do financeiro, feriados nacionais e Anotar o atraso com a próxima ação (migrations 0552, 0553)"
 }
