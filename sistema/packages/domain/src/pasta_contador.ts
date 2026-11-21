@@ -62,6 +62,14 @@ export function nomesNaPasta(anexos: readonly AnexoDaPasta[]): string[] {
   });
 }
 
+/**
+ * O recibo dentro do .zip (F3.93): na pasta "Recibos", com o dia do pagamento, o número e o cliente.
+ * "Recibos/2026-11-28 - Recibo 2026-0190 - Construtora Vale Alto Ltda.pdf"
+ */
+export function nomeDoReciboNaPasta(r: { pagoEm: string; numero: { ano: number; numero: number }; cliente: { nome: string } }): string {
+  return `Recibos/${r.pagoEm} - Recibo ${r.numero.ano}-${String(r.numero.numero).padStart(4, "0")} - ${limpar(r.cliente.nome, 90) || "Cliente"}.pdf`;
+}
+
 /** Divide os anexos em partes de até `maximo` bytes, na ordem dada. Um arquivo nunca se divide. */
 export function dividirPasta<T extends { tamanho: number }>(anexos: readonly T[], maximo = PARTE_MAXIMA_PASTA): T[][] {
   const partes: T[][] = [];

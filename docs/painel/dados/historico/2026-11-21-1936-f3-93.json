@@ -1,0 +1,11 @@
+{
+  "data": "21/11/2026",
+  "inicio": "19:36",
+  "fim": "19:34",
+  "texto": "O recibo passa a ser gerado em PDF também no servidor, e o .zip dos comprovantes para o contador ganha a pasta \"Recibos\" com o recibo de cada recebimento do mês.",
+  "refs": [
+    "F3.93",
+    "FI-14",
+    "FI-21"
+  ]
+}

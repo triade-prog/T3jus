@@ -3,7 +3,7 @@
 -- valor com motivo e aviso no sino, não cobrar com explicação, o fechamento do caso esperando a
 -- conferência, o reembolso na parcela e registrado junto só quando pedido. Área e isolamento.
 begin;
-select plan(54);
+select plan(56);
 
 select ajustar_relogio(('2026-11-18 14:50-03'::timestamptz - now()));
 
@@ -163,6 +163,12 @@ select is((select l ->> 'parcela' from exp, jsonb_array_elements(v -> 'recebimen
   'a exportação tem a linha do reembolso');
 select is((select count(distinct l ->> 'recibo') from exp, jsonb_array_elements(v -> 'recebimentos') l where l ->> 'recibo' is not null), 1::bigint,
   'com o mesmo recibo da parcela');
+
+-- F3.93: a pasta do contador recebe os recibos do mês, com o reembolso, para virar PDF no servidor.
+select is((select jsonb_path_query_array(portal_financeiro_pasta_preparar(diego, rm, (exp.v ->> 'id')::uuid) -> 'recibos', '$[*].reembolsos[*].valor') from ids, exp),
+  '[124836]'::jsonb, 'FI-21: o recibo de dezembro vai para a pasta, com o reembolso');
+select is((select jsonb_array_length(portal_financeiro_pasta_preparar(diego, rm, (exp.v ->> 'id')::uuid) -> 'recibos') from ids, exp), 1,
+  'só os recibos do mês da exportação');
 
 -- F3.94: a parte "honorários" da divisão do alvará baixa a parcela do êxito de Joana (R$ 7.000,00).
 create temp table pj as select r.id from recebimentos_previstos r, ex where r.exito_id = ex.joana;

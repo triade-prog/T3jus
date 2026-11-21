@@ -6,7 +6,8 @@
     "FI-21",
     "FI-14"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 930,
-  "proximo": "O desenho aprovado (ct-exportar) põe os recibos no .zip; hoje o PDF do recibo sai da impressão do navegador (F3.19), e o número do recibo já vai na planilha. Falta gerar o PDF do recibo no servidor"
+  "evidencia": "Migration 0652 (recibo_dados; a pasta do mês recebe os recibos dos recebimentos do caixa do escritório, com o reembolso pago junto), api-portal/recibo_pdf.ts (a folha A4 aprovada em PDF com pdf-lib, com o logo do dia quando houver), a pasta \"Recibos\" no .zip (pasta_contador.ts) e a rota GET /v1/escritorio/recibos/:pagamento/pdf; testes Deno app_test.ts (F3.93 e FI-14), pgTAP 080 e Vitest pasta_contador.test.ts.",
+  "nota": "A pasta já montada antes não muda (0621); só as montadas daqui em diante levam os recibos. A página do recibo segue com \"Baixar PDF ou imprimir\" pelo navegador, como no desenho aprovado; o PDF do servidor fica pronto para a tela usar se a Carol quiser."
 }

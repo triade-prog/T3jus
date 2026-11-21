@@ -11,29 +11,29 @@ import { chavePixParaLer, dataBr, reais, telefoneBr, TIPOS_CHAVE_PIX, type Carne
 
 type Impressa = CarneParaImprimir["parcelas"][number];
 
-const MM = 72 / 25.4;
-const A4 = { w: 210 * MM, h: 297 * MM };
+export const MM = 72 / 25.4;
+export const A4 = { w: 210 * MM, h: 297 * MM };
 const MARGEM = 10 * MM;
 const FAIXA = (277 / 3) * MM;
 const CANHOTO = 47 * MM;
-const VINHO = rgb(0x69 / 255, 0x27 / 255, 0x46 / 255);
-const TINTA = rgb(0x2a / 255, 0x1a / 255, 0x22 / 255);
-const SUAVE = rgb(0x5e / 255, 0x4a / 255, 0x54 / 255);
-const AMBAR = rgb(0xdd / 255, 0x97 / 255, 0x60 / 255);
-const CORTE = rgb(0.6, 0.6, 0.6);
+export const VINHO = rgb(0x69 / 255, 0x27 / 255, 0x46 / 255);
+export const TINTA = rgb(0x2a / 255, 0x1a / 255, 0x22 / 255);
+export const SUAVE = rgb(0x5e / 255, 0x4a / 255, 0x54 / 255);
+export const AMBAR = rgb(0xdd / 255, 0x97 / 255, 0x60 / 255);
+export const CORTE = rgb(0.6, 0.6, 0.6);
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 /** A fonte padrão do PDF só tem o alfabeto latino (WinAnsi): o resto sai sem o caractere. */
 const WINANSI = /[^\x20-\x7e\xa0-\xff‘’“”–—•…€]/g;
-const limpo = (s: string) => s.replace(/\s+/g, " ").replace(WINANSI, "");
+export const limpo = (s: string) => s.replace(/\s+/g, " ").replace(WINANSI, "");
 const mesRef = (v: string) => { const m = MESES[Number(v.slice(5, 7)) - 1] ?? ""; return `${m.charAt(0).toUpperCase()}${m.slice(1)} de ${v.slice(0, 4)}`; };
 const diaCurto = (v: string) => `${v.slice(8, 10)}/${v.slice(5, 7)}`;
 const cnpjLegivel = (c: string) => c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 const diaBrasilia = (em: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
 
-interface Fontes { r: PDFFont; b: PDFFont; s: PDFFont; m: PDFFont }
+export interface Fontes { r: PDFFont; b: PDFFont; s: PDFFont; m: PDFFont }
 
-class Pena {
+export class Pena {
   constructor(private p: PDFPage, readonly f: Fontes) {}
   /** Escreve a partir do topo (y é a linha de cima), quebrando em `largura`. Devolve o y de baixo. */
   texto(s: string, x: number, y: number, o: { t?: number; f?: keyof Fontes; cor?: ReturnType<typeof rgb>; largura?: number; linhas?: number; dir?: boolean } = {}): number {
@@ -66,7 +66,7 @@ class Pena {
   }
 }
 
-function quebrar(s: string, f: PDFFont, t: number, largura: number): string[] {
+export function quebrar(s: string, f: PDFFont, t: number, largura: number): string[] {
   const out: string[] = [];
   let atual = "";
   for (const palavra of s.split(" ")) {
