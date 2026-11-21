@@ -65,8 +65,17 @@ const LISTA = {
   casos: [{ id: CASO.id, nome: CASO.nome, parteContraria: "INSS", clientes: [{ id: BEN.id, nome: BEN.nome }] }],
 };
 const VAZIA = { ...LISTA, algum: false, totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0 }, repassadoMes: { valor: 0, clientes: 0 }, repassados: [], levantamentos: [] };
+const ACERTO = {
+  casoId: CASO.id, entrou: 2156656, destinadoPago: 0, faltaPagar: 2156656,
+  parcelas: { total: 6, pagas: 6, ultima: dia(-40), falta: 0 }, prestacoesPendentes: 1,
+  pendencias: [
+    { tipo: "REPASSE", para: "CLIENTE", nome: BEN.nome, valor: 1424259, prazo: dia(1), levantamentoId: id(1) },
+    { tipo: "REPASSE", para: "PERITO", nome: "Dr. Rui Tavares", valor: 85400, prazo: dia(-1), levantamentoId: id(1) },
+  ],
+  falta: 1509659, fechado: null,
+};
 const FICHA = {
-  ...LEV, hoje: dia(0), escritorio: "Ribeiro & Matos",
+  ...LEV, hoje: dia(0), escritorio: "Ribeiro & Matos", acerto: ACERTO,
   historico: [{ acao: "financeiro.levantamento", em: `${dia(-2)}T19:12:00Z`, por: MARINA, dados: { tipo: "RPV", valor: 2156656, seguiuProposta: true } }],
 };
 const PROPOSTA = {
@@ -215,6 +224,42 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(page.getByRole("region", { name: "Histórico" })).toContainText("Marina Ribeiro registrou RPV de R$ 21.566,56");
     await expect(page.getByRole("region", { name: "Histórico" })).toContainText("divisão do contrato aceita sem mudança");
     await semViolacoes(page);
+  });
+
+  test("Encerrar o caso com pendência (F3.45): a janela diz o que falta e leva a registrar o repasse", async ({ page }) => {
+    await simular(page, comuns());
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    const fecha = page.getByRole("region", { name: "Fechamento do caso" });
+    await expect(fecha).toContainText("Parcelas do contrato todas recebidas");
+    await expect(fecha).toContainText(`6 de 6, a última em ${ddmm(-40)}`);
+    await fecha.getByRole("button", { name: "Encerrar o caso no financeiro" }).click();
+    const j = page.getByRole("alertdialog", { name: "Ainda não dá para encerrar" });
+    await expect(j.getByRole("button", { name: "Voltar ao caso" })).toBeFocused();
+    await expect(j).toContainText("Ainda há 2 repasses pendentes neste caso.");
+    await expect(j).toContainText("Faltam R$ 15.096,59.");
+    await expect(j.getByRole("listitem").nth(1)).toContainText("Dr. Rui Tavares: R$ 854,00");
+    await expect(j.getByRole("listitem").nth(1)).toContainText(`perito · combinado para até ${ddmm(-1)}`);
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Registrar repasse a Benedito" }).click();
+    await expect(page.getByRole("dialog", { name: "Registrar repasse" })).toBeVisible();
+  });
+
+  test("Encerrar o caso sem pendência: confirma, vai ao servidor e mostra quem encerrou", async ({ page }) => {
+    const pronto = { ...ACERTO, pendencias: [], falta: 0, faltaPagar: 0, destinadoPago: 2156656 };
+    const fechado = { ...pronto, fechado: { em: `${dia(0)}T13:00:00Z`, por: MARINA } };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: [{ corpo: { ...FICHA, acerto: pronto } }, { corpo: { ...FICHA, acerto: fechado } }],
+      [`POST /v1/escritorio/financeiro/casos/${CASO.id}/encerrar`]: { corpo: fechado },
+    });
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    await page.getByRole("button", { name: "Encerrar o caso no financeiro" }).click();
+    const j = page.getByRole("dialog", { name: "Encerrar o caso no financeiro" });
+    await expect(j).toContainText("Tudo foi recebido e repassado.");
+    await j.getByRole("button", { name: "Encerrar o caso" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Caso encerrado no financeiro." })).toBeVisible();
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/financeiro/casos/${CASO.id}/encerrar`)).toBe(true);
+    await expect(page.getByRole("region", { name: "Fechamento do caso" })).toContainText(`Caso encerrado no financeiro em ${ddmm(0)}, por Marina Ribeiro.`);
   });
 
   test("Sem a área Financeiro, Repasses não abre", async ({ page }) => {
