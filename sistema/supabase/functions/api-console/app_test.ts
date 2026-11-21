@@ -20,6 +20,7 @@ function montar(opcoes: { equipe?: Set<string>; usuarios?: UsuarioFalso[] } = {}
     registrar_acesso: () => 1,
     console_sessao: (a) => ({ pessoaId: a.p_pessoa }),
     console_interessados_atencao: () => 0,
+    console_cobranca_atencao: () => 0,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3 }),
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
@@ -67,7 +68,7 @@ Deno.test("com o autenticador cadastrado e o código certo, o Console abre", asy
   const certo = await m.pedir("/v1/auth/autenticador/verificar", { corpo: { codigo: CODIGO_CERTO, factorId }, cookie: aal1 });
   assertEquals(certo.status, 200);
   const r = await m.pedir("/v1/sessao", { cookie: cookieDe(certo) });
-  assertEquals(await r.json(), { pessoaId: CAROLINA, interessadosAtencao: 0 });
+  assertEquals(await r.json(), { pessoaId: CAROLINA, interessadosAtencao: 0, faturasAtraso: 0 });
   assertEquals(m.acessos(), ["acesso.senha_conferida", "acesso.autenticador_cadastrado"]);
 
   // No login seguinte, já pede o código direto.

@@ -1,0 +1,67 @@
+# Publica as Edge Functions do T3jus (api-portal e api-console) no Supabase. Desde que o
+# repositório ficou privado (21/11/2026), não dá mais para publicar puxando o código do GitHub;
+# esta ação publica direto do repositório, a cada merge na main que mexe nas funções ou no
+# packages/domain, e também à mão (Actions › Publicar funções › Run workflow).
+#
+# Precisa do segredo SUPABASE_ACCESS_TOKEN (token pessoal do Supabase, em
+# supabase.com/dashboard/account/tokens), posto em Settings › Secrets and variables › Actions.
+# Atenção: a migration de que uma rota nova depende precisa estar aplicada antes do merge;
+# senão, só aquela rota falha até ela entrar.
+name: Publicar funções
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sistema/supabase/functions/**"
+      - "sistema/packages/domain/src/**"
+      - "sistema/supabase/config.toml"
+      - ".github/workflows/publicar-funcoes.yml"
+  workflow_dispatch:
+    inputs:
+      funcao:
+        description: "Qual publicar"
+        type: choice
+        options: [as-duas, api-portal, api-console]
+        default: as-duas
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar-funcoes
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    name: Publicar no Supabase
+    runs-on: ubuntu-24.04
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJETO: lfquiekccdofijksrifa
+    defaults:
+      run:
+        working-directory: sistema
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Token posto
+        run: test -n "$SUPABASE_ACCESS_TOKEN" || { echo "Falta o segredo SUPABASE_ACCESS_TOKEN"; exit 1; }
+      - name: Publicar
+        run: |
+          case "${{ inputs.funcao || 'as-duas' }}" in
+            api-portal)  funcoes="api-portal" ;;
+            api-console) funcoes="api-console" ;;
+            *)           funcoes="api-portal api-console" ;;
+          esac
+          for f in $funcoes; do
+            supabase functions deploy "$f" --project-ref "$PROJETO" --use-api
+          done
+      - name: Conferir a saúde
+        run: |
+          sleep 10
+          for u in https://app.t3jus.pro/api/v1/saude https://console.t3jus.pro/api/v1/saude; do
+            curl -fsS "$u" && echo
+          done

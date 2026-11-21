@@ -155,9 +155,17 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const escritorios = await deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: pessoaId });
     const atual = escritorios.find((x) => x.escritorio_id === id);
     if (!atual) throw new ErroDominio("ESCRITORIO_REQUIRED");
-    const dados = await deps.banco.rpc<Record<string, unknown>>("portal_escritorio", { p_pessoa: pessoaId, p_escritorio: id });
-    return c.json({ ...dados, id, nome: atual.nome, funcoes: atual.funcoes, outrosEscritorios: escritorios.length - 1 });
+    const [dados, cobranca] = await Promise.all([
+      deps.banco.rpc<Record<string, unknown>>("portal_escritorio", { p_pessoa: pessoaId, p_escritorio: id }),
+      // F1.18 (CO-06): as faixas de atraso (só o sócio dono) e de só consulta (todos).
+      deps.banco.rpc<Record<string, unknown>>("portal_cobranca", { p_pessoa: pessoaId, p_escritorio: id }),
+    ]);
+    return c.json({ ...dados, cobranca, id, nome: atual.nome, funcoes: atual.funcoes, outrosEscritorios: escritorios.length - 1 });
   });
+
+  // Escritório › Plano e faturas (F1.18, CO-06): só o sócio dono; o banco confere.
+  app.get("/v1/escritorio/faturas", async (c) =>
+    c.json(await deps.banco.rpc("portal_plano_faturas", { p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") })));
 
   // Equipe do escritório (PA-02): só o sócio dono. O banco confere em cada chamada.
   const quem = (c: Context<VarsPortal>) => ({ p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") });

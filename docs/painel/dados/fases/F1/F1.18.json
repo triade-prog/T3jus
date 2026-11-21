@@ -1,12 +1,12 @@
 {
   "id": "F1.18",
-  "texto": "Cobrança dos escritórios: área Cobrança do Console (faturas, planos e régua), aba Assinatura com carnê, situação de atraso na carteira, só consulta por atraso e Plano e faturas do sócio dono no Portal",
+  "texto": "Cobrança dos escritórios no servidor: planos, assinatura, faturas, carnê, régua de e-mails, pagamento manual, só consulta por atraso e o que o Console e o Portal leem",
   "peca": "C1",
   "refs": [
     "CO-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 67,
-  "nota": "Desenho aprovado em docs/design/aprovadas/console-cobranca (20/11/2026). Depende do meio de pagamento (Pix, boleto e PDF do carnê), do emissor de nota fiscal e do remetente de e-mail.",
-  "proximo": "Programar a cobrança dos escritórios seguindo o desenho aprovado em docs/design/aprovadas/console-cobranca"
+  "nota": "Desenho aprovado em docs/design/aprovadas/console-cobranca (20/11/2026). Pix e boleto ficam preparados (campos na fatura e no e-mail), sem banco ligado. As telas estão em F1.19 e F1.20; o meio de pagamento, a nota fiscal e o PDF do carnê em F1.21.",
+  "evidencia": "Migration 0690 (planos, planos_regras e planos_eventos globais; assinaturas, assinatura_carnes, assinatura_carne_parcelas, faturas, fatura_itens, fatura_eventos, pagamentos_manuais e fatura_envios protegidas por escritório; a cobrança começa ao ativar o escritório; fatura emitida 20 dias antes com o preço do plano, pessoas a mais e desconto; carnê de 12 parcelas; régua diária pelo pg_cron 't3jus-cobranca' com e-mails em -3, 0, 3, 7 e 15 dias e proposta de só consulta aos 30; pagamento manual com motivo e versão; só consulta bloqueia a escrita de quem é do escritório e volta sozinho ao pagar), pgTAP 091 (82 testes), rotas /v1/cobranca e /v1/clientes/:id/assinatura|faturas na api-console com a fila de e-mails pelo Resend e o sócio dono em cópia (8 testes Deno em cobranca_test.ts), cobranca e /v1/escritorio/faturas na api-portal, textos e esquemas em packages/domain/src/cobranca.ts (testes Vitest)."
 }
