@@ -33,6 +33,14 @@ function Marca({ texto, termo }: { texto: string; termo: string }) {
 }
 
 export function SeloSituacao({ situacao }: { situacao: ClienteLinha["situacao"] }) {
+  if (situacao === "ARQUIVADO") {
+    return (
+      <span className="selo selo-excl">
+        <Icone nome="pasta" className="ico" />
+        Arquivado
+      </span>
+    );
+  }
   if (situacao === "EXCLUIDO") {
     return (
       <span className="selo selo-excl">
@@ -190,8 +198,10 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
     );
     else if (filtro === "inativos") {
       const exc = lista.filter((c) => c.situacao === "EXCLUIDO").length;
-      contagem = exc ? (
-        <><b>{plural(lista.length, "cliente inativo", "clientes inativos")}</b>, {exc === 1 ? "1 deles excluído" : `${exc} deles excluídos`} a pedido (LGPD). Nada some em silêncio: o excluído fica só com o registro, sem dado pessoal.</>
+      const arq = lista.filter((c) => c.situacao === "ARQUIVADO").length;
+      const partes = [exc ? (exc === 1 ? "1 deles excluído" : `${exc} deles excluídos`) : "", arq ? (arq === 1 ? "1 deles arquivado" : `${arq} deles arquivados`) : ""].filter(Boolean);
+      contagem = partes.length ? (
+        <><b>{plural(lista.length, "cliente inativo", "clientes inativos")}</b>, {partes.join(" e ")} a pedido (LGPD). Nada some em silêncio: o excluído fica só com o registro, sem dado pessoal, e o arquivado fica com os dados, só leitura.</>
       ) : (
         <><b>{plural(lista.length, "cliente inativo", "clientes inativos")}</b>. Nada foi apagado: abra a ficha para ver ou reativar.</>
       );
@@ -284,7 +294,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
           {lista.map((c) => {
             const ct = c.contatoPrincipal;
             return (
-              <tr key={c.id} className={comercial && vencido(c) ? "cl-venc" : c.situacao === "EXCLUIDO" ? "pd-excl" : c.situacao === "INATIVO" ? "cl-off" : undefined}>
+              <tr key={c.id} className={comercial && vencido(c) ? "cl-venc" : c.situacao === "EXCLUIDO" ? "pd-excl" : c.situacao === "INATIVO" || c.situacao === "ARQUIVADO" ? "cl-off" : undefined}>
                 <td>
                   <div className="esc">
                     <span className={c.situacao === "ATIVO" ? "av-p forte" : "av-p"} aria-hidden="true">
@@ -294,12 +304,13 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                       <a href={hrefFicha(c)}>
                         <Marca texto={c.nome} termo={buscado} />
                       </a>
-                      <small>{TIPOS_CLIENTE[c.tipo]}{c.exclusao ? ` · protocolo ${c.exclusao.protocolo}` : ""}</small>
+                      <small>{TIPOS_CLIENTE[c.tipo]}{c.exclusao ? ` · protocolo ${c.exclusao.protocolo}` : c.arquivamento ? ` · protocolo ${c.arquivamento.protocolo}` : ""}</small>
                     </div>
                   </div>
                 </td>
                 <td>
                   {c.exclusao ? <span className="cl-sem">Excluído a pedido (LGPD) em {dataBr(c.exclusao.em)}</span> : null}
+                  {c.arquivamento ? <span className="cl-sem">Arquivado a pedido (LGPD) em {dataBr(c.arquivamento.em)}</span> : null}
                   {ct ? (
                     <div className="cl-ct">
                       <strong>
@@ -338,7 +349,13 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                   <a className="c-nome" href={hrefFicha(c)}>
                     <Marca texto={c.nome} termo={buscado} />
                   </a>
-                  <small>{c.exclusao ? `Excluído a pedido (LGPD) em ${dataBr(c.exclusao.em)}` : TIPOS_CLIENTE[c.tipo]}</small>
+                  <small>
+                    {c.exclusao
+                      ? `Excluído a pedido (LGPD) em ${dataBr(c.exclusao.em)}`
+                      : c.arquivamento
+                        ? `Arquivado a pedido (LGPD) em ${dataBr(c.arquivamento.em)}`
+                        : TIPOS_CLIENTE[c.tipo]}
+                  </small>
                 </div>
                 <Icone nome="dir" className="ico c-ir" />
               </div>

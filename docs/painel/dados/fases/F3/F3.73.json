@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 730,
-  "proximo": "Na ficha do contrato, listar as parcelas com pago_antes (canceladas como \"Paga antes do T3jus\") como informação, fora dos totais"
+  "proximo": "Desenho da folha “Pago antes do T3jus” na aba Recebimentos em project-files/t3jus/telas/portal-pendencias-pequenas, aguardando a aprovação da Carol; depois, programar"
 }
