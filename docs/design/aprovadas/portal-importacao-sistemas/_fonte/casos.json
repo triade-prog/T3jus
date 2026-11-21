@@ -1,0 +1,149 @@
+[
+ {
+  "nome": "clientes-vazio",
+  "url": "sistemas.html?estado=clientes-vazio",
+  "alto": 0,
+  "titulo": "Clientes de um escritório novo",
+  "legenda": "A lista vazia oferece importar (principal) ou cadastrar um por um, com as três origens logo embaixo: planilha, backup do Astrea e ADVBOX."
+ },
+ {
+  "nome": "clientes-lista",
+  "url": "sistemas.html?estado=clientes-lista",
+  "alto": 0,
+  "titulo": "Clientes com o botão Importar dados",
+  "legenda": "A lista aprovada, sem mudança, com “Importar dados” no lugar de “Importar planilha”."
+ },
+ {
+  "nome": "origem",
+  "url": "sistemas.html?estado=origem",
+  "alto": 0,
+  "titulo": "Escolher a origem",
+  "legenda": "Três cartões: Planilha, Astrea e ADVBOX, cada um com o que traz e o que não traz. “Usa outro sistema?” leva à planilha. Ao lado, quem pode importar de outro sistema (só a sócia dona) e o histórico."
+ },
+ {
+  "nome": "astrea-pedir",
+  "url": "sistemas.html?estado=astrea-pedir",
+  "alto": 0,
+  "titulo": "Pedir o backup e enviar",
+  "legenda": "Passo a passo só em texto, com os nomes dos menus do Astrea (Administração › Escritório › Manutenção de conta), o e-mail que chega e o envio do .xlsx. Ao lado, o que vem do Astrea e o que não vem."
+ },
+ {
+  "nome": "astrea-abas",
+  "url": "sistemas.html?estado=astrea-abas",
+  "alto": 0,
+  "titulo": "As abas reconhecidas",
+  "legenda": "Contatos, Processos e Lançamentos ligados pelo modelo do Astrea; Tarefas, Agenda e Publicações ficam de fora, com o motivo. Os processos arquivados ficam de fora por padrão."
+ },
+ {
+  "nome": "astrea-diferente",
+  "url": "sistemas.html?estado=astrea-diferente",
+  "alto": 0,
+  "titulo": "Backup diferente do esperado",
+  "legenda": "Duas abas novas que não estão no modelo: o resto segue ligado e as novas esperam a sua escolha. Uma aba de honorários pode ser ligada como a planilha de clientes e contratos."
+ },
+ {
+  "nome": "astrea-colunas",
+  "url": "sistemas.html?estado=astrea-colunas",
+  "alto": 1500,
+  "titulo": "As colunas, já ligadas pelo modelo",
+  "legenda": "A tabela aprovada de colunas, com o selo “Pelo modelo do Astrea”. Os valores: o tipo de contato separa clientes de partes contrárias; responsáveis e áreas dos processos."
+ },
+ {
+  "nome": "advbox-escolha",
+  "url": "sistemas.html?estado=advbox-escolha",
+  "alto": 0,
+  "titulo": "Conexão ou planilha",
+  "legenda": "Dois caminhos, com o custo dito (o plano de API é contratado com o ADVBOX) e a explicação de por que contratos não vêm."
+ },
+ {
+  "nome": "advbox-token",
+  "url": "sistemas.html?estado=advbox-token",
+  "alto": 0,
+  "titulo": "Colar o token",
+  "legenda": "Onde achar o token, o campo que não devolve o token à tela e o que o T3jus faz com ele: só lê, guarda cifrado durante a leitura e apaga ao terminar."
+ },
+ {
+  "nome": "advbox-token-erro",
+  "url": "sistemas.html?estado=advbox-token-erro",
+  "alto": 0,
+  "titulo": "Token recusado e outros problemas",
+  "legenda": "O erro no campo e no topo, no tom aprovado. Ao lado: plano sem API (leva à planilha), pausa pedida pelo ADVBOX, ADVBOX fora do ar e token que parou no meio."
+ },
+ {
+  "nome": "advbox-conectado",
+  "url": "sistemas.html?estado=advbox-conectado",
+  "alto": 0,
+  "titulo": "Conectado: o que ler",
+  "legenda": "As listas do escritório no ADVBOX, o que ler (clientes, processos, financeiro), o que não é lido e quanto tempo leva com o limite de 30 leituras por minuto."
+ },
+ {
+  "nome": "advbox-lendo",
+  "url": "sistemas.html?estado=advbox-lendo",
+  "alto": 0,
+  "titulo": "Lendo em segundo plano",
+  "legenda": "O andamento por tipo de dado, a pausa do ADVBOX explicada, “pode fechar a página, avisamos no sino” e cancelar apagando o token."
+ },
+ {
+  "nome": "advbox-valores",
+  "url": "sistemas.html?estado=advbox-valores",
+  "alto": 0,
+  "titulo": "Leitura pronta: ligar os valores",
+  "legenda": "Chegou pelo sino: a leitura terminou e o token foi apagado. Pessoas do ADVBOX vão para a Equipe, origens para a lista fixa, etapas para as do escritório e tipos de ação para a área."
+ },
+ {
+  "nome": "advbox-planilha",
+  "url": "sistemas.html?estado=advbox-planilha",
+  "alto": 0,
+  "titulo": "Sem plano de API: a planilha",
+  "legenda": "Como exportar os relatórios, clientes primeiro e processos depois, caindo nas colunas da importação aprovada com o modelo do ADVBOX."
+ },
+ {
+  "nome": "previa-sistema",
+  "url": "sistemas.html?estado=previa-sistema",
+  "alto": 0,
+  "titulo": "Prévia: clientes",
+  "legenda": "Os quatro números, as linhas com o código da aba (C de Contatos), o duplicado com cliente já cadastrado e o CPF errado. Ao lado, o que vai entrar e o que não entra: nenhum contrato, nada no Caixa, nenhuma mensagem."
+ },
+ {
+  "nome": "previa-casos",
+  "url": "sistemas.html?estado=previa-casos",
+  "alto": 0,
+  "titulo": "Prévia: casos",
+  "legenda": "Um processo aberto mostra o caso que vai entrar no Jurídico, com a etapa ligada, “sem contrato” e o que não vem (prazos, andamentos). Outros: mesmo número de caso existente, número inválido e cliente não encontrado."
+ },
+ {
+  "nome": "previa-financeiro",
+  "url": "sistemas.html?estado=previa-financeiro",
+  "alto": 0,
+  "titulo": "Prévia: financeiro",
+  "legenda": "Recebidos ficam como informação, em aberto vira lembrete de contrato, despesas do escritório ficam de fora (pergunta 2)."
+ },
+ {
+  "nome": "confirmar-sistema",
+  "url": "sistemas.html?estado=confirmar-sistema",
+  "alto": 1100,
+  "titulo": "Confirmar",
+  "legenda": "O resumo do que entra e do que fica de fora, tudo ou nada, o backup apagado, nenhuma mensagem ao cliente e o prazo de desfazer."
+ },
+ {
+  "nome": "resultado-sistema",
+  "url": "sistemas.html?estado=resultado-sistema",
+  "alto": 0,
+  "titulo": "Importação concluída",
+  "legenda": "O campo âmbar com clientes, casos e o que ficou de fora; os lembretes de contrato; o backup apagado; desfazer até 28/11."
+ },
+ {
+  "nome": "importacoes",
+  "url": "sistemas.html?estado=importacoes",
+  "alto": 0,
+  "titulo": "Histórico com a origem",
+  "legenda": "Cada importação com o selo da origem (Astrea, ADVBOX, Planilha), o arquivo ou a conexão e, no ADVBOX, a hora em que o token foi apagado."
+ },
+ {
+  "nome": "desfazer-sistema",
+  "url": "sistemas.html?estado=desfazer-sistema",
+  "alto": 1150,
+  "titulo": "Desfazer",
+  "legenda": "Clientes inativos, cadastros de volta ao que eram, casos em Encerrados marcados “importação desfeita”, histórico financeiro fora das fichas; o que alguém mexeu depois fica."
+ }
+]

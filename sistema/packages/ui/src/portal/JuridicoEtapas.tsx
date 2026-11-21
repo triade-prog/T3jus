@@ -106,7 +106,7 @@ function FormEtapa({ etapa, escritorio, aoCancelar, aoSalvo, aoTirar }: {
         {d.textoCliente.trim().length >= 10 ? (
           <div className="c6 jr-aviso-caixa">
             <p className="jr-previa-t"><Icone nome="whats" className="ico ico-s" />Prévia com um caso de exemplo</p>
-            <p className="jr-previa">{textoAvisoEtapa("Joana Pereira", escritorio, "Mercado Bom Preço", d.textoCliente.trim())}</p>
+            <p className="jr-previa">{textoAvisoEtapa("Joana Pereira", escritorio, "Joana x Mercado Bom Preço", d.textoCliente.trim())}</p>
           </div>
         ) : null}
         {etapa?.final ? (

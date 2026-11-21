@@ -35,7 +35,7 @@ export const SITUACOES_ASSINATURA = {
   EM_ATRASO: "Em atraso",
   SO_CONSULTA: "Só consulta",
 } as const;
-export type SituacaoAssinatura = keyof typeof SITUACOES_ASSINATURA;
+export type SituacaoAssinaturaCobranca = keyof typeof SITUACOES_ASSINATURA;
 
 /** A régua de cobrança (fixa nesta versão, igual para todos), contada do vencimento. */
 export const REGUA_COBRANCA = [

@@ -21,6 +21,10 @@ export const CATEGORIAS_ANEXO = {
   BOLETO: "Boleto",
   COMPROVANTE: "Comprovante",
   OFICIO_REQUISITORIO: "Ofício requisitório",
+  // Os assinados dos documentos gerados (F3.16): ligados à versão com documentoId.
+  PROCURACAO_ASSINADA: "Procuração assinada",
+  DECLARACAO_ASSINADA: "Declaração assinada",
+  DOCUMENTO_ASSINADO: "Documento assinado",
 } as const;
 export type CategoriaAnexo = keyof typeof CATEGORIAS_ANEXO;
 
@@ -36,6 +40,10 @@ export const iniciarAnexoSchema = z.object({
   nome: z.string().trim().min(1).max(200).refine((n) => !/[/\\]/.test(n), { message: "Nome de arquivo inválido" }),
   tipo: z.enum(Object.keys(TIPOS_DOCUMENTO) as [TipoDocumento, ...TipoDocumento[]]),
   tamanho: z.number().int().min(1).max(TAMANHO_MAXIMO_DOCUMENTO),
+  /** F3.16: a versão do documento gerado que este arquivo assinado traz; a categoria sai dela. */
+  documentoId: UUID.nullish(),
+  /** F3.16: a data em que foi assinado (AAAA-MM-DD), não depois de hoje. */
+  assinadoEm: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
 });
 export type IniciarAnexo = z.infer<typeof iniciarAnexoSchema>;
 
@@ -52,6 +60,9 @@ export interface Anexo {
   tamanho: number;
   /** O contrato, a conta, o recebimento ou a requisição a caminho. */
   donoId: string;
+  /** F3.16: a versão do documento gerado, quando é um assinado. */
+  documentoId?: string | null;
+  assinadoEm?: string | null;
   enviadoPor: PessoaRef;
   enviadoEm: string;
 }

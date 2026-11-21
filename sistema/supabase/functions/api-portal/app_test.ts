@@ -3,7 +3,7 @@ import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
 import type { Cerebro } from "../_shared/ia.ts";
 import type { Emails, MensagemEmail } from "../_shared/email.ts";
-import { abrirEntrada, abrirTexto, conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosPeticao } from "@t3jus/domain";
+import { abrirEntrada, abrirTexto, conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosDocumentos, type DadosPeticao } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -32,6 +32,29 @@ const PEDIDO_PETICAO = {
   modelo: { padrao: "JUNTADA" }, partes: [CLIENTE], advogados: [{ pessoaId: ANA, inscricoes: [OAB_ANA] }],
   enderecamento: "Excelentíssimo(a) Senhor(a) Juiz(íza) da 45ª Vara do Trabalho de São Paulo", cidadeData: "São Paulo, 20 de novembro de 2026",
 };
+
+// F3.16: o contrato de Benedito, sem RG, com Ana outorgada (como o desenho aprovado).
+const MODELO_DOC = "a1600000-0000-4000-8000-000000000001";
+const VERSAO_MODELO_DOC = "a1600000-0000-4000-8000-000000000002";
+const GERACAO_DOC = "a1600000-0000-4000-8000-000000000003";
+const DADOS_DOCUMENTOS: DadosDocumentos = {
+  contrato: { id: CLIENTE, numero: "C-2026-033", objeto: "Aposentadoria por idade", estado: "ELABORACAO", assinadoEm: null, versao: 1 },
+  cliente: { id: CLIENTE, nome: "Benedito Souza Lima", tipo: "PF", documento: "52998224725", nacionalidade: "brasileiro", estadoCivil: "CASADO", profissao: "aposentado",
+    rg: null, rgOrgao: null, endereco: "Rua das Flores, 120", bairro: "Centro", cidade: "Campinas", uf: "SP", cep: "13010000",
+    repNome: null, repCargo: null, repDocumento: null, repEstadoCivil: null, repProfissao: null, versao: 1 },
+  condicoes: [{ tipo: "FIXO", valor: 300000, vencimento: "2026-12-10" }],
+  casos: [],
+  advogados: [{ pessoaId: ANA, nome: "Ana Ribeiro", noContrato: true, responsavel: true, escolhidas: [OAB_ANA],
+    inscricoes: [{ id: OAB_ANA, uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" }] }],
+  semOab: [],
+  escritorio: { nome: "Aurora Advocacia", cnpj: "11222333000181", endereco: "Av. Paulista, 2.100", cidade: "São Paulo", uf: "SP", oab: "OAB/SP 31.874" },
+  marca: null, hoje: "2026-11-21", modelos: [], atuais: [], ultima: null, mudancas: [], poderesIniciais: [],
+};
+const PEDIDO_DOCUMENTOS = {
+  documentos: [{ tipo: "CONTRATO" }, { tipo: "PROCURACAO" }], outorgados: [{ pessoaId: ANA, inscricoes: [OAB_ANA] }],
+  poderes: ["RECEBER_QUITAR"], outroPoder: null, cidadeData: "São Paulo, 21 de novembro de 2026",
+};
+const NOMES_DOC: Record<string, string> = { CONTRATO: "Contrato de honorários", PROCURACAO: "Procuração", HIPOSSUFICIENCIA: "Declaração de hipossuficiência (pessoa física)" };
 
 const LOGO_TESTE = "10600000-0000-4000-8000-000000000001";
 
@@ -370,7 +393,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { id: CLIENTE, mes: d.mes, formato: d.formato, recebimentos: [], despesas: [], terceiros: [] };
     },
     portal_financeiro_repasse_proposta: () => ({ contrato: null, linhas: [], cliente: 100, falta: 0 }),
-    portal_financeiro_repasse: (a) => ({ id: a.p_levantamento, caso: { id: ANA } }),
+    portal_financeiro_repasse: (a) => ({
+      id: a.p_levantamento, caso: { id: ANA }, tipo: "RPV", valor: 100000, escritorioNome: "Aurora Advocacia",
+      cliente: { id: ANA, nome: "Benedito Souza", telefone: "+5511974561180" },
+      destinacoes: [{ id: ANA, para: "CLIENTE", nome: "Benedito Souza", valor: 70000, situacao: "FEITO", feitoEm: "2026-11-30", prazo: "2026-11-30" },
+                    { id: ANA, para: "HONORARIOS", nome: "Honorários de êxito", valor: 30000, situacao: "FEITO", feitoEm: "2026-11-30", prazo: "2026-11-30" }],
+    }),
+    portal_financeiro_prestacao_enviar: (a) => ({ id: a.p_levantamento, prestacao: { envio: "NA_FILA", texto: (a.p_dados as { texto: string }).texto } }),
     portal_financeiro_caso_acerto: (a) => ({ casoId: a.p_caso, pendencias: [] }),
     portal_financeiro_exitos: () => ({ total: 840000, n: 1, itens: [{ id: ANA, calculado: 840000 }] }),
     portal_financeiro_exito_lancar: (a) => {
@@ -391,6 +420,27 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { id: a.p_compromisso, versao: Number(a.p_versao) + 1 };
     },
     portal_compromisso_cancelar: (a) => Number(a.p_versao) + 1,
+    // F3.16: o PROCURACAO vem com o modelo do escritório; o resto, com o padrão.
+    portal_documento_preparar: (a) => {
+      const p = a.p_pedido as { documentos: { tipo: string }[] };
+      return {
+        pedido: { ...p, documentos: p.documentos.map((d, i) => d.tipo === "PROCURACAO" && a.p_contrato === MODELO_DOC
+          ? { tipo: d.tipo, chave: d.tipo, numero: 1, nome: "Procuração do escritório", modeloId: MODELO_DOC, versaoId: VERSAO_MODELO_DOC,
+              campos: ["CLIENTE_NOME", "PODERES_ESPECIAIS"], paragrafos: ["Outorgante: [CLIENTE_NOME][PODERES_ESPECIAIS]."] }
+          : { tipo: d.tipo, chave: d.tipo, numero: i + 1, nome: NOMES_DOC[d.tipo], padrao: d.tipo === "HIPOSSUFICIENCIA" ? "HIPOSSUFICIENCIA_PF" : d.tipo }) },
+        dados: DADOS_DOCUMENTOS,
+      };
+    },
+    portal_documento_gravar: (a) => ({ geracaoId: (a.p_resultado as { geracaoId: string }).geracaoId, documentos: (a.p_resultado as { documentos: unknown[] }).documentos }),
+    portal_documento_modelos: () => ({
+      modelos: [{ id: MODELO_DOC, padrao: false, tipo: "PROCURACAO", nome: "Procuração do escritório", versao: 2, versaoId: VERSAO_MODELO_DOC, campos: [], desconhecidos: [],
+        enviadoPor: { id: ANA, nome: "Ana" }, atualizadoEm: "2026-11-21T10:00:00-03:00", usos: 4, linhaVersao: 2, emRevisao: false, anteriores: [] }],
+      usosPadrao: { HIPOSSUFICIENCIA_PF: 2, HIPOSSUFICIENCIA_PJ: 1 }, podeEnviar: true,
+    }),
+    portal_documento_modelo_enviar: (a) => ({ id: MODELO_DOC, tipo: (a.p_dados as { tipo?: string }).tipo ?? "PROCURACAO", nome: (a.p_dados as { nome?: string }).nome, versao: 1 }),
+    portal_documento_arquivo: (a) => ({ id: a.p_id, nome: "procuracao-c-2026-033-benedito-souza-lima.docx" }),
+    portal_documento_geracao: () => ({ numero: "C-2026-033", cliente: "Benedito Souza Lima", versao: 1,
+      arquivos: [{ id: MODELO_DOC, nome: "contrato-c-2026-033-benedito-souza-lima.docx" }, { id: VERSAO_MODELO_DOC, nome: "procuracao-c-2026-033-benedito-souza-lima.docx" }] }),
     portal_peticao_preparar: (a) => ({ pedido: { ...(a.p_pedido as object), numero: null, valorCausa: 8640000, parteContrariaQualificacao: null }, dados: DADOS_PETICAO }),
     portal_peticao_gravar: (a) => {
       const r = a.p_resultado as { peticaoId: string; arquivo: string; marcados: string[] };
@@ -1686,6 +1736,96 @@ Deno.test("EX-09: a versão editada no Word passa pela conferência e a prévia 
   assertEquals((a.p_resultado as { arquivo: string }).arquivo, "juntada-de-documentos-pereira-x-mercado-v2.docx");
 });
 
+// ------------------------------------------------------------------------------- contrato, procuração e declaração (F3.16)
+
+Deno.test("F3.16: gerar faz um .docx por documento, no timbrado, e só então grava a geração", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos`, { corpo: PEDIDO_DOCUMENTOS, cookie });
+  assertEquals(r.status, 201);
+  const g = m.chamadas.find((c) => c.funcao === "portal_documento_gravar")!.args;
+  assertEquals([g.p_escritorio, g.p_contrato], [AURORA, CLIENTE]);
+  const res = g.p_resultado as { geracaoId: string; padraoDe: string; documentos: { id: string; chave: string; arquivo: string; marcados: string[] }[] };
+  assertEquals(res.padraoDe, "2026-11-21");
+  assertEquals(res.documentos.map((d) => [d.chave, d.arquivo]), [
+    ["CONTRATO", "contrato-c-2026-033-benedito-souza-lima.docx"], ["PROCURACAO", "procuracao-c-2026-033-benedito-souza-lima-v2.docx"]]);
+  assertEquals(res.documentos[1]!.marcados, ["RG de Benedito Souza Lima"]);
+  const procuracao = m.storage.bytes.get(`${AURORA}/documentos/${res.documentos[1]!.id}.docx`)!;
+  assertEquals((await conferirDocx(procuracao)).campos, []);
+  const texto = (await paragrafosDocx(procuracao)).join("\n");
+  assert(texto.includes("ANA RIBEIRO, OAB/SP nº 214.538"));
+  assert(texto.includes("poderes especiais para receber e dar quitação"));
+  const contrato = (await paragrafosDocx(m.storage.bytes.get(`${AURORA}/documentos/${res.documentos[0]!.id}.docx`)!)).join("\n");
+  assert(contrato.includes("R$ 3.000,00 (três mil reais)"));
+});
+
+Deno.test("F3.16: o modelo do escritório é baixado do Storage e preenchido; a prévia não grava nada", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  m.storage.bytes.set(`${AURORA}/documentos/modelos/${VERSAO_MODELO_DOC}.docx`, await criarDocx([{ texto: "Outorgante: [CLIENTE_NOME][PODERES_ESPECIAIS]." }]));
+  const previa = await (await m.pedir(`/v1/escritorio/contratos/${MODELO_DOC}/documentos/previa`, { corpo: PEDIDO_DOCUMENTOS, cookie })).json();
+  assertEquals(previa.documentos.map((d: { nome: string; marcados: string[] }) => [d.nome, d.marcados.length]), [["Contrato de honorários", 1], ["Procuração do escritório", 0]]);
+  assertEquals(previa.frase, "1 dado sai marcado.");
+  assertEquals(m.storage.bytes.size, 1);
+  assert(!m.chamadas.some((c) => c.funcao === "portal_documento_gravar"));
+  await m.pedir(`/v1/escritorio/contratos/${MODELO_DOC}/documentos`, { corpo: PEDIDO_DOCUMENTOS, cookie });
+  const res = m.chamadas.find((c) => c.funcao === "portal_documento_gravar")!.args.p_resultado as { documentos: { id: string }[] };
+  const feito = await paragrafosDocx(m.storage.bytes.get(`${AURORA}/documentos/${res.documentos[1]!.id}.docx`)!);
+  assertEquals(feito, ["Outorgante: BENEDITO SOUZA LIMA, com os poderes especiais para receber e dar quitação."]);
+});
+
+Deno.test("F3.16: a lista de modelos põe o padrão só onde o escritório não tem o seu", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await (await m.pedir("/v1/escritorio/documentos/modelos", { cookie })).json();
+  assertEquals(r.modelos.map((x: { id: string }) => x.id), ["CONTRATO", MODELO_DOC, "HIPOSSUFICIENCIA_PF"]);
+  const declaracao = r.modelos[2];
+  assertEquals([declaracao.usos, declaracao.emRevisao, declaracao.codigos.length], [3, true, 2]);
+  assertEquals(r.campos.length, 20);
+});
+
+Deno.test("F3.16: enviar modelo confere o arquivo e avisa o campo esperado que falta; PDF é recusado", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const docx = await criarDocx([{ texto: "Outorgante: [CLIENTE_NOME], [NOME_CLIENTE]." }]);
+  const r = await m.pedir("/v1/escritorio/documentos/modelos?nome=Procura%C3%A7%C3%A3o%20nova&tipo=procuracao&arquivo=procuracao.docx", { bruto: docx, cookie });
+  assertEquals(r.status, 201);
+  const conf = (await r.json()).conferencia;
+  assertEquals([conf.faltaEsperado?.campo, conf.desconhecidos[0].sugestao], ["PODERES_ESPECIAIS", "CLIENTE_NOME"]);
+  const a = m.chamadas.find((c) => c.funcao === "portal_documento_modelo_enviar")!.args;
+  assertEquals([a.p_escritorio, (a.p_dados as { tipo: string }).tipo, (a.p_conferido as { desconhecidos: string[] }).desconhecidos], [AURORA, "PROCURACAO", ["NOME_CLIENTE"]]);
+  assert(m.storage.bytes.has(`${AURORA}/documentos/modelos/${(a.p_conferido as { versaoId: string }).versaoId}.docx`));
+  const pdf = await m.pedir("/v1/escritorio/documentos/modelos/conferir?tipo=CONTRATO", { bruto: new TextEncoder().encode("%PDF-1.7"), cookie });
+  assertEquals((await erro(pdf)).detalhes, { campos: ["arquivo"], motivo: "ARQUIVO_PDF" });
+  assertEquals((await erro(await m.pedir("/v1/escritorio/documentos/modelos/conferir?tipo=PETICAO", { bruto: docx, cookie }))).detalhes?.campos, ["tipo"]);
+});
+
+Deno.test("F3.16: Baixar todos junta os arquivos da geração num .zip com os nomes certos", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  m.storage.bytes.set(`${AURORA}/documentos/${MODELO_DOC}.docx`, new Uint8Array([1, 2, 3]));
+  m.storage.bytes.set(`${AURORA}/documentos/${VERSAO_MODELO_DOC}.docx`, new Uint8Array([4, 5]));
+  const r = await (await m.pedir(`/v1/escritorio/documentos/geracoes/${GERACAO_DOC}/zip`, { metodo: "POST", cookie })).json();
+  assertMatch(r.url, /^https:\/\/storage\.exemplo\/ler\//);
+  assertEquals(m.storage.leituras.at(-1), { caminho: `${AURORA}/documentos/zip/${GERACAO_DOC}.zip`, segundos: 60, nome: "documentos-c-2026-033-benedito-souza-lima.zip" });
+  const zip = m.storage.bytes.get(`${AURORA}/documentos/zip/${GERACAO_DOC}.zip`)!;
+  const entradas = lerZip(zip);
+  assertEquals([...entradas.keys()], ["contrato-c-2026-033-benedito-souza-lima.docx", "procuracao-c-2026-033-benedito-souza-lima.docx"]);
+  assertEquals(await abrirEntrada(zip, entradas.get("procuracao-c-2026-033-benedito-souza-lima.docx")!), new Uint8Array([4, 5]));
+  await m.pedir(`/v1/escritorio/documentos/${MODELO_DOC}/abrir`, { metodo: "POST", cookie });
+  assertEquals(m.storage.leituras.at(-1)!.caminho, `${AURORA}/documentos/${MODELO_DOC}.docx`);
+});
+
+Deno.test("F3.16: o assinado entra pelos anexos com a versão e a data; data em formato errado é recusada", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { dono: "CONTRATO", donoId: CLIENTE, nome: "procuracao-assinada.pdf", tipo: "application/pdf", tamanho: 1200, documentoId: MODELO_DOC, assinadoEm: "2026-11-21" };
+  assertEquals((await m.pedir("/v1/escritorio/anexos", { corpo, cookie })).status, 201);
+  const a = m.chamadas.find((c) => c.funcao === "portal_anexo_iniciar")!.args.p_dados as { documentoId: string; assinadoEm: string };
+  assertEquals([a.documentoId, a.assinadoEm], [MODELO_DOC, "2026-11-21"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/anexos", { corpo: { ...corpo, assinadoEm: "21/11/2026" }, cookie }))).detalhes?.campos, ["assinadoEm"]);
+});
+
 Deno.test("FI-23: Escritório › Recebimento normaliza a chave Pix, o recebedor e a cidade antes do banco", async () => {
   const m = montar();
   const cookie = await noEscritorio(m);
@@ -2015,6 +2155,18 @@ Deno.test("F3.84, VA-05: \"Não foi paga\" e \"Foi paga, sim\" vão ao banco com
   const f = await m.pedir(`/v1/escritorio/recebimentos/${CLIENTE}/foi-paga`, { cookie, corpo: { motivo: "Achei o comprovante" } });
   assertEquals((await f.json()).contratoId, CLIENTE);
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_pago_antes_foi_paga")!.args.p_dados, { motivo: "Achei o comprovante" });
+});
+
+Deno.test("F3.44: a prestação de contas pelo WhatsApp leva o texto montado do registro, o mesmo da prévia", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/prestacao/envio`, { corpo: { texto: "o navegador não manda o texto" }, cookie });
+  assertEquals(r.status, 201);
+  const a = m.chamadas.find((c) => c.funcao === "portal_financeiro_prestacao_enviar")!.args;
+  assertEquals([a.p_escritorio, a.p_levantamento], [AURORA, CLIENTE]);
+  const texto = (a.p_dados as { texto: string }).texto;
+  assertEquals(texto.startsWith("Olá, Benedito. Aqui é do escritório Aurora Advocacia."), true);
+  assertEquals(texto.includes("Fica para você: R$ 700,00"), true);
 });
 
 Deno.test("F3.81: o PNG do logo é conferido de novo na API e guardado na pasta do escritório da sessão", async () => {

@@ -35,3 +35,4 @@ export * from "./interessados.ts";
 export * from "./logo.ts";
 export * from "./pasta_contador.ts";
 export * from "./cobranca.ts";
+export * from "./documentos.ts";

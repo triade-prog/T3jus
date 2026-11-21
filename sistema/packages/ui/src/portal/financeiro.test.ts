@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ParcelaLinha } from "@t3jus/domain";
-import { gruposPorCliente, gruposPorVencimento, mesReferencia, origemConta, quandoAcao, quandoConta, seloParcela } from "./financeiro.ts";
+import { situacaoPrestacao, gruposPorCliente, gruposPorVencimento, mesReferencia, origemConta, quandoAcao, quandoConta, seloParcela } from "./financeiro.ts";
 
 const parc = (vencimento: string, falta: number, contrato = "c1", cliente = "Hélio"): ParcelaLinha => ({
   id: vencimento + contrato, tipo: "PARCELADO", descricao: "Parcela 1 de 6", vencimento, valor: falta, recebido: 0, falta, forma: null,
@@ -52,5 +52,14 @@ describe("A pagar", () => {
     expect(origemConta({ ...base, adiantada: { cliente: { id: "c", nome: "Daniela Rocha Mendes" }, caso: null, como: "LEVANTAMENTO", reembolsadoEm: null, parcela: null } }).detalhe)
       .toBe("Vira reembolso de Daniela");
     expect(origemConta({ ...base, forma: "PIX" })).toEqual({ titulo: "Lançada à mão", detalhe: "Pix", repete: false });
+  });
+});
+
+describe("Prestação de contas pela fila do WhatsApp (F3.44)", () => {
+  const p = { id: "m", em: "2026-12-01T13:15:00Z", envioEm: null, motivo: null, para: "Joana Prado", telefone: "+5511996027732" };
+  it("diz onde está a mensagem e quando foi lida", () => {
+    expect(situacaoPrestacao({ ...p, envio: "NA_FILA" })).toBe("na fila do WhatsApp do escritório desde 01/12, às 10h15");
+    expect(situacaoPrestacao({ ...p, envio: "LIDA", envioEm: "2026-12-01T14:02:00Z" })).toBe("lida pelo cliente em 01/12, às 11h02");
+    expect(situacaoPrestacao({ ...p, envio: "FALHOU", motivo: "Número sem WhatsApp" })).toBe("não entregue: número sem WhatsApp");
   });
 });

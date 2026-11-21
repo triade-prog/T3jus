@@ -3,6 +3,7 @@
 // estão no banco (0240_portal_juridico_casos.sql); aqui o esquema só confere a forma do pedido.
 
 import { z } from "zod";
+import type { EnvioMensagem } from "./conversas.ts";
 import type { PessoaRef } from "./clientes.ts";
 import type { Condicao } from "./honorarios.ts";
 import type { SituacaoContrato } from "./contratos.ts";
@@ -157,8 +158,19 @@ export interface MudancaEtapa {
   resultado: ResultadoCaso | null;
   aviso: string | null;
   avisoEnviadoEm: string | null;
+  /** Para quem o aviso saiu (F3.37): cada cliente do caso, com a situação da mensagem. */
+  envios?: EnvioEtapa[];
   por: PessoaRef;
   em: string;
+}
+
+/** O aviso de uma mudança de etapa a um cliente do caso (F3.37). */
+export interface EnvioEtapa {
+  cliente: { id: string; nome: string };
+  /** A situação na automação "Etapa do caso": nula enquanto ela não rodou. */
+  situacao: "AGENDADA" | "EM_ANDAMENTO" | "CONCLUIDA" | "FALHOU" | "FICOU_DE_FORA" | null;
+  motivo: string | null;
+  mensagem: { envio: EnvioMensagem; em: string; envioEm: string | null; motivo: string | null } | null;
 }
 
 export interface FichaCaso extends LinhaCaso {
@@ -183,13 +195,18 @@ export interface FichaCaso extends LinhaCaso {
   escritorio: string;
   faltam: DocumentoFaltando[];
   documentos: DocumentoDoCaso[];
+  /** Se o aviso de etapa sai (F3.37): o WhatsApp ligado e a automação "Etapa do caso" ligada. */
+  avisoEtapa?: { whatsappLigado: boolean; automacaoLigada: boolean };
 }
 
-/** O aviso ao cliente (decisão 5): começo e fim fixos, o meio é o texto da etapa. */
-export function textoAvisoEtapa(cliente: string, escritorio: string, parteContraria: string | null, meio: string): string {
-  const primeiro = cliente.trim().split(/\s+/)[0] ?? "";
-  const contra = parteContraria?.trim() ? ` contra ${parteContraria.trim()}` : "";
-  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Novidade no seu processo${contra}: ${meio.trim()} Qualquer dúvida, é só responder esta mensagem.`;
+/**
+ * O aviso "Etapa do caso" (decisão 5 do Jurídico, com o texto aprovado nos textos no tom e
+ * mandado à Meta): começo e fim fixos, o caso e, no meio, o texto da etapa. {nome} é o primeiro
+ * nome do contato principal de cada cliente.
+ */
+export function textoAvisoEtapa(nome: string, escritorio: string, caso: string, meio: string): string {
+  const primeiro = nome.trim().split(/\s+/)[0] ?? "";
+  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Novidade no caso ${caso.trim()}: ${meio.trim()} Qualquer dúvida, é só responder esta mensagem.`;
 }
 
 // ------------------------------------------------------------------------- Parte 2: prazos e tarefas

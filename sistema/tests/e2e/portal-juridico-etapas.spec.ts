@@ -75,7 +75,7 @@ test.describe("Jurídico do Portal, etapas do escritório (EX-07)", () => {
     const form = page.getByRole("form", { name: "Editar a etapa Sentença" });
     await expect(form.getByLabel("Nome da etapa")).toBeFocused();
     await expect(form).toContainText("76 de 240");
-    await expect(form).toContainText("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no seu processo contra Mercado Bom Preço: o juiz decidiu o caso.");
+    await expect(form).toContainText("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no caso Joana x Mercado Bom Preço: o juiz decidiu o caso.");
     await form.getByLabel("Texto para o cliente").fill("curto");
     await form.getByRole("button", { name: "Salvar etapa" }).click();
     await expect(form.getByText("Falta acertar 1 ponto, marcado abaixo.")).toBeVisible();

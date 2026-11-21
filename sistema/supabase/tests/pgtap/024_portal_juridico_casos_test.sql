@@ -111,8 +111,8 @@ select is((teste.erro($$ select portal_juridico_caso_etapa(diego, rm, cs.ben, 1,
   'MESMA_ETAPA', 'não muda para a etapa em que já está');
 select is((select portal_juridico_caso_etapa(diego, rm, cs.ben, 1, jsonb_build_object('etapaId', (select id from etapas where escritorio_id = ids.rm and ordem = 3),
   'motivo', 'Citação juntada aos autos.', 'avisar', true)) ->> 'aviso' from ids, cs),
-  'Olá, Benedito. Aqui é do escritório Ribeiro & Matos. Novidade no seu processo contra Metalúrgica Paulista S.A.: a outra parte foi chamada e vai apresentar a defesa dela. É normal levar algumas semanas. Qualquer dúvida, é só responder esta mensagem.',
-  'EX-14: o aviso usa o primeiro nome, o escritório, a parte contrária e o texto da etapa');
+  'Olá, Benedito. Aqui é do escritório Ribeiro & Matos. Novidade no caso Benedito x Metalúrgica Paulista: a outra parte foi chamada e vai apresentar a defesa dela. É normal levar algumas semanas. Qualquer dúvida, é só responder esta mensagem.',
+  'EX-14: o aviso "Etapa do caso" usa o primeiro nome, o escritório, o caso e o texto da etapa (F3.37)');
 select is((teste.erro($$ select portal_juridico_caso_etapa(diego, rm, cs.ben, 1, jsonb_build_object('etapaId', et.prep, 'motivo', 'Voltou')) from ids, cs, et $$)) ->> 'codigo',
   'TC409', 'versão antiga é recusada');
 select is((select portal_juridico_caso(diego, rm, cs.ben) -> 'mudancas' -> 0 ->> 'avisoEnviadoEm' from ids, cs), null,
