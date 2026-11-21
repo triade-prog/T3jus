@@ -8,9 +8,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  GATILHOS, ORDEM_GATILHOS, PASSOS_ADICIONAVEIS, REGRAS_PESSOA, TIPOS_PASSO, TITULOS_ERRO_FLUXO,
+  AREA_DO_GATILHO, CONTA_CLIENTE_NOVO, GATILHOS, ORDEM_GATILHOS, PASSOS_ADICIONAVEIS, TIPOS_PASSO, TITULOS_ERRO_FLUXO, podeMontarGatilho, regrasDoGatilho,
   acharPasso, adicionarPasso, apagarPasso, aplicarSugestao, fluxoComSugestao, moverPasso, passosSugeridos, passosTracejados, recusarSugestao, nomeDoRamo, passoNovo, podeMover, quandoSai, quemRecebe, reais, textoDoErroFluxo, trocarPasso,
-  type ErroFluxo, type EscolhaSimulacao, type ExecucaoAutomacao, type Fluxo, type Gatilho, type LinhaAutomacao, type ListaAutomacoes,
+  type AreaAutomacao, type ErroFluxo, type EscolhaSimulacao, type ExecucaoAutomacao, type Fluxo, type Gatilho, type LinhaAutomacao, type ListaAutomacoes,
   type PaginaAutomacao, type Passo, type PassoMensagem, type PassoPessoa, type PassoRamos, type Quando, type QuemEntraria, type Simulacao, type TipoPasso,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -214,8 +214,22 @@ function JanelaPedir({ aberta, inicial, aoFechar, aoMontar, aoCriada }: {
   );
 }
 
+// A frase curta de cada gatilho na escolha (desenho de PA-06, estado gn-escolher).
+const RESUMO_GATILHO: Record<Gatilho, string> = {
+  CLIENTE_NOVO: "Quando aceita a primeira proposta ou assina o primeiro contrato. Para a boas-vindas.",
+  DOCUMENTO_PENDENTE: "Quando um documento pedido ao cliente não chega em alguns dias. Para lembrar do que falta.",
+  ETAPA_CASO: "Quando a etapa muda e tem texto para o cliente.",
+  LEMBRETE_AUDIENCIA: "1 dia antes de audiência, reunião ou perícia com o cliente.",
+  PARCELA_ATRASO: "Parcela sem pagamento alguns dias depois do vencimento.",
+  PARCELA_VAI_VENCER: "Alguns dias antes do vencimento.",
+  PAGAMENTO_RECEBIDO: "Quando o Financeiro registra o recebimento.",
+  PRESTACAO_CONTAS: "Quando o repasse ao cliente é registrado.",
+};
+
 function JanelaNova({ aberta, areas, aoFechar, aoCriada }: { aberta: boolean; areas: string[]; aoFechar: () => void; aoCriada: (id: string) => void }) {
-  const gatilhos = ORDEM_GATILHOS.filter((g) => areas.includes(GATILHOS[g].area));
+  const gatilhos = ORDEM_GATILHOS.filter((g) => podeMontarGatilho(g, areas));
+  const grupos = (["CONVERSAS", "JURIDICO", "FINANCEIRO"] as AreaAutomacao[])
+    .map((a) => ({ a, gs: gatilhos.filter((g) => GATILHOS[g].area === a) })).filter((x) => x.gs.length);
   const [nome, setNome] = useState("");
   const [gatilho, setGatilho] = useState<Gatilho | null>(null);
   const [erros, setErros] = useState<string[]>([]);
@@ -246,21 +260,25 @@ function JanelaNova({ aberta, areas, aoFechar, aoCriada }: { aberta: boolean; ar
       </div>
       <fieldset className="campo" aria-describedby={descritoPor(erros.includes("gatilho") && "nv-g-er")}>
         <legend>Quando começa</legend>
-        {gatilhos.length ? (
-          <ul className="au-tipos">
-            {gatilhos.map((g) => (
-              <li key={g}>
-                <label>
-                  <input className="marcar" type="radio" name="nv-g" checked={gatilho === g} onChange={() => setGatilho(g)} />
-                  <span className="au-ic"><Icone nome={ic(GATILHOS[g].icone)} className="ico" /></span>
-                  <span>{GATILHOS[g].nome}<small>{GATILHOS[g].area === "JURIDICO" ? "Jurídico" : "Financeiro"} · {GATILHOS[g].de}</small></span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        ) : <p className="ajuda">Você não tem Financeiro nem Jurídico. Peça a área à sócia dona para montar automações.</p>}
+        <div className="gn-tipos">
+          {grupos.map(({ a, gs }) => (
+            <fieldset key={a}>
+              <legend>{AREA_DO_GATILHO[a]}{a === "CONVERSAS" ? " · todos da equipe veem" : ""}</legend>
+              <ul>
+                {gs.map((g) => (
+                  <li key={g} className={GATILHOS[g].novo ? "gn-novo-l" : undefined}>
+                    <label>
+                      <input className="marcar" type="radio" name="nv-g" checked={gatilho === g} onChange={() => setGatilho(g)} />
+                      <span className="au-ic"><Icone nome={ic(GATILHOS[g].icone)} className="ico" /></span>
+                      <span><b>{GATILHOS[g].nome}{GATILHOS[g].novo ? <span className="gn-novo">Novo</span> : null}</b><small>{RESUMO_GATILHO[g]}</small></span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+          ))}
+        </div>
         {erros.includes("gatilho") ? <ErroCampo id="nv-g-er">Escolha quando a automação começa.</ErroCampo> : null}
-        <p className="ajuda">Cliente cadastrado, caso encerrado e documento pendente chegam depois.</p>
       </fieldset>
     </Janela>
   );
@@ -425,7 +443,7 @@ function Bloco({ ctx, passo }: { ctx: CtxDesenho; passo: Passo }) {
   switch (passo.tipo) {
     case "GATILHO":
       titulo = GATILHOS[g].titulo(passo.dias ?? null);
-      corpo = <p className="au-det">{GATILHOS[g].de}</p>;
+      corpo = <p className="au-det">{g === "CLIENTE_NOVO" ? `Conta: ${CONTA_CLIENTE_NOVO[passo.conta ?? "FECHOU"].nome.toLowerCase()}. Importados da planilha e reativados nunca recebem.` : GATILHOS[g].de}</p>;
       break;
     case "CONDICOES":
       titulo = "Só quem pode receber";
@@ -527,7 +545,7 @@ function Sequencia({ ctx, passos, rotulo }: { ctx: CtxDesenho; passos: Passo[]; 
               <ul className={`au-ramos${sug ? " sug" : ""}`} aria-label={`Caminhos depois do passo ${ctx.numeros.get(s.id)}`}>
                 {s.ramos.map((r) => (
                   <li key={r.quando}>
-                    <span className="au-rot"><Icone nome={ic(r.quando === "PAGOU" ? "moeda" : r.quando === "RESPONDEU" ? "conversas" : "relogio")} className="ico" />{nomeDoRamo(r.quando, ctx.p.gatilho)}</span>
+                    <span className="au-rot"><Icone nome={ic(r.quando === "PAGOU" ? "moeda" : r.quando === "CHEGOU" ? "doc" : r.quando === "RESPONDEU" ? "conversas" : "relogio")} className="ico" />{nomeDoRamo(r.quando, ctx.p.gatilho)}</span>
                     {r.passos.length ? <Sequencia ctx={ctx} passos={r.passos} /> : (
                       <ol className="au-fluxo">
                         <li>
@@ -623,14 +641,38 @@ function EditarPasso({ p, passo, num, aoSalvar, mudando, falha }: {
       campos = (
         <>
           <p className="au-det">{GATILHOS[g].de}</p>
+          {g === "CLIENTE_NOVO" && d.tipo === "GATILHO" ? (
+            <fieldset className="campo">
+              <legend>Quem conta como cliente novo</legend>
+              {(["FECHOU", "CADASTRO"] as const).map((c) => (
+                <label key={c} className="opcao"><input className="marcar" type="radio" name="bl-conta" disabled={ro} checked={(d.conta ?? "FECHOU") === c} onChange={() => setD({ ...d, conta: c })} />
+                  <span>{CONTA_CLIENTE_NOVO[c].nome}<small>{CONTA_CLIENTE_NOVO[c].ajuda}</small></span></label>
+              ))}
+            </fieldset>
+          ) : null}
+          {g === "CLIENTE_NOVO" || g === "DOCUMENTO_PENDENTE" ? (
+            <div className="campo">
+              <p className="au-rot-p">Regras fixas</p>
+              <ul className="gn-regras">
+                {(g === "CLIENTE_NOVO"
+                  ? ["Importados da planilha e clientes reativados nunca recebem.", "Uma boas-vindas por cliente, para sempre.", "Quem pediu para não receber avisos e quem não tem WhatsApp no contato principal ficam de fora."]
+                  : ["Uma mensagem por cliente, com tudo o que falta.", "No máximo 1 lembrete de documento por semana por cliente, somando o “Pedir de novo”.", "Chegou ou o caso encerrou: sai na hora.", "O pedido de não receber só cobrança não tira o cliente deste lembrete."]
+                ).map((t) => <li key={t}><Icone nome="cadeado" className="ico" /><span>{t} <small>Regra fixa.</small></span></li>)}
+              </ul>
+            </div>
+          ) : null}
           {GATILHOS[g].dias ? (
             <div className="campo">
-              <label htmlFor="bl-dias">{g === "PARCELA_ATRASO" ? "Dias de atraso" : "Dias antes do vencimento"}</label>
+              <label htmlFor="bl-dias">{g === "PARCELA_ATRASO" ? "Dias de atraso" : g === "PARCELA_VAI_VENCER" ? "Dias antes do vencimento" : g === "CLIENTE_NOVO" ? "Dias depois de virar cliente (0 é no mesmo dia)" : "Dias sem chegar, contados do pedido ou do último “Pedir de novo”"}</label>
               <input className="entrada" id="bl-dias" type="number" inputMode="numeric" min={GATILHOS[g].dias.min} max={GATILHOS[g].dias.max} disabled={ro} data-foco
                 value={d.dias ?? ""} onChange={(e) => setD({ ...d, dias: e.target.value === "" ? null : Number(e.target.value) })} aria-describedby="bl-dias-aj" />
               <p className="ajuda" id="bl-dias-aj">De {GATILHOS[g].dias.min} a {GATILHOS[g].dias.max}. O gatilho não muda depois de criar.</p>
             </div>
           ) : <p className="ajuda">Este gatilho não tem ajuste. Para outro gatilho, crie outra automação.</p>}
+          <div className="campo">
+            <p className="au-rot-p">Campos do texto</p>
+            <div className="gn-cam">{GATILHOS[g].campos.map((c) => <code key={c} className="gn-campos-c">{`{${c}}`}</code>)}</div>
+          </div>
         </>
       );
       break;
@@ -771,9 +813,9 @@ function EditarPasso({ p, passo, num, aoSalvar, mudando, falha }: {
         <>
           <fieldset className="campo">
             <legend>Para quem passa</legend>
-            {(["QUEM_CUIDA", "AREA", "SOCIA_DONA"] as const).map((r) => (
+            {regrasDoGatilho(g).map(({ regra: r, nome }) => (
               <label key={r} className="opcao"><input className="marcar" type="radio" name="bl-quem" disabled={ro} checked={modo === r} onChange={() => setD({ ...pessoa, regra: r, pessoaId: null })} />
-                <span>{REGRAS_PESSOA[r]}</span></label>
+                <span>{nome}{r === "QUEM_PEDIU" ? <small>Se ela estiver fora, quem cuida do caso; sem ninguém, a sócia dona.</small> : null}</span></label>
             ))}
             <label className="opcao"><input className="marcar" type="radio" name="bl-quem" disabled={ro} checked={modo === "PESSOA"}
               onChange={() => setD({ ...pessoa, regra: null, pessoaId: p.pessoas.find((x) => x.areas.includes(p.area))?.id ?? p.pessoas[0]?.id ?? null })} />
@@ -1110,6 +1152,23 @@ const MOTIVO_FORA: Record<string, string> = {
   COMBINADO: "Tem combinado no Financeiro",
 };
 
+/** A linha de "Quem entraria" nos gatilhos novos (PA-06): o que faz entrar e quando. */
+function detalheNovo(g: Gatilho, i: QuemEntraria["itens"][number]): string {
+  const para = i.contato.nome ? ` · para ${i.contato.nome}${i.contato.papel ? `, ${i.contato.papel}` : ""}` : "";
+  if (g === "CLIENTE_NOVO") {
+    if (i.motivo === "IMPORTADO") return `Vieram pela importação de ${diaCurto(i.origem.quando)}. Já eram do escritório.`;
+    if (i.motivo === "AINDA_NAO") return `Cadastrado em ${diaCurto(i.origem.quando)}, ainda sem proposta aceita nem contrato. Entra se fechar.`;
+    if (i.motivo === "JA_RECEBEU") return "Já recebeu a boas-vindas. Cada cliente recebe uma vez só.";
+    return `${i.origem.descricao} em ${diaCurto(i.origem.quando)}${para}${i.quemAtende ? ` · atende ${i.quemAtende.nome}` : ""}`;
+  }
+  const docs = i.documentos ?? [];
+  const casos = [...new Set(docs.map((x) => x.caso.nome))];
+  const base = `${docs.length > 1 ? `${docs.length} documentos numa mensagem só · ` : ""}${i.origem.descricao} · ${casos.join(", ")}`;
+  if (i.quando === "ESPERA") return `${base} · ${i.repedido ? `pediram de novo em ${diaCurto(i.repedido)}, a contagem recomeçou` : "ainda dentro do prazo"}: entra em ${diaCurto(i.origem.quando)}, se não chegar`;
+  if (i.quando === "AMANHA") return `${base} · chega aos dias do gatilho amanhã, ${diaCurto(i.origem.quando)}${para}`;
+  return `${base} · pedido em ${diaCurto(docs[0]?.pedidoEm ?? i.origem.quando)}${para}`;
+}
+
 function Testar({ p }: { p: PaginaAutomacao }) {
   const [quem, setQuem] = useState<QuemEntraria | "erro" | null>(null);
   const [parcela, setParcela] = useState<string>("");
@@ -1140,7 +1199,16 @@ function Testar({ p }: { p: PaginaAutomacao }) {
   const fora = itens.filter((i) => !i.entra);
   const escolhas: [EscolhaSimulacao, string][] = GATILHOS[g].ramos.includes("PAGOU")
     ? [["NADA", "Não pagar nem responder"], ["RESPONDEU", "Responder"], ["PAGOU", "Pagar"]]
-    : [["NADA", "Não responder"], ["RESPONDEU", "Responder"]];
+    : GATILHOS[g].ramos.includes("CHEGOU")
+      ? [["NADA", "Não mandar nem responder"], ["RESPONDEU", "Responder ou mandar um arquivo"], ["CHEGOU", "O documento chegar"]]
+      : [["NADA", "Não responder"], ["RESPONDEU", "Responder"]];
+  const novo = g === "CLIENTE_NOVO" || g === "DOCUMENTO_PENDENTE";
+  const subQuem = !quem || quem === "erro" || !quem.disponivel ? undefined
+    : g === "CLIENTE_NOVO" ? `Se estivesse ligada nos últimos 30 dias: ${entram.length} ${entram.length === 1 ? "entraria" : "entrariam"}, ${fora.reduce((n, i) => n + (i.quantos ?? 1), 0)} ficariam de fora`
+    : g === "DOCUMENTO_PENDENTE" ? `${itens.reduce((n, i) => n + (i.documentos?.length ?? 0), 0)} documentos faltando, de ${itens.length} ${itens.length === 1 ? "cliente" : "clientes"}: ${itens.filter((i) => i.quando === "HOJE").length} já ${itens.filter((i) => i.quando === "HOJE").length === 1 ? "passou" : "passaram"} de ${quem.dias ?? 5} dias hoje`
+    : `${itens.length} ${g.startsWith("PARCELA") ? (itens.length === 1 ? "parcela" : "parcelas") : g === "LEMBRETE_AUDIENCIA" ? (itens.length === 1 ? "compromisso nos próximos 7 dias" : "compromissos nos próximos 7 dias") : (itens.length === 1 ? "mudança de etapa nos últimos 7 dias" : "mudanças de etapa nos últimos 7 dias")}: ${entram.length} ${entram.length === 1 ? "entraria" : "entrariam"}, ${fora.length} ${fora.length === 1 ? "fica" : "ficam"} de fora`;
+  const agora = g === "DOCUMENTO_PENDENTE" ? entram.filter((i) => i.quando !== "ESPERA") : entram;
+  const depois = g === "DOCUMENTO_PENDENTE" ? entram.filter((i) => i.quando === "ESPERA") : [];
   return (
     <div className="au-teste">
       <div className="au-col">
@@ -1186,12 +1254,48 @@ function Testar({ p }: { p: PaginaAutomacao }) {
         </Folha>
       </div>
       <aside className="au-col" aria-label="Quem entraria">
-        <Folha id="t-quem" titulo="Quem entraria hoje" sub={quem && quem !== "erro" && quem.disponivel ? `${itens.length} ${g.startsWith("PARCELA") ? (itens.length === 1 ? "parcela" : "parcelas") : g === "LEMBRETE_AUDIENCIA" ? (itens.length === 1 ? "compromisso nos próximos 7 dias" : "compromissos nos próximos 7 dias") : (itens.length === 1 ? "mudança de etapa nos últimos 7 dias" : "mudanças de etapa nos últimos 7 dias")}: ${entram.length} ${entram.length === 1 ? "entraria" : "entrariam"}, ${fora.length} ${fora.length === 1 ? "fica" : "ficam"} de fora` : undefined}>
+        <Folha id="t-quem" titulo={g === "CLIENTE_NOVO" ? "Quem teria entrado" : g === "DOCUMENTO_PENDENTE" ? "Quem entraria" : "Quem entraria hoje"} sub={subQuem}>
           {quem === "erro" ? <div className="au-pe-nota"><Aviso tom="urgencia" titulo="Não deu para carregar">Tente de novo em instantes.</Aviso></div>
             : !quem ? <div className="au-pe-nota"><Carregando rotulo="Carregando quem entraria" linhas={3} /></div>
             : !quem.disponivel ? <p className="au-pe-nota ajuda">Neste gatilho, cada cliente entra na hora em que o registro é feito no Financeiro. A simulação já funciona.</p>
-            : !itens.length ? <p className="au-pe-nota ajuda">Hoje ninguém entraria nesta automação.</p>
-            : (
+            : !itens.length ? <p className="au-pe-nota ajuda">{g === "CLIENTE_NOVO" ? "Ninguém virou cliente nos últimos 30 dias." : g === "DOCUMENTO_PENDENTE" ? "Nenhum documento pedido está faltando." : "Hoje ninguém entraria nesta automação."}</p>
+            : novo ? (
+              <>
+                <p className="au-sub3">Entrariam · {agora.length}</p>
+                <ul className="au-quem-l">
+                  {agora.map((i) => (
+                    <li key={i.origem.id}><strong>{i.cliente.nome}</strong>
+                      {i.quando === "HOJE" ? <Selo tipo="atencao" icone="relogio">Já pendente hoje</Selo> : i.quando === "AMANHA" ? <Selo tipo="ok" icone="check">Entra amanhã</Selo> : <Selo tipo="ok" icone="check">Entraria</Selo>}
+                      <small>{detalheNovo(g, i)}</small>
+                      {i.quando === "HOJE" && i.documentos?.[0] ? <a className="btn btn-sec gn-ja" href={`/juridico/casos/${i.documentos[0].caso.id}`}><Icone nome="check" className="ico" />Já chegou? Marcar no caso</a> : null}
+                    </li>
+                  ))}
+                </ul>
+                {depois.length ? (
+                  <>
+                    <p className="au-sub3">Ainda não · {depois.length}</p>
+                    <ul className="au-quem-l">
+                      {depois.map((i) => <li key={i.origem.id}><strong>{i.cliente.nome}</strong><Selo tipo="atencao" icone="relogio">Espera</Selo><small>{detalheNovo(g, i)}</small></li>)}
+                    </ul>
+                  </>
+                ) : null}
+                {fora.length ? (
+                  <>
+                    <p className="au-sub3">{g === "CLIENTE_NOVO" ? "Ficam de fora" : "Ficam de fora"} · {fora.reduce((n, i) => n + (i.quantos ?? 1), 0)}</p>
+                    <ul className="au-quem-l">
+                      {fora.map((i) => (
+                        <li key={i.origem.id}><strong>{i.cliente.nome}</strong>
+                          {i.motivo === "AINDA_NAO" ? <Selo tipo="atencao" icone="relogio">Ainda não</Selo> : <Selo tipo="neutro">Fica de fora</Selo>}
+                          <small>{i.motivo === "SEM_AVISOS" ? `${i.detalhe?.quemPediu ? `${i.detalhe.quemPediu} pediu` : "Pediu"}${i.detalhe?.em ? ` em ${diaCurto(diaDe(i.detalhe.em))}` : ""} para não receber avisos.`
+                            : i.motivo === "SEM_WHATSAPP" ? MOTIVO_FORA.SEM_WHATSAPP : detalheNovo(g, i)}</small>
+                          {i.motivo === "SEM_WHATSAPP" ? <a className="btn btn-sec" href={`${ROTAS_PORTAL.clientes}/${i.cliente.id}`}><Icone nome="pessoas" className="ico" />Corrigir na ficha</a> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+              </>
+            ) : (
               <>
                 <p className="au-sub3">Entrariam · {entram.length}</p>
                 <ul className="au-quem-l">
@@ -1214,6 +1318,8 @@ function Testar({ p }: { p: PaginaAutomacao }) {
               </>
             )}
           {g === "PARCELA_ATRASO" ? <p className="pt-pe-folha"><Icone nome="ajuda" className="ico" /><span>Quem já está em atraso só entra se a sócia dona escolher isso ao ligar.</span></p> : null}
+          {g === "DOCUMENTO_PENDENTE" ? <p className="pt-pe-folha"><Icone nome="ajuda" className="ico" /><span>“Já pendente hoje” só entra se você escolher isso ao ligar. Antes, vale conferir na ficha do caso se algum já chegou por e-mail ou em mãos.</span></p> : null}
+          {g === "CLIENTE_NOVO" ? <p className="pt-pe-folha"><Icone nome="ajuda" className="ico" /><span>Boas-vindas só vale para quem entrar depois de ligar. Quem já é cliente hoje não recebe, nem estes {entram.length}.</span></p> : null}
         </Folha>
       </aside>
     </div>
@@ -1238,7 +1344,7 @@ function Frase({ p }: { p: PaginaAutomacao }) {
     <p className="au-frase">
       {GATILHOS[g].toda(gat?.dias ?? null)}{cond && cond.tipo === "CONDICOES" && cond.semCombinado ? ", sem combinado de pagamento," : ""} recebe <b>{msgs === 1 ? "uma mensagem" : `${msgs} mensagens`}</b> pelo WhatsApp.
       {resp?.passos.some((x) => x.tipo === "IA") ? <> Se o cliente responder, <b>a IA conversa</b> com o que está no T3jus.</> : null}
-      {nada ? <> Se{espera ? <> em <b>{espera} {espera === 1 ? "dia" : "dias"}</b></> : null} {GATILHOS[g].ramos.includes("PAGOU") ? "não pagar nem responder" : "não responder"}, a conversa <b>passa para {quemRecebe(nada, p.pessoas, g)}</b>.</> : null}
+      {nada ? <> Se{espera ? <> em <b>{espera} {espera === 1 ? "dia" : "dias"}</b></> : null} {GATILHOS[g].ramos.includes("PAGOU") ? "não pagar nem responder" : GATILHOS[g].ramos.includes("CHEGOU") ? "o documento não chegar nem o cliente responder" : "não responder"}, a conversa <b>passa para {quemRecebe(nada, p.pessoas, g)}</b>.</> : null}
       {fim ? <> Depois, a conversa <b>passa para {quemRecebe(fim, p.pessoas, g)}</b>.</> : null}
     </p>
   );
@@ -1287,6 +1393,19 @@ function Ligar({ p, mudando, falha, aoLigar, aoSugerir }: {
           <Aviso tom="atencao" titulo="Aprove os textos antes de ligar">
             {p.textosPorAprovarIds.map((id, i) => <span key={id}>{i ? " · " : ""}<a href={hrefAutomacao({ a: p.id, b: id })}>Passo {numeros.get(id)}: {(acharPasso(p.rascunho, id) as PassoMensagem | null)?.nome}</a></span>)}
           </Aviso>
+        ) : null}
+        {p.gatilho === "DOCUMENTO_PENDENTE" ? (
+          <fieldset className="campo">
+            <legend>Quem entra</legend>
+            <label className="opcao"><input className="marcar" type="radio" name="lg-quem" checked={!todas} onChange={() => setTodas(false)} />
+              <span>Só os documentos que passarem do prazo daqui em diante<small className="ajuda" style={{ display: "block" }}>Recomendado. A lista de pendentes costuma estar atrasada: o cliente não recebe lembrete de algo que já mandou.</small></span></label>
+            <label className="opcao"><input className="marcar" type="radio" name="lg-quem" checked={todas} onChange={() => setTodas(true)} />
+              <span>Também os que já estão pendentes hoje<small className="ajuda" style={{ display: "block" }}>Saem a partir do próximo horário permitido. Veja quem são em Testar.</small></span></label>
+            <p className="ajuda">No máximo 1 lembrete de documento por semana por cliente, somando o “Pedir de novo”.</p>
+          </fieldset>
+        ) : null}
+        {p.gatilho === "CLIENTE_NOVO" ? (
+          <p className="ajuda">Quem entra: só quem virar cliente depois de ligar. Uma boas-vindas por cliente, para sempre.</p>
         ) : null}
         {p.gatilho === "PARCELA_ATRASO" ? (
           <fieldset className="campo">

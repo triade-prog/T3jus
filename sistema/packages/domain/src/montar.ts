@@ -7,7 +7,7 @@
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import {
-  GATILHOS, passosEmOrdem,
+  GATILHOS, GATILHOS_VALIDOS, passosEmOrdem,
   type Fluxo, type Gatilho, type Passo, type PassoRamos, type Quando, type RegraPessoa,
 } from "./automacoes.ts";
 
@@ -42,20 +42,20 @@ const passoSimples = {
   dias: z.number().int().nullable(),
   horasAntes: z.number().int().nullable(),
   pessoaId: z.string().nullable(),
-  regra: z.enum(["QUEM_CUIDA", "AREA", "SOCIA_DONA"]).nullable(),
+  regra: z.enum(["QUEM_CUIDA", "AREA", "SOCIA_DONA", "QUEM_PEDIU"]).nullable(),
   motivo: z.string().nullable(),
 };
 const passoRamoSchema = z.object({ tipo: z.enum(TIPOS_SAIDA), ...passoSimples });
 const passoSaidaSchema = z.object({
   tipo: z.enum([...TIPOS_SAIDA, "RAMOS"]),
   ...passoSimples,
-  ramos: z.array(z.object({ quando: z.enum(["PAGOU", "RESPONDEU", "NADA"]), passos: z.array(passoRamoSchema) })).nullable(),
+  ramos: z.array(z.object({ quando: z.enum(["PAGOU", "CHEGOU", "RESPONDEU", "NADA"]), passos: z.array(passoRamoSchema) })).nullable(),
 });
 
 export const saidaMontarSchema = z.object({
   entendeu: z.boolean(),
   porque: z.string().nullable(),
-  gatilho: z.enum(["PAGAMENTO_RECEBIDO", "PARCELA_VAI_VENCER", "PARCELA_ATRASO", "ETAPA_CASO", "LEMBRETE_AUDIENCIA", "PRESTACAO_CONTAS"]).nullable(),
+  gatilho: z.enum(GATILHOS_VALIDOS).nullable(),
   nome: z.string().nullable(),
   dias: z.number().int().nullable(),
   semCombinado: z.boolean().nullable(),
@@ -90,12 +90,12 @@ ${gat}
 Passos que você pode usar:
 - MENSAGEM: um texto para o cliente, com "nome" (curto, até 60 letras) e "texto". Use só os campos do gatilho, entre chaves, no meio da frase (nunca no começo nem no fim do texto). Educado, curto, sem ameaça nem constrangimento (CDC, art. 42), sem juridiquês, sem opinião jurídica. Não use {link de pagamento}: o T3jus ainda não gera link. Assine com o nome do escritório.
 - ESPERA: "dias" de 1 a 30; no lembrete de audiência pode ser "horasAntes" de 1 a 48, contadas antes do compromisso.
-- RAMOS: só no caminho principal e sempre o último dele, logo depois de uma espera. Cada caminho tem "quando" (PAGOU, RESPONDEU ou NADA, conforme o gatilho) e os seus passos. Dentro de um caminho não há outro RAMOS.
+- RAMOS: só no caminho principal e sempre o último dele, logo depois de uma espera. Cada caminho tem "quando" (PAGOU, CHEGOU, RESPONDEU ou NADA, conforme o gatilho; CHEGOU é "o documento chegou") e os seus passos. Dentro de um caminho não há outro RAMOS.
 - IA: a IA do escritório conversa com o cliente, só com o que está no T3jus.
-- PESSOA: passa a conversa para alguém, com "motivo". Use "pessoaId" de uma pessoa da lista quando o pedido disser quem; senão "regra": QUEM_CUIDA (quem cuida do caso ou do contrato), AREA (quem tem a área) ou SOCIA_DONA. É sempre o último passo da sua sequência.
+- PESSOA: passa a conversa para alguém, com "motivo". Use "pessoaId" de uma pessoa da lista quando o pedido disser quem; senão "regra": QUEM_CUIDA (quem cuida do caso ou do contrato; no cliente novo, quem atende o cliente), AREA (quem tem a área; não existe no cliente novo), SOCIA_DONA ou QUEM_PEDIU (quem pediu o documento; só no documento pendente). É sempre o último passo da sua sequência.
 - FIM: termina; "texto" opcional curto. Último passo da sua sequência.
 Cada passo tem "ref": um apelido curto e único em letras minúsculas, números e hífen (ex.: msg-1, espera-1, pessoa-1). Campos que o passo não usa vão como null.
-O gatilho e as condições não entram em "passos": diga o "gatilho", os "dias" do gatilho (só nos de parcela) e "semCombinado" (só nos de parcela: true para deixar de fora parcela com combinado de pagamento).
+O gatilho e as condições não entram em "passos": diga o "gatilho", os "dias" do gatilho (nos de parcela, no cliente novo, de 0 a 30 dias depois de virar cliente, e no documento pendente, de 1 a 30 dias depois do pedido) e "semCombinado" (só nos de parcela: true para deixar de fora parcela com combinado de pagamento).
 
 Regras fixas do T3jus, que valem sempre e que você não precisa criar: mensagens só das 8h às 20h em dia útil; no máximo 1 cobrança por semana por parcela, somando todas as automações; quem pediu para não receber avisos fica de fora; texto novo só sai depois que a sócia dona aprova e o WhatsApp (Meta) aprova.
 
@@ -156,7 +156,10 @@ export function fluxoDaSaida(s: SaidaMontar, g: Gatilho, c: ContextoMontar): { f
       case "IA": return darId({ id: "", tipo: "IA" }, x.ref);
       case "PESSOA": {
         const pessoaId = pessoaOk(x.pessoaId);
-        const regra: RegraPessoa | null = pessoaId ? null : (x.regra ?? "AREA");
+        // A regra que o gatilho não tem vira a que faz sentido nele (PA-06).
+        let regra: RegraPessoa | null = pessoaId ? null : (x.regra ?? (g === "DOCUMENTO_PENDENTE" ? "QUEM_PEDIU" : g === "CLIENTE_NOVO" ? "QUEM_CUIDA" : "AREA"));
+        if (regra === "QUEM_PEDIU" && g !== "DOCUMENTO_PENDENTE") regra = "QUEM_CUIDA";
+        if (regra === "AREA" && g === "CLIENTE_NOVO") regra = "QUEM_CUIDA";
         return darId({ id: "", tipo: "PESSOA", pessoaId, regra, motivo: limpo(x.motivo, 300) || null }, x.ref);
       }
       case "FIM": return darId({ id: "", tipo: "FIM", texto: limpo(x.texto, 120) || null }, x.ref);
@@ -180,10 +183,13 @@ export function fluxoDaSaida(s: SaidaMontar, g: Gatilho, c: ContextoMontar): { f
     }
     return out;
   };
-  const gatilho: Passo = info.dias
-    ? { id: "gatilho", tipo: "GATILHO", dias: Math.min(info.dias.max, Math.max(info.dias.min, s.dias ?? info.dias.padrao)) }
-    : { id: "gatilho", tipo: "GATILHO" };
   const ant = c.atual?.rascunho.passos ?? [];
+  const gatAnt = ant[0]?.tipo === "GATILHO" ? ant[0] : null;
+  const gatilho: Passo = info.dias
+    ? { id: "gatilho", tipo: "GATILHO", dias: Math.min(info.dias.max, Math.max(info.dias.min, s.dias ?? info.dias.padrao)),
+        // Cliente novo: quem conta continua o do rascunho; a IA não muda isso (decisão 1).
+        ...(g === "CLIENTE_NOVO" ? { conta: gatAnt?.conta ?? "FECHOU" } : {}) }
+    : { id: "gatilho", tipo: "GATILHO" };
   const gatId = ant[0]?.tipo === "GATILHO" ? ant[0].id : "gatilho";
   usados.add(gatId);
   const inicio: Passo[] = [{ ...gatilho, id: gatId }];
