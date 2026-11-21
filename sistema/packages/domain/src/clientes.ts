@@ -217,7 +217,7 @@ export const buscaClientesSchema = z.object({
 
 // ------------------------------------------------------------------- o que a API devolve
 
-export type SituacaoCliente = "ATIVO" | "INATIVO" | "EXCLUIDO";
+export type SituacaoCliente = "ATIVO" | "INATIVO" | "EXCLUIDO" | "ARQUIVADO";
 export interface PessoaRef {
   id: string;
   nome: string;
@@ -252,7 +252,7 @@ export type QuemPediu = keyof typeof QUEM_PEDIU;
 
 export interface PedidoExclusao {
   id: string;
-  estado: "PENDENTE" | "ATENDIDO" | "RECUSADO";
+  estado: "PENDENTE" | "ATENDIDO" | "RECUSADO" | "ARQUIVADO";
   pedidoEm: string;
   canal: CanalPedido;
   quemPediu?: QuemPediu;
@@ -282,6 +282,12 @@ export const excluirDadosSchema = z.object({
   versao: z.number().int().min(1),
   conferido: z.literal(true),
   nomeConfirmado: z.string().trim().min(1).max(160),
+});
+/** Arquivar a pedido (F1.16): o mesmo pedido, sem escrever o nome, porque nada se perde. */
+export const arquivarLgpdSchema = z.object({
+  ...pedidoExclusaoBase,
+  versao: z.number().int().min(1),
+  conferido: z.literal(true),
 });
 export const recusarExclusaoSchema = z.object({ motivo: z.string().trim().min(1).max(300) });
 
@@ -337,6 +343,8 @@ export interface ClienteLinha {
   proxContato?: ProxContato | null;
   /** Só no cliente excluído (F1.15). */
   exclusao?: { em: string; protocolo: string };
+  /** Só no cliente arquivado a pedido (F1.16). */
+  arquivamento?: { em: string; protocolo: string };
 }
 export interface ListaClientes {
   comercial: boolean;
@@ -396,6 +404,15 @@ export interface FichaCliente {
   ultimaRecusa: PedidoExclusao | null;
   /** Só no cliente excluído: o registro da exclusão. */
   exclusao: (PedidoExclusao & { em: string }) | null;
+  /** Só no cliente arquivado a pedido (F1.16): o registro do arquivamento. */
+  arquivamento?: (PedidoExclusao & { em: string }) | null;
+  /** Só para a dona: o contrato e o processo que fazem o pedido virar arquivamento (F1.16). */
+  vinculosLgpd?: VinculosLgpd | null;
+}
+
+export interface VinculosLgpd {
+  contratos: { id: string; numero: string }[];
+  processos: { id: string; nome: string; numeroCnj: string | null }[];
 }
 
 export interface Atendimento {
