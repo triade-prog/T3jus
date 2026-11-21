@@ -85,6 +85,20 @@ begin
   end if;
 end $$;
 
+-- Antes de procurar o anexo: quem não tem nem Contratos nem Financeiro é recusado como área não
+-- liberada (PA-01), sem saber se o anexo existe.
+create function anexo_alguma_area(p_pessoa uuid, p_escritorio uuid) returns void
+language plpgsql
+set search_path = public
+as $$
+begin
+  perform entrar_escritorio(p_pessoa, p_escritorio, 'escritorio.ver');
+  if not (areas_da_pessoa(p_pessoa, p_escritorio) && array['CONTRATOS', 'FINANCEIRO']) then
+    raise exception 'Área não liberada para esta pessoa' using errcode = 'TC401',
+      detail = jsonb_build_object('motivo', 'AREA_NAO_LIBERADA')::text;
+  end if;
+end $$;
+
 create function anexo_dono(a anexos) returns text
 language sql immutable
 as $$ select case when a.contrato_id is not null then 'CONTRATO' when a.conta_id is not null then 'CONTA' else 'RECEBIMENTO' end $$;
@@ -118,8 +132,8 @@ declare
   v_dono_id uuid;
   v_categoria text := p_dados ->> 'categoria';
 begin
+  perform anexo_alguma_area(p_pessoa, p_escritorio);
   if v_dono is null or v_dono not in ('CONTRATO', 'CONTA', 'RECEBIMENTO') then
-    perform entrar_escritorio(p_pessoa, p_escritorio, 'escritorio.ver');
     perform recusar_campos('Confira o anexo', 'dono');
   end if;
   perform anexo_entrar(p_pessoa, p_escritorio, v_dono, true);
@@ -170,7 +184,7 @@ as $$
 #variable_conflict use_column
 declare a anexos;
 begin
-  perform entrar_escritorio(p_pessoa, p_escritorio, 'escritorio.ver');
+  perform anexo_alguma_area(p_pessoa, p_escritorio);
   select * into a from anexos x where x.id = p_anexo and x.escritorio_id = p_escritorio and x.enviado_por = p_pessoa;
   if a.id is null then raise exception 'Anexo não encontrado' using errcode = 'TC404'; end if;
   perform anexo_entrar(p_pessoa, p_escritorio, anexo_dono(a), true);
@@ -186,7 +200,7 @@ set search_path = public
 as $$
 declare a anexos;
 begin
-  perform entrar_escritorio(p_pessoa, p_escritorio, 'escritorio.ver');
+  perform anexo_alguma_area(p_pessoa, p_escritorio);
   select * into a from anexos where id = p_anexo and escritorio_id = p_escritorio and enviado_por = p_pessoa for update;
   if a.id is null then raise exception 'Anexo não encontrado' using errcode = 'TC404'; end if;
   perform anexo_entrar(p_pessoa, p_escritorio, anexo_dono(a), true);
@@ -206,7 +220,7 @@ set search_path = public
 as $$
 declare a anexos;
 begin
-  perform entrar_escritorio(p_pessoa, p_escritorio, 'escritorio.ver');
+  perform anexo_alguma_area(p_pessoa, p_escritorio);
   select * into a from anexos where id = p_anexo and escritorio_id = p_escritorio and situacao = 'PRONTO';
   if a.id is null then raise exception 'Anexo não encontrado' using errcode = 'TC404'; end if;
   perform anexo_entrar(p_pessoa, p_escritorio, anexo_dono(a), false);

@@ -38,3 +38,11 @@ describe("Contratos (CH-04, CH-06)", () => {
     expect(fraseDoContrato({ em: "", acao: "estado.mudou", autor: null, dados: {} })).toBeNull();
   });
 });
+
+describe("EX-12: inscrições no histórico do contrato", () => {
+  it("diz o depois e o antes de quem mudou", () => {
+    expect(fraseDoContrato({ em: "", acao: "contrato.inscricoes_mudadas", autor: "Paula",
+      dados: { antes: { "Felipe Matos": "OAB/SP nº 287.104", "Marina Ribeiro": "OAB/SP nº 214.538" }, depois: { "Felipe Matos": "OAB/RJ nº 245.880-S", "Marina Ribeiro": "OAB/SP nº 214.538" } } }))
+      .toEqual({ oque: "mudou as inscrições na OAB do contrato", detalhe: "Felipe Matos: OAB/RJ nº 245.880-S (antes, OAB/SP nº 287.104)." });
+  });
+});

@@ -5,7 +5,7 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
-  "proximo": "Programar a saída de tudo no fim da guarda (a data já aparece nas telas do F0.14); precisa apagar os arquivos do Storage junto",
-  "ordem": 150
+  "status": "feito",
+  "ordem": 150,
+  "evidencia": "Migration 0540: aplicar_prazos chama terminar_guarda no dia em que a guarda acaba; apaga tudo o que tem escritorio_id (inclusive histórico, carteira, notas e documentos) num comando só, limpa a ficha e deixa o nome com guarda_terminada_em; quem só trabalhava ali e já perdeu a entrada sai de pessoas. As pastas do Storage vão para a fila guarda_arquivos e a api-console apaga pela API do Storage (POST /v1/rotina/arquivos-da-guarda, chamada pela rotina e de hora em hora pelo pg_cron). pgTAP 047 e 009; Deno guarda_test.ts"
 }

@@ -13,7 +13,7 @@ import { Aviso, Carregando, ErroAoCarregar, ErroCampo, Janela } from "../console
 import { iniciais } from "../console/tempo.ts";
 import { DIAS_SEMANA, diaBr, diaCurto, diaDaSemana, diaDe, horaDe, horariosDoLembrete, jaPassou, nomeDoTipo, quandoCurto, rotaAgenda } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
-import { JanelaCompromisso, rascunhoDe, type Marcado, type Pessoa } from "./JanelaCompromisso.tsx";
+import { JanelaCompromisso, nomeDoCaso, rascunhoDe, useCasosDoCompromisso, type Marcado, type Pessoa } from "./JanelaCompromisso.tsx";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
 
 function Folha({ titulo, sub, acoes, pequena, icone, children }: { titulo: string; sub?: ReactNode; acoes?: ReactNode; pequena?: boolean; icone?: "whats"; children: ReactNode }) {
@@ -70,7 +70,7 @@ export function fraseDoEvento(e: FichaCompromisso["historico"][number], nomes: R
 }
 
 const CAMPOS: Record<string, string> = {
-  tipo: "tipo", tipo_escrito: "tipo", titulo: "o que é", modalidade: "onde", local: "endereço", link_sala: "link da sala", cliente_id: "cliente",
+  tipo: "tipo", tipo_escrito: "tipo", titulo: "o que é", modalidade: "onde", local: "endereço", link_sala: "link da sala", cliente_id: "cliente", caso_id: "processo",
   responsavel_id: "responsável", tambem_vai: "quem também vai", lembrete_cliente: "lembrete", observacoes: "observações",
 };
 
@@ -151,6 +151,7 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
   const [copiado, setCopiado] = useState(false);
   // A hora de agora, lida ao carregar (o "começa em" não precisa correr sozinho).
   const [agora, setAgora] = useState(0);
+  const casos = useCasosDoCompromisso(escritorio?.areas);
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -295,6 +296,15 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
           <dt>Cliente</dt>
           <dd>{f.cliente ? <a href={`${ROTAS_PORTAL.clientes}/${f.cliente.id}`}>{f.cliente.nome}</a> : "Sem cliente (compromisso interno)"}</dd>
         </div>
+        {f.caso ? (
+          <div className="inteira">
+            <dt>Processo</dt>
+            <dd>
+              <a href={`/juridico/casos/${f.caso.id}`}>{nomeDoCaso(f.caso)}</a>
+              {f.caso.parteContraria ? <><br /><small>Parte contrária: {f.caso.parteContraria}</small></> : null}
+            </dd>
+          </div>
+        ) : null}
         <div><dt>Responsável</dt><dd>{f.responsavel.nome}</dd></div>
         <div><dt>Também vai</dt><dd>{f.tambemVai.length ? f.tambemVai.map((p) => p.nome).join(", ") : "Ninguém mais"}</dd></div>
         {f.observacoes ? (
@@ -435,7 +445,7 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
           </aside>
         </div>
       </div>
-      <JanelaCompromisso aberta={editar} inicial={rascunhoDe(f)} editar={f} pessoas={pessoas} clientes={clientes} tiposEscritos={f.tipoEscrito ? [f.tipoEscrito] : []}
+      <JanelaCompromisso aberta={editar} inicial={rascunhoDe(f)} editar={f} pessoas={pessoas} clientes={clientes} casos={casos} tiposEscritos={f.tipoEscrito ? [f.tipoEscrito] : []}
         eu={escritorio.pessoa} aoFechar={() => setEditar(false)}
         aoFeito={(m: Marcado) => { setEditar(false); setFeito({ titulo: m.titulo, texto: m.texto }); void carregar(); }} />
       <JanelaCancelar aberta={cancelar} f={f} aoFechar={() => setCancelar(false)}

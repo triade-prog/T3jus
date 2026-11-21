@@ -11,12 +11,12 @@ import { dataBr, hojeBrasilia, reais, type Anexo, type EventoContrato, type Fich
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
-import { iniciais } from "../console/tempo.ts";
 import { diaCurto, lerDia } from "./agenda.ts";
 import { Selo } from "./Comercial.tsx";
 import { fraseDoContrato, janelaProgramacao, juntarItens, nomeSituacaoContrato, ROTAS_CONTRATOS, SELO_CONTRATO } from "./contratos.ts";
 import { Toast } from "./FichaCliente.tsx";
 import { FolhaCarne } from "./Carne.tsx";
+import { JanelaInscricoes, PessoasOab } from "./ContratoOab.tsx";
 import { CondicoesLeitura, SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
@@ -99,31 +99,6 @@ function Dir({ f, aoAssinar }: { f: FichaContrato; aoAssinar: () => void }) {
         <Icone nome="carteira" className="ico" />
         Ver recebimentos
       </a>
-    </section>
-  );
-}
-
-function Pessoas({ f }: { f: FichaContrato }) {
-  const adv = f.advogados.filter((a) => a.id !== f.responsavel.id);
-  const respAdv = f.advogados.some((a) => a.id === f.responsavel.id);
-  return (
-    <section className="folha" aria-labelledby="t-rs">
-      <div className="folha-cab" style={{ paddingBottom: 8 }}>
-        <div><h2 id="t-rs" style={{ fontSize: 20 }}>Responsáveis</h2></div>
-      </div>
-      <ul className="hn-pessoas">
-        <li>
-          <span className="av-p forte" aria-hidden="true">{iniciais(f.responsavel.nome)}</span>
-          <div><strong>{f.responsavel.nome}</strong><small>Responsável{respAdv ? " e advogado no contrato" : ""}</small></div>
-          <Selo tom="ativo">Recebe os lembretes</Selo>
-        </li>
-        {adv.map((a) => (
-          <li key={a.id}>
-            <span className="av-p forte" aria-hidden="true">{iniciais(a.nome)}</span>
-            <div><strong>{a.nome}</strong><small>Advogado no contrato</small></div>
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }
@@ -494,7 +469,7 @@ function JanelaEncerrar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: 
 
 function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba; escritorio: EscritorioPortal; aoNumero: (n: string) => void }) {
   const [f, setF] = useState<FichaContrato | null | "erro" | "nao">(null);
-  const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | null>(null);
+  const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | "inscricoes" | null>(null);
   const [assinados, setAssinados] = useState<Anexo[] | null>(null);
   const [carne, setCarne] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
@@ -585,7 +560,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
               <Historico eventos={f.historico} hoje={hoje} />
             </div>
             <aside className="hn-col" aria-label="Sobre o contrato">
-              <Pessoas f={f} />
+              <PessoasOab f={f} dono={escritorio.dono} socios={escritorio.socios} aoMudar={() => setJanela("inscricoes")} />
               <Assinatura f={f} assinados={assinados} aoAnexar={() => setJanela("assinado")} />
               <Situacao f={f} aoEncerrar={() => setJanela("encerrar")} />
             </aside>
@@ -611,6 +586,12 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             void carregar();
           }} />
       ) : null}
+      <JanelaInscricoes key={janela === "inscricoes" ? `i${f.versao}` : "z"} aberta={janela === "inscricoes"} f={ficha} aoFechar={() => setJanela(null)}
+        aoFeito={() => {
+          setJanela(null);
+          setFeito({ titulo: "Inscrições salvas", texto: "Valem para os documentos gerados daqui em diante. A mudança fica no histórico do contrato." });
+          void carregar();
+        }} />
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );

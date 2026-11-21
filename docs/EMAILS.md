@@ -10,7 +10,17 @@ Hoje todos os e-mails do sistema são do login e saem pelo Supabase Auth. O cód
 
 Os três links valem 1 hora e funcionam uma vez só (decisão da Carol, 18/11/2026). O link de todos é `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`: o modelo padrão do Supabase (`{{ .ConfirmationURL }}`) **não serve**, porque as telas do T3jus esperam o `token_hash`.
 
-Ainda não saem: o aviso de fim de contrato (F0.16), que vai precisar da API do Resend com o segredo `RESEND_API_KEY` nas funções.
+## E-mails que o próprio sistema manda
+
+Estes saem pela API do Resend, com o segredo `RESEND_API_KEY` nas Edge Functions (Edge Functions > Secrets). Sem o segredo, a ação continua e o e-mail simplesmente não sai.
+
+| E-mail | Quando sai | Onde está |
+|---|---|---|
+| Autenticador tirado | O suporte tira o autenticador de alguém no Console (F1.12): a própria pessoa fica sabendo e, se não foi ela que pediu, fala com o escritório | `sistema/supabase/functions/_shared/email.ts` |
+
+A chave pode ser a mesma do SMTP ou uma nova (**API Keys > Create API Key**, nome `supabase-funcoes`, **Sending access**, domínio `t3jus.pro`). Só a Carol cola.
+
+Ainda não sai: o aviso de fim de contrato (F0.16).
 
 ## Remetente
 

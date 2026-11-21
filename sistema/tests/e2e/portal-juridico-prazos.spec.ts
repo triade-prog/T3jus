@@ -43,7 +43,7 @@ const SOUZA = caso(2, "Souza x Construtora Atlas", "08123456720268260100", "4ª 
 const ANDRADE = caso(3, "Andrade x Unimed Paulistana", "10048712020258260011", "Foro de Pinheiros");
 const prazo = (n: number, descricao: string, dataFinal: string, c: typeof PEREIRA, responsavel: typeof MARINA, extra: Record<string, unknown> = {}) => ({
   id: `b1000000-0000-4000-8000-00000000000${n}`, descricao, dataFinal, fazerAte: null, intimacaoEm: null, lembrar: true, cumpridoEm: null, cumpridoPor: null,
-  responsavel, caso: c, ...extra,
+  responsavel, versao: 1, caso: c, ...extra,
 });
 const PRAZOS = [
   prazo(1, "Contestação", "2026-11-18", SOUZA, FELIPE),
@@ -56,7 +56,7 @@ const LISTA_PRAZOS = { hoje: HOJE, totais: { abertos: 5, meus: 2, hoje: 2 }, res
 
 const tarefa = (n: number, titulo: string, venceEm: string, c: { id: string; nome: string }, responsavel: typeof MARINA, extra: Record<string, unknown> = {}) => ({
   id: `d1000000-0000-4000-8000-00000000000${n}`, titulo, venceEm, esperando: null, esperandoDesde: null, concluidaEm: null, concluidaPor: null,
-  responsavel, caso: { id: c.id, nome: c.nome }, ...extra,
+  responsavel, versao: 2, caso: { id: c.id, nome: c.nome }, ...extra,
 });
 const TAREFAS = [
   tarefa(1, "Devolver a minuta de acordo", "2026-11-17", SOUZA, MARINA),
@@ -156,6 +156,59 @@ test.describe("Jurídico do Portal, prazos e tarefas (EX-02, EX-04, PD-05, IN-08
     await expect(page.getByRole("status").filter({ hasText: "Prazo cadastrado" })).toBeVisible();
     expect(pedidos.find((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/juridico/prazos")!.corpo).toEqual({
       casoId: ANDRADE.id, descricao: "Alegações finais", dataFinal: "2026-12-02", fazerAte: "2026-12-01", intimacaoEm: "2026-11-18", responsavelId: LARISSA.id, lembrar: true,
+    });
+  });
+
+  test("Editar prazo (F3.39): a janela abre preenchida, o caso fica, e vai a versão lida", async ({ page }) => {
+    const id = PRAZOS[2]!.id;
+    const pedidos = await simular(page, { ...comuns(), [`PUT /v1/escritorio/juridico/prazos/${id}`]: { corpo: { id, versao: 2, campos: ["data_final", "responsavel_id"] } } });
+    await page.goto(`${P}/juridico/prazos`);
+    await page.getByRole("button", { name: "Editar: Recurso ordinário, Pereira x Mercado Bom Preço" }).click();
+    const j = page.getByRole("dialog", { name: "Editar prazo" });
+    await expect(j).toContainText("Pereira x Mercado Bom Preço");
+    await expect(j).toContainText("1001022-51.2026.5.02.0045 · 45ª Vara do Trabalho");
+    await expect(j.getByLabel("Caso")).toHaveCount(0);
+    await expect(j.getByLabel("O que é")).toHaveValue("Recurso ordinário");
+    await expect(j.getByLabel("Prazo final")).toHaveValue("19/11/2026");
+    await expect(j.getByLabel("Fazer até")).toHaveValue("18/11/2026");
+    await expect(j.getByLabel("Responsável", { exact: true })).toHaveValue(MARINA.id);
+    await expect(j).toContainText("Trocar o responsável fica no histórico do caso, com quem era antes.");
+    await semViolacoes(page);
+    await j.getByLabel("Prazo final").fill("20/11/2026");
+    await j.getByLabel("Responsável", { exact: true }).selectOption(FELIPE.id);
+    await j.getByRole("button", { name: "Salvar prazo" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Prazo salvo" })).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toEqual({
+      versao: 1, descricao: "Recurso ordinário", dataFinal: "2026-11-20", fazerAte: "2026-11-18", intimacaoEm: null, responsavelId: FELIPE.id, lembrar: true,
+    });
+  });
+
+  test("Editar prazo sobre versão velha diz o que fazer", async ({ page }) => {
+    const id = PRAZOS[0]!.id;
+    await simular(page, { ...comuns(), [`PUT /v1/escritorio/juridico/prazos/${id}`]: { status: 409, corpo: { erro: { codigo: "VERSION_CONFLICT" } } } });
+    await page.goto(`${P}/juridico/prazos`);
+    await page.getByRole("button", { name: "Editar: Contestação, Souza x Construtora Atlas" }).click();
+    const j = page.getByRole("dialog", { name: "Editar prazo" });
+    await j.getByRole("button", { name: "Salvar prazo" }).click();
+    await expect(j.getByText("Outra pessoa mudou isto enquanto você editava.")).toBeVisible();
+  });
+
+  test("Editar tarefa (F3.39): muda o responsável e o que ela espera", async ({ page }) => {
+    const id = TAREFAS[2]!.id;
+    const pedidos = await simular(page, { ...comuns(), [`PUT /v1/escritorio/juridico/tarefas/${id}`]: { corpo: { id, versao: 3, campos: ["esperando"] } } });
+    await page.goto(`${P}/juridico/tarefas`);
+    await page.getByRole("button", { name: "Editar: Conversar com Joana sobre o acordo" }).click();
+    const j = page.getByRole("dialog", { name: "Editar tarefa" });
+    await expect(j.getByLabel("O que fazer")).toHaveValue("Conversar com Joana sobre o acordo");
+    await expect(j.getByLabel("Vence em")).toHaveValue("20/11/2026");
+    await j.getByLabel("Responsável").selectOption(LARISSA.id);
+    await j.getByRole("checkbox", { name: /Está esperando alguém/ }).check();
+    await j.getByLabel("Esperando o quê").fill("o cliente: proposta por escrito");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Salvar tarefa" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Tarefa salva" })).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toEqual({
+      versao: 2, titulo: "Conversar com Joana sobre o acordo", venceEm: "2026-11-20", responsavelId: LARISSA.id, esperando: "o cliente: proposta por escrito",
     });
   });
 

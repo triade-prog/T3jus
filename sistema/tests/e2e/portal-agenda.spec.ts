@@ -133,6 +133,52 @@ test.describe("Agenda do Portal (EX-06, PD-07)", () => {
   });
 });
 
+const CASO = { id: "b2000000-0000-4000-8000-000000000001", nome: "Pereira x Mercado Bom Preço", numero: "10010225120265020045", parteContraria: "Mercado Bom Preço Ltda." };
+const PRAZO_HOJE = {
+  id: "b3000000-0000-4000-8000-000000000001", titulo: "Recurso ordinário", vence: dia(0), fazerAte: null, processo: "1001022-51.2026.5.02.0045",
+  caso: { id: CASO.id, nome: CASO.nome }, responsavel: MARINA,
+};
+
+test.describe("O Jurídico na Agenda (F3.4: PD-04, PD-07, EX-06)", () => {
+  test("o prazo aparece no dia, com o processo e o caminho para o caso", async ({ page }) => {
+    await simular(page, comuns(ESCRITORIO, { ...AGENDA, prazos: [PRAZO_HOJE] }));
+    await page.goto(`${P}/agenda?ver=dia&dia=${dia(0)}`);
+    const pz = page.getByRole("list", { name: "Prazos do Jurídico" }).getByRole("listitem").filter({ hasText: "Recurso ordinário" });
+    await expect(pz).toContainText("1001022-51.2026.5.02.0045 · Marina Ribeiro");
+    await expect(pz).toContainText("Vence hoje");
+    await expect(pz.getByRole("link", { name: "Abrir no Jurídico" })).toHaveAttribute("href", `/juridico/casos/${CASO.id}`);
+    await semViolacoes(page);
+  });
+
+  test("o compromisso escolhe o processo e o manda ao servidor", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(), "GET /v1/escritorio/agenda/casos": { corpo: [CASO] },
+      "POST /v1/escritorio/compromissos": { status: 201, corpo: { id: cid(9), versao: 1 } },
+    });
+    await page.goto(`${P}/agenda`);
+    await page.getByRole("button", { name: "Novo compromisso", exact: true }).click();
+    const j = page.getByRole("dialog", { name: "Novo compromisso" });
+    await j.getByLabel("O que é").fill("Audiência de instrução");
+    await j.getByLabel("Dia").fill(br(2));
+    await j.getByLabel("Começa").fill("14:00");
+    await j.getByLabel("Termina").fill("15:00");
+    await j.getByLabel("Processo").selectOption(CASO.id);
+    await expect(j.getByLabel("Processo")).toContainText("Pereira x Mercado Bom Preço · 1001022-51.2026.5.02.0045");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Marcar compromisso" }).click();
+    await expect.poll(() => pedidos.find((p) => p.metodo === "POST")?.corpo).toMatchObject({ casoId: CASO.id });
+  });
+
+  test("sem o Jurídico, a janela não pergunta o processo nem manda o campo", async ({ page }) => {
+    const pedidos = await simular(page, { ...comuns(SEM_AREA, { ...AGENDA, juridico: false, prazos: null }), "POST /v1/escritorio/compromissos": { status: 201, corpo: { id: cid(9), versao: 1 } } });
+    await page.goto(`${P}/agenda`);
+    await page.getByRole("button", { name: "Novo compromisso", exact: true }).click();
+    const j = page.getByRole("dialog", { name: "Novo compromisso" });
+    await expect(j.getByLabel("Processo")).toHaveCount(0);
+    expect(pedidos.some((p) => p.caminho === "/v1/escritorio/agenda/casos")).toBe(false);
+  });
+});
+
 test.describe("Marcar compromisso (EX-06, EX-11)", () => {
   test("erros presos ao campo e o pedido que vai ao servidor", async ({ page }) => {
     const pedidos = await simular(page, { ...comuns(), "POST /v1/escritorio/compromissos": { status: 201, corpo: { id: cid(9), versao: 1 } } });

@@ -6,8 +6,7 @@
     "EX-10",
     "PA-01"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 55,
-  "nota": "A escolha de para quem passa já é obrigatória e fica no histórico (equipe.retirada, passou_para). Os compromissos futuros da Agenda já passam para essa pessoa (migration 0180). A recusa por área já existe no banco (entrar_area). Falta usar as duas quando as tabelas de tarefas, prazos, cobranças e atendimentos existirem.",
-  "proximo": "Quando Tarefas, Prazos, Cobranças e Atendimentos tiverem responsável, trocar o responsável na retirada e chamar entrar_area nas rotas de cada área"
+  "evidencia": "Migration 0540: a petição esperando a revisão de quem saiu passa para quem ficou com o trabalho (ou para a sócia dona, se essa pessoa não pode revisar), com evento e aviso no sino. O resto já passava nas migrations 0180 a 0400 (agenda, propostas, retornos, contratos, cobranças, casos, prazos, tarefas, conversas, repasses). pgTAP 046 confere que toda tabela com responsável tem quem passe o trabalho e que toda rota de área do Portal recusa quem não tem a área"
 }
