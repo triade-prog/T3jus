@@ -31,3 +31,4 @@ export * from "./proposta_docx.ts";
 export * from "./pix.ts";
 export * from "./anexos.ts";
 export * from "./recibo.ts";
+export * from "./interessados.ts";

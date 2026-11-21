@@ -29,14 +29,25 @@ import {
   notaSchema,
   versaoSchema,
   type SocioCliente,
+  pedidoSiteSchema,
+  responsavelInteressadoSchema,
+  proximoInteressadoSchema,
+  cidadeInteressadoSchema,
+  estagioInteressadoSchema,
+  encerrarInteressadoSchema,
+  reabrirInteressadoSchema,
+  notaInteressadoSchema,
+  converterInteressadoSchema,
+  whatsLegivel,
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { ipDaChamada } from "../_shared/repasse.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
-import { avisoAutenticadorTirado, type Emails } from "../_shared/email.ts";
+import { avisoAutenticadorTirado, confirmacaoPedidoDemonstracao, type Emails } from "../_shared/email.ts";
 import { pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
 import { registrar } from "../_shared/registro.ts";
 
@@ -152,13 +163,43 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     }
     return c.json({ pastas: pendentes.length, concluidas, apagados });
   });
+  // Pedido de demonstração do site (F2.2, SC-02). O site (t3jus.pro) repassa com o segredo e o IP
+  // de quem pediu; não há sessão. O banco aplica os limites e guarda a autorização; a resposta
+  // automática sai daqui, e se não sair o pedido continua registrado (fica no histórico).
+  app.post("/v1/site/pedidos", async (c) => {
+    const d = await lerCorpo(c, pedidoSiteSchema);
+    const r = await rpc<{ limite?: boolean; id?: string; repetido?: boolean }>("site_registrar_pedido", { p_dados: d, p_ip: ipDaChamada(c.req.raw.headers) });
+    if (r.limite) throw new ErroDominio("RATE_LIMITED");
+    let respostaEnviada = false;
+    if (r.id && !r.repetido && deps.emails) {
+      try {
+        await deps.emails.enviar({
+          para: d.email,
+          ...confirmacaoPedidoDemonstracao({ nome: d.nome, escritorio: d.escritorio, email: d.email, whats: whatsLegivel(d.whats), tamanho: d.tamanho, area: d.area, msg: d.msg }),
+        });
+        respostaEnviada = true;
+      } catch (e) {
+        registrar("aviso", { funcao: "api-console", rota: "site-pedidos", erro: e });
+      }
+      await rpc("site_pedido_resposta", { p_id: r.id, p_enviada: respostaEnviada });
+    }
+    return c.json({ ok: true, respostaEnviada }, 201);
+  });
+
   sessao.rotas(app);
 
-  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*"]) app.use(rota, sessao.exigirSessao);
+  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/suporte/*", "/v1/interessados", "/v1/interessados/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
-  app.get("/v1/sessao", async (c) => c.json(await rpc("console_sessao", { p_pessoa: pessoa(c) })));
+  // F2.3: o contador de Comercial (interessados que pedem atenção) vai junto, para a moldura.
+  app.get("/v1/sessao", async (c) => {
+    const [s, atencao] = await Promise.all([
+      rpc<Record<string, unknown>>("console_sessao", { p_pessoa: pessoa(c) }),
+      rpc<number>("console_interessados_atencao", { p_pessoa: pessoa(c) }),
+    ]);
+    return c.json({ ...s, interessadosAtencao: atencao });
+  });
 
   // Carteira (CO-01): só os clientes atribuídos.
   app.get("/v1/clientes", async (c) => {
@@ -492,6 +533,60 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     if (!enviado) throw new ErroDominio("VALIDATION_ERROR", { motivo: "JA_ENTROU" });
     await rpc("console_suporte_registrar", { p_pessoa: pessoa(c), p_alvo: alvo, p_acao: "suporte.reenviou_convite", p_motivo: motivo });
     return c.json({ email: mascararEmail(ficha.email) });
+  });
+
+  // Comercial › Interessados (F2.3, SC-05). Quem vê e quem muda é decidido no banco
+  // (Administração e Implantação, decisão 9 do desenho aprovado).
+  app.get("/v1/interessados", async (c) => c.json(await rpc("console_interessados", { p_pessoa: pessoa(c) })));
+  app.get("/v1/interessados/:id", async (c) => c.json(await rpc("console_interessado", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
+
+  app.put("/v1/interessados/:id/responsavel", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, responsavelInteressadoSchema);
+    return c.json({ versao: await rpc<number>("console_interessado_responsavel", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_responsavel: d.pessoaId, p_recado: d.recado ?? null }) });
+  });
+
+  app.put("/v1/interessados/:id/proximo", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, proximoInteressadoSchema);
+    return c.json({ versao: await rpc<number>("console_interessado_proximo", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_passo: d.passo, p_data: d.data, p_hora: d.hora ?? null, p_quem: d.quem }) });
+  });
+
+  app.put("/v1/interessados/:id/cidade", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, cidadeInteressadoSchema);
+    return c.json({ versao: await rpc<number>("console_interessado_cidade", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_cidade: d.cidade, p_uf: d.uf }) });
+  });
+
+  app.put("/v1/interessados/:id/estagio", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, estagioInteressadoSchema);
+    return c.json({ versao: await rpc<number>("console_interessado_estagio", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_estagio: d.estagio, p_motivo: d.motivo, p_data: d.data ?? null, p_hora: d.hora ?? null }) });
+  });
+
+  app.post("/v1/interessados/:id/encerrar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, encerrarInteressadoSchema);
+    return c.json({ versao: await rpc<number>("console_interessado_encerrar", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_como: d.como, p_porque: d.porque, p_motivo: d.motivo, p_procurar_em: d.procurarEm ?? null }) });
+  });
+
+  app.post("/v1/interessados/:id/reabrir", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, reabrirInteressadoSchema);
+    return c.json({ versao: await rpc<number>("console_interessado_reabrir", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_motivo: d.motivo }) });
+  });
+
+  app.post("/v1/interessados/:id/notas", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, notaInteressadoSchema);
+    return c.json({ id: await rpc<string>("console_interessado_nota", { p_pessoa: pessoa(c), p_id: id, p_texto: d.texto }) }, 201);
+  });
+
+  // Virar escritório cliente: o cadastro de sempre, já preenchido; o contato vai para a ficha.
+  app.post("/v1/interessados/:id/converter", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, converterInteressadoSchema);
+    return c.json({ escritorioId: await rpc<string>("console_interessado_converter", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_nome: d.nome, p_cidade: d.cidade, p_uf: d.uf, p_motivo: d.motivo }) }, 201);
   });
 
   return app;

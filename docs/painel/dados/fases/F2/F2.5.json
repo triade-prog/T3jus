@@ -1,0 +1,11 @@
+{
+  "id": "F2.5",
+  "texto": "Cadastrar interessado à mão (indicação, evento, contato direto) no Console",
+  "peca": "C4",
+  "refs": [
+    "SC-05"
+  ],
+  "status": "pendente",
+  "ordem": 50,
+  "proximo": "Desenhar a janela \"Cadastrar interessado\" (o botão está no desenho aprovado, sem o formulário), aprovar com a Carol e programar a função do banco."
+}

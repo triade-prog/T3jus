@@ -16,6 +16,8 @@ export interface SessaoConsole {
   nome: string;
   funcoes: FuncaoConsole[];
   acoes: string[];
+  /** Interessados que pedem atenção (F2.3), no contador de Comercial. */
+  interessadosAtencao?: number;
 }
 
 const TELA_ENTRAR = "/entrar";
@@ -52,7 +54,7 @@ export function useSessaoConsole(): SessaoConsole | null {
   return sessao;
 }
 
-type Area = "inicio" | "clientes" | "equipe" | "suporte";
+type Area = "inicio" | "clientes" | "equipe" | "suporte" | "comercial";
 
 /** Página da Equipe T3jus (só Administração). */
 export const EQUIPE = "/equipe";
@@ -61,10 +63,10 @@ const ITENS: { chave: Area | null; nome: string; icone: NomeIcone; href?: string
   { chave: "inicio", nome: "Início", icone: "inicio" },
   { chave: "clientes", nome: "Clientes", icone: "escritorios", href: CARTEIRA },
 ];
-const AREAS: { nome: string; icone: NomeIcone }[] = [
-  { nome: "Comercial", icone: "maleta" },
-  { nome: "Financeiro", icone: "moeda" },
-];
+const AREAS: { nome: string; icone: NomeIcone }[] = [{ nome: "Financeiro", icone: "moeda" }];
+
+/** Comercial › Interessados (F2.3): Administração e Implantação. */
+export const INTERESSADOS = "/interessados";
 
 /** Suporte de acesso (F1.3): só aparece para quem tem Suporte ou Administração. */
 const SUPORTE_HREF = "/suporte";
@@ -169,6 +171,19 @@ export function MolduraConsole({
               ),
             )}
             <p className="grupo">Áreas</p>
+            {sessao?.acoes.includes("console.interessados.ver") ? (
+              <a className="item" href={INTERESSADOS} aria-current={atual === "comercial" ? "page" : undefined}>
+                <Icone nome="maleta" className="ico" />
+                Comercial
+                {sessao.interessadosAtencao ? (
+                  <span className="cont" aria-label={`${sessao.interessadosAtencao} interessados pedem atenção`}>
+                    {sessao.interessadosAtencao}
+                  </span>
+                ) : null}
+              </a>
+            ) : (
+              <ItemApagado nome="Comercial" icone="maleta" />
+            )}
             {AREAS.map((a) => (
               <ItemApagado key={a.nome} {...a} />
             ))}
