@@ -7,5 +7,5 @@
   ],
   "status": "feito",
   "ordem": 840,
-  "evidencia": "Botão “Não foi paga” por parcela na folha “Pago antes do T3jus” da ficha do contrato (só com a área Financeiro), janela com o que muda, vencimento mantido ou novo e motivo obrigatório; a parcela passa para A receber sem desfazer a importação, sem aviso automático ao cliente antes da data da correção, com selo “Era paga antes do T3jus” e linha no histórico do contrato; “Foi paga, sim” desfaz enquanto a parcela nova não teve movimento; aviso de conflito quando outra pessoa mudou antes (migration 0600, pgTAP 065, Deno app_test, contratos.test, e2e portal-nao-paga-logo)."
+  "evidencia": "Botão “Não foi paga” por parcela na folha “Pago antes do T3jus” da ficha do contrato (só com a área Financeiro), janela com o que muda, vencimento mantido ou novo e motivo obrigatório; a parcela passa para A receber sem desfazer a importação, sem aviso automático ao cliente antes da data da correção, com selo “Era paga antes do T3jus” e linha no histórico do contrato; “Foi paga, sim” desfaz enquanto a parcela nova não teve movimento; aviso de conflito quando outra pessoa mudou antes (migration 0600, pgTAP 067, Deno app_test, contratos.test, e2e portal-nao-paga-logo)."
 }
