@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 60,
-  "proximo": "O Console ainda não tem sino; hoje o pedido novo aparece no contador de Comercial no menu. Ligar quando o sino do Console existir."
+  "proximo": "Programar o sino do Console como no desenho aprovado (docs/design/aprovadas/console-interessado-sino): tabela global avisos_console, botão na Moldura e os três avisos (pedido novo do site, interessado passado para você, passo vencido às 7h do dia seguinte)."
 }

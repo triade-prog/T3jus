@@ -1,0 +1,13 @@
+{
+  "id": "D18",
+  "texto": "Desenho do cadastro de interessado à mão (F2.5) e do sino do Console (F2.6)",
+  "peca": "C4",
+  "refs": [
+    "SC-02",
+    "SC-05",
+    "PT-11"
+  ],
+  "status": "feito",
+  "evidencia": "Aprovado pela Carol em 21/11/2026 às 17h05 (Bahia), com as recomendações das 9 perguntas; cópia em docs/design/aprovadas/console-interessado-sino (14 estados no computador e no celular, axe sem violação).",
+  "ordem": 68
+}
