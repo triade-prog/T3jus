@@ -22,10 +22,15 @@ end $$;
 -- ---------------------------------------------------------------------------------------
 -- Avisos prontos do WhatsApp.
 
--- Tabela comum (não temporária): o SQL Editor do Supabase não guarda tabela temporária entre
--- um comando e outro. Ela sai no fim da migration.
-create table d5_avisos (chave text primary key, antes text not null, depois text not null);
-insert into d5_avisos values
+-- Sem tabela de apoio: o SQL Editor do Supabase não enxerga uma tabela criada no mesmo envio.
+-- Para cada aviso: troca o texto semeado na função e, nos escritórios que ainda têm o texto
+-- semeado, troca o aviso. Texto mudado de aviso que já foi à Meta volta para a análise, como no
+-- ajuste feito pela sócia dona.
+do $$
+declare a record; w record;
+begin
+  perform set_config('t3jus.fim_da_guarda', 'on', true);
+  for a in select * from (values
   ('PAGAMENTO_RECEBIDO',
    'Olá, {nome}. Recebemos o pagamento de {valor} referente a {parcela}. Obrigado!',
    'Olá, {nome}. Aqui é do escritório {nome do escritório}. Recebemos o pagamento de {valor} ({parcela}). Agradecemos. Qualquer dúvida, é só responder esta mensagem.'),
@@ -43,32 +48,19 @@ insert into d5_avisos values
    'Olá, {nome}. Aqui é do escritório {nome do escritório}. Lembrete: {compromisso}, no dia {data}, às {hora}. Local: {local}. Responda CONFIRMO, ou escreva se tiver alguma dúvida.'),
   ('PRESTACAO_CONTAS',
    'Olá, {nome}. A prestação de contas de {caso} está pronta: {resumo}. Qualquer dúvida, é só responder.',
-   'Olá, {nome}. Aqui é do escritório {nome do escritório}. A prestação de contas do caso {caso} está pronta: {resumo}. Qualquer dúvida, é só responder esta mensagem.');
-
-do $$
-declare a record;
-begin
-  for a in select * from d5_avisos loop
+   'Olá, {nome}. Aqui é do escritório {nome do escritório}. A prestação de contas do caso {caso} está pronta: {resumo}. Qualquer dúvida, é só responder esta mensagem.')
+  ) v(chave, antes, depois) loop
     perform d5_trocar('whatsapp_avisos_garantir(uuid,text)', quote_literal(a.antes), quote_literal(a.depois));
-  end loop;
-end $$;
-
--- Os avisos de cada escritório que ainda têm o texto semeado. Texto mudado de aviso que já foi à
--- Meta volta para a análise, como no ajuste feito pela sócia dona.
-do $$
-declare w record;
-begin
-  perform set_config('t3jus.fim_da_guarda', 'on', true);
-  for w in
-    update whatsapp_avisos x set texto = a.depois,
-           situacao = case when x.situacao = 'NAO_ENVIADO' then 'NAO_ENVIADO' else 'EM_ANALISE' end,
-           situacao_em = case when x.situacao = 'NAO_ENVIADO' then x.situacao_em else app_now() end,
-           motivo_meta = null, motivo_simples = null, sugestao_ia = null
-      from d5_avisos a
-     where a.chave = x.chave and x.texto = a.antes
-    returning x.escritorio_id, x.chave, x.situacao, a.antes
-  loop
-    perform whatsapp_evento(w.escritorio_id, 'AVISO', jsonb_build_object('chave', w.chave, 'situacao', w.situacao, 'texto_anterior', w.antes, 'origem', 'D5'), null);
+    for w in
+      update whatsapp_avisos x set texto = a.depois,
+             situacao = case when x.situacao = 'NAO_ENVIADO' then 'NAO_ENVIADO' else 'EM_ANALISE' end,
+             situacao_em = case when x.situacao = 'NAO_ENVIADO' then x.situacao_em else app_now() end,
+             motivo_meta = null, motivo_simples = null, sugestao_ia = null
+       where x.chave = a.chave and x.texto = a.antes
+      returning x.escritorio_id, x.chave, x.situacao
+    loop
+      perform whatsapp_evento(w.escritorio_id, 'AVISO', jsonb_build_object('chave', w.chave, 'situacao', w.situacao, 'texto_anterior', a.antes, 'origem', 'D5'), null);
+    end loop;
   end loop;
   perform set_config('t3jus.fim_da_guarda', 'off', true);
 end $$;
@@ -131,4 +123,3 @@ do $d$ begin perform d5_trocar('portal_importacao_fora(uuid,uuid,uuid)', $q$'A p
                  $q$'A planilha das linhas de fora foi apagada', 'PLANILHA_APAGADA'$q$); end $d$;
 
 drop function d5_trocar(regprocedure, text, text);
-drop table d5_avisos;
