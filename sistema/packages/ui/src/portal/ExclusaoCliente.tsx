@@ -4,7 +4,7 @@
 // decisões da Carol de 18/11/2026: quem não é a sócia dona pede a exclusão a ela (decisão 2);
 // dos atendimentos ficam a data, o canal, quem atendeu e o resumo (decisão 3); o excluído
 // fica em Inativos com a data e o protocolo (decisão 4). Com contrato ou processo, o cliente
-// só se arquiva (decisão 5), quando Contratos e Jurídico existirem.
+// só se arquiva a pedido (decisão 5, F1.16, estado excluir-depois).
 
 import { useId, useRef, useState } from "react";
 import { CANAIS_PEDIDO, nomeConfere, QUEM_PEDIU, type CanalPedido, type FichaCliente, type PedidoExclusao, type QuemPediu } from "@t3jus/domain";
@@ -88,10 +88,17 @@ export function FaixaPedido({ f, aoExcluir, aoRecusar }: { f: FichaCliente; aoEx
         acoes={
           f.dono ? (
             <>
-              <button className="btn btn-perigo" type="button" onClick={aoExcluir}>
-                <Icone nome="escudo" className="ico" />
-                Excluir os dados
-              </button>
+              {f.vinculosLgpd ? (
+                <button className="btn btn-pri" type="button" onClick={aoExcluir}>
+                  <Icone nome="pasta" className="ico" />
+                  Arquivar a pedido (LGPD)
+                </button>
+              ) : (
+                <button className="btn btn-perigo" type="button" onClick={aoExcluir}>
+                  <Icone nome="escudo" className="ico" />
+                  Excluir os dados
+                </button>
+              )}
               <button className="btn btn-sec" type="button" onClick={aoRecusar}>
                 Recusar o pedido
               </button>
@@ -99,7 +106,11 @@ export function FaixaPedido({ f, aoExcluir, aoRecusar }: { f: FichaCliente; aoEx
           ) : undefined
         }>
         O pedido chegou por {canalMinusculo(p.canal)} em {dataBr(p.pedidoEm)}.{p.observacao ? ` Observação: “${p.observacao}”` : ""}
-        {f.dono ? " Quem decide é você: excluir os dados ou recusar o pedido, com o motivo." : ""}
+        {f.dono
+          ? f.vinculosLgpd
+            ? " Há contrato ou processo, então o pedido se atende arquivando, sem apagar. Quem decide é você: arquivar ou recusar o pedido, com o motivo."
+            : " Quem decide é você: excluir os dados ou recusar o pedido, com o motivo."
+          : ""}
       </Aviso>
     </div>
   );
@@ -451,8 +462,8 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
           <p className="pt-comuns">
             <Icone nome="escudo" className="ico" />
             <span>
-              <b>Nada aqui precisa ser guardado por lei.</b> Ainda não há contratos nem processos no T3jus; quando houver, o pedido de quem tiver um deles será
-              atendido arquivando, sem apagar. Documentos fora do T3jus (papel, e-mail, pastas) ficam com o escritório, que é o controlador.
+              <b>Nada aqui precisa ser guardado por lei.</b> Este cliente não tem contrato nem processo no T3jus; quem tem um deles é atendido arquivando, sem
+              apagar. Documentos fora do T3jus (papel, e-mail, pastas) ficam com o escritório, que é o controlador.
             </span>
           </p>
         </div>
@@ -513,15 +524,183 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
   );
 }
 
+/** Com contrato ou processo, a dona arquiva a pedido (decisão 5, F1.16): nada é apagado. */
+export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }: {
+  aberta: boolean; f: FichaCliente; hoje: string; aoFechar: () => void; aoFeito: (x: Feito) => void; aoConflito: () => void;
+}) {
+  const ids = useId();
+  const corpo = useRef<HTMLDivElement>(null);
+  const p = f.pedidoExclusao;
+  const c = useCamposPedido(p ? { data: dataBr(p.pedidoEm), canal: p.canal } : { canal: "" });
+  const [quem, setQuem] = useState<QuemPediu>(p?.quemPediu ?? "TITULAR");
+  const [conf, setConf] = useState(false);
+  const [erros, setErros] = useState<Erros>({});
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const primeiro = primeiroNome(f.nome);
+  const prox = f.proxContato;
+  const v = f.vinculosLgpd ?? { contratos: [], processos: [] };
+
+  async function enviar() {
+    setErro(null);
+    const e: Erros = {};
+    const pedidoEm = conferirPedido(c, hoje, e);
+    if (!conf) e.conf = "Confirme quem pediu antes de arquivar.";
+    setErros(e);
+    if (Object.keys(e).length) return focarPrimeiroErro(corpo.current);
+    setEnviando(true);
+    const r = await chamarPortal<{ protocolo: string; versao: number }>(`/v1/escritorio/clientes/${f.id}/arquivar-lgpd`, {
+      corpo: { versao: f.versao, pedidoEm, canal: c.canal, quemPediu: quem, conferido: true, observacao: c.obs.trim() || p?.observacao || null },
+    });
+    setEnviando(false);
+    if (!r.ok) {
+      if (r.erro.codigo === "VERSION_CONFLICT") return aoConflito();
+      const s = errosDoServidor(r.erro);
+      if (s) {
+        if (s.conf) s.conf = "Confirme quem pediu antes de arquivar.";
+        setErros(s);
+        return focarPrimeiroErro(corpo.current);
+      }
+      return setErro(r.erro);
+    }
+    aoFeito({ titulo: "Cliente arquivado a pedido (LGPD).", texto: `Protocolo ${r.dados.protocolo}. Informe ao cliente que o pedido foi atendido arquivando, e por quê. Nada foi apagado.` });
+  }
+
+  const nErros = Object.keys(erros).length;
+  return (
+    <Janela id={`${ids}-j`} classe="pd-janela" aberta={aberta} aoFechar={aoFechar} alerta sobretitulo={SOBRE} titulo={`Arquivar ${f.nome} a pedido (LGPD)?`}
+      descricao={`${ids}-d`} aoEnviar={() => void enviar()}
+      pe={
+        <>
+          <span className="pd-pe-nota">O arquivamento fica no histórico do escritório com o protocolo.</span>
+          <button className="btn btn-fantasma" type="button" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button className="btn btn-pri" type="submit" disabled={enviando}>
+            <Icone nome="pasta" className="ico" />
+            {enviando ? "Arquivando…" : "Arquivar a pedido (LGPD)"}
+          </button>
+        </>
+      }>
+      <p id={`${ids}-d`}>
+        {primeiro} tem {v.contratos.length && v.processos.length ? "contrato e processo" : v.contratos.length ? "contrato" : "processo"}, então os dados não são
+        excluídos: o cadastro é arquivado, a ficha fica só leitura e o pedido fica registrado.
+      </p>
+      <div className="pd-j" ref={corpo}>
+        {nErros ? (
+          <div className="pd-inteira">
+            <Aviso tom="urgencia" titulo={faltaAcertar(nErros)}>
+              Nada foi arquivado.
+            </Aviso>
+          </div>
+        ) : erro ? (
+          <div className="pd-inteira">
+            <Aviso tom="urgencia" titulo="O arquivamento não foi feito.">
+              {erro.detalhes?.motivo === "CLIENTE_ARQUIVADO"
+                ? "Este cliente já foi arquivado a pedido."
+                : erro.detalhes?.motivo === "SEM_CONTRATO_OU_PROCESSO"
+                  ? "O cliente não tem mais contrato nem processo. Feche e abra a ficha de novo para atender o pedido excluindo os dados."
+                  : `Nada mudou nos dados de ${primeiro}. ${textoDoErro(erro)}`}
+            </Aviso>
+          </div>
+        ) : p ? (
+          <div className="pd-inteira">
+            <Aviso tom="info" titulo={`Pedido registrado por ${p.registradoPor.nome} em ${ddmm(p.pedidoEm)}.`}>
+              A data e o canal vêm do pedido. Confira quem pediu e confirme.
+            </Aviso>
+          </div>
+        ) : null}
+        <div className="pd-col">
+          <div className="pd-lado pd-fica">
+            <h3>
+              <Icone nome="pasta" className="ico" />O que acontece
+            </h3>
+            <ul>
+              <li>
+                Nada é apagado<small>dados, contatos e atendimentos ficam como estão</small>
+              </li>
+              <li>
+                {primeiro} sai das listas comuns
+                <small>de Ativos, de Contato vencido, da busca e do Início. Fica só em Inativos, como “Arquivado a pedido (LGPD)”.</small>
+              </li>
+              <li>
+                A ficha fica só leitura<small>ninguém edita, reativa nem registra atendimento</small>
+              </li>
+              {prox ? (
+                <li>
+                  O próximo contato de {ddmm(prox.em)} é encerrado
+                  <small>sai também do Início de {prox.responsavel.nome}</small>
+                </li>
+              ) : null}
+              <li>
+                O pedido fica registrado<small>data, canal, quem pediu, quem arquivou e o protocolo</small>
+              </li>
+            </ul>
+          </div>
+          <div className="pd-lado pd-guarda">
+            <h3>
+              <Icone nome="cadeado" className="ico" />
+              Por que não exclui
+            </h3>
+            <ul>
+              {v.contratos.map((x) => (
+                <li key={x.id}>Contrato de honorários {x.numero}</li>
+              ))}
+              {v.processos.map((x) => (
+                <li key={x.id}>{x.numeroCnj ? `Processo ${x.numeroCnj}` : `Caso ${x.nome}`}</li>
+              ))}
+            </ul>
+            <p className="pd-arq-nota">
+              Com contrato ou processo, os dados continuam necessários para cumprir o contrato e defender o cliente (LGPD, art. 16). Por isso o pedido é atendido
+              arquivando, e não excluindo.
+            </p>
+          </div>
+        </div>
+        <div className="pd-col">
+          <fieldset className="pd-pedido">
+            <legend>O pedido</legend>
+            <CamposPedido ids={ids} c={c} erros={erros} focoData />
+            <fieldset className="pd-quem">
+              <legend>Quem pediu</legend>
+              {(Object.keys(QUEM_PEDIU) as QuemPediu[]).map((k) => (
+                <label className="opcao" key={k}>
+                  <input className="marcar" type="radio" name={`${ids}-quem`} checked={quem === k} onChange={() => setQuem(k)} />
+                  <span>
+                    {k === "TITULAR" ? "O próprio cliente" : "Alguém em nome do cliente"}
+                    {k === "REPRESENTANTE" ? <small>procurador ou responsável legal, com o documento que mostra isso</small> : null}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <div>
+              <label className="opcao" style={{ margin: "0 -8px" }}>
+                <input className="marcar" type="checkbox" checked={conf} onChange={(e) => setConf(e.target.checked)} aria-invalid={erros.conf ? true : undefined}
+                  aria-describedby={erros.conf ? `${ids}-conf-er` : undefined} />
+                <span>
+                  Conferi que o pedido veio do cliente ou de quem fala por ele
+                  <small>Pelo telefone ou e-mail que já estão na ficha, ou com documento.</small>
+                </span>
+              </label>
+              {erros.conf ? <ErroCampo id={`${ids}-conf-er`}>{erros.conf}</ErroCampo> : null}
+            </div>
+            <Observacao ids={ids} c={c} erro={erros.obs} ajuda="Não escreva dados pessoais: este texto fica guardado no registro do pedido." />
+          </fieldset>
+        </div>
+      </div>
+    </Janela>
+  );
+}
+
 // ------------------------------------------------------------------------- cliente excluído
 
 /** O âmbar do cabeçalho do excluído: a data e o protocolo. */
 export function RegistroNoCabecalho({ f }: { f: FichaCliente }) {
-  const x = f.exclusao;
+  const arquivado = f.situacao === "ARQUIVADO";
+  const x = arquivado ? f.arquivamento : f.exclusao;
   return (
     <section className="dir campo-ambar" aria-labelledby="pd-t-reg">
       <p className="sobretitulo" id="pd-t-reg">
-        Excluído a pedido
+        {arquivado ? "Arquivado a pedido" : "Excluído a pedido"}
       </p>
       <p className="grande" style={{ fontSize: 30 }}>
         {x ? dataLonga(x.em) : ""}
@@ -530,7 +709,7 @@ export function RegistroNoCabecalho({ f }: { f: FichaCliente }) {
         <p className="cl-oque">
           <b>Protocolo {x.protocolo}</b>
           <br />
-          feito por {x.resolvidoPor?.nome ?? "a sócia dona"}, às {hora(x.em)}
+          {arquivado ? "arquivado" : "feito"} por {x.resolvidoPor?.nome ?? "a sócia dona"}, às {hora(x.em)}
         </p>
       ) : null}
     </section>
@@ -539,7 +718,8 @@ export function RegistroNoCabecalho({ f }: { f: FichaCliente }) {
 
 /** A folha "Registro da exclusão", que não se apaga. */
 export function RegistroExclusao({ f }: { f: FichaCliente }) {
-  const x = f.exclusao;
+  const arquivado = f.situacao === "ARQUIVADO";
+  const x = arquivado ? f.arquivamento : f.exclusao;
   const [copiado, setCopiado] = useState(false);
   if (!x) return null;
   return (
@@ -547,7 +727,7 @@ export function RegistroExclusao({ f }: { f: FichaCliente }) {
       <div className="folha-cab" style={{ paddingBottom: 8 }}>
         <div>
           <h2 id="pd-t-regf" style={{ fontSize: 20 }}>
-            Registro da exclusão
+            {arquivado ? "Registro do arquivamento" : "Registro da exclusão"}
           </h2>
         </div>
       </div>
@@ -574,7 +754,7 @@ export function RegistroExclusao({ f }: { f: FichaCliente }) {
         </div>
         {x.resolvidoPor ? (
           <div>
-            <dt>Feita por</dt>
+            <dt>{arquivado ? "Arquivado por" : "Feita por"}</dt>
             <dd>{x.resolvidoPor.nome}, sócia dona</dd>
           </div>
         ) : null}
@@ -586,7 +766,11 @@ export function RegistroExclusao({ f }: { f: FichaCliente }) {
         </div>
       </dl>
       <div className="cl-folha-acao">
-        <p>Este registro não tem dado pessoal e não se apaga: ele prova que o pedido foi atendido. Se o cliente perguntar, informe o protocolo.</p>
+        <p>
+          {arquivado
+            ? "Este registro não se apaga: ele prova que o pedido foi atendido arquivando, porque há contrato ou processo. Se o cliente perguntar, informe o protocolo."
+            : "Este registro não tem dado pessoal e não se apaga: ele prova que o pedido foi atendido. Se o cliente perguntar, informe o protocolo."}
+        </p>
         <button className="btn btn-sec" type="button" onClick={() => void navigator.clipboard?.writeText(x.protocolo ?? "").then(() => setCopiado(true), () => undefined)}>
           <Icone nome={copiado ? "check" : "doc"} className="ico" />
           {copiado ? "Protocolo copiado" : "Copiar o protocolo"}
