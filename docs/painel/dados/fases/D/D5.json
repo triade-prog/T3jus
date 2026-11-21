@@ -2,7 +2,12 @@
   "id": "D5",
   "texto": "Textos: mensagens do WhatsApp ao cliente do escritório (respostas, avisos de parcela e atraso), avisos e erros nas telas, com o tom aprovado",
   "peca": "B3",
-  "refs": [],
-  "status": "pendente",
-  "ordem": 50
+  "refs": [
+    "EX-14",
+    "PA-03",
+    "PA-04"
+  ],
+  "status": "feito",
+  "ordem": 50,
+  "evidencia": "Guia de tom e inventário de 1.623 textos (95 mudam) em docs/design/aprovadas/textos-tom/ (axe sem violação em 1440 e 390 px), aprovado pela Carol em 21/11/2026 às 17h10 (Bahia) com as 10 recomendações do NOTAS.md"
 }
