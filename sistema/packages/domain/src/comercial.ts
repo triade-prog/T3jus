@@ -37,6 +37,20 @@ export const MOTIVOS_FORA_FUNIL = {
   NAO_VOLTOU: "não voltaram depois do atendimento",
 } as const;
 
+export type MotivoForaFunil = keyof typeof MOTIVOS_FORA_FUNIL;
+/** Rótulos da janela "Encerrar sem proposta" e da lista "Saíram sem proposta" (F3.8). */
+export const MOTIVOS_SAIDA_FUNIL: Record<MotivoForaFunil, { titulo: string; ajuda: string; curto: string; selo: string }> = {
+  NAO_PEGOU: { titulo: "O escritório não pegou o caso", ajuda: "Fora da área, sem viabilidade, conflito de interesse ou falta de agenda.",
+               curto: "não pegou o caso", selo: "Escritório não pegou" },
+  NAO_VOLTOU: { titulo: "O cliente não voltou", ajuda: "Foi atendido e não deu mais retorno.", curto: "não voltou", selo: "Cliente não voltou" },
+};
+
+/** Encerrar sem proposta: um dos dois motivos e a anotação opcional (até 300 caracteres). */
+export const encerrarFunilSchema = z.object({
+  motivo: z.string().max(20).nullish(),
+  nota: z.string().max(400).nullish(),
+});
+
 export const PERIODOS_COMERCIAL = { "30": "30 dias", "90": "90 dias", "12": "12 meses" } as const;
 export type PeriodoComercial = keyof typeof PERIODOS_COMERCIAL;
 
@@ -76,6 +90,8 @@ export interface Retorno {
   oque: string | null;
   responsavel: PessoaRef | null;
   ultimo: { em: string; canal: string; comQuem: string | null; resumo: string } | null;
+  /** Em "Sem próximo contato": ainda sem proposta enviada e no funil (F3.8). */
+  podeSairDoFunil?: boolean;
 }
 export interface Retornos {
   grupos: { vencidos: Retorno[]; hoje: Retorno[]; semana: Retorno[]; depois: Retorno[]; semData: Retorno[] };
@@ -135,6 +151,28 @@ export interface Funil {
     /** Os 3 contratos mais recentes que vieram de proposta (área Contratos). */
     contrato?: { id: string; numero: string; clienteId: string; nome: string; em: string; situacao: "ELABORACAO" | "ATIVO" | "ENCERRADO"; valorCerto: number }[];
   };
+  /** Quem saiu do funil sem proposta no período, mais recente primeiro (até 50) (F3.8). */
+  sairam?: { total: number; itens: (SaidaFunil & { clienteId: string; nome: string })[] };
+}
+
+/** Uma marcação de "Encerrar sem proposta" (F3.8). */
+export interface SaidaFunil {
+  id: string;
+  motivo: MotivoForaFunil;
+  nota?: string;
+  marcadoPor: PessoaRef;
+  marcadoEm: string;
+  voltouPor?: PessoaRef;
+  voltouEm?: string;
+}
+
+/** O cliente no funil, para a ficha (F3.8). */
+export interface ClienteFunil {
+  situacao: "PRIMEIRO" | "FORA" | "PROPOSTA" | "CONTRATO";
+  podeEncerrar: boolean;
+  rascunho: boolean;
+  saida: SaidaFunil | null;
+  eventos: SaidaFunil[];
 }
 export interface AgoraProposta { id: string; numero: string; clienteId: string; nome: string; retorno: { em: string; vencido: boolean } | null; valorCerto: number; condicoes: Condicao[] }
 

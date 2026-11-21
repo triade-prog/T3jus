@@ -6,7 +6,7 @@ import {
   areasSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
-  dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
+  dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL, encerrarFunilSchema, type SaidaFunil, type ClienteFunil,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
@@ -706,6 +706,20 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     if (!(periodo in PERIODOS_COMERCIAL)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["periodo"] });
     return c.json(await deps.banco.rpc<Funil>("portal_comercial_funil", { ...quem(c), p_periodo: periodo }));
   });
+
+  // Encerrar sem proposta e voltar ao funil (F3.8, AP-03). Só com a área Comercial.
+  app.put("/v1/escritorio/clientes/:id/funil", async (c) => {
+    const d = await lerCorpo(c, encerrarFunilSchema);
+    return c.json(await deps.banco.rpc<SaidaFunil>("portal_funil_encerrar", {
+      ...quem(c), p_cliente: idDaRota(c, "id"), p_motivo: d.motivo ?? null, p_nota: d.nota ?? null,
+    }));
+  });
+
+  app.post("/v1/escritorio/clientes/:id/funil/voltar", async (c) =>
+    c.json(await deps.banco.rpc<SaidaFunil>("portal_funil_voltar", { ...quem(c), p_cliente: idDaRota(c, "id") })));
+
+  app.get("/v1/escritorio/clientes/:id/funil", async (c) =>
+    c.json(await deps.banco.rpc<ClienteFunil>("portal_cliente_funil", { ...quem(c), p_cliente: idDaRota(c, "id") })));
 
   app.get("/v1/escritorio/comercial/origem", async (c) => {
     const periodo = c.req.query("periodo") || "90";

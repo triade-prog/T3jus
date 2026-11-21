@@ -285,6 +285,32 @@ test.describe("Clientes do Portal: ficha (AP-01, AP-02, AP-06)", () => {
     });
   });
 
+  test("AP-03: a ficha mostra o cliente no funil; encerrar sem proposta entra no histórico e deixa voltar", async ({ page }) => {
+    const saida = { id: "f1000000-0000-4000-8000-000000000077", motivo: "NAO_VOLTOU", nota: "Liguei duas vezes.", marcadoPor: MARINA, marcadoEm: new Date().toISOString() };
+    const pedidos = await simular(page, rotas({
+      [`GET /v1/escritorio/clientes/${cid(1)}/funil`]: [
+        { corpo: { situacao: "PRIMEIRO", podeEncerrar: true, rascunho: false, saida: null, eventos: [] } },
+        { corpo: { situacao: "FORA", podeEncerrar: false, rascunho: false, saida, eventos: [saida] } },
+      ],
+      [`PUT /v1/escritorio/clientes/${cid(1)}/funil`]: { corpo: saida },
+    }));
+    await page.goto(`${P}/clientes/${cid(1)}?aba=atendimentos`);
+    const folha = page.getByRole("region", { name: "No funil do Comercial" });
+    await expect(folha).toContainText("Primeiro contato, sem proposta");
+    await semViolacoes(page);
+    await folha.getByRole("button", { name: "Encerrar sem proposta" }).click();
+    const j = page.getByRole("dialog", { name: "Encerrar sem proposta" });
+    await j.getByRole("radio", { name: /O cliente não voltou/ }).check();
+    await j.getByLabel("Anotação (opcional)").fill("Liguei duas vezes.");
+    await j.getByRole("button", { name: "Tirar do funil" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "saiu do funil." })).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "PUT" && p.caminho.endsWith("/funil"))?.corpo).toEqual({ motivo: "NAO_VOLTOU", nota: "Liguei duas vezes." });
+    await expect(folha).toContainText("Saiu sem proposta");
+    await expect(folha.getByRole("button", { name: "Voltar ao funil" })).toBeVisible();
+    await expect(page.getByText(/Marina Ribeiro tirou \S+ do funil/)).toBeVisible();
+    await semViolacoes(page);
+  });
+
   test("editar: conflito mostra quem salvou antes e os campos que mudaram; salvar a minha versão", async ({ page }) => {
     const nova = { ...FICHA, versao: 4, profissao: "Aposentada", alterado: { em: "2026-11-18T17:52:00Z", por: "Felipe Matos" } };
     const pedidos = await simular(page, rotas({

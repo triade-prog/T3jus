@@ -1108,32 +1108,74 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 .cm-resp li span.n{flex:1;font-weight:500}
 .cm-resp li .selo{margin-left:auto}
 
-/* Funil */
+/* Funil: três números e uma barra (opção B, escolha da Carol em 21/11/2026) e "Encerrar sem proposta" (F3.8) */
 .cm-funil{padding:4px 24px 22px}
-.cm-f{list-style:none;margin:0;padding:0;display:grid;gap:0}
-.cm-f>li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);gap:0 28px;align-items:center}
-.cm-f-faixa{width:var(--w);min-width:170px;margin:0 auto;height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,22px 100%);background:var(--bg);color:#FFFFFF;text-align:center}
-.cm-f-faixa b{font-family:var(--serifa);font-size:40px;font-weight:600;line-height:1}
-.cm-f-faixa span{font-size:13px;line-height:1.3}
-.cm-f .e1 .cm-f-faixa{--bg:var(--vinho);color:var(--sal)}
-.cm-f .e2 .cm-f-faixa{--bg:var(--vinho-2)}
-.cm-f .e3 .cm-f-faixa{--bg:var(--vinho-3)}
-.cm-f-lado{font-size:13px;color:var(--texto-2);line-height:1.45;padding-left:16px;border-left:1px solid var(--divisor)}
-.cm-f-lado b{color:var(--texto);font-weight:600}
-.cm-f-passa{padding:6px 0}
-.cm-f-taxa{justify-self:center;display:inline-flex;align-items:center;gap:6px;margin:0;padding:4px 14px;border-radius:999px;background:var(--papel);border:1px solid var(--borda-folha);
-  font-size:13px;color:var(--vinho-2);line-height:1.4;position:relative}
-.cm-f-taxa::before{content:"";width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--vinho-2)}
-.cm-f-taxa b{font-size:16px;font-weight:600}
-.cm-f-perda{padding:8px 0 8px 16px;border-left:1px solid var(--divisor);font-size:13px;line-height:1.45}
-.cm-f-perda p{margin:0 0 2px;color:var(--texto)}
-.cm-f-perda p b{font-weight:600}
-.cm-f-perda ul{list-style:none;margin:0;padding:0;display:grid;gap:1px;color:var(--texto-2)}
-.cm-f-perda li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:4px}
-.cm-f-perda li b{font-weight:600;color:var(--texto);text-align:right;padding-right:4px}
-.cm-f-total{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--divisor);font-size:14px;color:var(--texto-2);text-align:center}
-.cm-f-total b{color:var(--vinho-2);font-weight:600}
+/* Quanto vira contrato: três números e uma barra (opção B, escolha da Carol em 21/11) */
+.fb-nums{list-style:none;margin:6px 0 0;padding:0;display:flex;align-items:flex-start;gap:0}
+.fb-et{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fb-et b{font-family:var(--serifa);font-size:48px;font-weight:600;color:var(--vinho);line-height:1}
+.fb-et span{font-size:13px;color:var(--texto-2)}
+.fb-seta{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 18px 0;min-width:0}
+.fb-p{font-size:15px;font-weight:600;color:var(--vinho-2)}
+.fb-linha{display:block;width:100%;height:1px;background:var(--vinho-4);position:relative}
+.fb-linha::after{content:"";position:absolute;right:-1px;top:-4px;border-left:7px solid var(--vinho-4);border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
+.fb-sr{font-size:12px;color:var(--texto-2)}
+.fb-onde{margin-top:24px;padding-top:16px;border-top:1px solid var(--divisor)}
+.fb-tit{font-family:var(--fonte-texto);font-size:13px;font-weight:500;margin:0 0 10px;color:var(--texto)}
+.fb-barra{display:flex;gap:2px;height:22px}
+.fb-barra span:first-child{border-radius:3px 0 0 3px}.fb-barra span:last-child{border-radius:0 3px 3px 0}
+.fb-c{background:var(--vinho)}.fb-a{background:var(--vinho-4)}.fb-o{background:var(--papel);box-shadow:inset 0 0 0 1.5px var(--vinho-4)}
+.fb-np{background:var(--marca-ambar)}.fb-nv{background:var(--marca-ambar-2)}
+.fb-at{background:repeating-linear-gradient(135deg,var(--marca-ambar) 0 2px,var(--papel) 2px 6px);box-shadow:inset 0 0 0 1.5px var(--marca-ambar)}
+.fb-grupos{display:flex;gap:2px;margin-top:6px;font-size:12px;color:var(--texto-2)}
+.fb-grupos span{border-top:1px solid var(--vinho-4);padding-top:4px}
+.fb-grupos span+span{text-align:right}
+.fb-legs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 32px;margin-top:16px}
+.fb-g{margin:0 0 6px;font-size:13px;font-weight:500}
+.fb-legs ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.fb-legs li{display:grid;grid-template-columns:14px 24px minmax(0,1fr);gap:8px;align-items:center;font-size:13px;color:var(--texto-2)}
+.fb-legs li b{color:var(--texto);font-weight:600;text-align:right}
+.fb-m{width:14px;height:14px;border-radius:3px;display:block}
+.fb-marcar{margin:4px 0 0 46px;font-size:13px}
+.fb-marcar .fu-link{margin-left:0}
+.fb-nada{margin:0;font-size:13px;color:var(--texto-2)}
+.fb.cm-funil{padding-top:4px}
+@media (max-width:760px){
+  .fb-et{flex:1}
+  .fb-et b{font-size:34px}
+  .fb-et span{font-size:12px;line-height:1.35}
+  .fb-seta{flex:none;width:52px;padding:6px 6px 0}
+  .fb-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .fb-legs{grid-template-columns:1fr}
+}
+.fi-ref{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio);border:1px solid var(--vinho-4);font-size:13px;line-height:1.5}
+.fi-ref .ico{color:var(--vinho);flex:none;margin-top:1px}
+.fi-ref b{font-weight:600}
+.janela .opcao{margin:0}
+.fi-grupo-op{border:0;margin:0;padding:0;min-width:0;display:grid;gap:4px}
+.fi-grupo-op legend{padding:0;margin-bottom:6px;font-size:13px;font-weight:500}
+/* ===== Funil: encerrar sem proposta (fu-) ===== */
+.fu-card{padding-bottom:12px}
+.fu-bot{position:relative;z-index:1;margin-top:6px;width:100%;justify-content:center;font-size:13px}
+.fu-bot2{margin-top:8px}
+.fu-link{font-weight:500;margin-left:6px;display:inline-flex;align-items:center;min-height:24px}
+.fu-vazio{font-size:12px;color:var(--texto-2);line-height:1.45;padding:10px 12px;border:1px dashed var(--vinho-4);border-radius:var(--raio)}
+.fu-sairam{list-style:none;margin:0;padding:0}
+.fu-sairam li{display:grid;grid-template-columns:minmax(0,1fr) 200px auto;gap:12px 16px;align-items:center;padding:12px 24px;border-top:1px solid var(--divisor)}
+.fu-sairam li:first-child{border-top:0}
+.fu-s-quem a{font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin:-10px 0 -8px}
+.fu-s-quem a:hover{text-decoration:underline}
+.fu-s-quem small{display:block;font-size:12px;color:var(--texto-2);line-height:1.45}
+.fu-nota{font-style:italic}
+.fu-alvo{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2)}
+.fu-alvo .ico{color:var(--vinho);flex:none;margin-top:2px}
+.fu-alvo strong{display:block;font-weight:500}
+.fu-alvo small{display:block;font-size:12px;color:var(--texto-2);line-height:1.45}
+.fu-est{margin:0}
+@media (max-width:760px){
+  .fu-sairam li{grid-template-columns:minmax(0,1fr);padding:12px 16px}
+  .fu-sairam li .btn{width:100%}
+}
 .cm-colunas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px;padding:0 24px 22px;align-items:start}
 .cm-coluna{border-top:3px solid var(--vinho-4);padding:10px 0 0;display:flex;flex-direction:column;gap:8px;min-width:0}
 .cm-coluna h3{display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--vinho);line-height:1.3}
@@ -1187,12 +1229,6 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .cm-dia .disco{--d:44px;--f:18px}
   .cm-prop,.cm-resp,.cm-motivos{padding-left:16px;padding-right:16px}
   .cm-funil{padding:0 16px 16px}
-  .cm-f>li{grid-template-columns:1fr;gap:6px}
-  .cm-f-faixa{height:72px;min-width:150px;clip-path:polygon(0 0,100% 0,calc(100% - 16px) 100%,16px 100%)}
-  .cm-f-faixa b{font-size:32px}
-  .cm-f-lado{border-left:0;padding:0;text-align:center;font-size:12px;margin-bottom:4px}
-  .cm-f-passa{padding:8px 0}
-  .cm-f-perda{border-left:0;border-radius:var(--raio);background:var(--sal-2);padding:10px 12px}
   .cm-colunas{grid-template-columns:1fr;gap:18px;padding:0 16px 16px}
   .cm-coluna>p{min-height:0}
   .cm-card{min-height:0}

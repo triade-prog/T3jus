@@ -7,8 +7,8 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  CANAIS, ESTADOS_CIVIS, formatarDocumento, hojeBrasilia, ORIGENS, TIPOS_CLIENTE,
-  type Atendimento, type Canal, type ContatoCliente, type FichaCliente, type PessoaRef,
+  CANAIS, ESTADOS_CIVIS, formatarDocumento, hojeBrasilia, MOTIVOS_SAIDA_FUNIL, ORIGENS, TIPOS_CLIENTE,
+  type Atendimento, type Canal, type ClienteFunil, type SaidaFunil, type ContatoCliente, type FichaCliente, type PessoaRef,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -23,6 +23,7 @@ import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
+import { FolhaFunilCliente } from "./FunilSaida.tsx";
 import { FolhaSemAvisos, SeloSemAvisos, useAvisosCliente } from "./SemAvisos.tsx";
 import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaArquivar, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
@@ -553,8 +554,12 @@ function JanelaSituacao({ modo, f, escritorio, aoFechar, aoFeito, aoConflito }: 
 
 // ------------------------------------------------------------------------- abas
 
-function Historico({ atendimentos, f, hoje, destaque, aoRegistrar }: {
+type LinhaHist = { ocorridoEm: string; a?: Atendimento; funil?: { tipo: "saiu" | "voltou"; s: SaidaFunil } };
+
+function Historico({ atendimentos, funil = [], f, hoje, destaque, aoRegistrar }: {
   atendimentos: Atendimento[];
+  /** Saídas do funil (F3.8): entram como linhas da equipe no histórico. */
+  funil?: SaidaFunil[];
   f: FichaCliente;
   hoje: string;
   destaque: string | null;
@@ -562,7 +567,15 @@ function Historico({ atendimentos, f, hoje, destaque, aoRegistrar }: {
 }) {
   const p = f.proxContato;
   const r = p ? rotuloProx(p, hoje) : null;
-  const dias = agruparEventosPorDia(atendimentos);
+  const linhas: LinhaHist[] = [
+    ...atendimentos.map((a) => ({ ocorridoEm: a.ocorridoEm, a })),
+    ...funil.flatMap((x) => [
+      { ocorridoEm: x.marcadoEm, funil: { tipo: "saiu" as const, s: x } },
+      ...(x.voltouEm ? [{ ocorridoEm: x.voltouEm, funil: { tipo: "voltou" as const, s: x } }] : []),
+    ]),
+  ].sort((x, y) => (x.ocorridoEm < y.ocorridoEm ? 1 : x.ocorridoEm > y.ocorridoEm ? -1 : 0));
+  const dias = agruparEventosPorDia(linhas);
+  const primeiro = f.nome.split(" ")[0];
   const excluido = f.situacao === "EXCLUIDO";
   return (
     <Folha titulo="Histórico de atendimento" estilo={{ overflow: "hidden" }}
@@ -587,7 +600,26 @@ function Historico({ atendimentos, f, hoje, destaque, aoRegistrar }: {
           <div key={d.dia} className="eventos-dia">
             <h3>{d.dia}</h3>
             <ol className="eventos">
-              {d.eventos.map((a) => (
+              {d.eventos.map(({ a, funil: fx }) => fx ? (
+                <li key={`${fx.s.id}-${fx.tipo}`}>
+                  <time dateTime={fx.tipo === "saiu" ? fx.s.marcadoEm : fx.s.voltouEm}>{hora(fx.tipo === "saiu" ? fx.s.marcadoEm : fx.s.voltouEm!)}</time>
+                  <span className="pto" aria-hidden="true" />
+                  <div>
+                    {fx.tipo === "saiu" ? (
+                      <>
+                        <p><b>{fx.s.marcadoPor.nome}</b> tirou {primeiro} do funil</p>
+                        <small>Motivo: {MOTIVOS_SAIDA_FUNIL[fx.s.motivo].titulo.toLowerCase()}</small>
+                        {fx.s.nota ? <span className="cl-resumo">“{fx.s.nota}”</span> : null}
+                      </>
+                    ) : (
+                      <>
+                        <p><b>{fx.s.voltouPor?.nome}</b> voltou {primeiro} ao funil</p>
+                        <small>O motivo de antes ({MOTIVOS_SAIDA_FUNIL[fx.s.motivo].curto}) ficou guardado.</small>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ) : a ? (
                 <li key={a.id} className={a.id === destaque ? "cl-novo" : undefined}>
                   <time dateTime={a.ocorridoEm}>{hora(a.ocorridoEm)}</time>
                   <span className={a.id === destaque ? "pto forte" : "pto"} aria-hidden="true" />
@@ -611,7 +643,7 @@ function Historico({ atendimentos, f, hoje, destaque, aoRegistrar }: {
                     ) : null}
                   </div>
                 </li>
-              ))}
+              ) : null)}
             </ol>
           </div>
         ))
@@ -723,6 +755,15 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     void Promise.resolve().then(() => carregar());
   }, [carregar]);
   const comercial = f?.comercial ?? false;
+  const [funil, setFunil] = useState<ClienteFunil | null | "erro">(null);
+  const carregarFunil = useCallback(async () => {
+    const r = await chamarPortal<ClienteFunil>(`/v1/escritorio/clientes/${id}/funil`);
+    setFunil(r.ok ? r.dados : "erro");
+  }, [id]);
+  useEffect(() => {
+    if (!comercial || aba !== "atendimentos") return;
+    void Promise.resolve().then(() => carregarFunil());
+  }, [comercial, aba, carregarFunil]);
   useEffect(() => {
     if (!comercial) return;
     void Promise.resolve().then(async () => {
@@ -1046,10 +1087,21 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           ) : atendimentos === null ? (
             <Carregando rotulo="Carregando os atendimentos…" linhas={4} />
           ) : (
-            <Historico atendimentos={atendimentos} f={f} hoje={hoje} destaque={destaque} aoRegistrar={ativo ? () => abrir("registrar") : null} />
+            <Historico atendimentos={atendimentos} funil={funil && funil !== "erro" ? funil.eventos : []} f={f} hoje={hoje} destaque={destaque}
+              aoRegistrar={ativo ? () => abrir("registrar") : null} />
           )
         }
-        lateral={fimLgpd ? <RegistroExclusao f={f} /> : <ExplicaHistorico />}
+        lateral={fimLgpd ? <RegistroExclusao f={f} /> : (
+          <>
+            {comercial && !excluido ? (
+              <FolhaFunilCliente dados={funil} recarregar={() => void carregarFunil()} id={f.id} nome={f.nome} hoje={hoje}
+                detalhe={atendimentos?.[0] ? `Último atendimento em ${dataLonga(atendimentos[0].ocorridoEm)}` : undefined}
+                podeEscrever={!soConsulta(escritorio) && ativo}
+                aoFeito={(titulo, texto) => { setFeito({ titulo, texto }); void carregarFunil(); }} />
+            ) : null}
+            <ExplicaHistorico />
+          </>
+        )}
       />
     );
   } else {

@@ -980,6 +980,27 @@ Deno.test("AP-05, IN-01: proposta com condições, marcar como enviada e registr
   assertEquals((await erro(await m.pedir("/v1/escritorio/comercial/retornos?responsavel=x", { cookie }))).detalhes?.campos, ["responsavel"]);
 });
 
+Deno.test("AP-03: encerrar sem proposta e voltar ao funil passam o cliente da rota e o motivo; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/funil`, { metodo: "PUT", corpo: { motivo: "NAO_VOLTOU", nota: "Liguei duas vezes.", escritorioId: "x" }, cookie });
+  const ch = m.chamadas.find((c) => c.funcao === "portal_funil_encerrar")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_cliente, ch.args.p_motivo, ch.args.p_nota], [AURORA, CLIENTE, "NAO_VOLTOU", "Liguei duas vezes."]);
+  await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/funil/voltar`, { metodo: "POST", cookie });
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_funil_voltar")!.args.p_cliente, CLIENTE);
+  await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/funil`, { cookie });
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_cliente_funil")!.args.p_escritorio, AURORA);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/clientes/x/funil", { cookie }))).codigo, "NOT_FOUND");
+});
+
+Deno.test("AP-03: os motivos de sair do funil no domínio são os mesmos do banco", async () => {
+  const { MOTIVOS_FORA_FUNIL, MOTIVOS_SAIDA_FUNIL } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0550_funil_sem_proposta.sql", import.meta.url));
+  const lista = /motivo\s+text not null check \(motivo in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista, Object.keys(MOTIVOS_FORA_FUNIL));
+  assertEquals(Object.keys(MOTIVOS_SAIDA_FUNIL), Object.keys(MOTIVOS_FORA_FUNIL));
+});
+
 Deno.test("AP-05, CH-06: situações, motivos e tipos de honorário no domínio são os mesmos do banco", async () => {
   const { MOTIVOS_RECUSA, TIPOS_HONORARIO } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0190_portal_comercial.sql", import.meta.url));

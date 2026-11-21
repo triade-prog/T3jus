@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  hojeBrasilia, MOTIVOS_RECUSA, ORIGENS, PERIODOS_COMERCIAL, reais,
+  hojeBrasilia, MOTIVOS_SAIDA_FUNIL, ORIGENS, PERIODOS_COMERCIAL, reais,
   type Funil, type ListaPropostas, type OrigemContatos, type PeriodoComercial, type PropostaLinha, type Retorno, type Retornos,
 } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
@@ -17,6 +17,9 @@ import { primeiroNome } from "./equipe.ts";
 import { ateSemana, faixaVencidos, nomeSituacao, quandoRetorno, ROTAS_COMERCIAL, SELO_SITUACAO, taxa, textoPeriodo, textoUltimo } from "./comercial.ts";
 import { SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
+import { textoDoErro } from "../api.ts";
+import { Toast } from "./FichaCliente.tsx";
+import { FolhaSairam, FunilBarra, JanelaEncerrarFunil, JanelaVoltarFunil, type AlvoFunil, type AlvoVoltar } from "./FunilSaida.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
 type Carga<T> = T | null | "erro";
@@ -128,7 +131,7 @@ const CAB_ATEND = (
     lede="Quem precisa de retorno, de todos os clientes, por data. Cada conversa se registra na ficha do cliente, que é onde fica o histórico." />
 );
 
-function LinhaRetorno({ r, tipo, hoje }: { r: Retorno; tipo: "vencidos" | "hoje" | "semana" | "depois" | "semData"; hoje: string }) {
+function LinhaRetorno({ r, tipo, hoje, aoEncerrar }: { r: Retorno; tipo: "vencidos" | "hoje" | "semana" | "depois" | "semData"; hoje: string; aoEncerrar?: (r: Retorno) => void }) {
   const disco = tipo === "vencidos" ? "disco hn-d-urg" : tipo === "hoje" ? "disco hn-d-hoje" : "disco";
   const link = ROTAS_COMERCIAL.atendimentosCliente(r.clienteId);
   return (
@@ -141,6 +144,12 @@ function LinhaRetorno({ r, tipo, hoje }: { r: Retorno; tipo: "vencidos" | "hoje"
       <div className="cm-quem">
         <a href={link}>{r.nome}</a>
         {r.em ? <p><b>{r.oque ?? "Falar com o cliente"}</b></p> : <p>Ninguém marcou quando falar de novo.</p>}
+        {tipo === "semData" && r.podeSairDoFunil && aoEncerrar ? (
+          <button className="btn btn-sec btn-compacto fu-bot2" type="button" onClick={() => aoEncerrar(r)}>
+            <Icone nome="pessoa-menos" className="ico" />
+            Encerrar sem proposta<span className="sr">: {r.nome}</span>
+          </button>
+        ) : null}
         {tipo === "vencidos" && r.em ? <Selo tom="urgente" icone="alerta">vencido {quandoRetorno(r.em, hoje)}</Selo> : null}
         {tipo === "hoje" ? <Selo tom="atencao" icone="relogio">Hoje</Selo> : null}
       </div>
@@ -156,13 +165,13 @@ function LinhaRetorno({ r, tipo, hoje }: { r: Retorno; tipo: "vencidos" | "hoje"
   );
 }
 
-function Grupo({ id, titulo, itens, tipo, hoje }: { id: string; titulo: string; itens: Retorno[]; tipo: Parameters<typeof LinhaRetorno>[0]["tipo"]; hoje: string }) {
+function Grupo({ id, titulo, itens, tipo, hoje, aoEncerrar }: { id: string; titulo: string; itens: Retorno[]; tipo: Parameters<typeof LinhaRetorno>[0]["tipo"]; hoje: string; aoEncerrar?: (r: Retorno) => void }) {
   if (!itens.length) return null;
   return (
     <div className="cm-grupo" id={id}>
       <h3>{titulo}<span className="q">{itens.length}</span></h3>
       <ul className="cm-ret">
-        {itens.map((r) => <LinhaRetorno key={r.clienteId} r={r} tipo={tipo} hoje={hoje} />)}
+        {itens.map((r) => <LinhaRetorno key={r.clienteId} r={r} tipo={tipo} hoje={hoje} aoEncerrar={aoEncerrar} />)}
       </ul>
     </div>
   );
@@ -179,6 +188,9 @@ function AtendimentosConteudo() {
   const [busca, setBusca] = useState("");
   const { dados, recarregar } = useCarga<Retornos>(`/v1/escritorio/comercial/retornos${resp ? `?responsavel=${resp}` : ""}`);
   const [semDataTodos, setSemDataTodos] = useState<number | null>(null);
+  const [encerrar, setEncerrar] = useState<AlvoFunil | null>(null);
+  const [vez, setVez] = useState(0);
+  const [feito, setFeito] = useState<{ titulo: string; texto: string } | null>(null);
   const hoje = hojeBrasilia();
   useEffect(() => {
     if (dados && dados !== "erro" && !resp) void Promise.resolve().then(() => setSemDataTodos(dados.grupos.semData.length));
@@ -253,7 +265,8 @@ function AtendimentosConteudo() {
                 <Grupo id="g-hoje" titulo="Hoje" itens={g.hoje} tipo="hoje" hoje={hoje} />
                 <Grupo id="g-semana" titulo="Próximos 7 dias" itens={g.semana} tipo="semana" hoje={hoje} />
                 <Grupo id="g-depois" titulo="Depois" itens={g.depois} tipo="depois" hoje={hoje} />
-                <Grupo id="g-sem" titulo="Sem próximo contato" itens={g.semData} tipo="semData" hoje={hoje} />
+                <Grupo id="g-sem" titulo="Sem próximo contato" itens={g.semData} tipo="semData" hoje={hoje}
+                  aoEncerrar={(r) => { setVez((v) => v + 1); setEncerrar({ id: r.clienteId, nome: r.nome, detalhe: r.ultimo ? `Último atendimento: ${textoUltimo(r.ultimo)} · sem próximo contato` : "Sem atendimento registrado" }); }} />
               </>
             )}
           </section>
@@ -309,6 +322,13 @@ function AtendimentosConteudo() {
           </section>
         </aside>
       </div>
+      <JanelaEncerrarFunil key={`e-${vez}`} alvo={encerrar} aoFechar={() => setEncerrar(null)}
+        aoFeito={(x, a) => {
+          setEncerrar(null);
+          setFeito({ titulo: `${a.nome} saiu do funil.`, texto: `Motivo: ${MOTIVOS_SAIDA_FUNIL[x.motivo].titulo.toLowerCase()}. Para desfazer, use “Voltar ao funil” no Funil ou na ficha.` });
+          recarregar();
+        }} />
+      {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );
 }
@@ -482,28 +502,34 @@ function Coluna({ titulo, n, desc, fim, children }: { titulo: string; n: number;
   );
 }
 
-const pctLargura = (parte: number, todo: number) => `${todo ? Math.max(30, Math.round((100 * parte) / todo)) : 100}%`;
-
 function FunilConteudo() {
   const [periodo, setPeriodo] = useState<PeriodoComercial>("90");
   const { dados, recarregar } = useCarga<Funil>(`/v1/escritorio/comercial/funil?periodo=${periodo}`);
+  const [encerrar, setEncerrar] = useState<AlvoFunil | null>(null);
+  const [voltar, setVoltar] = useState<AlvoVoltar | null>(null);
+  const [vez, setVez] = useState(0);
+  const [feito, setFeito] = useState<{ titulo: string; texto: string; desfazer?: string } | null>(null);
+  const [novo, setNovo] = useState<string | null>(null);
   const hoje = hojeBrasilia();
   const cab = <CabSimples titulo="Funil" />;
   if (dados === "erro") return <>{cab}<ErroAoCarregar oque="o funil" aoTentar={recarregar} /></>;
   if (!dados) return <>{cab}<Carregando rotulo="Carregando o funil…" linhas={3} /></>;
   const d = dados;
   const per = textoPeriodo(d.de, d.ate);
-  const semProp = d.primeiros - d.comProposta;
-  const naoFecharam = d.comProposta - d.contratos;
-  const perdas1 = ([[d.semProposta.naoPegou, "o escritório não pegou o caso"], [d.semProposta.naoVoltou, "não voltaram depois do atendimento"],
-    [d.semProposta.emAtendimento, "ainda em atendimento, sem proposta"]] as [number, string][]).filter(([n]) => n);
-  const perdas2 = ([[d.depoisProposta.andamento, "proposta em andamento (abaixo)"],
-    ...d.depoisProposta.recusadas.map((r) => [r.n, r.motivo ? MOTIVOS_RECUSA[r.motivo].toLowerCase() : "recusaram"] as [number, string])] as [number, string][]).filter(([n]) => n);
   const card = (p: Funil["agora"]["enviada"][number], extra?: string) => (
     <Cartao key={p.id} href={ROTAS_COMERCIAL.proposta(p.id)} nome={p.nome}
       sub={`${p.numero}${extra ? ` · ${extra}` : p.valorCerto ? ` · ${reais(p.valorCerto)}` : ""}`}
       selo={p.retorno && (p.retorno.vencido || p.retorno.em === hoje) ? <SeloRetorno r={p.retorno} hoje={hoje} prefixo="retorno " /> : undefined} />
   );
+  const abrirEncerrar = (a: AlvoFunil) => { setVez((v) => v + 1); setEncerrar(a); };
+  async function desfazer(clienteId: string, nome: string) {
+    setFeito(null);
+    const r = await chamarPortal(`/v1/escritorio/clientes/${clienteId}/funil/voltar`, { metodo: "POST" });
+    setFeito(r.ok ? { titulo: `${nome} voltou ao funil.`, texto: "Está de novo em “Primeiro contato”. O motivo de antes ficou no histórico." }
+      : { titulo: "Não deu para desfazer.", texto: textoDoErro(r.erro) });
+    setNovo(null);
+    recarregar();
+  }
 
   return (
     <div className="hn">
@@ -516,39 +542,7 @@ function FunilConteudo() {
           </div>
           <div className="acoes"><Periodo atual={periodo} aoEscolher={setPeriodo} /></div>
         </div>
-        {d.primeiros ? (
-          <div className="cm-funil">
-            <ol className="cm-f" aria-label={`Funil de ${per}`}>
-              <li className="e1">
-                <div className="cm-f-faixa" style={{ ["--w" as string]: "100%" }}><b className="num">{d.primeiros}</b><span>{d.primeiros === 1 ? "primeiro contato" : "primeiros contatos"}</span></div>
-                <p className="cm-f-lado">Clientes novos cadastrados no período.</p>
-              </li>
-              <li className="cm-f-passa">
-                <p className="cm-f-taxa"><b className="num">{taxa(d.comProposta, d.primeiros)}</b> passam</p>
-                <div className="cm-f-perda">
-                  <p><b>{semProp === 1 ? "1 não recebeu proposta" : `${semProp} não receberam proposta`}</b></p>
-                  {perdas1.length ? <ul>{perdas1.map(([n, t]) => <li key={t}><b className="num">{n}</b><span>{t}</span></li>)}</ul> : null}
-                </div>
-              </li>
-              <li className="e2">
-                <div className="cm-f-faixa" style={{ ["--w" as string]: pctLargura(d.comProposta, d.primeiros) }}><b className="num">{d.comProposta}</b><span>{d.comProposta === 1 ? "recebeu proposta" : "receberam proposta"}</span></div>
-                <p className="cm-f-lado">Proposta enviada ao cliente, por qualquer valor.</p>
-              </li>
-              <li className="cm-f-passa">
-                <p className="cm-f-taxa"><b className="num">{taxa(d.contratos, d.comProposta)}</b> passam</p>
-                <div className="cm-f-perda">
-                  <p><b>{naoFecharam === 1 ? "1 ainda não fechou" : `${naoFecharam} ainda não fecharam`}</b></p>
-                  {perdas2.length ? <ul>{perdas2.map(([n, t]) => <li key={t}><b className="num">{n}</b><span>{t}</span></li>)}</ul> : null}
-                </div>
-              </li>
-              <li className="e3">
-                <div className="cm-f-faixa" style={{ ["--w" as string]: pctLargura(d.contratos, d.primeiros) }}><b className="num">{d.contratos}</b><span>{d.contratos === 1 ? "virou contrato" : "viraram contrato"}</span></div>
-                <p className="cm-f-lado">Contrato criado no T3jus, assinado ou não.</p>
-              </li>
-            </ol>
-            <p className="cm-f-total"><b className="num">{taxa(d.contratos, d.primeiros)}</b> dos primeiros contatos viraram contrato no período.</p>
-          </div>
-        ) : (
+        {d.primeiros ? <FunilBarra d={d} /> : (
           <Estado icone="pessoas" titulo="Nenhum primeiro contato no período">
             O funil conta os clientes cadastrados no período. Escolha um período maior ou cadastre quem procurou o escritório em Clientes.
           </Estado>
@@ -558,15 +552,21 @@ function FunilConteudo() {
         <div className="folha-cab">
           <div>
             <h2 id="t-ag">Agora no funil</h2>
-            <p className="sub">Ninguém arrasta cartão: a etapa sai do que foi registrado (atendimento, proposta, resposta e contrato).</p>
+            <p className="sub">Ninguém arrasta cartão: a etapa sai do que foi registrado. Quem não vai receber proposta sai com “Encerrar sem proposta”.</p>
           </div>
         </div>
         <div className="cm-colunas">
           <Coluna titulo="Primeiro contato" n={d.agora.primeiro.length} desc="Atendido, ainda sem proposta enviada.">
-            {d.agora.primeiro.map((x) => (
-              <Cartao key={x.clienteId} href={ROTAS_COMERCIAL.ficha(x.clienteId)} nome={x.nome} sub={x.detalhe}
-                selo={x.rascunho ? <Selo tom="neutro">Rascunho</Selo> : x.semRetorno ? <Selo tom="atencao" icone="relogio">Sem retorno marcado</Selo> : undefined} />
-            ))}
+            {d.agora.primeiro.length ? d.agora.primeiro.map((x) => (
+              <li key={x.clienteId} className="cm-card fu-card">
+                <a href={ROTAS_COMERCIAL.ficha(x.clienteId)}>{x.nome}</a>
+                <small>{x.detalhe}</small>
+                {x.rascunho ? <Selo tom="neutro">Rascunho</Selo> : x.semRetorno ? <Selo tom="atencao" icone="relogio">Sem retorno marcado</Selo> : null}
+                <button className="btn btn-sec btn-compacto fu-bot" type="button" onClick={() => abrirEncerrar({ id: x.clienteId, nome: x.nome, detalhe: x.detalhe })}>
+                  Encerrar sem proposta<span className="sr">: {x.nome}</span>
+                </button>
+              </li>
+            )) : <li className="fu-vazio">Ninguém esperando proposta. Cada primeiro contato já recebeu proposta ou saiu do funil com o motivo.</li>}
           </Coluna>
           <Coluna titulo="Proposta enviada" n={d.agora.enviada.length} desc="Esperando a resposta do cliente.">{d.agora.enviada.map((p) => card(p))}</Coluna>
           <Coluna titulo="Em negociação" n={d.agora.negociacao.length} desc="O cliente pediu mudança.">{d.agora.negociacao.map((p) => card(p))}</Coluna>
@@ -580,9 +580,35 @@ function FunilConteudo() {
           </Coluna>
         </div>
       </section>
+      {d.sairam ? <FolhaSairam sairam={d.sairam} hoje={hoje} novo={novo} aoVoltar={(a) => { setVez((v) => v + 1); setVoltar(a); }} /> : null}
       <Oab titulo="Funil de quem já procurou o escritório.">
         O T3jus não faz anúncio, envio em massa nem lista de contatos comprada, e não conta pontos de “chance de fechar”. A publicidade da advocacia segue o Provimento 205/2021 da OAB.
       </Oab>
+      <JanelaEncerrarFunil key={`e-${vez}`} alvo={encerrar} aoFechar={() => setEncerrar(null)}
+        aoFeito={(s, a) => {
+          setEncerrar(null);
+          setNovo(s.id);
+          setFeito({ titulo: `${a.nome} saiu do funil.`, texto: `Motivo: ${MOTIVOS_SAIDA_FUNIL[s.motivo].titulo.toLowerCase()}. Passou a contar em “${MOTIVOS_SAIDA_FUNIL[s.motivo].curto}”.`, desfazer: a.id });
+          recarregar();
+        }} />
+      <JanelaVoltarFunil key={`v-${vez}`} alvo={voltar} hoje={hoje} aoFechar={() => setVoltar(null)}
+        aoFeito={(a) => {
+          setVoltar(null);
+          setNovo(null);
+          setFeito({ titulo: `${a.nome} voltou ao funil.`, texto: "Está de novo em “Primeiro contato”. O motivo de antes ficou no histórico." });
+          recarregar();
+        }} />
+      {feito ? (
+        <Toast aoFechar={() => setFeito(null)} feito={{
+          titulo: feito.titulo, texto: feito.texto,
+          acoes: feito.desfazer ? (
+            <button className="btn btn-sec btn-compacto" type="button" onClick={() => void desfazer(feito.desfazer!, feito.titulo.replace(/ saiu do funil\.$/, ""))}>
+              <Icone nome="trocar" className="ico" />
+              Desfazer
+            </button>
+          ) : undefined,
+        }} />
+      ) : null}
     </div>
   );
 }
