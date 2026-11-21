@@ -94,6 +94,14 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         icone: "trocar", titulo: <><b>{d.quem ?? "Quem revisava"}</b> passou a revisão de {minuscula(d.modelo)} de {d.caso} para {d.para ?? "outro advogado"}</>,
         detalhe: "Ela continua em revisão.", onde: "Abrir a petição", href: peticao,
       };
+    case "BASE_DO_MES":
+      // CH-06: no dia de pedir a base do percentual recorrente; informar fica em Honorários.
+      return {
+        icone: "relogio", titulo: <>Pedir a base do mês: <b>{d.cliente}</b>{d.contrato ? ` · ${d.contrato}` : ""}</>,
+        detalhe: [d.sobre ? `${d.sobre}${d.mes && d.de ? `, mês ${d.mes} de ${d.de}` : ""}.` : null,
+          d.vencimento ? `Sem a base, a cobrança de ${d.vencimento.split("-").reverse().join("/")} não sai.` : null].filter(Boolean).join(" "),
+        onde: "Informar a base", href: "/contratos/honorarios", selo: { tom: "atencao", texto: "Base do mês" },
+      };
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,
