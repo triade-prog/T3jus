@@ -5,7 +5,7 @@
   "refs": [
     "PD-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 210,
-  "proximo": "Bloco no Início com as cobranças do dia da pessoa, levando às parcelas do contrato"
+  "evidencia": "Migration 0500_portal_inicio_completo.sql (a parcela com a próxima ação de cobrança para hoje ou já passada entra em \"Para hoje\" no Financeiro de quem tem a ação, além das vencidas e das que entram em 2 dias úteis), teste 050_portal_inicio_completo_test.sql, textoItem em inicio.ts (Cobrar, com a próxima ação) e e2e portal-inicio.spec.ts"
 }

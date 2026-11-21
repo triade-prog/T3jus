@@ -6,7 +6,7 @@
     "EX-04",
     "EX-02"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 380,
-  "proximo": "O campo \"lembrar\" já fica gravado em cada prazo e o sino já aceita o aviso PRAZO_2_DIAS (0390); falta a rotina diária que cria o aviso, e o quadro no Início vem com o Início por áreas (F3.26)"
+  "evidencia": "Migration 0500_portal_inicio_completo.sql: o prazo com \"lembrar\" entra em \"A acompanhar\" no Jurídico até 2 dias antes do \"fazer até\" (ou do prazo final), e a rotina diária avisar_prazos_em_2_dias (pg_cron, 6h de Brasília) grava o aviso PRAZO_2_DIAS no sino do responsável, uma vez por prazo e data; teste 050_portal_inicio_completo_test.sql e e2e portal-inicio.spec.ts"
 }

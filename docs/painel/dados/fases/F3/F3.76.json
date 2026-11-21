@@ -5,7 +5,7 @@
   "refs": [
     "EX-09"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 760,
-  "proximo": "O sino já avisa quem revisa (PETICAO_REVISAR); falta o item no Início, que sai quando o revisor decide"
+  "evidencia": "Migration 0500_portal_inicio_completo.sql: a petição em revisão entra em \"Para hoje\" no Jurídico de quem revisa (Revisar, com quem mandou e o prazo mais próximo do caso) e sai quando a pessoa decide; teste 050_portal_inicio_completo_test.sql e e2e portal-inicio.spec.ts"
 }

@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 650,
-  "proximo": "O servidor já aceita o pedido vindo da conversa (origem CONVERSA); falta o atalho na tela da conversa, que passa pela especialista e pela Carol"
+  "proximo": "O servidor já aceita o pedido vindo da conversa (origem CONVERSA). Desenho do atalho em project-files/t3jus/telas/portal-pendencias-pequenas, aguardando a aprovação da Carol; depois, programar"
 }

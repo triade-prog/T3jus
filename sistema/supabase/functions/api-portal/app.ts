@@ -29,7 +29,7 @@ import {
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
   type RelatorioResponsaveis, type ResumoRelatorio,
   deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio,
-  contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
+  arquivarLgpdSchema, contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
 import type { Context } from "hono";
@@ -348,6 +348,15 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/clientes/:id/exclusao", async (c) => {
     const { versao, ...d } = await lerCorpo(c, excluirDadosSchema);
     const r = await deps.banco.rpc<{ protocolo: string; versao: number; pedido: PedidoExclusao }>("portal_cliente_excluir_dados", {
+      ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    });
+    return c.json(r);
+  });
+
+  // Com contrato ou processo, não exclui: arquiva a pedido (F1.16, decisão 5). Só a dona.
+  app.post("/v1/escritorio/clientes/:id/arquivar-lgpd", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, arquivarLgpdSchema);
+    const r = await deps.banco.rpc<{ protocolo: string; versao: number; pedido: PedidoExclusao }>("portal_cliente_arquivar_lgpd", {
       ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: versao, p_dados: d,
     });
     return c.json(r);

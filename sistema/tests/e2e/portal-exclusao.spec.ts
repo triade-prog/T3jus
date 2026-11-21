@@ -187,4 +187,58 @@ test.describe("Pedido de exclusão do titular (F1.15, PT-11)", () => {
     await expect(aviso).toContainText("Antônia Ferreira Prado · pedido em");
     await semViolacoes(page);
   });
+
+  // F1.16 (decisão 5): com contrato ou processo, não exclui, arquiva a pedido.
+  test("F1.16: com contrato, a dona arquiva a pedido; nada é apagado e a ficha fica só leitura", async ({ page }) => {
+    const VINC = { contratos: [{ id: "ct1", numero: "C-2026-031" }], processos: [{ id: "cs1", nome: "Aposentadoria", numeroCnj: "0812345-67.2026.8.26.0100" }] };
+    const arquivamento = { id: "p1", estado: "ARQUIVADO", pedidoEm: dia(0), canal: "WHATSAPP", quemPediu: "TITULAR", registradoPor: DIEGO, registradoEm: h(1),
+      resolvidoPor: MARINA, resolvidoEm: h(0.1), protocolo: "EXC-2026-0008", em: h(0.1) };
+    const ARQUIVADA = { ...FICHA, situacao: "ARQUIVADO", podeInativar: false, proxContato: null, versao: 4, pedidoExclusao: null, vinculosLgpd: null, arquivamento };
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: [{ corpo: { ...FICHA, pedidoExclusao: PEDIDO, vinculosLgpd: VINC } }, { corpo: ARQUIVADA }],
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`POST ${ficha}/arquivar-lgpd`]: { corpo: { protocolo: "EXC-2026-0008", versao: 4, pedido: arquivamento } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await expect(page.getByText(/Há contrato ou processo, então o pedido se atende arquivando/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Excluir os dados" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Arquivar a pedido (LGPD)" }).click();
+    const j = page.getByRole("alertdialog", { name: "Arquivar Antônia Ferreira Prado a pedido (LGPD)?" });
+    await expect(j).toBeVisible();
+    await expect(j.getByText("Contrato de honorários C-2026-031")).toBeVisible();
+    await expect(j.getByText("Processo 0812345-67.2026.8.26.0100")).toBeVisible();
+    await expect(j.getByText("Nada é apagado")).toBeVisible();
+    await expect(j.getByLabel("Para confirmar, escreva o nome do cliente")).toHaveCount(0);
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Arquivar a pedido (LGPD)" }).click();
+    await expect(j.getByText("Confirme quem pediu antes de arquivar.")).toBeVisible();
+    expect(pedidos.some((p) => p.metodo === "POST")).toBe(false);
+    await j.getByRole("checkbox", { name: /Conferi que o pedido veio do cliente/ }).check();
+    await j.getByRole("button", { name: "Arquivar a pedido (LGPD)" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Cliente arquivado a pedido (LGPD)." })).toContainText("EXC-2026-0008");
+    await expect(page.getByRole("heading", { level: 1, name: "Antônia Ferreira Prado" })).toBeVisible();
+    await expect(page.getByText("Arquivado (LGPD)")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Registro do arquivamento" }).getByText("EXC-2026-0008")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Editar|Inativar cliente|Registrar atendimento|Atender pedido de exclusão/ })).toHaveCount(0);
+    const post = pedidos.find((p) => p.metodo === "POST")!;
+    expect(post.corpo).toMatchObject({ versao: 3, pedidoEm: dia(0), canal: "WHATSAPP", quemPediu: "TITULAR", conferido: true });
+    await semViolacoes(page);
+  });
+
+  test("F1.16: o arquivado fica em Inativos, com a data e o protocolo", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      "GET /v1/escritorio/clientes?situacao=ATIVO": { corpo: { comercial: true, clientes: [] } },
+      "GET /v1/escritorio/clientes?situacao=INATIVO": { corpo: { comercial: true, clientes: [
+        { id: CLI, tipo: "PF", nome: "Antônia Ferreira Prado", situacao: "ARQUIVADO", contatoPrincipal: null, versao: 4, origem: "GOOGLE", proxContato: null,
+          arquivamento: { em: h(0.1), protocolo: "EXC-2026-0008" } },
+      ] } },
+    });
+    await page.goto(`${P}/clientes?filtro=inativos`);
+    await expect(page.getByText(/1 deles arquivado a pedido \(LGPD\)/)).toBeVisible();
+    await expect(page.getByText(/Arquivado a pedido \(LGPD\) em/).filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByText(/protocolo EXC-2026-0008/).first()).toBeAttached();
+    await semViolacoes(page);
+  });
 });

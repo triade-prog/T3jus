@@ -55,6 +55,8 @@ export interface ItemPrazo extends ItemBase {
   descricao: string;
   fazerAte: string | null;
   dataFinal: string;
+  /** Amanhã ou depois de amanhã, com "lembrar" marcado (F3.38): a acompanhar. */
+  lembrete?: boolean;
   caso: { id: string; nome: string; numero: string | null; tribunal: string | null };
 }
 export interface ItemTarefa extends ItemBase {
@@ -64,7 +66,19 @@ export interface ItemTarefa extends ItemBase {
   esperandoDesde: string | null;
   caso: Ref;
 }
-export type ItemInicio = ItemBaseMensal | ItemAssinatura | ItemParcela | ItemRepasse | ItemPrazo | ItemTarefa;
+/** A petição esperando a revisão de quem é o responsável do item (F3.76, EX-09). */
+export interface ItemPeticao extends ItemBase {
+  tipo: "PETICAO";
+  modelo: string;
+  versao: number;
+  /** Quando chegou para a revisão (aaaa-mm-dd). */
+  enviadaEm: string;
+  por: PessoaRef;
+  caso: Ref;
+  /** O prazo aberto mais próximo do caso, quando há. */
+  prazo: { id: string; descricao: string; em: string; dataFinal: string } | null;
+}
+export type ItemInicio = ItemBaseMensal | ItemAssinatura | ItemParcela | ItemRepasse | ItemPrazo | ItemTarefa | ItemPeticao;
 
 export interface BlocoInicio<T extends ItemInicio = ItemInicio> {
   total: number;
@@ -91,7 +105,7 @@ export interface InicioFinanceiro {
   };
   terceiros: BlocoInicio<ItemRepasse> & { atrasados: number; prazoMaisLonge: string | null };
 }
-export interface InicioJuridico extends BlocoInicio<ItemPrazo | ItemTarefa> {
+export interface InicioJuridico extends BlocoInicio<ItemPrazo | ItemTarefa | ItemPeticao> {
   de: DeInicio;
   pedem: number;
   atrasadas: number;
