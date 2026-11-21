@@ -1,0 +1,11 @@
+{
+  "id": "D20",
+  "texto": "Desenho da 2ª rodada de Procurações e modelos: modelos do escritório, gerar contrato, procuração e declaração (com empresa e menor representado), anexar o assinado e versões",
+  "peca": "S3",
+  "refs": [
+    "CH-08"
+  ],
+  "status": "feito",
+  "ordem": 70,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-procuracoes/ (17 estados, computador e celular, axe sem violação), aprovado pela Carol em 21/11/2026 às 19h37 (Bahia) com as 5 recomendações do NOTAS.md"
+}
