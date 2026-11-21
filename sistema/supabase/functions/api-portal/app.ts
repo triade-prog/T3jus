@@ -621,7 +621,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Simular sem enviar: o banco entrega só o que a pessoa pode ver; o caminho e a conversa saem aqui.
   app.post("/v1/escritorio/automacoes/:id/simular", async (c) => {
     const d = await lerCorpo(c, simularAutomacaoSchema);
-    const dados = await deps.banco.rpc<DadosSimulacao>("portal_automacao_simulacao", { ...quem(c), p_id: idDaRota(c, "id"), p_parcela: d.parcelaId ?? null });
+    const dados = await deps.banco.rpc<DadosSimulacao>("portal_automacao_simulacao", { ...quem(c), p_id: idDaRota(c, "id"), p_parcela: d.parcelaId ?? null, p_cliente: d.clienteId ?? null });
     return c.json(simularFluxo(dados, d.escolha));
   });
 

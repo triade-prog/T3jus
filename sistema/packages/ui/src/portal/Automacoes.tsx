@@ -10,7 +10,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AREA_DO_GATILHO, CONTA_CLIENTE_NOVO, GATILHOS, ORDEM_GATILHOS, PASSOS_ADICIONAVEIS, TIPOS_PASSO, TITULOS_ERRO_FLUXO, podeMontarGatilho, regrasDoGatilho,
   acharPasso, adicionarPasso, apagarPasso, aplicarSugestao, fluxoComSugestao, moverPasso, passosSugeridos, passosTracejados, recusarSugestao, nomeDoRamo, passoNovo, podeMover, quandoSai, quemRecebe, reais, textoDoErroFluxo, trocarPasso,
-  type AreaAutomacao, type ErroFluxo, type EscolhaSimulacao, type ExecucaoAutomacao, type Fluxo, type Gatilho, type LinhaAutomacao, type ListaAutomacoes,
+  type AreaAutomacao, type ErroFluxo, type EscolhaSimulacao, type ExecucaoAutomacao, type Fluxo, type Gatilho, type ItemQuemEntraria, type LinhaAutomacao, type ListaAutomacoes,
   type PaginaAutomacao, type Passo, type PassoMensagem, type PassoPessoa, type PassoRamos, type Quando, type QuemEntraria, type Simulacao, type TipoPasso,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -1169,6 +1169,17 @@ function detalheNovo(g: Gatilho, i: QuemEntraria["itens"][number]): string {
   return `${base} · pedido em ${diaCurto(docs[0]?.pedidoEm ?? i.origem.quando)}${para}`;
 }
 
+/** "proposta aceita em 16/11" (boas-vindas) ou "CTPS digital" / "2 documentos" (documento pendente). */
+function rotuloSimular(g: Gatilho, i: ItemQuemEntraria): string {
+  if (g === "DOCUMENTO_PENDENTE") {
+    const docs = i.documentos ?? [];
+    return docs.length === 1 ? docs[0]!.descricao : `${docs.length} documentos`;
+  }
+  const dm = `${i.origem.quando.slice(8, 10)}/${i.origem.quando.slice(5, 7)}`;
+  return i.origem.descricao === "Aceitou a proposta" ? `proposta aceita em ${dm}` : i.origem.descricao === "Contrato assinado" ? `contrato assinado em ${dm}`
+    : i.origem.descricao === "Cadastrado" ? `cadastrado em ${dm}` : "ainda sem proposta aceita nem contrato";
+}
+
 function Testar({ p }: { p: PaginaAutomacao }) {
   const [quem, setQuem] = useState<QuemEntraria | "erro" | null>(null);
   const [parcela, setParcela] = useState<string>("");
@@ -1177,19 +1188,22 @@ function Testar({ p }: { p: PaginaAutomacao }) {
   const [erro, setErro] = useState<string | null>(null);
   const [rodando, setRodando] = useState(false);
   const g = p.gatilho;
+  // F3.87: nos gatilhos novos, a simulação escolhe o cliente (e não a parcela).
+  const novo = g === "CLIENTE_NOVO" || g === "DOCUMENTO_PENDENTE";
   useEffect(() => {
     let vivo = true;
     void chamarPortal<QuemEntraria>(`/v1/escritorio/automacoes/${p.id}/quem-entraria`).then((r) => {
       if (!vivo) return;
       setQuem(r.ok ? r.dados : "erro");
-      if (r.ok) setParcela(r.dados.itens.find((i) => i.entra && i.parcela)?.parcela?.id ?? "");
+      if (r.ok) setParcela(novo ? r.dados.itens.find((i) => i.entra && i.motivo !== "IMPORTADO")?.cliente.id ?? ""
+        : r.dados.itens.find((i) => i.entra && i.parcela)?.parcela?.id ?? "");
     });
     return () => { vivo = false; };
-  }, [p.id]);
+  }, [p.id, novo]);
   async function simular() {
     setRodando(true);
     setErro(null);
-    const r = await chamarPortal<Simulacao>(`/v1/escritorio/automacoes/${p.id}/simular`, { corpo: { parcelaId: parcela || null, escolha } });
+    const r = await chamarPortal<Simulacao>(`/v1/escritorio/automacoes/${p.id}/simular`, { corpo: novo ? { clienteId: parcela || null, escolha } : { parcelaId: parcela || null, escolha } });
     setRodando(false);
     if (!r.ok) { setErro(textoDoErro(r.erro)); return; }
     setSim(r.dados);
@@ -1202,7 +1216,6 @@ function Testar({ p }: { p: PaginaAutomacao }) {
     : GATILHOS[g].ramos.includes("CHEGOU")
       ? [["NADA", "Não mandar nem responder"], ["RESPONDEU", "Responder ou mandar um arquivo"], ["CHEGOU", "O documento chegar"]]
       : [["NADA", "Não responder"], ["RESPONDEU", "Responder"]];
-  const novo = g === "CLIENTE_NOVO" || g === "DOCUMENTO_PENDENTE";
   const subQuem = !quem || quem === "erro" || !quem.disponivel ? undefined
     : g === "CLIENTE_NOVO" ? `Se estivesse ligada nos últimos 30 dias: ${entram.length} ${entram.length === 1 ? "entraria" : "entrariam"}, ${fora.reduce((n, i) => n + (i.quantos ?? 1), 0)} ficariam de fora`
     : g === "DOCUMENTO_PENDENTE" ? `${itens.reduce((n, i) => n + (i.documentos?.length ?? 0), 0)} documentos faltando, de ${itens.length} ${itens.length === 1 ? "cliente" : "clientes"}: ${itens.filter((i) => i.quando === "HOJE").length} já ${itens.filter((i) => i.quando === "HOJE").length === 1 ? "passou" : "passaram"} de ${quem.dias ?? 5} dias hoje`
@@ -1218,9 +1231,12 @@ function Testar({ p }: { p: PaginaAutomacao }) {
               <label htmlFor="ts-cli">Simular com</label>
               <select className="entrada" id="ts-cli" value={parcela} onChange={(e) => setParcela(e.target.value)} aria-describedby="ts-cli-aj">
                 <option value="">Cliente de exemplo</option>
-                {itens.flatMap((i) => (i.parcela ? [<option key={i.parcela.id} value={i.parcela.id}>{i.cliente.nome} · {i.parcela.descricao}</option>] : []))}
+                {novo ? itens.flatMap((i) => (i.motivo === "IMPORTADO" ? [] : [<option key={i.cliente.id} value={i.cliente.id}>{i.cliente.nome} · {rotuloSimular(g, i)}</option>]))
+                  : itens.flatMap((i) => (i.parcela ? [<option key={i.parcela.id} value={i.parcela.id}>{i.cliente.nome} · {i.parcela.descricao}</option>] : []))}
               </select>
-              <p className="ajuda" id="ts-cli-aj">{g === "PARCELA_ATRASO" ? "Clientes com parcela em atraso hoje." : g === "PARCELA_VAI_VENCER" ? "Parcelas que entram hoje." : "Para este gatilho, a simulação usa um exemplo."}</p>
+              <p className="ajuda" id="ts-cli-aj">{g === "PARCELA_ATRASO" ? "Clientes com parcela em atraso hoje." : g === "PARCELA_VAI_VENCER" ? "Parcelas que entram hoje."
+                : g === "CLIENTE_NOVO" ? "Clientes que viraram clientes nos últimos 30 dias." : g === "DOCUMENTO_PENDENTE" ? "Clientes com documento pendente hoje."
+                : "Para este gatilho, a simulação usa um exemplo."}</p>
             </div>
             <fieldset className="campo">
               <legend>E se o cliente</legend>

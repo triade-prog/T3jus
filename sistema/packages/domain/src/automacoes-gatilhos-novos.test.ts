@@ -50,4 +50,14 @@ describe("F3.82: gatilhos cliente novo e documento pendente", () => {
     const nada = simularFluxo(dados("DOCUMENTO_PENDENTE", DOC), "NADA");
     expect(nada.caminho.map((c) => c.passo)).toContain("pessoa");
   });
+
+  it("F3.87: com um cliente de verdade, usa o que falta dele e quem pediu", () => {
+    const s = simularFluxo({ ...dados("DOCUMENTO_PENDENTE", DOC), exemplo: {
+      cliente: "Carlos Henrique Dias", contato: "Carlos Henrique Dias", papel: null, documentos: "CTPS digital", caso: "Pereira x Mercado",
+      pedidoEm: "2026-11-10", quemPediu: { id: "l", nome: "Larissa Costa" } } }, "NADA");
+    expect(s.exemplo).toBe(false);
+    const msg = s.conversa.find((l) => l.tipo === "AVISO");
+    expect(msg && "texto" in msg ? msg.texto : "").toBe("Olá, Carlos. Ainda falta CTPS digital. Ribeiro & Matos");
+    expect(s.conversa.some((l) => l.tipo === "SISTEMA" && l.texto.includes("passaria para Larissa Costa"))).toBe(true);
+  });
 });

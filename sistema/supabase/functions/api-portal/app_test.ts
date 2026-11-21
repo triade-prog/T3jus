@@ -1354,8 +1354,10 @@ Deno.test("PD-07: motivos e razões do domínio são os mesmos do banco", async 
   const sql = await Deno.readTextFile(new URL("../../migrations/0300_portal_conversas_mensagens.sql", import.meta.url));
   // A 0330 refaz as listas de motivo e de razão (a IA que atende).
   const sql330 = await Deno.readTextFile(new URL("../../migrations/0330_portal_ia_atende.sql", import.meta.url));
+  // A 0626 acrescenta o pedido de não receber avisos (F3.83).
+  const sql626 = await Deno.readTextFile(new URL("../../migrations/0626_ia_pedido_sem_avisos.sql", import.meta.url));
   const lista = (re: RegExp, texto = sql) => re.exec(texto)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
-  assertEquals(lista(/check \(motivo in \(([^)]+)\)/, sql330), Object.keys(MOTIVOS_CONVERSA));
+  assertEquals(lista(/check \(motivo in \(([^)]+)\)/, sql626), Object.keys(MOTIVOS_CONVERSA));
   assertEquals(lista(/check \(responsavel_razao in \(([^)]+)\)/, sql330), Object.keys(RAZOES_RESPONSAVEL));
   assertEquals(lista(/envio\s+text check \(envio in \(([^)]+)\)/), Object.keys(ENVIO_MENSAGEM));
 });
