@@ -221,6 +221,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 1200 }],
     portal_juridico_documento_concluir: (a) => ({ id: a.p_documento, nome: "peticao.pdf" }),
     portal_juridico_documento_abrir: () => "peticao.pdf",
+    portal_anexo_iniciar: () => PETICAO,
+    portal_anexo_para_concluir: () => [{ tipo: "application/pdf", tamanho: 84000 }],
+    portal_anexo_concluir: (a) => ({ id: a.p_anexo, categoria: "CONTRATO_ASSINADO", nome: "contrato-assinado.pdf" }),
+    portal_anexo_abrir: () => "contrato-assinado.pdf",
+    portal_contrato_anexos: () => ({ anexos: [] }),
+    portal_financeiro_anexos: (a) => ({ anexos: [], contas: a.p_contas, pagamentos: a.p_pagamentos }),
+    portal_financeiro_exportacao_anexos: (a) => ({ mes: a.p_mes, semNota: [], anexos: [] }),
     portal_juridico_peticoes: () => ({ minhaResposta: null }),
     portal_juridico_peticoes_responder: (a) => ({ ...(a.p_dados as object), em: "2026-11-19T22:00:00Z" }),
     portal_financeiro_destinacao_feita: (a) => ({ id: a.p_destinacao, situacao: "FEITO", feitoEm: (a.p_dados as { feitoEm: string }).feitoEm }),
@@ -1549,4 +1556,36 @@ Deno.test("F3.45, FI-08: a ficha do repasse traz o acerto do caso; encerrar devo
   const e = await erro(await m.pedir(`/v1/escritorio/financeiro/casos/${CLIENTE}/encerrar`, { corpo: {}, cookie }));
   assertEquals([e.detalhes?.motivo, e.detalhes?.falta], ["PENDENCIAS", 381840]);
   assertEquals((await m.pedir("/v1/escritorio/financeiro/casos/x/encerrar", { corpo: {}, cookie })).status, 404);
+});
+
+Deno.test("CH-01, FI-18: anexos do contrato, da conta e do recebimento, enviados em duas etapas no caminho do escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { dono: "CONTRATO", donoId: CLIENTE, nome: "contrato-assinado.pdf", tipo: "application/pdf", tamanho: 84000 };
+  assertEquals((await erro(await m.pedir("/v1/escritorio/anexos", { corpo: { ...corpo, nome: "a/b.pdf" }, cookie }))).detalhes?.campos, ["nome"]);
+  assertEquals((await m.pedir("/v1/escritorio/anexos", { corpo: { ...corpo, dono: "CASO" }, cookie })).status, 400);
+  assertEquals((await m.pedir("/v1/escritorio/anexos", { corpo: { ...corpo, tipo: "application/msword" }, cookie })).status, 400);
+  const ini = await m.pedir("/v1/escritorio/anexos", { corpo, cookie });
+  assertEquals([ini.status, (await ini.json()).id], [201, PETICAO]);
+  assertEquals(m.storage.pedidosDeEnvio.at(-1), `${AURORA}/${PETICAO}`);
+
+  // Sem o arquivo no Storage, ou com outro tamanho, não conclui.
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/anexos/${PETICAO}/concluir`, { corpo: {}, cookie }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.storage.guardados.set(`${AURORA}/${PETICAO}`, { tamanho: 10, tipo: "application/pdf" });
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/anexos/${PETICAO}/concluir`, { corpo: {}, cookie }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.storage.guardados.set(`${AURORA}/${PETICAO}`, { tamanho: 84000, tipo: "application/pdf" });
+  assertEquals((await (await m.pedir(`/v1/escritorio/anexos/${PETICAO}/concluir`, { corpo: {}, cookie })).json()).nome, "contrato-assinado.pdf");
+
+  const abrir = await (await m.pedir(`/v1/escritorio/anexos/${PETICAO}/abrir`, { corpo: {}, cookie })).json();
+  assertMatch(abrir.url, /^https:\/\/storage\.exemplo\/ler\//);
+  assertEquals(m.storage.leituras.at(-1), { caminho: `${AURORA}/${PETICAO}`, segundos: 60, nome: "contrato-assinado.pdf" });
+  assertEquals((await m.pedir("/v1/escritorio/anexos/nao-e-id/abrir", { corpo: {}, cookie })).status, 404);
+
+  assertEquals((await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/anexos`, { cookie })).json()).anexos, []);
+  const busca = await (await m.pedir("/v1/escritorio/financeiro/anexos/buscar", { corpo: { contas: [CLIENTE] }, cookie })).json();
+  assertEquals([busca.contas, busca.pagamentos], [[CLIENTE], []]);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/anexos/buscar", { corpo: { contas: ["x"] }, cookie })).status, 400);
+  assertEquals((await (await m.pedir("/v1/escritorio/financeiro/exportacoes/anexos?mes=2026-11-01", { cookie })).json()).mes, "2026-11-01");
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/exportacoes/anexos?mes=novembro", { cookie })).status, 400);
+  assert(m.chamadas.filter((c) => c.funcao.includes("anexo")).every((c) => c.args.p_escritorio === AURORA));
 });

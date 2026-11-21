@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   alertaDeQueda, FORMAS_PAGAMENTO, PARA_DESTINACAO, quemEspera, reais, receitaPorGrupo, TIPOS_LEVANTAMENTO,
-  type CaixaFinanceiro, type DadosExportacao, type FormatoExportacao, type MesCaixa, type ParcelaLinha, type PreviaExportacao,
+  type AnexosDaExportacao, type CaixaFinanceiro, type DadosExportacao, type FormatoExportacao, type MesCaixa, type ParcelaLinha, type PreviaExportacao,
   type RepassePendente, type ResumoFinanceiro, type TerceirosNaConta,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -620,6 +620,7 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
   const [mes, setMes] = useState(c.mesesExportar.find((m) => m < c.mes) ?? c.mes);
   const [formato, setFormato] = useState<FormatoExportacao>("XLSX");
   const [previa, setPrevia] = useState<{ mes: string; p: PreviaExportacao | "erro" } | null>(null);
+  const [anexos, setAnexos] = useState<{ mes: string; a: AnexosDaExportacao | null } | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const seq = useRef(0);
@@ -631,6 +632,9 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
     void chamarPortal<PreviaExportacao>(`/v1/escritorio/financeiro/exportacoes/previa?mes=${mes}`).then((r) => {
       if (n === seq.current) setPrevia({ mes, p: r.ok ? r.dados : "erro" });
     });
+    void chamarPortal<AnexosDaExportacao>(`/v1/escritorio/financeiro/exportacoes/anexos?mes=${mes}`).then((r) => {
+      if (n === seq.current) setAnexos({ mes, a: r.ok ? r.dados : null });
+    });
   }, [mes]);
 
   async function enviar() {
@@ -639,11 +643,12 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
     const r = await chamarPortal<DadosExportacao>("/v1/escritorio/financeiro/exportacoes", { metodo: "POST", corpo: { mes, formato } });
     setEnviando(false);
     if (!r.ok) return setFalha(textoDoErro(r.erro));
-    const a = arquivoContador(r.dados, formato);
+    const a = arquivoContador(r.dados, formato, an?.semNota);
     salvar(a.nome, a.tipo, a.dados);
     aoFeito({ titulo: `Exportação de ${nome} gerada.`, texto: `O arquivo ${a.nome} foi salvo, e a exportação ficou no histórico do escritório.` });
   }
 
+  const an = anexos && anexos.mes === mes ? anexos.a : null;
   const rec = p && p !== "erro" ? { n: p.recebimentos.n + p.honorariosTransferidos.n, valor: p.recebimentos.valor + p.honorariosTransferidos.valor } : null;
   return (
     <Janela id="j-exp" aberta aoFechar={aoFechar} sobretitulo="Caixa" titulo="Exportar para o contador" descricao="j-exp-d" aoEnviar={() => void enviar()}
@@ -684,7 +689,24 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
                     : "Nenhum valor de terceiros entrou ou foi repassado no mês."}</small>
                 </span>
               </li>
-              <li className="rs-depois"><Icone nome="cadeado" className="ico" /><span>Comprovantes, notas e guias<small>Entram no arquivo quando o envio de arquivos chegar ao Financeiro.</small></span></li>
+              {an ? (
+                <li>
+                  <Icone nome="doc" className="ico" />
+                  <span>
+                    {an.anexos.length ? `${contar(an.anexos.length, "comprovante, nota ou guia anexado", "comprovantes, notas e guias anexados")} aos lançamentos` : "Nenhum comprovante, nota ou guia anexado no mês"}
+                    <small>Ficam guardados em cada lançamento. A pasta com os arquivos (.zip) chega numa próxima entrega.</small>
+                  </span>
+                </li>
+              ) : null}
+              {an && an.semNota.length ? (
+                <li className="rs-falta">
+                  <Icone nome="alerta" className="ico" />
+                  <span>
+                    {contar(an.semNota.length, "despesa sem nota fiscal", "despesas sem nota fiscal")}
+                    <small>{an.semNota.slice(0, 3).map((x) => `${x.descricao}, ${diaCurto(x.dia)}`).join(" · ")}{an.semNota.length > 3 ? ` e mais ${an.semNota.length - 3}` : ""}. Vão marcadas na planilha.</small>
+                  </span>
+                </li>
+              ) : null}
             </ul>
           )}
           {p && p !== "erro" && p.aberto ? (

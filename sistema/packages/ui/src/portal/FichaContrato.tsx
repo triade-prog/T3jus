@@ -7,7 +7,7 @@
 // ativo pede motivo; encerrar para as cobranças novas e não apaga nada.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { dataBr, hojeBrasilia, reais, type EventoContrato, type FichaContrato, type RecebimentoPrevisto } from "@t3jus/domain";
+import { dataBr, hojeBrasilia, reais, type Anexo, type EventoContrato, type FichaContrato, type ListaAnexos, type RecebimentoPrevisto } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -21,6 +21,8 @@ import { JanelaInscricoes, PessoasOab } from "./ContratoOab.tsx";
 import { CondicoesLeitura, SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
+import { abrirAnexo, CampoAnexo, enviarAnexo } from "./Anexos.tsx";
+import { tamanhoLegivel } from "../console/documentos.ts";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
 
@@ -103,7 +105,18 @@ function Dir({ f, aoAssinar }: { f: FichaContrato; aoAssinar: () => void }) {
   );
 }
 
-function Assinatura({ f }: { f: FichaContrato }) {
+// O arquivo assinado (CH-01, F3.12): o mais novo vale; anexar de novo guarda os dois.
+function Assinatura({ f, assinados, aoAnexar }: { f: FichaContrato; assinados: Anexo[] | null; aoAnexar: () => void }) {
+  const [falha, setFalha] = useState<string | null>(null);
+  const [abrindo, setAbrindo] = useState(false);
+  const atual = assinados?.[0] ?? null;
+  async function abrir(a: Anexo) {
+    setFalha(null);
+    setAbrindo(true);
+    const e = await abrirAnexo(a.id);
+    setAbrindo(false);
+    if (e) setFalha(e);
+  }
   return (
     <section className="folha" aria-labelledby="t-as">
       <div className="folha-cab" style={{ paddingBottom: 8 }}>
@@ -112,13 +125,40 @@ function Assinatura({ f }: { f: FichaContrato }) {
       <dl className="hn-dl">
         <div><dt>Assinado em</dt><dd>{f.assinadoEm ? dataBr(f.assinadoEm) : "Ainda não"}</dd></div>
         {f.assinaturaPor ? <div><dt>Registrado por</dt><dd>{f.assinaturaPor.nome}</dd></div> : null}
+        {assinados === null ? null : (
+          <div data-assinado>
+            <dt>Arquivo assinado</dt>
+            <dd>
+              {atual ? (
+                <>
+                  <button className="jr-link" type="button" onClick={() => void abrir(atual)} disabled={abrindo} aria-busy={abrindo || undefined}>
+                    {atual.nome}<span className="sr"> (abre numa aba nova)</span>
+                  </button>
+                  <small style={{ display: "block", color: "var(--texto-2)" }}>
+                    {tamanhoLegivel(atual.tamanho)} · anexado por {atual.enviadoPor.nome} em {dataBr(diaDoInstante(atual.enviadoEm))}
+                    {assinados.length > 1 ? ` · ${assinados.length - 1 === 1 ? "1 anterior guardado" : `${assinados.length - 1} anteriores guardados`}` : ""}
+                  </small>
+                </>
+              ) : f.situacao === "ELABORACAO" ? "Ainda não" : <span className="selo selo-atencao"><Icone nome="relogio" className="ico" />Falta anexar o assinado</span>}
+            </dd>
+          </div>
+        )}
         {f.proposta ? <div><dt>Veio da proposta</dt><dd><a href={ROTAS_CONTRATOS.proposta(f.proposta.id)}>{f.proposta.numero}</a></dd></div> : null}
         <div><dt>Cliente</dt><dd><a href={ROTAS_CONTRATOS.cliente(f.cliente.id)}>{f.cliente.nome}</a></dd></div>
       </dl>
+      {falha ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="O arquivo não abriu.">{falha}</Aviso></div> : null}
+      {f.situacao !== "ELABORACAO" && assinados !== null ? (
+        <div className="hn-folha-acao">
+          <button className="btn btn-sec" type="button" onClick={aoAnexar}>
+            <Icone nome="enviar" className="ico" />
+            {atual ? "Anexar outro assinado" : "Anexar o assinado"}
+          </button>
+        </div>
+      ) : null}
       <div className="hn-reserva">
         <div>
           <Icone nome="lapis" className="ico" />
-          <span><b>Assinatura eletrônica:</b> em estudo. Por enquanto, imprime-se, assina-se e registra-se a data aqui.</span>
+          <span><b>Assinatura eletrônica:</b> em estudo. Por enquanto, imprime-se, assina-se e anexa-se o arquivo assinado.</span>
         </div>
       </div>
     </section>
@@ -340,7 +380,7 @@ function Documentos() {
         <div><h2 id="t-dc">Documentos</h2><p className="sub">Contrato, procuração e declaração gerados com os dados do cliente e dos advogados.</p></div>
       </div>
       <Estado icone="doc" titulo="Os documentos chegam numa próxima entrega">
-        Gerar o contrato, a procuração e a declaração no timbrado do escritório e anexar o assinado ainda está sendo preparado. Por enquanto, faça no Word e registre a data da assinatura neste contrato.
+        Gerar o contrato, a procuração e a declaração no timbrado do escritório ainda está sendo preparado. Por enquanto, faça no Word; o assinado se anexa ao registrar a assinatura, na aba Contrato.
       </Estado>
       <div className="hn-reserva">
         <div>
@@ -358,15 +398,31 @@ function JanelaAssinatura({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f
   const [erro, setErro] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erroArq, setErroArq] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
+  const [anexado, setAnexado] = useState(false);
   const corpo = useRef<HTMLDivElement>(null);
   async function enviar() {
     const dia = lerDia(em);
     setFalha(null);
-    if (!dia || dia > hoje) {
-      setErro(true);
-      return focarPrimeiroErro(corpo.current);
-    }
+    const semData = !dia || dia > hoje;
+    const semArquivo = !anexado && !arquivo ? "Anexe o contrato assinado: PDF ou a foto das páginas." : !anexado ? erroArq : null;
+    setErro(semData);
+    setErroArq(semArquivo);
+    if (semData || semArquivo) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
+    // Primeiro o arquivo; a assinatura só se registra com ele guardado.
+    if (!anexado && arquivo) {
+      setProgresso(0);
+      const e = await enviarAnexo("CONTRATO", f.id, arquivo, null, setProgresso);
+      setProgresso(null);
+      if (e) {
+        setEnviando(false);
+        return setFalha(`O arquivo não foi guardado, e a assinatura não foi registrada. ${e}`);
+      }
+      setAnexado(true);
+    }
     const r = await chamarPortal<{ recebimentos: number }>(`/v1/escritorio/contratos/${f.id}/assinatura`, { metodo: "POST", corpo: { versao: f.versao, assinadoEm: dia } });
     setEnviando(false);
     if (r.ok) return aoFeito(r.dados.recebimentos);
@@ -389,7 +445,7 @@ function JanelaAssinatura({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f
         </>
       }>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
-        <p id="j-assinatura-d">O contrato fica ativo e a programação dos recebimentos passa a existir, a partir de hoje. Fica no histórico, com seu nome e a hora.</p>
+        <p id="j-assinatura-d">Anexe o contrato assinado e diga a data. O contrato fica ativo e a programação dos recebimentos passa a existir, a partir de hoje. Fica no histórico, com seu nome e a hora.</p>
         {falha ? <Aviso tom="urgencia" titulo="A assinatura não foi registrada.">{falha}</Aviso> : null}
         <div className="campo">
           <label htmlFor="as-data">Data da assinatura</label>
@@ -398,6 +454,52 @@ function JanelaAssinatura({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f
           <p className="ajuda" id="as-data-aj">dd/mm/aaaa. Hoje ou antes, desde a criação do contrato.</p>
           {erro ? <ErroCampo id="as-data-er">Escreva a data da assinatura, hoje ou antes, desde que o contrato foi criado, no formato dd/mm/aaaa.</ErroCampo> : null}
         </div>
+        {anexado ? (
+          <Aviso tom="sucesso" titulo="O arquivo assinado já está guardado.">Falta só registrar a assinatura.</Aviso>
+        ) : (
+          <CampoAnexo rotulo="Contrato assinado" opcional={false} ajuda="O PDF digitalizado ou as fotos das páginas, num arquivo só."
+            arquivo={arquivo} aoEscolher={(a, e) => { setArquivo(e ? null : a); setErroArq(e); }} erro={erroArq} progresso={progresso} />
+        )}
+      </div>
+    </Janela>
+  );
+}
+
+function JanelaAnexarAssinado({ f, aoFechar, aoFeito }: { f: FichaContrato; aoFechar: () => void; aoFeito: () => void }) {
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [falha, setFalha] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
+  const corpo = useRef<HTMLDivElement>(null);
+  async function enviar() {
+    setFalha(null);
+    if (!arquivo || erro) {
+      setErro(erro ?? "Escolha o arquivo do contrato assinado.");
+      return focarPrimeiroErro(corpo.current);
+    }
+    setProgresso(0);
+    const e = await enviarAnexo("CONTRATO", f.id, arquivo, null, setProgresso);
+    setProgresso(null);
+    if (e) return setFalha(e);
+    aoFeito();
+  }
+  return (
+    <Janela id="j-assinado" aberta aoFechar={aoFechar} sobretitulo={`${f.numero} · ${f.cliente.nome}`} titulo="Anexar o contrato assinado" descricao="j-assinado-d"
+      aoEnviar={() => void enviar()}
+      pe={
+        <>
+          <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
+          <button className="btn btn-pri" type="submit" disabled={progresso !== null} aria-busy={progresso !== null || undefined}>
+            <Icone nome="enviar" className="ico" />
+            Anexar
+          </button>
+        </>
+      }>
+      <div ref={corpo} style={{ display: "grid", gap: 16 }}>
+        <p id="j-assinado-d">O arquivo fica na ficha do contrato. Se já houver um, o anterior continua guardado. Fica no histórico, com seu nome e a hora.</p>
+        {falha ? <Aviso tom="urgencia" titulo="O arquivo não foi anexado.">{falha}</Aviso> : null}
+        <CampoAnexo rotulo="Contrato assinado" opcional={false} ajuda="O PDF digitalizado ou as fotos das páginas, num arquivo só."
+          arquivo={arquivo} aoEscolher={(a, e) => { setArquivo(e ? null : a); setErro(e); }} erro={erro} progresso={progresso} />
       </div>
     </Janela>
   );
@@ -458,7 +560,8 @@ function JanelaEncerrar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: 
 
 function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba; escritorio: EscritorioPortal; aoNumero: (n: string) => void }) {
   const [f, setF] = useState<FichaContrato | null | "erro" | "nao">(null);
-  const [janela, setJanela] = useState<"assinatura" | "encerrar" | "inscricoes" | null>(null);
+  const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | "inscricoes" | null>(null);
+  const [assinados, setAssinados] = useState<Anexo[] | null>(null);
   const [carne, setCarne] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
   const hoje = hojeBrasilia();
@@ -467,6 +570,8 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
     const r = await chamarPortal<FichaContrato>(`/v1/escritorio/contratos/${id}`);
     setF(r.ok ? r.dados : r.status === 404 ? "nao" : "erro");
     if (r.ok) aoNumero(r.dados.numero);
+    const a = await chamarPortal<ListaAnexos>(`/v1/escritorio/contratos/${id}/anexos`);
+    setAssinados(a.ok ? a.dados.anexos : null);
   }, [id, aoNumero]);
   useEffect(() => {
     void Promise.resolve().then(() => carregar());
@@ -547,7 +652,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             </div>
             <aside className="hn-col" aria-label="Sobre o contrato">
               <PessoasOab f={f} dono={escritorio.dono} socios={escritorio.socios} aoMudar={() => setJanela("inscricoes")} />
-              <Assinatura f={f} />
+              <Assinatura f={f} assinados={assinados} aoAnexar={() => setJanela("assinado")} />
               <Situacao f={f} aoEncerrar={() => setJanela("encerrar")} />
             </aside>
           </div>
@@ -564,6 +669,14 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
           setFeito({ titulo: "Contrato encerrado", texto: n ? `${n === 1 ? "1 recebimento que ainda ia vencer foi cancelado" : `${n} recebimentos que ainda iam vencer foram cancelados`}. Nada foi apagado.` : "Nada foi apagado." });
           void carregar();
         }} />
+      {janela === "assinado" ? (
+        <JanelaAnexarAssinado f={ficha} aoFechar={() => setJanela(null)}
+          aoFeito={() => {
+            setJanela(null);
+            setFeito({ titulo: "Contrato assinado anexado", texto: "O arquivo está na ficha do contrato." });
+            void carregar();
+          }} />
+      ) : null}
       <JanelaInscricoes key={janela === "inscricoes" ? `i${f.versao}` : "z"} aberta={janela === "inscricoes"} f={ficha} aoFechar={() => setJanela(null)}
         aoFeito={() => {
           setJanela(null);

@@ -156,8 +156,13 @@ const tipoReceita = (t: DadosExportacao["recebimentos"][number]["tipo"]) =>
   t === "REEMBOLSO" ? "Reembolso de despesa" : t === "EXITO" ? "Êxito" : TIPOS_HONORARIO[t].nome;
 const SITUACAO = { FEITO: "Feito", DISPENSADO: "Dispensado", PENDENTE: "Pendente" } as const;
 
-/** As abas da planilha do contador, a partir dos dados do servidor. */
-export function abasContador(d: DadosExportacao): Aba[] {
+/** As despesas sem nota (F3.22, FI-18), pela data, descrição e valor de cada uma. */
+export type SemNota = { dia: string; descricao: string; valor: number }[];
+const chaveDespesa = (x: { dia: string; descricao: string; valor: number }) => `${x.dia}|${x.descricao}|${x.valor}`;
+
+/** As abas da planilha do contador, a partir dos dados do servidor. Com semNota, a aba Despesas marca a falta. */
+export function abasContador(d: DadosExportacao, semNota?: SemNota): Aba[] {
+  const falta = semNota ? new Set(semNota.map(chaveDespesa)) : null;
   const receita = d.recebimentos.reduce((s, r) => s + r.valor + r.multaJuros, 0);
   const despesa = d.despesas.reduce((s, x) => s + x.valor, 0);
   const terc = d.terceiros.filter((t) => t.para !== "HONORARIOS" && t.para !== "REEMBOLSO");
@@ -188,12 +193,13 @@ export function abasContador(d: DadosExportacao): Aba[] {
     },
     {
       nome: "Despesas",
-      larguras: [12, 12, 32, 24, 24, 18, 14, 11, 26],
+      larguras: falta ? [12, 12, 32, 24, 24, 18, 14, 11, 26, 18] : [12, 12, 32, 24, 24, 18, 14, 11, 26],
       linhas: [
-        ["Pago em", "Vencimento", "Descrição", "Fornecedor", "Categoria", "Forma", "Valor", "Recorrente", "Adiantada para o cliente"],
+        ["Pago em", "Vencimento", "Descrição", "Fornecedor", "Categoria", "Forma", "Valor", "Recorrente", "Adiantada para o cliente", ...(falta ? ["Nota ou guia"] : [])],
         ...d.despesas.map((x) => [
           dia(x.dia), dia(x.vencimento), x.descricao, x.fornecedor, CATEGORIAS_SAIDA[x.categoria], x.forma ? FORMAS_PAGAMENTO[x.forma] : null,
           { reais: x.valor }, x.recorrente ? "Sim" : "Não", x.cliente,
+          ...(falta ? [falta.has(chaveDespesa(x)) ? "Falta a nota" : "Anexada"] : []),
         ]),
       ],
     },
@@ -212,7 +218,8 @@ export function abasContador(d: DadosExportacao): Aba[] {
 }
 
 /** O .csv do contador: uma tabela só, com a seção em cada linha, separada por ponto e vírgula. */
-export function csvContador(d: DadosExportacao): string {
+export function csvContador(d: DadosExportacao, semNota?: SemNota): string {
+  const falta = semNota ? new Set(semNota.map(chaveDespesa)) : null;
   const campo = (v: string | number | null) => {
     const s = v === null ? "" : String(v);
     return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -223,7 +230,7 @@ export function csvContador(d: DadosExportacao): string {
     ...d.recebimentos.map((r) => ["Recebimento", dia(r.dia), `${r.parcela}${r.contrato ? ` · contrato ${r.contrato}` : ""}`, r.cliente, tipoReceita(r.tipo),
       FORMAS_PAGAMENTO[r.forma], valor(r.valor + r.multaJuros), r.recibo ? `Recibo ${r.recibo}` : null]),
     ...d.despesas.map((x) => ["Despesa", dia(x.dia), x.descricao, x.fornecedor, CATEGORIAS_SAIDA[x.categoria], x.forma ? FORMAS_PAGAMENTO[x.forma] : null,
-      valor(x.valor), x.cliente ? `Adiantada para ${x.cliente}` : null]),
+      valor(x.valor), [x.cliente ? `Adiantada para ${x.cliente}` : null, falta?.has(chaveDespesa(x)) ? "Falta a nota" : null].filter(Boolean).join(" · ") || null]),
     ...d.terceiros.filter((t) => t.para !== "HONORARIOS" && t.para !== "REEMBOLSO").map((t) => [
       "Terceiros (não é receita)", dia(t.feitoEm ?? t.entrouEm), `${TIPOS_LEVANTAMENTO[t.tipo]} · ${t.caso}`, t.nome, PARA_DESTINACAO[t.para], null,
       valor(t.valor), SITUACAO[t.situacao]]),
@@ -232,10 +239,10 @@ export function csvContador(d: DadosExportacao): string {
 }
 
 /** O arquivo pronto para salvar. */
-export function arquivoContador(d: DadosExportacao, formato: FormatoExportacao): { nome: string; tipo: string; dados: Uint8Array | string } {
+export function arquivoContador(d: DadosExportacao, formato: FormatoExportacao, semNota?: SemNota): { nome: string; tipo: string; dados: Uint8Array | string } {
   const base = d.escritorio.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
   const nome = `contador-${base || "escritorio"}-${d.mes.slice(0, 7)}`;
   return formato === "CSV"
-    ? { nome: `${nome}.csv`, tipo: "text/csv;charset=utf-8", dados: csvContador(d) }
-    : { nome: `${nome}.xlsx`, tipo: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", dados: planilhaXlsx(abasContador(d)) };
+    ? { nome: `${nome}.csv`, tipo: "text/csv;charset=utf-8", dados: csvContador(d, semNota) }
+    : { nome: `${nome}.xlsx`, tipo: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", dados: planilhaXlsx(abasContador(d, semNota)) };
 }
