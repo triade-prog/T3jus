@@ -263,3 +263,30 @@ test.describe("Financeiro do Portal, Resumo e Caixa (FI-03, FI-06, FI-09, FI-21,
     await expect(page.getByRole("heading", { name: "Esta área não está liberada para você" })).toBeVisible();
   });
 });
+
+// As despesas sem nota na exportação (F3.22, FI-18 e FI-21).
+test.describe("Financeiro do Portal, exportação com as notas (FI-18, FI-21)", () => {
+  test("A janela lista as despesas sem nota, conta os anexos e marca a falta na planilha", async ({ page }) => {
+    await simular(page, {
+      ...comuns(), "POST /v1/escritorio/financeiro/exportacoes": { status: 201, corpo: DADOS },
+      "GET /v1/escritorio/financeiro/exportacoes/anexos?mes=2026-10-01": { corpo: {
+        mes: "2026-10-01",
+        semNota: [{ id: "c1", descricao: DADOS.despesas[0]!.descricao, fornecedor: null, dia: DADOS.despesas[0]!.dia, valor: DADOS.despesas[0]!.valor }],
+        anexos: [{ id: "a1", categoria: "COMPROVANTE", nome: "x.pdf", tipo: "application/pdf", tamanho: 10, donoId: "p1", enviadoPor: { id: "x", nome: "Marina" }, enviadoEm: "2026-10-05T12:00:00Z" }],
+      } },
+    });
+    await page.goto(`${P}/financeiro/caixa`);
+    await page.getByRole("button", { name: "Exportar para o contador" }).click();
+    const j = page.getByRole("dialog", { name: "Exportar para o contador" });
+    await expect(j).toContainText("1 despesa sem nota fiscal");
+    await expect(j).toContainText(`${DADOS.despesas[0]!.descricao}`);
+    await expect(j).toContainText("Vão marcadas na planilha.");
+    await expect(j).toContainText("1 comprovante, nota ou guia anexado aos lançamentos");
+    await semViolacoes(page);
+    await j.getByRole("radio", { name: /Só a planilha \(\.csv\)/ }).check();
+    const baixou = page.waitForEvent("download");
+    await j.getByRole("button", { name: "Exportar outubro" }).click();
+    const texto = readFileSync((await (await baixou).path())!, "utf8");
+    expect(texto).toContain("Falta a nota");
+  });
+});

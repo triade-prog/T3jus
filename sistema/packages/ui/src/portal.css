@@ -4123,6 +4123,11 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .ca-barra .ca-dica{flex-basis:100%;font-size:12px;color:var(--ambar-3)}
 @media print{.ca-folhas>.ca-aviso-tela{display:none!important}}
 
+/* Nota ou guia na lista de A pagar e anexos do contrato (F3.12, F3.22) */
+.fi-docs .fi-doc-bt{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px;font-weight:500;text-decoration:none}
+.fi-docs .fi-doc-bt:hover{text-decoration:underline}
+.fi-docs .fi-doc-bt .ico{width:16px;height:16px}
+.fi-check li.rs-falta .ico{color:var(--vinho)}
 /* Recebimentos · Pago antes do T3jus (F3.73; docs/design/aprovadas/portal-pendencias-pequenas) */
 .pg-grade{display:grid;gap:24px}
 .pg-nota{margin:0 24px 16px;display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5;color:var(--texto)}

@@ -5,7 +5,7 @@
   "refs": [
     "FI-18"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 220,
-  "proximo": "Vem com o envio de arquivos do Portal (o mesmo do F3.12); a conta sem nota ganha o selo de atenção e a exportação aponta a falta"
+  "evidencia": "Migration 0520_portal_anexos.sql (nota fiscal, guia, boleto ou comprovante na conta; comprovante no recebimento; área Financeiro; despesas pagas sem nota para a exportação), teste 052_portal_anexos_test.sql, rotas /v1/escritorio/financeiro/anexos/buscar e /exportacoes/anexos, A pagar com a coluna \"Nota ou guia\" (selo \"Falta a nota fiscal\" e Anexar), arquivo em Lançar conta e em Registrar recebimento, \"Anexar comprovante\" nas parcelas do contrato, exportação listando as despesas sem nota e marcando a falta na planilha (planilha.ts, 3 testes); e2e portal-financeiro, portal-financeiro-pagar e portal-financeiro-caixa (celular e computador, com axe)"
 }
