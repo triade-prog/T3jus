@@ -296,6 +296,8 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_etapa_remover: (a) => ({ casosMovidos: a.p_mover_para ? 1 : 0, para: a.p_mover_para }),
     portal_juridico_documento_pedir: (a) => ({ id: CLIENTE, ...(a.p_dados as object) }),
     portal_juridico_documento_repedir: (a) => ({ id: a.p_pedido, repedidoEm: "2026-11-19" }),
+    portal_juridico_documento_repedir_whatsapp: (a) => ({ id: a.p_pedido, repedidoEm: "2026-11-19", repedido: { envio: "NA_FILA" } }),
+    portal_recibo_enviar: (a) => ({ mensagem: { id: "m1", envio: "NA_FILA", arquivo: (a.p_dados as { arquivo: unknown }).arquivo } }),
     portal_juridico_documento_chegou: (a) => ({ id: a.p_pedido, chegouEm: "2026-11-19T22:00:00Z" }),
     portal_juridico_documento_iniciar: () => CLIENTE,
     portal_juridico_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 1200 }],
@@ -1447,11 +1449,11 @@ Deno.test("PA-04: avisos, assuntos e tons do domínio são os mesmos do banco", 
   const { AVISOS_WHATSAPP, ASSUNTOS_IA, TONS_IA, textoAvisoValido } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0310_portal_whatsapp_ia.sql", import.meta.url));
   const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
-  // A 0670 acrescenta o aviso de cancelamento do compromisso (F3.3).
-  const sql670 = await Deno.readTextFile(new URL("../../migrations/0670_lembrete_audiencia_envio.sql", import.meta.url));
+  // A 0670 acrescenta o aviso de cancelamento do compromisso (F3.3); a 0721, o pedido de documento e o recibo.
+  const sql670 = await Deno.readTextFile(new URL("../../migrations/0721_documento_recibo_fila.sql", import.meta.url));
   assertEquals(/whatsapp_avisos_chave_check\s+check \(chave in \(([^)]+)\)/.exec(sql670)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1)),
     Object.keys(AVISOS_WHATSAPP));
-  assertEquals(lista(/chave\s+text not null check \(chave in \(([^)]+)\)/), Object.keys(AVISOS_WHATSAPP).filter((k) => k !== "COMPROMISSO_CANCELADO"));
+  assertEquals(lista(/chave\s+text not null check \(chave in \(([^)]+)\)/), Object.keys(AVISOS_WHATSAPP).filter((k) => !["COMPROMISSO_CANCELADO", "DOCUMENTO_PEDIDO", "RECIBO_PAGAMENTO"].includes(k)));
   assertEquals(lista(/assuntos <@ array\[([^\]]+)\]/), Object.keys(ASSUNTOS_IA));
   assertEquals(lista(/tom\s+text not null default 'CORDIAL' check \(tom in \(([^)]+)\)/), Object.keys(TONS_IA));
   assertEquals([textoAvisoValido("{nome}, venceu."), textoAvisoValido("Olá, {nome}. Pague: {link}"), textoAvisoValido("Olá, {nome}. Venceu.")], [false, false, true]);
@@ -2165,6 +2167,27 @@ Deno.test("F3.44: a prestação de contas pelo WhatsApp leva o texto montado do 
   const texto = (a.p_dados as { texto: string }).texto;
   assertEquals(texto.startsWith("Olá, Benedito. Aqui é do escritório Aurora Advocacia."), true);
   assertEquals(texto.includes("Fica para você: R$ 700,00"), true);
+});
+
+Deno.test("F3.19: mandar o recibo pelo WhatsApp gera e guarda o PDF e passa o caminho montado no servidor", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/recibos/${CLIENTE}/envio`, { corpo: {}, cookie });
+  assertEquals(r.status, 201);
+  const caminho = `${AURORA}/recibos/${CLIENTE}.pdf`;
+  assertEquals(m.storage.guardados.get(caminho)?.tipo, "application/pdf");
+  const a = m.chamadas.find((c) => c.funcao === "portal_recibo_enviar")!.args;
+  assertEquals([a.p_escritorio, a.p_pagamento], [AURORA, CLIENTE]);
+  const arq = (a.p_dados as { arquivo: { caminho: string; nome: string; bytes: string } }).arquivo;
+  assertEquals([arq.caminho, arq.nome, arq.bytes], [caminho, "recibo-2026-0187-helio-correa.pdf", String(m.storage.guardados.get(caminho)!.tamanho)]);
+});
+
+Deno.test("F3.42: \"Pedir de novo\" pelo WhatsApp chama a função da fila com o pedido da rota", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/juridico/pedidos/${CLIENTE}/de-novo/whatsapp`, { corpo: {}, cookie });
+  assertEquals(r.status, 200);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_juridico_documento_repedir_whatsapp")!.args, { p_pessoa: ANA, p_escritorio: AURORA, p_pedido: CLIENTE });
 });
 
 Deno.test("F3.81: o PNG do logo é conferido de novo na API e guardado na pasta do escritório da sessão", async () => {
