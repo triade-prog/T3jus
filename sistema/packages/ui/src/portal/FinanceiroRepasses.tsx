@@ -21,7 +21,7 @@ import { contar, diaBr, diaCurto, lerDia, nomeDoMes } from "./agenda.ts";
 import { Selo, useCarga } from "./Comercial.tsx";
 import { primeiroNome } from "./equipe.ts";
 import { Toast } from "./FichaCliente.tsx";
-import { ROTAS_FINANCEIRO } from "./financeiro.ts";
+import { quando, ROTAS_FINANCEIRO, situacaoPrestacao } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
@@ -133,7 +133,7 @@ function Bloco({ l, hoje, prazo, eu, aoFeito, aoDispensar, aoPrestacao, aoAnotar
               <strong>{d.nome}</strong>
               <small>{quemE(d)}</small>
               {d.para === "CLIENTE" ? (
-                <p className="fi-prox"><Icone nome="whats" className="ico" />Prestação de contas: <b>{l.prestacaoEm ? `enviada em ${diaCurto(diaDoInstante(l.prestacaoEm))}` : "ainda não enviada"}</b></p>
+                <p className="fi-prox"><Icone nome="whats" className="ico" />Prestação de contas: <b>{l.prestacao ? situacaoPrestacao(l.prestacao) : l.prestacaoEm ? `enviada em ${diaCurto(diaDoInstante(l.prestacaoEm))}` : "ainda não enviada"}</b></p>
               ) : null}
               {d.dispensa ? <p className="fi-prox"><Icone nome="alerta" className="ico" />Dispensado: <b>{d.dispensa.motivo}</b></p> : null}
               <NotaAtraso d={d} hoje={hoje} prazoDias={prazo} aoAnotar={aoAnotar ? (x) => aoAnotar(l, x) : undefined} />
@@ -762,11 +762,18 @@ function JanelaPrestacao({ l, escritorio, aoFechar, aoFeito }: { l: Levantamento
   const descontos = l.destinacoes.filter((d) => d.para !== "CLIENTE" && d.situacao !== "DISPENSADO").reduce((s, d) => s + d.valor, 0);
   const fica = l.destinacoes.find((d) => d.para === "CLIENTE")?.valor ?? 0;
 
+  // Com o WhatsApp do escritório ligado, a mensagem entra na fila do número do escritório
+  // (F3.44). Sem ele, ou depois de já ter ido pela fila, fica o envio pelo aparelho.
+  const pelaFila = !!l.whatsappLigado && !l.prestacao;
+
   async function marcar() {
     setFalha(null);
     setEnviando(true);
-    const r = await chamarPortal<{ id: string }>(`/v1/escritorio/financeiro/repasses/${l.id}/prestacao`, { metodo: "POST", corpo: {} });
+    const r = pelaFila
+      ? await chamarPortal<Levantamento>(`/v1/escritorio/financeiro/repasses/${l.id}/prestacao/envio`, { metodo: "POST", corpo: {} })
+      : await chamarPortal<{ id: string }>(`/v1/escritorio/financeiro/repasses/${l.id}/prestacao`, { metodo: "POST", corpo: {} });
     setEnviando(false);
+    if (r.ok && pelaFila) return aoFeito({ titulo: "Prestação de contas na fila do WhatsApp.", texto: `A mensagem a ${l.cliente.nome} sai pelo número do escritório. O repasse mostra quando for lida.` });
     if (r.ok) return aoFeito({ titulo: "Prestação de contas marcada como enviada.", texto: `O envio a ${l.cliente.nome} ficou no histórico do repasse.` });
     setFalha(textoDoErro(r.erro));
   }
@@ -778,8 +785,8 @@ function JanelaPrestacao({ l, escritorio, aoFechar, aoFeito }: { l: Levantamento
         <>
           <button className="btn btn-sec" type="button" onClick={aoFechar}>Voltar</button>
           <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
-            <Icone nome="check" className="ico" />
-            Marcar como enviada
+            <Icone nome={pelaFila ? "whats" : "check"} className="ico" />
+            {pelaFila ? "Mandar pelo WhatsApp" : "Marcar como enviada"}
           </button>
         </>
       }>
@@ -796,10 +803,24 @@ function JanelaPrestacao({ l, escritorio, aoFechar, aoFeito }: { l: Levantamento
             A conta fecha: {reais(l.valor)} levantados = {reais(descontos)} de outras partes + {reais(fica)} para {nome}. Os valores vêm do registro; para mudar um número, registre de novo.
           </span>
         </p>
-        <AcoesPrestacao l={l} escritorio={escritorio} />
-        <Aviso tom="info" titulo="O WhatsApp do escritório ainda não está ligado ao T3jus.">
-          Por enquanto, envie pelo aparelho e marque aqui. Quando Conversas estiver pronta, a mensagem sai pelo número do escritório e mostra quando foi lida.
-        </Aviso>
+        {pelaFila ? (
+          <Aviso tom="info" titulo="Sai pelo WhatsApp do escritório.">
+            A mensagem entra na fila do número do escritório, para o contato principal de {nome}. O repasse mostra quando ela for lida.
+          </Aviso>
+        ) : (
+          <>
+            <AcoesPrestacao l={l} escritorio={escritorio} />
+            {l.prestacao ? (
+              <Aviso tom="info" titulo="Esta prestação de contas já foi pelo WhatsApp do escritório.">
+                Situação: {situacaoPrestacao(l.prestacao)}. Para mandar de novo, envie pelo aparelho e marque aqui.
+              </Aviso>
+            ) : (
+              <Aviso tom="info" titulo="O WhatsApp do escritório ainda não está ligado ao T3jus.">
+                Por enquanto, envie pelo aparelho e marque aqui. Quando o número do escritório for ligado, a mensagem sai por ele e mostra quando foi lida.
+              </Aviso>
+            )}
+          </>
+        )}
       </div>
     </Janela>
   );
@@ -1026,7 +1047,9 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
             <div className="fi-zap rp-zap">
               <p className="fi-zap-cab">
                 <Icone nome="whats" className="ico" />
-                {f.prestacaoEm && f.prestacaoPor
+                {f.prestacao && f.prestacaoPor
+                  ? `Mandada pelo WhatsApp por ${f.prestacaoPor.nome}: ${situacaoPrestacao(f.prestacao)}`
+                  : f.prestacaoEm && f.prestacaoPor
                   ? `Marcada como enviada por ${f.prestacaoPor.nome} em ${diaCurto(diaDoInstante(f.prestacaoEm))}, às ${horaDoInstante(f.prestacaoEm)}`
                   : "Ainda não enviada"}
               </p>
@@ -1065,7 +1088,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
               ))}
               <li className={f.prestacaoEm ? undefined : "falta"}>
                 <Icone nome={f.prestacaoEm ? "check" : "alerta"} className="ico" />
-                <span>{f.prestacaoEm ? "Prestação de contas enviada ao cliente" : <><b>Prestação de contas:</b> ainda não enviada</>}</span>
+                <span>{f.prestacao?.envio === "LIDA" ? `Prestação de contas lida pelo cliente em ${quando(f.prestacao.envioEm ?? f.prestacao.em)}` : f.prestacaoEm ? "Prestação de contas enviada ao cliente" : <><b>Prestação de contas:</b> ainda não enviada</>}</span>
               </li>
             </ul>
             </div>

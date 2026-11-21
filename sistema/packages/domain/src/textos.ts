@@ -89,6 +89,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   SEM_AUTENTICADOR: "Esta pessoa não tem autenticador cadastrado.",
   PROPOSTA_RESPONDIDA: "Esta proposta já foi respondida e não muda mais. Se o cliente quer outra coisa, escreva uma proposta nova.",
   JA_ENVIADA: "Esta proposta já estava marcada como enviada.",
+  PRESTACAO_JA_ENVIADA: "A prestação de contas deste repasse já está na fila do WhatsApp. Recarregue a página para ver.",
+  SEM_WHATSAPP: "O contato principal não tem celular na ficha. Ajuste o telefone na ficha do cliente.",
   PROPOSTA_INCOMPLETA: "Complete a proposta antes de marcar como enviada: falta o que está incluído, as condições ou o retorno.",
   PROPOSTA_NAO_ENVIADA: "Marque a proposta como enviada antes de registrar a resposta.",
   PROPOSTA_NAO_ACEITA: "Só a proposta aceita vira contrato. Esta já virou contrato ou ainda não foi aceita.",

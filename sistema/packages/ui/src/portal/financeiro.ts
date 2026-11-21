@@ -1,7 +1,7 @@
 // Peças puras do Financeiro do Portal (desenho aprovado em docs/design/aprovadas/portal-financeiro):
 // endereços, mês de referência, situação da parcela em palavras e os grupos de A receber.
 
-import { reais, REEMBOLSO_COMO, FORMAS_PAGAMENTO, type CobrancaAtual, type ContaPagar, type ParcelaLinha } from "@t3jus/domain";
+import { reais, REEMBOLSO_COMO, FORMAS_PAGAMENTO, type CobrancaAtual, type ContaPagar, type MensagemPrestacao, type ParcelaLinha } from "@t3jus/domain";
 import { DIAS_SEMANA, diaCurto, diaDaSemana, nomeDoMes, somarDias } from "./agenda.ts";
 import { diasEntre } from "./comercial.ts";
 
@@ -163,4 +163,25 @@ export const mesCurto = (mes: string) => `${nomeDoMes(mes).slice(0, 3)}/${mes.sl
 export function textoDia(dia: number, inicial = true): string {
   const t = dia === 0 || dia > 28 ? "no último dia do mês" : `todo dia ${dia}`;
   return inicial ? t.replace(/^./, (x) => x.toUpperCase()) : t;
+}
+
+// ------------------------------------------------------------------------- Prestação de contas (F3.44)
+
+const fusoBr = { timeZone: "America/Sao_Paulo" } as const;
+/** Dia e hora de Brasília de um instante: "01/12, às 10h15". */
+export const quando = (em: string) => {
+  const d = new Intl.DateTimeFormat("en-CA", { ...fusoBr, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
+  const h = new Intl.DateTimeFormat("pt-BR", { ...fusoBr, hour: "2-digit", minute: "2-digit" }).format(new Date(em)).replace(":", "h");
+  return `${diaCurto(d)}, às ${h}`;
+};
+
+/** Onde está a prestação de contas mandada pelo WhatsApp (F3.44): na fila, entregue ou lida. */
+export function situacaoPrestacao(p: MensagemPrestacao): string {
+  switch (p.envio) {
+    case "NA_FILA": return `na fila do WhatsApp do escritório desde ${quando(p.em)}`;
+    case "ENVIADA": return `enviada pelo WhatsApp em ${quando(p.envioEm ?? p.em)}`;
+    case "ENTREGUE": return `entregue em ${quando(p.envioEm ?? p.em)}, ainda não lida`;
+    case "LIDA": return `lida pelo cliente em ${quando(p.envioEm ?? p.em)}`;
+    default: return `não entregue${p.motivo ? `: ${p.motivo.charAt(0).toLowerCase()}${p.motivo.slice(1)}` : ""}`;
+  }
 }

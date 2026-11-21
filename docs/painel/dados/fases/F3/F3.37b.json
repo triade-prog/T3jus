@@ -1,0 +1,11 @@
+{
+  "id": "F3.37b",
+  "texto": "O aviso de mudança de etapa sai de fato pelo WhatsApp do escritório: a ligação com a Meta tira as mensagens da fila e a ficha passa a mostrar entregue e lido",
+  "peca": "B3",
+  "refs": [
+    "EX-14"
+  ],
+  "status": "pendente",
+  "ordem": 371,
+  "proximo": "Depende só da ligação do WhatsApp com a Meta (F3.58) e do aviso \"Etapa do caso\" aprovado pela Meta. As mensagens já ficam na fila"
+}

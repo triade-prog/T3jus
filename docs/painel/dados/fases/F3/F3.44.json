@@ -1,11 +1,11 @@
 {
   "id": "F3.44",
-  "texto": "Prestação de contas enviada pelo WhatsApp do escritório, com a hora em que o cliente leu",
+  "texto": "Prestação de contas enviada pela fila do WhatsApp do escritório depois de revisada, com a situação e a hora em que o cliente leu",
   "peca": "S6",
   "refs": [
     "FI-12"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 440,
-  "proximo": "Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79); até lá a janela mostra a mensagem para copiar ou abrir no WhatsApp do aparelho e marca como enviada"
+  "evidencia": "Migration 0720 (\"Mandar pelo WhatsApp\" põe a prestação revisada na fila da conversa do contato principal, com o aviso \"Prestação de contas\" e o resumo numa linha em dados.campos para fora da janela de 24 horas; não manda duas vezes; a automação pronta não manda outra para o mesmo repasse; sem o WhatsApp ligado, fica \"Marcar como enviada\"); o texto sai do registro na api-portal (POST /repasses/:id/prestacao/envio); o repasse mostra na fila, entregue ou lida com a hora; teste pgTAP 100, Deno app_test F3.44, Vitest financeiro.test (+1) e e2e portal-financeiro-repasses (+1)"
 }
