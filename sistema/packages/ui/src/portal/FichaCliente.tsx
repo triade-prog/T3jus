@@ -24,7 +24,7 @@ import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { FolhaSemAvisos, SeloSemAvisos, useAvisosCliente } from "./SemAvisos.tsx";
-import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
+import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaArquivar, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
 export type AbaCliente = "ficha" | "atendimentos";
 export type Feito = { titulo: string; texto: string };
@@ -105,7 +105,7 @@ function Dados({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
   );
   const end = f.endereco && f.cidade && f.uf ? endereco(f) : null;
   return (
-    <Folha titulo="Dados e qualificação" sub={f.situacao === "INATIVO" ? "Guardados como estavam ao inativar." : "O que vai na procuração e no contrato."}
+    <Folha titulo="Dados e qualificação" sub={f.situacao === "INATIVO" ? "Guardados como estavam ao inativar." : f.situacao === "ARQUIVADO" ? "Guardados como estavam ao arquivar, só leitura." : "O que vai na procuração e no contrato."}
       acoes={aoEditar ? (
         <button data-muda className="btn btn-sec" type="button" onClick={aoEditar}>
           <Icone nome="lapis" className="ico" />
@@ -801,6 +801,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
 
   const ativo = f.situacao === "ATIVO";
   const excluido = f.situacao === "EXCLUIDO";
+  // Arquivado a pedido (F1.16): os dados ficam, só leitura, com o registro do arquivamento.
+  const arquivado = f.situacao === "ARQUIVADO";
+  const fimLgpd = excluido || arquivado;
   const abaAtual: AbaCliente = comercial ? aba : "ficha";
   const editar = ativo ? () => { setFeito(null); setEditando(true); } : undefined;
   const p = f.proxContato;
@@ -809,7 +812,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const dona = escritorio.socios[0];
   const nomeDona = dona ?? "a sócia dona";
 
-  const dir = excluido ? (
+  const dir = fimLgpd ? (
     <RegistroNoCabecalho f={f} />
   ) : comercial ? (
     <section className="dir campo-ambar" aria-labelledby="cl-t-prox">
@@ -876,8 +879,8 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const cab = (
     <div className="ficha-cab">
       <div className="esq campo-vinho">
-        <Icone nome={excluido ? "escudo" : "balanca"} className="ico estatua" />
-        <a className="voltar" href={excluido ? `${ROTAS_PORTAL.clientes}?filtro=inativos` : ROTAS_PORTAL.clientes}>
+        <Icone nome={fimLgpd ? "escudo" : "balanca"} className="ico estatua" />
+        <a className="voltar" href={fimLgpd ? `${ROTAS_PORTAL.clientes}?filtro=inativos` : ROTAS_PORTAL.clientes}>
           <Icone nome="esquerda" className="ico ico-s" />
           Clientes
         </a>
@@ -891,6 +894,11 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
                   <Icone nome="escudo" className="ico" />
                   Excluído (LGPD)
                 </span>
+              ) : arquivado ? (
+                <span className="selo selo-excl">
+                  <Icone nome="pasta" className="ico" />
+                  Arquivado (LGPD)
+                </span>
               ) : ativo ? (
                 <>
                   <span className="selo selo-ativo">Ativo</span>
@@ -899,7 +907,13 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
               ) : (
                 <span className="selo selo-neutro">Inativo</span>
               )}
-              <span>{excluido ? `a pedido do titular em ${f.exclusao ? dataLonga(f.exclusao.em) : ""}` : `cliente desde ${dataLonga(f.criadoEm)}`}</span>
+              <span>
+                {excluido
+                  ? `a pedido do titular em ${f.exclusao ? dataLonga(f.exclusao.em) : ""}`
+                  : arquivado
+                    ? `arquivado a pedido do titular em ${f.arquivamento ? dataLonga(f.arquivamento.em) : ""}`
+                    : `cliente desde ${dataLonga(f.criadoEm)}`}
+              </span>
               {f.documento ? (
                 <>
                   <span className="sep" aria-hidden="true" />
@@ -929,7 +943,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     </nav>
   );
 
-  const faixaInativo = !ativo && !excluido ? (
+  const faixaInativo = !ativo && !fimLgpd ? (
     <div className="aviso aviso-info cl-inativo-faixa" role="status">
       <Icone nome="pasta" className="ico" />
       <div>
@@ -969,6 +983,15 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     <Folha titulo="Situação" pequena>
       <div className="cl-sit">
         <p>Não dá para editar, reativar nem registrar atendimento em cliente excluído. Se a pessoa voltar a procurar o escritório, cadastre de novo, como cliente novo.</p>
+      </div>
+    </Folha>
+  ) : arquivado ? (
+    <Folha titulo="Situação" pequena>
+      <div className="cl-sit">
+        <p>
+          Arquivado a pedido do titular (LGPD). A ficha fica só leitura: não dá para editar, reativar nem registrar atendimento. Os dados continuam guardados
+          porque há contrato ou processo, e só aparecem em Inativos.
+        </p>
       </div>
     </Folha>
   ) : ativo ? (
@@ -1025,7 +1048,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             <Historico atendimentos={atendimentos} f={f} hoje={hoje} destaque={destaque} aoRegistrar={ativo ? () => abrir("registrar") : null} />
           )
         }
-        lateral={excluido ? <RegistroExclusao f={f} /> : <ExplicaHistorico />}
+        lateral={fimLgpd ? <RegistroExclusao f={f} /> : <ExplicaHistorico />}
       />
     );
   } else {
@@ -1038,18 +1061,18 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             <>
               <Dados f={f} aoEditar={editar} />
               <Contatos f={f} aoEditar={editar} />
-              <FolhaSemAvisos f={f} dados={avisos.dados} eu={escritorio.pessoa} podeEscrever={!soConsulta(escritorio)}
+              <FolhaSemAvisos f={f} dados={avisos.dados} eu={escritorio.pessoa} podeEscrever={!soConsulta(escritorio) && !arquivado}
                 aoFeito={(x) => { setFeito(x); avisos.recarregar(); }} />
             </>
           )
         }
         lateral={
           <>
-            {excluido ? <RegistroExclusao f={f} /> : null}
+            {fimLgpd ? <RegistroExclusao f={f} /> : null}
             {ativo ? <Procuracao f={f} aoEditar={editar} /> : null}
             {comercial ? <Origem f={f} /> : notaSemComercial}
             {situacao}
-            {excluido ? null : <Reserva />}
+            {fimLgpd ? null : <Reserva />}
           </>
         }
       />
@@ -1060,7 +1083,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     <MolduraPortal atual="clientes" trilha={trilha} escritorio={escritorio} pagina="co-ficha">
       <div className="cl">
         {cab}
-        {excluido ? null : <FaixaPedido f={f} aoExcluir={() => abrir("excluir")} aoRecusar={() => abrir("recusar")} />}
+        {fimLgpd ? null : <FaixaPedido f={f} aoExcluir={() => abrir("excluir")} aoRecusar={() => abrir("recusar")} />}
         {abas}
         {faixaInativo}
         {corpo}
@@ -1079,15 +1102,21 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           aoFechar={() => setJanela(null)} aoFeito={(x) => void concluir(x)}
           aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
       ) : null}
-      {excluido ? null : (
+      {fimLgpd ? null : (
         <>
           <JanelaPedir key={`p-${abertura}`} aberta={janela === "pedir"} f={f} dona={nomeDona} hoje={hoje} aoFechar={() => setJanela(null)}
             aoFeito={(x) => void concluir(x)} />
           {f.dono ? (
             <>
-              <JanelaExcluir key={`x-${abertura}`} aberta={janela === "excluir"} f={f} hoje={hoje} aoFechar={() => setJanela(null)}
-                aoFeito={(x) => void concluir(x, async () => { if (abaAtual === "atendimentos") await carregarAtendimentos(); })}
-                aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
+              {f.vinculosLgpd ? (
+                <JanelaArquivar key={`a-${abertura}`} aberta={janela === "excluir"} f={f} hoje={hoje} aoFechar={() => setJanela(null)}
+                  aoFeito={(x) => void concluir(x)}
+                  aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
+              ) : (
+                <JanelaExcluir key={`x-${abertura}`} aberta={janela === "excluir"} f={f} hoje={hoje} aoFechar={() => setJanela(null)}
+                  aoFeito={(x) => void concluir(x, async () => { if (abaAtual === "atendimentos") await carregarAtendimentos(); })}
+                  aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
+              )}
               <JanelaRecusar key={`n-${abertura}`} aberta={janela === "recusar"} f={f} aoFechar={() => setJanela(null)} aoFeito={(x) => void concluir(x)} />
             </>
           ) : null}

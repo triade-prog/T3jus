@@ -138,6 +138,10 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
       return { protocolo: "EXC-2026-0001", versao: Number(a.p_versao) + 1, pedido: { id: "p1", estado: "ATENDIDO" } };
     },
+    portal_cliente_arquivar_lgpd: (a) => {
+      if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
+      return { protocolo: "EXC-2026-0002", versao: Number(a.p_versao) + 1, pedido: { id: "p2", estado: "ARQUIVADO" } };
+    },
     portal_agenda: (a) => ({ juridico: true, compromissos: [], feriados: [], prazos: [], tiposEscritos: [], de: a.p_de }),
     portal_compromisso_marcar: () => ({ id: CLIENTE, versao: 1 }),
     portal_comercial_retornos: () => ({ algum: false }),
@@ -834,6 +838,21 @@ Deno.test("F1.15: excluir pede a conferência e o nome; quem não é a dona é r
   assertEquals([ch.args.p_versao, (ch.args.p_dados as Record<string, unknown>).versao], [2, undefined]);
   const n = montar({ naoDono: true });
   const e = await n.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao`, { metodo: "POST", corpo: { ...corpo, conferido: true }, cookie: await noEscritorio(n) });
+  assertEquals((await erro(e)).detalhes?.motivo, "SO_SOCIO_DONO");
+});
+
+Deno.test("F1.16: arquivar a pedido pede a conferência, sem o nome; quem não é a dona é recusado", async () => {
+  const corpo = { pedidoEm: "2026-11-18", canal: "EMAIL", quemPediu: "TITULAR", versao: 3 };
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const sem = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/arquivar-lgpd`, { metodo: "POST", corpo, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["conferido"]);
+  const ok = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/arquivar-lgpd`, { metodo: "POST", corpo: { ...corpo, conferido: true }, cookie });
+  assertEquals((await ok.json()).protocolo, "EXC-2026-0002");
+  const ch = m.chamadas.find((c) => c.funcao === "portal_cliente_arquivar_lgpd")!;
+  assertEquals([ch.args.p_versao, (ch.args.p_dados as Record<string, unknown>).versao], [3, undefined]);
+  const n = montar({ naoDono: true });
+  const e = await n.pedir(`/v1/escritorio/clientes/${CLIENTE}/arquivar-lgpd`, { metodo: "POST", corpo: { ...corpo, conferido: true }, cookie: await noEscritorio(n) });
   assertEquals((await erro(e)).detalhes?.motivo, "SO_SOCIO_DONO");
 });
 

@@ -5,8 +5,8 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 65,
-  "nota": "Decisão 5 da Carol (18/11/2026): “Não exclui, só arquiva”. Desenhado no estado excluir-depois de docs/design/aprovadas/portal-clientes-pendencias. Hoje ainda não há contratos nem processos no T3jus, então a exclusão é sempre completa.",
-  "proximo": "Quando Contratos e Jurídico existirem, a exclusão de quem tiver um deles responde TEM_CONTRATO_OU_PROCESSO e a tela oferece “Arquivar a pedido (LGPD)”"
+  "nota": "Decisão 5 da Carol (18/11/2026): “Não exclui, só arquiva”. Desenhado no estado excluir-depois de docs/design/aprovadas/portal-clientes-pendencias; a ficha do arquivado segue o padrão da ficha do excluído aprovada, com os dados visíveis e só leitura.",
+  "evidencia": "Portal › ficha do cliente: com contrato (de qualquer situação) ou processo, a exclusão responde TEM_CONTRATO_OU_PROCESSO (também no gatilho do banco) e a dona vê “Arquivar a pedido (LGPD)”, com o contrato e o processo que impedem a exclusão; arquivar confere data, canal, quem pediu e a conferência, sem apagar nada, com protocolo EXC-aaaa-nnnn; o arquivado sai de Ativos, da busca e do Início, fica em Inativos como “Arquivado a pedido (LGPD)”, e não se edita, reativa nem recebe atendimento ou novo pedido. Migration 0460, rota POST /v1/escritorio/clientes/:id/arquivar-lgpd, pgTAP 046, Deno app_test.ts e e2e portal-exclusao.spec.ts"
 }
