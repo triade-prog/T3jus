@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { diaDe, gradeDoMes, horaDe, horariosDoLembrete, horariosLivres, inicioDaSemana, lerDia, lerHorario, nomeDoTipo, periodo, posicaoNaGrade, rotaAgenda } from "./agenda.ts";
 import { conferirRascunho, corpoDoRascunho, rascunhoNovo } from "./JanelaCompromisso.tsx";
-import { fraseDoEvento, textoDoLembrete } from "./FichaCompromisso.tsx";
+import { confirmou, fraseDoEvento, nomeDoLembrete, textoDoCancelamento, textoDoLembrete } from "./FichaCompromisso.tsx";
 
 describe("EX-06: períodos da agenda", () => {
   it("a semana vai de segunda a domingo", () => {
@@ -68,6 +68,19 @@ describe("EX-11: lembrete ao cliente", () => {
   it("1 dia antes, no mesmo horário, e 2 horas antes", () => {
     const l = horariosDoLembrete("2026-11-18T11:00:00-03:00");
     expect([diaDe(l.umDia), horaDe(l.umDia), horaDe(l.duasHoras)]).toEqual(["2026-11-17", "11:00", "09:00"]);
+  });
+  it("F3.3: o de 1 dia antes sai no dia útil anterior, e o de 2 horas não sai a menos de 30 minutos", () => {
+    // Segunda, 23/11: sexta (20/11) é feriado, então sai na quinta.
+    expect(horariosDoLembrete("2026-11-23T09:00:00-03:00")).toEqual({ umDia: "2026-11-19T09:00:00-03:00", duasHoras: "2026-11-23T08:00:00-03:00" });
+    expect(horariosDoLembrete("2026-12-08T07:00:00-03:00").umDia).toBe("2026-12-07T08:00:00-03:00");
+    expect(horariosDoLembrete("2026-12-08T08:20:00-03:00").duasHoras).toBeNull();
+  });
+  it("F3.3: nomes do lembrete, confirmação e aviso de cancelamento", () => {
+    expect(nomeDoLembrete("Lembrete · 1 dia antes")).toBe("Lembrete de 1 dia antes");
+    expect(nomeDoLembrete("Lembrete · nova data")).toBe("Lembrete com a nova data");
+    expect([confirmou("Confirmo, estarei lá."), confirmou("Posso remarcar?")]).toEqual([true, false]);
+    expect(textoDoCancelamento({ titulo: "Audiência de conciliação", inicio: "2026-12-21T10:00:00-03:00" }, "Ribeiro & Matos", "Gabriela Teixeira"))
+      .toBe("Olá, Gabriela. Aqui é do escritório Ribeiro & Matos. Avisamos que foi cancelado: Audiência de conciliação, no dia 21/12, às 10:00. Se houver nova data, avisamos por aqui. Qualquer dúvida, é só responder esta mensagem.");
   });
   it("o texto segue o modelo aprovado", () => {
     const t = textoDoLembrete({ tipo: "AUDIENCIA", tipoEscrito: null, inicio: "2026-11-18T11:00:00-03:00", modalidade: "VIRTUAL", local: null }, "Ribeiro & Matos", "Gabriela Teixeira");

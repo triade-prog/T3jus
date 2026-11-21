@@ -1,12 +1,11 @@
 {
   "id": "F3.3",
-  "texto": "O lembrete da audiência (1 dia e 2 horas antes) e o aviso de cancelamento saem de fato pelo WhatsApp do escritório",
+  "texto": "O lembrete da audiência (1 dia e 2 horas antes) e o aviso de cancelamento saem pela fila do WhatsApp do escritório: lembrete no dia útil anterior, remarcar recomeça e manda a nova data, desmarcar e cancelar param o lembrete, e a ficha mostra o que saiu e a resposta do cliente",
   "peca": "B3",
   "refs": [
     "EX-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 30,
-  "nota": "Hoje o lembrete fica marcado e a tela diz que ainda não sai, porque o WhatsApp do escritório não está ligado.",
-  "proximo": "Enviar os lembretes marcados e os avisos de cancelamento. Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79)"
+  "evidencia": "Desenho aprovado (docs/design/aprovadas/portal-agenda-conversas, itens 8 e 9); migration 0670 (automação pronta \"Lembrete de audiência\": entra no dia útil anterior, confere o compromisso na hora de mandar, não manda a menos de 30 minutos, link da sala no lembrete; gatilho em compromissos para cancelar, desmarcar e remarcar; aviso novo \"Compromisso cancelado\" na fila ao cancelar com \"Avisar\", ou o motivo de não sair; a ficha e a Agenda dizem se o WhatsApp está ligado); ficha do compromisso com o que saiu, a situação de cada mensagem, a resposta e \"Ver a conversa\"; teste pgTAP 090 (30), Vitest agenda.test (+2), e2e portal-agenda (+2), Deno app_test PA-04"
 }

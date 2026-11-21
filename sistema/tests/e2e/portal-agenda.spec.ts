@@ -238,6 +238,43 @@ test.describe("Ficha do compromisso (PT-25, PT-03)", () => {
     await semViolacoes(page);
   });
 
+  test("F3.3: o lembrete mostra o que saiu, a resposta da cliente e a conversa", async ({ page }) => {
+    const ficha = {
+      ...FICHA, whatsappLigado: true,
+      lembretes: {
+        umDia: em(0, "11:00"), horasAntes: 2, antes: em(1, "09:00"), situacao: "EM_ANDAMENTO", motivo: null, proximoEm: em(1, "09:00"),
+        automacaoLigada: true, conversaId: "c0000000-0000-4000-8000-000000000001", previa: null,
+        mensagens: [{ id: "m1", nome: "Lembrete · 1 dia antes", em: em(0, "11:00"), envio: "LIDA", envioEm: em(0, "11:01"), envioMotivo: null,
+          texto: "Olá, Gabriela. Aqui é do escritório Ribeiro & Matos. Lembrete: Conciliação, no dia amanhã, às 11:00. Responda CONFIRMO." }],
+        resposta: { em: em(0, "11:26"), texto: "Confirmo, estarei lá." },
+      },
+    };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/compromissos/${cid(1)}`]: { corpo: ficha } });
+    await page.goto(`${P}/agenda/${cid(1)}`);
+    await expect(page.getByText("Confirmou presença")).toBeVisible();
+    await expect(page.getByText("Lembrete de 1 dia antes enviado")).toBeVisible();
+    await expect(page.getByText("Gabriela respondeu: “Confirmo, estarei lá.”")).toBeVisible();
+    await expect(page.getByText("Lembrete de 2 horas antes, com o link da sala")).toBeVisible();
+    await expect(page.getByText("Agendado", { exact: true })).toBeVisible();
+    await expect(page.getByText("O WhatsApp do escritório ainda não está ligado.", { exact: false })).toHaveCount(0);
+    await expect(page.getByText(`Mensagem enviada em ${br(0).slice(0, 5)}, às 11:00`)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver a conversa com Gabriela" })).toHaveAttribute("href", /c=c0000000-0000-4000-8000-000000000001/);
+    await semViolacoes(page);
+  });
+
+  test("F3.3: cancelado, a ficha diz por que o aviso não saiu", async ({ page }) => {
+    const ficha = {
+      ...FICHA, situacao: "CANCELADO", whatsappLigado: true,
+      cancelamento: { em: em(0, "10:00"), por: MARINA, motivo: "acordo fechado", avisar: true, aviso: { motivo: "Sem WhatsApp no contato principal da ficha.", mensagem: null } },
+      lembretes: { umDia: em(0, "11:00"), horasAntes: 2, antes: em(1, "09:00"), situacao: "FICOU_DE_FORA", motivo: "O compromisso foi cancelado.", proximoEm: null,
+        automacaoLigada: true, conversaId: null, previa: null, mensagens: [], resposta: null },
+    };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/compromissos/${cid(1)}`]: { corpo: ficha } });
+    await page.goto(`${P}/agenda/${cid(1)}`);
+    await expect(page.getByText("O aviso de cancelamento não saiu: sem WhatsApp no contato principal da ficha.", { exact: false })).toBeVisible();
+    await semViolacoes(page);
+  });
+
   test("cancelar pede motivo e não apaga", async ({ page }) => {
     const pedidos = await simular(page, {
       ...comuns(),

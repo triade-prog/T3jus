@@ -1,7 +1,7 @@
 // Regras de tela da Agenda (docs/design/aprovadas/portal-agenda-conversas): datas no horário de
 // Brasília, períodos de mês, semana e dia, posição na grade e textos. Sem React, com testes.
 
-import { TIPOS_COMPROMISSO_CURTO, type CompromissoLinha, type TipoCompromisso } from "@t3jus/domain";
+import { TIPOS_COMPROMISSO_CURTO, diaUtil, proximoHorario, type CompromissoLinha, type TipoCompromisso } from "@t3jus/domain";
 
 export type VisaoAgenda = "mes" | "semana" | "dia";
 
@@ -144,10 +144,23 @@ export function horariosLivres(lista: Pick<CompromissoLinha, "inicio" | "fim" | 
   return livres.map((l) => ({ de: hh(l.de), ate: l.ate === null ? null : hh(l.ate) }));
 }
 
-/** Os dois lembretes ao cliente: 1 dia antes, no mesmo horário, e 2 horas antes. */
-export function horariosDoLembrete(inicio: string): { umDia: string; duasHoras: string } {
-  const t = new Date(inicio).getTime();
-  return { umDia: new Date(t - 24 * 3600e3).toISOString(), duasHoras: new Date(t - 2 * 3600e3).toISOString() };
+/**
+ * Os dois lembretes ao cliente (F3.3), as mesmas regras do servidor (0670): o de 1 dia antes
+ * sai no dia útil anterior, na mesma hora, entre 8h e 20h; o de 2 horas antes sai no horário
+ * permitido (8h às 20h, dia útil) e não sai (nulo) se faltar menos de 30 minutos.
+ */
+export function horariosDoLembrete(inicio: string, horas = 2): { umDia: string; duasHoras: string | null } {
+  const H = 3600e3;
+  const ini = new Date(inicio).getTime() - 3 * H; // hora local guardada em UTC
+  const p2 = (n: number) => String(n).padStart(2, "0");
+  const doLocal = (l: Date) => `${l.getUTCFullYear()}-${p2(l.getUTCMonth() + 1)}-${p2(l.getUTCDate())}T${p2(l.getUTCHours())}:${p2(l.getUTCMinutes())}:00${FUSO}`;
+  const l = new Date(ini - 24 * H);
+  for (let n = 0; n < 15 && !diaUtil(doLocal(l).slice(0, 10)); n++) l.setUTCDate(l.getUTCDate() - 1);
+  const h = l.getUTCHours() + l.getUTCMinutes() / 60;
+  if (h < 8) l.setUTCHours(8, 0, 0, 0);
+  else if (h >= 20) l.setUTCHours(19, 30, 0, 0);
+  const d = proximoHorario(new Date(ini - horas * H));
+  return { umDia: doLocal(l), duasHoras: d.getTime() <= ini - 0.5 * H ? doLocal(d) : null };
 }
 
 /** "quarta, às 16:00" */
