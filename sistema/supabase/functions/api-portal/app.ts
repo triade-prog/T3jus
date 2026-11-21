@@ -5,7 +5,7 @@ import type { MiddlewareHandler } from "hono";
 import {
   areasSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
-  cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso,
+  cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
@@ -16,7 +16,7 @@ import {
   exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
-  type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, concluirTarefaSchema,
+  type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, editarPrazoSchema, editarTarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
   semAvisosSchema, avisosLidosSchema, type AvisosDoCliente, type ListaAvisosSino, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, pedirIaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
@@ -40,6 +40,8 @@ import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao
 import { lerCorpo } from "../_shared/validar.ts";
 import { rotasPeticoes } from "./peticoes.ts";
 import { rotasCarne } from "./carne.ts";
+import { rotasContratosOab } from "./contratos_oab.ts";
+import { rotasPropostaDocx } from "./proposta_docx.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
 import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
@@ -408,6 +410,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     }));
   });
 
+  // Os casos em andamento, para ligar o compromisso ao processo (F3.4; só com o Jurídico).
+  app.get("/v1/escritorio/agenda/casos", async (c) => {
+    return c.json(await deps.banco.rpc<CasoDoCompromisso[]>("portal_agenda_casos", quem(c)));
+  });
+
   app.post("/v1/escritorio/compromissos", async (c) => {
     const d = await lerCorpo(c, dadosCompromissoSchema);
     return c.json(await deps.banco.rpc<{ id: string; versao: number }>("portal_compromisso_marcar", { ...quem(c), p_dados: d }), 201);
@@ -727,17 +734,21 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.post("/v1/escritorio/contratos", async (c) => {
     const d = await lerCorpo(c, dadosContratoSchema);
-    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_contrato_criar", { ...quem(c), p_dados: d }), 201);
+    // Com a escolha das inscrições de cada advogado (EX-12, 0530).
+    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_contrato_criar_oab", { ...quem(c), p_dados: d }), 201);
   });
 
   app.get("/v1/escritorio/contratos/:id", async (c) => {
-    return c.json(await deps.banco.rpc<FichaContrato>("portal_contrato", { ...quem(c), p_contrato: idDaRota(c, "id") }));
+    const p = { ...quem(c), p_contrato: idDaRota(c, "id") };
+    const ficha = await deps.banco.rpc<FichaContrato>("portal_contrato", p);
+    // A OAB de cada advogado neste contrato (EX-12, 0530).
+    return c.json({ ...ficha, inscricoes: await deps.banco.rpc<NonNullable<FichaContrato["inscricoes"]>>("portal_contrato_inscricoes", p) });
   });
 
   // Mudar condições, objeto e pessoas (PT-19). Contrato ativo pede motivo e refaz só o futuro.
   app.put("/v1/escritorio/contratos/:id", async (c) => {
     const { versao, ...d } = await lerCorpo(c, editarContratoSchema);
-    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number; novos: number }>("portal_contrato_condicoes", {
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number; novos: number }>("portal_contrato_condicoes_oab", {
       ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: versao, p_dados: d,
     }));
   });
@@ -1086,6 +1097,21 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_prazo_criar", { ...quem(c), p_dados: d }), 201);
   });
 
+  // Editar prazo e tarefa (F3.39): pela versão lida (PT-19); o caso não muda.
+  app.put("/v1/escritorio/juridico/prazos/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarPrazoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; campos: string[] }>("portal_juridico_prazo_editar", {
+      ...quem(c), p_prazo: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
+  app.put("/v1/escritorio/juridico/tarefas/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarTarefaSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; campos: string[] }>("portal_juridico_tarefa_editar", {
+      ...quem(c), p_tarefa: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
+  });
+
   app.post("/v1/escritorio/juridico/prazos/:id/cumprido", async (c) => {
     return c.json(await deps.banco.rpc<{ id: string; cumpridoEm: string }>("portal_juridico_prazo_cumprido", { ...quem(c), p_prazo: idDaRota(c, "id") }));
   });
@@ -1194,6 +1220,8 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Gerador de petições (EX-09).
   rotasPeticoes(app, deps);
   rotasCarne(app, deps);
+  rotasContratosOab(app, deps);
+  rotasPropostaDocx(app, deps);
 
   return app;
 }

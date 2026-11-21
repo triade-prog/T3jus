@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   conferirCondicao, dataBr, hojeBrasilia, reais,
-  type ClienteLinha, type Condicao, type FichaContrato, type ListaClientes, type PropostaParaContrato,
+  type ClienteLinha, type Condicao, type FichaContrato, type ListaClientes, type PessoaComOab, type PropostaParaContrato,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -16,18 +16,21 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar
 import { iniciais } from "../console/tempo.ts";
 import { diaCurto } from "./agenda.ts";
 import { resumoContrato, ROTAS_CONTRATOS } from "./contratos.ts";
+import { AdvogadosOab, idErroInscricao } from "./ContratoOab.tsx";
 import { EditorCondicoes, errosPorCondicao, idDoErro } from "./Honorarios.tsx";
 import { lerCondicao, mensagemCampo, rascunhoDe, type RascunhoCondicao } from "./honorarios.ts";
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
-type Pessoa = { id: string; nome: string };
+type Pessoa = PessoaComOab;
 
 interface Rascunho {
   clienteId: string;
   objeto: string;
   responsavelId: string;
   advogados: string[];
+  /** As inscrições escolhidas de cada advogado (EX-12); sem a pessoa, vão todas. */
+  inscricoes: Record<string, string[]>;
   condicoes: RascunhoCondicao[];
   observacoes: string;
   motivo: string;
@@ -120,6 +123,8 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
     objeto: ficha?.objeto ?? proposta?.servico ?? "",
     responsavelId: ficha?.responsavel.id ?? proposta?.responsavel.id ?? "",
     advogados: ficha?.advogados.map((a) => a.id) ?? [],
+    inscricoes: Object.fromEntries((ficha?.inscricoes ?? []).filter((a) => a.inscricoes.length > 1)
+      .map((a) => [a.pessoaId, a.inscricoes.filter((i) => i.escolhida).map((i) => i.id)])),
     condicoes: (ficha?.condicoes ?? proposta?.condicoes ?? []).map(rascunhoDe),
     observacoes: ficha?.observacoes ?? "",
     motivo: "",
@@ -132,7 +137,7 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
   const ativo = ficha?.situacao === "ATIVO";
 
   useEffect(() => {
-    void chamarPortal<{ pessoas: Pessoa[] }>("/v1/escritorio/pessoas").then((x) => {
+    void chamarPortal<{ pessoas: Pessoa[] }>("/v1/escritorio/pessoas/oab").then((x) => {
       if (!x.ok) return setPessoas([]);
       setPessoas(x.dados.pessoas);
       const meu = x.dados.pessoas.find((p) => p.nome === eu)?.id ?? "";
@@ -155,6 +160,9 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
       observacoes: r.observacoes.trim() || null,
       responsavelId: r.responsavelId || null,
       advogados: r.advogados,
+      // Cada advogado com OAB leva as inscrições escolhidas (todas, se ninguém mexeu).
+      inscricoes: Object.fromEntries((pessoas ?? []).filter((p) => r.advogados.includes(p.id) && p.oab.length > 0)
+        .map((p) => [p.id, r.inscricoes[p.id] ?? p.oab.map((i) => i.id)])),
       condicoes: r.condicoes.map(lerCondicao),
     };
     const x = ficha
@@ -180,6 +188,12 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
       const cond = r.condicoes[Number(m[1]) - 1];
       return { id: idDoErro("nv", c), texto: `Condição ${m[1]}${cond ? `, ${nomeTipo(cond.tipo)}` : ""}: ${mensagemCampo(m[2]!, "contrato")}` };
     }
+    const ins = /^inscricoes\.(.+)$/.exec(c);
+    if (ins) {
+      const p = pessoas?.find((x) => x.id === ins[1]);
+      return { id: p ? idErroInscricao(p.id) : "nv-adv", texto: `Advogados: marque pelo menos uma inscrição${p ? ` de ${p.nome}` : ""}` };
+    }
+    if (c === "inscricoes") return { id: "nv-adv", texto: "Advogados: confira as inscrições marcadas" };
     return { id: ID[c] ?? "nv-obj", texto: `${ROTULO[c] ?? c}: ${MSG[c] ?? "Confira este campo."}` };
   });
 
@@ -201,9 +215,12 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
   }
 
   const eCli = tem("clienteId") || tem("propostaId");
-  const eAdv = tem("advogados");
   const eResp = tem("responsavelId");
-  const marcarAdv = (id: string, sim: boolean) => mudar({ advogados: sim ? [...r.advogados, id] : r.advogados.filter((x) => x !== id) });
+  const marcarAdv = (id: string, sim: boolean) => setR((v) => {
+    const inscricoes = { ...v.inscricoes };
+    if (!sim) delete inscricoes[id];
+    return { ...v, advogados: sim ? [...v.advogados, id] : v.advogados.filter((x) => x !== id), inscricoes };
+  });
 
   return (
     <div className="hn" ref={topo}>
@@ -318,19 +335,9 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
                 <p className="ajuda" id="nv-resp-aj">Recebe os lembretes: base do mês, etapa que gera cobrança e assinatura pendente.</p>
                 {eResp ? <ErroCampo id="nv-resp-er">{MSG.responsavelId}</ErroCampo> : null}
               </div>
-              <fieldset className="grupo-opcoes c6" id="nv-adv" tabIndex={-1} aria-describedby={descritoPor("nv-adv-aj", eAdv && "nv-adv-er")}>
-                <legend>Advogados no contrato e na procuração</legend>
-                <div className="hn-ops3">
-                  {ordenadas.map((p) => (
-                    <label className="opcao" key={p.id}>
-                      <input className="marcar" type="checkbox" name="nv-adv" checked={r.advogados.includes(p.id)} onChange={(ev) => marcarAdv(p.id, ev.target.checked)} />
-                      <span>{nomePessoa(p)}</span>
-                    </label>
-                  ))}
-                </div>
-                <p className="ajuda" id="nv-adv-aj">Vão como contratados e outorgados. Quem acompanha nem sempre é quem assina.</p>
-                {eAdv ? <ErroCampo id="nv-adv-er">{MSG.advogados}</ErroCampo> : null}
-              </fieldset>
+              <AdvogadosOab pessoas={pessoas} eu={eu} marcados={r.advogados} escolha={r.inscricoes} erros={erros}
+                dono={escritorio.dono} socios={escritorio.socios} aoMarcar={marcarAdv}
+                aoEscolher={(id, ids) => setR((v) => ({ ...v, inscricoes: { ...v.inscricoes, [id]: ids } }))} />
 
               <div className="hn-passo">
                 <span className="disco" aria-hidden="true"><span>3</span></span>

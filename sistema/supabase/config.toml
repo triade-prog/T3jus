@@ -112,6 +112,8 @@ sign_in_sign_ups = 30
 # caracteres), PORTAL_URL e CONSOLE_URL (para o link de redefinir senha).
 # OPENAI_API_KEY (a IA que atende pelo WhatsApp; sem ela, a conversa vai para a equipe) e,
 # se quiser trocar o modelo, IA_MODELO (padrão gpt-4.1-mini).
+# RESEND_API_KEY (os e-mails que o próprio sistema manda, como o aviso de autenticador tirado;
+# sem ela, a ação segue e o e-mail não sai).
 # SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o Supabase já entrega.
 # No Console (Vercel), ARQUIVOS_ORIGEM é a origem do Supabase (https://<ref>.supabase.co): entra
 # no connect-src da CSP para o navegador mandar o anexo direto ao Storage.

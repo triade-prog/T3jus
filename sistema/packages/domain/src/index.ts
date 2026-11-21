@@ -27,4 +27,5 @@ export * from "./importacao.ts";
 export * from "./zip.ts";
 export * from "./docx.ts";
 export * from "./peticoes.ts";
+export * from "./proposta_docx.ts";
 export * from "./pix.ts";

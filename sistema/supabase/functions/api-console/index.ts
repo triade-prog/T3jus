@@ -5,6 +5,8 @@ import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
 import { arquivosStorage } from "../_shared/arquivos.ts";
 import { conferirVazadaHibp } from "../_shared/senha.ts";
+import { emailsResend } from "../_shared/email.ts";
+import { storageLimpeza } from "../_shared/guarda.ts";
 import { criarApiConsole } from "./app.ts";
 
 function exigir(nome: string): string {
@@ -15,6 +17,7 @@ function exigir(nome: string): string {
 
 const url = exigir("SUPABASE_URL");
 const chaveServico = exigir("SUPABASE_SERVICE_ROLE_KEY");
+const chaveResend = Deno.env.get("RESEND_API_KEY");
 const app = criarApiConsole(Deno.env.get("REPASSE_SEGREDO"), {
   banco: bancoPostgrest(url, chaveServico),
   auth: authGoTrue(url, exigir("SUPABASE_ANON_KEY")),
@@ -23,6 +26,8 @@ const app = criarApiConsole(Deno.env.get("REPASSE_SEGREDO"), {
   urlApp: exigir("CONSOLE_URL"),
   urlPortal: exigir("PORTAL_URL"),
   arquivos: arquivosStorage(url, chaveServico),
+  emails: chaveResend ? emailsResend(chaveResend) : undefined,
+  limpeza: storageLimpeza(url, chaveServico),
 });
 
 Deno.serve(app.fetch);

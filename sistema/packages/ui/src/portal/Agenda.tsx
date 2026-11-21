@@ -15,7 +15,7 @@ import {
   quandoCurto, rotaAgenda, somarDias, type VisaoAgenda,
 } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
-import { JanelaCompromisso, rascunhoNovo, type Marcado, type Pessoa, type Rascunho } from "./JanelaCompromisso.tsx";
+import { JanelaCompromisso, rascunhoNovo, useCasosDoCompromisso, type Marcado, type Pessoa, type Rascunho } from "./JanelaCompromisso.tsx";
 import { chamarPortal, irPara, MolduraPortal, useEscritorioPortal } from "./Moldura.tsx";
 
 const LEDE = "Audiências, reuniões com clientes, assinaturas e compromissos internos. Clique num dia para marcar. Os prazos do Jurídico aparecem aqui sozinhos.";
@@ -172,7 +172,7 @@ function PrazosDoDia({ prazos, hoje }: { prazos: PrazoAgenda[]; hoje: string }) 
                 {q}
               </span>
             )}
-            <a className="ver" href={`/juridico/prazos`}>
+            <a className="ver" href={`/juridico/casos/${p.caso.id}`}>
               Abrir no Jurídico
               <Icone nome="dir" className="ico ico-s" />
             </a>
@@ -667,6 +667,7 @@ export function AgendaPortal({ ver = "semana", dia: diaPedido, pessoa = null, ma
   const [feito, setFeito] = useState<Marcado | null>(null);
   const [destaque, setDestaque] = useState<string | null>(marcadoInicial ?? null);
   const eu = escritorio?.pessoa ?? null;
+  const casos = useCasosDoCompromisso(escritorio?.areas);
 
   const ate = vis === "dia" ? somarDias(p.ate, 1) : p.ate;
   const endereco = `/v1/escritorio/agenda?de=${p.de}&ate=${ate}${pessoa ? `&pessoa=${pessoa}` : ""}`;
@@ -738,7 +739,7 @@ export function AgendaPortal({ ver = "semana", dia: diaPedido, pessoa = null, ma
   );
 
   const janelaEl = (
-    <JanelaCompromisso aberta={janela.aberta} inicial={janela.inicial} pessoas={pessoas} clientes={clientes} tiposEscritos={agenda?.tiposEscritos ?? []} eu={eu}
+    <JanelaCompromisso aberta={janela.aberta} inicial={janela.inicial} pessoas={pessoas} clientes={clientes} casos={casos} tiposEscritos={agenda?.tiposEscritos ?? []} eu={eu}
       aoMudar={aoMudar} aoFechar={() => setJanela((j) => ({ ...j, aberta: false }))}
       aoFeito={(m) => {
         setJanela((j) => ({ ...j, aberta: false }));

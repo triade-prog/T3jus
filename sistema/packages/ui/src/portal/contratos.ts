@@ -103,6 +103,16 @@ export function fraseDoContrato(e: EventoContrato): { oque: string; detalhe?: st
       return { oque: "encerrou o contrato", detalhe: Number(d.cancelados) ? `${Number(d.cancelados)} recebimentos que ainda iam vencer foram cancelados.` : undefined, forte: true };
     case "contrato.base_informada":
       return { oque: "informou a base do mês", detalhe: `${reais(Number(d.base))} dá ${reais(Number(d.valor))}, a receber em ${dataBr(String(d.vencimento))}.` };
+    case "contrato.inscricoes_mudadas": {
+      // EX-12, decisão 19: o antes e o depois de cada advogado que mudou.
+      const antes = (d.antes ?? {}) as Record<string, string | null>;
+      const depois = (d.depois ?? {}) as Record<string, string | null>;
+      const nomes = Object.keys(depois).filter((n) => antes[n] !== depois[n]);
+      return {
+        oque: "mudou as inscrições na OAB do contrato",
+        detalhe: nomes.map((n) => `${n}: ${depois[n] ?? "sem OAB"}${antes[n] ? ` (antes, ${antes[n]})` : ""}.`).join(" ") || undefined,
+      };
+    }
     case "contrato.responsavel_passado":
       return { oque: "O contrato passou para outra pessoa da equipe, porque o responsável saiu." };
     case "estado.mudou":

@@ -41,6 +41,8 @@ export const dadosCompromissoSchema = z.object({
   tambemVai: z.array(uuid).max(20).default([]),
   lembrete: z.boolean().default(false),
   observacoes: texto(2000),
+  /** O processo do compromisso (F3.4): só quem tem o Jurídico manda; sem o campo, o caso fica como está. */
+  casoId: uuid.nullish(),
 });
 export type DadosCompromisso = z.input<typeof dadosCompromissoSchema>;
 
@@ -77,12 +79,24 @@ export interface CompromissoLinha {
   responsavel: PessoaAgenda;
   tambemVai: PessoaAgenda[];
   cliente: { id: string; nome: string } | null;
+  /** O caso do compromisso, só para quem tem o Jurídico. */
+  caso?: CasoDoCompromisso | null;
+}
+
+export interface CasoDoCompromisso {
+  id: string;
+  nome: string;
+  numero: string | null;
+  parteContraria: string | null;
 }
 
 export interface PrazoAgenda {
   id: string;
   titulo: string;
+  /** O número do processo (ou o nome do caso, quando ainda não tem número). */
   processo: string;
+  caso: { id: string; nome: string };
+  fazerAte: string | null;
   responsavel: PessoaAgenda;
   vence: string;
 }
@@ -111,6 +125,11 @@ export interface FichaCompromisso extends CompromissoLinha {
   versao: number;
   criadoEm: string;
   criadoPor: PessoaAgenda | null;
+  /** Quem vê tem o Jurídico (pode escolher o caso). */
+  juridico: boolean;
+  caso: CasoDoCompromisso | null;
+  /** Há um caso ligado, mesmo quando quem vê não tem o Jurídico. */
+  temCaso: boolean;
   contatoCliente: { id: string; nome: string; papel?: string | null; telefone?: string | null; email?: string | null } | null;
   cancelamento: { em: string; por: PessoaAgenda | null; motivo: string; avisar: boolean | null } | null;
   historico: EventoCompromisso[];
