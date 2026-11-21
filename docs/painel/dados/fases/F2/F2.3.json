@@ -5,6 +5,7 @@
   "refs": [
     "SC-05"
   ],
-  "status": "pendente",
-  "ordem": 30
+  "status": "feito",
+  "ordem": 30,
+  "evidencia": "Console › Comercial › Interessados (desenho aprovado D16): lista com números, funil, busca, filtros e chips; ficha com o pedido como chegou, a autorização, notas só de inserção, histórico, responsável, próximo passo, mudar estágio com motivo, encerrar como perdido ou descartado e reabrir, e virar escritório cliente sem redigitar (contato na ficha, responsável como Implantação). Só Administração e Implantação (console.interessados.ver/editar); quem sai da equipe deixa o interessado sem responsável (EX-10); quem não virou cliente sai 12 meses depois do último contato. Testes: pgTAP 058, Deno interessados_test, vitest interessados.test, e2e console-interessados (10, com axe no celular e no computador)."
 }

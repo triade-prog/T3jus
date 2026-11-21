@@ -5,7 +5,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 export default defineConfig([
-  globalIgnores(["**/.next/**", "**/node_modules/**", "**/next-env.d.ts", "supabase/functions/**", "test-results/**", "playwright-report/**", "apps/site/.astro/**", "apps/site/dist/**"]),
+  globalIgnores(["**/.next/**", "**/node_modules/**", "**/next-env.d.ts", "supabase/functions/**", "test-results/**", "playwright-report/**", "apps/site/.astro/**", "apps/site/dist/**", "apps/site/.vercel/**"]),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
