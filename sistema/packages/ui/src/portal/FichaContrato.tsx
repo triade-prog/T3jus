@@ -11,7 +11,6 @@ import { dataBr, hojeBrasilia, reais, type EventoContrato, type FichaContrato, t
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
-import { iniciais } from "../console/tempo.ts";
 import { diaCurto, lerDia } from "./agenda.ts";
 import { Selo } from "./Comercial.tsx";
 import { fraseDoContrato, janelaProgramacao, juntarItens, nomeSituacaoContrato, ROTAS_CONTRATOS, SELO_CONTRATO } from "./contratos.ts";
