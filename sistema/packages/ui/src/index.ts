@@ -46,6 +46,7 @@ export { RepasseFinanceiro, RepassesFinanceiro } from "./portal/FinanceiroRepass
 export { BarraConversas, ConversasPortal, ROTAS_CONVERSAS } from "./portal/Conversas.tsx";
 export { AvisosAutomaticosPortal } from "./portal/AvisosAutomaticos.tsx";
 export { BarraEscritorio, ROTAS_ESCRITORIO, WhatsappPortal } from "./portal/WhatsApp.tsx";
+export { FolhaRecibo, ReciboImprimir } from "./portal/Recibo.tsx";
 export { BotaoCarne, CarneImprimir, FolhaCarne, FolhasCarne, QrPix, RecebimentoPortal, rotaCarne } from "./portal/Carne.tsx";
 export { AutomacoesPortal, hrefAutomacao } from "./portal/Automacoes.tsx";
 export { CaixaDoFinanceiro, ResumoDoFinanceiro } from "./portal/FinanceiroResumo.tsx";

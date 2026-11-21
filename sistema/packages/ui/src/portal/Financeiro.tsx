@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, reais, TIPOS_COBRANCA,
+  cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
   type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido, type ContaPagar, CATEGORIAS_SAIDA,
 } from "@t3jus/domain";
@@ -29,7 +29,7 @@ import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
-type Feito = { titulo: string; texto: string };
+type Feito = { titulo: string; texto: string; acoes?: ReactNode };
 type Pessoa = { id: string; nome: string };
 
 const ORDEM_FORMAS = Object.keys(FORMAS_PAGAMENTO) as FormaPagamento[];
@@ -246,7 +246,23 @@ export function ReceberFinanceiro() {
 function textoRecebido(p: Pick<ParcelaLinha, "descricao" | "vencimento">, r: RecebimentoRegistrado, valor: number, hoje: string): Feito {
   const ref = mesReferencia(p.vencimento, hoje);
   const base = r.paga ? `${p.descricao} (${ref}) foi baixada.` : `${reais(valor)} na ${p.descricao.toLowerCase()} (${ref}). Falta ${reais(r.falta)}.`;
-  return { titulo: "Recebimento registrado.", texto: `${base}${r.recibo ? ` Recibo nº ${r.recibo.ano}-${numeroRecibo(r.recibo)}.` : ""}` };
+  return {
+    titulo: "Recebimento registrado.", texto: `${base}${r.recibo ? ` Recibo nº ${r.recibo.ano}-${numeroRecibo(r.recibo)}.` : ""}`,
+    acoes: r.recibo ? <LinkRecibo pagamento={r.id} numero={`${r.recibo.ano}-${numeroRecibo(r.recibo)}`} botao /> : undefined,
+  };
+}
+
+/** FI-14: o recibo abre a página de imprimir em outra aba (decisão 1.8). */
+export function LinkRecibo({ pagamento, numero, botao, area = "financeiro", children }: {
+  pagamento: string; numero: string; botao?: boolean; area?: "financeiro" | "contratos"; children?: ReactNode;
+}) {
+  return (
+    <a className={botao ? "btn btn-sec btn-compacto" : "rb-link"} href={`${ROTAS_FINANCEIRO.recibo(pagamento)}${area === "contratos" ? "?area=contratos" : ""}`} target="_blank" rel="noopener">
+      <Icone nome="doc" className="ico ico-s" />
+      {children ?? (botao ? "Ver o recibo" : `Recibo ${numero.slice(-4)}`)}
+      <span className="sr"> nº {numero}, abre em outra aba para baixar o PDF ou imprimir</span>
+    </a>
+  );
 }
 
 function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha | null; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
@@ -258,6 +274,9 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
   const [forma, setForma] = useState<FormaPagamento>(parcela?.forma ?? "PIX");
   const [multa, setMulta] = useState("");
   const [recibo, setRecibo] = useState(true);
+  const [pagou, setPagou] = useState<"CLIENTE" | "CONTATO" | "OUTRO">("CLIENTE");
+  const [pagNome, setPagNome] = useState("");
+  const [pagDoc, setPagDoc] = useState("");
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [erroArq, setErroArq] = useState<string | null>(null);
   const [progresso, setProgresso] = useState<number | null>(null);
@@ -295,6 +314,9 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
     if (!d) e.push("recebidoEm");
     else if (d > hoje) { e.push("recebidoEm"); m.recebidoEm = "FUTURO"; }
     if (multa.trim() && !mj) e.push("multaJuros");
+    const docDig = pagDoc.replace(/\D/g, "");
+    if (pagou === "OUTRO" && pagNome.trim().length < 2) e.push("pagador.nome");
+    if (pagou !== "CLIENTE" && (pagou === "OUTRO" || docDig) && !(cpfValido(docDig) || cnpjValido(docDig))) e.push("pagador.documento");
     setFalha(null);
     if (e.length || !p || erroArq) {
       setErros(e);
@@ -303,7 +325,10 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
     }
     setEnviando(true);
     const r = await chamarPortal<RecebimentoRegistrado>(`/v1/escritorio/financeiro/parcelas/${p.id}/recebimentos`, {
-      metodo: "POST", corpo: { valor: c, multaJuros: mj, recebidoEm: d, forma, recibo },
+      metodo: "POST", corpo: {
+        valor: c, multaJuros: mj, recebidoEm: d, forma, recibo,
+        pagador: pagou === "CLIENTE" ? null : { tipo: pagou, nome: pagou === "OUTRO" ? pagNome.trim() : null, documento: pagDoc.replace(/\D/g, "") || null },
+      },
     });
     if (r.ok) {
       const t = textoRecebido(p, r.dados, c!, hoje);
@@ -423,6 +448,38 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
         </p>
         <CampoAnexo rotulo="Comprovante" arquivo={arquivo} aoEscolher={(a, er) => { setArquivo(er ? null : a); setErroArq(er); }}
           erro={erroArq} progresso={progresso} />
+        <fieldset className="fi-grupo-op">
+          <legend>Quem pagou</legend>
+          <label className="opcao">
+            <input className="marcar" type="radio" name="rg-pagou" checked={pagou === "CLIENTE"} onChange={() => setPagou("CLIENTE")} />
+            <span>{p ? `${p.cliente.nome}, o cliente` : "O cliente"}<small>O padrão. O recibo sai no nome dele.</small></span>
+          </label>
+          <label className="opcao">
+            <input className="marcar" type="radio" name="rg-pagou" checked={pagou === "CONTATO"} onChange={() => setPagou("CONTATO")} />
+            <span>O contato principal do cliente<small>O recibo diz que o contato pagou, em favor do cliente. O nome vem do cadastro.</small></span>
+          </label>
+          {pagou === "CONTATO" ? (
+            <div className="fi-sub-op">
+              <CampoDoc id="rg-pag-doc" rotulo="CPF de quem pagou" opcional valor={pagDoc} aoMudar={setPagDoc} erro={tem("pagador.documento")}
+                ajuda="Vai no recibo. Deixe em branco se não tiver." />
+            </div>
+          ) : null}
+          <label className="opcao">
+            <input className="marcar" type="radio" name="rg-pagou" checked={pagou === "OUTRO"} onChange={() => setPagou("OUTRO")} />
+            <span>Outra pessoa ou empresa<small>Escreva o nome e o CPF ou CNPJ de quem pagou.</small></span>
+          </label>
+          {pagou === "OUTRO" ? (
+            <div className="fi-sub-op">
+              <div className="campo">
+                <label htmlFor="rg-pag-nome">Nome de quem pagou</label>
+                <input className="entrada" id="rg-pag-nome" type="text" autoComplete="off" value={pagNome} onChange={(e) => setPagNome(e.target.value)}
+                  aria-invalid={tem("pagador.nome") || undefined} aria-describedby={tem("pagador.nome") ? "rg-pag-nome-er" : undefined} />
+                {tem("pagador.nome") ? <ErroCampo id="rg-pag-nome-er">Escreva o nome de quem pagou.</ErroCampo> : null}
+              </div>
+              <CampoDoc id="rg-pag-doc" rotulo="CPF ou CNPJ de quem pagou" valor={pagDoc} aoMudar={setPagDoc} erro={tem("pagador.documento")} />
+            </div>
+          ) : null}
+        </fieldset>
         <label className="opcao">
           <input className="marcar" type="checkbox" checked={recibo} onChange={(e) => setRecibo(e.target.checked)} />
           <span>
@@ -432,6 +489,20 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
         </label>
       </div>
     </Janela>
+  );
+}
+
+function CampoDoc({ id, rotulo, valor, aoMudar, erro, ajuda, opcional }: {
+  id: string; rotulo: string; valor: string; aoMudar: (v: string) => void; erro: boolean; ajuda?: string; opcional?: boolean;
+}) {
+  return (
+    <div className="campo">
+      <label htmlFor={id}>{rotulo}{opcional ? <> <span className="opcional">(opcional)</span></> : null}</label>
+      <input className="entrada" id={id} type="text" inputMode="numeric" autoComplete="off" value={valor} onChange={(e) => aoMudar(e.target.value)}
+        aria-invalid={erro || undefined} aria-describedby={descritoPor(!erro && ajuda && `${id}-aj`, erro && `${id}-er`)} />
+      {erro ? <ErroCampo id={`${id}-er`}>Confira os números: o CPF tem 11 e o CNPJ tem 14, com os dígitos certos.</ErroCampo>
+        : ajuda ? <p className="ajuda" id={`${id}-aj`}>{ajuda}</p> : null}
+    </div>
   );
 }
 
@@ -802,9 +873,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                           {recibos.length || p.pagamentos.length ? (
                             <div className="fi-docs">
                               {recibos.map((x) => (
-                                <span key={x.id} className="fi-pq" style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 32 }}>
-                                  <Icone nome="doc" className="ico ico-s" />Recibo {numeroRecibo(x.recibo!)}
-                                </span>
+                                <LinkRecibo key={x.id} pagamento={x.id} numero={`${x.recibo!.ano}-${numeroRecibo(x.recibo!)}`} />
                               ))}
                               {comprovantes.map((a) => (
                                 <button key={a.id} className="jr-link fi-doc-bt" type="button" onClick={() => void abrir(a)}>

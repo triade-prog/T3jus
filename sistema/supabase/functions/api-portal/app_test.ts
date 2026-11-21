@@ -176,11 +176,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_contrato: (a) => ({ id: a.p_contrato, parcelas: [] }),
     portal_financeiro_contrato_adiantados: () => [{ id: "conta", descricao: "Custas da apelação" }],
     portal_financeiro_adiantar: (a) => ({ cliente: a.p_cliente, casos: [], proximaParcela: null }),
-    portal_financeiro_receber_registrar: (a) => {
+    portal_financeiro_receber_registrar_recibo: (a) => {
       if ((a.p_dados as Record<string, unknown>).valor === 90000) erroBanco("TC422", { motivo: "VALOR_ACIMA_DO_SALDO", campos: ["valor"], falta: 85000 });
       return { id: CLIENTE, paga: true, falta: 0, recibo: { ano: 2026, numero: 1 } };
     },
     portal_financeiro_cobranca_anotar: () => ({ id: CLIENTE }),
+    portal_recibo: (a) => ({ numero: { ano: 2026, numero: 187 }, pagamentoId: a.p_pagamento }),
     portal_financeiro_pagar: (a) => ({ algum: true, contas: [], mostrar: a.p_mostrar }),
     portal_financeiro_conta_lancar: () => ({ id: CLIENTE, recorrenteId: null }),
     portal_financeiro_conta_paga: (a) => {
@@ -1058,8 +1059,17 @@ Deno.test("FI-01 a FI-04, FI-14: A receber, ficha de parcelas, registrar recebim
   assertEquals((await m.pedir("/v1/escritorio/financeiro/contratos/nao-e-id", { cookie })).status, 404);
   const r = await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/recebimentos`, { corpo: { valor: 85000, recebidoEm: "2026-11-18", forma: "PIX", recibo: true }, cookie });
   assertEquals([r.status, (await r.json()).recibo.numero], [201, 1]);
-  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_receber_registrar")!;
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_receber_registrar_recibo")!;
   assertEquals([ch.args.p_escritorio, ch.args.p_parcela], [AURORA, CLIENTE]);
+  // FI-14: quem pagou vai ao banco; o recibo abre pelo id do recebimento.
+  await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/recebimentos`, {
+    corpo: { valor: 85000, recebidoEm: "2026-11-18", forma: "PIX", recibo: true, pagador: { tipo: "OUTRO", nome: "Marta", documento: "20577138499" } }, cookie });
+  assertEquals((m.chamadas.filter((c) => c.funcao === "portal_financeiro_receber_registrar_recibo").at(-1)!.args.p_dados as Record<string, unknown>).pagador,
+    { tipo: "OUTRO", nome: "Marta", documento: "20577138499" });
+  const rb = await m.pedir(`/v1/escritorio/recibos/${CLIENTE}`, { cookie });
+  assertEquals((await rb.json()).numero.numero, 187);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_recibo")!.args, { p_pessoa: ANA, p_escritorio: AURORA, p_pagamento: CLIENTE });
+  assertEquals((await m.pedir("/v1/escritorio/recibos/nao-e-id", { cookie })).status, 404);
   const acima = await erro(await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/recebimentos`, { corpo: { valor: 90000, recebidoEm: "2026-11-18", forma: "PIX" }, cookie }));
   assertEquals([acima.detalhes?.motivo, acima.detalhes?.falta], ["VALOR_ACIMA_DO_SALDO", 85000]);
   const c = await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/cobranca`, {

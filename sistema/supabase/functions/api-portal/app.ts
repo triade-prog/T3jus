@@ -9,7 +9,7 @@ import {
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
-  type FichaContrato, type HonorariosContratos, type PedidoContrato, type ListaContratos, type PropostaParaContrato,
+  type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
@@ -811,9 +811,14 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Registrar recebimento: baixa a parcela do mês dela; o dinheiro conta no dia em que entrou.
   app.post("/v1/escritorio/financeiro/parcelas/:id/recebimentos", async (c) => {
     const d = await lerCorpo(c, registrarRecebimentoSchema);
-    return c.json(await deps.banco.rpc<RecebimentoRegistrado>("portal_financeiro_receber_registrar", {
+    return c.json(await deps.banco.rpc<RecebimentoRegistrado>("portal_financeiro_receber_registrar_recibo", {
       ...quem(c), p_parcela: idDaRota(c, "id"), p_dados: d,
     }), 201);
+  });
+
+  // FI-14, F3.19: o recibo de um recebimento, como foi emitido, para imprimir ou salvar em PDF.
+  app.get("/v1/escritorio/recibos/:pagamento", async (c) => {
+    return c.json(await deps.banco.rpc<ReciboParaImprimir>("portal_recibo", { ...quem(c), p_pagamento: idDaRota(c, "pagamento") }));
   });
 
   // Anotar cobrança: o que foi feito, o motivo do atraso e a próxima ação.

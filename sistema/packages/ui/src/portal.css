@@ -4272,3 +4272,91 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
   .pc-item{grid-template-columns:1fr;gap:10px;padding:14px 16px}
   .pc-item .btn{width:100%}
 }
+
+/* ==========================================================================
+   Recibo em PDF, o modelo A4 (FI-14, F3.19): docs/design/aprovadas/portal-recibo-recorrente
+   (recibo-a4.html). Prefixo rb-.
+   ========================================================================== */
+.rb-pagina{--vinho:#692746;--vinho-2:#87335B;--vinho-3:#AC3F6B;--ambar:#DD9760;--ambar-3:#F2CDB3;--sal:#F1E6DF;--sal-2:#F2ECE8;--tinta:#2A1A22;--tinta-2:#5E4A54;
+  --linha:#CDBFC6;--serifa:var(--font-titulo);--sans:var(--font-sans)}
+.rb-pagina{min-height:100vh;background:#E7DCD5;color:var(--tinta);font-family:var(--sans);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rb-pagina :is(p,dl,dd,h1,h2,h3,ol,ul){margin:0}
+.rb-pagina *{box-sizing:border-box}
+.rb-barra{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;padding:10px 24px;background:var(--vinho);color:#fff;font-size:14px}
+.rb-voltar{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px 0 6px;border-radius:8px;color:var(--ambar-3);text-decoration:none;font-weight:500;font-size:13px}
+.rb-barra .ico{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rb-barra h1{font-family:var(--serifa);font-weight:500;font-size:22px;line-height:1.2}
+.rb-barra h1 small{display:block;font-family:var(--sans);font-size:12px;color:var(--ambar-3);letter-spacing:.02em}
+.rb-acoes{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.rb-dica{font-size:12px;color:var(--ambar-3);max-width:250px;line-height:1.4}
+.rb-barra button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font:inherit;font-weight:500;cursor:pointer;background:#fff;color:var(--vinho);border:1px solid #fff}
+.rb-barra a:focus-visible,.rb-barra button:focus-visible{outline:3px solid var(--ambar-3);outline-offset:2px}
+.rb-folhas{display:grid;gap:24px;justify-content:center;padding:24px 16px 48px}
+.rb-folha{page:recibo;width:210mm;height:296.8mm;padding:16mm 18mm 12mm;background:#fff;box-shadow:0 10px 30px -12px rgba(42,26,34,.35);overflow:hidden;display:flex;flex-direction:column;position:relative;color:var(--tinta)}
+.rb-folha::before{content:"";position:absolute;left:0;right:0;top:0;height:3.2mm;background:var(--vinho)}
+.rb-timbre{display:grid;grid-template-columns:minmax(0,1fr) 96mm;gap:8mm;align-items:end}
+.rb-marca{display:grid;gap:.6mm}
+.rb-esc{font-family:var(--serifa);font-size:26pt;font-weight:600;line-height:1;color:var(--vinho)}
+.rb-esc-sub{font-size:7.4pt;letter-spacing:.36em;text-transform:uppercase;color:var(--tinta-2);font-weight:500}
+.rb-ender{font-size:7.8pt;line-height:1.5;color:var(--tinta-2);text-align:right}
+.rb-fio{position:relative;height:.5mm;background:var(--vinho);margin:5mm 0 0}
+.rb-fio::before{content:"";position:absolute;left:0;top:-.45mm;width:18mm;height:1.25mm;background:var(--ambar)}
+.rb-topo{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8mm;align-items:end;margin-top:8mm}
+.rb-rot{font-size:7pt;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--tinta-2)}
+.rb-titulo h2{font-family:var(--serifa);font-size:34pt;font-weight:600;line-height:.95;color:var(--tinta);margin-top:1.5mm}
+.rb-titulo p{font-size:9pt;color:var(--tinta-2);margin-top:2mm}
+.rb-titulo p b{font-weight:600;color:var(--tinta);font-size:11pt;letter-spacing:.02em}
+.rb-valor{min-width:66mm;padding:4mm 5mm;border:.35mm solid var(--vinho);border-radius:2mm;text-align:right;display:grid;gap:1mm}
+.rb-valor b{font-family:var(--serifa);font-size:26pt;font-weight:600;line-height:1;color:var(--tinta);white-space:nowrap}
+.rb-texto{margin-top:7mm;font-family:var(--serifa);font-size:12.5pt;line-height:1.55;color:var(--tinta);text-align:justify;hyphens:auto}
+.rb-texto b{font-weight:600}
+.rb-texto .rb-ext{font-style:italic}
+.rb-sec{margin-top:6.5mm}
+.rb-sec h3{font-family:var(--serifa);font-size:12.5pt;font-weight:600;color:var(--vinho);margin-bottom:2.5mm}
+.rb-tab{width:100%;border-collapse:collapse;font-size:9pt}
+.rb-tab th{font-size:6.8pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--tinta-2);text-align:left;padding:0 0 1.6mm;border-bottom:.3mm solid var(--vinho)}
+.rb-tab td{padding:2.2mm 0;border-bottom:.2mm solid #DDD0D6;vertical-align:top}
+.rb-tab td small{display:block;font-size:7.6pt;color:var(--tinta-2);margin-top:.4mm}
+.rb-tab th:last-child,.rb-tab td:last-child{text-align:right;white-space:nowrap}
+.rb-tab tfoot td{border-bottom:0;padding-top:2.6mm;font-weight:600}
+.rb-tab tfoot td:last-child{font-family:var(--serifa);font-size:14pt}
+.rb-dados{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4mm 6mm;padding:4mm 5mm;border-radius:1.6mm;background:var(--sal-2)}
+.rb-dados div{min-width:0}
+.rb-dados dt{font-size:6.6pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--tinta-2)}
+.rb-dados dd{font-size:9pt;font-weight:500;margin-top:.6mm;line-height:1.35}
+.rb-dados dd small{display:block;font-weight:400;font-size:7.6pt;color:var(--tinta-2)}
+.rb-dados .rb-largo{grid-column:span 2}
+.rb-fim{margin-top:auto;padding-top:16mm;display:grid;grid-template-columns:minmax(0,1fr) 84mm;gap:10mm;align-items:end}
+.rb-local{font-family:var(--serifa);font-size:12pt}
+.rb-quit{font-size:7.8pt;color:var(--tinta-2);line-height:1.5;margin-top:3mm;max-width:80mm}
+.rb-ass{text-align:center;display:grid;gap:1mm;font-size:8.4pt;line-height:1.4}
+.rb-ass .rb-linha{border-top:.3mm solid var(--tinta);margin-bottom:1.5mm}
+.rb-ass b{font-weight:600;font-size:9.2pt}
+.rb-ass span{color:var(--tinta-2)}
+.rb-reg{margin-top:2.5mm;padding:1.6mm 2.4mm;border-left:.8mm solid var(--ambar);background:var(--sal-2);border-radius:1mm;font-size:7.4pt;line-height:1.45;color:var(--tinta-2);text-align:left}
+.rb-reg b{color:var(--tinta);font-weight:600;font-size:7.4pt}
+.rb-pe{margin-top:8mm;padding-top:2mm;border-top:.2mm solid var(--linha);display:flex;justify-content:space-between;align-items:center;gap:6mm;font-size:6.8pt;color:var(--tinta-2)}
+.rb-t3{display:inline-flex;align-items:center;gap:1mm;white-space:nowrap;letter-spacing:.06em}
+.rb-simb{width:3mm;height:3.1mm}
+@page recibo{size:A4;margin:0}
+@media print{
+  html:has(.rb-pagina),html:has(.rb-pagina) body,.rb-pagina{background:#fff}
+  .rb-barra{display:none!important}
+  .rb-folhas{display:block;padding:0}
+  .rb-folha{box-shadow:none}
+}
+@media screen and (max-width:760px){
+  .rb-barra{padding:8px 16px;gap:6px 12px}
+  .rb-barra h1{font-size:19px;flex:1 1 100%;order:2}
+  .rb-voltar{order:1}
+  .rb-acoes{order:3;margin-left:0;flex:1 1 100%}
+  .rb-acoes button{flex:1 1 100%;justify-content:center}
+  .rb-dica{max-width:none}
+  .rb-folhas{padding:16px 16px 40px}
+  .rb-folha{zoom:.45}
+}
+/* Links do recibo nas parcelas e no aviso (abrem em outra aba) */
+.rb-link{display:inline-flex;align-items:center;gap:6px;min-height:32px;color:var(--vinho);font-weight:500}
+.fi-grupo-op{border:0;margin:0;padding:0;display:grid;gap:8px}
+.fi-grupo-op legend{font-weight:500;margin-bottom:6px;padding:0}
+.fi-sub-op{padding-left:34px;display:grid;gap:12px}

@@ -36,6 +36,13 @@ export const registrarRecebimentoSchema = z.object({
   recebidoEm: txt(20),
   forma: txt(30),
   recibo: z.boolean().default(false),
+  /** Quem pagou (FI-14): o cliente (padrão), o contato principal ou outra pessoa ou empresa. */
+  pagador: z.object({
+    tipo: z.enum(["CLIENTE", "CONTATO", "OUTRO"]),
+    nome: txt(160),
+    documento: txt(20),
+    papel: txt(60),
+  }).nullish(),
 });
 export type RegistrarRecebimento = z.input<typeof registrarRecebimentoSchema>;
 
@@ -128,6 +135,24 @@ export interface ParcelasContrato {
   parcelas: ParcelaDoContrato[];
   /** O que o escritório adiantou nos casos do contrato (F3.23). */
   adiantados: ContaPagar[];
+}
+
+/** O que vai no papel do recibo (FI-14, F3.19), como estava no registro. */
+export interface ReciboParaImprimir {
+  numero: { ano: number; numero: number };
+  escritorio: { nome: string; cnpj: string | null; endereco: string | null; cidade: string | null; uf: string | null;
+    contatos?: { telefone?: string | null; email?: string | null }[] | null; whatsapp: string | null };
+  cliente: { id: string; nome: string; tipo: "PF" | "PJ"; documento: string | null };
+  pagador: { tipo: "CONTATO" | "OUTRO"; nome: string; documento: string | null; papel: string | null } | null;
+  contrato: { id: string; numero: string; objeto: string };
+  parcela: { id: string; descricao: string; vencimento: string; ordem: number | null; total: number | null };
+  valor: number;
+  multaJuros: number | null;
+  forma: FormaPagamento;
+  pagoEm: string;
+  registradoPor: { nome: string; oab: string | null };
+  registradoEm: string;
+  pagamentoId: string;
 }
 
 export interface RecebimentoRegistrado { id: string; paga: boolean; falta: number; recibo: { ano: number; numero: number } | null }
