@@ -1,0 +1,49 @@
+---
+// Moldura de toda página do site: cabeça (título, descrição, endereço canônico,
+// prévia de compartilhamento e dados estruturados), ícones e o pulo para o conteúdo.
+import "../styles/site.css";
+import Icones from "../components/Icones.astro";
+import { SITE } from "../config";
+
+interface Props {
+  titulo: string;
+  descricao: string;
+  rota: string;
+  dadosEstruturados?: object;
+}
+const { titulo, descricao, rota, dadosEstruturados } = Astro.props;
+const canonico = new URL(rota, SITE).href;
+const og = `${SITE}/marca/og.png`;
+---
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{titulo}</title>
+<meta name="description" content={descricao}>
+<meta name="theme-color" content="#692746">
+<link rel="canonical" href={canonico}>
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="T3jus">
+<meta property="og:url" content={canonico}>
+<meta property="og:title" content={titulo}>
+<meta property="og:description" content={descricao}>
+<meta property="og:image" content={og}>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Logo do T3jus, Sistema jurídico, sobre fundo vinho">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/marca/icone-app.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+<link rel="preload" href="/fontes/alegreya-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fontes/poppins-400.woff2" as="font" type="font/woff2" crossorigin>
+{dadosEstruturados && <script type="application/ld+json" set:html={JSON.stringify(dadosEstruturados)} />}
+<script is:inline defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<Icones />
+<slot />
+</body>
+</html>

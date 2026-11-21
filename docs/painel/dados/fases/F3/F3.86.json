@@ -1,11 +1,11 @@
 {
   "id": "F3.86",
-  "texto": "Anexar o ofício requisitório (PDF) ao registrar o RPV ou precatório a caminho",
-  "peca": "S4",
+  "texto": "Automações: aviso no sino para quem pediu o documento quando o cliente manda um arquivo na conversa (o pedido não se fecha sozinho)",
+  "peca": "B3",
   "refs": [
-    "FI-09"
+    "PA-06"
   ],
   "status": "pendente",
-  "ordem": 860,
-  "proximo": "O desenho aprovado (rv-registrar) tem o anexo opcional do ofício; a primeira entrega registra o expedido sem ele. Falta guardar o PDF com os anexos do caso e mostrar na folha A caminho"
+  "ordem": 821,
+  "proximo": "Decisão 7 do desenho dos gatilhos novos: programar o aviso quando chegar arquivo na conversa de cliente com documento pedido em aberto"
 }

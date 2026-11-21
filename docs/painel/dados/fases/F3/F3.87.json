@@ -1,11 +1,11 @@
 {
   "id": "F3.87",
-  "texto": "Mandar ao contador os comprovantes do mês num .zip, por um link que vale 30 dias",
-  "peca": "S4",
+  "texto": "Automações: testar os gatilhos cliente novo e documento pendente com um cliente de verdade (hoje a simulação usa dados de exemplo)",
+  "peca": "B3",
   "refs": [
-    "FI-21"
+    "PA-06"
   ],
   "status": "pendente",
-  "ordem": 870,
-  "proximo": "O desenho aprovado (ct-exportar, decisão 9 da Carol) manda a planilha anexada e os comprovantes num .zip por link de 30 dias. A primeira entrega manda só a planilha anexada; falta gerar o .zip no Storage e pôr o link no e-mail"
+  "ordem": 822,
+  "proximo": "Levar a escolha de cliente real da simulação para os dois gatilhos novos"
 }

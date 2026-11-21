@@ -16,6 +16,7 @@ import { enviarArquivo, problemaDoArquivo, tamanhoLegivel, tipoDoArquivo, tipoLe
 import { formatarTelefone } from "../console/ficha.ts";
 import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { ROTAS_PETICOES } from "./peticoes.ts";
+import { diaDe } from "./agenda.ts";
 import { chamarPortal } from "./Moldura.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -88,6 +89,11 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
                 <div>
                   <span className="doc-nome">{d.descricao}</span>
                   <p className="doc-meta"><span className="selo selo-atencao">Falta</span><span>{textoFalta(d)}</span></p>
+                  {d.lembrete ? (
+                    <p className="gn-ju-auto"><Icone nome="raio" className="ico" /><span><b>Lembrete automático enviado em {ddmm(diaDe(d.lembrete.enviadoEm))}.</b>
+                      {d.lembrete.ate && d.lembrete.passaPara ? <> Se não chegar até {ddmm(diaDe(d.lembrete.ate))}, passa para {d.lembrete.passaPara.nome}.</> : null}
+                      {" "}<a href={`/conversas/automacoes?a=${d.lembrete.automacao.id}`}>Ver a automação<span className="sr"> {d.lembrete.automacao.nome}</span></a></span></p>
+                  ) : null}
                 </div>
                 <div className="doc-acoes">
                   <button className="btn btn-sec btn-compacto" type="button" onClick={() => aoPedirDeNovo(d)} aria-label={`Pedir de novo: ${d.descricao}`}>

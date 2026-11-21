@@ -1,9 +1,20 @@
-# Site "em breve" do T3jus (t3jus.pro)
+# Site comercial do T3jus (t3jus.pro)
 
-Página única e estática que fica no ar em `t3jus.pro` até o site comercial completo (F2.1, em Astro) ficar pronto. Sem build e sem dependências: a Vercel serve a pasta como está.
+Site em Astro (F2.1; SC-01, SC-03, SC-06), programado a partir do desenho aprovado pela Carol em 21/11/2026 (`docs/design/aprovadas/site-comercial`). Quatro páginas estáticas, sem JavaScript além do formulário de demonstração.
 
-- `index.html`: a página, com o CSS no próprio arquivo.
-- `marca/`: cópias sem alteração dos SVGs de `docs/marca/svg`, o ícone do iPhone e a imagem de compartilhamento (`og.png`).
-- `vercel.json`: cabeçalhos de segurança e cache da pasta `marca/`.
+| Rota | Arquivo | O que tem |
+|---|---|---|
+| `/` | `src/pages/index.astro` | Início: o caminho do honorário, o que já existe e o que é planejado, dados, valor e chamada |
+| `/como-funciona` | `src/pages/como-funciona.astro` | As seis etapas, cada uma com a situação de hoje, e os passos para começar |
+| `/para-quem-e` | `src/pages/para-quem-e.astro` | Perfil do escritório e perguntas frequentes (FAQPage) |
+| `/demonstracao` | `src/pages/demonstracao.astro` | Pedido de demonstração (F2.2) |
 
-Na Vercel: projeto com diretório raiz `sistema/apps/site`, framework "Other", sem comando de build.
+- `src/layouts/Base.astro`: título, descrição, endereço canônico, prévia de compartilhamento (`og.png`) e dados estruturados de cada página; o medidor de visitas da Vercel (Web Analytics, sem cookies) é ligado no painel da Vercel.
+- `src/components/`: topo, rodapé, ícones e o formulário (`Pedido.astro`). As regras do formulário ficam em `src/lib/pedido.ts` e valem também no servidor.
+- `src/config.ts`: `privacidadePronta`. A Carol decidiu que o formulário só vai ao ar com a política de privacidade revisada (F2.4). Enquanto for `false`, a página Demonstração mostra o contato por e-mail no lugar do formulário e o rodapé mostra a política como "em preparação".
+- **Honestidade (SC-03):** os selos "No T3jus", "Em preparação" e "Planejado" saem do painel. Quando um item muda de situação no painel, mude o selo aqui.
+- `public/`: a marca (cópias sem alteração de `docs/marca/svg`), as fontes Alegreya e Poppins servidas pelo próprio site, `robots.txt` e `sitemap.xml`.
+
+Rodar: `pnpm --filter @t3jus/site dev` (porta 3002). Conferir: `pnpm --filter @t3jus/site build && node scripts/conferir-site.mjs` (axe no computador e no celular, rolagem lateral e erros; `PW_CHROMIUM_PATH` para outro Chromium).
+
+Na Vercel: projeto `site-t3jus`, diretório raiz `sistema/apps/site`; o `vercel.json` diz o framework (Astro), a instalação, o build e a pasta `dist`.

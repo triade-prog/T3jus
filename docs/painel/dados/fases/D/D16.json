@@ -1,0 +1,15 @@
+{
+  "id": "D16",
+  "texto": "Desenho do site comercial (Início, Como funciona, Para quem é, Demonstração), do pedido de demonstração e da área Interessados do Console",
+  "peca": "W1",
+  "refs": [
+    "SC-01",
+    "SC-02",
+    "SC-03",
+    "SC-05",
+    "SC-06"
+  ],
+  "status": "feito",
+  "evidencia": "Aprovado pela Carol em 21/11/2026 às 12h05 (Bahia), com as recomendações das 11 perguntas; cópia em docs/design/aprovadas/site-comercial (27 estados no computador e no celular, axe sem violação).",
+  "ordem": 66
+}

@@ -1,0 +1,44 @@
+---
+import Base from "../layouts/Base.astro";
+import Topo from "../components/Topo.astro";
+import Rodape from "../components/Rodape.astro";
+const dados = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Preciso largar o sistema que uso hoje?", "acceptedAnswer": {"@type": "Answer", "text": "Não de uma vez. Clientes e contratos entram pela sua planilha, com a ajuda da nossa equipe. Importar direto de outros sistemas jurídicos ainda é planejado."}}, {"@type": "Question", "name": "O cliente vai falar com um robô?", "acceptedAnswer": {"@type": "Answer", "text": "A assistente virtual se apresenta como assistente e responde só o que está no T3jus, como a etapa do caso ou a data da parcela. O que ela não sabe, ou o que pede um advogado, ela passa para uma pessoa da equipe, com o motivo. O escritório decide as regras e pode pausar quando quiser. A ligação oficial do seu número com a Meta ainda está em preparação."}}, {"@type": "Question", "name": "O T3jus recebe o dinheiro dos meus clientes?", "acceptedAnswer": {"@type": "Answer", "text": "Não. O carnê leva o Pix do próprio escritório, e o dinheiro cai direto na sua conta. Quem registra o recebimento é a sua equipe."}}, {"@type": "Question", "name": "Onde ficam os dados?", "acceptedAnswer": {"@type": "Answer", "text": "Em servidores no Brasil, em São Paulo. Os dados de cada escritório ficam separados, e o sócio dono pode exportar tudo quando quiser."}}, {"@type": "Question", "name": "Funciona no celular?", "acceptedAnswer": {"@type": "Answer", "text": "Sim. As telas foram desenhadas para o computador e para o celular, no navegador, sem instalar nada."}}, {"@type": "Question", "name": "Quanto custa?", "acceptedAnswer": {"@type": "Answer", "text": "O valor é combinado na demonstração, de acordo com o tamanho da equipe. Os planos ainda estão sendo definidos."}}]};
+---
+<Base titulo="Para quem é · T3jus" descricao="Para escritórios de advocacia de 3 a 10 pessoas em que o sócio centraliza a gestão, com honorários fixos ou parcelados, êxito, RPV ou precatório." rota="/para-quem-e" dadosEstruturados={dados}>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<div class="abertura interna"><div class="lado" aria-hidden="true"></div><svg class="ico estatua" aria-hidden="true"><use href="#i-coluna"/></svg>
+  <Topo atual="/para-quem-e" />
+  <div class="miolo"><div id="conteudo" class="cab-int sobre-vinho"><nav class="trilha-int" aria-label="Você está em"><a href="/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Para quem é</span></nav>
+  <span class="sobretitulo">Para quem é</span><h1>Para o escritório em que <i>o sócio cuida de tudo.</i></h1><span class="fio" aria-hidden="true"></span><p class="lede">O T3jus é feito para escritórios de advocacia pequenos, em que quem decide também atende, cobra e confere o caixa.</p></div></div>
+</div><main><section class="secao" style="padding-top:72px" aria-labelledby="t-perfil"><div class="miolo">
+  <div class="sec-cab"><span class="sobretitulo">O escritório que temos em mente</span><h2 id="t-perfil">Pequeno na equipe, grande na rotina.</h2><span class="fio" aria-hidden="true"></span></div>
+  <ul class="perfil">
+    <li><p class="grande">3 a 10</p><h3>pessoas na equipe</h3><p>Sócios, advogados, estagiários e secretaria, cada um com a sua parte.</p></li>
+    <li><p class="grande">1</p><h3>sócio que centraliza</h3><p>Quem decide também responde cliente, aprova pagamento e confere o mês.</p></li>
+    <li><p class="grande"><svg class="ico" aria-hidden="true"><use href="#i-moeda"/></svg></p><h3>honorários que se repetem</h3><p>Fixos ou parcelados, com êxito, RPV ou precatório no fim do caminho.</p></li>
+  </ul>
+  <div class="encaixe">
+    <section class="sim" aria-labelledby="t-sim"><h3 id="t-sim">Faz sentido se</h3><ul>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Os clientes escrevem no WhatsApp pessoal de quem atendeu</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>As parcelas dos contratos vivem numa planilha</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Alvarás e acordos entram e o repasse depende da memória de alguém</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>O sócio quer saber, numa tela, o que cobrar, o que repassar e o que vence</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Cada pessoa da equipe deve ver só a parte dela</span></li>
+    </ul></section>
+    <section class="nao" aria-labelledby="t-nao"><h3 id="t-nao">Talvez ainda não seja para você se</h3><ul>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg><span>Você precisa hoje da leitura automática de publicações e intimações</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg><span>A cobrança precisa sair por boleto registrado com baixa automática</span></li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg><span>O escritório tem muitas dezenas de advogados e departamentos</span></li>
+    </ul><p class="ajuda" style="margin-top:16px;font-size:13.5px">Estes estão na lista do que é planejado. Se algum é essencial, conte na demonstração.</p></section>
+  </div>
+</div></section>
+<section class="secao clara" aria-labelledby="t-perg"><div class="miolo">
+  <div class="sec-cab"><span class="sobretitulo">Perguntas</span><h2 id="t-perg">O que costumam perguntar.</h2><span class="fio" aria-hidden="true"></span></div>
+  <div class="perguntas"><details><summary>Preciso largar o sistema que uso hoje?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Não de uma vez. Clientes e contratos entram pela sua planilha, com a ajuda da nossa equipe. Importar direto de outros sistemas jurídicos ainda é planejado.</p></details><details><summary>O cliente vai falar com um robô?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>A assistente virtual se apresenta como assistente e responde só o que está no T3jus, como a etapa do caso ou a data da parcela. O que ela não sabe, ou o que pede um advogado, ela passa para uma pessoa da equipe, com o motivo. O escritório decide as regras e pode pausar quando quiser. A ligação oficial do seu número com a Meta ainda está em preparação.</p></details><details><summary>O T3jus recebe o dinheiro dos meus clientes?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Não. O carnê leva o Pix do próprio escritório, e o dinheiro cai direto na sua conta. Quem registra o recebimento é a sua equipe.</p></details><details><summary>Onde ficam os dados?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Em servidores no Brasil, em São Paulo. Os dados de cada escritório ficam separados, e o sócio dono pode exportar tudo quando quiser.</p></details><details><summary>Funciona no celular?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Sim. As telas foram desenhadas para o computador e para o celular, no navegador, sem instalar nada.</p></details><details><summary>Quanto custa?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>O valor é combinado na demonstração, de acordo com o tamanho da equipe. Os planos ainda estão sendo definidos.</p></details></div>
+</div></section>
+<section class="chamada" aria-labelledby="t-chamada"><div class="miolo">
+  <div><span class="sobretitulo">Vamos conversar</span><h2 id="t-chamada">Veja o T3jus com a rotina do seu escritório.</h2><p class="lede">Conte rapidinho como o escritório funciona hoje. A nossa equipe responde para marcar um horário.</p></div>
+  <div class="cartao-c"><a class="btn btn-pri" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a><p class="ou"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg><span>Prefere e-mail? <a href="mailto:contato@t3jus.pro">contato@t3jus.pro</a></span></p></div>
+</div></section></main>
+<Rodape />
+</Base>

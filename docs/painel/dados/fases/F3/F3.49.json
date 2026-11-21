@@ -7,5 +7,5 @@
   ],
   "status": "feito",
   "ordem": 490,
-  "evidencia": "Migration 0558_meta_receita (meta de todo mês ou de um mês só, definida pela sócia dona, meses fechados comparados com a meta deles); faixa da meta no Resumo, a comparação mês a mês e a janela de definir; testes 064_ajustes_contador_meta_test.sql, api-portal app_test e e2e portal-financeiro-caixa. Tirar a meta fica no F3.88"
+  "evidencia": "Migration 0558_meta_receita (meta de todo mês ou de um mês só, definida pela sócia dona, meses fechados comparados com a meta deles); faixa da meta no Resumo, a comparação mês a mês e a janela de definir; testes 064_ajustes_contador_meta_test.sql, api-portal app_test e e2e portal-financeiro-caixa. Tirar a meta fica no F3.90"
 }

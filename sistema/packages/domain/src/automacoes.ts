@@ -7,11 +7,14 @@ import type { PessoaRef } from "./clientes.ts";
 import type { SugestaoIa } from "./montar.ts";
 import { reais } from "./honorarios.ts";
 
-export type Gatilho = "PAGAMENTO_RECEBIDO" | "PARCELA_VAI_VENCER" | "PARCELA_ATRASO" | "ETAPA_CASO" | "LEMBRETE_AUDIENCIA" | "PRESTACAO_CONTAS";
+export type Gatilho = "PAGAMENTO_RECEBIDO" | "PARCELA_VAI_VENCER" | "PARCELA_ATRASO" | "ETAPA_CASO" | "LEMBRETE_AUDIENCIA" | "PRESTACAO_CONTAS"
+  | "CLIENTE_NOVO" | "DOCUMENTO_PENDENTE";
 export type AreaAutomacao = "FINANCEIRO" | "JURIDICO" | "CONVERSAS";
-export type Quando = "PAGOU" | "RESPONDEU" | "NADA";
+export type Quando = "PAGOU" | "CHEGOU" | "RESPONDEU" | "NADA";
 export type TipoPasso = "GATILHO" | "CONDICOES" | "MENSAGEM" | "ESPERA" | "RAMOS" | "IA" | "PESSOA" | "FIM";
-export type RegraPessoa = "QUEM_CUIDA" | "AREA" | "SOCIA_DONA";
+export type RegraPessoa = "QUEM_CUIDA" | "AREA" | "SOCIA_DONA" | "QUEM_PEDIU";
+/** Cliente novo (PA-06): quem fechou (proposta aceita ou contrato assinado) ou quem foi cadastrado. */
+export type ContaClienteNovo = "FECHOU" | "CADASTRO";
 export type SituacaoAutomacao = "RASCUNHO" | "EM_APROVACAO" | "LIGADA" | "DESLIGADA";
 
 interface InfoGatilho {
@@ -28,6 +31,8 @@ interface InfoGatilho {
   de: string;
   /** Como começa a frase de Ligar: "Toda parcela que chegar a 3 dias de atraso". */
   toda: (dias: number | null) => string;
+  /** Gatilho novo (PA-06): leva o selo "Novo" na escolha do gatilho. */
+  novo?: boolean;
 }
 
 const d = (n: number | null) => `${n ?? 0} ${n === 1 ? "dia" : "dias"}`;
@@ -70,9 +75,37 @@ export const GATILHOS: Record<Gatilho, InfoGatilho> = {
     titulo: () => "Repasse ao cliente registrado", quando: () => "Quando o repasse ao cliente é registrado",
     de: "Vem do Financeiro: o repasse ao cliente foi registrado.", toda: () => "Todo repasse ao cliente registrado",
   },
+  CLIENTE_NOVO: {
+    nome: "Cliente novo", area: "CONVERSAS", icone: "pessoa-mais", dias: { min: 0, max: 30, padrao: 0 },
+    campos: ["nome", "quem atende", "horário de atendimento", "nome do escritório"], ramos: ["RESPONDEU", "NADA"],
+    titulo: (n) => (n ? `${d(n)} depois de virar cliente` : "Alguém vira cliente do escritório"),
+    quando: (n) => (n ? `${d(n)} depois de virar cliente` : "Quando alguém vira cliente do escritório"),
+    de: "Vem de Clientes: a primeira proposta aceita ou o primeiro contrato assinado. Importados da planilha e reativados nunca recebem.",
+    toda: (n) => (n ? `Todo cliente novo, ${d(n)} depois de virar cliente,` : "Todo cliente novo"), novo: true,
+  },
+  DOCUMENTO_PENDENTE: {
+    nome: "Documento pendente", area: "JURIDICO", icone: "doc", dias: { min: 1, max: 30, padrao: 5 },
+    campos: ["nome", "documentos", "caso", "pedido em", "nome do escritório"], ramos: ["CHEGOU", "RESPONDEU", "NADA"],
+    titulo: (n) => `Documento pedido há ${d(n)} e não chegou`, quando: (n) => `${d(n)} depois do pedido, se o documento não chegou`,
+    de: "Vem do Jurídico: documento pedido ao cliente que ainda não chegou. Uma mensagem por cliente, com tudo o que falta; chegou, sai na hora.",
+    toda: (n) => `Todo cliente com documento pedido há ${d(n)} sem chegar`, novo: true,
+  },
 };
 
-export const ORDEM_GATILHOS: Gatilho[] = ["PARCELA_ATRASO", "PARCELA_VAI_VENCER", "PAGAMENTO_RECEBIDO", "PRESTACAO_CONTAS", "ETAPA_CASO", "LEMBRETE_AUDIENCIA"];
+/** Os nomes das áreas na escolha do gatilho; o cliente novo é de Clientes, que todos veem. */
+export const AREA_DO_GATILHO: Record<AreaAutomacao, string> = { CONVERSAS: "Clientes", JURIDICO: "Jurídico", FINANCEIRO: "Financeiro" };
+
+/** Quem conta como cliente novo (decisão 1 do desenho de PA-06). */
+export const CONTA_CLIENTE_NOVO: Record<ContaClienteNovo, { nome: string; ajuda: string }> = {
+  FECHOU: { nome: "Quem aceita a primeira proposta ou assina o primeiro contrato", ajuda: "Recomendado. Quem só veio para o primeiro atendimento ainda não recebe." },
+  CADASTRO: { nome: "Quem é cadastrado em Clientes", ajuda: "Inclui quem só pediu um orçamento." },
+};
+
+/** Quem pode montar uma automação com este gatilho: as de Conversas, toda a equipe. */
+export const podeMontarGatilho = (g: Gatilho, areas: string[]) => GATILHOS[g].area === "CONVERSAS" || areas.includes(GATILHOS[g].area);
+
+/** A ordem da escolha do gatilho, agrupada por área: Clientes, Jurídico e Financeiro. */
+export const ORDEM_GATILHOS: Gatilho[] = ["CLIENTE_NOVO", "DOCUMENTO_PENDENTE", "ETAPA_CASO", "LEMBRETE_AUDIENCIA", "PARCELA_ATRASO", "PARCELA_VAI_VENCER", "PAGAMENTO_RECEBIDO", "PRESTACAO_CONTAS"];
 
 export const TIPOS_PASSO: Record<TipoPasso, { nome: string; icone: string; ajuda: string }> = {
   GATILHO: { nome: "Gatilho", icone: "raio", ajuda: "Quando a automação começa." },
@@ -90,16 +123,30 @@ export const PASSOS_ADICIONAVEIS: TipoPasso[] = ["CONDICOES", "MENSAGEM", "ESPER
 
 export const RAMOS_QUANDO: Record<Quando, { nome: string; icone: string }> = {
   PAGOU: { nome: "Se pagou", icone: "moeda" },
+  CHEGOU: { nome: "Se chegou", icone: "doc" },
   RESPONDEU: { nome: "Se respondeu", icone: "conversas" },
   NADA: { nome: "Nem pagou, nem respondeu", icone: "relogio" },
 };
-export const nomeDoRamo = (q: Quando, g: Gatilho) => (q === "NADA" && !GATILHOS[g].ramos.includes("PAGOU") ? "Não respondeu" : RAMOS_QUANDO[q].nome);
+export const nomeDoRamo = (q: Quando, g: Gatilho) =>
+  q !== "NADA" ? RAMOS_QUANDO[q].nome
+    : GATILHOS[g].ramos.includes("PAGOU") ? RAMOS_QUANDO.NADA.nome
+      : GATILHOS[g].ramos.includes("CHEGOU") ? "Nem chegou, nem respondeu" : "Não respondeu";
 
 export const REGRAS_PESSOA: Record<RegraPessoa, string> = {
   QUEM_CUIDA: "Quem cuida do caso ou do contrato",
   AREA: "Quem tem a área",
   SOCIA_DONA: "A sócia dona",
+  QUEM_PEDIU: "Quem pediu o documento",
 };
+
+/** As regras de "Passar para pessoa" que cada gatilho tem, com o nome dela ali. */
+export function regrasDoGatilho(g: Gatilho): { regra: RegraPessoa; nome: string }[] {
+  if (g === "CLIENTE_NOVO") return [{ regra: "QUEM_CUIDA", nome: "Quem atende o cliente" }, { regra: "SOCIA_DONA", nome: REGRAS_PESSOA.SOCIA_DONA }];
+  const base: { regra: RegraPessoa; nome: string }[] = [
+    { regra: "QUEM_CUIDA", nome: REGRAS_PESSOA.QUEM_CUIDA }, { regra: "AREA", nome: REGRAS_PESSOA.AREA }, { regra: "SOCIA_DONA", nome: REGRAS_PESSOA.SOCIA_DONA },
+  ];
+  return g === "DOCUMENTO_PENDENTE" ? [{ regra: "QUEM_PEDIU", nome: REGRAS_PESSOA.QUEM_PEDIU }, ...base] : base;
+}
 
 export const SITUACOES_AUTOMACAO: Record<SituacaoAutomacao, string> = {
   RASCUNHO: "Rascunho",
@@ -111,7 +158,7 @@ export const SITUACOES_AUTOMACAO: Record<SituacaoAutomacao, string> = {
 // ------------------------------------------------------------------------------- o fluxo
 
 export interface PassoBase { id: string }
-export interface PassoGatilho extends PassoBase { tipo: "GATILHO"; dias?: number | null }
+export interface PassoGatilho extends PassoBase { tipo: "GATILHO"; dias?: number | null; conta?: ContaClienteNovo | null }
 export interface PassoCondicoes extends PassoBase { tipo: "CONDICOES"; semCombinado: boolean }
 export interface PassoMensagem extends PassoBase { tipo: "MENSAGEM"; nome: string; texto?: string | null; modeloId?: string | null; aviso?: Gatilho | null }
 export interface PassoEspera extends PassoBase { tipo: "ESPERA"; dias?: number | null; horasAntes?: number | null }
@@ -150,7 +197,9 @@ export function textoDoErroFluxo(e: ErroFluxo, g: Gatilho): string {
     case "TEXTO_RECUSADO":
       return `A Meta recusou este texto${e.motivo ? `: ${e.motivo}` : ""}. Escreva um texto novo para aprovar.`;
     case "LIMITE_SEMANAL":
-      return `Esta cobrança sairia ${d(e.dias ?? 0)} depois da anterior. O limite é 1 cobrança por semana por parcela.`;
+      return g === "DOCUMENTO_PENDENTE"
+        ? `Este lembrete sairia ${d(e.dias ?? 0)} depois do anterior. O limite é 1 lembrete de documento por semana por cliente.`
+        : `Esta cobrança sairia ${d(e.dias ?? 0)} depois da anterior. O limite é 1 cobrança por semana por parcela.`;
   }
 }
 
@@ -163,7 +212,7 @@ export const TITULOS_ERRO_FLUXO: Record<CodigoErroFluxo, string> = {
   TEXTO_VAZIO: "Mensagem sem texto",
   TEXTO_CAMPO_NA_PONTA: "Campo no começo ou no fim",
   TEXTO_RECUSADO: "Texto recusado pela Meta",
-  LIMITE_SEMANAL: "Mais de 1 cobrança na semana",
+  LIMITE_SEMANAL: "Mais de 1 mensagem na semana",
 };
 
 // ------------------------------------------------------------------------------- mexer no fluxo
@@ -233,7 +282,7 @@ export function passoNovo(f: Fluxo, tipo: TipoPasso, g: Gatilho): Passo {
       return { id, tipo, ramos };
     }
     case "IA": return { id, tipo };
-    case "PESSOA": return { id, tipo, regra: "AREA", motivo: "" };
+    case "PESSOA": return { id, tipo, regra: g === "DOCUMENTO_PENDENTE" ? "QUEM_PEDIU" : g === "CLIENTE_NOVO" ? "QUEM_CUIDA" : "AREA", motivo: "" };
     case "FIM": return { id, tipo };
     case "GATILHO": return { id, tipo };
   }
@@ -259,9 +308,10 @@ export function adicionarPasso(f: Fluxo, onde: { ramos?: string; quando?: Quando
 /** Quem receberia a conversa num passo "Passar para pessoa". */
 export function quemRecebe(p: PassoPessoa, pessoas: { id: string; nome: string }[], g: Gatilho): string {
   if (p.pessoaId) return pessoas.find((x) => x.id === p.pessoaId)?.nome ?? "pessoa fora da equipe";
-  if (p.regra === "AREA") return `quem tem o ${GATILHOS[g].area === "JURIDICO" ? "Jurídico" : "Financeiro"}`;
+  if (p.regra === "AREA") return GATILHOS[g].area === "CONVERSAS" ? "a sócia dona" : `quem tem o ${GATILHOS[g].area === "JURIDICO" ? "Jurídico" : "Financeiro"}`;
   if (p.regra === "SOCIA_DONA") return "a sócia dona";
-  if (p.regra === "QUEM_CUIDA") return GATILHOS[g].area === "JURIDICO" ? "quem cuida do caso" : "quem cuida do contrato";
+  if (p.regra === "QUEM_PEDIU") return "quem pediu o documento";
+  if (p.regra === "QUEM_CUIDA") return g === "CLIENTE_NOVO" ? "quem atende o cliente" : GATILHOS[g].area === "JURIDICO" ? "quem cuida do caso" : "quem cuida do contrato";
   return "ninguém escolhido";
 }
 
@@ -281,7 +331,9 @@ export function quandoSai(g: Gatilho, f: Fluxo, pessoas: { id: string; nome: str
         const nome = nada.pessoaId ? quem.split(" ")[0] : quem;
         frases.push(GATILHOS[g].ramos.includes("PAGOU")
           ? `Se não pagar${espera ? ` em ${d(espera)}` : ""}, passa para ${nome}.`
-          : `Se não responder, passa para ${nome}.`);
+          : GATILHOS[g].ramos.includes("CHEGOU")
+            ? `Se não chegar${espera ? ` em ${d(espera)}` : ""}, passa para ${nome}.`
+            : `Se não responder, passa para ${nome}.`);
       }
     }
     if (p.tipo === "PESSOA") frases.push(`Passa para ${quemRecebe(p, pessoas, g)}.`);
@@ -383,7 +435,14 @@ export interface ItemQuemEntraria {
   diasAtraso?: number;
   jaEmAtraso?: boolean;
   entra: boolean;
-  motivo: "SEM_AVISOS" | "SEM_WHATSAPP" | "COMBINADO" | null;
+  motivo: "SEM_AVISOS" | "SEM_WHATSAPP" | "COMBINADO" | "IMPORTADO" | "AINDA_NAO" | "JA_RECEBEU" | null;
+  /** Cliente novo: quem atende; e, na linha dos importados, quantos vieram da planilha. */
+  quemAtende?: PessoaRef | null;
+  quantos?: number;
+  /** Documento pendente: o que falta, quando entra e se pediram de novo. */
+  documentos?: { id: string; descricao: string; caso: { id: string; nome: string }; pedidoEm: string; repedidoEm: string | null; pedidoPor: PessoaRef | null }[];
+  quando?: "HOJE" | "AMANHA" | "ESPERA";
+  repedido?: string | null;
   detalhe: { quemPediu?: string | null; em?: string; tipo?: string; oQue?: string; data?: string } | null;
 }
 
@@ -523,10 +582,15 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
     hora: "14:00",
     local: "Fórum Central, sala 4",
     resumo: "o valor de R$ 3.200,00 foi depositado na sua conta",
+    "quem atende": ex?.quemCuida?.nome ?? s.socioDono?.nome ?? "Marina Ribeiro",
+    "horário de atendimento": "de segunda a sexta, das 9h às 18h",
+    documentos: "CTPS digital e holerites de 2025",
+    "pedido em": (() => { const v = new Date(`${hojeDia}T12:00:00Z`); v.setUTCDate(v.getUTCDate() - (g === "DOCUMENTO_PENDENTE" ? gat?.dias ?? 5 : 0)); return dm(v.toISOString().slice(0, 10)); })(),
   };
   const preencher = (t: string) => t.replace(/\{([^{}]{1,40})\}/g, (m, c: string) => campos[c] ?? m);
   const pessoa = (p: PassoPessoa) => {
     if (p.pessoaId) return s.pessoas[p.pessoaId] ?? "pessoa fora da equipe";
+    if (p.regra === "QUEM_PEDIU") return "quem pediu o documento";
     if (p.regra === "QUEM_CUIDA") return ex?.quemCuida?.nome ?? s.socioDono?.nome ?? "a sócia dona";
     if (p.regra === "AREA") return s.quemTemArea?.nome ?? s.socioDono?.nome ?? "a sócia dona";
     return s.socioDono?.nome ?? "a sócia dona";
@@ -542,7 +606,13 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
   const respostaDoCliente = (em: Date) => {
     agiu = true;
     if (escolha === "PAGOU") sis("moeda", "O pagamento foi registrado no Financeiro.", em);
-    else conversa.push({ tipo: "CLIENTE", texto: g.startsWith("PARCELA") ? "Oi! Vi a mensagem. Posso pagar na sexta?" : "Recebi, obrigado. Confirmo.", em: iso(em) });
+    else if (escolha === "CHEGOU") sis("doc", "O documento foi marcado como chegado no caso.", em);
+    else conversa.push({
+      tipo: "CLIENTE", em: iso(em),
+      texto: g.startsWith("PARCELA") ? "Oi! Vi a mensagem. Posso pagar na sexta?"
+        : g === "CLIENTE_NOVO" ? "Obrigado! Qual o endereço de vocês?"
+          : g === "DOCUMENTO_PENDENTE" ? "Oi! Vou procurar e mando por aqui ainda hoje." : "Recebi, obrigado. Confirmo.",
+    });
   };
 
   const rodar = (seq: Passo[]): boolean => {
@@ -574,6 +644,11 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
               caminho.push({ passo: "pagou", tipo: "FIM", rotulo: "Pagou" });
               return true;
             }
+            if (escolha === "CHEGOU" && g === "DOCUMENTO_PENDENTE") {
+              sis("fim", "Chegou, o cliente sai da automação. Nada mais sai para ele.");
+              caminho.push({ passo: "chegou", tipo: "FIM", rotulo: "Chegou" });
+              return true;
+            }
             sis("conversas", "A resposta entra em Mensagens. Uma pessoa ou a IA responde por lá.");
           }
           break;
@@ -590,10 +665,10 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
             const em = new Date(t.getTime() + 24 * H);
             respostaDoCliente(em);
             t = em;
-            sis("espera", `A espera de ${d(dias)} termina antes: o cliente ${escolha === "PAGOU" ? "pagou" : "respondeu"}.`);
+            sis("espera", `A espera de ${d(dias)} termina antes: ${escolha === "PAGOU" ? "o cliente pagou" : escolha === "CHEGOU" ? "o documento chegou" : "o cliente respondeu"}.`);
           } else {
             t = new Date(t.getTime() + dias * 24 * H);
-            sis("espera", `${d(dias)} ${g.startsWith("PARCELA") ? "sem pagamento nem resposta" : "sem resposta"}.`);
+            sis("espera", `${d(dias)} ${g.startsWith("PARCELA") ? "sem pagamento nem resposta" : g === "DOCUMENTO_PENDENTE" ? "sem o documento nem resposta" : "sem resposta"}.`);
           }
           break;
         }
@@ -627,7 +702,9 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
 
 // ------------------------------------------------------------------------------- pedidos
 
-const gatilhoSchema = z.enum(["PAGAMENTO_RECEBIDO", "PARCELA_VAI_VENCER", "PARCELA_ATRASO", "ETAPA_CASO", "LEMBRETE_AUDIENCIA", "PRESTACAO_CONTAS"]);
+export const GATILHOS_VALIDOS = ["PAGAMENTO_RECEBIDO", "PARCELA_VAI_VENCER", "PARCELA_ATRASO", "ETAPA_CASO", "LEMBRETE_AUDIENCIA", "PRESTACAO_CONTAS",
+  "CLIENTE_NOVO", "DOCUMENTO_PENDENTE"] as const;
+const gatilhoSchema = z.enum(GATILHOS_VALIDOS);
 
 export const criarAutomacaoSchema = z.object({ gatilho: gatilhoSchema, nome: z.string().max(80) });
 
@@ -647,7 +724,7 @@ export const ligarAutomacaoSchema = z.object({
 });
 export const desligarAutomacaoSchema = z.object({ versao: z.number().int().positive(), motivo: z.string().max(600) });
 export const sugerirMudancaSchema = z.object({ texto: z.string().max(600) });
-export const simularAutomacaoSchema = z.object({ parcelaId: z.string().uuid().nullish(), escolha: z.enum(["NADA", "RESPONDEU", "PAGOU"]) });
+export const simularAutomacaoSchema = z.object({ parcelaId: z.string().uuid().nullish(), escolha: z.enum(["NADA", "RESPONDEU", "PAGOU", "CHEGOU"]) });
 
 // ------------------------------------------------------------------ Avisos automáticos (F3.64)
 // O que saiu sozinho pelo WhatsApp nos últimos 7 dias (portal_avisos_automaticos).
@@ -667,6 +744,8 @@ export const FILTROS_AVISO: { gatilho: Gatilho | null; nome: string }[] = [
   { gatilho: "ETAPA_CASO", nome: "Etapa do caso" },
   { gatilho: "LEMBRETE_AUDIENCIA", nome: "Audiência" },
   { gatilho: "PRESTACAO_CONTAS", nome: "Prestação de contas" },
+  { gatilho: "CLIENTE_NOVO", nome: "Cliente novo" },
+  { gatilho: "DOCUMENTO_PENDENTE", nome: "Documento" },
 ];
 
 export interface AvisoAutomatico {
