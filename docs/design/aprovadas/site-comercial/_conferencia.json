@@ -1,0 +1,434 @@
+[
+ {
+  "nome": "site-inicio",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "site-inicio",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "site-como-funciona",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "site-como-funciona",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "site-para-quem-e",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "site-para-quem-e",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-branco",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-branco",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-enviando",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-enviando",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-enviado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-enviado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-falha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "demo-falha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-lista",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-lista",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-lista-todos",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-lista-todos",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-lista-implantacao",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-lista-implantacao",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-vazio",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-vazio",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-carregando",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-carregando",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-erro",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-erro",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-sem-resultado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-sem-resultado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-sem-permissao",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-sem-permissao",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-ficha-novo",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-ficha-novo",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-ficha",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-ficha",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-atribuir",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-atribuir",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-proximo",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-proximo",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-mudar",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-mudar",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-mudar-erro",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-mudar-erro",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-converter",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-converter",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-convertido",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-convertido",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-perder",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-perder",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-perdido",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-perdido",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-descartado",
+  "tam": "computador",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "in-descartado",
+  "tam": "celular",
+  "rolagem": 0,
+  "viol": [],
+  "erros": [],
+  "pequenos": []
+ }
+]

@@ -1,0 +1,14 @@
+---
+// Rodapé com a fita das nove cores, os links e o contato.
+import { privacidadePronta } from "../config";
+const ano = new Date().getFullYear();
+---
+<footer class="rodape"><div class="fita9" aria-hidden="true"><i style="background:#692746"></i><i style="background:#87335B"></i><i style="background:#AC3F6B"></i><i style="background:#AC788D"></i><i style="background:#DD9760"></i><i style="background:#E9AE90"></i><i style="background:#F2CDB3"></i><i style="background:#F2ECE8"></i><i style="background:#F1E6DF"></i></div><div class="miolo">
+  <div class="grade-r">
+    <div><img src="/marca/logo-completo-sobre-vinho.svg" width="1583" height="512" alt="T3jus, Sistema jurídico" loading="lazy"><p class="sobre">Gestão comercial e financeira ligada aos casos, para escritórios de advocacia.</p></div>
+    <div><h2>O T3jus</h2><ul><li><a href="/como-funciona">Como funciona</a></li><li><a href="/para-quem-e">Para quem é</a></li><li><a href="/demonstracao">Pedir demonstração</a></li></ul></div>
+    <div><h2>Já é cliente</h2><ul><li><a href="https://app.t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-sair"/></svg>Entrar no T3jus</a></li></ul></div>
+    <div><h2>Contato</h2><ul><li><a href="mailto:contato@t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg>contato@t3jus.pro</a></li><li>{privacidadePronta ? <a href="/privacidade">Política de privacidade</a> : <span>Política de privacidade</span>}{!privacidadePronta && <span class="depois">em preparação</span>}</li></ul></div>
+  </div>
+  <div class="pe"><span>© {ano} T3jus</span><span>Servidores no Brasil · São Paulo</span></div>
+</div></footer>

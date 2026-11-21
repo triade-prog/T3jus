@@ -1,0 +1,27 @@
+---
+import Base from "../layouts/Base.astro";
+import Topo from "../components/Topo.astro";
+import Rodape from "../components/Rodape.astro";
+import Pedido from "../components/Pedido.astro";
+import { privacidadePronta } from "../config";
+---
+<Base titulo="Pedir demonstração · T3jus" descricao="Peça uma demonstração do T3jus: uma conversa por vídeo para ver o sistema com a rotina do seu escritório de advocacia e combinar o valor, sem compromisso." rota="/demonstracao">
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<div class="abertura interna"><div class="lado" aria-hidden="true"></div><svg class="ico estatua" aria-hidden="true"><use href="#i-coluna"/></svg>
+  <Topo atual="/demonstracao" />
+  <div class="miolo"><div id="conteudo" class="cab-int sobre-vinho"><nav class="trilha-int" aria-label="Você está em"><a href="/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Demonstração</span></nav>
+  <span class="sobretitulo">Demonstração</span><h1>Veja o T3jus com a rotina do <i>seu escritório.</i></h1><span class="fio" aria-hidden="true"></span><p class="lede">Conte um pouco sobre o escritório. A nossa equipe responde para marcar uma conversa por vídeo, sem compromisso.</p></div></div>
+</div><main><div class="miolo dem-grade">
+  <Pedido />
+  <aside class="lado-d" aria-label="O que acontece depois">
+    <section aria-labelledby="t-depois"><h2 id="t-depois">O que acontece depois</h2><ol class="depois-lista">
+      <li><span class="disco" aria-hidden="true">1</span><span><b>Respondemos em até 1 dia útil</b><span>Por e-mail ou WhatsApp, para marcar o horário.</span></span></li>
+      <li><span class="disco" aria-hidden="true">2</span><span><b>Uma conversa por vídeo</b><span>Mostramos o T3jus com um exemplo parecido com o seu escritório.</span></span></li>
+      <li><span class="disco" aria-hidden="true">3</span><span><b>Valor combinado antes</b><span>Você decide depois de ver, sem compromisso.</span></span></li>
+    </ol></section>
+    <section class="caixa-d" aria-labelledby="t-dados-d"><h3 id="t-dados-d">Seus dados</h3><p>Usamos o que você escreveu só para responder a este pedido. Se não virar cliente, apagamos depois de 12 meses sem contato, ou antes, se você pedir.</p></section>
+    {privacidadePronta && (<section class="caixa-d" aria-labelledby="t-email-d"><h3 id="t-email-d">Prefere escrever?</h3><p>Mande um e-mail com o nome do escritório e o melhor horário.</p><a class="btn btn-sec" href="mailto:contato@t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg>contato@t3jus.pro</a></section>)}
+  </aside>
+</div></main>
+<Rodape />
+</Base>

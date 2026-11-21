@@ -1,6 +1,6 @@
 # Sistema T3jus
 
-Código do T3jus (DC1): o **Portal do advogado** e o **Console T3jus** (equipe interna). O site comercial entra no passo 2, em `apps/site`. As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
+Código do T3jus (DC1): o **Portal do advogado** e o **Console T3jus** (equipe interna). O site comercial (Astro) fica em `apps/site`; veja o [`LEIA-ME`](apps/site/LEIA-ME.md). As decisões estão em [`../docs/CONTEXTO.md`](../docs/CONTEXTO.md). O andamento está no painel de execução, em [`../docs/painel/`](../docs/painel/LEIA-ME.md). As ideias que cada parte atende estão no [`../IDEIAS.md`](../IDEIAS.md).
 
 A base veio da fundação (passo 0) do TRÍADE Condo, que por sua vez veio do T-shirt Club (DC5, DC6): só as peças genéricas, com "condomínio" trocado por "escritório".
 
@@ -9,6 +9,7 @@ A base veio da fundação (passo 0) do TRÍADE Condo, que por sua vez veio do T-
 ```
 apps/portal     Portal do advogado (Next.js 16, porta 3000)
 apps/console        Console T3jus (Next.js 16, porta 3001)
+apps/site           site comercial em t3jus.pro (Astro, porta 3002)
 packages/domain     regras puras em TypeScript: dinheiro, erros, textos, esquemas, logs limpos
                     (roda no Node e no Deno)
 packages/ui         tema (DC10) e componentes React
