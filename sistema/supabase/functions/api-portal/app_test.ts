@@ -128,6 +128,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (a.p_de === "EQUIPE" && opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
       return { de: a.p_de, total: 0, mostrando: 0, grupos: [] };
     },
+    portal_inicio_audiencias: () => ({ de: "2026-11-19", ate: "2026-11-25", total: 0, itens: [], seguinte: null }),
     portal_inicio_contratos: (a) => ({ de: a.p_de, total: 0, mostrando: 0, grupos: [] }),
     portal_inicio_financeiro: (a) => ({ de: a.p_de }),
     portal_financeiro_repasse_responsavel: () => ({ id: ANA, nome: "Ana" }),
@@ -775,6 +776,8 @@ Deno.test("F3.26: o Início por áreas tem uma rota por área, do escritório da
   const m = montar();
   const cookie = await noEscritorio(m);
   assertEquals((await (await m.pedir("/v1/escritorio/inicio/resumo", { cookie })).json()).total, 2);
+  assertEquals((await (await m.pedir("/v1/escritorio/inicio/audiencias", { cookie })).json()).ate, "2026-11-25");
+  assertEquals(typeof m.chamadas.find((c) => c.funcao === "portal_inicio_audiencias")!.args.p_escritorio, "string");
   for (const area of ["contratos", "financeiro", "juridico"]) {
     const r = await m.pedir(`/v1/escritorio/inicio/${area}?de=EQUIPE`, { cookie });
     assertEquals(r.status, 200);

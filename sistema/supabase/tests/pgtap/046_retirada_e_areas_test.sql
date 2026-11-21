@@ -91,7 +91,7 @@ begin
   for f in select p.proname, p.pronargs, p.proargtypes::regtype[] t, p.proargnames n
              from pg_proc p join pg_namespace s on s.oid = p.pronamespace
             where s.nspname = 'public' and p.proname like 'portal\_%'
-              and p.proname !~ '^portal_(agenda|compromisso|cliente|clientes|importacao|importacoes|conversa|conversas|automacao|automacoes|aviso|avisos|carne|conta|escritorio|exigir_escrita|ia|inicio_resumo|pessoas_escritorio|recebimento|whatsapp|equipe|historico_equipe|convidar|mudar_areas|oab|reenviar_convite|retirar)(_|$)' loop
+              and p.proname !~ '^portal_(agenda|compromisso|cliente|clientes|importacao|importacoes|conversa|conversas|automacao|automacoes|aviso|avisos|carne|conta|escritorio|exigir_escrita|ia|inicio_resumo|inicio_audiencias|pessoas_escritorio|recebimento|whatsapp|equipe|historico_equipe|convidar|mudar_areas|oab|reenviar_convite|retirar)(_|$)' loop
     v_args := '';
     for i in 1..f.pronargs loop
       v_args := v_args || case when i > 1 then ', ' else '' end

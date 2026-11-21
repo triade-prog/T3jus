@@ -4,7 +4,7 @@
 import { z } from "zod";
 import type { AreaPortal } from "./portal.ts";
 import type { PessoaRef } from "./clientes.ts";
-import type { TipoCompromisso } from "./agenda.ts";
+import type { CompromissoLinha, TipoCompromisso } from "./agenda.ts";
 
 export type GrupoInicio = "VENCIDOS" | "HOJE" | "ACOMPANHAR" | "ESPERANDO";
 type Ref = { id: string; nome: string };
@@ -120,6 +120,16 @@ export interface ResumoInicio {
   total: number;
   compromissos: number;
   proximoCompromisso: { tipo: TipoCompromisso; tipoEscrito: string | null; inicio: string } | null;
+}
+
+/** GET /v1/escritorio/inicio/audiencias (F3.2, EX-06): de amanhã até 7 dias depois, até 3. */
+export interface AudienciasInicio {
+  de: string;
+  ate: string;
+  total: number;
+  itens: CompromissoLinha[];
+  /** A primeira depois da janela, para o pé e o vazio. */
+  seguinte: { id: string; inicio: string; titulo: string } | null;
 }
 
 export type DeInicio = "MEUS" | "EQUIPE";

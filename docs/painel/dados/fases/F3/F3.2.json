@@ -5,7 +5,7 @@
   "refs": [
     "EX-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 20,
-  "proximo": "Desenho das próximas audiências no Início (parte comum, ao lado da Agenda de hoje) em aprovação com a Carol; depois, programar"
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-inicio-audiencias (Carol, 21/11/2026); migration 0501_portal_inicio_audiencias.sql (portal_inicio_audiencias: audiências marcadas de amanhã até 7 dias, até 3, com o total e a seguinte), teste 051_portal_inicio_audiencias_test.sql, rota GET /v1/escritorio/inicio/audiencias, trecho \"Próximas audiências\" na Agenda de hoje (Inicio.tsx) e e2e portal-inicio.spec.ts"
 }

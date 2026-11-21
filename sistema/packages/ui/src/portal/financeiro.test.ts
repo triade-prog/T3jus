@@ -49,7 +49,7 @@ describe("A pagar", () => {
     const base = { recorrente: null, adiantada: null, forma: null } as const;
     expect(origemConta({ ...base, recorrente: { dia: 20, mes: "2026-11-01", lancadaSozinha: true } }))
       .toEqual({ titulo: "Recorrente · todo dia 20", detalhe: "Lançada sozinha em 01/11", repete: true });
-    expect(origemConta({ ...base, adiantada: { cliente: { id: "c", nome: "Daniela Rocha Mendes" }, como: "LEVANTAMENTO", reembolsadoEm: null } }).detalhe)
+    expect(origemConta({ ...base, adiantada: { cliente: { id: "c", nome: "Daniela Rocha Mendes" }, caso: null, como: "LEVANTAMENTO", reembolsadoEm: null, parcela: null } }).detalhe)
       .toBe("Vira reembolso de Daniela");
     expect(origemConta({ ...base, forma: "PIX" })).toEqual({ titulo: "Lançada à mão", detalhe: "Pix", repete: false });
   });
