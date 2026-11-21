@@ -46,13 +46,13 @@ export const GATILHOS: Record<Gatilho, InfoGatilho> = {
   },
   PARCELA_VAI_VENCER: {
     nome: "Parcela vai vencer", area: "FINANCEIRO", icone: "moeda", dias: { min: 1, max: 30, padrao: 3 },
-    campos: ["nome", "parcela", "valor", "vencimento", "link de pagamento", "nome do escritório"], ramos: ["PAGOU", "RESPONDEU", "NADA"],
+    campos: ["nome", "parcela", "valor", "vencimento", "nome do escritório"], ramos: ["PAGOU", "RESPONDEU", "NADA"],
     titulo: (n) => `Faltam ${d(n)} para a parcela vencer`, quando: (n) => `${d(n)} antes do vencimento`,
     de: "Vem do Financeiro: parcela em aberto perto do vencimento.", toda: (n) => `Toda parcela a ${d(n)} do vencimento`,
   },
   PARCELA_ATRASO: {
     nome: "Parcela em atraso", area: "FINANCEIRO", icone: "alerta", dias: { min: 1, max: 60, padrao: 3 },
-    campos: ["nome", "parcela", "valor", "vencimento", "link de pagamento", "nome do escritório"], ramos: ["PAGOU", "RESPONDEU", "NADA"],
+    campos: ["nome", "parcela", "valor", "vencimento", "nome do escritório"], ramos: ["PAGOU", "RESPONDEU", "NADA"],
     titulo: (n) => `Parcela chega a ${d(n)} de atraso`, quando: (n) => `Quando a parcela chega a ${d(n)} de atraso`,
     de: "Vem do Financeiro: parcela sem pagamento registrado depois do vencimento. Paga, a parcela sai da automação.",
     toda: (n) => `Toda parcela que chegar a ${d(n)} de atraso`,

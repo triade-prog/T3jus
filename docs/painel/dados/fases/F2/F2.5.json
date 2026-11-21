@@ -5,7 +5,7 @@
   "refs": [
     "SC-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 50,
-  "proximo": "Programar o cadastro à mão como no desenho aprovado (docs/design/aprovadas/console-interessado-sino): campos base_legal, sabe_do_contato e cadastrado_por, pelo menos e-mail ou WhatsApp, funções console_interessado_cadastrar e console_interessado_juntar."
+  "evidencia": "Console › Comercial › Interessados › Cadastrar interessado (desenho aprovado D18): indicação, evento ou contato direto, pelo menos e-mail ou WhatsApp, legítimo interesse com a origem guardada, data do contato até hoje contando o prazo de 12 meses, responsável e próximo passo já no cadastro, sem e-mail automático; repetido pelo e-mail ou WhatsApp oferece juntar ao existente (vira nota e novo contato) ou cadastrar mesmo assim. Migration 0590. Testes: pgTAP 065, Deno interessado_mao_sino_test, e2e console-interessado-sino (com axe no celular e no computador)."
 }

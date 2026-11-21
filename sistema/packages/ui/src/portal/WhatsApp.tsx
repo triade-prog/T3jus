@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  ASSUNTOS_IA, AVISOS_WHATSAPP, DIAS_SEMANA, QUALIDADES, telefoneBr, telefoneE164, textoAvisoValido, TONS_IA,
+  ASSUNTOS_IA, AVISOS_WHATSAPP, DIAS_SEMANA, horarioDeAtendimento, QUALIDADES, telefoneBr, telefoneE164, textoAvisoValido, TONS_IA,
   type AssuntoIa, type AvisoWhatsapp, type ChaveAviso, type ConfigIa, type EventoWhatsapp, type PaginaIa, type PaginaWhatsapp,
   MOTIVOS_CONVERSA, type ClienteTesteIa, type MotivoConversa, type PlanoIa, type RegraBarrada, type RespostaIa, type RespostaTesteIa, type TomIa,
 } from "@t3jus/domain";
@@ -1073,7 +1073,7 @@ function IaPassar({ ia, aoSalvar }: { ia: PaginaIa; aoSalvar: AoSalvar }) {
               <div className="campo-linha"><label htmlFor="h-fora">O que a IA diz fora do horário e em feriado</label><span className="contador" aria-hidden="true">{c.msgForaHorario.length} de 400</span></div>
               <textarea className="entrada" id="h-fora" value={c.msgForaHorario} maxLength={400} readOnly={ro} onChange={(e) => setC({ ...c, msgForaHorario: e.target.value })}
                 aria-invalid={erros.includes("msgForaHorario") || undefined} aria-describedby={descritoPor("h-fora-aj", erros.includes("msgForaHorario") && "h-fora-er")} />
-              <p className="ajuda" id="h-fora-aj">{"{próximo atendimento}"} vira, por exemplo, “segunda, 23/11, a partir das 9h”.</p>
+              <p className="ajuda" id="h-fora-aj">{"{horário de atendimento}"} vira o horário acima, como “de segunda a sexta, das 9h às 18h”. {"{próximo atendimento}"} vira, por exemplo, “segunda, 23/11, a partir das 9h”.</p>
               {erros.includes("msgForaHorario") ? <ErroCampo id="h-fora-er">Escreva de 10 a 400 caracteres.</ErroCampo> : null}
             </div>
             <div className="campo">
@@ -1093,7 +1093,7 @@ function IaPassar({ ia, aoSalvar }: { ia: PaginaIa; aoSalvar: AoSalvar }) {
           <ol className="cv-msgs" aria-label="Prévia da conversa" style={{ background: "var(--sal-2)" }}>
             <li className="cv-m cli"><div className="cv-b"><span className="de">Cliente</span>Recebi uma carta do INSS pedindo perícia. O que eu faço?</div></li>
             <li className="cv-m ia"><div className="cv-b"><span className="de"><Icone nome="ia" className="ico" />IA do escritório</span>
-              {c.msgForaHorario.replace("{próximo atendimento}", `no próximo dia de atendimento, a partir das ${hhmm(c.horaInicio)}`)}</div></li>
+              {c.msgForaHorario.replace("{próximo atendimento}", `no próximo dia de atendimento, a partir das ${hhmm(c.horaInicio)}`).replaceAll("{horário de atendimento}", horarioDeAtendimento(c))}</div></li>
             <li className="cv-sis"><Icone nome="mao" className="ico" /><span>Passa para <b>quem cuida do caso</b>. Motivo: documento novo.</span></li>
           </ol>
         </Folha>

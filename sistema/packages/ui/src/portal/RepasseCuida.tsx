@@ -156,7 +156,7 @@ export function JanelaTrocarResponsavel({ f, aoFechar, aoFeito }: { f: FichaRepa
       setErro(`${escolhido?.nome ?? "Esta pessoa"} não tem mais a área Financeiro ou saiu da equipe. Escolha outra pessoa.`);
       return focarPrimeiroErro(corpo.current);
     }
-    setFalha(`${textoDoErro(r.erro)} Nada foi salvo: ${f.responsavel.nome} continua responsável. O que você escolheu continua aqui; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada foi salvo: ${f.responsavel.nome} continua responsável. O que você escolheu continua aqui.`);
   }
 
   return (
@@ -275,7 +275,7 @@ export function JanelaAnotarAtraso({ d, l, pessoas, responsavelId, hoje, aoFecha
       setErros(campos.map(String));
       return focarPrimeiroErro(corpo.current);
     }
-    setFalha(`${textoDoErro(r.erro)} Nada foi salvo. O que você escreveu continua aqui; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada foi salvo. O que você escreveu continua aqui.`);
   }
 
   return (

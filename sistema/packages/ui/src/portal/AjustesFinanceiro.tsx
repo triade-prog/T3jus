@@ -204,7 +204,7 @@ function FormAjustes({ a, aoSalvo, aoCorrigir }: { a: AjustesFinanceiro; aoSalvo
       setErros(cs.map(String) as Campo[]);
       return focarPrimeiroErro(form.current);
     }
-    setFalha(`${textoDoErro(r.erro)} Nada foi salvo: o contador, o prazo e o saldo continuam como estavam. O que você mudou continua aqui; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada foi salvo: o contador, o prazo e o saldo continuam como estavam. O que você mudou continua aqui.`);
   }
 
   const campo = (id: string, k: Campo, rot: string, v: string, set: (x: string) => void, o: { erro: string; ajuda?: string; opc?: boolean; tipo?: string; ac?: string; im?: "numeric" | "decimal" | "tel" | "email" } ) => (
@@ -342,7 +342,7 @@ function JanelaAbertura({ a, aoFechar, aoFeito }: { a: AjustesFinanceiro; aoFech
     if (r.ok) return aoFeito(r.dados, { titulo: "Saldo de abertura corrigido.", texto: `O Caixa de hoje agora mostra ${reais(r.dados.saldoHoje)}. O valor anterior ficou no histórico.` });
     const cs = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(cs) && cs.length) { setErros(cs.map(String)); return focarPrimeiroErro(corpo.current); }
-    setFalha(`${textoDoErro(r.erro)} Nada mudou; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada mudou.`);
   }
 
   return (

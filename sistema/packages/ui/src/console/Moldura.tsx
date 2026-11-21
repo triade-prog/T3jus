@@ -2,13 +2,15 @@
 // Moldura do Console (telas aprovadas em docs/design/aprovadas/console-carteira.html e
 // console-v1): menu lateral vinho com as áreas, barra do topo com o caminho e, no pé, quem
 // está usando. As áreas que ainda não têm tela aparecem apagadas, sem link. No celular
-// (até 760 px), a lateral vira gaveta, aberta pela barra vinho do topo; fecha com Esc.
+// (até 760 px), a lateral vira gaveta, aberta pela barra vinho do topo; fecha com Esc. O sino
+// (F2.6) fica no topo e na barra vinho do celular, com um painel só para os dois botões.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_CONSOLE, type FuncaoConsole } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { LogoCompacto } from "../Marca.tsx";
+import { BotaoSinoConsole, PainelSinoConsole, useSinoConsole } from "./Sino.tsx";
 import { iniciais } from "./tempo.ts";
 
 export interface SessaoConsole {
@@ -118,6 +120,19 @@ export function MolduraConsole({
     return () => document.removeEventListener("keydown", aoTeclar);
   }, [gaveta]);
 
+  const sino = useSinoConsole();
+  const [sinoAberto, setSinoAberto] = useState(false);
+  const sinoQueAbriu = useRef<HTMLButtonElement | null>(null);
+  const novos = sino.lista && sino.lista !== "erro" ? sino.lista.novos : 0;
+  const clicarSino = (b: HTMLButtonElement) => {
+    sinoQueAbriu.current = b;
+    setSinoAberto((x) => !x);
+  };
+  const fecharSino = useCallback(() => {
+    setSinoAberto(false);
+    sinoQueAbriu.current?.focus();
+  }, []);
+
   async function sair() {
     setSaindo(true);
     await chamarApi("/v1/auth/sair", { corpo: {} });
@@ -142,6 +157,7 @@ export function MolduraConsole({
             <span>Console</span>
             <span className="sr">, carteira de escritórios</span>
           </a>
+          <BotaoSinoConsole cls="bb" novos={novos} aberto={sinoAberto} aoClicar={clicarSino} />
         </header>
         <div className="veu-gaveta" onClick={() => mudarGaveta(false)} />
         <aside className="trilho" id="trilho" aria-label="Console T3jus">
@@ -229,12 +245,14 @@ export function MolduraConsole({
                 </span>
               ))}
             </nav>
+            <BotaoSinoConsole cls="icone-botao cs-sino" novos={novos} aberto={sinoAberto} aoClicar={clicarSino} />
           </header>
           <main className="conteudo" id="conteudo" tabIndex={-1}>
             {children}
           </main>
         </div>
       </div>
+      <PainelSinoConsole sino={sino} aberto={sinoAberto} aoFechar={fecharSino} />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { contar, diaBr, lerDia } from "./agenda.ts";
 import { Selo } from "./Comercial.tsx";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
+import { abrirAnexo, CampoAnexo, enviarAnexo } from "./Anexos.tsx";
 
 type Feito = { titulo: string; texto: string };
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -53,6 +54,7 @@ function LinhaACaminho({ r, ateMes, aoData, aoEntrou }: {
             ? <span>Era <b>{mesAno(r.estimadaMes)}</b> · fora da previsão do Caixa até ter data nova</span>
             : <span>Data estimada: <b>{mesAno(r.estimadaMes)}</b> · {ateMes && r.estimadaMes > ateMes ? `fora do gráfico, que vai até ${MESES[Number(ateMes.slice(5, 7)) - 1]}` : "na previsão do Caixa"}</span>}
         </p>
+        {r.oficio ? <Oficio a={r.oficio} /> : null}
         {r.passou ? <div className="fi-por"><Selo tom="urgente" icone="alerta">Passou da data estimada</Selo></div>
           : novo && aoData ? <div className="fi-por"><Selo tom="ativo">Novo</Selo></div> : null}
         {aoData && aoEntrou ? (
@@ -71,6 +73,21 @@ function LinhaACaminho({ r, ateMes, aoData, aoEntrou }: {
         <span className="fi-pq">do escritório{r.parteRegra ? ` (${r.parteRegra})` : ""}</span>
       </div>
     </li>
+  );
+}
+
+/** O ofício requisitório anexado (F3.88): o nome, com o abrir. */
+function Oficio({ a }: { a: NonNullable<RequisicaoACaminho["oficio"]> }) {
+  const [erro, setErro] = useState<string | null>(null);
+  return (
+    <div className="fi-por">
+      <span className="fi-docs">
+        <button className="jr-link fi-doc-bt" type="button" onClick={() => void abrirAnexo(a.id).then(setErro)}>
+          <Icone nome="doc" className="ico" />Ofício anexado<span className="sr">: abrir {a.nome}</span>
+        </button>
+        {erro ? <span role="alert" className="fi-pq">{erro}</span> : null}
+      </span>
+    </div>
   );
 }
 
@@ -133,6 +150,9 @@ export function JanelaExpedido({ casos, aoFechar, aoFeito }: { casos: ListaRepas
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erroArq, setErroArq] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<number | null>(null);
   const corpo = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
   const tem = (c: string) => erros.includes(c);
@@ -184,20 +204,26 @@ export function JanelaExpedido({ casos, aoFechar, aoFeito }: { casos: ListaRepas
       metodo: "POST",
       corpo: { tipo, casoId, clienteId, tribunal: tribunal.trim(), devedor: devedor.trim(), numero: numero.trim() || null, valor: total, expedidoEm: expD, estimadaMes: estM },
     });
-    setEnviando(false);
     if (r.ok) {
       setErros([]);
-      return aoFeito({
-        titulo: `${TIPOS_REQUISICAO[tipo].titulo} a caminho registrado.`,
-        texto: `${reais(r.dados.parteEscritorio)} do escritório entram na previsão do Caixa em ${mesAno(r.dados.estimadaMes)}. Nada entra no caixa agora.`,
-      });
+      let texto = `${reais(r.dados.parteEscritorio)} do escritório entram na previsão do Caixa em ${mesAno(r.dados.estimadaMes)}. Nada entra no caixa agora.`;
+      // O registro já existe; a falha do arquivo não o desfaz.
+      if (arquivo) {
+        setProgresso(0);
+        const erro = await enviarAnexo("REQUISICAO", r.dados.id, arquivo, null, setProgresso);
+        setProgresso(null);
+        texto += erro ? " O ofício não foi guardado: o registro ficou sem ele." : " Ofício anexado.";
+      }
+      setEnviando(false);
+      return aoFeito({ titulo: `${TIPOS_REQUISICAO[tipo].titulo} a caminho registrado.`, texto });
     }
+    setEnviando(false);
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       setErros(campos.map((c) => (c === "clienteId" ? "casoId" : String(c))));
       return focarPrimeiroErro(corpo.current);
     }
-    setFalha(`${textoDoErro(r.erro)} Nada foi salvo e a previsão do Caixa não mudou. O que você preencheu continua aqui; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada foi salvo e a previsão do Caixa não mudou. O que você preencheu continua aqui.`);
   }
 
   const campo = (id: string, chaveErro: string, rot: string, v: string, set: (x: string) => void, extra: { ajuda?: string; erro: string; opc?: boolean; im?: "decimal" | "numeric"; foco?: boolean; mudou?: (x: string) => void }) => (
@@ -280,6 +306,8 @@ export function JanelaExpedido({ casos, aoFechar, aoFeito }: { casos: ListaRepas
             <span>Os <b>{reais(p.valor)}</b> do escritório entram na previsão do Caixa em <b>{mesAno(estM)}</b>, em âmbar, e no Falta receber dos Relatórios, à parte. Nada entra no caixa agora.</span>
           </p>
         ) : null}
+        <CampoAnexo rotulo="Ofício requisitório" ajuda="O PDF do ofício, se já tiver." arquivo={arquivo}
+          aoEscolher={(a, er) => { setArquivo(er ? null : a); setErroArq(er); }} erro={erroArq} progresso={progresso} />
       </div>
     </Janela>
   );
@@ -322,7 +350,7 @@ export function JanelaDataRequisicao({ r, hoje, aoFechar, aoFeito }: { r: Requis
       setErros(campos.map(String));
       return focarPrimeiroErro(corpo.current);
     }
-    setFalha(`${textoDoErro(x.erro)} Nada foi salvo; tente de novo.`);
+    setFalha(`${textoDoErro(x.erro)} Nada foi salvo.`);
   }
 
   return (

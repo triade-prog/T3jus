@@ -242,4 +242,22 @@ test.describe("Carnê de pagamento do Portal (FI-23)", () => {
     await expect(j.getByRole("link", { name: "Cadastrar a chave Pix" })).toHaveCount(0);
     await semViolacoes(page);
   });
+
+  test("F3.80: quem não é dono pede a chave Pix à sócia dona pela janela", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: DIEGO_ESC },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET /v1/escritorio/financeiro/contratos/${CT}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/contratos/${CT}/carnes`]: { corpo: opcoes(SEM_CHAVE, [], false) },
+      "POST /v1/escritorio/recebimento/pedido": { corpo: { para: MARINA, jaPedido: false } },
+    });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT}`);
+    await page.getByRole("button", { name: "Gerar carnê" }).first().click();
+    const j = page.getByRole("dialog", { name: "Gerar carnê" });
+    await j.getByRole("button", { name: "Pedir a Marina Ribeiro" }).click();
+    await expect(j.getByRole("button", { name: "Pedido a Marina Ribeiro" })).toBeDisabled();
+    await expect(j.getByRole("status").filter({ hasText: "recebeu o pedido no sino" }).last()).toBeVisible();
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/recebimento/pedido")?.corpo).toEqual({ area: "FINANCEIRO", contratoId: CT });
+    await semViolacoes(page);
+  });
 });

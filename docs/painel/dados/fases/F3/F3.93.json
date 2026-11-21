@@ -1,0 +1,12 @@
+{
+  "id": "F3.93",
+  "texto": "Recibos em PDF dentro do .zip dos comprovantes para o contador",
+  "peca": "S4",
+  "refs": [
+    "FI-21",
+    "FI-14"
+  ],
+  "status": "pendente",
+  "ordem": 930,
+  "proximo": "O desenho aprovado (ct-exportar) põe os recibos no .zip; hoje o PDF do recibo sai da impressão do navegador (F3.19), e o número do recibo já vai na planilha. Falta gerar o PDF do recibo no servidor"
+}

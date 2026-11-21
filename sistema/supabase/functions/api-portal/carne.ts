@@ -5,9 +5,9 @@
 
 import type { Context, Hono } from "hono";
 import {
-  documentoParcial, ErroDominio, gerarCarneSchema, LIMITE_CIDADE, LIMITE_RECEBEDOR, normalizarChavePix, pixDaParcela,
+  documentoParcial, ErroDominio, gerarCarneSchema, pedirChavePixSchema, LIMITE_CIDADE, LIMITE_RECEBEDOR, normalizarChavePix, pixDaParcela,
   salvarRecebimentoSchema, textoPix,
-  type CarneParaImprimir, type OpcoesCarne, type RecebimentoEscritorio, type RecebimentoSalvo, type TipoChavePix,
+  type CarneParaImprimir, type OpcoesCarne, type PedidoChavePix, type RecebimentoEscritorio, type RecebimentoSalvo, type TipoChavePix,
 } from "@t3jus/domain";
 import { lerCorpo } from "../_shared/validar.ts";
 import type { DepsPortal, VarsPortal } from "./app.ts";
@@ -71,6 +71,12 @@ export function rotasCarne(app: Hono<VarsPortal>, deps: DepsPortal) {
         ...pick(d, ["marca", "logoId", "logoJeito", "logoCor", "oabUf", "oabNumero"]),
       },
     }));
+  });
+
+  // F3.80: quem gera carnês e não é dono pede a chave; a sócia dona recebe o aviso no sino.
+  app.post("/v1/escritorio/recebimento/pedido", async (c) => {
+    const d = await lerCorpo(c, pedirChavePixSchema);
+    return c.json(await deps.banco.rpc<PedidoChavePix>("portal_recebimento_pedir", { ...quem(c), p_dados: d }));
   });
 
   // ------------------------------------------------------------------ Carnê de um contrato

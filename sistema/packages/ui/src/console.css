@@ -1686,3 +1686,152 @@
 .co-in table.cb-tab td{overflow-wrap:anywhere}
 .co-in table.cb-tab .in-pessoa{white-space:normal}
 @media (max-width:760px){.co-in .cabeca-ambar.cb-cab.cb-sem-num{padding-bottom:22px!important}}
+
+/* ==========================================================================
+   F2.5 e F2.6, desenho aprovado em docs/design/aprovadas/console-interessado-sino:
+   cadastrar interessado à mão (ci-) e o sino do Console (si-, copiado do Portal, e cs-)
+   ========================================================================== */
+/* ==========================================================================
+   F2.5 · Cadastrar interessado à mão (prefixo ci-)
+   ========================================================================== */
+.janela.ci-larga{width:min(760px,calc(100vw - 32px))}
+.ci-sec{display:grid;gap:14px;padding-top:18px;border-top:1px solid var(--divisor)}
+.ci-sec:first-of-type{border-top:0;padding-top:0}
+.ci-sec>h3{font-family:inherit;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-2);margin:0;display:flex;align-items:center;gap:8px}
+.ci-sec>h3 .ico{width:16px;height:16px;color:var(--vinho-4)}
+.ci-duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.ci-cid{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:14px}
+.ci-grupo legend{font-size:13px;font-weight:500;margin-bottom:8px}
+.ci-cartoes{display:grid;gap:8px}
+.ci-cartoes.ci-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ci-cartoes.ci-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ci-cartoes.ci-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ci-cartoes .opcao{margin:0;padding:10px 12px;border-radius:var(--raio);box-shadow:inset 0 0 0 1px var(--borda-folha);background:var(--papel);min-height:48px;align-items:flex-start}
+.ci-cartoes .opcao:has(input:checked){box-shadow:inset 0 0 0 2px var(--vinho);background:#FFFBF8}
+.ci-cartoes .opcao small{color:var(--texto-2)}
+.ci-grupo[aria-invalid="true"] .opcao,.ci-grupo.ci-erro .opcao{box-shadow:inset 0 0 0 1px var(--vinho-3)}
+.ci-grupo .erro-msg{margin-top:8px}
+.ci-ajuda-par{font-size:12px;color:var(--texto-2);margin:-6px 0 0}
+.ci-lgpd{padding:14px 16px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:8px;font-size:13px;line-height:1.5}
+.ci-lgpd .ci-l-topo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0}
+.ci-lgpd .ci-l-topo b{font-weight:600;font-size:14px}
+.ci-lgpd ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;color:var(--texto-2)}
+.ci-lgpd ul b{color:var(--texto);font-weight:500}
+.ci-lgpd .ci-dica{display:flex;gap:8px;align-items:flex-start;margin:0;padding:10px 12px;border-radius:8px;background:var(--ambar-3);color:var(--tinta)}
+.ci-lgpd .ci-dica .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho)}
+.ci-igual{display:flex;align-items:center;gap:6px;margin:6px 0 0;font-size:12.5px;font-weight:500;color:var(--vinho)}
+.ci-igual .ico{width:14px;height:14px}
+.ci-rep{display:grid;gap:4px;margin:8px 0 0;padding:10px 12px;border-radius:8px;background:var(--papel);box-shadow:inset 0 0 0 1px var(--borda-folha)}
+.ci-rep b{font-weight:600}
+.ci-rep span{font-size:12.5px;color:var(--texto-2)}
+.janela .ci-resumo{display:grid;gap:10px}
+.janela .ci-resumo:focus{outline:3px solid var(--vinho-3);outline-offset:2px;border-radius:var(--raio)}
+.in-dl dd .ci-mao{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--vinho-2);margin-left:8px}
+.ci-mao .ico{width:13px;height:13px}
+@media (max-width:760px){
+  .ci-duas,.ci-cartoes.ci-3,.ci-cartoes.ci-2{grid-template-columns:minmax(0,1fr)}
+  .ci-cartoes.ci-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .janela.ci-larga{width:100vw;max-width:100vw;max-height:100dvh;height:100dvh;border-radius:0;margin:0}
+}
+
+/* ==========================================================================
+   F2.6 · Sino do Console (CSS si- do Portal aprovado, mais o prefixo cs-)
+   ========================================================================== */
+
+/* ==========================================================================
+   Sino de avisos (prefixo si-)
+   ========================================================================== */
+/* O botão do sino aberto fica marcado, como um item atual */
+.icone-botao[aria-expanded="true"]{background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--ambar-2)}
+.barra-cel .bb[aria-expanded="true"]{background:var(--vinho-2)}
+
+/* Computador: painel que desce do sino, sem cobrir a página inteira */
+.si-painel{position:fixed;inset:auto;top:72px;right:40px;margin:0;z-index:90;width:460px;max-height:calc(100vh - 96px);padding:0;
+  display:none;flex-direction:column;border:1px solid var(--borda-folha);border-radius:var(--raio-g);background:var(--papel);color:var(--texto);
+  box-shadow:0 24px 48px -20px rgba(42,26,34,.45),0 2px 6px rgba(42,26,34,.08);overflow:hidden}
+.si-painel[open]{display:flex}
+.si-painel:focus{outline:none}
+.si-painel::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--vinho)}
+.si-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 20px 10px 24px}
+.si-cab h2{font-size:26px;line-height:1.1}
+.si-cab .si-conta{font-size:13px;color:var(--texto-2);margin-top:4px}
+.si-cab .si-conta b{font-weight:600;color:var(--vinho)}
+.si-cab .fechar{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;border-radius:var(--raio);color:var(--vinho);cursor:pointer;margin:-6px -6px 0 0}
+.si-cab .fechar:hover{background:var(--sal-2)}
+.si-ferr{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:0 16px 12px 24px;border-bottom:1px solid var(--divisor)}
+.si-ferr .chips{margin-left:0}
+.si-ferr .chips button .q{font-size:12px;font-weight:600}
+.si-todos{min-height:44px;padding:0 10px;margin-right:-4px}
+.si-tudo-lido{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px;color:var(--texto-2)}
+.si-tudo-lido .ico{width:16px;height:16px;color:var(--vinho-4)}
+.si-lista{overflow:auto;overscroll-behavior:contain;flex:1 1 auto}
+.si-dia{position:sticky;top:0;z-index:1;margin:0;padding:10px 24px 6px;background:var(--papel);font-family:inherit;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-2);display:flex;align-items:center;gap:10px}
+.si-dia::after{content:"";flex:1;height:1px;background:var(--borda-folha)}
+.si-ul{list-style:none;margin:0;padding:0}
+.si-item{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) 12px;gap:12px;padding:14px 20px 14px 24px;border-top:1px solid var(--divisor)}
+.si-ul li:first-child .si-item,.si-ul>li:first-child.si-item{border-top:0}
+.si-item:hover{background:var(--sal-2)}
+.si-item:focus-within{background:var(--sal-2)}
+.si-novo{background:#FFFBF8;box-shadow:inset 3px 0 0 var(--vinho)}
+.si-ico{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--sal-2);color:var(--vinho-2)}
+.si-novo .si-ico{background:var(--ambar-3);color:var(--vinho)}
+.si-ico .ico{width:20px;height:20px}
+.si-tit{font-size:14px;line-height:1.4;color:var(--texto)}
+.si-link{color:inherit;text-decoration:none}
+.si-link::after{content:"";position:absolute;inset:0}
+.si-link:focus-visible{outline:none}
+.si-item:has(.si-link:focus-visible){outline:3px solid var(--vinho-3);outline-offset:-3px}
+.si-link:hover{text-decoration:underline}
+.si-novo .si-tit{font-weight:600}
+.si-tit b{font-weight:600}
+.si-det{font-size:13px;line-height:1.45;color:var(--texto-2);margin-top:2px}
+.si-det q{font-family:var(--serifa);font-style:italic;font-size:14px;color:var(--tinta)}
+.si-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:8px;font-size:12px;color:var(--texto-2)}
+.si-meta .selo{height:24px;padding:0 9px;font-size:11.5px}
+.si-meta .si-onde{display:inline-flex;align-items:center;gap:4px;color:var(--vinho);font-weight:500}
+.si-meta .si-onde .ico{width:14px;height:14px}
+.si-meta .si-nv{font-weight:600;color:var(--vinho-3)}
+.si-pto{width:10px;height:10px;border-radius:50%;background:var(--vinho-3);margin-top:6px}
+.si-pe{display:flex;align-items:flex-start;gap:10px;padding:12px 24px 14px;border-top:1px solid var(--divisor);background:var(--sal-2);font-size:12px;line-height:1.5;color:var(--texto-2)}
+.si-pe .ico{width:16px;height:16px;flex:none;margin-top:1px;color:var(--vinho-4)}
+.si-msg{margin:12px 20px 4px 24px}
+.si-painel .estado{margin:16px 20px 20px;border:0;box-shadow:none;background:var(--sal-2);padding:32px 20px}
+.si-vazio-lista{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px;text-align:left}
+.si-vazio-lista li{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.45;color:var(--texto-2)}
+.si-vazio-lista .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho-4)}
+
+/* Celular: o painel ocupa a tela, abaixo da barra vinho, como a folha Mais */
+@media (max-width:760px){
+  .si-painel{top:0;right:0;left:0;bottom:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;border-radius:0}
+  .si-painel::before{display:none}
+  .si-cab{padding:16px 10px 8px 16px;background:var(--vinho);color:var(--papel)}
+  .si-cab h2{color:var(--papel)}
+  .si-cab .sobretitulo{color:var(--ambar-2)}
+  .si-cab .si-conta{color:var(--ambar-3)}
+  .si-cab .si-conta b{color:var(--papel)}
+  .si-cab .fechar{color:var(--ambar-2);margin:0}
+  .si-cab .fechar:hover{background:var(--vinho-2)}
+  .si-cab .fechar:focus-visible{outline-color:var(--ambar-3)}
+  .si-ferr{padding:10px 12px 10px 16px}
+  .si-todos{flex:0 0 auto}
+  .si-dia{padding:10px 16px 6px}
+  .si-item{padding:14px 14px 14px 16px;gap:10px;grid-template-columns:36px minmax(0,1fr) 10px}
+  .si-ico{width:36px;height:36px}
+  .si-msg{margin:12px 16px 4px}
+  .si-pe{padding:12px 16px calc(14px + env(safe-area-inset-bottom))}
+  .si-painel .estado{margin:16px}
+  .si-painel::backdrop{background:rgba(42,26,34,.4)}
+}
+
+/* Moldura do Console: o sino fica no fim do topo (a busca entra depois) */
+.co .topo .cs-sino{margin-left:auto}
+/* Filtros do painel (mesmo desenho dos chips da carteira) */
+.si-ferr .chips{display:flex;gap:6px}
+.si-ferr .chips button{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--borda-folha);background:var(--papel);font:inherit;font-size:13px;color:var(--texto-2);cursor:pointer;display:flex;align-items:center;gap:6px}
+.si-ferr .chips button[aria-pressed="true"]{background:var(--ambar-3);border-color:var(--ambar-2);color:var(--vinho);font-weight:500}
+
+.cs-explica{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px;text-align:left}
+.cs-explica li{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.45;color:var(--texto-2)}
+.cs-explica .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho-4)}
+.si-painel .estado h3{font-size:22px}
+.si-painel .estado .codigo{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--texto-2)}

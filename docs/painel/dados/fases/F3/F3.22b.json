@@ -6,7 +6,7 @@
     "FI-18",
     "FI-21"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 221,
-  "proximo": "Montar o .zip com a planilha e os anexos do mês (a lista já sai de /v1/escritorio/financeiro/exportacoes/anexos); conferir no Storage de verdade o limite de tamanho"
+  "evidencia": "Ao exportar a planilha (.xlsx), o .zip com as notas, guias, boletos e comprovantes do mês baixa junto (POST /v1/escritorio/financeiro/exportacoes/:id/pasta, link de 60 segundos por parte) e vai ao contador por link (F3.89). Limite do Storage conferido: o bucket documentos-portal aceita até 12 MB por arquivo, e a pasta se divide em partes de até 11 MB. Testes 075_oficio_pasta_meta_test.sql e e2e portal-financeiro-caixa"
 }

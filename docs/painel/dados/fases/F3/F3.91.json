@@ -7,7 +7,7 @@
     "PA-03",
     "PA-04"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 910,
-  "proximo": "Programar os 95 textos de docs/design/aprovadas/textos-tom/textos.json (migration 0610)"
+  "evidencia": "Migration 0610_textos_no_tom.sql (avisos prontos e IA com o texto aprovado, só onde ainda é o semeado; {link de pagamento} fora dos gatilhos de parcela; motivos SO_QUEM_GEROU e PLANILHA_APAGADA), 41 motivos novos em packages/domain/src/textos.ts, {horário de atendimento} no fora do horário (ia.ts), textos das telas; teste pgTAP 070_textos_no_tom_test.sql e ia.test.ts"
 }

@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import type { Condicao, TipoHonorario } from "./honorarios.ts";
 import type { SituacaoContrato } from "./contratos.ts";
+import type { Anexo } from "./anexos.ts";
 
 /** As formas de pagamento do FI-17. */
 export const FORMAS_PAGAMENTO = {
@@ -483,6 +484,8 @@ export interface RequisicaoACaminho {
   criadoEm: string;
   caso: { id: string; nome: string; parteContraria: string | null };
   cliente: { id: string; nome: string };
+  /** O ofício requisitório anexado (F3.88), o mais novo. */
+  oficio?: Anexo | null;
 }
 
 export interface ACaminho {
@@ -667,14 +670,14 @@ export function contaPrestacao(
   const doCliente = l.destinacoes.find((d) => d.para === "CLIENTE");
   const data = (s: string) => s.split("-").reverse().slice(0, 2).join("/");
   return {
-    abertura: `Olá, ${primeiro}. Aqui é o escritório ${escritorio}. ${O_SEU_LEVANTAMENTO[l.tipo]}, e esta é a conta de como ficou:`,
+    abertura: `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. ${O_SEU_LEVANTAMENTO[l.tipo]}, e esta é a conta de como ficou:`,
     descontos: l.destinacoes
       .filter((d) => d.para !== "CLIENTE" && d.situacao !== "DISPENSADO")
       .map((d) => ({ rotulo: d.nome, valor: d.valor })),
     fica: doCliente?.valor ?? 0,
     fecho: doCliente?.feitoEm
-      ? `Já transferimos o seu valor em ${data(doCliente.feitoEm)}. Qualquer dúvida, é só responder.`
-      : `Vamos transferir o seu valor até ${data(doCliente?.prazo ?? "")}. Qualquer dúvida, é só responder.`,
+      ? `Já transferimos o seu valor em ${data(doCliente.feitoEm)}. Qualquer dúvida, é só responder esta mensagem.`
+      : `Vamos transferir o seu valor até ${data(doCliente?.prazo ?? "")}. Qualquer dúvida, é só responder esta mensagem.`,
   };
 }
 
@@ -768,7 +771,22 @@ export const definirMetaSchema = z.object({ valor: z.number().int().nullish(), m
 /** A planilha que vai anexada ao e-mail do contador, em base64 (até uns 4 MB). */
 export const enviarContadorSchema = z.object({ nome: z.string().min(1).max(120), arquivo: z.string().min(1).max(6_000_000) });
 
-export interface EnvioContador { para: string; situacao: "ENVIADO" | "FALHOU"; em: string; por: PessoaRef | null }
+export interface EnvioContador {
+  para: string;
+  situacao: "ENVIADO" | "FALHOU";
+  em: string;
+  por: PessoaRef | null;
+  /** Até quando vale o link do .zip dos comprovantes (F3.89); nulo sem .zip. */
+  linkAte?: string | null;
+}
+
+/** Tirar a meta (F3.90): a partir de um mês, sem meta. */
+export const tirarMetaSchema = z.object({ mes: z.string().nullish() });
+
+/** A pasta dos comprovantes pronta para baixar: cada parte com um link de 60 segundos. */
+export interface PastaParaBaixar {
+  pasta: { arquivos: number; tamanho: number; partes: { nome: string; tamanho: number; arquivos: number; url: string }[] } | null;
+}
 
 /** Pessoa de contato: e-mail com o final (como .com.br). */
 export const emailCompleto = (t: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.trim());

@@ -215,7 +215,7 @@ test("PA-04: como a IA atende, o nome diz assistente virtual, palavras, salvar c
   await expect(j.getByText("Confirme que testou e revisou.")).toBeVisible();
   await j.getByText("Testei a IA e revisei o que ela responde").click();
   await j.getByRole("button", { name: "Ligar a IA" }).click();
-  await expect(j.getByText("Teste a IA sem enviar antes de ligar.")).toBeVisible();
+  await expect(j.getByText("Antes de ligar, use “Testar sem enviar”.")).toBeVisible();
   await expect(j.getByRole("link", { name: "Testar sem enviar" })).toBeVisible();
 });
 

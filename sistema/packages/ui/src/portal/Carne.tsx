@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   brCodePix, chavePixParaLer, dataBr, hojeBrasilia, LIMITE_CIDADE, LIMITE_INSTRUCOES, LIMITE_RECEBEDOR, normalizarChavePix, pixDaParcela,
   fraseOabSociedade, reais, telefoneBr, textoPix, TIPOS_CHAVE_PIX, txidParcela,
-  type AreaCarne, type CarneGerado, type CarneParaImprimir, type FormatoCarne, type MudancaCarne, type OpcoesCarne, type ParcelaParaCarne,
+  type AreaCarne, type CarneGerado, type CarneParaImprimir, type FormatoCarne, type MudancaCarne, type OpcoesCarne, type ParcelaParaCarne, type PedidoChavePix,
   type RecebimentoEscritorio, type RecebimentoSalvo, type TipoChavePix,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -526,6 +526,8 @@ function JanelaCarne({ o, area, escritorio, aoFechar, aoFeito }: {
   const [enviando, setEnviando] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   const [semEscolha, setSemEscolha] = useState(false);
+  // F3.80: o pedido da chave à sócia dona (aviso no sino dela).
+  const [pedido, setPedido] = useState<"nao" | "pedindo" | "pedido" | string>(o.chavePedida ? "pedido" : "nao");
   const corpo = useRef<HTMLDivElement>(null);
 
   const escolhidas = modo === "A_VENCER" ? aVencer : possiveis.filter((p) => marcadas.has(p.id));
@@ -547,6 +549,12 @@ function JanelaCarne({ o, area, escritorio, aoFechar, aoFeito }: {
       if (sim) n.add(id); else n.delete(id);
       return n;
     });
+  }
+
+  async function pedirChave() {
+    setPedido("pedindo");
+    const res = await chamarPortal<PedidoChavePix>("/v1/escritorio/recebimento/pedido", { corpo: { area, contratoId: o.contrato.id } });
+    setPedido(res.ok ? "pedido" : textoDoErro(res.erro));
   }
 
   async function gerar() {
@@ -589,9 +597,22 @@ function JanelaCarne({ o, area, escritorio, aoFechar, aoFeito }: {
         {semEscolha ? <Aviso tom="urgencia" titulo={faltaAcertar(1)}>Escolha ao menos uma parcela para o carnê.</Aviso> : null}
         {!comPix ? (
           <Aviso tom="atencao" titulo="O escritório ainda não tem chave Pix no T3jus."
-            acoes={o.dono ? <a className="btn btn-sec" href={ROTAS_ESCRITORIO.recebimento}><Icone nome="moeda" className="ico" />Cadastrar a chave Pix</a> : undefined}>
+            acoes={o.dono ? <a className="btn btn-sec" href={ROTAS_ESCRITORIO.recebimento}><Icone nome="moeda" className="ico" />Cadastrar a chave Pix</a>
+              : o.socioDono ? (
+                <button className="btn btn-sec" type="button" onClick={() => void pedirChave()} disabled={pedido === "pedindo" || pedido === "pedido"}
+                  aria-busy={pedido === "pedindo" || undefined}>
+                  <Icone nome={pedido === "pedido" ? "check" : "sino"} className="ico" />
+                  {pedido === "pedido" ? `Pedido a ${dona}` : pedido === "pedindo" ? "Pedindo…" : `Pedir a ${dona}`}
+                </button>
+              ) : undefined}>
             {o.dono ? "Sem ela, o carnê sai com as instruções de pagamento em texto. Com a chave, cada parcela ganha o QR e o Pix copia e cola."
-              : `Quem cadastra é ${dona}, a sócia dona: fale com ela. Enquanto isso, o carnê sai com as instruções de pagamento em texto.`}
+              : `Quem cadastra é ${dona}, a sócia dona. Enquanto isso, o carnê sai com as instruções de pagamento em texto.`}
+            {!o.dono ? (
+              <span className="cn-pedido" role="status">
+                {pedido === "pedido" ? ` ${dona} recebeu o pedido no sino. Quando ela cadastrar, gere o carnê de novo para ter o QR.`
+                  : pedido !== "nao" && pedido !== "pedindo" ? ` Não deu para pedir: ${pedido}` : ""}
+              </span>
+            ) : null}
           </Aviso>
         ) : null}
         <div className="cn-j">

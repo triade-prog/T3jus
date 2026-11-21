@@ -5,7 +5,7 @@
   "refs": [
     "FI-09"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 880,
-  "proximo": "O desenho aprovado (rv-registrar) tem o anexo opcional do ofício; a primeira entrega registra o expedido sem ele. Falta guardar o PDF com os anexos do caso e mostrar na folha A caminho"
+  "evidencia": "Migration 0620_oficio_requisicao.sql (o ofício requisitório entra nos anexos do Portal com o dono \"requisição a caminho\", área Financeiro, nada se apaga; a linha da requisição traz o ofício mais novo), campo \"Ofício requisitório (opcional)\" na janela Registrar RPV ou precatório expedido e \"Ofício anexado\" na folha A caminho; testes 075_oficio_pasta_meta_test.sql e e2e portal-financeiro-repasses (celular e computador, com axe)"
 }

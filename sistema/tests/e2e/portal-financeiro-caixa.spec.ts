@@ -303,13 +303,49 @@ test.describe("Financeiro do Portal, exportação com as notas (FI-18, FI-21)", 
     await expect(j).toContainText("1 despesa sem nota fiscal");
     await expect(j).toContainText(`${DADOS.despesas[0]!.descricao}`);
     await expect(j).toContainText("Vão marcadas na planilha.");
-    await expect(j).toContainText("1 comprovante, nota ou guia anexado aos lançamentos");
+    await expect(j).toContainText("Os comprovantes num .zip: 1 comprovante, nota ou guia");
+    await expect(j).toContainText("cada arquivo com a data e o lançamento no nome");
     await semViolacoes(page);
     await j.getByRole("radio", { name: /Só a planilha \(\.csv\)/ }).check();
+    await expect(j).toContainText("1 comprovante, nota ou guia anexado aos lançamentos");
     const baixou = page.waitForEvent("download");
     await j.getByRole("button", { name: "Exportar outubro" }).click();
     const texto = readFileSync((await (await baixou).path())!, "utf8");
     expect(texto).toContain("Falta a nota");
+  });
+
+  test("F3.89 e F3.22b: com a planilha (.xlsx), os comprovantes baixam num .zip e vão ao contador por link de 30 dias", async ({ page }) => {
+    const caixa = { ...CAIXA, dono: true, abertura: null, lembrete: null,
+      contador: { nome: "Paulo Serra", firma: "Contabilidade Silva", email: "contato@exemplo.com.br", mandarAoExportar: true, lembrarDia5: true } };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/caixa": { corpo: caixa },
+      "POST /v1/escritorio/financeiro/exportacoes": { status: 201, corpo: { ...DADOS, formato: "XLSX", saldoInicio: 2827000, saldoFim: 3245000 } },
+      "GET /v1/escritorio/financeiro/exportacoes/anexos?mes=2026-10-01": { corpo: {
+        mes: "2026-10-01", semNota: [],
+        anexos: [{ id: "a1", categoria: "NOTA_FISCAL", nome: "x.pdf", tipo: "application/pdf", tamanho: 312000, donoId: "c1", enviadoPor: { id: "x", nome: "Marina" }, enviadoEm: "2026-10-05T12:00:00Z" }],
+      } },
+      [`POST /v1/escritorio/financeiro/exportacoes/${DADOS.id}/pasta`]: { corpo: { pasta: { arquivos: 1, tamanho: 312400,
+        partes: [{ nome: "comprovantes-outubro-2026.zip", tamanho: 312400, arquivos: 1, url: "https://arquivos.exemplo/ler/comprovantes.zip?token=curto" }] } } },
+      [`POST /v1/escritorio/financeiro/exportacoes/${DADOS.id}/enviar`]: { corpo: { para: "contato@exemplo.com.br", situacao: "ENVIADO", em: "2026-11-18T13:00:00Z", por: MARINA, linkAte: "2026-12-18T13:00:00Z" } },
+    });
+    await page.route("https://arquivos.exemplo/**", (rota) => rota.fulfill({
+      status: 200, contentType: "application/zip", headers: { "content-disposition": 'attachment; filename="comprovantes-outubro-2026.zip"' }, body: "PK",
+    }));
+    await page.goto(`${P}/financeiro/caixa`);
+    await page.getByRole("button", { name: "Exportar para o contador" }).click();
+    const j = page.getByRole("dialog", { name: "Exportar para o contador" });
+    await expect(j.getByRole("radio", { name: /Planilha \(\.xlsx\) e os comprovantes \(\.zip\)/ })).toBeChecked();
+    await expect(j).toContainText("os comprovantes vão num link do .zip, que vale por 30 dias");
+    await semViolacoes(page);
+    const nomes: string[] = [];
+    page.on("download", (d) => nomes.push(d.suggestedFilename()));
+    await j.getByRole("button", { name: "Exportar e mandar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Outubro foi para Paulo Serra." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Outubro foi para Paulo Serra." })).toContainText("A planilha e o link dos comprovantes (.zip) saíram para contato@exemplo.com.br. Também baixaram no seu aparelho.");
+    await expect.poll(() => nomes.length).toBe(2);
+    expect(nomes).toContain("comprovantes-outubro-2026.zip");
+    expect(pedidos.findIndex((p) => p.caminho.endsWith("/pasta"))).toBeLessThan(pedidos.findIndex((p) => p.caminho.endsWith("/enviar")));
   });
 
   // ------------------------------------------------------------------ F3.50 e F3.49
@@ -411,6 +447,26 @@ test.describe("Financeiro do Portal, exportação com as notas (FI-18, FI-21)", 
     await j.getByRole("button", { name: "Salvar a meta" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Dezembro de 2026 tem a meta de R$ 40.000,00, só esse mês." })).toBeVisible();
     expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toEqual({ valor: 4000000, mes: "2026-12-01", soMes: true });
+  });
+
+  test("F3.90: Tirar a meta deixa o escritório sem meta do mês escolhido em diante", async ({ page }) => {
+    const meta = (valor: number, deMes: string, soMes = false) => ({ valor, deMes, soMes, por: MARINA, em: "2026-11-02T12:00:00Z" });
+    const resumo = { ...RESUMO,
+      meta: { mes: meta(5000000, "2026-11-01"), todoMes: meta(5000000, "2026-11-01"), antes: null, umMes: [], dono: true, socioDono: MARINA, media3: 4244667 } };
+    const pedidos = await simular(page, { ...comuns(), "GET /v1/escritorio/financeiro/resumo": { corpo: resumo },
+      "POST /v1/escritorio/financeiro/meta/tirar": { corpo: { mes: null, todoMes: null, antes: null, umMes: [] } } });
+    await page.goto(`${P}/financeiro`);
+    await page.getByRole("region", { name: "Previsto e realizado" }).getByRole("button", { name: "Mudar a meta" }).click();
+    const j = page.getByRole("dialog", { name: "Meta de receita" });
+    await j.getByLabel("Meta de receita do mês").fill("0");
+    await j.getByRole("button", { name: "Salvar a meta" }).click();
+    await expect(j.getByText("Para ficar sem meta, use “Tirar a meta”.")).toBeVisible();
+    await j.getByRole("radio", { name: /Só em um mês/ }).check();
+    await j.getByLabel("Qual mês").selectOption("2026-12-01");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Tirar a meta" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Meta tirada." })).toContainText("De dezembro de 2026 em diante, o escritório fica sem meta.");
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/financeiro/meta/tirar")!.corpo).toEqual({ mes: "2026-12-01" });
   });
 
   test("F3.49: quem tem o Financeiro sem ser dona vê a meta, sem botão; sem meta, a faixa diz quem define", async ({ page }) => {

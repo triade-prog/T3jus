@@ -1,0 +1,13 @@
+{
+  "data": "21/11/2026",
+  "inicio": "17:12",
+  "fim": "17:35",
+  "texto": "Cadastro de interessado à mão e sino do Console programados como no desenho aprovado (migration 0590, rotas na api-console, telas e testes).",
+  "refs": [
+    "F2.5",
+    "F2.6",
+    "SC-02",
+    "SC-05",
+    "PT-11"
+  ]
+}

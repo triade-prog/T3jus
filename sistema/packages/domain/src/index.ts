@@ -33,3 +33,4 @@ export * from "./anexos.ts";
 export * from "./recibo.ts";
 export * from "./interessados.ts";
 export * from "./logo.ts";
+export * from "./pasta_contador.ts";

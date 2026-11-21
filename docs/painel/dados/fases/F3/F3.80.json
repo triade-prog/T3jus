@@ -5,7 +5,7 @@
   "refs": [
     "FI-23"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 800,
-  "proximo": "Hoje o aviso de desatualizado aparece na folha \"Carnê\" da ficha e quem não é dono vê o nome da sócia dona para pedir a chave"
+  "evidencia": "Desenho aprovado (docs/design/aprovadas/portal-carne, decisões 9 e 12, estado carne-sem-pix-equipe); migration 0623 (CARNE_DESATUALIZADO para quem gerou e o responsável do contrato, uma vez por carnê, quando a parcela muda ou a chave Pix é trocada; PEDIDO_CHAVE_PIX pela rota POST /v1/escritorio/recebimento/pedido, sem repetir enquanto a dona não lê); botão \"Pedir a <sócia dona>\" na janela Gerar carnê; teste pgTAP 076, Deno, e2e portal-carne e portal-sino-avisos"
 }

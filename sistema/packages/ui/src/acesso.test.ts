@@ -32,7 +32,7 @@ describe("chamarApi", () => {
   it("traduz o código do erro em texto", async () => {
     const r = await chamarApi("/v1/auth/entrar", { corpo: {}, buscar: resposta(401, { erro: { codigo: "INVALID_CREDENTIALS" } }) });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(textoDoErro(r.erro)).toBe("E-mail ou senha não conferem.");
+    if (!r.ok) expect(textoDoErro(r.erro)).toBe("O e-mail ou a senha não conferem. Confira e tente de novo.");
   });
   it("código desconhecido não chega à tela", async () => {
     const r = await chamarApi("/x", { buscar: resposta(500, { erro: { codigo: "QUALQUER" } }) });

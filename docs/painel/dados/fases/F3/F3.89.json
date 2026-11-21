@@ -5,7 +5,7 @@
   "refs": [
     "FI-21"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 890,
-  "proximo": "O desenho aprovado (ct-exportar, decisão 9 da Carol) manda a planilha anexada e os comprovantes num .zip por link de 30 dias. A primeira entrega manda só a planilha anexada; falta gerar o .zip no Storage e pôr o link no e-mail"
+  "evidencia": "Migration 0621_pasta_contador.sql (pasta .zip por exportação, guardada em <escritório>/exportacoes/ no bucket documentos-portal, em partes de até 11 MB; o envio guarda até quando vale o link; o bucket passa a aceitar .zip de até 12 MB), api-portal/pasta_contador.ts (baixa os anexos do mês, monta o .zip sem comprimir de novo, assina o link de 30 dias no e-mail do contador), packages/domain/src/pasta_contador.ts (nome com a data e o lançamento, divisão em partes); testes 075_oficio_pasta_meta_test.sql, pasta_contador.test.ts, api-portal app_test e e2e portal-financeiro-caixa. Os recibos em PDF ficam no F3.93"
 }

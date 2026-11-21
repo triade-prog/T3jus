@@ -5,7 +5,7 @@
   "refs": [
     "IN-09"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 900,
-  "proximo": "O desenho aprovado (mt-definir) tem \"Tirar a meta\"; a primeira entrega só define e troca. Falta a versão sem valor que encerra a meta de todo mês a partir de um mês, sem mudar os fechados"
+  "evidencia": "Migration 0622_meta_tirar.sql (versão \"sem meta\" de todo mês a partir de um mês; saem também as metas só de um mês dali em diante; meses fechados não mudam; só a sócia dona), rota POST /v1/escritorio/financeiro/meta/tirar e o botão \"Tirar a meta\" na janela da meta; testes 075_oficio_pasta_meta_test.sql, api-portal app_test e e2e portal-financeiro-caixa"
 }

@@ -236,7 +236,7 @@ function ErroRelatorio({ erro, aoTentar }: { erro: ErroApi; aoTentar: () => void
             <a className="btn btn-sec" href={ROTAS_FINANCEIRO.receber}><Icone nome="moeda" className="ico" />Abrir A receber</a>
           </>
         }>
-        {`O servidor não respondeu. Nenhum dado se perdeu: os recebimentos estão todos em A receber e no Caixa. Tente de novo em alguns segundos. Código para o suporte: ${erro.codigo}.`}
+        {`O servidor não respondeu. Nenhum dado se perdeu: os recebimentos estão todos em A receber e no Caixa. Tente de novo em alguns segundos. Se continuar, fale com o suporte do T3jus.`}
       </Estado>
     </section>
   );
