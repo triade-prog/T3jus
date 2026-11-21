@@ -40,6 +40,7 @@ import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao
 import { lerCorpo } from "../_shared/validar.ts";
 import { rotasPeticoes } from "./peticoes.ts";
 import { rotasCarne } from "./carne.ts";
+import { rotasContratosOab } from "./contratos_oab.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
 import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
@@ -714,17 +715,21 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.post("/v1/escritorio/contratos", async (c) => {
     const d = await lerCorpo(c, dadosContratoSchema);
-    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_contrato_criar", { ...quem(c), p_dados: d }), 201);
+    // Com a escolha das inscrições de cada advogado (EX-12, 0530).
+    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_contrato_criar_oab", { ...quem(c), p_dados: d }), 201);
   });
 
   app.get("/v1/escritorio/contratos/:id", async (c) => {
-    return c.json(await deps.banco.rpc<FichaContrato>("portal_contrato", { ...quem(c), p_contrato: idDaRota(c, "id") }));
+    const p = { ...quem(c), p_contrato: idDaRota(c, "id") };
+    const ficha = await deps.banco.rpc<FichaContrato>("portal_contrato", p);
+    // A OAB de cada advogado neste contrato (EX-12, 0530).
+    return c.json({ ...ficha, inscricoes: await deps.banco.rpc<NonNullable<FichaContrato["inscricoes"]>>("portal_contrato_inscricoes", p) });
   });
 
   // Mudar condições, objeto e pessoas (PT-19). Contrato ativo pede motivo e refaz só o futuro.
   app.put("/v1/escritorio/contratos/:id", async (c) => {
     const { versao, ...d } = await lerCorpo(c, editarContratoSchema);
-    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number; novos: number }>("portal_contrato_condicoes", {
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number; novos: number }>("portal_contrato_condicoes_oab", {
       ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: versao, p_dados: d,
     }));
   });
@@ -1181,6 +1186,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Gerador de petições (EX-09).
   rotasPeticoes(app, deps);
   rotasCarne(app, deps);
+  rotasContratosOab(app, deps);
 
   return app;
 }
