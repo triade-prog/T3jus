@@ -5,8 +5,7 @@
   "refs": [
     "CH-06"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 130,
-  "proximo": "Falta o pedido opcional ao cliente pelo WhatsApp. Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79)",
-  "evidencia": "Rotina diária lembrar_bases_do_mes (7h de Brasília) põe no sino de quem foi escolhido, ou do responsável, o aviso \"Pedir a base do mês\" uma vez por cobrança (migration 0531, pgTAP 054)."
+  "evidencia": "Rotina diária lembrar_bases_do_mes (7h de Brasília) põe no sino de quem foi escolhido, ou do responsável, o aviso \"Pedir a base do mês\" uma vez por cobrança (migration 0531, pgTAP 054). Pedido ao cliente: com \"Pedir também ao cliente, pelo WhatsApp do escritório\" marcado e o WhatsApp ligado, a rotina pedir_bases_ao_cliente (8h de Brasília) põe o aviso \"Pedido da base do mês\" (texto aprovado pela Carol em 21/11) na fila da conversa do contato principal, uma vez por cobrança, e guarda o motivo quando não sai (sem celular ou \"não receber avisos\") (migration 0722, pgTAP 102)."
 }
