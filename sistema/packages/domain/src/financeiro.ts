@@ -7,6 +7,7 @@ import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import type { Condicao, TipoHonorario } from "./honorarios.ts";
 import type { SituacaoContrato } from "./contratos.ts";
+import type { Anexo } from "./anexos.ts";
 
 /** As formas de pagamento do FI-17. */
 export const FORMAS_PAGAMENTO = {
@@ -476,6 +477,8 @@ export interface RequisicaoACaminho {
   criadoEm: string;
   caso: { id: string; nome: string; parteContraria: string | null };
   cliente: { id: string; nome: string };
+  /** O ofício requisitório anexado (F3.88), o mais novo. */
+  oficio?: Anexo | null;
 }
 
 export interface ACaminho {
@@ -761,7 +764,22 @@ export const definirMetaSchema = z.object({ valor: z.number().int().nullish(), m
 /** A planilha que vai anexada ao e-mail do contador, em base64 (até uns 4 MB). */
 export const enviarContadorSchema = z.object({ nome: z.string().min(1).max(120), arquivo: z.string().min(1).max(6_000_000) });
 
-export interface EnvioContador { para: string; situacao: "ENVIADO" | "FALHOU"; em: string; por: PessoaRef | null }
+export interface EnvioContador {
+  para: string;
+  situacao: "ENVIADO" | "FALHOU";
+  em: string;
+  por: PessoaRef | null;
+  /** Até quando vale o link do .zip dos comprovantes (F3.89); nulo sem .zip. */
+  linkAte?: string | null;
+}
+
+/** Tirar a meta (F3.90): a partir de um mês, sem meta. */
+export const tirarMetaSchema = z.object({ mes: z.string().nullish() });
+
+/** A pasta dos comprovantes pronta para baixar: cada parte com um link de 60 segundos. */
+export interface PastaParaBaixar {
+  pasta: { arquivos: number; tamanho: number; partes: { nome: string; tamanho: number; arquivos: number; url: string }[] } | null;
+}
 
 /** Pessoa de contato: e-mail com o final (como .com.br). */
 export const emailCompleto = (t: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.trim());

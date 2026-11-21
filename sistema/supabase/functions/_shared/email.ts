@@ -90,7 +90,11 @@ const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julh
  * docs/design/aprovadas/portal-comercial-financeiro-pendencias (ct-exportar): sai de T3jus em nome
  * do escritório, com a planilha anexada e resposta para quem exportou.
  */
-export function exportacaoContador(d: { contador: string; escritorio: string; mes: string; quem: string; arquivo: string }): Omit<MensagemEmail, "para"> {
+export function exportacaoContador(d: {
+  contador: string; escritorio: string; mes: string; quem: string; arquivo: string;
+  /** Os comprovantes do mês num .zip, por link que vale 30 dias (F3.89, decisão 9). */
+  pasta?: { arquivos: number; ate: string; links: { nome: string; tamanho: number; url: string }[] } | null;
+}): Omit<MensagemEmail, "para"> {
   const mes = `${MESES[Number(d.mes.slice(5, 7)) - 1]} de ${d.mes.slice(0, 4)}`;
   const primeiro = d.contador.trim().split(/\s+/)[0] ?? "";
   const ola = primeiro ? `Olá, ${primeiro}.` : "Olá.";
@@ -99,6 +103,16 @@ export function exportacaoContador(d: { contador: string; escritorio: string; me
   const resp = "Para responder, é só responder a este e-mail: a resposta vai para o escritório.";
   const fonte = "font-family:'Source Sans 3',Arial,Helvetica,sans-serif;";
   const titulo = `Financeiro de ${mes} · ${d.escritorio}`;
+  const pasta = d.pasta && d.pasta.links.length ? d.pasta : null;
+  const ate = pasta ? `${pasta.ate.slice(8, 10)}/${pasta.ate.slice(5, 7)}/${pasta.ate.slice(0, 4)}` : "";
+  const mb = (n: number) => `${Math.max(1, Math.round(n / 1048576))} MB`;
+  const textoPasta = pasta
+    ? `Os comprovantes, notas e guias do mês (${pasta.arquivos === 1 ? "1 arquivo" : `${pasta.arquivos} arquivos`}) estão num .zip${pasta.links.length > 1 ? `, em ${pasta.links.length} partes` : ""}. `
+      + `O link vale até ${ate}; depois disso, peça ao escritório para mandar de novo.`
+    : "";
+  const botoes = pasta
+    ? pasta.links.map((l, i) => `<tr><td style="padding:${i ? 8 : 12}px 32px 0 32px;"><a href="${escapar(l.url)}" style="display:inline-block;background:#692746;color:#FFFFFF;${fonte}font-size:15px;font-weight:600;text-decoration:none;padding:12px 20px;border-radius:8px;">Baixar os comprovantes${pasta.links.length > 1 ? ` · parte ${i + 1} de ${pasta.links.length}` : ""} (${mb(l.tamanho)})</a></td></tr>`).join("")
+    : "";
   const html = `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -116,6 +130,7 @@ export function exportacaoContador(d: { contador: string; escritorio: string; me
 </td></tr>
 <tr><td style="padding:16px 32px 0 32px;font-family:Alegreya,Georgia,'Times New Roman',serif;font-size:24px;line-height:1.3;color:#692746;font-weight:700;">${escapar(titulo)}</td></tr>
 <tr><td style="padding:12px 32px 0 32px;${fonte}font-size:16px;line-height:1.55;color:#2A1A22;">${escapar(ola)} ${escapar(corpo)}</td></tr>
+${pasta ? `<tr><td style="padding:12px 32px 0 32px;${fonte}font-size:16px;line-height:1.55;color:#2A1A22;">${escapar(textoPasta)}</td></tr>${botoes}` : ""}
 <tr><td style="padding:16px 32px 28px 32px;${fonte}font-size:14px;line-height:1.55;color:#5E4A54;">${resp}</td></tr>
 </table>
 <p style="margin:16px 0 0 0;${fonte}font-size:12px;color:#5E4A54;">T3jus · Sistema Jurídico · <a href="https://t3jus.pro" style="color:#5E4A54;">t3jus.pro</a></p>
@@ -123,7 +138,8 @@ export function exportacaoContador(d: { contador: string; escritorio: string; me
 </table>
 </body>
 </html>`;
-  const texto = `${ola}\n\n${corpo}\n\n${resp}\n\nT3jus · Sistema Jurídico · t3jus.pro`;
+  const linksTexto = pasta ? `${textoPasta}\n${pasta.links.map((l, i) => `${pasta.links.length > 1 ? `Parte ${i + 1}: ` : ""}${l.url}`).join("\n")}\n\n` : "";
+  const texto = `${ola}\n\n${corpo}\n\n${linksTexto}${resp}\n\nT3jus · Sistema Jurídico · t3jus.pro`;
   return { assunto: titulo, html, texto };
 }
 

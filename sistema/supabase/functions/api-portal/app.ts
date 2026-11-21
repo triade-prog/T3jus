@@ -24,7 +24,7 @@ import {
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
-  colunasImportacaoSchema, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema,
+  colunasImportacaoSchema, tirarMetaSchema, VALIDADE_LINK_PASTA_S, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema,
   LIMITE_ARQUIVO_BYTES, lerPlanilha, ligacaoImportacaoSchema, linhaImportacaoSchema, type Importacao, type LinhaPrevia, type LinhasFora,
   type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
@@ -42,6 +42,7 @@ import { lerCorpo } from "../_shared/validar.ts";
 import { rotasPeticoes } from "./peticoes.ts";
 import { rotasCarne } from "./carne.ts";
 import { rotasAnexos } from "./anexos.ts";
+import { garantirPasta, linksDaPasta, rotasPastaContador } from "./pasta_contador.ts";
 import { rotasContratosOab } from "./contratos_oab.ts";
 import { rotasPropostaDocx } from "./proposta_docx.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
@@ -1018,18 +1019,29 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const p = await deps.banco.rpc<{ para: string; contador: string; escritorio: string; mes: string; quem: string; responderPara: string | null }>(
       "portal_financeiro_envio_preparar", { ...quem(c), p_exportacao: id });
     let situacao: "ENVIADO" | "FALHOU" = "FALHOU";
+    let linkAte: string | null = null;
     if (deps.emails) {
       try {
+        // Os comprovantes do mês vão num .zip, por link que vale 30 dias (F3.89, decisão 9).
+        const pasta = await garantirPasta(deps, quem(c), id);
+        const ate = new Date(Date.now() + VALIDADE_LINK_PASTA_S * 1000);
+        const links = pasta ? await linksDaPasta(deps, pasta, VALIDADE_LINK_PASTA_S) : [];
         await deps.emails.enviar({
           para: p.para, responderPara: p.responderPara, anexos: [{ nome: d.nome, base64: d.arquivo }],
-          ...exportacaoContador({ contador: p.contador, escritorio: p.escritorio, mes: p.mes, quem: p.quem, arquivo: d.nome }),
+          ...exportacaoContador({
+            contador: p.contador, escritorio: p.escritorio, mes: p.mes, quem: p.quem, arquivo: d.nome,
+            pasta: pasta ? { arquivos: pasta.arquivos, ate: ate.toISOString(), links } : null,
+          }),
         });
         situacao = "ENVIADO";
+        if (pasta) linkAte = ate.toISOString();
       } catch {
         situacao = "FALHOU";
       }
     }
-    return c.json(await deps.banco.rpc<EnvioContador>("portal_financeiro_envio_registrar", { ...quem(c), p_exportacao: id, p_situacao: situacao }));
+    return c.json(await deps.banco.rpc<EnvioContador>("portal_financeiro_envio_registrar", {
+      ...quem(c), p_exportacao: id, p_situacao: situacao, p_link_ate: linkAte,
+    }));
   });
 
   // Escritório › Ajustes do financeiro (F3.50): o contador, o saldo de abertura e o prazo; a meta só para ler.
@@ -1046,6 +1058,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.put("/v1/escritorio/financeiro/meta", async (c) => {
     const d = await lerCorpo(c, definirMetaSchema);
     return c.json(await deps.banco.rpc<MetasReceita>("portal_financeiro_meta", { ...quem(c), p_dados: d }));
+  });
+  // Tirar a meta (F3.90): sem meta a partir de um mês; os meses fechados não mudam.
+  app.post("/v1/escritorio/financeiro/meta/tirar", async (c) => {
+    const d = await lerCorpo(c, tirarMetaSchema);
+    return c.json(await deps.banco.rpc<MetasReceita>("portal_financeiro_meta_tirar", { ...quem(c), p_dados: d }));
   });
 
   // Importar planilha (F3.55, VA-05). O arquivo chega como corpo binário e é lido aqui, na
@@ -1355,6 +1372,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   rotasPeticoes(app, deps);
   rotasCarne(app, deps);
   rotasAnexos(app, deps);
+  rotasPastaContador(app, deps);
   rotasContratosOab(app, deps);
   rotasPropostaDocx(app, deps);
 

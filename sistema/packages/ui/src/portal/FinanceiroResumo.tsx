@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   alertaDeQueda, FORMAS_PAGAMENTO, PARA_DESTINACAO, quemEspera, reais, receitaPorGrupo, TIPOS_LEVANTAMENTO, TIPOS_REQUISICAO,
   type AnexosDaExportacao, type CaixaFinanceiro, type DadosExportacao, type EnvioContador, type FormatoExportacao, type MesCaixa, type ParcelaLinha, type PreviaExportacao,
-  type RepassePendente, type ResumoFinanceiro, type TerceirosNaConta,
+  type PastaParaBaixar, type RepassePendente, type ResumoFinanceiro, type TerceirosNaConta,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
@@ -26,6 +26,7 @@ import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { FolhaACaminho } from "./ACaminho.tsx";
 import { arquivoContador, nomeMesAno } from "./planilha.ts";
+import { tamanhoLegivel } from "../console/documentos.ts";
 
 type Feito = { titulo: string; texto: string };
 const fuso = { timeZone: "America/Sao_Paulo" } as const;
@@ -536,9 +537,32 @@ function JanelaMeta({ r, aoFechar, aoFeito }: { r: ResumoFinanceiro; aoFechar: (
     setFalha(`${textoDoErro(x.erro)} Nada foi salvo: ${nomeDoMes(r.mes)} continua com a meta de antes. O valor que você escreveu continua aqui.`);
   }
 
+  // Tirar a meta (F3.90): sem meta a partir do mês escolhido; os meses fechados não mudam.
+  const temMeta = !!(mt.mes || mt.todoMes || mt.umMes.length);
+  async function tirar() {
+    if (enviando) return;
+    const de = so ? mesSo : r.mes;
+    setFalha(null);
+    setErros([]);
+    setEnviando(true);
+    const x = await chamarPortal("/v1/escritorio/financeiro/meta/tirar", { metodo: "POST", corpo: { mes: de } });
+    setEnviando(false);
+    if (x.ok) {
+      return aoFeito({
+        titulo: "Meta tirada.",
+        texto: `De ${nomeMesAno(de)} em diante, o escritório fica sem meta. Os meses que já fecharam continuam com a meta deles.`,
+      });
+    }
+    setFalha(`${textoDoErro(x.erro)} Nada mudou: ${nomeDoMes(r.mes)} continua com a meta de antes.`);
+  }
+
   return (
     <Janela id="j-meta" aberta aoFechar={aoFechar} sobretitulo="Resumo" titulo="Meta de receita" descricao="j-meta-d" aoEnviar={() => void enviar()}
-      pe={<><button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button><button className="btn btn-pri" type="submit" aria-busy={enviando || undefined}><Icone nome="check" className="ico" />Salvar a meta</button></>}>
+      pe={<>
+        {temMeta ? <button className="btn btn-fantasma pd-pe-j" type="button" onClick={() => void tirar()} disabled={enviando}><Icone nome="xis" className="ico" />Tirar a meta</button> : null}
+        <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
+        <button className="btn btn-pri" type="submit" aria-busy={enviando || undefined}><Icone nome="check" className="ico" />Salvar a meta</button>
+      </>}>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
         <p id="j-meta-d">Quanto o escritório quer receber de honorários no mês.</p>
         {erros.length ? <Aviso tom="urgencia" titulo={erros.length === 1 ? "Falta acertar 1 ponto, marcado abaixo." : `Falta acertar ${erros.length} pontos, marcados abaixo.`}>A meta ainda não foi salva.</Aviso> : null}
@@ -547,7 +571,7 @@ function JanelaMeta({ r, aoFechar, aoFeito }: { r: ResumoFinanceiro; aoFechar: (
           <label htmlFor="mt-valor">Meta de receita do mês</label>
           <input className="entrada" id="mt-valor" inputMode="decimal" autoComplete="off" value={valor} onChange={(e) => { setValor(e.target.value); setErros((x) => x.filter((c) => c !== "valor")); }} data-foco=""
             aria-invalid={tem("valor") || undefined} aria-describedby={tem("valor") ? "mt-valor-er" : "mt-valor-aj"} />
-          {tem("valor") ? <p className="erro-msg" id="mt-valor-er"><Icone nome="alerta" className="ico ico-s" />Escreva um valor maior que zero.</p>
+          {tem("valor") ? <p className="erro-msg" id="mt-valor-er"><Icone nome="alerta" className="ico ico-s" />Escreva um valor maior que zero.{temMeta ? " Para ficar sem meta, use “Tirar a meta”." : ""}</p>
             : <p className="ajuda" id="mt-valor-aj">Honorários que entram no caixa do escritório no mês. Valores de terceiros não contam.</p>}
         </div>
         <fieldset className="fi-grupo-op">
@@ -865,6 +889,21 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
     return false;
   }
 
+  // Os comprovantes do mês num .zip (F3.22b): o servidor monta e devolve um link curto por parte.
+  async function baixarComprovantes(id: string): Promise<boolean> {
+    const r = await chamarPortal<PastaParaBaixar>(`/v1/escritorio/financeiro/exportacoes/${id}/pasta`, { metodo: "POST", corpo: {} });
+    if (!r.ok) return false;
+    for (const x of r.dados.pasta?.partes ?? []) {
+      const a = document.createElement("a");
+      a.href = x.url;
+      a.download = x.nome;
+      document.body.append(a);
+      a.click();
+      a.remove();
+    }
+    return true;
+  }
+
   async function enviar() {
     if (enviando) return;
     setFalha(null);
@@ -882,14 +921,24 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
     }
     const a = arquivoContador(r.dados, formato, an?.semNota);
     salvar(a.nome, a.tipo, a.dados);
+    const comZip = formato === "XLSX" && !!an?.anexos.length;
+    const zipOk = comZip ? await baixarComprovantes(r.dados.id) : true;
+    const semZip = zipOk ? "" : " Os comprovantes (.zip) não baixaram agora; exporte o mês de novo para baixar.";
     if (mandar && ct) {
       const ok = await mandarAoContador({ id: r.dados.id, nome: a.nome, base64: emBase64(a.dados), mes });
       setEnviando(false);
       if (!ok) return;
-      return aoFeito({ titulo: `Exportação de ${nome} mandada a ${ct.nome}.`, texto: `O arquivo ${a.nome} também foi salvo no seu aparelho. A exportação e o envio ficaram no histórico.` });
+      return aoFeito(comZip
+        ? { titulo: `${maiuscula(nomeDoMes(mes))} foi para ${ct.nome}.`, texto: `A planilha e o link dos comprovantes (.zip) saíram para ${ct.email}. ${zipOk ? "Também baixaram no seu aparelho." : `A planilha também baixou no seu aparelho.${semZip}`}` }
+        : { titulo: `Exportação de ${nome} mandada a ${ct.nome}.`, texto: `O arquivo ${a.nome} também foi salvo no seu aparelho. A exportação e o envio ficaram no histórico.` });
     }
     setEnviando(false);
-    aoFeito({ titulo: `Exportação de ${nome} gerada.`, texto: `O arquivo ${a.nome} foi salvo, e a exportação ficou no histórico do escritório.` });
+    aoFeito({
+      titulo: `Exportação de ${nome} gerada.`,
+      texto: comZip && zipOk
+        ? `A planilha ${a.nome} e os comprovantes (.zip) foram salvos, e a exportação ficou no histórico do escritório.`
+        : `O arquivo ${a.nome} foi salvo, e a exportação ficou no histórico do escritório.${semZip}`,
+    });
   }
 
   const an = anexos && anexos.mes === mes ? anexos.a : null;
@@ -941,12 +990,20 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
                     : "Nenhum valor de terceiros entrou ou foi repassado no mês."}</small>
                 </span>
               </li>
-              {an ? (
+              {an && an.anexos.length && formato === "XLSX" ? (
+                <li>
+                  <Icone nome="check" className="ico" />
+                  <span>
+                    Os comprovantes num .zip: {contar(an.anexos.length, "comprovante, nota ou guia", "comprovantes, notas e guias")}
+                    <small>{tamanhoLegivel(an.anexos.reduce((t, x) => t + x.tamanho, 0))} · cada arquivo com a data e o lançamento no nome</small>
+                  </span>
+                </li>
+              ) : an ? (
                 <li>
                   <Icone nome="doc" className="ico" />
                   <span>
                     {an.anexos.length ? `${contar(an.anexos.length, "comprovante, nota ou guia anexado", "comprovantes, notas e guias anexados")} aos lançamentos` : "Nenhum comprovante, nota ou guia anexado no mês"}
-                    <small>Ficam guardados em cada lançamento. A pasta com os arquivos (.zip) chega numa próxima entrega.</small>
+                    <small>{an.anexos.length ? "Ficam guardados em cada lançamento. Para levar num .zip, escolha a planilha (.xlsx)." : "Ficam guardados em cada lançamento, quando anexados."}</small>
                   </span>
                 </li>
               ) : null}
@@ -969,7 +1026,7 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
           <legend>Formato</legend>
           <label className="opcao">
             <input className="marcar" type="radio" name="ex-f" checked={formato === "XLSX"} onChange={() => setFormato("XLSX")} />
-            <span>Planilha (.xlsx)<small>O mais pedido pelos contadores, com uma aba para cada parte</small></span>
+            <span>Planilha (.xlsx) e os comprovantes (.zip)<small>O mais pedido pelos contadores, com uma aba para cada parte</small></span>
           </label>
           <label className="opcao">
             <input className="marcar" type="radio" name="ex-f" checked={formato === "CSV"} onChange={() => setFormato("CSV")} />
@@ -979,7 +1036,7 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
         {ct ? (
           <label className="opcao">
             <input className="marcar" type="checkbox" checked={mandar} onChange={(e) => setMandar(e.target.checked)} disabled={!!naoSaiu} />
-            <span>Mandar por e-mail a {ct.nome}{ct.firma ? `, da ${ct.firma}` : ""}<small>{ct.email} · a planilha vai anexada.</small></span>
+            <span>Mandar por e-mail a {ct.nome}{ct.firma ? `, da ${ct.firma}` : ""}<small>{ct.email} · a planilha vai anexada{formato === "XLSX" && an?.anexos.length ? "; os comprovantes vão num link do .zip, que vale por 30 dias" : ""}.</small></span>
           </label>
         ) : (
           <>
