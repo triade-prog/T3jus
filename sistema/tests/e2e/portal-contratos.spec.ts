@@ -170,6 +170,53 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await expect.poll(() => pedidos.some((p) => p.busca === "?mostrar=BASE&q=farm")).toBe(true);
   });
 
+  test("IN-01: pedidos de contrato do Comercial no alto da lista, do mais antigo ao mais novo, com o link para gerar", async ({ page }) => {
+    const PEDIDOS = [
+      { proposta: { id: prop(14), numero: "P-2026-014", servico: "Aposentadoria por idade", aceitaEm: dia(-1) }, cliente: { id: cli(33), nome: "Benedito Souza Lima" },
+        condicoes: [PARC, EXITO], pedidoPor: DIEGO, pedidoEm: em(0, "11:40") },
+      { proposta: { id: prop(15), numero: "P-2026-015", servico: "Revisão de contrato bancário", aceitaEm: dia(0) }, cliente: { id: cli(40), nome: "Daniela Rocha Mendes" },
+        condicoes: [{ tipo: "FIXO", valor: 150000, vencimento: dia(20) }, EXITO], pedidoPor: DIEGO, pedidoEm: em(0, "14:05") },
+    ];
+    await simular(page, { ...comuns(), "GET /v1/escritorio/contratos/pedidos": { corpo: PEDIDOS } });
+    await page.goto(`${P}/contratos/contratos`);
+    const bloco = page.getByRole("region", { name: /Pedidos de contrato/ });
+    await expect(bloco.getByRole("heading", { level: 2 })).toContainText("Pedidos de contrato");
+    await expect(bloco.getByLabel("2 pedidos")).toBeVisible();
+    const itens = bloco.getByRole("listitem");
+    await expect(itens.nth(0)).toContainText("Benedito Souza Lima");
+    await expect(itens.nth(0)).toContainText(`P-2026-014 · Aposentadoria por idade · aceita em ${br(-1).slice(0, 5)}`);
+    await expect(itens.nth(0)).toContainText("R$ 2.000,00 mais êxito");
+    await expect(itens.nth(0)).toContainText("Pedido por Diego Almeida");
+    await expect(itens.nth(0)).toContainText("hoje, às 11h40 · pelo Comercial");
+    await expect(itens.nth(1)).toContainText("Daniela Rocha Mendes");
+    await expect(bloco.getByRole("link", { name: "Gerar o contrato de Benedito Souza Lima" })).toHaveAttribute("href", `/contratos/contratos/novo?proposta=${prop(14)}`);
+    await expect(page.getByRole("table", { name: "Contratos" })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("IN-01: o aviso do pedido no sino leva ao Novo contrato da proposta", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/avisos": { corpo: { novos: 1, total: 1, itens: [
+        { id: "av1", tipo: "PEDIDO_CONTRATO", origem: "propostas", origemId: prop(14), em: new Date().toISOString(), lido: false,
+          dados: { quem: "Diego Almeida", cliente: "Benedito Souza Lima", proposta: "P-2026-014", servico: "Aposentadoria por idade", aceita: dia(-1), condicoes: [PARC, EXITO] } },
+      ] } },
+    });
+    await page.goto(`${P}/contratos/contratos`);
+    await page.getByRole("button", { name: "Avisos, 1 novo" }).first().click();
+    await expect(page.getByRole("link", { name: "Novo: Diego Almeida pediu o contrato de Benedito Souza Lima" }))
+      .toHaveAttribute("href", `/contratos/contratos/novo?proposta=${prop(14)}`);
+    await expect(page.getByText(`Proposta P-2026-014, aposentadoria por idade, aceita em ${br(-1).slice(0, 5)}: R$ 2.000,00 mais êxito.`)).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("IN-01: sem pedido de contrato, a lista fica como antes, sem bloco", async ({ page }) => {
+    await simular(page, { ...comuns(), "GET /v1/escritorio/contratos/pedidos": { corpo: [] } });
+    await page.goto(`${P}/contratos/contratos`);
+    await expect(page.getByRole("table", { name: "Contratos" })).toBeVisible();
+    await expect(page.getByRole("region", { name: /Pedidos de contrato/ })).toHaveCount(0);
+  });
+
   test("Lista no primeiro uso leva às propostas aceitas e ao primeiro contrato", async ({ page }) => {
     await simular(page, { ...comuns(), "GET /v1/escritorio/contratos": { corpo: { algum: false, contagem: { ativos: 0, elaboracao: 0, encerrados: 0, base: 0 }, contratos: [] } } });
     await page.goto(`${P}/contratos/contratos`);

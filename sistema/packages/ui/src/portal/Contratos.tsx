@@ -7,14 +7,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
   dataBr, FONTES_BASE, hojeBrasilia, percentual, reais,
-  type BasePendente, type FonteBase, type HonorariosContratos, type ListaContratos, type MostrarContratos,
+  type BasePendente, type FonteBase, type HonorariosContratos, type ListaContratos, type MostrarContratos, type PedidoContrato,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { contar, diaCurto, lerDia, somarDias } from "./agenda.ts";
 import { Busca, CabAmbar, Chips, Selo, useCarga } from "./Comercial.tsx";
-import { diasEntre } from "./comercial.ts";
+import { diasEntre, valorDaProposta } from "./comercial.ts";
 import { nomeSituacaoContrato, ROTAS_CONTRATOS, SELO_CONTRATO, textoProximo } from "./contratos.ts";
 import { Toast } from "./FichaCliente.tsx";
 import { SeloTipo } from "./Honorarios.tsx";
@@ -43,6 +43,57 @@ function CabContratos() {
   );
 }
 
+// IN-01, F3.11 (desenho aprovado em docs/design/aprovadas/portal-recibo-recorrente, estados pc-):
+// as propostas aceitas que o Comercial pediu para virar contrato, do pedido mais antigo para o mais
+// novo. Sem pedido, não há bloco. O pedido sai quando o contrato é gerado da proposta.
+const fusoBr = { timeZone: "America/Sao_Paulo" } as const;
+const diaDe = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fusoBr, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
+const horaDe = (em: string) => new Intl.DateTimeFormat("pt-BR", { ...fusoBr, hour: "2-digit", minute: "2-digit" }).format(new Date(em)).replace(":", "h");
+
+export function quandoPedido(em: string, hoje: string): string {
+  const d = diaDe(em);
+  const dia = d === hoje ? "hoje" : d === somarDias(hoje, -1) ? "ontem" : `em ${diaCurto(d)}`;
+  return `${dia}, às ${horaDe(em)}`;
+}
+
+function BlocoPedidos({ pedidos }: { pedidos: PedidoContrato[] }) {
+  if (!pedidos.length) return null;
+  const n = pedidos.length;
+  const hoje = hojeBrasilia();
+  return (
+    <section className="folha pc-bloco" aria-labelledby="t-pc">
+      <div className="folha-cab">
+        <div>
+          <h2 id="t-pc">Pedidos de contrato <span className="pc-n" aria-label={`${n} ${n === 1 ? "pedido" : "pedidos"}`}>{n}</span></h2>
+          <p className="sub">Propostas aceitas que o Comercial pediu para virar contrato. O contrato nasce com as condições da proposta; o pedido sai daqui quando o contrato é gerado.</p>
+        </div>
+      </div>
+      <ul className="pc-lista">
+        {pedidos.map((p) => (
+          <li key={p.proposta.id} className="pc-item">
+            <div className="pc-quem">
+              <a className="pc-nome" href={ROTAS_CONTRATOS.proposta(p.proposta.id)}>{p.cliente.nome}</a>
+              <small>{p.proposta.numero} · {p.proposta.servico}{p.proposta.aceitaEm ? ` · aceita em ${diaCurto(p.proposta.aceitaEm)}` : ""}</small>
+            </div>
+            <div className="pc-hon">
+              <span className="pc-valor num">{valorDaProposta(p.condicoes)}</span>
+              <div className="hn-selos">{p.condicoes.map((x) => <SeloTipo key={x.tipo} c={x} />)}</div>
+            </div>
+            <p className="pc-ped">
+              <Icone nome="enviar" className="ico" />
+              <span>Pedido por <b>{p.pedidoPor.nome}</b><small>{quandoPedido(p.pedidoEm, hoje)} · pelo Comercial</small></span>
+            </p>
+            <a className="btn btn-sec" href={ROTAS_CONTRATOS.daProposta(p.proposta.id)} aria-label={`Gerar o contrato de ${p.cliente.nome}`}>
+              <Icone nome="pena" className="ico" />
+              Gerar o contrato
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function ContratosConteudo() {
   const [mostrar, setMostrar] = useState<MostrarContratos>("ATIVOS");
   const [busca, setBusca] = useState("");
@@ -52,6 +103,8 @@ function ContratosConteudo() {
     return () => clearTimeout(t);
   }, [busca]);
   const { dados, recarregar } = useCarga<ListaContratos>(`/v1/escritorio/contratos?mostrar=${mostrar}${q ? `&q=${encodeURIComponent(q)}` : ""}`);
+  const { dados: pedidos } = useCarga<PedidoContrato[]>("/v1/escritorio/contratos/pedidos");
+  const bloco = Array.isArray(pedidos) ? <BlocoPedidos pedidos={pedidos} /> : null;
 
   if (dados === "erro") return <><CabContratos /><ErroAoCarregar oque="os contratos" aoTentar={recarregar} /></>;
   if (!dados) return <><CabContratos /><Carregando rotulo="Carregando os contratos…" linhas={4} /></>;
@@ -59,6 +112,7 @@ function ContratosConteudo() {
     return (
       <div className="hn">
         <CabContratos />
+        {bloco}
         <section className="folha" aria-labelledby="t-cl" style={{ overflow: "hidden" }}>
           <h2 id="t-cl" className="sr">Lista de contratos</h2>
           <Estado icone="pena" titulo="Nenhum contrato ainda"
@@ -84,6 +138,7 @@ function ContratosConteudo() {
   return (
     <div className="hn">
       <CabContratos />
+      {bloco}
       <section className="folha" aria-labelledby="t-cl" style={{ overflow: "hidden" }}>
         <h2 id="t-cl" className="sr">Lista de contratos</h2>
         <Busca id="ct-b" rotulo="Buscar por cliente, número ou objeto" dica="Cliente, número do contrato ou objeto" valor={busca} aoMudar={setBusca}>

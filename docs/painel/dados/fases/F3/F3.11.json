@@ -5,7 +5,7 @@
   "refs": [
     "IN-01"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 110,
-  "proximo": "Listar as propostas aceitas com contrato pedido no alto de Contratos, com o link para gerar; hoje o pedido fica na proposta e no histórico"
+  "evidencia": "Bloco \"Pedidos de contrato\" no alto de Contratos (do pedido mais antigo ao mais novo, com \"Gerar o contrato\"), aviso no sino para quem tem Contratos e \"Contrato gerado\" para quem pediu (migration 0532, pgTAP 055, Deno app_test, e2e portal-contratos e portal-comercial IN-01)."
 }

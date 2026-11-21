@@ -284,7 +284,11 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await semViolacoes(page);
     await page.getByRole("button", { name: "Pedir o contrato" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Contrato pedido" })).toBeVisible();
-    await expect(page.locator(".dir")).toContainText("Contrato pedido em");
+    await expect(page.getByRole("status").filter({ hasText: "Marina Ribeiro e Felipe Matos receberam o aviso" })).toBeVisible();
+    await expect(page.locator(".dir")).toContainText("Você pediu hoje, às");
+    await expect(page.locator(".dir")).toContainText("Marina Ribeiro e Felipe Matos receberam o aviso no sino. Quando o contrato for gerado, você também recebe um aviso.");
+    await expect(page.locator(".dir .pc-pedido")).toContainText("Contrato pedido");
+    await expect(page.getByRole("button", { name: "Pedir o contrato" })).toHaveCount(0);
     expect(pedidos.some((p) => p.metodo === "POST" && p.caminho.endsWith("/pedir-contrato"))).toBe(true);
   });
 

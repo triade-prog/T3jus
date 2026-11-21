@@ -1,6 +1,7 @@
 // O sino de avisos (F3.57; PD-07) e o pedido de "não receber avisos" na ficha (F3.63; PA-03).
 // Telas aprovadas em docs/design/aprovadas/portal-sem-avisos-sino.
 import { z } from "zod";
+import type { Condicao } from "./honorarios.ts";
 
 // ------------------------------------------------------------------ Não receber avisos
 
@@ -68,7 +69,7 @@ export type TipoAvisoSino =
   | "CONVERSA_IA" | "CONVERSA_ASSUMIDA" | "CONVERSA_PASSADA" | "AUTOMACAO_SUGESTAO"
   | "MODELO_APROVADO" | "MODELO_RECUSADO" | "PRAZO_2_DIAS"
   | "PETICAO_REVISAR" | "PETICAO_DECIDIDA" | "PETICAO_PASSADA"
-  | "BASE_DO_MES";
+  | "BASE_DO_MES" | "PEDIDO_CONTRATO" | "CONTRATO_GERADO";
 
 export interface AvisoSino {
   id: string;
@@ -80,8 +81,10 @@ export interface AvisoSino {
     caso?: string; versao?: number; decisao?: "APROVADA" | "AJUSTE" | "REPROVADA"; para?: string; passadaPor?: string;
     /** A base do mês do percentual recorrente (CH-06): o número do contrato, o mês e o vencimento. */
     contrato?: string; sobre?: string; vencimento?: string; mes?: number; de?: number; recebimento?: string;
+    /** Pedido de contrato do Comercial (IN-01): a proposta, o serviço, quando foi aceita e os honorários. */
+    proposta?: string; servico?: string; aceita?: string; condicoes?: Condicao[];
   };
-  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos";
+  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas";
   origemId: string;
   em: string;
   lido: boolean;

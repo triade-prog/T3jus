@@ -322,12 +322,20 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
           </>
         ) : (
           <>
-            <p className="hn-oque">
-              {nomes.length ? <>Quem cria contratos é quem tem a área Contratos: <b>{juntar(nomes)}</b>. O contrato nasce com estas condições.</>
-                : <>Ninguém do escritório tem a área Contratos ainda. Quem libera áreas é o sócio dono.</>}
-            </p>
             {f.contratoPedidoEm ? (
-              <p className="hn-oque"><Icone nome="check" className="ico ico-s" /> Contrato pedido em {diaCurto(diaDoInstante(f.contratoPedidoEm))}, às {horaDoInstante(f.contratoPedidoEm)}.</p>
+              // IN-01 (estado pc-pedido-feito): quem pediu sabe quem recebeu o aviso no sino.
+              <p className="hn-oque">
+                <b>Você pediu {diaDoInstante(f.contratoPedidoEm) === hoje ? "hoje" : `em ${diaCurto(diaDoInstante(f.contratoPedidoEm))}`}, às {horaDoInstante(f.contratoPedidoEm)}.</b><br />
+                {nomes.length ? <>{juntar(nomes)} {nomes.length === 1 ? "recebeu" : "receberam"} o aviso no sino. </> : null}Quando o contrato for gerado, você também recebe um aviso.
+              </p>
+            ) : (
+              <p className="hn-oque">
+                {nomes.length ? <>Quem cria contratos é quem tem a área Contratos: <b>{juntar(nomes)}</b>. O contrato nasce com estas condições.</>
+                  : <>Ninguém do escritório tem a área Contratos ainda. Quem libera áreas é o sócio dono.</>}
+              </p>
+            )}
+            {f.contratoPedidoEm ? (
+              <p className="pc-pedido"><Selo tom="andamento" icone="relogio">Contrato pedido</Selo></p>
             ) : nomes.length ? (
               <button data-muda className="btn btn-pri" type="button" onClick={aoPedir} disabled={ocupado}>
                 <Icone nome="enviar" className="ico" />
@@ -461,7 +469,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
         </div>
         <Dir f={f} hoje={hoje} eu={escritorio.pessoa} ocupado={ocupado} aoResponder={() => setJanela(true)}
           aoEnviada={() => void acao("enviada", { titulo: "Proposta marcada como enviada", texto: "O retorno dela é o próximo contato do cliente, em Atendimentos e na ficha." }, { versao: ficha.versao })}
-          aoPedir={() => void acao("pedir-contrato", { titulo: "Contrato pedido", texto: "O pedido fica na proposta, com seu nome e a hora, para quem tem a área Contratos." })} />
+          aoPedir={() => void acao("pedir-contrato", { titulo: "Contrato pedido.", texto: f.quemTemContratos.length ? `${juntar(f.quemTemContratos)} ${f.quemTemContratos.length === 1 ? "recebeu" : "receberam"} o aviso, com o link desta proposta.` : "O pedido fica na proposta, com seu nome e a hora, para quem tem a área Contratos." })} />
       </div>
       {falha ? (
         <Aviso tom="urgencia" titulo="Não deu para concluir.">

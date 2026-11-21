@@ -9,7 +9,7 @@ import {
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
-  type FichaContrato, type HonorariosContratos, type ListaContratos, type PropostaParaContrato,
+  type FichaContrato, type HonorariosContratos, type PedidoContrato, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
@@ -731,6 +731,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.get("/v1/escritorio/contratos/honorarios", async (c) => {
     return c.json(await deps.banco.rpc<HonorariosContratos>("portal_contratos_honorarios", quem(c)));
+  });
+
+  // IN-01, F3.11: os pedidos de contrato do Comercial que ainda não viraram contrato.
+  app.get("/v1/escritorio/contratos/pedidos", async (c) => {
+    return c.json(await deps.banco.rpc<PedidoContrato[]>("portal_contratos_pedidos", quem(c)));
   });
 
   app.post("/v1/escritorio/contratos", async (c) => {

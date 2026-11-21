@@ -1,0 +1,90 @@
+[
+ {
+  "nome": "rb-a4-padrao",
+  "url": "recibo-a4.html?estado=padrao"
+ },
+ {
+  "nome": "rb-a4-multa",
+  "url": "recibo-a4.html?estado=multa"
+ },
+ {
+  "nome": "rb-a4-terceiro",
+  "url": "recibo-a4.html?estado=terceiro"
+ },
+ {
+  "nome": "rb-a4-pb",
+  "url": "recibo-a4.html?estado=pb"
+ },
+ {
+  "nome": "rb-ficha",
+  "url": "financeiro.html?estado=rb-ficha"
+ },
+ {
+  "nome": "rb-confirmacao",
+  "url": "financeiro.html?estado=rb-confirmacao"
+ },
+ {
+  "nome": "rb-confirmacao-sem-envio",
+  "url": "financeiro.html?estado=rb-confirmacao-sem-envio"
+ },
+ {
+  "nome": "rb-quem-pagou",
+  "url": "financeiro.html?estado=rb-quem-pagou"
+ },
+ {
+  "nome": "rc-lista",
+  "url": "financeiro.html?estado=rc-lista"
+ },
+ {
+  "nome": "rc-ficha",
+  "url": "financeiro.html?estado=rc-ficha"
+ },
+ {
+  "nome": "rc-mudar",
+  "url": "financeiro.html?estado=rc-mudar"
+ },
+ {
+  "nome": "rc-mudar-erros",
+  "url": "financeiro.html?estado=rc-mudar-erros"
+ },
+ {
+  "nome": "rc-mudado",
+  "url": "financeiro.html?estado=rc-mudado"
+ },
+ {
+  "nome": "rc-encerrar",
+  "url": "financeiro.html?estado=rc-encerrar"
+ },
+ {
+  "nome": "rc-encerrar-erro",
+  "url": "financeiro.html?estado=rc-encerrar-erro"
+ },
+ {
+  "nome": "rc-encerrada",
+  "url": "financeiro.html?estado=rc-encerrada"
+ },
+ {
+  "nome": "rc-lista-encerrada",
+  "url": "financeiro.html?estado=rc-lista-encerrada"
+ },
+ {
+  "nome": "pc-um",
+  "url": "contratos.html?estado=pc-um"
+ },
+ {
+  "nome": "pc-dois",
+  "url": "contratos.html?estado=pc-dois"
+ },
+ {
+  "nome": "pc-sino",
+  "url": "contratos.html?estado=pc-sino"
+ },
+ {
+  "nome": "pc-vazio",
+  "url": "contratos.html?estado=pc-vazio"
+ },
+ {
+  "nome": "pc-pedido-feito",
+  "url": "comercial.html?estado=pc-pedido-feito"
+ }
+]
