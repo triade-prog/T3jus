@@ -2,6 +2,7 @@
 import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
 import type { Cerebro } from "../_shared/ia.ts";
+import type { Emails, MensagemEmail } from "../_shared/email.ts";
 import { conferirDocx, criarDocx, paragrafosDocx, type ContextoIa, type DadosPeticao } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
@@ -30,7 +31,8 @@ const PEDIDO_PETICAO = {
   enderecamento: "Excelentíssimo(a) Senhor(a) Juiz(íza) da 45ª Vara do Trabalho de São Paulo", cidadeData: "São Paulo, 20 de novembro de 2026",
 };
 
-function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean; ia?: Cerebro | null } = {}) {
+function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean; ia?: Cerebro | null;
+  emails?: Emails } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
@@ -65,6 +67,11 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       const c = sessoes.get(String(a.p_sessao));
       return c && vinculos.has(c) ? c : null;
     },
+    portal_financeiro_envio_preparar: (a) => ({ exportacaoId: a.p_exportacao, mes: "2026-10-01", formato: "XLSX", para: "contato@exemplo.com.br",
+      contador: "Paulo Serra", firma: null, escritorio: "Aurora Advocacia", quem: "Ana", responderPara: "ana@aurora.adv.br" }),
+    portal_financeiro_envio_registrar: (a) => ({ para: "contato@exemplo.com.br", situacao: a.p_situacao, em: "2026-11-18T10:00:00-03:00", por: null }),
+    portal_financeiro_ajustes_salvar: (a) => ({ dados: a.p_dados }),
+    portal_financeiro_meta: (a) => ({ dados: a.p_dados }),
     exportar_escritorio: (a) => {
       if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
       return { formato: "t3jus.exportacao.v1", geradoEm: "2026-11-18T10:00:00-03:00", escritorio: { id: a.p_escritorio }, pessoas: [], tabelas: {} };
@@ -354,7 +361,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
   });
   const storage = arquivosFalsos();
   const app = criarApiPortal("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo", admin, arquivos: storage.arquivos, ia: opcoes.ia,
+    banco: db.banco, auth: falso.auth, urlApp: "https://portal.exemplo", admin, arquivos: storage.arquivos, ia: opcoes.ia, emails: opcoes.emails,
     senhaVazada: (senha) => Promise.resolve((opcoes.vazadas ?? []).includes(senha)),
   });
   return { pedir: pedido(app, "api-portal"), vinculos, enviados, contas, storage, ...falso, ...db };
@@ -1710,4 +1717,45 @@ Deno.test("F3.48: registrar o RPV a caminho e mudar a data levam os dados ao ban
   assertEquals((await erro(ruim)).detalhes?.campos, ["situacao"]);
   await m.pedir("/v1/escritorio/financeiro/repasses", { metodo: "POST", corpo: { tipo: "RPV", requisicaoId: CLIENTE, divisao: [] }, cookie });
   assertEquals((m.chamadas.find((c) => c.funcao === "portal_financeiro_levantamento_registrar")!.args.p_dados as { requisicaoId: string }).requisicaoId, CLIENTE);
+});
+
+Deno.test("F3.50: mandar ao contador anexa a planilha, responde para quem exportou e registra se saiu", async () => {
+  const mandados: MensagemEmail[] = [];
+  const m = montar({ emails: { enviar: (x) => { mandados.push(x); return Promise.resolve(); } } });
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/enviar`, { metodo: "POST", corpo: { nome: "financeiro-2026-10.xlsx", arquivo: "UEsDBA==" }, cookie });
+  assertEquals((await r.json()).situacao, "ENVIADO");
+  assertEquals(mandados[0]!.para, "contato@exemplo.com.br");
+  assertEquals(mandados[0]!.responderPara, "ana@aurora.adv.br");
+  assertEquals(mandados[0]!.anexos, [{ nome: "financeiro-2026-10.xlsx", base64: "UEsDBA==" }]);
+  assertEquals(mandados[0]!.assunto, "Financeiro de outubro de 2026 · Aurora Advocacia");
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_financeiro_envio_registrar")!.args.p_escritorio, AURORA);
+});
+
+Deno.test("F3.50: sem o Resend, ou se ele recusa, o envio fica como não saiu", async () => {
+  const sem = montar();
+  const c1 = await noEscritorio(sem);
+  const r1 = await sem.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/enviar`, { metodo: "POST", corpo: { nome: "a.xlsx", arquivo: "UEsDBA==" }, cookie: c1 });
+  assertEquals((await r1.json()).situacao, "FALHOU");
+  const recusa = montar({ emails: { enviar: () => Promise.reject(new Error("Resend respondeu 500")) } });
+  const c2 = await noEscritorio(recusa);
+  const r2 = await recusa.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/enviar`, { metodo: "POST", corpo: { nome: "a.xlsx", arquivo: "UEsDBA==" }, cookie: c2 });
+  assertEquals((await r2.json()).situacao, "FALHOU");
+  const vazio = await recusa.pedir(`/v1/escritorio/financeiro/exportacoes/${CLIENTE}/enviar`, { metodo: "POST", corpo: { nome: "a.xlsx" }, cookie: c2 });
+  assertEquals((await erro(vazio)).detalhes?.campos, ["arquivo"]);
+});
+
+Deno.test("F3.50 e F3.49: os ajustes e a meta vão ao banco com o escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  await m.pedir("/v1/escritorio/financeiro/ajustes", { metodo: "PUT", corpo: { contador: { nome: "Paulo Serra", email: "contato@exemplo.com.br" }, prazoRepasseDias: 2 }, cookie });
+  const a = m.chamadas.find((c) => c.funcao === "portal_financeiro_ajustes_salvar")!;
+  assertEquals([a.args.p_escritorio, (a.args.p_dados as { prazoRepasseDias: number }).prazoRepasseDias], [AURORA, 2]);
+  await m.pedir("/v1/escritorio/financeiro/meta", { metodo: "PUT", corpo: { valor: 5000000, mes: "2026-11-01", soMes: false }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_financeiro_meta")!.args.p_dados as { valor: number }).valor, 5000000);
+});
+
+Deno.test("F3.50: o lembrete do contador no domínio é o mesmo tipo do banco", async () => {
+  const sql = await Deno.readTextFile(new URL("../../migrations/0557_envio_contador.sql", import.meta.url));
+  assertEquals(sql.includes("'EXPORTAR_CONTADOR'"), true);
 });

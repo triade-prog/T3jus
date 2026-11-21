@@ -712,12 +712,59 @@ export interface ResumoFinanceiro {
   proximas: { valor: number; n: number; ate: string | null; parcelas: ParcelaLinha[] };
   terceiros: TerceirosNaConta;
   repasses: { valor: number; n: number; lista: RepassePendente[] };
-  meses: { mes: string; previsto: number; realizado: number }[];
+  meses: { mes: string; previsto: number; realizado: number; meta?: number | null }[];
+  /** F3.49: a meta do mês, as outras e quem define. */
+  meta?: MetasReceita & { dono: boolean; socioDono: PessoaRef | null; media3: number };
   porTipo: { tipo: TipoHonorario; valor: number; anteriores: number; restante: number }[];
   contratado: { n: number; valor: number };
   clientesReceberam: { n: number; valor: number };
   fixas: { receita: number; despesas: number };
 }
+
+// ------------------------------------------------------- Ajustes do financeiro (F3.50, F3.49)
+
+/** O contador do escritório (F3.50, FI-21). Não entra no T3jus: recebe só o e-mail. */
+export interface Contador {
+  nome: string; firma: string | null; email: string; telefone: string | null;
+  mandarAoExportar: boolean; lembrarDia5: boolean; por?: PessoaRef | null; em?: string;
+}
+/** O saldo do caixa do escritório no dia antes do primeiro lançamento (F3.50, FI-09). */
+export interface SaldoAbertura { id: string; data: string; valor: number; motivo: string | null; por: PessoaRef | null; em: string }
+/** Uma meta de receita (F3.49, IN-09): de todo mês a partir de deMes, ou só de um mês. */
+export interface MetaReceita { valor: number; deMes: string; soMes: boolean; por: PessoaRef | null; em: string }
+export interface MetasReceita { mes: MetaReceita | null; todoMes: MetaReceita | null; antes: MetaReceita | null; umMes: MetaReceita[] }
+
+export interface AjustesFinanceiro {
+  dono: boolean;
+  socioDono: PessoaRef | null;
+  contador: Contador | null;
+  abertura: SaldoAbertura | null;
+  primeiroLancamento: string | null;
+  saldoHoje: number;
+  prazoRepasseDias: number;
+  meta: MetasReceita;
+  historico: { acao: string; em: string; por: PessoaRef | null; dados: Record<string, unknown> }[];
+}
+
+export const contadorSchema = z.object({
+  nome: z.string().nullish(), firma: z.string().nullish(), email: z.string().nullish(), telefone: z.string().nullish(),
+  mandarAoExportar: z.boolean().nullish(), lembrarDia5: z.boolean().nullish(),
+});
+export const salvarAjustesSchema = z.object({
+  contador: contadorSchema.nullish(),
+  prazoRepasseDias: z.number().int().nullish(),
+  abertura: z.object({ data: z.string().nullish(), valor: z.number().int().nullish() }).nullish(),
+});
+export type SalvarAjustes = z.input<typeof salvarAjustesSchema>;
+export const corrigirAberturaSchema = z.object({ data: z.string().nullish(), valor: z.number().int().nullish(), motivo: z.string().nullish() });
+export const definirMetaSchema = z.object({ valor: z.number().int().nullish(), mes: z.string().nullish(), soMes: z.boolean().nullish() });
+/** A planilha que vai anexada ao e-mail do contador, em base64 (até uns 4 MB). */
+export const enviarContadorSchema = z.object({ nome: z.string().min(1).max(120), arquivo: z.string().min(1).max(6_000_000) });
+
+export interface EnvioContador { para: string; situacao: "ENVIADO" | "FALHOU"; em: string; por: PessoaRef | null }
+
+/** Pessoa de contato: e-mail com o final (como .com.br). */
+export const emailCompleto = (t: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.trim());
 
 export interface MesCaixa {
   mes: string;
@@ -739,8 +786,13 @@ export interface CaixaFinanceiro {
   meses: MesCaixa[];
   /** F3.48: a parte do escritório nos RPVs e precatórios a caminho. */
   aCaminho: ACaminho;
-  exportacoes: { mes: string; formato: FormatoExportacao; em: string; por: PessoaRef | null }[];
+  exportacoes: { id?: string; mes: string; formato: FormatoExportacao; em: string; por: PessoaRef | null; envio?: EnvioContador | null }[];
   mesesExportar: string[];
+  /** F3.50: onde o saldo começa, o contador e o próximo lembrete do dia 5. */
+  abertura?: SaldoAbertura | null;
+  contador?: Pick<Contador, "nome" | "firma" | "email" | "mandarAoExportar" | "lembrarDia5"> | null;
+  lembrete?: string | null;
+  dono?: boolean;
 }
 
 export const FORMATOS_EXPORTACAO = { XLSX: "Planilha (.xlsx)", CSV: "Só a planilha (.csv)" } as const;
@@ -765,6 +817,9 @@ export interface PreviaExportacao {
 export interface DadosExportacao {
   id: string;
   mes: string;
+  /** F3.50: o saldo do caixa do escritório no começo e no fim do mês. */
+  saldoInicio?: number;
+  saldoFim?: number;
   formato: FormatoExportacao;
   escritorio: string;
   recebimentos: {

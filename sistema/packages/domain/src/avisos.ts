@@ -70,7 +70,8 @@ export type TipoAvisoSino =
   | "MODELO_APROVADO" | "MODELO_RECUSADO" | "PRAZO_2_DIAS"
   | "PETICAO_REVISAR" | "PETICAO_DECIDIDA" | "PETICAO_PASSADA"
   | "BASE_DO_MES" | "PEDIDO_CONTRATO" | "CONTRATO_GERADO"
-  | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO";
+  | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
+  | "EXPORTAR_CONTADOR";
 
 export interface AvisoSino {
   id: string;
@@ -86,8 +87,10 @@ export interface AvisoSino {
     proposta?: string; servico?: string; aceita?: string; condicoes?: Condicao[];
     /** Repasses (F3.71, F3.46): quem saiu, se você entrou, o tipo do levantamento, a parte, o que fazer e o valor. */
     saiu?: string; entrou?: boolean; levantamento?: string; partes?: number; parte?: string; oQue?: string; valor?: number;
+    /** Lembrete do dia 5 (F3.50): o mês a exportar e o contador. */
+    referencia?: string; contador?: string;
   };
-  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos";
+  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios";
   origemId: string;
   em: string;
   lido: boolean;

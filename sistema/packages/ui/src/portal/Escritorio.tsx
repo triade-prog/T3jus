@@ -472,7 +472,7 @@ export function EscritorioDoPortal() {
   const abrirExportar = useRef<(() => void) | null>(null);
   const trilha = [{ nome: "Escritório" }];
   return (
-    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={e} pagina="co-equipe" barra={<BarraEscritorio secao="dados" />}>
+    <MolduraPortal atual="escritorio" trilha={trilha} escritorio={e} pagina="co-equipe" barra={<BarraEscritorio secao="dados" financeiro={!!e?.areas.includes("FINANCEIRO")} />}>
       <div className="cabeca-ambar campo-ambar cabeca-equipe">
         <div>
           <p className="sobretitulo">Escritório</p>

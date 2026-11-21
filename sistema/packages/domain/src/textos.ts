@@ -33,6 +33,7 @@ export const TEXTO_LINK_ENVIADO =
 /** Motivo de uma recusa do banco (detalhes.motivo), dito para quem usa o Console. */
 export const TEXTOS_MOTIVO: Record<string, string> = {
   SO_SOCIO_DONO: "Só a sócia dona faz isso.",
+  SEM_CONTADOR: "O escritório ainda não tem contador cadastrado. Cadastre em Escritório › Ajustes do financeiro.",
   SEM_AREA_FINANCEIRO: "Esta pessoa não tem a área Financeiro. Escolha outra pessoa.",
   REPASSE_JA_FEITO: "Este repasse já foi feito ou dispensado. Recarregue a página para ver.",
   REQUISICAO_RESOLVIDA: "Esta requisição já entrou ou foi marcada como não vai entrar. Recarregue a página para ver.",

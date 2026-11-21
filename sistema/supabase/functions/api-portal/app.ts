@@ -13,7 +13,8 @@ import {
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
-  exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
+  exportarSchema, enviarContadorSchema, salvarAjustesSchema, corrigirAberturaSchema, definirMetaSchema,
+  type AjustesFinanceiro, type EnvioContador, type MetasReceita, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, editarPrazoSchema, editarTarefaSchema, concluirTarefaSchema,
@@ -46,6 +47,7 @@ import { rotasPropostaDocx } from "./proposta_docx.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
 import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
+import { exportacaoContador, type Emails } from "../_shared/email.ts";
 
 export type VarsPortal = { Variables: VarsSessao["Variables"] & { escritorioId: string } };
 
@@ -73,6 +75,8 @@ export interface DepsPortal extends DepsSessao {
   arquivos: Arquivos;
   /** O modelo da IA do escritório (F3.53); nulo enquanto o servidor não tem a chave. */
   ia?: Cerebro | null;
+  /** E-mails do sistema pelo Resend (F3.50: a exportação ao contador); sem a chave, o envio falha e fica registrado. */
+  emails?: Emails;
 }
 
 interface LinhaHistoricoEquipe {
@@ -1004,6 +1008,44 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/financeiro/exportacoes", async (c) => {
     const d = await lerCorpo(c, exportarSchema);
     return c.json(await deps.banco.rpc<DadosExportacao>("portal_financeiro_exportar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  // Mandar a exportação ao contador (F3.50, FI-21): quem exportou confere e manda. A planilha vem
+  // do navegador (a mesma que baixou) e vai anexada. O envio, saído ou não, fica registrado.
+  app.post("/v1/escritorio/financeiro/exportacoes/:id/enviar", async (c) => {
+    const d = await lerCorpo(c, enviarContadorSchema);
+    const id = idDaRota(c, "id");
+    const p = await deps.banco.rpc<{ para: string; contador: string; escritorio: string; mes: string; quem: string; responderPara: string | null }>(
+      "portal_financeiro_envio_preparar", { ...quem(c), p_exportacao: id });
+    let situacao: "ENVIADO" | "FALHOU" = "FALHOU";
+    if (deps.emails) {
+      try {
+        await deps.emails.enviar({
+          para: p.para, responderPara: p.responderPara, anexos: [{ nome: d.nome, base64: d.arquivo }],
+          ...exportacaoContador({ contador: p.contador, escritorio: p.escritorio, mes: p.mes, quem: p.quem, arquivo: d.nome }),
+        });
+        situacao = "ENVIADO";
+      } catch {
+        situacao = "FALHOU";
+      }
+    }
+    return c.json(await deps.banco.rpc<EnvioContador>("portal_financeiro_envio_registrar", { ...quem(c), p_exportacao: id, p_situacao: situacao }));
+  });
+
+  // Escritório › Ajustes do financeiro (F3.50): o contador, o saldo de abertura e o prazo; a meta só para ler.
+  app.get("/v1/escritorio/financeiro/ajustes", async (c) => c.json(await deps.banco.rpc<AjustesFinanceiro>("portal_financeiro_ajustes", quem(c))));
+  app.put("/v1/escritorio/financeiro/ajustes", async (c) => {
+    const d = await lerCorpo(c, salvarAjustesSchema);
+    return c.json(await deps.banco.rpc<AjustesFinanceiro>("portal_financeiro_ajustes_salvar", { ...quem(c), p_dados: d }));
+  });
+  app.post("/v1/escritorio/financeiro/ajustes/abertura", async (c) => {
+    const d = await lerCorpo(c, corrigirAberturaSchema);
+    return c.json(await deps.banco.rpc<AjustesFinanceiro>("portal_financeiro_abertura_corrigir", { ...quem(c), p_dados: d }));
+  });
+  // A meta de receita (F3.49): só a sócia dona; meses fechados não mudam.
+  app.put("/v1/escritorio/financeiro/meta", async (c) => {
+    const d = await lerCorpo(c, definirMetaSchema);
+    return c.json(await deps.banco.rpc<MetasReceita>("portal_financeiro_meta", { ...quem(c), p_dados: d }));
   });
 
   // Importar planilha (F3.55, VA-05). O arquivo chega como corpo binário e é lido aqui, na

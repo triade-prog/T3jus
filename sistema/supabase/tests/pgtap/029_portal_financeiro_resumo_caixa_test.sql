@@ -115,8 +115,8 @@ select is((select (r -> 'repasses' -> 'lista' -> 0) - 'id' - 'levantamentoId' fr
   '{"caso": "Lima x INSS", "nome": "Benedito Souza Lima", "para": "CLIENTE", "tipo": "ALVARA", "prazo": "2026-11-19", "regra": null, "valor": 70000, "cliente": "Benedito Souza Lima"}'::jsonb,
   'PD-06: os repasses pendentes, com o prazo');
 select is((select r -> 'meses' from rs),
-  '[{"mes": "2026-08-01", "previsto": 0, "realizado": 0}, {"mes": "2026-09-01", "previsto": 280000, "realizado": 280000},
-    {"mes": "2026-10-01", "previsto": 280000, "realizado": 180000}, {"mes": "2026-11-01", "previsto": 310000, "realizado": 30000}]'::jsonb,
+  '[{"mes": "2026-08-01", "meta": null, "previsto": 0, "realizado": 0}, {"mes": "2026-09-01", "meta": null, "previsto": 280000, "realizado": 280000},
+    {"mes": "2026-10-01", "meta": null, "previsto": 280000, "realizado": 180000}, {"mes": "2026-11-01", "meta": null, "previsto": 310000, "realizado": 30000}]'::jsonb,
   'IN-09: o mês comparado com os três anteriores; o previsto de novembro é o recebido mais o que falta');
 select is((select r -> 'porTipo' from rs),
   '[{"tipo": "EXITO", "valor": 30000, "restante": 0, "anteriores": 0}, {"tipo": "MENSAL", "valor": 0, "restante": 180000, "anteriores": 360000},

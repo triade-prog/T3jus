@@ -144,6 +144,14 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         detalhe: `Repasse atrasado${d.cliente ? ` de ${d.cliente}` : ""}. Se mudou, atualize a anotação.`,
         onde: "Abrir o repasse", href: `/financeiro/repasses/${a.origemId}`, selo: { tom: "atencao", texto: "Próxima ação" },
       };
+    case "EXPORTAR_CONTADOR": {
+      const ref = d.referencia ? `${["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][Number(d.referencia.slice(5, 7)) - 1]} de ${d.referencia.slice(0, 4)}` : "o mês anterior";
+      return {
+        icone: "envelope", titulo: <>Exportar <b>{ref}</b> para o contador</>,
+        detalhe: `${d.contador ? `${d.contador} espera` : "O contador espera"} a exportação do mês. Confira e mande pelo Caixa.`,
+        onde: "Abrir o Caixa", href: "/financeiro/caixa", selo: { tom: "atencao", texto: "Dia 5" },
+      };
+    }
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,
