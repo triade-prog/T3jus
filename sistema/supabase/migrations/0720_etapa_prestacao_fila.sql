@@ -248,7 +248,7 @@ begin
   select * into l from levantamentos where id = p_levantamento and escritorio_id = p_escritorio for update;
   if l.id is null then raise exception 'Repasse não encontrado' using errcode = 'TC404'; end if;
   if l.prestacao_mensagem_id is not null then
-    perform recusar_motivo('A prestação de contas deste repasse já está na fila do WhatsApp', 'JA_ENVIADA');
+    perform recusar_motivo('A prestação de contas deste repasse já está na fila do WhatsApp', 'PRESTACAO_JA_ENVIADA');
   end if;
   if not whatsapp_ligado(p_escritorio) then perform recusar_motivo('O WhatsApp do escritório não está ligado', 'WHATSAPP_NAO_LIGADO'); end if;
   select * into k from clientes_escritorio where id = l.cliente_id;

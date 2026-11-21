@@ -114,7 +114,7 @@ select is((select r -> 'prestacao' ->> 'para' from pr), 'Joana Prado', 'para o c
 select is((select m.dados -> 'campos' ->> 'resumo' from conversa_mensagens m, pr where m.id = (pr.r -> 'prestacao' ->> 'id')::uuid),
   'recebemos R$ 42.800,00, descontamos R$ 13.640,00 e fica para você R$ 29.160,00', 'o resumo numa linha para o aviso da Meta');
 select is((teste.erro($$ select portal_financeiro_prestacao_enviar(diego, rm, lv.id, '{"texto":"de novo"}') from ids, lv $$)) -> 'detalhe' ->> 'motivo',
-  'JA_ENVIADA', 'não manda duas vezes');
+  'PRESTACAO_JA_ENVIADA', 'não manda duas vezes');
 
 -- A automação "Prestação de contas" não manda outra para o mesmo repasse.
 select portal_financeiro_destinacao_feita(diego, rm, d.id, '{"feitoEm": "2026-12-01"}') from ids, lv, destinacoes d where d.levantamento_id = lv.id and d.para = 'CLIENTE';
