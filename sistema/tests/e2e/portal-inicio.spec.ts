@@ -62,7 +62,13 @@ const bloco = (page: Page, nome = "Comercial") => page.getByRole("region", { nam
 const vazioBloco = { total: 0, mostrando: 0, grupos: [] };
 const resumo = (x: Record<string, unknown> = {}) => ({ areas: ["COMERCIAL"], dono: false, pedem: { COMERCIAL: 5 }, total: 5, compromissos: 2,
   proximoCompromisso: { tipo: "AUDIENCIA", tipoEscrito: null, inicio: `${dia(0)}T23:30:00-03:00` }, ...x });
+const AUDIENCIAS = { de: dia(1), ate: dia(7), total: 2, seguinte: { id: "a9", inicio: `${dia(9)}T13:30:00-03:00`, titulo: "Instrução · Lima x Padaria Estrela" }, itens: [
+  { id: "a2", tipo: "AUDIENCIA", tipoEscrito: null, titulo: "Instrução · Corrêa x Rota Sul", inicio: `${dia(1)}T13:30:00-03:00`, fim: `${dia(1)}T15:00:00-03:00`,
+    modalidade: "PRESENCIAL", local: "TRT-2, Barra Funda", situacao: "MARCADO", lembrete: true, responsavel: MARINA, tambemVai: [{ id: "g", nome: "Gustavo Lima" }], cliente: null },
+  { id: "a3", tipo: "AUDIENCIA", tipoEscrito: null, titulo: "Conciliação · Castro x Seguradora Leste", inicio: `${dia(6)}T10:30:00-03:00`, fim: `${dia(6)}T11:30:00-03:00`,
+    modalidade: "VIRTUAL", local: "CEJUSC Pinheiros", situacao: "MARCADO", lembrete: true, responsavel: { id: "f", nome: "Felipe Matos" }, tambemVai: [], cliente: null }] };
 const COMUNS = {
+  "GET /v1/escritorio/inicio/audiencias": { corpo: AUDIENCIAS },
   [`GET /v1/escritorio/agenda?de=${dia(0)}&ate=${dia(0)}`]: { corpo: { juridico: false, algum: true, feriados: [], prazos: null, tiposEscritos: [], compromissos: [
     { id: "a1", tipo: "AUDIENCIA", tipoEscrito: null, titulo: "Conciliação · Ferreira x Banco Horizonte", inicio: `${dia(0)}T23:30:00-03:00`, fim: `${dia(0)}T23:50:00-03:00`,
       modalidade: "VIRTUAL", local: null, situacao: "MARCADO", lembrete: false, responsavel: MARINA, tambemVai: [], cliente: null }] } },
@@ -334,6 +340,29 @@ test.describe("Início completo: cobrança do dia, prazo em 2 dias e petição p
     const fin = bloco(page, "Financeiro").getByRole("list", { name: "Para hoje · 1" });
     await expect(fin).toContainText("Próxima ação hoje: mandar o Pix da primeira parcela");
     await expect(fin.getByRole("link", { name: "Gabriela Teixeira · parcela 1/2" })).toHaveAttribute("href", "/financeiro/a-receber/contratos/c9");
+    await semViolacoes(page);
+  });
+});
+
+test.describe("Próximas audiências no Início (F3.2, EX-06)", () => {
+  test("dentro da Agenda de hoje, para todos (Paula, sem área), cada uma leva ao compromisso", async ({ page }) => {
+    await simular(page, { ...COMUNS, "/v1/escritorio": { corpo: ESC_PAULA }, "GET /v1/escritorio/inicio/resumo": { corpo: resumo({ areas: [], pedem: {}, total: 0 }) } });
+    await page.goto(P);
+    const lista = page.getByRole("list", { name: "Próximas audiências" });
+    await expect(lista.getByRole("listitem")).toHaveCount(2);
+    await expect(lista.getByRole("listitem").first()).toContainText("amanhã");
+    await expect(lista.getByRole("listitem").first()).toContainText("Presencial · TRT-2, Barra Funda · Marina e Gustavo");
+    await expect(lista.getByRole("link").first()).toHaveAttribute("href", "/agenda/a2");
+    await expect(page.getByText(/^Nenhuma outra até .+ A seguinte é .+: Instrução · Lima x Padaria Estrela\.$/)).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("vazio: a linha fica, com a próxima depois da janela", async ({ page }) => {
+    await simular(page, { ...COMUNS, "/v1/escritorio": { corpo: ESC_PAULA }, "GET /v1/escritorio/inicio/resumo": { corpo: resumo({ areas: [], pedem: {}, total: 0 }) },
+      "GET /v1/escritorio/inicio/audiencias": { corpo: { ...AUDIENCIAS, total: 0, itens: [] } } });
+    await page.goto(P);
+    await expect(page.getByText("Nenhuma audiência nos próximos 7 dias.")).toBeVisible();
+    await expect(page.getByRole("list", { name: "Próximas audiências" })).toHaveCount(0);
     await semViolacoes(page);
   });
 });

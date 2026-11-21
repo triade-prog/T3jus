@@ -28,7 +28,7 @@ import {
   type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
   type RelatorioResponsaveis, type ResumoRelatorio,
-  deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio,
+  deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio, type AudienciasInicio,
   contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -362,6 +362,10 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // falhar sozinho, e o resumo do hero. "Da equipe" só para a dona; a área o banco confere.
   app.get("/v1/escritorio/inicio/resumo", async (c) => {
     return c.json(await deps.banco.rpc<ResumoInicio>("portal_inicio_resumo", quem(c)));
+  });
+  // As próximas audiências (F3.2, EX-06): da equipe toda, para todos do escritório.
+  app.get("/v1/escritorio/inicio/audiencias", async (c) => {
+    return c.json(await deps.banco.rpc<AudienciasInicio>("portal_inicio_audiencias", quem(c)));
   });
   const deInicio = (c: Context<VarsPortal>) => {
     const r = deInicioSchema.safeParse({ de: c.req.query("de") || undefined });

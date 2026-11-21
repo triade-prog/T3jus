@@ -10,19 +10,19 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   haQuanto, iniciaisConversa, MOTIVOS_CONVERSA,
-  type Agenda, type AreaPortal, type BlocoInicio, type ContatoDoDia, type ContatosDoInicio, type FichaCliente, type InicioContratos,
+  type Agenda, type AreaPortal, type AudienciasInicio, type BlocoInicio, type ContatoDoDia, type ContatosDoInicio, type FichaCliente, type InicioContratos,
   type InicioFinanceiro, type InicioJuridico, type ItemInicio, type ListaConversas, type PessoaRef, type ResumoInicio,
 } from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { formatarTelefone } from "../console/ficha.ts";
 import { Aviso } from "../console/pecas.tsx";
-import { COR_TIPO, horaDe, jaPassou, nomeDoTipo } from "./agenda.ts";
+import { COR_TIPO, horaDe, jaPassou, nomeDoTipo, rotaAgenda, somarDias, diaDe } from "./agenda.ts";
 import { ICONE_AREA } from "./areas.ts";
 import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { primeiroNome } from "./equipe.ts";
 import { JanelaRegistrar, Toast, type Feito } from "./FichaCliente.tsx";
 import {
-  cartaoComercial, cartaoContratos, cartaoFinanceiro, cartaoJuridico, diaDoInicio, diaMes, discoData, hojeIso, hojeLongo, peDoBloco,
+  cartaoComercial, cartaoContratos, cartaoFinanceiro, cartaoJuridico, diaDaAudiencia, diaDoInicio, linhaAudiencia, peAudiencias, diaMes, discoData, hojeIso, hojeLongo, peDoBloco,
   peDoLimite, rotuloAtraso, rotuloGrupo, saudacao, subtituloBloco, textoItem, type Cartao,
 } from "./inicio.ts";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
@@ -647,7 +647,63 @@ function AgendaDeHoje({ hoje }: { hoje: string }) {
       ) : (
         <EmDia titulo="Nenhum compromisso hoje." prox="A agenda da equipe está livre." />
       )}
+      <ProximasAudiencias hoje={hoje} />
     </section>
+  );
+}
+
+// As próximas audiências (F3.2, EX-06), dentro da Agenda de hoje: da equipe toda, de amanhã até 7
+// dias depois, até 3. Desenho aprovado em docs/design/aprovadas/portal-inicio-audiencias.
+function ProximasAudiencias({ hoje }: { hoje: string }) {
+  const [c, tentar] = useCarga<AudienciasInicio>("/v1/escritorio/inicio/audiencias");
+  const amanha = somarDias(hoje, 1);
+  const pe = c.estado === "ok" ? peAudiencias(c.dados) : null;
+  return (
+    <>
+      <div className="pa-cab">
+        <h3 id="t-aud">
+          <Icone nome="balanca" className="ico" />
+          Próximas audiências
+        </h3>
+        <p>{c.estado === "ok" ? `Da equipe toda · de amanhã até ${diaMes(c.dados.ate)}` : "Da equipe toda · os próximos 7 dias"}</p>
+      </div>
+      {c.estado === "carregando" ? (
+        <div aria-busy="true"><Esqueleto oque="as próximas audiências" n={2} /></div>
+      ) : c.estado === "erro" ? (
+        <ErroBloco oque="as próximas audiências" codigo={c.codigo} aoTentar={tentar} alt={{ href: rotaAgenda({ ver: "mes" }), rot: "Abrir a Agenda" }} />
+      ) : (
+        <>
+          {c.dados.itens.length ? (
+            <ol className="agenda pa-prox" aria-labelledby="t-aud">
+              {c.dados.itens.map((x) => (
+                <li key={x.id} className="ev pa-ev" style={{ "--t": COR_TIPO.AUDIENCIA } as React.CSSProperties}>
+                  <time dateTime={x.inicio}>
+                    <span className="pa-d">{diaDaAudiencia(x.inicio)}</span>
+                    {horaDe(x.inicio)}
+                  </time>
+                  <a className="cx pa-cx" href={`${ROTAS_PORTAL.agenda}/${x.id}`}>
+                    <span className="tipo">Audiência{diaDe(x.inicio) === amanha ? <> · <b>amanhã</b></> : null}</span>
+                    <strong>{x.titulo}</strong>
+                    <small>
+                      <Icone nome={x.modalidade === "VIRTUAL" ? "video" : "local"} className="ico" />
+                      <span>{linhaAudiencia(x)}</span>
+                    </small>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          {pe ? (
+            <Pe
+              icone="agenda"
+              texto={pe.destaque ? <><b>{pe.destaque}</b> {pe.texto}</> : pe.texto}
+              href={rotaAgenda({ ver: "mes" })}
+              rot="Agenda do mês"
+            />
+          ) : null}
+        </>
+      )}
+    </>
   );
 }
 
