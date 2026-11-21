@@ -1,0 +1,11 @@
+{
+  "id": "F3.82",
+  "texto": "Automações: gatilhos \"cliente novo\" (boas-vindas) e \"documento pendente\" (lembrar do documento que falta), com quem entraria hoje, os campos da mensagem e a IA podendo usá-los ao montar o fluxo",
+  "peca": "B3",
+  "refs": [
+    "PA-06"
+  ],
+  "status": "pendente",
+  "ordem": 820,
+  "proximo": "Ver se o desenho aprovado das automações já cobre os dois gatilhos ou se precisa passar pela especialista e pela Carol; depois programar o motor, a lista de gatilhos e as instruções da IA"
+}
