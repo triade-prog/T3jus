@@ -2,7 +2,7 @@
 -- F3.19, FI-14): só a sócia dona envia e escolhe; logo claro demais só em uma cor; a OAB com
 -- seccional e número; o carnê e o recibo guardam a marca do dia; isolamento (PT-01, PT-03).
 begin;
-select plan(22);
+select plan(25);
 
 select ajustar_relogio(('2026-11-18 10:12-03'::timestamptz - now()));
 
@@ -52,6 +52,10 @@ select is((select portal_recebimento_salvar(socia, rm, jsonb_build_object('versa
   'null'::jsonb, 'pergunta 7: em uma cor só, na cor da tinta, vale');
 select is((select portal_recebimento_salvar(socia, rm, jsonb_build_object('versao', 2, 'marca', 'LOGO', 'logoId', largo, 'logoCor', 'ARQUIVO')) ->> 'versao' from ids),
   '3', 'troca para o logo largo');
+select is((select portal_recebimento_marca(diego, rm) - 'logoId' from ids),
+  '{"tipo": "LOGO", "largura": 1425, "altura": 366, "jeito": "SO_LOGO", "cor": "ARQUIVO", "oab": "OAB/SP 31.874"}'::jsonb,
+  'F3.92: a proposta em Word lê a marca de hoje, com a OAB');
+select is((teste.erro($$ select portal_recebimento_marca(intrusa, rm) from ids $$)) ->> 'codigo', 'TC401', 'PT-01: a marca de outro escritório não abre');
 select is((select jsonb_build_array(r ->> 'marca', r -> 'logo' ->> 'nome', r ->> 'logoCor') from ids, lateral (select portal_recebimento(diego, rm) r) x),
   '["LOGO", "logo-ribeiro-matos.png", "ARQUIVO"]'::jsonb, 'decisão 22: Diego vê a marca em uso');
 select is((select portal_escritorio(diego, rm) ->> 'oabSociedade' from ids), 'OAB/SP 31.874', 'decisão 23: "Dados do escritório" mostra o registro');
@@ -85,6 +89,7 @@ select portal_recebimento_salvar(socia, rm, jsonb_build_object('versao', 3, 'mar
 select is((select portal_recibo(diego, rm, pg.id) -> 'marca' ->> 'tipo' from ids, pg) || ' · ' || (select portal_recibo(diego, rm, pg.id) -> 'escritorio' ->> 'oab' from ids, pg),
   'LOGO · OAB/SP 31.874', 'pergunta 9: o recibo já emitido fica como foi');
 select is((select portal_carne(diego, rm, k1.id, 'FINANCEIRO') -> 'marca' ->> 'tipo' from ids, k1), 'LOGO', 'pergunta 9: o carnê já gerado fica como foi');
+select is((select portal_recebimento_marca(diego, rm) ->> 'tipo' from ids), 'LETRA', 'F3.92: a próxima proposta sai com a marca nova');
 select throws_ok($$ delete from escritorio_logos $$, 'TC023', null, 'decisão 21: o arquivo do logo fica guardado (nada se apaga)');
 
 select * from finish();

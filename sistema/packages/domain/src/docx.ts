@@ -332,20 +332,47 @@ function paragrafoXml(p: ParagrafoDocx): string {
 }
 
 /** O timbrado no cabeçalho de cada página: a primeira linha em negrito, as outras menores. */
-function cabecalhoXml(linhas: readonly string[], w: string): string {
+/** O logo do escritório no cabeçalho (F3.92): o PNG, o tamanho em pixels e se vai com o nome ao lado. */
+export interface LogoDocx { png: Uint8Array; largura: number; altura: number; comNome: boolean }
+
+const EMU_MM = 36000;
+
+/** O logo cabe em até 92 × 18 mm, como no recibo (decisão 24 do desenho portal-nao-paga-logo). */
+function logoXml(l: LogoDocx, nome: string): string {
+  const esc = Math.min((92 * EMU_MM) / l.largura, (18 * EMU_MM) / l.altura);
+  const cx = Math.round(l.largura * esc), cy = Math.round(l.altura * esc);
+  const alt = escaparXml(semControle(nome));
+  return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">' +
+    `<wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logo" descr="${alt}"/>` +
+    '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr>' +
+    '<pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+    `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>` +
+    "</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>";
+}
+
+function cabecalhoXml(linhas: readonly string[], w: string, logo?: LogoDocx): string {
+  const r = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
   const ps = linhas.map((l, i) => {
     const rPr = i === 0 ? '<w:rPr><w:b/><w:sz w:val="26"/></w:rPr>' : '<w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr>';
     const borda = i === linhas.length - 1 ? '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="6" w:color="6B2346"/></w:pBdr>' : "";
+    // Com o logo, a primeira linha (o nome) vira o logo; com o nome ao lado, os dois na mesma linha.
+    if (i === 0 && logo) {
+      const nome = logo.comNome ? `<w:r>${rPr}<w:t xml:space="preserve">  ${escaparXml(semControle(l))}</w:t></w:r>` : "";
+      return `<w:p><w:pPr>${borda}<w:spacing w:after="60"/><w:jc w:val="center"/></w:pPr>${logoXml(logo, l)}${nome}</w:p>`;
+    }
     return `<w:p><w:pPr>${borda}<w:spacing w:after="0"/><w:jc w:val="center"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${escaparXml(semControle(l))}</w:t></w:r></w:p>`;
   }).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${w}>${ps}</w:hdr>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${w} ${r}>${ps}</w:hdr>`;
 }
 
 /**
  * Um .docx simples (Times New Roman 12, A4, margens de 3 e 2 cm), para os modelos padrão. Com
- * `timbrado`, as linhas vão no cabeçalho de cada página (nome do escritório, CNPJ e endereço).
+ * `timbrado`, as linhas vão no cabeçalho de cada página (nome do escritório, CNPJ e endereço); com
+ * `logo`, o logo do escritório entra no lugar do nome, ou ao lado dele (F3.92).
  */
-export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?: readonly string[]): Promise<Uint8Array> {
+export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?: readonly string[], logo?: LogoDocx): Promise<Uint8Array> {
+  const comLogo = !!(timbrado?.length && logo);
   const w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
   const r = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
   const cab = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
@@ -355,6 +382,7 @@ export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?:
     ["[Content_Types].xml", `${cab}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
       '<Default Extension="xml" ContentType="application/xml"/>' +
+      (comLogo ? '<Default Extension="png" ContentType="image/png"/>' : "") +
       '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
       '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
       (timbrado?.length ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : "") +
@@ -372,6 +400,12 @@ export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?:
       `<w:sectPr>${timbrado?.length ? '<w:headerReference w:type="default" r:id="rId2"/>' : ""}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>` +
       "</w:body></w:document>"],
   ];
-  if (timbrado?.length) arquivos.push(["word/header1.xml", cabecalhoXml(timbrado, w)]);
-  return await escreverZip(arquivos.map(([nome, t]) => ({ nome, dados: enc.encode(t) })));
+  if (timbrado?.length) arquivos.push(["word/header1.xml", cabecalhoXml(timbrado, w, comLogo ? logo : undefined)]);
+  if (comLogo) {
+    arquivos.push(["word/_rels/header1.xml.rels", `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+      '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/></Relationships>']);
+  }
+  const entradas: { nome: string; dados: Uint8Array }[] = arquivos.map(([nome, t]) => ({ nome, dados: enc.encode(t) }));
+  if (comLogo) entradas.push({ nome: "word/media/logo.png", dados: logo!.png });
+  return await escreverZip(entradas);
 }

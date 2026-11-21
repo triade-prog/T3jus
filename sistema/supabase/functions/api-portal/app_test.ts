@@ -3,7 +3,7 @@ import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
 import type { Cerebro } from "../_shared/ia.ts";
 import type { Emails, MensagemEmail } from "../_shared/email.ts";
-import { conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosPeticao } from "@t3jus/domain";
+import { abrirEntrada, abrirTexto, conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosPeticao } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -33,6 +33,8 @@ const PEDIDO_PETICAO = {
   enderecamento: "Excelentíssimo(a) Senhor(a) Juiz(íza) da 45ª Vara do Trabalho de São Paulo", cidadeData: "São Paulo, 20 de novembro de 2026",
 };
 
+const LOGO_TESTE = "10600000-0000-4000-8000-000000000001";
+
 // O recibo como o banco devolve (F3.19, F3.93), com o reembolso pago junto (F3.95).
 const RECIBO_TESTE = {
   numero: { ano: 2026, numero: 187 },
@@ -46,7 +48,7 @@ const RECIBO_TESTE = {
 };
 
 function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono?: boolean; semComercial?: boolean; soConsulta?: boolean; ia?: Cerebro | null;
-  emails?: Emails; comprovantes?: boolean; recibos?: boolean } = {}) {
+  emails?: Emails; comprovantes?: boolean; recibos?: boolean; logo?: boolean } = {}) {
   const { admin, enviados, contas } = adminFalso({ "lara@aurora.adv.br": LARA });
   const vinculos = new Set([AURORA]);
   const sessoes = new Map<string, string>();
@@ -222,6 +224,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_financeiro_cobranca_anotar: () => ({ id: CLIENTE }),
     portal_recibo: (a) => ({ ...RECIBO_TESTE, pagamentoId: a.p_pagamento }),
+    portal_recebimento_marca: () => (opcoes.logo
+      ? { tipo: "LOGO", logoId: LOGO_TESTE, largura: 1200, altura: 300, jeito: "SO_LOGO", cor: "ARQUIVO", oab: "OAB/BA 1.234" }
+      : { tipo: "LETRA" }),
     portal_recorrencias: () => ({ mes: "2026-11-01", ativas: [], encerradas: [] }),
     portal_recorrencia: (a) => ({ id: a.p_rec, mudancas: [] }),
     portal_recorrencia_mudar: (a) => {
@@ -1117,6 +1122,28 @@ Deno.test("AP-05: baixar a proposta em .docx no timbrado, na pasta do escritóri
   assert(texto.some((t) => t.startsWith("Parcelado: R$ 3.000,00 em 3 parcelas")));
   assert(texto.includes("Esta proposta vale até 30/11/2026."));
   assertEquals((await m.pedir("/v1/escritorio/propostas/nao-e-id/docx", { corpo: {}, cookie })).status, 404);
+});
+
+Deno.test("F3.92: com o logo do escritório, a proposta em Word leva o logo no cabeçalho, no lugar do nome", async () => {
+  const m = montar({ logo: true });
+  m.storage.bytes.set(`${AURORA}/logos/${LOGO_TESTE}.png`, new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]));
+  const cookie = await noEscritorio(m);
+  await m.pedir(`/v1/escritorio/propostas/${CLIENTE}/docx`, { corpo: {}, cookie });
+  const bytes = m.storage.bytes.get(`${AURORA}/propostas/${CLIENTE}-v2.docx`)!;
+  const docx = lerZip(bytes);
+  assertEquals((await abrirEntrada(bytes, docx.get("word/media/logo.png")!)).length, 11);
+  const cab = await abrirTexto(bytes, docx.get("word/header1.xml")!);
+  assertMatch(cab, /r:embed="rIdLogo"/);
+  // 1200 × 300 px cabe em 72 × 18 mm (a altura manda).
+  assertMatch(cab, /cx="2592000" cy="648000"/);
+  assertMatch(cab, /OAB\/BA 1\.234/);
+  assertEquals(cab.includes(">Aurora Advocacia<"), false);
+  // Sem logo, o cabeçalho segue com o nome em letra.
+  const sem = montar();
+  const c2 = await noEscritorio(sem);
+  await sem.pedir(`/v1/escritorio/propostas/${CLIENTE}/docx`, { corpo: {}, cookie: c2 });
+  const d2 = lerZip(sem.storage.bytes.get(`${AURORA}/propostas/${CLIENTE}-v2.docx`)!);
+  assertEquals(d2.has("word/media/logo.png"), false);
 });
 
 Deno.test("CH-01: situações do contrato e fontes da base no domínio são as mesmas do banco", async () => {

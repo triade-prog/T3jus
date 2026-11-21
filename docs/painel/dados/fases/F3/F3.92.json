@@ -5,7 +5,8 @@
   "refs": [
     "AP-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 920,
-  "proximo": "Pergunta 10 do desenho portal-nao-paga-logo: entra numa próxima entrega, depois do logo no carnê e no recibo"
+  "evidencia": "Migration 0653 (portal_recebimento_marca: a marca de hoje, que toda a equipe lê), domain/docx.ts (o logo no cabeçalho do .docx, até 92 × 18 mm, no lugar do nome ou ao lado dele), domain/logo.ts (pngEmUmaCor: o logo em uma cor só sai em preto) e api-portal/proposta_docx.ts; testes Deno app_test.ts (F3.92), Vitest logo.test.ts e pgTAP 068.",
+  "nota": "Sem logo (marca em letra), o cabeçalho da proposta segue com o nome do escritório, como antes. A OAB da sociedade entra no timbrado."
 }
