@@ -148,15 +148,19 @@ export function textoItem(i: ItemInicio, hoje: string): TextoItem {
     case "PARCELA": {
       const c = i.cobranca;
       const forma = i.forma && i.forma in FORMAS_PAGAMENTO ? FORMAS_PAGAMENTO[i.forma as FormaPagamento] : null;
+      // A cobrança com a ação de hoje (ou já passada) antes do vencimento (F3.21).
+      const acaoAntes = !venc && c !== null && c.proxData <= hoje;
+      const proxima = (x: NonNullable<typeof c>) => `Próxima ação ${x.proxData === hoje ? "hoje" : `em ${diaCurto(x.proxData)}`}: ${x.proxOque}`;
       return {
         titulo: `${i.cliente.nome} · ${i.descricao}`, href: `/financeiro/a-receber/contratos/${i.contrato.id}`,
-        verbo: venc ? "Cobrar" : "Acompanhar",
+        verbo: venc || acaoAntes ? "Cobrar" : "Acompanhar",
         oque: venc
-          ? c ? `Próxima ação ${c.proxData === hoje ? "hoje" : `em ${diaCurto(c.proxData)}`}: ${c.proxOque}` : "Sem próxima ação: anote a cobrança"
-          : `Entra ${naData(i.em, hoje)}${forma ? ` por ${forma}` : ""}`,
+          ? c ? proxima(c) : "Sem próxima ação: anote a cobrança"
+          : acaoAntes ? proxima(c) : `Entra ${naData(i.em, hoje)}${forma ? ` por ${forma}` : ""}`,
         detalhe: venc ? (c?.motivo ? `Motivo: ${c.motivo}` : null) : [maiuscula(nomeDoMes(i.em)), forma].filter(Boolean).join(" · "),
         detalheIco: "doc",
         selo: venc ? { tom: "urgente", texto: `${diasEntre(i.em, hoje)} ${diasEntre(i.em, hoje) === 1 ? "dia" : "dias"}` }
+          : acaoAntes ? { tom: "neutro", texto: `vence ${relDia(i.em, hoje).toLowerCase()}` }
           : { tom: "atencao", texto: relDia(i.em, hoje) },
         valor: i.valor, esperando: null,
       };
@@ -173,6 +177,18 @@ export function textoItem(i: ItemInicio, hoje: string): TextoItem {
     }
     case "PRAZO": {
       const final = i.dataFinal;
+      // O lembrete 2 dias antes (F3.38): a acompanhar, para preparar.
+      if (i.lembrete && i.em > hoje) {
+        return {
+          titulo: `${i.descricao} · ${i.caso.nome}`, href: `/juridico/casos/${i.caso.id}`, verbo: "Preparar",
+          oque: i.fazerAte && i.fazerAte !== final
+            ? `Fazer até ${relDia(i.fazerAte, hoje).toLowerCase()}: o prazo final é ${relDia(final, hoje).toLowerCase()}`
+            : `Prazo final ${relDia(final, hoje).toLowerCase()}`,
+          detalhe: ["Prazo", i.caso.numero, i.caso.tribunal].filter(Boolean).join(" · "), detalheIco: "balanca",
+          selo: { tom: "atencao", texto: i.em === somarDias(hoje, 1) ? "amanhã" : `em ${diasEntre(hoje, i.em)} dias` },
+          valor: null, esperando: null,
+        };
+      }
       return {
         titulo: `${i.descricao} · ${i.caso.nome}`, href: `/juridico/casos/${i.caso.id}`, verbo: "Entregar",
         oque: i.fazerAte && i.fazerAte !== final
@@ -191,6 +207,19 @@ export function textoItem(i: ItemInicio, hoje: string): TextoItem {
         valor: null,
         esperando: i.esperando ? `Esperando ${i.esperando}${i.esperandoDesde ? `, desde ${diaCurto(i.esperandoDesde)}` : ""}` : null,
       };
+    case "PETICAO": {
+      // A petição esperando a revisão (F3.76, EX-09): sai quando quem revisa decide.
+      const p = i.prazo;
+      const quando = i.enviadaEm === hoje ? "hoje" : i.enviadaEm === somarDias(hoje, -1) ? "ontem" : `em ${diaCurto(i.enviadaEm)}`;
+      return {
+        titulo: `${i.modelo} · ${i.caso.nome}`, href: `/juridico/peticoes/${i.id}`, verbo: "Revisar",
+        oque: `Revisar ${i.versao > 1 ? `a versão ${i.versao} que` : "a petição que"} ${primeiroNome(i.por.nome)} mandou ${quando}`,
+        detalhe: p ? `Prazo do caso: ${p.descricao}, ${p.em === hoje ? "hoje" : diaCurto(p.em)}` : "Só fica pronta depois que você aprovar",
+        detalheIco: "balanca",
+        selo: { tom: p && p.em <= hoje ? "urgente" : "atencao", texto: "Revisar" },
+        valor: null, esperando: null,
+      };
+    }
   }
 }
 

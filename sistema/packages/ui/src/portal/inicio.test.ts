@@ -126,3 +126,37 @@ describe("Início por áreas: blocos, cartões e hero", () => {
       .toEqual([{ n: 8, titulo: "pedem você hoje", sub: "nas suas 4 áreas" }, { n: 4, titulo: "compromissos hoje", sub: "audiência às 11h" }]);
   });
 });
+
+describe("Início completo: cobrança do dia, prazo em 2 dias e petição para revisar", () => {
+  it("F3.21 (PD-07): a cobrança com a ação de hoje antes do vencimento pede para cobrar", () => {
+    const i: ItemInicio = {
+      tipo: "PARCELA", id: "p", em: "2026-12-10", responsavel: MARINA, descricao: "parcela 1/2", valor: 100000, forma: "PIX",
+      contrato: { id: "c", numero: "C-2026-002" }, cliente: { id: "k", nome: "Gabriela Teixeira" },
+      cobranca: { motivo: null, proxData: H, proxOque: "mandar o Pix da primeira parcela" },
+    };
+    const t = textoItem(i, H);
+    expect([t.verbo, t.oque, t.selo]).toEqual(["Cobrar", "Próxima ação hoje: mandar o Pix da primeira parcela", { tom: "neutro", texto: "vence 10/12" }]);
+  });
+  it("F3.38 (EX-04): o prazo com o lembrete aparece 2 dias antes para preparar", () => {
+    const i: ItemInicio = {
+      tipo: "PRAZO", id: "z", em: "2026-11-20", responsavel: MARINA, descricao: "Contestação", fazerAte: "2026-11-20", dataFinal: "2026-11-23",
+      lembrete: true, caso: { id: "s", nome: "Castro x Banco Horizonte", numero: null, tribunal: null },
+    };
+    const t = textoItem(i, H);
+    expect([t.verbo, t.oque, t.selo]).toEqual(["Preparar", "Fazer até sexta: o prazo final é segunda", { tom: "atencao", texto: "em 2 dias" }]);
+    expect(textoItem({ ...i, em: "2026-11-19", fazerAte: null, dataFinal: "2026-11-19" }, H).selo?.texto).toBe("amanhã");
+  });
+  it("F3.76 (EX-09): a petição para revisar diz quem mandou e o prazo do caso", () => {
+    const i: ItemInicio = {
+      tipo: "PETICAO", id: "x", em: H, responsavel: MARINA, modelo: "Contestação", versao: 1, enviadaEm: "2026-11-17",
+      por: { id: "f", nome: "Felipe Matos" }, caso: { id: "s", nome: "Souza x Construtora Atlas" },
+      prazo: { id: "z", descricao: "Contestação", em: "2026-11-20", dataFinal: "2026-11-20" },
+    };
+    const t = textoItem(i, H);
+    expect([t.titulo, t.href, t.verbo, t.oque, t.detalhe, t.selo]).toEqual([
+      "Contestação · Souza x Construtora Atlas", "/juridico/peticoes/x", "Revisar", "Revisar a petição que Felipe mandou ontem",
+      "Prazo do caso: Contestação, 20/11", { tom: "atencao", texto: "Revisar" },
+    ]);
+    expect(textoItem({ ...i, versao: 2, enviadaEm: "2026-11-10", prazo: null }, H).oque).toBe("Revisar a versão 2 que Felipe mandou em 10/11");
+  });
+});
