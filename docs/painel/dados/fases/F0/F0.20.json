@@ -1,0 +1,11 @@
+{
+  "id": "F0.20",
+  "texto": "Envio garantido de mensagens: a mudança e a mensagem a enviar ficam gravadas juntas, na mesma transação, numa fila com a situação de cada uma",
+  "peca": "B3",
+  "refs": [
+    "PT-04"
+  ],
+  "status": "feito",
+  "evidencia": "conversa_mensagens com envio NA_FILA, ENVIADA, ENTREGUE, LIDA ou FALHOU (migration 0300), gravada na mesma função que muda a conversa, os avisos automáticos (0340, 0570) e o carnê (0625); pgTAP 030 e 058",
+  "ordem": 200
+}

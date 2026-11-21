@@ -1,0 +1,11 @@
+{
+  "id": "F0.21",
+  "texto": "O serviço que tira as mensagens da fila e entrega pelo WhatsApp, com novas tentativas e a falha registrada",
+  "peca": "B3",
+  "refs": [
+    "PT-04"
+  ],
+  "status": "pendente",
+  "ordem": 210,
+  "proximo": "Depende da ligação do WhatsApp com a Meta (PA-04): hoje nada sai da fila"
+}

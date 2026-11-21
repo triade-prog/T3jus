@@ -45,6 +45,11 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     acesso_portal: (a) => a.p_pessoa === ANA && vinculos.size > 0,
     registrar_acesso: () => 1,
     portal_recebimento: () => ({ dono: true, versao: 0, pixTipo: null, pixChave: null }),
+    portal_carne_envio: () => ({
+      cliente: { nome: "Hélio Batista Corrêa" }, para: { nome: "Marta Corrêa", papel: "esposa", telefone: "+5511981143059" }, titular: null,
+      escritorio: "Aurora Advocacia", ultimaDoCliente: null, bloqueio: "WHATSAPP_NAO_LIGADO", envios: [],
+    }),
+    portal_carne_enviar: () => ({ envios: [{ id: "e1", para: "Marta Corrêa", telefone: "+5511981143059", em: "2026-11-21T18:00:00-03:00", por: null, envio: "NA_FILA" }] }),
     portal_recebimento_pedir: () => ({ para: { id: "d0000000-0000-4000-8000-000000000001", nome: "Marina Ribeiro" }, jaPedido: false }),
     portal_recebimento_salvar: (a) => ({ versao: Number((a.p_dados as { versao: number }).versao) + 1, desatualizados: 0 }),
     portal_carne_opcoes: (a) => ({ contrato: { id: a.p_contrato }, area: a.p_area, parcelas: [], carnes: [] }),
@@ -1702,6 +1707,32 @@ Deno.test("F3.85, F3.14: o reembolso vai junto no registrar; o encerramento leva
     corpo: { versao: 1, etapaId: ANA, motivo: "Acordo", resultado: "ACORDO", valores: { [CLIENTE]: 2800000 }, previstoEm: "2026-12-15" }, cookie });
   const d = m.chamadas.findLast((c) => c.funcao === "portal_juridico_caso_etapa")!.args.p_dados as Record<string, unknown>;
   assertEquals([d.valores, d.previstoEm], [{ [CLIENTE]: 2800000 }, "2026-12-15"]);
+});
+
+Deno.test("F3.79: o PDF do carnê sai do servidor uma vez e fica guardado; o envio leva o PDF e a mensagem", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const caminho = `${AURORA}/carnes/${CLIENTE}.pdf`;
+  const r = await (await m.pedir(`/v1/escritorio/carnes/${CLIENTE}/pdf?area=financeiro`, { cookie })).json();
+  assertEquals(r.nome, "carne-helio-correa-C-2026-014.pdf");
+  const pdf = m.storage.bytes.get(caminho)!;
+  assertEquals(new TextDecoder().decode(pdf.slice(0, 5)), "%PDF-");
+  assertEquals(m.storage.guardados.get(caminho)?.tipo, "application/pdf");
+  assertEquals(m.storage.leituras.at(-1), { caminho, segundos: 60, nome: "carne-helio-correa-C-2026-014.pdf" });
+  // Pedir de novo usa o guardado.
+  await m.pedir(`/v1/escritorio/carnes/${CLIENTE}/pdf`, { cookie });
+  assertEquals(m.storage.bytes.get(caminho), pdf);
+
+  const p = await (await m.pedir(`/v1/escritorio/carnes/${CLIENTE}/envio?area=financeiro`, { cookie })).json();
+  assertEquals(p.bloqueio, "WHATSAPP_NAO_LIGADO");
+  assertEquals(p.arquivo, { nome: "carne-helio-correa-C-2026-014.pdf", tamanho: pdf.length, folhas: 1 });
+  assertMatch(p.texto, /^Olá, Marta! Aqui está o carnê dos honorários do Hélio, contrato C-2026-014: as parcelas 3 a 4, de R\$ 850,00, que vencem todo dia 25\./);
+  const e = await m.pedir(`/v1/escritorio/carnes/${CLIENTE}/envios`, { cookie, corpo: { area: "FINANCEIRO", texto: "  Olá, Marta!  ", tambemCliente: true } });
+  assertEquals(e.status, 201);
+  const a = m.chamadas.find((c) => c.funcao === "portal_carne_enviar")!.args;
+  assertEquals(a.p_dados, { area: "FINANCEIRO", texto: "Olá, Marta!", tambemCliente: true,
+    arquivo: { caminho, nome: "carne-helio-correa-C-2026-014.pdf", bytes: String(pdf.length) } });
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/carnes/${CLIENTE}/envios`, { cookie, corpo: { area: "FINANCEIRO", texto: "" } }))).codigo, "VALIDATION_ERROR");
 });
 
 Deno.test("F3.45, FI-08: a ficha do repasse traz o acerto do caso; encerrar devolve as pendências", async () => {

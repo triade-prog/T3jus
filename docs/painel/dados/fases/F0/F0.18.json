@@ -1,0 +1,11 @@
+{
+  "id": "F0.18",
+  "texto": "Servidores no Brasil: banco, arquivos e funções no Supabase em São Paulo; Portal e Console na Vercel em São Paulo",
+  "peca": "B4",
+  "refs": [
+    "PT-16"
+  ],
+  "status": "feito",
+  "evidencia": "Projeto Supabase t3jus em sa-east-1 (São Paulo), criado em 20/11/2026; apps/portal/vercel.json e apps/console/vercel.json com \"regions\": [\"gru1\"] (São Paulo). O site comercial é estático, sem dado de escritório",
+  "ordem": 180
+}

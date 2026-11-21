@@ -1,11 +1,11 @@
 {
   "id": "F3.79",
-  "texto": "Carnê pelo WhatsApp do escritório: prévia da mensagem com o PDF para o contato principal, envio, entregue e lido na folha \"Carnê\", e o PDF guardado no servidor",
+  "texto": "Carnê pelo WhatsApp do escritório: PDF gerado e guardado no servidor, prévia da mensagem com o PDF para o contato principal, envio para a fila e a folha \"Carnê\" mostrando para quem foi",
   "peca": "S4",
   "refs": [
     "FI-23"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 790,
-  "proximo": "Precisa gerar o PDF no servidor (hoje sai pela impressão do navegador) e, fora da janela de 24 horas, de um aviso \"Carnê de pagamento\" aprovado pela Meta"
+  "evidencia": "Desenho aprovado (docs/design/aprovadas/portal-carne, estado carne-whats, decisões 10 e 11); api-portal carne_pdf.ts (pdf-lib, o mesmo A4 aprovado: 3 por folha, canhoto, capa, QR do Pix) guardado em Storage {escritório}/carnes/{id}.pdf, GET /carnes/:id/pdf, /envio e POST /envios; migration 0625 (carne_envios, só acrescenta; recusa sem WhatsApp ligado, sem celular e fora da janela de 24 horas); \"Baixar PDF\" e \"Mandar pelo WhatsApp\" na folha \"Carnê\"; teste pgTAP 077, Deno app_test F3.79 e e2e portal-carne (+2)"
 }

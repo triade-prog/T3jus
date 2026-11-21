@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   brCodePix, chavePixParaLer, dataBr, hojeBrasilia, LIMITE_CIDADE, LIMITE_INSTRUCOES, LIMITE_RECEBEDOR, normalizarChavePix, pixDaParcela,
   fraseOabSociedade, reais, telefoneBr, textoPix, TIPOS_CHAVE_PIX, txidParcela,
-  type AreaCarne, type CarneGerado, type CarneParaImprimir, type FormatoCarne, type MudancaCarne, type OpcoesCarne, type ParcelaParaCarne, type PedidoChavePix,
+  type AreaCarne, type CarneGerado, type CarneParaImprimir, type FormatoCarne, type MudancaCarne, type OpcoesCarne, type ParcelaParaCarne, type PdfDoCarne, type PedidoChavePix, type PreviaEnvioCarne, type EnvioCarne,
   type RecebimentoEscritorio, type RecebimentoSalvo, type TipoChavePix,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -408,6 +408,8 @@ export function FolhaCarne({ contrato, area, escritorio, aberta, aoAbrir, aoFech
 }) {
   const [o, setO] = useState<OpcoesCarne | null | "erro">(null);
   const [vez, setVez] = useState(0);
+  const [whats, setWhats] = useState<string | null>(null);
+  const [feito, setFeito] = useState<Feito | null>(null);
   useEffect(() => {
     let vivo = true;
     void chamarPortal<OpcoesCarne>(`/v1/escritorio/contratos/${contrato}/carnes?area=${area.toLowerCase()}`).then((r) => {
@@ -446,7 +448,7 @@ export function FolhaCarne({ contrato, area, escritorio, aberta, aoAbrir, aoFech
           ) : null}
           <ul className="cn-hist" aria-label="Carnês gerados">
             {o.carnes.map((k, i) => <ItemCarne key={k.id} k={k} area={area} ultimo={i === 0} substituidoEm={i > 0 ? o.carnes[i - 1]!.geradoEm : null}
-              aoGerar={i === 0 && pode && !desat ? aoAbrir : undefined} />)}
+              aoGerar={i === 0 && pode && !desat ? aoAbrir : undefined} aoMandar={i === 0 && vigente && !desat ? () => setWhats(k.id) : undefined} />)}
           </ul>
           {desat ? null : <LinhaChave o={o} />}
         </>
@@ -466,13 +468,54 @@ export function FolhaCarne({ contrato, area, escritorio, aberta, aoAbrir, aoFech
         <JanelaCarne o={o} area={area} escritorio={escritorio} aoFechar={aoFechar}
           aoFeito={(id) => { window.location.href = rotaCarne(id, area, true); }} />
       ) : null}
+      {whats ? (
+        <JanelaWhats carne={whats} area={area} aoFechar={() => setWhats(null)}
+          aoEnviado={(para) => {
+            setWhats(null);
+            setFeito({ titulo: "Carnê na fila do WhatsApp", texto: `A mensagem para ${para} sai pelo número do escritório e fica na ficha, com a situação do envio.` });
+            setVez((v) => v + 1);
+          }} />
+      ) : null}
+      {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </section>
   );
 }
 
-function ItemCarne({ k, area, ultimo, substituidoEm, aoGerar }: { k: CarneGerado; area: AreaCarne; ultimo: boolean; substituidoEm: string | null; aoGerar?: () => void }) {
+/** Baixa o PDF gerado no servidor (F3.79) pelo link curto. */
+async function baixarPdf(id: string, area: AreaCarne): Promise<string | null> {
+  const r = await chamarPortal<PdfDoCarne>(`/v1/escritorio/carnes/${id}/pdf?area=${area.toLowerCase()}`);
+  if (!r.ok) return textoDoErro(r.erro);
+  const a = document.createElement("a");
+  a.href = r.dados.url;
+  a.download = r.dados.nome;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  return null;
+}
+
+const SITUACAO_ENVIO: Record<string, string> = {
+  NA_FILA: "na fila, esperando a ligação do WhatsApp com a Meta", ENVIADA: "enviado", ENTREGUE: "entregue", LIDA: "lido", FALHOU: "não foi entregue",
+};
+
+function LinhaEnvios({ envios }: { envios: EnvioCarne[] }) {
+  if (!envios.length) return null;
+  return (
+    <small className="cn-envios">
+      <Icone nome="whats" className="ico ico-s" />
+      {envios.map((e) => `${e.para} em ${diaCurto(diaDoInstante(e.em))}, às ${horaDoInstante(e.em)}: ${SITUACAO_ENVIO[e.envio ?? "NA_FILA"] ?? "na fila"}`).join(" · ")}
+    </small>
+  );
+}
+
+function ItemCarne({ k, area, ultimo, substituidoEm, aoGerar, aoMandar }: {
+  k: CarneGerado; area: AreaCarne; ultimo: boolean; substituidoEm: string | null; aoGerar?: () => void; aoMandar?: () => void;
+}) {
   const folhas = folhasDoCarne(k.parcelas.length, k.formato, k.capa);
   const desat = k.mudancas.length > 0;
+  const [baixando, setBaixando] = useState(false);
+  const [falhaPdf, setFalhaPdf] = useState<string | null>(null);
   return (
     <li>
       <Icone nome="carne" className="ico" />
@@ -482,12 +525,98 @@ function ItemCarne({ k, area, ultimo, substituidoEm, aoGerar }: { k: CarneGerado
         {!ultimo && substituidoEm ? <SeloCarne tom="neutro">Substituído pelo de {diaCurto(diaDoInstante(substituidoEm))}</SeloCarne>
           : desat ? <SeloCarne tom="atencao" icone="alerta">Desatualizado</SeloCarne>
           : <SeloCarne tom="ativo" icone="check">Em dia com as parcelas</SeloCarne>}
+        <LinhaEnvios envios={k.envios ?? []} />
       </div>
       <div className="cn-acoes">
         <a className="btn btn-sec btn-compacto" href={rotaCarne(k.id, area)}><Icone nome="impressora" className="ico" />Abrir para imprimir</a>
+        <button className="btn btn-sec btn-compacto" type="button" disabled={baixando} aria-busy={baixando || undefined}
+          onClick={async () => { setBaixando(true); setFalhaPdf(await baixarPdf(k.id, area)); setBaixando(false); }}>
+          <Icone nome={baixando ? "relogio" : "baixar"} className="ico" />{baixando ? "Gerando o PDF…" : "Baixar PDF"}
+        </button>
+        {aoMandar ? <button className="btn btn-sec btn-compacto" type="button" onClick={aoMandar}><Icone nome="whats" className="ico" />Mandar pelo WhatsApp</button> : null}
         {aoGerar ? <button className="btn btn-sec btn-compacto" type="button" onClick={aoGerar}><Icone nome="reenviar" className="ico" />Gerar de novo</button> : null}
       </div>
+      {falhaPdf ? <p className="erro-campo" role="alert" style={{ gridColumn: "1 / -1" }}>Não deu para gerar o PDF. {falhaPdf}</p> : null}
     </li>
+  );
+}
+
+const BLOQUEIOS: Record<string, (nome: string) => string> = {
+  WHATSAPP_NAO_LIGADO: () => "O WhatsApp do escritório ainda não está ligado ao T3jus. Quando a ligação com a Meta ficar pronta, o carnê sai daqui. Enquanto isso, baixe o PDF e mande por fora.",
+  SEM_WHATSAPP: () => "O contato principal da ficha não tem celular. Cadastre um celular na ficha do cliente, ou baixe o PDF e entregue por outro meio.",
+  JANELA_FECHADA_SEM_MODELO: (nome) => `${nome} não escreve ao escritório há mais de 24 horas. Fora dessa janela, o WhatsApp só aceita aviso aprovado pela Meta, e o aviso “Carnê de pagamento” ainda não foi aprovado. Peça para ${nome} escrever, ou baixe o PDF e mande por fora.`,
+};
+
+/** Prévia da mensagem antes de mandar o carnê pelo WhatsApp (estado carne-whats). */
+function JanelaWhats({ carne, area, aoFechar, aoEnviado }: { carne: string; area: AreaCarne; aoFechar: () => void; aoEnviado: (para: string) => void }) {
+  const [p, setP] = useState<PreviaEnvioCarne | null | "erro">(null);
+  const [tambem, setTambem] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [falha, setFalha] = useState<string | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    void chamarPortal<PreviaEnvioCarne>(`/v1/escritorio/carnes/${carne}/envio?area=${area.toLowerCase()}`).then((r) => { if (vivo) setP(r.ok ? r.dados : "erro"); });
+    return () => { vivo = false; };
+  }, [carne, area]);
+  const pronta = p && p !== "erro" ? p : null;
+  const nome = pronta?.para ? pronta.para.nome.split(" ")[0]! : "o cliente";
+  async function enviar() {
+    if (!pronta || pronta.bloqueio) return;
+    setEnviando(true);
+    setFalha(null);
+    const r = await chamarPortal<{ envios: EnvioCarne[] }>(`/v1/escritorio/carnes/${carne}/envios`, { corpo: { area, texto: pronta.texto, tambemCliente: tambem } });
+    setEnviando(false);
+    if (r.ok) aoEnviado(pronta.para!.nome);
+    else setFalha(textoDoErro(r.erro));
+  }
+  let corpo: ReactNode;
+  if (p === "erro") corpo = <ErroAoCarregar oque="a prévia da mensagem" aoTentar={() => setP(null)} />;
+  else if (!pronta) corpo = <Carregando rotulo="Gerando o PDF e a prévia…" linhas={3} />;
+  else {
+    const kb = Math.max(1, Math.round(pronta.arquivo.tamanho / 1024));
+    corpo = (
+      <>
+        <p id="janela-whats-d">Confira a mensagem antes de enviar.</p>
+        {falha ? <Aviso tom="urgencia" titulo="Não deu para mandar.">{falha} Nada foi enviado.</Aviso> : null}
+        {pronta.bloqueio ? <Aviso tom="atencao" titulo="O carnê ainda não pode ir pelo WhatsApp.">{BLOQUEIOS[pronta.bloqueio]!(nome)}</Aviso> : null}
+        <div className="fi-zap">
+          <p className="fi-zap-cab"><Icone nome="whats" className="ico" />
+            {pronta.para ? <>Para {pronta.para.nome}{pronta.para.papel ? ` (${pronta.para.papel} de ${pronta.cliente.nome.split(" ")[0]})` : ""} · {telefoneBr(pronta.para.telefone)} · WhatsApp do escritório</> : "Sem celular no contato principal"}
+          </p>
+          <div className="fi-balao">
+            {pronta.texto.split("\n\n").map((t, i) => <p key={i} style={i ? { marginTop: 6 } : undefined}>{t}</p>)}
+            <div className="cn-anexo"><Icone nome="doc" className="ico" /><span><b>{pronta.arquivo.nome}</b>{contar(pronta.arquivo.folhas, "folha A4", "folhas A4")} · {kb} KB</span></div>
+            <small>Prévia · ainda não enviada</small>
+          </div>
+        </div>
+        {!pronta.bloqueio && pronta.ultimaDoCliente ? (
+          <p className="fi-ref"><Icone nome="check" className="ico" />
+            <span>A conversa está aberta: {nome} escreveu ao escritório em {diaCurto(diaDoInstante(pronta.ultimaDoCliente))}, às {horaDoInstante(pronta.ultimaDoCliente)}. A mensagem vai agora, com o PDF.</span></p>
+        ) : null}
+        {pronta.titular ? (
+          <label className="opcao"><input className="marcar" type="checkbox" checked={tambem} disabled={!!pronta.bloqueio} onChange={(e) => setTambem(e.target.checked)} />
+            <span>Mandar também a {pronta.titular.nome.split(" ")[0]}<small>{telefoneBr(pronta.titular.telefone)}, o número do cliente na ficha</small></span></label>
+        ) : null}
+      </>
+    );
+  }
+  return (
+    <Janela id="janela-whats" aberta aoFechar={aoFechar} sobretitulo="Carnê" titulo="Mandar o carnê pelo WhatsApp" descricao="janela-whats-d" aoEnviar={() => void enviar()}
+      pe={
+        <>
+          {pronta?.bloqueio ? (
+            <button className="btn btn-sec" type="button" onClick={async () => { const e = await baixarPdf(carne, area); if (e) setFalha(e); }}>
+              <Icone nome="baixar" className="ico" />Baixar PDF
+            </button>
+          ) : null}
+          <button className="btn btn-sec" type="button" onClick={aoFechar}>Voltar</button>
+          <button className="btn btn-pri" type="submit" disabled={!pronta || !!pronta.bloqueio || enviando} aria-busy={enviando || undefined}>
+            <Icone nome={enviando ? "relogio" : "whats"} className="ico" />{enviando ? "Enviando…" : `Enviar a ${nome}`}
+          </button>
+        </>
+      }>
+      <div style={{ display: "grid", gap: 16 }}>{corpo}</div>
+    </Janela>
   );
 }
 

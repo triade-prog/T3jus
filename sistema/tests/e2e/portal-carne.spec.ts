@@ -260,4 +260,66 @@ test.describe("Carnê de pagamento do Portal (FI-23)", () => {
     expect(pedidos.find((p) => p.caminho === "/v1/escritorio/recebimento/pedido")?.corpo).toEqual({ area: "FINANCEIRO", contratoId: CT });
     await semViolacoes(page);
   });
+  test("F3.79: baixar o PDF do servidor e mandar o carnê pelo WhatsApp, que espera a Meta", async ({ page }) => {
+    const previa = {
+      cliente: { nome: "Hélio Batista Corrêa" }, para: { nome: "Marta Corrêa", papel: "esposa", telefone: "+5511981143059" },
+      titular: { nome: "Hélio Batista Corrêa", telefone: "+5511996027735" }, escritorio: "Ribeiro & Matos",
+      ultimaDoCliente: em(0, "09:12"), bloqueio: null, envios: [],
+      texto: "Olá, Marta! Aqui está o carnê dos honorários do Hélio, contrato C-2026-014.\n\nRibeiro & Matos",
+      arquivo: { nome: "carne-helio-correa-C-2026-014.pdf", tamanho: 214000, folhas: 2 },
+    };
+    const envio = { id: "e1", para: "Marta Corrêa", telefone: "+5511981143059", em: em(0, "10:05"), por: DIEGO, envio: "NA_FILA" };
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: DIEGO_ESC },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET /v1/escritorio/financeiro/contratos/${CT}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/contratos/${CT}/carnes`]: [
+        { corpo: opcoes(COM_CHAVE, [GERADO], false) }, { corpo: opcoes(COM_CHAVE, [{ ...GERADO, envios: [envio] }], false) }],
+      [`GET /v1/escritorio/carnes/${CARNE}/pdf`]: { corpo: { url: `${P}/arquivo-teste.pdf`, nome: previa.arquivo.nome, tamanho: 214000 } },
+      [`GET /v1/escritorio/carnes/${CARNE}/envio`]: { corpo: previa },
+      [`POST /v1/escritorio/carnes/${CARNE}/envios`]: { status: 201, corpo: { envios: [envio] } },
+    });
+    await page.route("**/arquivo-teste.pdf", (r) => r.fulfill({ status: 200, contentType: "application/pdf", body: "%PDF-1.7" }));
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT}`);
+    const folha = page.getByRole("region", { name: "Carnê" });
+    const baixou = page.waitForEvent("download");
+    await folha.getByRole("button", { name: "Baixar PDF" }).click();
+    expect((await baixou).suggestedFilename()).toBe("carne-helio-correa-C-2026-014.pdf");
+    expect(pedidos.find((p) => p.caminho.endsWith("/pdf"))!.busca).toBe("?area=financeiro");
+
+    await folha.getByRole("button", { name: "Mandar pelo WhatsApp" }).click();
+    const j = page.getByRole("dialog", { name: "Mandar o carnê pelo WhatsApp" });
+    await expect(j).toContainText("Para Marta Corrêa (esposa de Hélio)");
+    await expect(j).toContainText("carne-helio-correa-C-2026-014.pdf");
+    await expect(j).toContainText("2 folhas A4 · 209 KB");
+    await expect(j).toContainText("A conversa está aberta: Marta escreveu ao escritório");
+    await semViolacoes(page);
+    await j.getByRole("checkbox", { name: /Mandar também a Hélio/ }).check();
+    await j.getByRole("button", { name: "Enviar a Marta" }).click();
+    await expect(j).toHaveCount(0);
+    expect(pedidos.find((p) => p.metodo === "POST" && p.caminho.endsWith("/envios"))!.corpo).toEqual({ area: "FINANCEIRO", texto: previa.texto, tambemCliente: true });
+    await expect(page.getByText("Carnê na fila do WhatsApp")).toBeVisible();
+    await expect(folha).toContainText("Marta Corrêa em");
+    await expect(folha).toContainText("na fila, esperando a ligação do WhatsApp com a Meta");
+  });
+
+  test("F3.79: sem o WhatsApp ligado, a janela explica e oferece o PDF", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: DIEGO_ESC },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET /v1/escritorio/financeiro/contratos/${CT}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/contratos/${CT}/carnes`]: { corpo: opcoes(COM_CHAVE, [GERADO], false) },
+      [`GET /v1/escritorio/carnes/${CARNE}/envio`]: { corpo: {
+        cliente: { nome: "Hélio Batista Corrêa" }, para: { nome: "Marta Corrêa", papel: null, telefone: "+5511981143059" }, titular: null,
+        escritorio: "Ribeiro & Matos", ultimaDoCliente: null, bloqueio: "WHATSAPP_NAO_LIGADO", envios: [], texto: "Olá, Marta!",
+        arquivo: { nome: "carne.pdf", tamanho: 90000, folhas: 1 } } },
+    });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT}`);
+    await page.getByRole("region", { name: "Carnê" }).getByRole("button", { name: "Mandar pelo WhatsApp" }).click();
+    const j = page.getByRole("dialog", { name: "Mandar o carnê pelo WhatsApp" });
+    await expect(j).toContainText("O WhatsApp do escritório ainda não está ligado ao T3jus.");
+    await expect(j.getByRole("button", { name: "Enviar a Marta" })).toBeDisabled();
+    await expect(j.getByRole("button", { name: "Baixar PDF" })).toBeVisible();
+    await semViolacoes(page);
+  });
 });
