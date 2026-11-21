@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  conferirResposta, decidirAntes, dentroDoHorario, finalizarResposta, instrucoesIa, mensagensParaIa, palavraDoEscritorio,
+  conferirResposta, decidirAntes, horarioDeAtendimento, dentroDoHorario, finalizarResposta, instrucoesIa, mensagensParaIa, palavraDoEscritorio,
   planoSemModelo, precisaApresentar, proximoAtendimento, type AtendimentoIa, type ContextoIa, type MensagemIa, type SaidaIa,
 } from "./ia.ts";
 
@@ -115,7 +115,7 @@ describe("PA-05 depois da IA", () => {
     const p = finalizarResposta(saida({ texto: "Garanto que você ganha." }), ctx(), [cliente("Vou ganhar?"), { autor: "IA", texto: "Olá" }]);
     expect(p.passar).toBe("REGRA_FIXA");
     expect(p.barrada).toBe("PROMETER");
-    expect(p.enviar).toBe("Vou passar sua mensagem para Larissa, da equipe do Ribeiro & Matos. A resposta vem por aqui.");
+    expect(p.enviar).toBe("Vou passar a sua mensagem para Larissa, da equipe do escritório Ribeiro & Matos. A resposta chega por aqui.");
   });
   it("a primeira resposta e a pergunta se é robô dizem que é assistente virtual", () => {
     expect(precisaApresentar([cliente("Oi")])).toBe(true);
@@ -136,7 +136,7 @@ describe("PA-05 depois da IA", () => {
       [cliente("Vocês atendem no sábado?"), { autor: "IA", texto: "Olá" }]);
     expect(p.naoSoube).toBe("Vocês atendem no sábado?");
     expect(p.passariaPara).toBe("Larissa Costa");
-    expect(p.enviar).toContain("Vou passar sua mensagem para Larissa");
+    expect(p.enviar).toContain("Vou passar a sua mensagem para Larissa");
   });
   it("contato novo vai para o Comercial", () => {
     const p = finalizarResposta(saida({ acao: "PASSAR", motivo: "NAO_SOUBE", texto: "Obrigada, Rafael. Já passei para a equipe." }),
@@ -148,5 +148,13 @@ describe("PA-05 depois da IA", () => {
     const p = planoSemModelo("IA_DESLIGADA", ctx(), [cliente("Oi")]);
     expect(p.enviar).toBeNull();
     expect(p.passar).toBe("IA_DESLIGADA");
+  });
+});
+
+describe("D5 fora do horário", () => {
+  it("preenche {horário de atendimento} com os dias e as horas da IA", () => {
+    expect(horarioDeAtendimento({ dias: [1, 2, 3, 4, 5], horaInicio: "09:00", horaFim: "18:00" })).toBe("de segunda a sexta, das 9h às 18h");
+    expect(horarioDeAtendimento({ dias: [1, 3], horaInicio: "08:30", horaFim: "12:00" })).toBe("segunda e quarta, das 8h30 às 12h");
+    expect(horarioDeAtendimento({ dias: [1, 2, 3, 4, 5, 6, 7], horaInicio: "09:00", horaFim: "18:00" })).toBe("todos os dias, das 9h às 18h");
   });
 });

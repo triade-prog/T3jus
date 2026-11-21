@@ -367,5 +367,5 @@ export interface DocumentoDoCaso {
 export function textoPedirDocumento(cliente: string, escritorio: string, parteContraria: string | null, descricao: string): string {
   const primeiro = cliente.trim().split(/\s+/)[0] ?? "";
   const contra = parteContraria?.trim() ? ` contra ${parteContraria.trim()}` : "";
-  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Para o seu processo${contra} andar, ainda precisamos de: ${descricao.trim()}. Pode enviar por aqui mesmo? Obrigado.`;
+  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Para o seu processo${contra} andar, ainda precisamos de: ${descricao.trim()}. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.`;
 }

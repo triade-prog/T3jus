@@ -1305,10 +1305,13 @@ Deno.test("PA-03: gatilhos e tipos de passo do domínio são os mesmos do banco"
   const sql = await Deno.readTextFile(new URL("../../migrations/0320_portal_automacoes.sql", import.meta.url));
   // A 0570 refaz a lista de campos com os gatilhos cliente novo e documento pendente: vale a última.
   const sql570 = await Deno.readTextFile(new URL("../../migrations/0570_automacoes_gatilhos_novos.sql", import.meta.url));
+  const sql610 = await Deno.readTextFile(new URL("../../migrations/0610_textos_no_tom.sql", import.meta.url));
   for (const [g, info] of Object.entries(GATILHOS)) {
     const re = new RegExp(`when '${g}' then array\\[([^\\]]+)\\]`);
     const linha = (re.exec(sql570) ?? re.exec(sql))?.[1];
-    assertEquals(linha?.match(/'([^']+)'/g)?.map((x) => x.slice(1, -1)), info.campos, g);
+    // A 0610 (D5) tira o {link de pagamento} dos gatilhos de parcela.
+    const campos = linha?.match(/'([^']+)'/g)?.map((x) => x.slice(1, -1)).filter((c) => !(sql610.includes("'link de pagamento'") && c === "link de pagamento"));
+    assertEquals(campos, info.campos, g);
   }
   const tipos = /v_ok := case v_tipo([\s\S]+?) end;/.exec(sql)?.[1]?.match(/when '([A-Z]+)'/g)?.map((x) => x.slice(6, -1));
   assertEquals(tipos, Object.keys(TIPOS_PASSO));

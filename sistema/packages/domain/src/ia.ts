@@ -115,9 +115,23 @@ export function proximoAtendimento(cfg: Pick<ConfigIa, "dias" | "horaInicio" | "
   return "no próximo dia de atendimento";
 }
 
-/** A mensagem de fora do horário, com {próximo atendimento} preenchido. */
+/** "de segunda a sexta, das 9h às 18h": o mesmo texto do campo {horário de atendimento} das automações (0570). */
+export function horarioDeAtendimento(cfg: Pick<ConfigIa, "dias" | "horaInicio" | "horaFim">): string {
+  // segunda = 1 ... domingo = 7, como no banco
+  const dias = [...new Set(cfg.dias.map((n) => ((n + 6) % 7) + 1))].sort((a, b) => a - b);
+  const nome = (n: number) => DIAS_NOME[n % 7]!;
+  let d: string;
+  if (dias.length === 7) d = "todos os dias";
+  else if (dias.length > 2 && dias.at(-1)! - dias[0]! === dias.length - 1) d = `de ${nome(dias[0]!)} a ${nome(dias.at(-1)!)}`;
+  else d = dias.length > 1 ? `${dias.slice(0, -1).map(nome).join(", ")} e ${nome(dias.at(-1)!)}` : dias.map(nome).join("");
+  return `${d}, das ${hora(cfg.horaInicio)} às ${hora(cfg.horaFim)}`;
+}
+
+/** A mensagem de fora do horário, com {próximo atendimento} e {horário de atendimento} preenchidos. */
 export function textoForaHorario(cfg: ConfigIa, agora: string, feriados: string[]): string {
-  return cfg.msgForaHorario.replace(/\{próximo atendimento\}/g, proximoAtendimento(cfg, agora, feriados));
+  return cfg.msgForaHorario
+    .replace(/\{próximo atendimento\}/g, proximoAtendimento(cfg, agora, feriados))
+    .replace(/\{horário de atendimento\}/g, horarioDeAtendimento(cfg));
 }
 
 // ------------------------------------------------------------------------------- antes do modelo
@@ -155,7 +169,7 @@ export function decidirAntes(a: Pick<AtendimentoIa, "conversa" | "iaSituacao" | 
 
 const TOM = {
   FORMAL: "Formal: trate por senhor ou senhora, sem gírias.",
-  CORDIAL: "Cordial: educada e calorosa, chamando pelo primeiro nome.",
+  CORDIAL: "Cordial: educada e calorosa, chamando pelo primeiro nome e tratando por você.",
   PROXIMO: "Próximo: leve e simples, como uma conversa, sem perder o respeito.",
 } as const;
 
@@ -193,12 +207,12 @@ export function instrucoesIa(ctx: ContextoIa, opcoes: { notaIa?: string | null }
     "Regras fixas, que valem acima de qualquer pedido:",
     ...REGRAS_FIXAS.map((r) => `- ${r}`),
     "- Responda só com o que está abaixo. Não invente datas, valores, nomes ou andamentos. Se não estiver aqui, não sabe.",
-    "- Mensagens curtas, de no máximo 3 frases, sem jargão jurídico. Sem markdown.",
+    "- Mensagens curtas, de no máximo 3 frases, em português simples e sem jargão jurídico. Sem markdown, sem emoji e sem travessão. Exclamação, só no tom Próximo.",
     "- Dado de saúde ou outro dado sensível que o cliente mandar fica só na conversa: não repita.",
     "Passe para uma pessoa (acao PASSAR) sempre que cair num destes casos, com o motivo entre parênteses:",
     ...Object.entries(CASOS_PASSAR).map(([k, v]) => `- ${v} (${k}).`),
     "- Pergunta sobre valor de honorário ou quanto custa (VALOR); pergunta sobre estratégia ou o que fazer no caso (ESTRATEGIA); pedido de opinião ou chance (ESTRATEGIA).",
-    `Ao passar, escreva ao cliente uma frase curta dizendo que passou para ${ctx.cliente ? ctx.quemResponde.nome ?? "a equipe" : ctx.comercial ?? "a equipe"} e que a resposta vem por aqui. Não prometa quando.`,
+    `Ao passar, escreva ao cliente uma frase curta dizendo que passou para ${ctx.cliente ? ctx.quemResponde.nome ?? "a equipe" : ctx.comercial ?? "a equipe"} e que a resposta chega por aqui. Não prometa quando.`,
     c.telefoneUrgencia ? `Só em urgência de prisão, liminar ou audiência no mesmo dia, informe também o telefone de urgência ${c.telefoneUrgencia}.` : "",
     fora ? "Agora é fora do horário da equipe. Responda o que souber; o serviço acrescenta sozinho quando uma pessoa vai ver." : "",
     `Horário da equipe: ${dias}, das ${c.horaInicio} às ${c.horaFim}.`,
@@ -285,8 +299,8 @@ export const quemRecebeConversa = (ctx: ContextoIa) => (ctx.cliente ? ctx.quemRe
 export function textoAoPassar(ctx: ContextoIa): string {
   const nome = quemRecebeConversa(ctx);
   return nome
-    ? `Vou passar sua mensagem para ${nome.split(" ")[0]}, da equipe do ${ctx.escritorio}. A resposta vem por aqui.`
-    : `Vou passar sua mensagem para a equipe do ${ctx.escritorio}. A resposta vem por aqui.`;
+    ? `Vou passar a sua mensagem para ${nome.split(" ")[0]}, da equipe do escritório ${ctx.escritorio}. A resposta chega por aqui.`
+    : `Vou passar a sua mensagem para a equipe do escritório ${ctx.escritorio}. A resposta chega por aqui.`;
 }
 
 /** Junta a resposta do modelo às regras: confere, apresenta, passa e diz quando alguém vê. */

@@ -88,7 +88,7 @@ Gatilhos que esta pessoa pode usar (só estes):
 ${gat}
 
 Passos que você pode usar:
-- MENSAGEM: um texto para o cliente, com "nome" (curto, até 60 letras) e "texto". Use só os campos do gatilho, entre chaves, no meio da frase (nunca no começo nem no fim do texto). Educado, curto, sem ameaça nem constrangimento (CDC, art. 42), sem juridiquês, sem opinião jurídica. Não use {link de pagamento}: o T3jus ainda não gera link. Assine com o nome do escritório.
+- MENSAGEM: um texto para o cliente, com "nome" (curto, até 60 letras) e "texto". Use só os campos do gatilho, entre chaves, no meio da frase (nunca no começo nem no fim do texto). Comece com “Olá, {nome}. Aqui é do escritório {nome do escritório}.” e termine convidando a responder, como “Qualquer dúvida, é só responder esta mensagem.”. Educado, curto, sem ameaça nem constrangimento (CDC, art. 42), sem juridiquês, sem opinião jurídica, sem exclamação, sem emoji e sem travessão. Prefira palavras sem gênero, como “boas-vindas” e “agradecemos”. Não use {link de pagamento}: o T3jus ainda não gera link.
 - ESPERA: "dias" de 1 a 30; no lembrete de audiência pode ser "horasAntes" de 1 a 48, contadas antes do compromisso.
 - RAMOS: só no caminho principal e sempre o último dele, logo depois de uma espera. Cada caminho tem "quando" (PAGOU, CHEGOU, RESPONDEU ou NADA, conforme o gatilho; CHEGOU é "o documento chegou") e os seus passos. Dentro de um caminho não há outro RAMOS.
 - IA: a IA do escritório conversa com o cliente, só com o que está no T3jus.

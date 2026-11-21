@@ -85,7 +85,7 @@ select throws_ok($$ delete from whatsapp_eventos $$, 'TC023', null, 'o históric
 
 -- Como a IA atende.
 select is((select portal_ia(paula, rm) ->> 'situacao' from ids), 'DESLIGADA', 'a IA nasce desligada');
-select is((select portal_ia(paula, rm) -> 'config' ->> 'nome' from ids), 'Assistente virtual do Ribeiro & Matos', 'com o nome do escritório');
+select is((select portal_ia(paula, rm) -> 'config' ->> 'nome' from ids), 'Assistente virtual do escritório Ribeiro & Matos', 'com o nome do escritório');
 select is((select portal_ia(paula, rm) -> 'comercial' ->> 'nome' from ids), 'Diego Almeida', 'contato novo vai para o Comercial');
 select is((teste.erro($$ select portal_ia_salvar(socia, rm, 1, '{"nome":"Carla do Ribeiro & Matos"}') from ids $$)) -> 'detalhe' ->> 'motivo',
   'NOME_SEM_ASSISTENTE_VIRTUAL', 'a IA nunca finge ser pessoa');

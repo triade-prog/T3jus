@@ -197,7 +197,7 @@ export function JanelaExpedido({ casos, aoFechar, aoFeito }: { casos: ListaRepas
       setErros(campos.map((c) => (c === "clienteId" ? "casoId" : String(c))));
       return focarPrimeiroErro(corpo.current);
     }
-    setFalha(`${textoDoErro(r.erro)} Nada foi salvo e a previsão do Caixa não mudou. O que você preencheu continua aqui; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada foi salvo e a previsão do Caixa não mudou. O que você preencheu continua aqui.`);
   }
 
   const campo = (id: string, chaveErro: string, rot: string, v: string, set: (x: string) => void, extra: { ajuda?: string; erro: string; opc?: boolean; im?: "decimal" | "numeric"; foco?: boolean; mudou?: (x: string) => void }) => (
@@ -322,7 +322,7 @@ export function JanelaDataRequisicao({ r, hoje, aoFechar, aoFeito }: { r: Requis
       setErros(campos.map(String));
       return focarPrimeiroErro(corpo.current);
     }
-    setFalha(`${textoDoErro(x.erro)} Nada foi salvo; tente de novo.`);
+    setFalha(`${textoDoErro(x.erro)} Nada foi salvo.`);
   }
 
   return (

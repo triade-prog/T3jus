@@ -96,7 +96,7 @@ select is((teste.erro($$ select pg_temp.salvar(gustavo, '{"passos":[{"id":"g","t
 -- Os três erros do desenho: campo que o gatilho não tem, caminho sem saída e passar para ninguém.
 select is((select jsonb_agg(e ->> 'codigo' order by e ->> 'codigo') from ids,
   jsonb_array_elements(pg_temp.salvar(gustavo, '{"passos":[{"id":"gatilho","tipo":"GATILHO","dias":3},{"id":"cond","tipo":"CONDICOES","semCombinado":true},
-   {"id":"msg","tipo":"MENSAGEM","nome":"Cobrança gentil · 1º aviso","texto":"Olá, {nome}. A parcela {parcela}, de {valor}, venceu antes da {data da audiência}. Para pagar: {link de pagamento}. Qualquer dúvida, é só responder."},
+   {"id":"msg","tipo":"MENSAGEM","nome":"Cobrança gentil · 1º aviso","texto":"Olá, {nome}. A parcela {parcela}, de {valor}, venceu antes da {data da audiência}. Qualquer dúvida, é só responder."},
    {"id":"espera","tipo":"ESPERA","dias":5},
    {"id":"ramo","tipo":"RAMOS","ramos":[{"quando":"PAGOU","passos":[{"id":"fim-p","tipo":"FIM"}]},{"quando":"RESPONDEU","passos":[]},
      {"quando":"NADA","passos":[{"id":"pessoa","tipo":"PESSOA","motivo":"5 dias sem pagamento nem resposta"}]}]}]}') -> 'listaErros') e),
@@ -116,7 +116,7 @@ select is((select jsonb_agg(e ->> 'codigo') from ids, jsonb_array_elements(pg_te
 
 -- O desenho certo.
 select is((select pg_temp.salvar(gustavo, '{"passos":[{"id":"gatilho","tipo":"GATILHO","dias":3},{"id":"cond","tipo":"CONDICOES","semCombinado":true},
-   {"id":"msg","tipo":"MENSAGEM","nome":"Cobrança gentil · 1º aviso","texto":"Olá, {nome}. A parcela {parcela}, de {valor}, venceu em {vencimento} e ainda não aparece como paga. Para pagar: {link de pagamento}. Qualquer dúvida, é só responder."},
+   {"id":"msg","tipo":"MENSAGEM","nome":"Cobrança gentil · 1º aviso","texto":"Olá, {nome}. A parcela {parcela}, de {valor}, venceu em {vencimento} e ainda não aparece como paga. Qualquer dúvida, é só responder."},
    {"id":"espera","tipo":"ESPERA","dias":5},
    {"id":"ramo","tipo":"RAMOS","ramos":[{"quando":"PAGOU","passos":[{"id":"fim-p","tipo":"FIM"}]},{"quando":"RESPONDEU","passos":[{"id":"ia","tipo":"IA"},{"id":"fim-r","tipo":"FIM"}]},
      {"quando":"NADA","passos":[{"id":"pessoa","tipo":"PESSOA","pessoaId":"GUSTAVO","motivo":"5 dias sem pagamento nem resposta"}]}]}]}') -> 'textosPorAprovarIds' from ids),
