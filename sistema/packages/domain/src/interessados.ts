@@ -99,6 +99,55 @@ export const reabrirInteressadoSchema = z.object({ versao, motivo });
 
 export const notaInteressadoSchema = z.object({ texto: z.string().trim().min(1).max(2000) });
 
+/**
+ * Cadastrar interessado à mão (F2.5, SC-05): indicação, evento ou contato direto. Pelo menos
+ * e-mail ou WhatsApp (decisão 1); a base é o legítimo interesse, com a origem (decisão 2). As
+ * regras finas (formato, data até hoje, quem pode ser responsável) são do banco, campo a campo.
+ */
+export const ORIGENS_MAO = ["INDICACAO", "EVENTO", "CONTATO"] as const;
+const dadosMao = {
+  nome: z.string().trim().max(120),
+  escritorio: z.string().trim().max(160),
+  email: z.string().trim().max(200).optional().default(""),
+  whats: z.string().trim().max(30).optional().default(""),
+  tamanho: z.string().max(20),
+  area: z.string().trim().max(40).optional().default(""),
+  cidade: z.string().trim().max(80).optional().default(""),
+  uf: z.string().max(2).optional().default(""),
+  origem: z.string().max(20),
+  detalhe: z.string().trim().max(200),
+  quando: z.string().max(10),
+  mensagem: z.string().trim().max(1000).optional().default(""),
+  sabe: z.boolean().nullable(),
+};
+export const cadastrarInteressadoSchema = z.object({
+  ...dadosMao,
+  responsavel: z.string().max(36),
+  passo: z.string().trim().max(160),
+  passoData: z.string().max(10),
+  /** "É outro escritório: cadastrar mesmo assim" (decisão 3). */
+  forcar: z.boolean().optional().default(false),
+});
+export const juntarInteressadoSchema = z.object(dadosMao);
+
+/** O interessado parecido que o banco devolve no lugar de cadastrar. */
+export interface InteressadoRepetido {
+  id: string;
+  nome: string;
+  escritorio: string;
+  estagio: EstagioInteressado;
+  origem: OrigemInteressado;
+  cidade: string | null;
+  uf: string | null;
+  chegouEm: string;
+  email: string | null;
+  whats: string | null;
+  versao: number;
+  campo: "email" | "whats";
+  responsavel: string | null;
+}
+export type RespostaCadastroInteressado = { id: string } | { repetido: InteressadoRepetido };
+
 export const converterInteressadoSchema = z.object({
   versao,
   nome: z.string().trim().min(2).max(160),
@@ -119,8 +168,9 @@ export interface Interessado {
   origem: OrigemInteressado;
   nome: string;
   escritorio: string;
-  email: string;
-  whats: string;
+  /** Pelo menos um dos dois (o pedido do site tem os dois). */
+  email: string | null;
+  whats: string | null;
   tamanho: TamanhoInteressado;
   area: string | null;
   cidade: string | null;
@@ -158,6 +208,11 @@ export interface FichaInteressado extends Interessado {
   cidadeCompletadaEm: string | null;
   autorizacao: { texto: string; versao: number; aceita_em: string; pagina: string } | null;
   origemDetalhe: Record<string, string> | null;
+  baseLegal: "CONSENTIMENTO" | "LEGITIMO_INTERESSE";
+  /** Cadastro à mão: se a pessoa sabe que vamos procurá-la. */
+  sabeDoContato: boolean | null;
+  cadastradoPor: string | null;
+  cadastradoEm: string | null;
   responsavelDesde: string | null;
   responsavelPor: string | null;
   clienteNome: string | null;
@@ -174,4 +229,40 @@ export function whatsLegivel(v: string): string {
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return v;
+}
+
+// ---------------------------------------------------------------- sino do Console (F2.6)
+
+export type TipoAvisoConsole = "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO";
+
+export interface AvisoConsole {
+  id: string;
+  tipo: TipoAvisoConsole;
+  /** A foto do momento: nomes, trecho, recado, passo e data. */
+  dados: {
+    escritorio?: string;
+    nome?: string;
+    tamanho?: TamanhoInteressado;
+    trecho?: string;
+    prazo?: string;
+    quem?: string;
+    recado?: string;
+    cadastro?: boolean;
+    passo?: string;
+    data?: string;
+    responsavel?: string;
+  };
+  interessadoId: string | null;
+  em: string;
+  lido: boolean;
+  /** Pedido novo: quem cuida agora (null se ninguém). */
+  agora: string | null;
+}
+
+export interface ListaAvisosConsole {
+  novos: number;
+  total: number;
+  veInteressados: boolean;
+  itens: AvisoConsole[];
+  marcados?: number;
 }

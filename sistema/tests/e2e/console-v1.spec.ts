@@ -233,7 +233,7 @@ test.describe("Console v1: equipe do cliente, notas e histórico", () => {
       [`POST ${R}/equipe/b0000000-0000-4000-8000-000000000002/retirar`]: { corpo: { versao: 2 } },
     });
     await page.goto(`${C}/clientes/${CEDRO.id}/equipe`);
-    await expect(page.getByText("você")).toBeVisible();
+    await expect(page.getByText("você", { exact: true })).toBeVisible();
     await page.getByLabel("Pessoa").selectOption({ label: RAFAEL.nome });
     await page.getByLabel("Função neste cliente").selectOption({ label: "Implantação" });
     await page.getByRole("button", { name: "Atribuir" }).click();

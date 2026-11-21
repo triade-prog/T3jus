@@ -510,3 +510,12 @@ Telas aprovadas em `docs/design/aprovadas/portal-comercial-contratos` (ficha do 
 - **Nada se apaga.** Anexar de novo guarda os dois e vale o mais novo.
 - **Contrato.** "Registrar assinatura" pede o arquivo e o envia antes de ativar; contrato já ativo sem o arquivo mostra "Falta anexar o assinado" e "Anexar o assinado". O servidor não exige o arquivo para ativar, para não quebrar quem já registrou só a data.
 - **Financeiro.** A lista de A pagar busca os anexos das contas que mostra (`POST /v1/escritorio/financeiro/anexos/buscar`); a conta sem arquivo ganha o selo e "Anexar". O arquivo de Lançar conta e de Registrar recebimento vai depois do registro; se cair, o registro fica e a tela diz como anexar de novo. A exportação lista as despesas pagas sem nota (`GET /v1/escritorio/financeiro/exportacoes/anexos`) e marca a falta na planilha. A pasta .zip com os arquivos é o F3.22b.
+
+### Cadastrar interessado à mão e o sino do Console (F2.5, F2.6; SC-02, SC-05)
+
+Telas aprovadas em `docs/design/aprovadas/console-interessado-sino`. Migration `0590_interessado_mao_sino_console.sql`, rotas em `supabase/functions/api-console/app.ts`, telas em `packages/ui/src/console/CadastrarInteressado.tsx` e `Sino.tsx` (CSS `ci-`, `si-` e `cs-` em `console.css`).
+
+- **Cadastro à mão.** `POST /v1/interessados` (Administração e Implantação) recebe indicação, evento ou contato direto. Pelo menos e-mail ou WhatsApp; a base é o legítimo interesse, com o detalhe da origem guardado; a data do contato vai até hoje e conta o prazo de 12 meses; já nasce com responsável e próximo passo. Os erros voltam juntos, presos aos campos. Não manda e-mail automático.
+- **Repetido.** O mesmo e-mail ou WhatsApp devolve `{repetido}` sem gravar. "Juntar ao existente" (`POST /v1/interessados/:id/juntar`) vira nota e conta como novo contato; "cadastrar mesmo assim" manda `forcar` e o histórico guarda de quem era a repetição.
+- **Sino.** Tabela global `avisos_console` (só acréscimo; só se marca como lido). Três avisos: pedido novo do site para todos que veem Interessados, interessado passado (ou cadastrado) para você por outra pessoa, e próximo passo vencido, uma vez, às 7h do dia seguinte (`avisar_interessados_vencidos`, pg_cron `t3jus-interessados-vencidos`). Quem perde Interessados deixa de ver esses avisos; eles saem junto com o interessado. Rotas `GET /v1/avisos`, `POST /v1/avisos/:id/lido` e `POST /v1/avisos/lidos` (`{ate}`).
+- **Falta:** os próximos avisos do sino (fatura de escritório em atraso e pedido de suporte novo) entram com as telas deles.
