@@ -42,6 +42,7 @@ export { ContratosPortal, HonorariosContratosPortal } from "./portal/Contratos.t
 export { FichaContratoPortal } from "./portal/FichaContrato.tsx";
 export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financeiro.tsx";
 export { PagarFinanceiro } from "./portal/FinanceiroPagar.tsx";
+export { RecorrenteFinanceiro } from "./portal/Recorrentes.tsx";
 export { RepasseFinanceiro, RepassesFinanceiro } from "./portal/FinanceiroRepasses.tsx";
 export { BarraConversas, ConversasPortal, ROTAS_CONVERSAS } from "./portal/Conversas.tsx";
 export { AvisosAutomaticosPortal } from "./portal/AvisosAutomaticos.tsx";

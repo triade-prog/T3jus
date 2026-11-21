@@ -9,6 +9,7 @@ export const ROTAS_FINANCEIRO = {
   resumo: "/financeiro",
   receber: "/financeiro/a-receber",
   pagar: "/financeiro/a-pagar",
+  recorrente: (id: string) => `/financeiro/a-pagar/recorrentes/${id}`,
   contrato: (id: string) => `/financeiro/a-receber/contratos/${id}`,
   repasses: "/financeiro/repasses",
   repasse: (id: string) => `/financeiro/repasses/${id}`,
@@ -137,4 +138,29 @@ export function comoVolta(c: ContaPagar): string {
   const a = c.adiantada!;
   if (a.como === "PROXIMA_PARCELA" && a.parcela) return `junto com a ${a.parcela.descricao.toLowerCase()}, de ${diaCurto(a.parcela.vencimento)}`;
   return REEMBOLSO_COMO[a.como];
+}
+
+// ------------------------------------------------------------------ Contas que repetem (FI-13, F3.24)
+
+/** O endereço da ficha de uma conta que repete todo mês. */
+export const rotaRecorrente = (id: string) => `/financeiro/a-pagar/recorrentes/${id}`;
+
+/** O primeiro dia do mês n meses depois de "mes" (aaaa-mm-01). */
+export function mesMais(mes: string, n: number): string {
+  const a = Number(mes.slice(0, 4));
+  const m = Number(mes.slice(5, 7)) - 1 + n;
+  const ano = a + Math.floor(m / 12);
+  return `${ano}-${String((((m % 12) + 12) % 12) + 1).padStart(2, "0")}-01`;
+}
+
+/** "dezembro de 2026". */
+export const mesEAno = (mes: string) => `${nomeDoMes(mes)} de ${mes.slice(0, 4)}`;
+
+/** "mar/2025", como na coluna "Desde". */
+export const mesCurto = (mes: string) => `${nomeDoMes(mes).slice(0, 3)}/${mes.slice(0, 4)}`;
+
+/** O dia da conta em palavras: "Todo dia 20" ou "No último dia do mês" (dia 0 ou depois de 28). */
+export function textoDia(dia: number, inicial = true): string {
+  const t = dia === 0 || dia > 28 ? "no último dia do mês" : `todo dia ${dia}`;
+  return inicial ? t.replace(/^./, (x) => x.toUpperCase()) : t;
 }

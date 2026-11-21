@@ -219,8 +219,10 @@ export interface ContaPagar {
   vencimento: string;
   forma: FormaPagamento | null;
   pagaEm: string | null;
-  situacao: "A_VENCER" | "VENCIDA" | "PAGA";
-  recorrente: { dia: number; mes: string; lancadaSozinha: boolean } | null;
+  situacao: "A_VENCER" | "VENCIDA" | "PAGA" | "CANCELADA";
+  recorrente: { id?: string; dia: number; mes: string; lancadaSozinha: boolean } | null;
+  /** A conta do mês cancelada ao encerrar a recorrência (F3.24): fica no histórico, fora das somas. */
+  cancelada?: { em: string; por: PessoaRef; motivo: string } | null;
   adiantada: {
     cliente: { id: string; nome: string };
     /** O caso em que o escritório adiantou (F3.23); null nas contas antigas ou de cliente sem caso. */
@@ -253,7 +255,7 @@ export interface ListaPagar {
   totais: {
     semana: { valor: number; contas: number };
     vencidas: { valor: number; contas: number };
-    recorrentes: { contas: number; sozinhas: number };
+    recorrentes: { contas: number; sozinhas: number; ativas?: number; encerradasMes?: number };
     reembolsar: { valor: number; clientes: number };
   };
   contas: ContaPagar[];
@@ -261,6 +263,82 @@ export interface ListaPagar {
   adiantados: ContaPagar[];
   categorias: { categoria: CategoriaSaida; valor: number }[];
 }
+
+// ------------------------------------------------------------------ Contas que repetem (FI-13, F3.24)
+// Regras em 0534_recorrencia_mudancas.sql. Dia 0 é "no último dia do mês".
+
+/** Por que encerrar: a lista fechada do desenho aprovado. */
+export const MOTIVOS_ENCERRAR = [
+  "O contrato com o fornecedor terminou",
+  "Troquei de fornecedor",
+  "O escritório não usa mais",
+  "A conta vai ser lançada de outro jeito",
+  "Outro",
+] as const;
+export type MotivoEncerrar = (typeof MOTIVOS_ENCERRAR)[number];
+
+export const mudarRecorrenciaSchema = z.discriminatedUnion("tipo", [
+  z.object({
+    tipo: z.literal("VALOR"),
+    aPartirDe: txt(20).nullish(),
+    valor: z.number().int().nullish(),
+    dia: z.number().int().nullish(),
+    motivo: txt(160).nullish(),
+  }),
+  z.object({
+    tipo: z.literal("ENCERRAR"),
+    aPartirDe: txt(20).nullish(),
+    motivo: txt(160).nullish(),
+    detalhe: txt(500).nullish(),
+    cancelarLancada: z.boolean().optional(),
+  }),
+]);
+export type MudarRecorrencia = z.input<typeof mudarRecorrenciaSchema>;
+
+export interface Recorrencia {
+  id: string;
+  descricao: string;
+  fornecedor: string | null;
+  categoria: CategoriaSaida;
+  forma: FormaPagamento | null;
+  /** O valor e o dia que valem neste mês. */
+  valor: number;
+  dia: number;
+  /** O primeiro mês da conta. */
+  desde: string;
+  /** O último mês em que nasce, quando foi encerrada. */
+  ultimoMes: string | null;
+  encerrada: { em: string; por: PessoaRef; aPartirDe: string; motivo: string; detalhe: string | null } | null;
+  proxima: { mes: string; valor: number; dia: number; vencimento: string } | null;
+  doMes: ContaPagar | null;
+  lancadas: number;
+  pagas: number;
+}
+
+export interface ListaRecorrencias { mes: string; ativas: Recorrencia[]; encerradas: Recorrencia[] }
+
+export interface MudancaRecorrencia {
+  id: string;
+  tipo: "VALOR" | "ENCERRAR";
+  aPartirDe: string;
+  valor: number | null;
+  dia: number | null;
+  antes: { valor: number; dia: number } | null;
+  motivo: string | null;
+  detalhe: string | null;
+  por: PessoaRef;
+  em: string;
+  mudouConta: boolean;
+  cancelouConta: boolean;
+}
+
+export interface FichaRecorrencia extends Recorrencia {
+  contas: (ContaPagar & { anexos: number })[];
+  mudancas: MudancaRecorrencia[];
+  criada: { em: string; por: PessoaRef; valor: number; dia: number; mes: string; forma: FormaPagamento | null };
+}
+
+export interface RecorrenciaMudada { id: string; mudouConta: boolean; cancelouConta: boolean; contaDoMes: ContaPagar | null }
 
 // ------------------------------------------------------------------ Repasses (FI-05, FI-06, FI-12)
 

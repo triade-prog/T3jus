@@ -5,7 +5,7 @@
   "refs": [
     "FI-13"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 240,
-  "proximo": "Ação na conta recorrente para encerrar (a tabela já aceita o fim) ou mudar o valor dos próximos meses; hoje o valor do mês se escreve ao marcar como paga"
+  "evidencia": "\"Recorrentes do mês\" do A pagar abre a lista das contas que repetem (com \"Mudar\" e \"Encerrar\" e as encerradas embaixo) e a ficha da conta com a próxima conta, as contas lançadas e as mudanças; mudar valor ou dia vale a partir do mês escolhido (a conta do mês, não paga, muda só se o mês dela for escolhido), encerrar pede o motivo e só cancela a conta do mês se marcado; conta paga nunca muda, a cancelada sai das somas e nada se apaga (migration 0534, pgTAP 057, Deno app_test, e2e portal-financeiro-recorrentes)."
 }

@@ -182,6 +182,15 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_financeiro_cobranca_anotar: () => ({ id: CLIENTE }),
     portal_recibo: (a) => ({ numero: { ano: 2026, numero: 187 }, pagamentoId: a.p_pagamento }),
+    portal_recorrencias: () => ({ mes: "2026-11-01", ativas: [], encerradas: [] }),
+    portal_recorrencia: (a) => ({ id: a.p_rec, mudancas: [] }),
+    portal_recorrencia_mudar: (a) => {
+      const d = a.p_dados as { tipo: string; motivo?: string | null };
+      if (d.tipo === "ENCERRAR" && !d.motivo) {
+        erroBanco("TC422", { campos: ["motivo"], motivos: { motivo: "MOTIVO_OBRIGATORIO" } });
+      }
+      return { id: "m1", mudouConta: false, cancelouConta: false, contaDoMes: null };
+    },
     portal_financeiro_pagar: (a) => ({ algum: true, contas: [], mostrar: a.p_mostrar }),
     portal_financeiro_conta_lancar: () => ({ id: CLIENTE, recorrenteId: null }),
     portal_financeiro_conta_paga: (a) => {
@@ -1075,6 +1084,29 @@ Deno.test("FI-01 a FI-04, FI-14: A receber, ficha de parcelas, registrar recebim
   const c = await m.pedir(`/v1/escritorio/financeiro/parcelas/${CLIENTE}/cobranca`, {
     corpo: { tipo: "LIGACAO", motivo: "Não atende", proxData: "2026-11-19", proxOque: "Ligar de novo", proxResponsavelId: ANA }, cookie });
   assertEquals(c.status, 201);
+});
+
+Deno.test("FI-13 (F3.24): contas que repetem, a ficha e a mudança; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir("/v1/escritorio/financeiro/recorrencias", { cookie })).json()).ativas, []);
+  assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/recorrencias/${CLIENTE}`, { cookie })).json()).id, CLIENTE);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/recorrencias/nao-e-id", { cookie })).status, 404);
+  const r = await m.pedir(`/v1/escritorio/financeiro/recorrencias/${CLIENTE}/mudancas`, {
+    corpo: { tipo: "VALOR", aPartirDe: "2026-12-01", valor: 378000, dia: 20, motivo: "Reajuste" }, cookie });
+  assertEquals(r.status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_recorrencia_mudar")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_rec, (ch.args.p_dados as { valor: number }).valor], [AURORA, CLIENTE, 378000]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/financeiro/recorrencias/${CLIENTE}/mudancas`, { corpo: { tipo: "PAUSAR" }, cookie }))).codigo, "VALIDATION_ERROR");
+  const sem = await erro(await m.pedir(`/v1/escritorio/financeiro/recorrencias/${CLIENTE}/mudancas`, { corpo: { tipo: "ENCERRAR", aPartirDe: "2026-12-01" }, cookie }));
+  assertEquals(sem.detalhes?.motivos, { motivo: "MOTIVO_OBRIGATORIO" });
+});
+
+Deno.test("FI-13: os motivos de encerrar do domínio são os mesmos do banco", async () => {
+  const { MOTIVOS_ENCERRAR } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0534_recorrencia_mudancas.sql", import.meta.url));
+  const lista = /v_motivo not in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([^']+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista, [...MOTIVOS_ENCERRAR]);
 });
 
 Deno.test("FI-17: as formas de pagamento do domínio são as mesmas do banco", async () => {

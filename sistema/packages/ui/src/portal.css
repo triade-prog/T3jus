@@ -4360,3 +4360,34 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .fi-grupo-op{border:0;margin:0;padding:0;display:grid;gap:8px}
 .fi-grupo-op legend{font-weight:500;margin-bottom:6px;padding:0}
 .fi-sub-op{padding-left:34px;display:grid;gap:12px}
+
+/* Contas que repetem todo mês (FI-13, F3.24), desenho aprovado em
+   docs/design/aprovadas/portal-recibo-recorrente (estados rc-). */
+.rc-quem a{font-weight:500;color:var(--vinho);text-decoration:none;display:inline-block;padding:12px 0;margin:-12px 0}
+.rc-tab td{padding-right:14px}
+.rc-quem a:hover{text-decoration:underline}
+.rc-quem small{display:block;font-size:12px;color:var(--texto-2)}
+.rc-mes{display:grid;gap:4px;justify-items:start}
+.rc-mes small{font-size:12px;color:var(--texto-2)}
+.rc-acoes{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
+.rc-muda{font-size:12px;color:var(--texto-2);display:block;font-weight:400}
+.rc-total{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 24px;border-top:1px solid var(--divisor);font-size:13px;color:var(--texto-2);margin:0}
+.rc-total b{font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--vinho)}
+.rc-enc .fi-quem a{font-weight:500;color:var(--texto-2);text-decoration:none;display:inline-block;padding:12px 0;margin:-12px 0}
+.rc-enc .fi-quem a:hover{text-decoration:underline}
+.rc-dir-linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rc-dir-bts{display:flex;gap:8px;flex-wrap:wrap}
+.rc-efeito{list-style:none;margin:0;padding:12px 14px;border-radius:var(--raio);border:1px solid var(--vinho-4);display:grid;gap:8px}
+.rc-efeito-t{font-size:13px;font-weight:500;margin:0 0 -4px}
+.rc-efeito li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5}
+.rc-efeito li .ico{color:var(--vinho);flex:none;margin-top:1px;width:18px;height:18px}
+.rc-efeito b{font-weight:600}
+.rc-nota{display:flex;gap:10px;align-items:flex-start;padding:12px 24px 18px;font-size:12px;line-height:1.5;color:var(--texto-2);margin:0}
+.rc-nota .ico{width:16px;height:16px;flex:none;margin-top:1px;color:var(--vinho-4)}
+@media (max-width:760px){
+  .rc-total{padding:12px 16px}
+  .rc-dir-bts .btn{flex:1 1 100%}
+  .rc-nota{padding:10px 16px 16px}
+  .rc-acoes{flex-wrap:wrap;justify-content:stretch}
+  .rc-acoes .btn{flex:1 1 auto}
+}
