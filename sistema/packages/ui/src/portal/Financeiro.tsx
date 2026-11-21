@@ -245,6 +245,7 @@ function ReceberConteudo() {
                         <div className="fi-forma">
                           <b>{nomeForma(p.forma) ?? "Forma a combinar"}</b>
                           {cob ? <small>{cob}</small> : null}
+                          {p.semAvisoAutomatico ? <small>Sem aviso automático</small> : null}
                         </div>
                       </td>
                       <td data-r="Situação">
@@ -253,6 +254,7 @@ function ReceberConteudo() {
                             {novas.includes(p.id) ? <Selo tom="ativo">Novo</Selo> : null}
                             {p.exito ? <Selo tom="ok" icone="balanca">Êxito</Selo> : null}
                             <SeloDaParcela p={p} hoje={hoje} />
+                            {p.eraPagoAntes ? <span className="selo selo-neutro">Era paga antes do T3jus</span> : null}
                           </span>
                           <OrigemExito p={p} />
                           <LevaJunto p={p} />
@@ -835,6 +837,7 @@ function SituacaoNaFicha({ p, hoje }: { p: ParcelaDoContrato; hoje: string }) {
       <span className="fi-selos">
         {p.exito ? <Selo tom="ok" icone="balanca">Êxito</Selo> : null}
         <SeloDaParcela p={p} hoje={hoje} />
+        {p.eraPagoAntes ? <span className="selo selo-neutro">Era paga antes do T3jus</span> : null}
       </span>
       {nota ? <p className="fi-motivo">{nota}</p> : null}
       <OrigemExito p={p} />

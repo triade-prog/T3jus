@@ -3,6 +3,7 @@
 // ação. As regras estão no banco (0220_portal_financeiro_receber.sql); aqui o esquema só
 // confere a forma do pedido.
 
+import type { MarcaNoDocumento } from "./logo.ts";
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import type { Condicao, TipoHonorario } from "./honorarios.ts";
@@ -90,6 +91,10 @@ export interface ParcelaLinha {
   cancelado: { em: string; motivo: string } | null;
   /** Só em "Recebido no mês": quanto entrou no mês. */
   noMes?: number | null;
+  /** Voltou de "Pago antes do T3jus" ("Não foi paga", F3.84). */
+  eraPagoAntes?: boolean;
+  /** Nenhum aviso automático sai por esta parcela até ela ter nova data (pergunta 3). */
+  semAvisoAutomatico?: boolean;
   /** A parcela do êxito: de onde veio e quem conferiu (F3.14). */
   exito?: ExitoDaParcela | null;
   /** O reembolso que vai junto com a parcela e ainda não foi pago (F3.85). */
@@ -208,7 +213,9 @@ export interface ParcelasContrato {
 /** O que vai no papel do recibo (FI-14, F3.19), como estava no registro. */
 export interface ReciboParaImprimir {
   numero: { ano: number; numero: number };
-  escritorio: { nome: string; cnpj: string | null; endereco: string | null; cidade: string | null; uf: string | null;
+  /** A marca do dia (F3.81): sem ela, o recibo sai com o nome em letra, como saiu. */
+  marca?: MarcaNoDocumento | null;
+  escritorio: { nome: string; cnpj: string | null; endereco: string | null; cidade: string | null; uf: string | null; oab?: string | null;
     contatos?: { telefone?: string | null; email?: string | null }[] | null; whatsapp: string | null };
   cliente: { id: string; nome: string; tipo: "PF" | "PJ"; documento: string | null };
   pagador: { tipo: "CONTATO" | "OUTRO"; nome: string; documento: string | null; papel: string | null } | null;

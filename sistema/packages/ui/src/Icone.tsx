@@ -347,6 +347,7 @@ const DESENHOS = {
   fonte: <><path d="M5 3h10l4 4v14H5Z" /><path d="M8.5 11h7M8.5 15h7" /></>,
   // Sino de avisos e "não receber avisos" (desenho aprovado em 20/11/2026).
   "sino-mudo": <><path d="M6 16.5V11a6 6 0 0 1 9.2-5.1" /><path d="M18 10.2v6.3l1.5 2H8" /><path d="M10 21h4" /><path d="M4 20 20 4" /></>,
+  desfazer: <><path d="M9 5 4 10l5 5" /><path d="M4 10h11a5 5 0 0 1 0 10h-3" /></>,
   "sino-volta": <><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z" /><path d="M10 21h4" /><path d="m9.5 11.5 2 2 3.5-3.5" /></>,
   checks: <><path d="m2.5 12.5 4 4 8-9" /><path d="m11.5 16 1 .5 8-9" /></>,
   // Carnê de pagamento (FI-23, desenho aprovado em 20/11/2026).

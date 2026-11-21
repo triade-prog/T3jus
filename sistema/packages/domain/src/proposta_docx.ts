@@ -14,6 +14,8 @@ export interface EscritorioDoTimbrado {
   endereco: string | null;
   cidade: string | null;
   uf: string | null;
+  /** O registro da sociedade na OAB, "OAB/SP 31.874" (F3.19). */
+  oab?: string | null;
   contatos?: { telefone?: string | null; email?: string | null }[];
 }
 
@@ -30,7 +32,7 @@ function telefoneFmt(t: string): string {
 /** As linhas do timbrado: o nome; CNPJ e endereço; telefone e e-mail. Só o que existe. */
 export function linhasTimbrado(e: EscritorioDoTimbrado): string[] {
   const lugar = [e.endereco?.trim(), [e.cidade?.trim(), e.uf].filter(Boolean).join("/")].filter(Boolean).join(" · ");
-  const doc = [e.cnpj ? `CNPJ ${cnpjFmt(e.cnpj)}` : "", lugar].filter(Boolean).join(" · ");
+  const doc = [e.cnpj ? `CNPJ ${cnpjFmt(e.cnpj)}` : "", e.oab ?? "", lugar].filter(Boolean).join(" · ");
   const c = e.contatos?.find((x) => x.telefone || x.email);
   const contato = c ? [c.telefone ? telefoneFmt(c.telefone) : "", c.email ?? ""].filter(Boolean).join(" · ") : "";
   return [e.nome, doc, contato].filter(Boolean);

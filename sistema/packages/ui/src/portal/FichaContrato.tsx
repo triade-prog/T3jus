@@ -24,7 +24,9 @@ import { OrigemPlanilha } from "./Importacao.tsx";
 import { abrirAnexo, CampoAnexo, enviarAnexo } from "./Anexos.tsx";
 import { tamanhoLegivel } from "../console/documentos.ts";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
+import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { HistoricoRecebimentos, JanelaFoiPaga, JanelaNaoPaga, textoAtraso } from "./NaoPaga.tsx";
 
 type Aba = "contrato" | "recebimentos" | "documentos";
 type Feito = { titulo: string; texto: string };
@@ -79,6 +81,25 @@ function Dir({ f, aoAssinar }: { f: FichaContrato; aoAssinar: () => void }) {
         <p className="sobretitulo" id="t-px">Encerrado{f.encerradoEm ? ` em ${diaCurto(diaDoInstante(f.encerradoEm))}` : ""}</p>
         <p className="grande" style={{ fontSize: 30 }}>Sem cobranças novas</p>
         <p className="hn-oque">{f.motivoEncerramento ? <><b>“{f.motivoEncerramento}”</b><br /></> : null}O que já venceu continua no Financeiro.</p>
+      </section>
+    );
+  }
+  // A parcela que era paga antes do T3jus e voltou vencida (F3.84, decisão 8): sem recebimento,
+  // carnê nem cobrança (podeVoltar), então é certo que está em aberto.
+  const atrasada = f.recebimentos.find((r) => r.eraPagoAntes && r.podeVoltar && !r.cancelado && r.vencimento < hojeBrasilia());
+  if (atrasada) {
+    return (
+      <section className="dir campo-ambar" aria-labelledby="t-pr">
+        <p className="sobretitulo" id="t-pr">Recebimento em atraso</p>
+        <div className="hn-dir-linha">
+          <p className="grande">{diaCurto(atrasada.vencimento)}</p>
+          <Selo tom="urgente" icone="alerta">{textoAtraso(atrasada.vencimento, hojeBrasilia())}</Selo>
+        </div>
+        <p className="hn-oque"><b>{atrasada.descricao} · {atrasada.valor ? reais(atrasada.valor) : "a definir"}</b><br />{f.financeiro ? "no Financeiro, em A receber" : "na programação do contrato"}</p>
+        <a className="btn btn-pri" href={f.financeiro ? ROTAS_FINANCEIRO.receber : ROTAS_CONTRATOS.recebimentos(f.id)}>
+          <Icone nome="carteira" className="ico" />
+          {f.financeiro ? "Ver em A receber" : "Ver recebimentos"}
+        </a>
       </section>
     );
   }
@@ -225,10 +246,14 @@ function Historico({ eventos, hoje }: { eventos: EventoContrato[]; hoje: string 
   );
 }
 
-function Recebimentos({ f, hoje, dono }: { f: FichaContrato; hoje: string; dono: string | undefined }) {
+function Recebimentos({ f, hoje, dono, aoNaoPaga, aoFoiPaga }: {
+  f: FichaContrato; hoje: string; dono: string | undefined; aoNaoPaga: (r: RecebimentoPrevisto) => void; aoFoiPaga: (r: RecebimentoPrevisto) => void;
+}) {
   const j = janelaProgramacao(f.recebimentos, hoje);
   const variaveis = f.condicoes.filter((c) => c.tipo === "EXITO" || c.tipo === "SUCUMBENCIA" || c.tipo === "ATO" || (c.tipo === "RECORRENTE" && c.etapa));
-  const pagas = f.recebimentos.filter((r) => r.pagoAntes);
+  // A que já voltou para A receber ("Não foi paga", F3.84) sai da folha.
+  const pagas = f.recebimentos.filter((r) => r.pagoAntes && !r.corrigida);
+  const mudancas = f.mudancasPagoAntes ?? [];
   const somaPagas = pagas.reduce((t, r) => t + (r.valor ?? 0), 0);
   return (
     <div className="pg-grade">
@@ -260,7 +285,7 @@ function Recebimentos({ f, hoje, dono }: { f: FichaContrato; hoje: string; dono:
               <colgroup>{["16%", "40%", "22%", "22%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
               <thead><tr>{["Vencimento", "O quê", "Condição", "Valor"].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>
               <tbody>
-                {j.mostrar.map((r) => <LinhaRecebimento key={r.id} r={r} f={f} />)}
+                {j.mostrar.map((r) => <LinhaRecebimento key={r.id} r={r} f={f} hoje={hoje} aoFoiPaga={aoFoiPaga} />)}
               </tbody>
             </table>
           ) : <Estado icone="carteira" titulo="Nada programado">As condições deste contrato dependem do caso. Quando a etapa for marcada, o valor entra aqui.</Estado>}
@@ -272,7 +297,8 @@ function Recebimentos({ f, hoje, dono }: { f: FichaContrato; hoje: string; dono:
         <p className="hn-pe"><Icone nome="cadeado" className="ico" /><span>Se cada recebimento foi pago ou está em atraso fica no Financeiro, que não está liberado para você.{dono ? ` Quem libera é ${dono}, sócio dono.` : ""}</span></p>
       )}
     </section>
-    {pagas.length ? <PagoAntes f={f} pagas={pagas} soma={somaPagas} hoje={hoje} /> : null}
+    {pagas.length ? <PagoAntes f={f} pagas={pagas} soma={somaPagas} hoje={hoje} aoNaoPaga={aoNaoPaga} /> : null}
+    {mudancas.length ? <HistoricoRecebimentos mudancas={mudancas} cliente={f.cliente.nome} hoje={hoje} /> : null}
     </div>
   );
 }
@@ -282,10 +308,11 @@ const PAGAS_DE_CARA = 6;
 
 /**
  * As parcelas que a planilha trouxe como já pagas (F3.73, VA-05). Só informação: não entram nos
- * totais, em A receber nem no Caixa, e não geram recibo. Se alguma não foi paga, o caminho é
- * desfazer a importação (pergunta 5).
+ * totais, em A receber nem no Caixa, e não geram recibo. Se uma não foi paga, quem tem o
+ * Financeiro a passa para A receber ("Não foi paga", F3.84); se a planilha inteira estava
+ * errada, o caminho é desfazer a importação.
  */
-function PagoAntes({ f, pagas, soma, hoje }: { f: FichaContrato; pagas: RecebimentoPrevisto[]; soma: number; hoje: string }) {
+function PagoAntes({ f, pagas, soma, hoje, aoNaoPaga }: { f: FichaContrato; pagas: RecebimentoPrevisto[]; soma: number; hoje: string; aoNaoPaga: (r: RecebimentoPrevisto) => void }) {
   const [todas, setTodas] = useState(false);
   const recentes = [...pagas].sort((a, b) => (a.vencimento < b.vencimento ? 1 : a.vencimento > b.vencimento ? -1 : 0));
   const mostrar = todas ? recentes : recentes.slice(0, PAGAS_DE_CARA);
@@ -294,12 +321,18 @@ function PagoAntes({ f, pagas, soma, hoje }: { f: FichaContrato; pagas: Recebime
   const doTipo = (t: RecebimentoPrevisto["tipo"]) => f.recebimentos.filter((r) => r.tipo === t && (r.pagoAntes || !r.cancelado)).length;
   const total = doTipo(pagas[0]!.tipo);
   const podeDesfazer = imp && !imp.desfeita && imp.desfazerAte && imp.desfazerAte.slice(0, 10) >= hoje;
+  const botao = !!f.podeMarcarNaoPaga;
+  const corrigidas = f.recebimentos.filter((r) => r.pagoAntes && r.corrigida && f.recebimentos.some((x) => x.eraPagoAntes && !x.cancelado && x.descricao === r.descricao && diaDoInstante(x.criadoEm) === hoje));
+  const quem = (f.quemFinanceiro ?? []).map((p) => p.nome);
   return (
     <section className="folha pg" aria-labelledby="t-pg" id="pago-antes" style={{ overflow: "hidden" }}>
       <div className="folha-cab">
         <div>
           <h2 id="t-pg">Pago antes do T3jus</h2>
-          <p className="sub">{pagas.length === 1 ? "1 parcela que a planilha trouxe como já paga." : `${pagas.length} parcelas que a planilha trouxe como já pagas.`}</p>
+          <p className="sub">
+            {pagas.length === 1 ? "1 parcela que a planilha trouxe como já paga." : `${pagas.length} parcelas que a planilha trouxe como já pagas.`}
+            {corrigidas.length ? ` ${juntarItens(corrigidas.map((r) => r.descricao.replace(/ de \d+$/, "").replace(/^Parcela/, corrigidas.length === 1 ? "A parcela" : "a parcela")))} ${corrigidas.length === 1 ? "passou" : "passaram"} para A receber hoje.` : ""}
+          </p>
         </div>
       </div>
       <p className="pg-nota">
@@ -308,8 +341,13 @@ function PagoAntes({ f, pagas, soma, hoje }: { f: FichaContrato; pagas: Recebime
       </p>
       <table className="hn-tab">
         <caption className="sr">Parcelas pagas antes do T3jus</caption>
-        <colgroup>{["14%", "34%", "18%", "15%", "19%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
-        <thead><tr>{["Vencimento", "O quê", "Condição", "Valor", "Como veio"].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>
+        <colgroup>{(botao ? ["13%", "26%", "16%", "13%", "18%", "14%"] : ["14%", "34%", "18%", "15%", "19%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+        <thead>
+          <tr>
+            {["Vencimento", "O quê", "Condição", "Valor", "Como veio"].map((t) => <th key={t} scope="col">{t}</th>)}
+            {botao ? <th scope="col"><span className="sr">Ação</span></th> : null}
+          </tr>
+        </thead>
         <tbody>
           {mostrar.map((r) => {
             const c = f.condicoes.find((x) => x.tipo === r.tipo);
@@ -320,6 +358,14 @@ function PagoAntes({ f, pagas, soma, hoje }: { f: FichaContrato; pagas: Recebime
                 <td data-r="Condição">{c ? <SeloTipo c={c} /> : null}</td>
                 <td data-r="Valor"><span className="num hn-valor-c">{r.valor ? reais(r.valor) : "a definir"}</span></td>
                 <td data-r="Como veio"><Selo tom="neutro">Paga antes do T3jus</Selo></td>
+                {botao ? (
+                  <td data-r="" className="np-acao">
+                    <button className="btn btn-sec btn-compacto" type="button" onClick={() => aoNaoPaga(r)}
+                      aria-label={`Não foi paga: ${r.descricao.toLowerCase()}, de ${dataBr(r.vencimento)}`}>
+                      Não foi paga
+                    </button>
+                  </td>
+                ) : null}
               </tr>
             );
           })}
@@ -341,29 +387,71 @@ function PagoAntes({ f, pagas, soma, hoje }: { f: FichaContrato; pagas: Recebime
             <div><dt>Importada por</dt><dd>{imp.por?.nome ?? "Alguém que saiu da equipe"}<small>{dataCurta(imp.em)}, às {hora(imp.em)}</small></dd></div>
             <div><dt>Na planilha</dt><dd>“Parcelas pagas: {pagas.length}”<small>{pagas.length === 1 ? `a primeira de ${total}` : `as ${pagas.length} primeiras de ${total}`}</small></dd></div>
           </dl>
-          <div className="pg-acoes">
-            <a className="btn btn-sec" href={ROTAS_IMPORTACAO.resultado(imp.id)}><Icone nome="historico" className="ico" />Ver a importação</a>
-            <p>
-              {imp.desfeita
-                ? "A importação foi desfeita."
-                : podeDesfazer
-                  ? `Alguma não foi paga? Até ${dataCurta(imp.desfazerAte!)} dá para desfazer a importação, corrigir a planilha e importar de novo.`
-                  : "Alguma não foi paga? O prazo para desfazer a importação acabou. Fale com o suporte para corrigir."}
-            </p>
-          </div>
+          {imp.desfeita ? (
+            <div className="pg-acoes">
+              <a className="btn btn-sec" href={ROTAS_IMPORTACAO.resultado(imp.id)}><Icone nome="historico" className="ico" />Ver a importação</a>
+              <p>A importação foi desfeita.</p>
+            </div>
+          ) : (
+            <ul className="np-caminhos" aria-label="Se a planilha estava errada">
+              {botao ? (
+                <li>
+                  <Icone nome="moeda" className="ico" />
+                  <span><b>Uma parcela não foi paga?</b> Use “Não foi paga” na linha dela. Ela passa para A receber e o resto da importação fica como está.</span>
+                </li>
+              ) : (
+                <li>
+                  <Icone nome="cadeado" className="ico" />
+                  <span>
+                    <b>Alguma não foi paga?</b> Quem tem a área Financeiro passa a parcela para A receber{quem.length ? `: ${quem.length === 1 ? quem[0] : `${quem.slice(0, -1).join(", ")} ou ${quem[quem.length - 1]}`}` : ""}.
+                    {podeDesfazer ? ` Desfazer a importação, até ${dataCurta(imp.desfazerAte!)}, é com ${imp.por?.nome ?? "quem importou"}, que importou.` : ""}
+                    <span className="np-ac"><a className="btn btn-sec" href={ROTAS_IMPORTACAO.resultado(imp.id)}><Icone nome="historico" className="ico" />Ver a importação</a></span>
+                  </span>
+                </li>
+              )}
+              {botao ? (
+                <li>
+                  <Icone nome="desfazer" className="ico" />
+                  <span>
+                    <b>A planilha inteira estava errada?</b>{" "}
+                    {podeDesfazer ? `Até ${dataCurta(imp.desfazerAte!)} dá para desfazer a importação, corrigir a planilha e importar de novo.` : "O prazo para desfazer a importação acabou. Fale com o suporte para corrigir."}
+                    <span className="np-ac">
+                      <a className="btn btn-sec" href={ROTAS_IMPORTACAO.resultado(imp.id)}><Icone nome="historico" className="ico" />Ver a importação</a>
+                      {podeDesfazer ? <a className="btn btn-sec" href={ROTAS_IMPORTACAO.desfazer(imp.id)}><Icone nome="desfazer" className="ico" />Desfazer a importação</a> : null}
+                    </span>
+                  </span>
+                </li>
+              ) : null}
+            </ul>
+          )}
         </>
       ) : null}
     </section>
   );
 }
 
-function LinhaRecebimento({ r, f }: { r: RecebimentoPrevisto; f: FichaContrato }) {
+function LinhaRecebimento({ r, f, hoje, aoFoiPaga }: { r: RecebimentoPrevisto; f: FichaContrato; hoje: string; aoFoiPaga: (r: RecebimentoPrevisto) => void }) {
   const c = f.condicoes.find((x) => x.tipo === r.tipo);
+  const era = r.eraPagoAntes && !r.cancelado;
+  const atraso = era && r.podeVoltar ? textoAtraso(r.vencimento, hoje) : null;
   return (
     <tr className={r.cancelado ? "ct-cancelado" : undefined}>
-      <td><b className="num">{dataBr(r.vencimento)}</b></td>
+      <td>
+        <b className="num">{dataBr(r.vencimento)}</b>
+        {atraso && atraso !== "Vence hoje" ? <><br /><Selo tom="urgente" icone="alerta">{atraso}</Selo></> : null}
+      </td>
       <td data-r="O quê">
-        {r.descricao}
+        {era ? (
+          <span className="np-o">
+            {r.descricao}
+            <small>Era “paga antes do T3jus” até {diaDoInstante(r.criadoEm) === hoje ? "hoje" : dataBr(diaDoInstante(r.criadoEm))}</small>
+            {r.podeVoltar && f.podeMarcarNaoPaga ? (
+              <button className="btn btn-sec btn-compacto" type="button" onClick={() => aoFoiPaga(r)} aria-label={`Foi paga, sim: ${r.descricao.toLowerCase()}`}>
+                <Icone nome="desfazer" className="ico" />Foi paga, sim
+              </button>
+            ) : null}
+          </span>
+        ) : r.descricao}
         {r.cancelado ? <><br /><small>Cancelado: {r.cancelado.motivo}</small></> : null}
         {r.base ? <><br /><small>Base de {reais(r.base.valor)}, informada por {r.base.por.nome}</small></> : null}
       </td>
@@ -563,6 +651,8 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
   const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | "inscricoes" | null>(null);
   const [assinados, setAssinados] = useState<Anexo[] | null>(null);
   const [carne, setCarne] = useState(false);
+  const [naoPaga, setNaoPaga] = useState<RecebimentoPrevisto | null>(null);
+  const [foiPaga, setFoiPaga] = useState<RecebimentoPrevisto | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const hoje = hojeBrasilia();
 
@@ -630,7 +720,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
       </nav>
       {aba === "recebimentos" ? (
         <>
-          <Recebimentos f={f} hoje={hoje} dono={escritorio.socios[0]} />
+          <Recebimentos f={f} hoje={hoje} dono={escritorio.socios[0]} aoNaoPaga={setNaoPaga} aoFoiPaga={setFoiPaga} />
           {f.situacao !== "ELABORACAO" ? (
             <FolhaCarne contrato={f.id} area="CONTRATOS" escritorio={escritorio} aberta={carne} aoAbrir={() => setCarne(true)} aoFechar={() => setCarne(false)} />
           ) : null}
@@ -683,6 +773,27 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
           setFeito({ titulo: "Inscrições salvas", texto: "Valem para os documentos gerados daqui em diante. A mudança fica no histórico do contrato." });
           void carregar();
         }} />
+      {naoPaga ? (
+        <JanelaNaoPaga f={ficha} r={naoPaga} hoje={hoje} aoFechar={() => setNaoPaga(null)}
+          aoFeito={(n) => {
+            const r = naoPaga;
+            setNaoPaga(null);
+            setFeito({
+              titulo: `A ${r.descricao.toLowerCase()} passou para A receber.`,
+              texto: `${n.vencimento < hoje ? `Vencida desde ${dataBr(n.vencimento)}` : `Vence em ${dataBr(n.vencimento)}`}, com a cobrança com ${ficha.responsavel.nome}. Nenhum aviso automático saiu para ${ficha.cliente.nome.split(" ")[0]}.`,
+            });
+            void carregar();
+          }} />
+      ) : null}
+      {foiPaga ? (
+        <JanelaFoiPaga f={ficha} r={foiPaga} aoFechar={() => setFoiPaga(null)}
+          aoFeito={() => {
+            const r = foiPaga;
+            setFoiPaga(null);
+            setFeito({ titulo: `A ${r.descricao.toLowerCase()} voltou para “Pago antes do T3jus”.`, texto: "Saiu de A receber e dos totais. As duas mudanças ficam no histórico." });
+            void carregar();
+          }} />
+      ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );

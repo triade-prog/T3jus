@@ -70,6 +70,12 @@ function Dados({ e }: { e: EscritorioPortal }) {
           <dt>CNPJ</dt>
           <dd className="num">{e.cnpj ? formatarCnpj(e.cnpj) : "Não informado"}</dd>
         </div>
+        {e.oabSociedade ? (
+          <div>
+            <dt>Registro da sociedade na OAB</dt>
+            <dd className="num">{e.oabSociedade}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>Cidade e UF</dt>
           <dd>{e.cidade ? `${e.cidade}${e.uf ? `, ${e.uf}` : ""}` : "Não informado"}</dd>

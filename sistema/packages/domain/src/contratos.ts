@@ -42,6 +42,10 @@ export const inscricoesContratoSchema = z.object({ versao: z.number().int().min(
 
 export const assinaturaContratoSchema = z.object({ versao: z.number().int().min(1), assinadoEm: z.string().max(20).nullish() });
 export const encerrarContratoSchema = z.object({ versao: z.number().int().min(1), motivo: texto(500) });
+/** "Não foi paga" (F3.84): o vencimento da planilha ou outra data, e o motivo. */
+export const naoPagaSchema = z.object({ vencimento: z.string().max(20).nullish(), motivo: texto(500) });
+/** "Foi paga, sim" (F3.84): o motivo. */
+export const foiPagaSchema = z.object({ motivo: texto(300) });
 export const baseMesSchema = z.object({ valor: z.number().int().nullish(), fonte: z.string().max(20).nullish(), vencimento: z.string().max(20).nullish() });
 
 export interface ProximoRecebimento { em: string; valor: number | null; aDefinir: number; itens: string[] }
@@ -75,6 +79,12 @@ export interface RecebimentoPrevisto {
   cancelado: { em: string; motivo: string } | null;
   /** Paga antes do T3jus, vinda da planilha (F3.73): só informação, nasce cancelada. */
   pagoAntes?: boolean;
+  /** Paga antes do T3jus que já voltou para A receber ("Não foi paga", F3.84): sai da folha. */
+  corrigida?: boolean;
+  /** Parcela que voltou para A receber ("Era paga antes do T3jus até ..."). */
+  eraPagoAntes?: boolean;
+  /** Dá para "Foi paga, sim": nada foi feito nela em A receber. */
+  podeVoltar?: boolean;
   base: { valor: number; fonte: FonteBase; por: PessoaRef; em: string } | null;
 }
 export interface EventoContrato { em: string; acao: string; autor: string | null; dados: Record<string, unknown> }
@@ -94,6 +104,23 @@ export interface FichaContrato extends ContratoLinha {
   historico: EventoContrato[];
   /** A importação de planilha de onde o contrato veio (F3.73), ou nulo. */
   importacao?: OrigemImportacaoContrato | null;
+  /** Quem vê o botão "Não foi paga" (área Financeiro, F3.84). */
+  podeMarcarNaoPaga?: boolean;
+  /** Quem tem a área Financeiro, para o pé da folha de quem não tem. */
+  quemFinanceiro?: PessoaRef[];
+  /** "Não foi paga" e "Foi paga, sim", do mais novo ao mais antigo. */
+  mudancasPagoAntes?: MudancaPagoAntes[];
+}
+
+export interface MudancaPagoAntes {
+  id: string;
+  tipo: "NAO_PAGA" | "FOI_PAGA";
+  parcela: string;
+  vencimentoPlanilha: string;
+  vencimento: string | null;
+  motivo: string;
+  por: PessoaRef | null;
+  em: string;
 }
 
 export interface OrigemImportacaoContrato {

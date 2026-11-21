@@ -379,6 +379,10 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_peticao_arquivo: (a) => ({ versaoId: VERSAO_PET, nome: "juntada.docx", rascunho: a.p_versao === 1 }),
     portal_peticao_versao_preparar: () => ({ numero: 2, modeloNome: "Juntada de documentos", casoNome: "Pereira x Mercado" }),
     portal_peticao_versao_gravar: (a) => ({ id: a.p_id, situacao: "REVISAO", versao: 2, arquivo: (a.p_resultado as { arquivo: string }).arquivo }),
+    portal_pago_antes_nao_paga: (a) => ({ id: CLIENTE, contratoId: a.p_contrato, eraPagoAntes: true, vencimento: "2026-12-10" }),
+    portal_pago_antes_foi_paga: (a) => ({ id: a.p_recebimento, contratoId: CLIENTE }),
+    portal_recebimento_logo_registrar: (a) => ({ ...(a.p_dados as object), enviadoEm: "2026-11-21T10:00:00-03:00" }),
+    portal_recebimento_logo_arquivo: (a) => `${a.p_escritorio}/logos/${a.p_logo}.png`,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
   });
   const storage = arquivosFalsos();
@@ -1868,4 +1872,86 @@ Deno.test("F3.50 e F3.49: os ajustes e a meta vão ao banco com o escritório da
 Deno.test("F3.50: o lembrete do contador no domínio é o mesmo tipo do banco", async () => {
   const sql = await Deno.readTextFile(new URL("../../migrations/0557_envio_contador.sql", import.meta.url));
   assertEquals(sql.includes("'EXPORTAR_CONTADOR'"), true);
+});
+
+/** Um PNG RGBA de 8 bits, sem filtro, com um retângulo pintado no meio. */
+async function pngComRetangulo(largura: number, altura: number, cor: [number, number, number]): Promise<Uint8Array> {
+  const cru = new Uint8Array((largura * 4 + 1) * altura);
+  for (let y = 10; y < altura - 10; y++) {
+    for (let x = 10; x < largura - 10; x++) cru.set([...cor, 255], y * (largura * 4 + 1) + 1 + x * 4);
+  }
+  const idat = new Uint8Array(await new Response(new Blob([cru]).stream().pipeThrough(new CompressionStream("deflate"))).arrayBuffer());
+  const crc = (b: Uint8Array) => {
+    let c = ~0;
+    for (const x of b) { c ^= x; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1)); }
+    return ~c >>> 0;
+  };
+  const pedaco = (nome: string, dados: Uint8Array) => {
+    const out = new Uint8Array(12 + dados.length);
+    const dv = new DataView(out.buffer);
+    dv.setUint32(0, dados.length);
+    out.set([...nome].map((ch) => ch.charCodeAt(0)), 4);
+    out.set(dados, 8);
+    dv.setUint32(8 + dados.length, crc(out.subarray(4, 8 + dados.length)));
+    return out;
+  };
+  const ihdr = new Uint8Array(13);
+  new DataView(ihdr.buffer).setUint32(0, largura);
+  new DataView(ihdr.buffer).setUint32(4, altura);
+  ihdr[8] = 8; ihdr[9] = 6;
+  const partes = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), pedaco("IHDR", ihdr), pedaco("IDAT", idat), pedaco("IEND", new Uint8Array())];
+  const total = new Uint8Array(partes.reduce((t, x) => t + x.length, 0));
+  let o = 0;
+  for (const x of partes) { total.set(x, o); o += x.length; }
+  return total;
+}
+
+Deno.test("F3.84, VA-05: \"Não foi paga\" e \"Foi paga, sim\" vão ao banco com o escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/pago-antes/${VERSAO_PET.toUpperCase()}/nao-paga`, { cookie, corpo: { motivo: "O cliente diz que não pagou" } });
+  assertEquals(r.status, 201);
+  const a = m.chamadas.find((c) => c.funcao === "portal_pago_antes_nao_paga")!.args;
+  assertEquals([a.p_escritorio, a.p_contrato, a.p_recebimento], [AURORA, CLIENTE, VERSAO_PET]);
+  assertEquals(a.p_dados, { vencimento: "ORIGINAL", motivo: "O cliente diz que não pagou" });
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/pago-antes/nao-e-id/nao-paga`, { cookie, corpo: { motivo: "abc" } }))).codigo, "NOT_FOUND");
+  const f = await m.pedir(`/v1/escritorio/recebimentos/${CLIENTE}/foi-paga`, { cookie, corpo: { motivo: "Achei o comprovante" } });
+  assertEquals((await f.json()).contratoId, CLIENTE);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_pago_antes_foi_paga")!.args.p_dados, { motivo: "Achei o comprovante" });
+});
+
+Deno.test("F3.81: o PNG do logo é conferido de novo na API e guardado na pasta do escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const png = await pngComRetangulo(720, 240, [0x69, 0x27, 0x46]);
+  const r = await m.pedir("/v1/escritorio/recebimento/logo?nome=logo-aurora.svg&formato=SVG&bytes=9000&corte=12,4,12,4", { bruto: png, cookie });
+  assertEquals(r.status, 201);
+  const logo = await r.json();
+  assertEquals([logo.largura, logo.altura, logo.passa, logo.formato], [720, 240, true, "SVG"]);
+  assertEquals(logo.corte, { esquerda: 12, topo: 4, direita: 12, baixo: 4 });
+  const a = m.chamadas.find((c) => c.funcao === "portal_recebimento_logo_registrar")!.args;
+  assertEquals(a.p_escritorio, AURORA);
+  const caminho = `${AURORA}/logos/${logo.id}.png`;
+  assertEquals(m.storage.guardados.get(caminho), { tamanho: png.length, tipo: "image/png" });
+  // Abrir o logo: o caminho vem do banco; a imagem sai como PNG.
+  const img = await m.pedir(`/v1/escritorio/logos/${logo.id}`, { cookie });
+  assertEquals(img.headers.get("content-type"), "image/png");
+  assertEquals(new Uint8Array(await img.arrayBuffer()).length, png.length);
+  // Recusas: pequeno, arquivo grande, não é PNG, formato que não entra.
+  const pequeno = await pngComRetangulo(300, 120, [0, 0, 0]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/recebimento/logo?nome=a.png&formato=PNG&bytes=900", { bruto: pequeno, cookie }))).detalhes?.motivo, "LOGO_PEQUENO");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/recebimento/logo?nome=a.png&formato=PNG&bytes=2000000", { bruto: png, cookie }))).detalhes?.motivo, "LOGO_GRANDE");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/recebimento/logo?nome=a.png&formato=PNG&bytes=900", { bruto: new TextEncoder().encode("%PDF-1.7"), cookie }))).detalhes?.motivo, "LOGO_FORMATO");
+  assertEquals((await erro(await m.pedir("/v1/escritorio/recebimento/logo?nome=a.pdf&formato=PDF&bytes=900", { bruto: png, cookie }))).detalhes?.campos, ["formato"]);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_recebimento_logo_registrar").length, 1);
+});
+
+Deno.test("F3.81, F3.19: Salvar a marca e a OAB passa só o que a tela mandou", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  await m.pedir("/v1/escritorio/recebimento", { metodo: "PUT", cookie,
+    corpo: { versao: 2, marca: "LOGO", logoId: VERSAO_PET.toUpperCase(), logoCor: "UMA_COR", oabUf: "SP", oabNumero: "31.874" } });
+  const a = m.chamadas.find((c) => c.funcao === "portal_recebimento_salvar")!.args;
+  assertEquals(a.p_dados, { versao: 2, pixTipo: null, pixChave: null, recebedor: null, cidade: null, instrucoes: null,
+    marca: "LOGO", logoId: VERSAO_PET, logoCor: "UMA_COR", oabUf: "SP", oabNumero: "31.874" });
 });
