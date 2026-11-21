@@ -1,0 +1,11 @@
+{
+  "id": "D21",
+  "texto": "Desenho da importação direta do Astrea (backup .xlsx) e do ADVBOX (conexão pela API ou planilha), com processos como casos e financeiro só como informação",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "feito",
+  "ordem": 71,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-importacao-sistemas/ (21 estados, computador e celular, axe sem violação), aprovado pela Carol em 21/11/2026 às 20h37 (Bahia) com as 4 recomendações do NOTAS.md"
+}

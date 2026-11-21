@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 560,
-  "nota": "Decisão da Carol (20/11/2026): fica para depois; por enquanto a planilha exportada desses sistemas entra pela importação de planilha"
+  "proximo": "Programar o desenho aprovado em docs/design/aprovadas/portal-importacao-sistemas (D21): primeiro o backup do Astrea e a planilha do ADVBOX, conferindo as abas com o backup real de um piloto; a conexão com a API do ADVBOX quando um piloto tiver o plano de API"
 }
