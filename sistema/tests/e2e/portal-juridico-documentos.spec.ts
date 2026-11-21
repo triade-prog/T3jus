@@ -16,7 +16,7 @@ const ESCRITORIO = {
 type Resp = { status?: number; corpo: unknown };
 type Pedido = { metodo: string; caminho: string; corpo: unknown };
 
-async function simular(page: Page, rotas: Record<string, Resp>) {
+async function simular(page: Page, rotas: Record<string, Resp | (() => Resp)>) {
   const pedidos: Pedido[] = [];
   const envios: string[] = [];
   await page.route("**/arquivos-falsos/**", async (rota) => {
@@ -28,7 +28,8 @@ async function simular(page: Page, rotas: Record<string, Resp>) {
     const caminho = url.pathname.replace(/^\/api/, "");
     const metodo = rota.request().method();
     pedidos.push({ metodo, caminho, corpo: rota.request().postDataJSON() });
-    const x = rotas[`${metodo} ${caminho}`] ?? rotas[caminho] ?? { status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } };
+    const r = rotas[`${metodo} ${caminho}`] ?? rotas[caminho];
+    const x = (typeof r === "function" ? r() : r) ?? { status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } };
     await rota.fulfill({ status: x.status ?? 200, contentType: "application/json", body: JSON.stringify(x.corpo) });
   });
   return { pedidos, envios };
@@ -131,7 +132,7 @@ test.describe("Jurídico do Portal, documentos do caso (EX-05, PD-05)", () => {
     await page.goto(`${P}/juridico/casos/${CASO}`);
     await page.getByRole("button", { name: "Pedir de novo: CTPS digital de Carlos" }).click();
     const j = page.getByRole("dialog", { name: "Pedir de novo" });
-    await expect(j).toContainText("Olá, Carlos. Aqui é do escritório Ribeiro & Matos. Para o seu processo contra Mercado Bom Preço andar, ainda precisamos de: CTPS digital de Carlos. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.");
+    await expect(j).toContainText("Olá, Carlos. Aqui é do escritório Ribeiro & Matos. Para o caso Pereira x Mercado Bom Preço andar, ainda precisamos de: CTPS digital de Carlos. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.");
     await expect(j).toContainText("Texto para Carlos · (11) 97108-4426");
     await expect(j.getByRole("link", { name: "Abrir no WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/5511971084426\?text=Ol%C3%A1%2C%20Carlos/);
     await expect(j).toContainText("O WhatsApp do escritório ainda não está ligado ao T3jus.");
@@ -139,6 +140,31 @@ test.describe("Jurídico do Portal, documentos do caso (EX-05, PD-05)", () => {
     await j.getByRole("button", { name: "Marcar como pedido hoje" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Pedido de novo" })).toBeVisible();
     expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/juridico/pedidos/${PEDIDO_CTPS}/de-novo`)).toBe(true);
+  });
+
+  test("F3.42: com o WhatsApp do escritório ligado, Pedir de novo põe a mensagem na fila e a lista mostra", async ({ page }) => {
+    const ctps = { ...FALTAM[0]!, cliente: { ...CARLOS, telefone: "+5511971084426", contato: "Carlos Dias", celular: true } };
+    const depois = { ...ctps, repedidoEm: "2026-11-19", repedido: { id: "m1", envio: "NA_FILA", em: "2026-11-19T12:30:00Z", envioEm: null, motivo: null, para: "Carlos Dias", telefone: "+5511971084426" } };
+    let ficha: unknown = { ...FICHA, faltam: [ctps, FALTAM[1]], avisoEtapa: { whatsappLigado: true, automacaoLigada: true } };
+    const { pedidos } = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/juridico/casos/${CASO}`]: () => ({ corpo: ficha }),
+      [`POST /v1/escritorio/juridico/pedidos/${PEDIDO_CTPS}/de-novo/whatsapp`]: () => {
+        ficha = { ...FICHA, faltam: [depois, FALTAM[1]], avisoEtapa: { whatsappLigado: true, automacaoLigada: true } };
+        return { corpo: depois };
+      },
+    });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    await page.getByRole("button", { name: "Pedir de novo: CTPS digital de Carlos" }).click();
+    const j = page.getByRole("dialog", { name: "Pedir de novo" });
+    await expect(j).toContainText("Olá, Carlos. Aqui é do escritório Ribeiro & Matos. Para o caso Pereira x Mercado Bom Preço andar");
+    await expect(j).toContainText("Sai pelo WhatsApp do escritório.");
+    await expect(j.getByRole("link", { name: "Abrir no WhatsApp" })).toHaveCount(0);
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Mandar pelo WhatsApp" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "está na fila do WhatsApp do escritório" })).toBeVisible();
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/juridico/pedidos/${PEDIDO_CTPS}/de-novo/whatsapp`)).toBe(true);
+    await expect(page.getByText("Pedido de novo pelo WhatsApp: na fila do WhatsApp do escritório desde")).toBeVisible();
   });
 
   test("Já chegou: só marcar, ou guardar o arquivo junto (fecha o pedido)", async ({ page }) => {

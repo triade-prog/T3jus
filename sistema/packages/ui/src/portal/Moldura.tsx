@@ -32,6 +32,8 @@ export interface EscritorioPortal {
   oabSociedade?: string | null;
   contatos: { nome: string; papel?: string | null; telefone?: string | null; email?: string | null }[];
   ultimaExportacao: { em: string; por: string | null } | null;
+  /** O WhatsApp do escritório está ligado ao T3jus: os avisos saem pela fila (F3.19, F3.42). */
+  whatsappLigado?: boolean;
   /** Contrato encerrado, nos 30 dias só para consulta (F0.14); fora disso, null. */
   encerramento?: DatasContrato | null;
   /** Conversas que esperam alguém da equipe (o número no trilho e na barra do celular). */

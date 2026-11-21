@@ -18,7 +18,7 @@ import {
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, editarPrazoSchema, editarTarefaSchema, concluirTarefaSchema,
-  type ListaPrazos, type ListaTarefas, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
+  type ListaPrazos, type ListaTarefas, type MensagemAviso, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
   ajustarAvisoSchema, aprovarTextoSchema, criarAutomacaoSchema, desligarAutomacaoSchema, ligarAutomacaoSchema, salvarAutomacaoSchema,
   semAvisosSchema, avisosLidosSchema, type AvisosDoCliente, type ListaAvisosSino, simularAutomacaoSchema, simularFluxo, sugerirMudancaSchema, pedirIaSchema, type DadosSimulacao, type ListaAutomacoes, type ListaAvisosAutomaticos, type PaginaAutomacao,
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
@@ -865,15 +865,8 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     }), 201);
   });
 
-  // FI-14, F3.19: o recibo de um recebimento, como foi emitido, para imprimir ou salvar em PDF.
-  app.get("/v1/escritorio/recibos/:pagamento", async (c) => {
-    return c.json(await deps.banco.rpc<ReciboParaImprimir>("portal_recibo", { ...quem(c), p_pagamento: idDaRota(c, "pagamento") }));
-  });
-
-  // F3.93: o PDF do recibo, gerado no servidor uma vez e guardado em <escritório>/recibos/<recebimento>.pdf
-  // (o recibo não muda). Quem pode ver o recibo pode baixar; o link vale pouco.
-  app.get("/v1/escritorio/recibos/:pagamento/pdf", async (c) => {
-    const id = idDaRota(c, "pagamento");
+  // O PDF do recibo, gerado uma vez e guardado em <escritório>/recibos/<recebimento>.pdf (o recibo não muda).
+  async function guardarPdfDoRecibo(c: Context<VarsPortal>, id: string) {
     const r = await deps.banco.rpc<ReciboParaImprimir>("portal_recibo", { ...quem(c), p_pagamento: id });
     const caminho = `${c.get("escritorioId")}/recibos/${id}.pdf`;
     const nome = nomeDoPdfRecibo(r);
@@ -888,7 +881,30 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
       await deps.arquivos.enviar(caminho, pdf, "application/pdf", true);
       tamanho = pdf.length;
     }
+    return { caminho, nome, tamanho };
+  }
+
+  // FI-14, F3.19: o recibo de um recebimento, como foi emitido, para imprimir ou salvar em PDF.
+  app.get("/v1/escritorio/recibos/:pagamento", async (c) => {
+    return c.json(await deps.banco.rpc<ReciboParaImprimir>("portal_recibo", { ...quem(c), p_pagamento: idDaRota(c, "pagamento") }));
+  });
+
+  // F3.93: o PDF do recibo, gerado no servidor uma vez e guardado em <escritório>/recibos/<recebimento>.pdf
+  // (o recibo não muda). Quem pode ver o recibo pode baixar; o link vale pouco.
+  app.get("/v1/escritorio/recibos/:pagamento/pdf", async (c) => {
+    const id = idDaRota(c, "pagamento");
+    const { caminho, nome, tamanho } = await guardarPdfDoRecibo(c, id);
     return c.json({ url: await deps.arquivos.enderecoDeLeitura(caminho, VALIDADE_LEITURA_S, nome), nome, tamanho });
+  });
+
+  // F3.19: mandar o recibo pelo WhatsApp do escritório. O PDF (o mesmo do download) vai anexo
+  // ao aviso "Recibo de pagamento", na fila da conversa do contato principal.
+  app.post("/v1/escritorio/recibos/:pagamento/envio", async (c) => {
+    const id = idDaRota(c, "pagamento");
+    const { caminho, nome, tamanho } = await guardarPdfDoRecibo(c, id);
+    return c.json(await deps.banco.rpc<{ mensagem: MensagemAviso }>("portal_recibo_enviar", {
+      ...quem(c), p_pagamento: id, p_dados: { arquivo: { caminho, nome, bytes: String(tamanho) } },
+    }), 201);
   });
 
   // Anotar cobrança: o que foi feito, o motivo do atraso e a próxima ação.
@@ -1361,6 +1377,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.post("/v1/escritorio/juridico/pedidos/:id/de-novo", async (c) => {
     return c.json(await deps.banco.rpc<DocumentoFaltando>("portal_juridico_documento_repedir", { ...quem(c), p_pedido: idDaRota(c, "id") }));
+  });
+
+  // F3.42: "Pedir de novo" pelo WhatsApp do escritório (aviso "Pedido de documento" na fila).
+  app.post("/v1/escritorio/juridico/pedidos/:id/de-novo/whatsapp", async (c) => {
+    return c.json(await deps.banco.rpc<DocumentoFaltando>("portal_juridico_documento_repedir_whatsapp", { ...quem(c), p_pedido: idDaRota(c, "id") }));
   });
 
   app.post("/v1/escritorio/juridico/pedidos/:id/chegou", async (c) => {

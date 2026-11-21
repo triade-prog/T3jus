@@ -8,8 +8,8 @@ create temp table ids as select teste.escritorio('Ribeiro & Matos') as rm;
 
 select whatsapp_avisos_garantir((select rm from ids), 'NAO_ENVIADO');
 select is((select count(*)::int from whatsapp_avisos where escritorio_id = (select rm from ids)
-            and texto like 'Olá, {nome}. Aqui é do escritório {nome do escritório}. %'), 7,
-  'os 7 avisos prontos (com o de cancelamento, F3.3) começam dizendo de quem são');
+            and texto like 'Olá, {nome}. Aqui é do escritório {nome do escritório}. %'), 9,
+  'os 9 avisos prontos (com o pedido de documento e o recibo) começam dizendo de quem são');
 select is((select count(*)::int from whatsapp_avisos where escritorio_id = (select rm from ids)
             and (texto like '%link de pagamento%' or texto like '%!%' or texto like '%Obrigad%')), 0,
   'sem link de pagamento, sem exclamação e sem "Obrigado"');

@@ -1,0 +1,14 @@
+{
+  "data": "21/11/2026",
+  "inicio": "20:15",
+  "fim": "20:40",
+  "texto": "\"Pedir de novo\" e o recibo em PDF pela fila do WhatsApp do escritório, com os avisos novos \"Pedido de documento\" e \"Recibo de pagamento\" aprovados pela Carol; a automação \"Pagamento recebido\" não repete o recibo (migration 0721); falta só a entrega pela Meta (F3.42b, F3.19b).",
+  "refs": [
+    "F3.42",
+    "F3.42b",
+    "F3.19",
+    "F3.19b",
+    "EX-05",
+    "FI-14"
+  ]
+}
