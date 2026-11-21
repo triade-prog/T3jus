@@ -40,7 +40,7 @@ describe("Início do Portal (F1.14)", () => {
 
 // ---------------------------------------------------------------------------------------
 // Início por áreas (F3.26)
-import { cartaoFinanceiro, cartaoJuridico, diaDoInicio, peDoBloco, relDia, subtituloBloco, textoItem } from "./inicio.ts";
+import { cartaoFinanceiro, diaDaAudiencia, linhaAudiencia, peAudiencias, cartaoJuridico, diaDoInicio, peDoBloco, relDia, subtituloBloco, textoItem } from "./inicio.ts";
 import type { InicioFinanceiro, InicioJuridico, ItemInicio } from "@t3jus/domain";
 
 const H = "2026-11-18"; // quarta
@@ -158,5 +158,23 @@ describe("Início completo: cobrança do dia, prazo em 2 dias e petição para r
       "Prazo do caso: Contestação, 20/11", { tom: "atencao", texto: "Revisar" },
     ]);
     expect(textoItem({ ...i, versao: 2, enviadaEm: "2026-11-10", prazo: null }, H).oque).toBe("Revisar a versão 2 que Felipe mandou em 10/11");
+  });
+});
+
+describe("Próximas audiências no Início (F3.2, EX-06)", () => {
+  const aud = (inicio: string, titulo: string) => ({
+    id: titulo, tipo: "AUDIENCIA" as const, tipoEscrito: null, titulo, inicio, fim: inicio, modalidade: "PRESENCIAL" as const, local: "TRT-2, Barra Funda",
+    situacao: "MARCADO" as const, lembrete: true, responsavel: MARINA, tambemVai: [{ id: "g", nome: "Gustavo Lima" }], cliente: null,
+  });
+  it("o dia curto, a modalidade com o lugar e quem vai", () => {
+    expect(diaDaAudiencia("2026-11-19T13:30:00-03:00")).toBe("Qui, 19/11");
+    expect(linhaAudiencia(aud("2026-11-19T13:30:00-03:00", "x"))).toBe("Presencial · TRT-2, Barra Funda · Marina e Gustavo");
+  });
+  it("o pé: a seguinte depois da janela, quantas faltam e o vazio", () => {
+    const base = { de: "2026-11-19", ate: "2026-11-25", seguinte: { id: "s", inicio: "2026-11-26T13:30:00-03:00", titulo: "Instrução · Lima x Padaria Estrela" } };
+    const itens = [aud("2026-11-19T13:30:00-03:00", "a")];
+    expect(peAudiencias({ ...base, total: 1, itens }).texto).toBe("Nenhuma outra até 25/11. A seguinte é na quinta, 26/11, às 13h30: Instrução · Lima x Padaria Estrela.");
+    expect(peAudiencias({ ...base, total: 5, itens }).texto).toBe("Mais 4 audiências até 25/11.");
+    expect(peAudiencias({ ...base, total: 0, itens: [] })).toEqual({ destaque: "Nenhuma audiência nos próximos 7 dias.", texto: "A próxima é na quinta, 26/11, às 13h30: Instrução · Lima x Padaria Estrela." });
   });
 });
