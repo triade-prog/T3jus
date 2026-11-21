@@ -207,6 +207,20 @@ test.describe("Êxito para conferir e reembolso junto (F3.14, F3.85)", () => {
     expect(corpo.reembolso).toEqual({ valor: 124836, forma: "TRANSFERENCIA" });
   });
 
+  test("F3.94: a parcela do êxito baixada pela divisão do alvará diz de onde veio a baixa", async ({ page }) => {
+    const paga = { ...LANCADA, recebido: 840000, falta: 0, situacao: "PAGA", pagaEm: dia(-1),
+      baixaAlvara: [{ tipo: "ALVARA", entrouEm: dia(-1), valor: 840000, levantamentoId: "l1" }] };
+    await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": { corpo: SEM_EXITOS },
+      "GET /v1/escritorio/financeiro/receber": { corpo: lista([paga]) },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    const linha = page.getByRole("row", { name: /Joana Pereira/ });
+    await expect(linha).toContainText(`Baixada pela divisão do alvará de ${br(-1).slice(0, 5)}.`);
+    await semViolacoes(page);
+  });
+
   test("F3.95: o valor que cobre a parcela e o reembolso só sugere marcar", async ({ page }) => {
     const pedidos = await simular(page, {
       ...comuns(),

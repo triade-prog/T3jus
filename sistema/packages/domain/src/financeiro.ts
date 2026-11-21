@@ -99,6 +99,8 @@ export interface ParcelaLinha {
   exito?: ExitoDaParcela | null;
   /** O reembolso que vai junto com a parcela e ainda não foi pago (F3.85). */
   reembolso?: ReembolsoDaParcela | null;
+  /** A baixa pela divisão do alvará (F3.94): de qual levantamento e quanto. */
+  baixaAlvara?: { tipo: TipoLevantamento; entrouEm: string; valor: number; levantamentoId: string }[] | null;
 }
 
 export interface ExitoDaParcela {
@@ -484,6 +486,8 @@ export interface PropostaRepasse {
   linhas: { para: "HONORARIOS" | "REEMBOLSO"; nome: string; regra: string; valor: number; contaId?: string }[];
   cliente: number;
   falta: number;
+  /** As parcelas do êxito do cliente no caso que a parte "honorários" vai baixar (F3.94). */
+  exito?: { id: string; descricao: string; vencimento: string; falta: number }[];
 }
 
 export interface Destinacao {

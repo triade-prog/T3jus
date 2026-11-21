@@ -5,7 +5,8 @@
   "refs": [
     "CH-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 940,
-  "proximo": "O êxito conferido já vira parcela em A receber (F3.14); falta a destinação \"honorários\" da divisão do alvará do mesmo caso baixar essa parcela, com a origem \"da divisão do alvará de dd/mm\""
+  "evidencia": "Migration 0651 (ao registrar o levantamento, cada parte \"honorários\" baixa a parcela do êxito do cliente no caso, até o que falta, num recebimento de caixa TERCEIROS ligado à parte; a divisão proposta traz a parcela que vai ser baixada; a parte que baixou não se dispensa; parcela_linha com baixaAlvara), pgTAP 080 (9 testes novos), e2e tests/e2e/portal-financeiro-repasses.spec.ts (\"Dá baixa na parcela\" na divisão e o aviso) e tests/e2e/portal-financeiro-exito.spec.ts (\"Baixada pela divisão do alvará de dd/mm\"). Desenho aprovado em docs/design/aprovadas/portal-exito-conferir.",
+  "nota": "A baixa acontece ao registrar a divisão, com o dia em que o dinheiro entrou, para a parcela não seguir em cobrança. O dinheiro entra no caixa do escritório só quando a parte \"honorários\" é transferida, como antes; por isso a baixa não conta duas vezes no Caixa, no Resumo, nos Relatórios nem na exportação."
 }

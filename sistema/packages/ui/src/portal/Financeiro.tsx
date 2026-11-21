@@ -47,11 +47,20 @@ function SeloDaParcela({ p, hoje }: { p: Pick<ParcelaLinha, "situacao" | "vencim
   return <Selo tom={s.tom} icone={s.icone}>{s.texto}</Selo>;
 }
 
+const DO_LEVANTAMENTO = { ALVARA: "do alvará", RPV: "da RPV", PRECATORIO: "do precatório", ACORDO: "do depósito de acordo" } as const;
+
 /** De onde veio a parcela do êxito (F3.14): "Do encerramento do caso em 18/11, conferido por Diego." */
-function OrigemExito({ p }: { p: Pick<ParcelaLinha, "exito"> }) {
+function OrigemExito({ p }: { p: Pick<ParcelaLinha, "exito" | "baixaAlvara"> }) {
   const x = p.exito;
   if (!x) return null;
-  return <p className="fi-motivo">Do encerramento do caso em {diaCurto(diaDoInstante(x.encerradoEm))}, conferido por {primeiroNome(x.conferido.por.nome)}.</p>;
+  // F3.94: a baixa pela divisão do alvará (ou RPV, precatório, depósito de acordo) em Repasses.
+  const b = p.baixaAlvara?.[0];
+  return (
+    <p className="fi-motivo">
+      Do encerramento do caso em {diaCurto(diaDoInstante(x.encerradoEm))}, conferido por {primeiroNome(x.conferido.por.nome)}.
+      {b ? ` Baixada pela divisão ${DO_LEVANTAMENTO[b.tipo]} de ${diaCurto(b.entrouEm)}.` : null}
+    </p>
+  );
 }
 
 /** O reembolso que vai junto com a parcela (F3.85): "Leva junto: custas da apelação, R$ 1.248,36." */

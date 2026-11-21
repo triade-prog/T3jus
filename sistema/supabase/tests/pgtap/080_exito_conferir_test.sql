@@ -3,7 +3,7 @@
 -- valor com motivo e aviso no sino, não cobrar com explicação, o fechamento do caso esperando a
 -- conferência, o reembolso na parcela e registrado junto só quando pedido. Área e isolamento.
 begin;
-select plan(45);
+select plan(54);
 
 select ajustar_relogio(('2026-11-18 14:50-03'::timestamptz - now()));
 
@@ -163,6 +163,29 @@ select is((select l ->> 'parcela' from exp, jsonb_array_elements(v -> 'recebimen
   'a exportação tem a linha do reembolso');
 select is((select count(distinct l ->> 'recibo') from exp, jsonb_array_elements(v -> 'recebimentos') l where l ->> 'recibo' is not null), 1::bigint,
   'com o mesmo recibo da parcela');
+
+-- F3.94: a parte "honorários" da divisão do alvará baixa a parcela do êxito de Joana (R$ 7.000,00).
+create temp table pj as select r.id from recebimentos_previstos r, ex where r.exito_id = ex.joana;
+create temp table prop as select portal_financeiro_repasse_proposta(diego, rm, jsonb_build_object('casoId', cs.id, 'clienteId', cli.joana, 'valor', 2800000)) v
+  from ids, cs, cli;
+select is((select v -> 'exito' -> 0 ->> 'falta' from prop), '700000', 'CH-07: a divisão proposta diz qual parcela do êxito vai ser baixada');
+select is((select v -> 'linhas' -> 0 ->> 'valor' from prop), '840000', 'e o honorário pelo contrato');
+create temp table cx as select caixa_entradas(rm, '-infinity', '2026-12-28') antes from ids;
+create temp table lv as select portal_financeiro_levantamento_registrar(diego, rm, jsonb_build_object('tipo', 'ALVARA', 'casoId', cs.id, 'clienteId', cli.joana,
+  'valor', 2800000, 'entrouEm', '2026-12-20', 'divisao', jsonb_build_array(
+    jsonb_build_object('para', 'CLIENTE', 'valor', 1960000),
+    jsonb_build_object('para', 'HONORARIOS', 'nome', 'Honorários de êxito', 'regra', '30%', 'valor', 840000)))) v from ids, cs, cli;
+select is((select v -> 'exitoBaixado' -> 0 ->> 'valor' from lv), '700000', 'CH-07: a parte "honorários" baixa a parcela do êxito até o que falta');
+select is((select parcela_linha(r) ->> 'situacao' from recebimentos_previstos r, pj where r.id = pj.id), 'PAGA', 'a parcela do êxito fica paga');
+select is((select (parcela_linha(r) -> 'baixaAlvara' -> 0) - 'levantamentoId' from recebimentos_previstos r, pj where r.id = pj.id),
+  '{"tipo": "ALVARA", "entrouEm": "2026-12-20", "valor": 700000}'::jsonb, 'com a origem "da divisão do alvará de 20/12"');
+select is((select caixa from pagamentos_recebidos p, pj where p.parcela_id = pj.id), 'TERCEIROS', 'a baixa não entra no caixa por fora');
+select is(caixa_entradas(rm, '-infinity', '2026-12-28'), (select antes from cx), 'o caixa só muda quando o honorário for transferido') from ids;
+select is((teste.erro($$ select portal_financeiro_destinacao_dispensar(diego, rm, d.id, 'Não vamos cobrar') from ids, destinacoes d
+   where d.levantamento_id = (select (v ->> 'id')::uuid from lv) and d.para = 'HONORARIOS' $$)) -> 'detalhe' ->> 'motivo', 'BAIXOU_EXITO',
+  'a parte que baixou o êxito não se dispensa');
+select is((select v -> 'exito' from (select portal_financeiro_repasse_proposta(diego, rm, jsonb_build_object('casoId', cs.id, 'clienteId', cli.joana, 'valor', 100000)) v
+  from ids, cs, cli) x), '[]'::jsonb, 'e um levantamento seguinte já não tem êxito para baixar');
 
 select * from finish();
 rollback;
