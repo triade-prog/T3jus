@@ -1,0 +1,12 @@
+{
+  "id": "F1.19",
+  "texto": "Telas da cobrança no Console: área Cobrança (faturas, planos e régua), aba Assinatura com carnê, atraso na carteira e aviso de fatura em atraso no sino",
+  "peca": "C1",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67.1,
+  "nota": "O servidor está pronto (F1.18). Desenho aprovado em docs/design/aprovadas/console-cobranca.",
+  "proximo": "Programar as telas da cobrança no Console seguindo docs/design/aprovadas/console-cobranca"
+}
