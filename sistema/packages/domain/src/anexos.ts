@@ -7,16 +7,20 @@ import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import { TAMANHO_MAXIMO_DOCUMENTO, TIPOS_DOCUMENTO, type TipoDocumento } from "./console.ts";
 
-export const DONOS_ANEXO = ["CONTRATO", "CONTA", "RECEBIMENTO"] as const;
+export const DONOS_ANEXO = ["CONTRATO", "CONTA", "RECEBIMENTO", "REQUISICAO"] as const;
 export type DonoAnexo = (typeof DONOS_ANEXO)[number];
 
-/** O que é o arquivo. O do contrato é sempre o assinado; o do recebimento, o comprovante. */
+/**
+ * O que é o arquivo. O do contrato é sempre o assinado; o do recebimento, o comprovante; o do RPV
+ * ou precatório a caminho (F3.88), o ofício requisitório.
+ */
 export const CATEGORIAS_ANEXO = {
   CONTRATO_ASSINADO: "Contrato assinado",
   NOTA_FISCAL: "Nota fiscal",
   GUIA: "Guia",
   BOLETO: "Boleto",
   COMPROVANTE: "Comprovante",
+  OFICIO_REQUISITORIO: "Ofício requisitório",
 } as const;
 export type CategoriaAnexo = keyof typeof CATEGORIAS_ANEXO;
 
@@ -46,7 +50,7 @@ export interface Anexo {
   nome: string;
   tipo: TipoDocumento;
   tamanho: number;
-  /** O contrato, a conta ou o recebimento. */
+  /** O contrato, a conta, o recebimento ou a requisição a caminho. */
   donoId: string;
   enviadoPor: PessoaRef;
   enviadoEm: string;
@@ -65,5 +69,5 @@ export interface AnexosDaExportacao {
 
 /** O texto da coluna "Nota ou guia" de A pagar e da conta anexada. */
 export function textoAnexado(c: CategoriaAnexo): string {
-  return c === "NOTA_FISCAL" ? "Nota anexada" : c === "GUIA" ? "Guia anexada" : c === "BOLETO" ? "Boleto anexado" : c === "COMPROVANTE" ? "Comprovante anexado" : "Contrato assinado";
+  return c === "NOTA_FISCAL" ? "Nota anexada" : c === "GUIA" ? "Guia anexada" : c === "BOLETO" ? "Boleto anexado" : c === "COMPROVANTE" ? "Comprovante anexado" : c === "OFICIO_REQUISITORIO" ? "Ofício anexado" : "Contrato assinado";
 }

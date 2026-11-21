@@ -122,22 +122,27 @@ async function comprimir(b: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(fluxo).arrayBuffer());
 }
 
-/** Monta o .zip com as entradas na ordem dada, comprimidas com deflate. */
-export async function escreverZip(entradas: { nome: string; dados: Uint8Array }[]): Promise<Uint8Array> {
+/**
+ * Monta o .zip com as entradas na ordem dada, comprimidas com deflate. Com `guardar`, as entradas
+ * vão sem comprimir (método 0): serve a PDF e foto, que já vêm comprimidos, e poupa o processador
+ * do servidor (a pasta do contador, F3.89).
+ */
+export async function escreverZip(entradas: { nome: string; dados: Uint8Array }[], opcoes: { guardar?: boolean } = {}): Promise<Uint8Array> {
   const enc = new TextEncoder();
+  const metodo = opcoes.guardar ? 0 : 8;
   const partes: Uint8Array[] = [];
   const central: Uint8Array[] = [];
   let pos = 0;
   for (const e of entradas) {
     const nome = enc.encode(e.nome);
-    const dados = await comprimir(e.dados);
+    const dados = opcoes.guardar ? e.dados : await comprimir(e.dados);
     const crc = crc32(e.dados);
     const local = new Uint8Array(30 + nome.length);
     const dl = new DataView(local.buffer);
     dl.setUint32(0, 0x04034b50, true);
     dl.setUint16(4, 20, true);
     dl.setUint16(6, 0x0800, true); // nomes em UTF-8
-    dl.setUint16(8, 8, true);
+    dl.setUint16(8, metodo, true);
     dl.setUint16(10, 0, true);
     dl.setUint16(12, 0x21, true); // 1/1/1980
     dl.setUint32(14, crc, true);
@@ -151,7 +156,7 @@ export async function escreverZip(entradas: { nome: string; dados: Uint8Array }[
     dc.setUint16(4, 20, true);
     dc.setUint16(6, 20, true);
     dc.setUint16(8, 0x0800, true);
-    dc.setUint16(10, 8, true);
+    dc.setUint16(10, metodo, true);
     dc.setUint16(14, 0x21, true);
     dc.setUint32(16, crc, true);
     dc.setUint32(20, dados.length, true);
