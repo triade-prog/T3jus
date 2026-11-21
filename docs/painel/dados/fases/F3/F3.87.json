@@ -5,7 +5,7 @@
   "refs": [
     "PA-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 822,
-  "proximo": "Levar a escolha de cliente real da simulação para os dois gatilhos novos"
+  "evidencia": "Desenho aprovado (docs/design/aprovadas/portal-gatilhos-novos, gn-cliente-testar e gn-doc-testar); migration 0624 (a simulação recebe o cliente: boas-vindas com quem atende e documento pendente com o que falta, o caso e quem pediu; cliente fora do gatilho é recusado); \"Simular com\" lista os clientes de \"Quem entraria\"; teste pgTAP 058 (+4), vitest automacoes-gatilhos-novos e e2e portal-automacoes"
 }

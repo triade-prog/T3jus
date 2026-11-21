@@ -473,7 +473,11 @@ export interface DadosSimulacao {
   fluxo: Fluxo;
   escritorio: string;
   hoje: string;
-  exemplo: { cliente: string; contato: string | null; papel: string | null; parcela: string; valor: number; vencimento: string; quemCuida: PessoaRef | null } | null;
+  /** O cliente real escolhido: a parcela (gatilhos de parcela) ou o cliente (F3.87: boas-vindas e documento pendente). */
+  exemplo: {
+    cliente: string; contato: string | null; papel: string | null; parcela?: string; valor?: number; vencimento?: string; quemCuida?: PessoaRef | null;
+    documentos?: string; caso?: string; pedidoEm?: string; quemPediu?: PessoaRef | null;
+  } | null;
   textos: Record<string, string>;
   aviso: string | null;
   pessoas: Record<string, string>;
@@ -549,11 +553,11 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
   const cliente = ex?.cliente ?? "Cliente de exemplo";
   // O dia em que o gatilho dispara.
   let inicio: Date;
-  if (ex && g === "PARCELA_ATRASO") {
+  if (ex?.vencimento && g === "PARCELA_ATRASO") {
     const v = new Date(`${ex.vencimento}T08:00:00Z`);
     v.setUTCDate(v.getUTCDate() + (gat?.dias ?? 0));
     inicio = v.getTime() < agora.getTime() ? agora : v;
-  } else if (ex && g === "PARCELA_VAI_VENCER") {
+  } else if (ex?.vencimento && g === "PARCELA_VAI_VENCER") {
     const v = new Date(`${ex.vencimento}T08:00:00Z`);
     v.setUTCDate(v.getUTCDate() - (gat?.dias ?? 0));
     inicio = v.getTime() < agora.getTime() ? agora : v;
@@ -574,7 +578,7 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
     vencimento: dm(vencimento),
     "link de pagamento": "(link de pagamento)",
     "nome do escritório": s.escritorio,
-    caso: "Ação revisional",
+    caso: ex?.caso ?? "Ação revisional",
     etapa: "Instrução",
     "texto da etapa": "a audiência de instrução foi marcada e nós vamos avisar a data.",
     compromisso: "Audiência de conciliação",
@@ -584,13 +588,13 @@ export function simularFluxo(s: DadosSimulacao, escolha: EscolhaSimulacao): Simu
     resumo: "o valor de R$ 3.200,00 foi depositado na sua conta",
     "quem atende": ex?.quemCuida?.nome ?? s.socioDono?.nome ?? "Marina Ribeiro",
     "horário de atendimento": "de segunda a sexta, das 9h às 18h",
-    documentos: "CTPS digital e holerites de 2025",
-    "pedido em": (() => { const v = new Date(`${hojeDia}T12:00:00Z`); v.setUTCDate(v.getUTCDate() - (g === "DOCUMENTO_PENDENTE" ? gat?.dias ?? 5 : 0)); return dm(v.toISOString().slice(0, 10)); })(),
+    documentos: ex?.documentos ?? "CTPS digital e holerites de 2025",
+    "pedido em": ex?.pedidoEm ? dm(ex.pedidoEm) : (() => { const v = new Date(`${hojeDia}T12:00:00Z`); v.setUTCDate(v.getUTCDate() - (g === "DOCUMENTO_PENDENTE" ? gat?.dias ?? 5 : 0)); return dm(v.toISOString().slice(0, 10)); })(),
   };
   const preencher = (t: string) => t.replace(/\{([^{}]{1,40})\}/g, (m, c: string) => campos[c] ?? m);
   const pessoa = (p: PassoPessoa) => {
     if (p.pessoaId) return s.pessoas[p.pessoaId] ?? "pessoa fora da equipe";
-    if (p.regra === "QUEM_PEDIU") return "quem pediu o documento";
+    if (p.regra === "QUEM_PEDIU") return ex?.quemPediu?.nome ?? "quem pediu o documento";
     if (p.regra === "QUEM_CUIDA") return ex?.quemCuida?.nome ?? s.socioDono?.nome ?? "a sócia dona";
     if (p.regra === "AREA") return s.quemTemArea?.nome ?? s.socioDono?.nome ?? "a sócia dona";
     return s.socioDono?.nome ?? "a sócia dona";
@@ -724,7 +728,7 @@ export const ligarAutomacaoSchema = z.object({
 });
 export const desligarAutomacaoSchema = z.object({ versao: z.number().int().positive(), motivo: z.string().max(600) });
 export const sugerirMudancaSchema = z.object({ texto: z.string().max(600) });
-export const simularAutomacaoSchema = z.object({ parcelaId: z.string().uuid().nullish(), escolha: z.enum(["NADA", "RESPONDEU", "PAGOU", "CHEGOU"]) });
+export const simularAutomacaoSchema = z.object({ parcelaId: z.string().uuid().nullish(), clienteId: z.string().uuid().nullish(), escolha: z.enum(["NADA", "RESPONDEU", "PAGOU", "CHEGOU"]) });
 
 // ------------------------------------------------------------------ Avisos automáticos (F3.64)
 // O que saiu sozinho pelo WhatsApp nos últimos 7 dias (portal_avisos_automaticos).
