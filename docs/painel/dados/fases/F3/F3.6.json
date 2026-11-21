@@ -5,7 +5,7 @@
   "refs": [
     "AP-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 60,
-  "proximo": "Gerar o arquivo da proposta (serviço, o que está incluído, condições e validade) com o timbrado do escritório e pôr o botão na ficha"
+  "evidencia": "Botão \"Baixar a proposta (.docx)\" na ficha; POST /v1/escritorio/propostas/:id/docx gera o arquivo com o timbrado do escritório no cabeçalho (proposta_docx.ts, teste de domínio, Deno app_test e e2e portal-comercial AP-05)."
 }

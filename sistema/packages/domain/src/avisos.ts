@@ -62,7 +62,8 @@ export const semAvisosSchema = z.object({
 export type TipoAvisoSino =
   | "CONVERSA_IA" | "CONVERSA_ASSUMIDA" | "CONVERSA_PASSADA" | "AUTOMACAO_SUGESTAO"
   | "MODELO_APROVADO" | "MODELO_RECUSADO" | "PRAZO_2_DIAS"
-  | "PETICAO_REVISAR" | "PETICAO_DECIDIDA" | "PETICAO_PASSADA";
+  | "PETICAO_REVISAR" | "PETICAO_DECIDIDA" | "PETICAO_PASSADA"
+  | "BASE_DO_MES";
 
 export interface AvisoSino {
   id: string;
@@ -72,8 +73,10 @@ export interface AvisoSino {
     automacao?: string; texto?: string; modelo?: string; prazo?: string; cliente?: string; vence?: string; processo?: string;
     /** Petições (EX-09). */
     caso?: string; versao?: number; decisao?: "APROVADA" | "AJUSTE" | "REPROVADA"; para?: string; passadaPor?: string;
+    /** A base do mês do percentual recorrente (CH-06): o número do contrato, o mês e o vencimento. */
+    contrato?: string; sobre?: string; vencimento?: string; mes?: number; de?: number; recebimento?: string;
   };
-  origem: "conversas" | "automacoes" | "prazos" | "peticoes";
+  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos";
   origemId: string;
   em: string;
   lido: boolean;

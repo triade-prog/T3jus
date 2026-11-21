@@ -5,7 +5,7 @@
   "refs": [
     "EX-12"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 740,
-  "proximo": "Na tela de novo contrato e em Mudar advogados, as caixas das inscrições de cada advogado (padrão todas, ao menos uma), guardadas por contrato; o contrato e a procuração usam oab_frase com as escolhidas"
+  "evidencia": "Tabela contrato_advogado_oab guarda as inscrições escolhidas por contrato (padrão todas, ao menos uma); novo contrato e ficha mostram a OAB e a prévia do texto, e Mudar inscrições troca as escolhidas (migration 0530, pgTAP 053, Deno app_test, e2e portal-contratos EX-12)."
 }
