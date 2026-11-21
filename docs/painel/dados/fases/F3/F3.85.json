@@ -5,7 +5,8 @@
   "refs": [
     "FI-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 850,
-  "proximo": "Aguarda a Carol aprovar o desenho portal-exito-conferir (estados receber-reembolso e registrar-reembolso); depois, o \"+ reembolso\" na lista e a caixa \"O reembolso também foi pago\" na janela de registrar"
+  "evidencia": "Migration 0640 (reembolsos_recebidos, parcela_reembolsos na linha da parcela, registrar com o reembolso junto, reembolso que passa para a parcela seguinte), pgTAP 080 e 052, e2e tests/e2e/portal-financeiro-exito.spec.ts (\"+ reembolso\" na linha, caixa desmarcada, valor e forma, erros presos ao campo). Desenho aprovado em docs/design/aprovadas/portal-exito-conferir.",
+  "nota": "A caixa \"O reembolso também foi pago\" vem sempre desmarcada (decisão 4). O reembolso no caixa e no recibo ficou em F3.95."
 }

@@ -1,13 +1,14 @@
 {
   "id": "F3.14",
-  "texto": "Ligar casos ao contrato e gerar a cobrança quando o caso chega à etapa",
+  "texto": "Ligar casos ao contrato e gerar o êxito para conferir quando o caso termina com ganho ou acordo",
   "peca": "S2",
   "refs": [
     "CH-05",
     "CH-07",
     "EX-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 140,
-  "proximo": "O caso já liga cada cliente ao contrato e a etapa final já pede o resultado (F3.33); falta o resultado e a etapa que avisa o Financeiro virarem recebimento previsto do êxito"
+  "evidencia": "Migration 0640 (exitos_conferir, recebimentos_previstos.origem ENCERRAMENTO, valores por cliente ao encerrar, lançar e não cobrar com histórico e sino), pgTAP 080 (39 testes), rotas /v1/escritorio/financeiro/exitos na api-portal (2 testes Deno), telas em packages/ui/src/portal/FinanceiroExito.tsx, Financeiro.tsx e Juridico.tsx, e2e tests/e2e/portal-financeiro-exito.spec.ts e portal-juridico-casos.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-exito-conferir.",
+  "nota": "O êxito para conferir fica fora dos números do alto do A receber; mudar o valor pede o motivo e avisa no sino quem encerrou o caso. A baixa pela divisão do alvará em Repasses ficou em F3.94."
 }

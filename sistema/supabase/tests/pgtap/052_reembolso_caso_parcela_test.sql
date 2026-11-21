@@ -85,7 +85,7 @@ select ajustar_relogio(('2026-11-29 10:00-03'::timestamptz - now()));
 select portal_financeiro_receber_registrar(diego, rm, (select id from recebimentos_previstos where contrato_id = ct.cobranca and vencimento = '2026-11-28'),
   jsonb_build_object('valor', 240000, 'recebidoEm', '2026-11-28', 'forma', 'CHEQUE_PRE')) from ids, ct;
 select is((select jsonb_path_query_first(portal_financeiro_pagar(diego, rm) -> 'adiantados', '$[*] ? (@.descricao == "Custas da apelação")') -> 'adiantada' -> 'parcela' ->> 'vencimento' from ids),
-  '2026-11-28', 'paga sem o reembolso, ele continua a reembolsar, ligado a ela');
+  '2026-12-28', 'paga sem o reembolso, ele continua a reembolsar e passa para a parcela seguinte (0640)');
 
 -- Na ficha de parcelas do contrato.
 select is((select jsonb_path_query_array(portal_financeiro_contrato_adiantados(diego, rm, ct.cobranca), '$[*].descricao') from ids, ct),

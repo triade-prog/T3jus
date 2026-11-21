@@ -165,7 +165,7 @@ test.describe("Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17)", (
     await j.getByRole("button", { name: "Registrar recebimento" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." })).toContainText("Recibo nº 2026-0187");
     const corpo = pedidos.filter((p) => p.metodo === "POST").at(-1)?.corpo as Record<string, unknown>;
-    expect(corpo).toEqual({ valor: 85000, multaJuros: 2380, recebidoEm: dia(0), forma: "PIX", recibo: true, pagador: null });
+    expect(corpo).toEqual({ valor: 85000, multaJuros: 2380, recebidoEm: dia(0), forma: "PIX", recibo: true, pagador: null, reembolso: null });
     await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." }).getByRole("link", { name: /Ver o recibo/ })).toHaveAttribute("href", "/recibos/p9");
   });
 

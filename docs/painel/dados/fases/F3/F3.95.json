@@ -1,0 +1,11 @@
+{
+  "id": "F3.95",
+  "texto": "Reembolso pago junto entra no caixa do escritório e no recibo da parcela",
+  "peca": "S4",
+  "refs": [
+    "FI-07"
+  ],
+  "status": "pendente",
+  "ordem": 950,
+  "proximo": "O reembolso já é registrado junto com a parcela e sai de \"A reembolsar\" (F3.85); falta ele aparecer no Caixa e como segunda linha do recibo, e a sugestão \"o valor cobre a parcela e o reembolso; marcar?\" na janela de registrar"
+}
