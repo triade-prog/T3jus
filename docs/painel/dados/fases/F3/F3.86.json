@@ -5,7 +5,7 @@
   "refs": [
     "PA-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 821,
-  "proximo": "Decisão 7 do desenho dos gatilhos novos: programar o aviso quando chegar arquivo na conversa de cliente com documento pedido em aberto"
+  "evidencia": "Desenho aprovado (docs/design/aprovadas/portal-gatilhos-novos, decisão 10 e pergunta 7); migration 0623 (aviso DOCUMENTO_CHEGOU quando o cliente manda arquivo na conversa e tem documento pedido em aberto; um aviso por quem pediu, sem repetir enquanto não lido; o pedido não se fecha sozinho); teste pgTAP 076 e e2e portal-sino-avisos"
 }

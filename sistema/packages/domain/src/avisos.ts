@@ -71,7 +71,7 @@ export type TipoAvisoSino =
   | "PETICAO_REVISAR" | "PETICAO_DECIDIDA" | "PETICAO_PASSADA"
   | "BASE_DO_MES" | "PEDIDO_CONTRATO" | "CONTRATO_GERADO"
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
-  | "EXPORTAR_CONTADOR";
+  | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX";
 
 export interface AvisoSino {
   id: string;
@@ -89,6 +89,10 @@ export interface AvisoSino {
     saiu?: string; entrou?: boolean; levantamento?: string; partes?: number; parte?: string; oQue?: string; valor?: number;
     /** Lembrete do dia 5 (F3.50): o mês a exportar e o contador. */
     referencia?: string; contador?: string;
+    /** Arquivo do cliente com documento pedido (F3.86): o arquivo e quantos documentos faltam. */
+    arquivo?: string; quantos?: number;
+    /** Carnê desatualizado (F3.80): o carnê, quando foi gerado e se foi você quem gerou. */
+    carne?: string; gerado?: string; gerou?: boolean; parcela?: string;
   };
   origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios";
   origemId: string;

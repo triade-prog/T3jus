@@ -11,7 +11,7 @@ import type { AvisoSino, ListaAvisosSino } from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Aviso, Estado } from "../console/pecas.tsx";
 import { hora } from "../console/tempo.ts";
-import { chamarPortal } from "./Moldura.tsx";
+import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 import { valorDaProposta } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 
@@ -152,6 +152,34 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         onde: "Abrir o Caixa", href: "/financeiro/caixa", selo: { tom: "atencao", texto: "Dia 5" },
       };
     }
+    case "DOCUMENTO_CHEGOU":
+      // F3.86: o cliente mandou um arquivo e há documento pedido; quem pediu confere e marca "Já chegou".
+      return {
+        icone: "doc", titulo: <><b>{d.contato ?? d.conversa}</b> mandou um arquivo na conversa</>,
+        detalhe: [d.arquivo ? `“${d.arquivo}”.` : null,
+          `Você pediu ${d.quantos && d.quantos > 1 ? "estes documentos" : "este documento"}${d.caso ? ` no caso ${d.caso}` : ""}: ${d.texto}.`,
+          "Confira o arquivo e, se for o certo, marque “Já chegou” no caso."].filter(Boolean).join(" "),
+        onde: "Abrir a conversa", href: conversa, selo: { tom: "andamento", texto: "Conferir" },
+      };
+    case "CARNE_DESATUALIZADO": {
+      // F3.80: a parcela ou a chave Pix mudou depois do carnê; gera-se de novo na folha "Carnê".
+      const oQue = d.motivo === "CHAVE_PIX" ? "trocou a chave Pix do escritório"
+        : d.motivo === "CANCELADA" ? `cancelou ${d.parcela ? `a ${d.parcela.toLowerCase()}` : "uma parcela"}`
+        : d.motivo === "VENCIMENTO" ? `mudou o vencimento ${d.parcela ? `da ${d.parcela.toLowerCase()}` : "de uma parcela"}`
+        : `mudou o valor ${d.parcela ? `da ${d.parcela.toLowerCase()}` : "de uma parcela"}`;
+      return {
+        icone: "carne", titulo: <>O carnê de <b>{d.cliente}</b>{d.contrato ? ` · ${d.contrato}` : ""} ficou desatualizado</>,
+        detalhe: `${d.quem ?? "Alguém da equipe"} ${oQue}. ${d.gerou ? "O carnê que você gerou" : "O carnê"}${d.gerado ? ` em ${diaDe(d.gerado).split("-").reverse().slice(0, 2).join("/")}` : ""} ainda mostra o que era. Gere de novo e entregue o novo ao cliente.`,
+        onde: "Abrir o carnê", href: ROTAS_CONTRATOS.recebimentos(a.origemId), selo: { tom: "atencao", texto: "Desatualizado" },
+      };
+    }
+    case "PEDIDO_CHAVE_PIX":
+      // F3.80: quem não é dono pediu a chave Pix para os carnês.
+      return {
+        icone: "moeda", titulo: <><b>{d.quem ?? "Alguém da equipe"}</b> pediu a chave Pix do escritório</>,
+        detalhe: `${d.cliente ? `Para o carnê de ${d.cliente}. ` : ""}Sem a chave, os carnês saem com as instruções de pagamento em texto, sem o QR.`,
+        onde: "Cadastrar a chave Pix", href: `${ROTAS_PORTAL.escritorio}/recebimento`, selo: { tom: "andamento", texto: "Pedido" },
+      };
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,
