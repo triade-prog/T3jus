@@ -177,6 +177,16 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   MODELO_INVALIDO: "Este modelo de petição não está mais disponível. Escolha outro da lista.",
   SO_QUEM_GEROU: "Só quem gerou a petição pode enviar.",
   PLANILHA_APAGADA: "A planilha das linhas de fora já foi apagada: ela fica guardada só enquanto dá para desfazer a importação.",
+  // Contrato, procuração e declaração (F3.16).
+  DOCUMENTO_OBRIGATORIO: "Marque pelo menos um documento para gerar.",
+  SEM_OUTORGADO: "Escolha pelo menos um advogado outorgado.",
+  ADVOGADO_SEM_OAB: "Só quem tem OAB cadastrada na Equipe pode ser outorgado.",
+  INSCRICAO_INVALIDA: "Marque pelo menos uma inscrição na OAB de cada advogado.",
+  PODER_INVALIDO: "Um dos poderes marcados não existe mais. Recarregue a página.",
+  CIDADE_DATA_OBRIGATORIA: "Escreva a cidade e a data.",
+  CIDADE_DATA_LONGA: "A cidade e a data passam de 120 letras.",
+  DATA_FUTURA: "A data da assinatura não pode ser depois de hoje.",
+  DATA_INVALIDA: "Confira a data da assinatura.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
