@@ -1,0 +1,12 @@
+{
+  "id": "D14",
+  "texto": "Desenho das pendências pequenas do Portal: atalho “Não receber avisos” na conversa e folha “Pago antes do T3jus” no contrato",
+  "peca": "S4",
+  "refs": [
+    "PA-03",
+    "VA-05"
+  ],
+  "status": "feito",
+  "ordem": 64,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-pendencias-pequenas/ (7 estados, computador e celular, axe sem violação), aprovado pela Carol em 21/11/2026 às 9h02 (Bahia) com as 7 recomendações do NOTAS.md"
+}

@@ -58,6 +58,18 @@ const F19 = {
     { em: em(-73, "15:00"), acao: "contrato.criado", autor: "Felipe Matos", dados: { numero: "C-2026-019", proposta: "P-2026-006" } },
   ],
 };
+// F3.73: contrato importado da planilha, 10 parcelas, 8 pagas antes do T3jus (a folha mostra 6 e "as outras 2").
+const L41 = linha(41, "Rosa Almeida", "Aposentadoria por idade", "ATIVO", [{ tipo: "PARCELADO", total: 800000, parcelas: 10, primeiro: dia(-240) }], MARINA);
+const F41 = {
+  ...L41, observacoes: null, versao: 1, assinadoEm: dia(-250), assinaturaPor: MARINA, encerradoEm: null, motivoEncerramento: null,
+  proposta: null, advogados: [MARINA], financeiro: true, historico: [],
+  recebimentos: Array.from({ length: 10 }, (_, i) => recebimento(40 + i, `Parcela ${i + 1} de 10`, -240 + i * 30, 80000, {
+    tipo: "PARCELADO",
+    ...(i < 8 ? { pagoAntes: true, cancelado: { em: em(-1, "15:42"), motivo: "Paga antes do T3jus (importação)" } } : { pagoAntes: false }),
+  })),
+  importacao: { id: "e4000000-0000-4000-8000-000000000041", arquivo: "clientes-e-contratos-2026.xlsx", linha: 2, por: MARINA, em: em(-1, "15:42"),
+    desfazerAte: `${dia(6)}T15:42:00-03:00`, desfeita: false },
+};
 const F33 = {
   ...L33, observacoes: null, versao: 1, assinadoEm: null, assinaturaPor: null, encerradoEm: null, motivoEncerramento: null,
   proposta: { id: prop(14), numero: "P-2026-014" }, advogados: [MARINA, FELIPE], financeiro: true, recebimentos: [],
@@ -119,6 +131,7 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
       parcelas: [{ descricao: "Mensalidade 1", ordem: 1, total: 12, vencimento: dia(10), valor: 87300, semValor: false }], mudancas: [] }],
   } },
   [`GET /v1/escritorio/contratos/${ct(33)}`]: { corpo: F33 },
+  [`GET /v1/escritorio/contratos/${ct(41)}`]: { corpo: F41 },
   [`GET /v1/escritorio/contratos/da-proposta/${prop(14)}`]: { corpo: PROPOSTA14 },
   "GET /v1/escritorio/contratos/honorarios": { corpo: HONORARIOS },
 });
@@ -237,6 +250,43 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await expect(carne).toContainText("Parcela 1/12 · com capa · 1 folha A4");
     await expect(carne.getByRole("link", { name: "Abrir para imprimir" })).toHaveAttribute("href", "/carnes/c4000000-0000-4000-8000-000000000019?area=contratos");
     await semViolacoes(page);
+  });
+
+  test("F3.73: as parcelas pagas antes do T3jus ficam numa folha só de informação, com a origem e o caminho de desfazer", async ({ page }) => {
+    await simular(page, comuns());
+    await page.goto(`${P}/contratos/contratos/${ct(41)}?aba=recebimentos`);
+    const prog = page.getByRole("table", { name: "Programação dos recebimentos" });
+    await expect(prog).toBeVisible();
+    await expect(prog.getByText("Parcela 8 de 10")).toHaveCount(0);
+    await expect(prog.getByText("Parcela 9 de 10")).toBeVisible();
+    await expect(page.getByRole("link", { name: /Recebimentos/ })).toContainText("2");
+    await expect(page.getByText("Só o que passa pelo T3jus.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "R$ 6.400,00 pagos antes" })).toHaveAttribute("href", "#pago-antes");
+    const folha = page.getByRole("region", { name: "Pago antes do T3jus" });
+    await expect(folha).toContainText("8 parcelas que a planilha trouxe como já pagas.");
+    await expect(folha).toContainText("Só informação. Não entram nos totais acima, nem em A receber, nem no Caixa, e não geram recibo");
+    const tab = folha.getByRole("table", { name: "Parcelas pagas antes do T3jus" });
+    await expect(tab.getByRole("row")).toHaveCount(7);
+    await expect(tab.getByRole("row").nth(1)).toContainText("Parcela 8 de 10");
+    await expect(tab.getByText("Paga antes do T3jus").first()).toBeVisible();
+    await expect(folha).toContainText("R$ 6.400,00");
+    await expect(folha).toContainText("clientes-e-contratos-2026.xlsx");
+    await expect(folha).toContainText("linha 2");
+    await expect(folha).toContainText("“Parcelas pagas: 8”");
+    await expect(folha).toContainText("as 8 primeiras de 10");
+    await expect(folha).toContainText(`Até ${br(6).slice(0, 5)} dá para desfazer a importação, corrigir a planilha e importar de novo.`);
+    await expect(folha.getByRole("link", { name: "Ver a importação" })).toHaveAttribute("href", "/clientes/importacoes/e4000000-0000-4000-8000-000000000041");
+    await semViolacoes(page);
+    await folha.getByRole("button", { name: "Mostrar as outras 2" }).click();
+    await expect(tab.getByRole("row")).toHaveCount(9);
+    await expect(folha.getByRole("button", { name: /Mostrar as outras/ })).toHaveCount(0);
+  });
+
+  test("F3.73: sem parcela paga antes, a folha não aparece", async ({ page }) => {
+    await simular(page, comuns());
+    await page.goto(`${P}/contratos/contratos/${ct(19)}?aba=recebimentos`);
+    await expect(page.getByRole("table", { name: "Programação dos recebimentos" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Pago antes do T3jus" })).toHaveCount(0);
   });
 
   test("Ficha ativa: histórico com motivo e encerrar pede o motivo", async ({ page }) => {

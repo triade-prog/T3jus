@@ -1,0 +1,11 @@
+{
+  "id": "F3.83",
+  "texto": "A IA reconhecer na conversa o pedido de não receber avisos e sugerir à equipe o atalho já preenchido",
+  "peca": "B3",
+  "refs": [
+    "PA-03"
+  ],
+  "status": "pendente",
+  "ordem": 830,
+  "proximo": "Combinado no desenho aprovado das pendências pequenas (pergunta 4): fica para uma próxima entrega, depois do atalho da conversa (F3.65)"
+}

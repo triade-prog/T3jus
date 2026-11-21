@@ -67,7 +67,8 @@ export function resumoContrato(lista: Condicao[]): {
 export function janelaProgramacao(lista: RecebimentoPrevisto[], hoje: string): { mostrar: RecebimentoPrevisto[]; depois: number; ate: string | null; programado: number } {
   const limite = somarMesesDia(hoje, 3);
   const vivos = lista.filter((r) => !r.cancelado);
-  const mostrar = lista.filter((r) => r.vencimento <= limite);
+  // As pagas antes do T3jus (F3.73) ficam na folha delas, fora da programação.
+  const mostrar = lista.filter((r) => !r.pagoAntes && r.vencimento <= limite);
   const ultimo = vivos.length ? vivos[vivos.length - 1]!.vencimento : null;
   return {
     mostrar,
