@@ -178,6 +178,18 @@ export const gerarCarneSchema = z.object({
 });
 export type GerarCarne = z.input<typeof gerarCarneSchema>;
 
+/** POST /v1/escritorio/recebimento/pedido (F3.80): quem não é dono pede a chave Pix à sócia dona. */
+export const pedirChavePixSchema = z.object({
+  area: z.enum(["FINANCEIRO", "CONTRATOS"]),
+  contratoId: z.string().uuid().optional(),
+});
+export type PedirChavePix = z.input<typeof pedirChavePixSchema>;
+export interface PedidoChavePix {
+  para: PessoaRef;
+  /** Já havia um pedido seu que ela ainda não leu: nenhum aviso novo saiu. */
+  jaPedido: boolean;
+}
+
 export interface ParcelaParaCarne {
   id: string;
   descricao: string;
@@ -217,6 +229,8 @@ export interface OpcoesCarne {
   dono: boolean;
   socioDono: PessoaRef | null;
   carnes: CarneGerado[];
+  /** F3.80: você já pediu a chave Pix e a sócia dona ainda não leu o aviso. */
+  chavePedida?: boolean;
 }
 
 /** Uma parcela no carnê para imprimir, já com o Pix copia e cola montado. */

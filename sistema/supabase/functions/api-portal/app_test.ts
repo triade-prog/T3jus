@@ -45,6 +45,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     acesso_portal: (a) => a.p_pessoa === ANA && vinculos.size > 0,
     registrar_acesso: () => 1,
     portal_recebimento: () => ({ dono: true, versao: 0, pixTipo: null, pixChave: null }),
+    portal_recebimento_pedir: () => ({ para: { id: "d0000000-0000-4000-8000-000000000001", nome: "Marina Ribeiro" }, jaPedido: false }),
     portal_recebimento_salvar: (a) => ({ versao: Number((a.p_dados as { versao: number }).versao) + 1, desatualizados: 0 }),
     portal_carne_opcoes: (a) => ({ contrato: { id: a.p_contrato }, area: a.p_area, parcelas: [], carnes: [] }),
     portal_carne_gerar: () => ({ id: CLIENTE, parcelas: 2 }),
@@ -1630,6 +1631,19 @@ Deno.test("FI-23: Escritório › Recebimento normaliza a chave Pix, o recebedor
     corpo: { versao: 1, pixTipo: "CPF", pixChave: "123", recebedor: "Advocacia Ribeiro Matos e Associados", cidade: "" } }));
   assertEquals(e.detalhes?.campos, ["pixChave", "recebedor", "cidade"]);
   assertEquals(m.chamadas.filter((c) => c.funcao === "portal_recebimento_salvar").length, 1);
+});
+
+Deno.test("F3.80: pedir a chave Pix à sócia dona leva a área e o contrato; área errada nem chega ao banco", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/recebimento/pedido", { cookie, corpo: { area: "CONTRATOS", contratoId: CLIENTE } });
+  assertEquals((await r.json()).para.nome, "Marina Ribeiro");
+  const a = m.chamadas.find((c) => c.funcao === "portal_recebimento_pedir")!.args;
+  assertEquals(a.p_escritorio, AURORA);
+  assertEquals(a.p_dados, { area: "CONTRATOS", contratoId: CLIENTE });
+  const e = await erro(await m.pedir("/v1/escritorio/recebimento/pedido", { cookie, corpo: { area: "JURIDICO" } }));
+  assertEquals(e.codigo, "VALIDATION_ERROR");
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_recebimento_pedir").length, 1);
 });
 
 Deno.test("FI-23: gerar o carnê e imprimir com o Pix de cada parcela; a vencida sai sem valor e o CPF pela metade", async () => {

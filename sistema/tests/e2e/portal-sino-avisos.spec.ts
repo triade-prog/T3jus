@@ -207,6 +207,31 @@ test.describe("O sino de avisos (F3.57, PD-07)", () => {
     expect(pedidos.some((p) => p.caminho === `/v1/escritorio/avisos/${ITENS[0]!.id}/lido`)).toBe(true);
   });
 
+  test("F3.86 e F3.80: arquivo do cliente com documento pedido, carnê desatualizado e pedido da chave Pix", async ({ page }) => {
+    const CT = "c2000000-0000-4000-8000-000000000001";
+    const itens = [
+      { id: "a2000000-0000-4000-8000-000000000001", tipo: "DOCUMENTO_CHEGOU", origem: "conversas", origemId: C1, em: h(0.1), lido: false,
+        dados: { conversa: "Carlos Dias", arquivo: "ctps.jpg", texto: "CTPS digital, Holerites de 2025", quantos: 2, caso: "Dias x Mercado Bom Preço" } },
+      { id: "a2000000-0000-4000-8000-000000000002", tipo: "CARNE_DESATUALIZADO", origem: "contratos", origemId: CT, em: h(0.2), lido: false,
+        dados: { cliente: "Hélio Batista Corrêa", contrato: "C-2026-022", motivo: "VENCIMENTO", parcela: "Parcela 5 de 6", quem: "Diego Almeida", gerou: true, gerado: h(48) } },
+      { id: "a2000000-0000-4000-8000-000000000003", tipo: "PEDIDO_CHAVE_PIX", origem: "escritorios", origemId: ESC, em: h(0.3), lido: false,
+        dados: { quem: "Diego Almeida", cliente: "Hélio Batista Corrêa" } },
+    ];
+    await simular(page, sino({ corpo: { novos: 3, total: 3, itens } }));
+    await page.goto(`${P}/clientes`);
+    await botaoSino(page).click();
+    const d = page.getByRole("dialog", { name: "Avisos" });
+    await expect(d.getByRole("link", { name: /Carlos Dias mandou um arquivo na conversa/ })).toHaveAttribute("href", `/conversas?c=${C1}`);
+    await expect(d).toContainText("Você pediu estes documentos no caso Dias x Mercado Bom Preço: CTPS digital, Holerites de 2025.");
+    await expect(d).toContainText("marque “Já chegou” no caso");
+    await expect(d.getByRole("link", { name: /O carnê de Hélio Batista Corrêa · C-2026-022 ficou desatualizado/ }))
+      .toHaveAttribute("href", `/contratos/contratos/${CT}?aba=recebimentos`);
+    await expect(d).toContainText("Diego Almeida mudou o vencimento da parcela 5 de 6. O carnê que você gerou em");
+    await expect(d.getByRole("link", { name: /Diego Almeida pediu a chave Pix do escritório/ })).toHaveAttribute("href", "/meu-escritorio/recebimento");
+    await expect(d).toContainText("Para o carnê de Hélio Batista Corrêa.");
+    await semViolacoes(page);
+  });
+
   test("vazio explica o que chega; erro oferece tentar de novo e diz que nada se perde", async ({ page }) => {
     await simular(page, sino([{ status: 500, corpo: { erro: { codigo: "INTERNAL_ERROR" } } }, { status: 500, corpo: { erro: { codigo: "INTERNAL_ERROR" } } },
       { corpo: { novos: 0, total: 0, itens: [] } }]));
