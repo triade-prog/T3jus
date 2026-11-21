@@ -4218,3 +4218,6 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
   .oe-pe-ins{padding:12px 16px 16px}
   .oe-pe-ins .btn{width:100%;min-height:44px}
 }
+/* Cliente e caso lado a lado na conta adiantada (F3.23) */
+.fi-sub-par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.fi-sub-par{grid-template-columns:1fr}}

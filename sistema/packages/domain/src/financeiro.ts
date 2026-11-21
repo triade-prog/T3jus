@@ -126,6 +126,8 @@ export interface ParcelasContrato {
   totais: { contratado: number; recebido: number; atraso: number; aVencer: number };
   aguardandoBase: number;
   parcelas: ParcelaDoContrato[];
+  /** O que o escritório adiantou nos casos do contrato (F3.23). */
+  adiantados: ContaPagar[];
 }
 
 export interface RecebimentoRegistrado { id: string; paga: boolean; falta: number; recibo: { ano: number; numero: number } | null }
@@ -172,6 +174,7 @@ export const lancarContaSchema = z.object({
   repete: z.boolean().default(false),
   adiantada: z.boolean().default(false),
   clienteId: txt(40),
+  casoId: txt(40),
   reembolsoComo: txt(30),
 });
 export type LancarConta = z.input<typeof lancarContaSchema>;
@@ -193,7 +196,30 @@ export interface ContaPagar {
   pagaEm: string | null;
   situacao: "A_VENCER" | "VENCIDA" | "PAGA";
   recorrente: { dia: number; mes: string; lancadaSozinha: boolean } | null;
-  adiantada: { cliente: { id: string; nome: string }; como: ReembolsoComo; reembolsadoEm: string | null } | null;
+  adiantada: {
+    cliente: { id: string; nome: string };
+    /** O caso em que o escritório adiantou (F3.23); null nas contas antigas ou de cliente sem caso. */
+    caso: { id: string; nome: string } | null;
+    como: ReembolsoComo;
+    reembolsadoEm: string | null;
+    /** A parcela em que volta, quando é "junto com a próxima parcela" e ainda não voltou. */
+    parcela: ParcelaDoReembolso | null;
+  } | null;
+}
+
+/** A parcela em que o reembolso volta (F3.23). */
+export interface ParcelaDoReembolso {
+  id: string;
+  descricao: string;
+  vencimento: string;
+  valor: number;
+  contrato: { id: string; numero: string };
+}
+
+/** Para a janela de lançar conta adiantada: os casos do cliente e a parcela em que voltaria. */
+export interface ParaAdiantar {
+  casos: { id: string; nome: string; numero: string | null; situacao: "ANDAMENTO" | "ENCERRADO"; proximaParcela: ParcelaDoReembolso | null }[];
+  proximaParcela: ParcelaDoReembolso | null;
 }
 
 export interface ListaPagar {

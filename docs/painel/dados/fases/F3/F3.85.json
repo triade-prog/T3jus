@@ -1,0 +1,11 @@
+{
+  "id": "F3.85",
+  "texto": "Reembolso na linha da parcela em A receber e registrado junto com a parcela",
+  "peca": "S4",
+  "refs": [
+    "FI-07"
+  ],
+  "status": "pendente",
+  "ordem": 850,
+  "proximo": "Aguarda a Carol aprovar o desenho portal-exito-conferir (estados receber-reembolso e registrar-reembolso); depois, o \"+ reembolso\" na lista e a caixa \"O reembolso também foi pago\" na janela de registrar"
+}

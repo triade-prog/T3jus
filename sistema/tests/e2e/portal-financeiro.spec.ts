@@ -224,6 +224,25 @@ test.describe("Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17)", (
     expect(corpo).toEqual({ tipo: "MENSAGEM", texto: null, motivo: null, proxData: dia(2), proxOque: "Mandar o Pix de novo", proxResponsavelId: DIEGO.id, forma: "PIX" });
   });
 
+  test("Parcelas do contrato mostram o que o escritório adiantou no caso (F3.23, FI-07)", async ({ page }) => {
+    const PERICIA = {
+      id: "cp1", descricao: "Perícia contábil · honorários do perito judicial", fornecedor: null, categoria: "CUSTAS", valor: 90000, valorPago: 90000,
+      vencimento: dia(-15), forma: "PIX", pagaEm: dia(-15), situacao: "PAGA", recorrente: null,
+      adiantada: { cliente: { id: "c22", nome: "Hélio Batista Corrêa" }, caso: { id: "s1", nome: "Corrêa x Banco Sul" }, como: "PROXIMA_PARCELA", reembolsadoEm: null,
+        parcela: { id: pc(64), descricao: "Parcela 4 de 4", vencimento: dia(6), valor: 85000, contrato: { id: ct(22), numero: "C-2026-022" } } },
+    };
+    const COPIAS = { ...PERICIA, id: "cp2", descricao: "Cópias do processo", valor: 5000, valorPago: 5000,
+      adiantada: { ...PERICIA.adiantada, como: "A_PARTE", reembolsadoEm: dia(-2), parcela: null } };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/contratos/${ct(22)}`]: { corpo: { ...FICHA, adiantados: [PERICIA, COPIAS] } } });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${ct(22)}`);
+    const sec = page.getByRole("region", { name: "Adiantado pelo escritório neste caso" });
+    await expect(sec.getByRole("listitem").first()).toContainText(`Paga pelo escritório em ${dia(-15).slice(8, 10)}/${dia(-15).slice(5, 7)} · Corrêa x Banco Sul · categoria “Custas adiantadas”`);
+    await expect(sec.getByRole("listitem").first()).toContainText(`Reembolso combinado: junto com a parcela 4 de 4, de ${dia(6).slice(8, 10)}/${dia(6).slice(5, 7)}`);
+    await expect(sec.getByRole("listitem").first()).toContainText("A reembolsar");
+    await expect(sec.getByRole("listitem").nth(1)).toContainText("Reembolsado em");
+    await semViolacoes(page);
+  });
+
   test("Sem a área Financeiro, A receber não abre", async ({ page }) => {
     await simular(page, comuns(SEM_AREA));
     await page.goto(`${P}/financeiro/a-receber`);

@@ -121,8 +121,53 @@ test.describe("Financeiro do Portal, A pagar (FI-01, FI-02, FI-07, FI-13, FI-20)
     const corpo = pedidos.find((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/contas")?.corpo;
     expect(corpo).toEqual({
       descricao: "Custas da apelação", valor: 124836, vencimento: dia(3), categoria: "CUSTAS", forma: "BOLETO", repete: false, adiantada: true,
-      clienteId: DANI.id, reembolsoComo: "PROXIMA_PARCELA",
+      clienteId: DANI.id, casoId: null, reembolsoComo: "PROXIMA_PARCELA",
     });
+  });
+
+  test("Conta adiantada (F3.23): o caso do cliente e a parcela em que o reembolso volta", async ({ page }) => {
+    const CASO = { id: "b2000000-0000-4000-8000-000000000001", nome: "Mendes x Loja Bela Casa", numero: "10010225120265020045", situacao: "ANDAMENTO" };
+    const ANTIGO = { id: "b2000000-0000-4000-8000-000000000002", nome: "Mendes x Banco Sul", numero: null, situacao: "ENCERRADO" };
+    const PARCELA = { id: "p1", descricao: "Parcela 2 de 3", vencimento: dia(7), valor: 240000, contrato: { id: "k1", numero: "CT-2026-015" } };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/financeiro/adiantar`]: { corpo: { casos: [{ ...CASO, proximaParcela: PARCELA }, { ...ANTIGO, proximaParcela: null }], proximaParcela: null } },
+      "POST /v1/escritorio/financeiro/contas": { status: 201, corpo: { id: "n1", recorrenteId: null, parcela: PARCELA } },
+    });
+    await page.goto(`${P}/financeiro/a-pagar`);
+    await page.getByRole("button", { name: "Lançar conta" }).first().click();
+    const j = page.getByRole("dialog", { name: "Lançar conta" });
+    await j.getByLabel("Foi adiantada para um cliente").check();
+    await expect(j.getByLabel("Caso", { exact: true })).toBeDisabled();
+    await j.getByLabel("Cliente", { exact: true }).selectOption(DANI.id);
+    await expect(j.getByLabel("Caso", { exact: true })).toHaveValue(CASO.id);
+    await expect(j.getByLabel("Caso", { exact: true })).toContainText("Mendes x Loja Bela Casa · 1001022-51.2026.5.02.0045");
+    await expect(j.getByLabel("Caso", { exact: true })).toContainText("Mendes x Banco Sul (encerrado)");
+    expect(pedidos.find((p) => p.caminho === "/v1/escritorio/financeiro/adiantar")!.busca).toBe(`?cliente=${DANI.id}`);
+    await j.getByLabel("Como o dinheiro volta").selectOption("PROXIMA_PARCELA");
+    await expect(j.getByText(`A próxima parcela de Daniela Rocha Mendes vence em ${br(7).slice(0, 5)} e passa a mostrar este reembolso.`)).toBeVisible();
+    await j.getByLabel("Caso", { exact: true }).selectOption("");
+    await j.getByLabel("O que é").fill("Custas da apelação");
+    await j.getByLabel("Valor", { exact: true }).fill("1.248,36");
+    await j.getByLabel("Vencimento").fill(br(0));
+    await j.getByLabel("Categoria").selectOption("CUSTAS");
+    await j.getByRole("button", { name: "Lançar conta" }).click();
+    await expect(j.getByText("Escolha o caso em que o escritório pagou.")).toBeVisible();
+    await semViolacoes(page);
+    await j.getByLabel("Caso", { exact: true }).selectOption(CASO.id);
+    await j.getByRole("button", { name: "Lançar conta" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Conta lançada." })).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/contas")?.corpo).toMatchObject({ clienteId: DANI.id, casoId: CASO.id, reembolsoComo: "PROXIMA_PARCELA" });
+  });
+
+  test("Adiantado por cliente mostra o caso e a parcela em que volta", async ({ page }) => {
+    const COM_CASO = { ...CUSTAS, adiantada: { cliente: DANI, caso: { id: "b2", nome: "Mendes x Loja Bela Casa" }, como: "PROXIMA_PARCELA", reembolsadoEm: null,
+      parcela: { id: "p1", descricao: "Parcela 2 de 3", vencimento: dia(7), valor: 240000, contrato: { id: "k1", numero: "CT-2026-015" } } } };
+    await simular(page, comuns(ESCRITORIO, { ...LISTA, contas: [COM_CASO, ALUGUEL], adiantados: [COM_CASO] }));
+    await page.goto(`${P}/financeiro/a-pagar`);
+    const item = page.getByRole("region", { name: "Adiantado por cliente" }).getByRole("listitem").first();
+    await expect(item).toContainText("Custas recursais · Mendes x Loja Bela Casa");
+    await expect(item).toContainText(`Como volta: junto com a parcela 2 de 3, de ${br(7).slice(0, 5)}`);
   });
 
   test("Marcar paga: data no futuro volta presa ao campo; depois manda o valor que saiu. Reembolso registrado", async ({ page }) => {

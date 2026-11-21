@@ -9,9 +9,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  CATEGORIAS_SAIDA, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, reais, REEMBOLSO_COMO,
+  CATEGORIAS_SAIDA, dataBr, formatarCnj, FORMAS_PAGAMENTO, hojeBrasilia, reais, REEMBOLSO_COMO,
   textoAnexado, type Anexo, type CategoriaAnexo,
-  type CategoriaSaida, type ContaPagar, type FormaPagamento, type ListaClientes, type ListaPagar, type MostrarPagar, type ReembolsoComo,
+  type CategoriaSaida, type ContaPagar, type FormaPagamento, type ListaClientes, type ListaPagar, type ParaAdiantar, type ParcelaDoReembolso, type MostrarPagar, type ReembolsoComo,
 } from "@t3jus/domain";
 import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
@@ -20,7 +20,7 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, falt
 import { contar, diaBr, diaCurto, lerDia, nomeDoMes } from "./agenda.ts";
 import { Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
-import { origemConta, quandoConta } from "./financeiro.ts";
+import { comoVolta, origemConta, quandoConta } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
@@ -32,6 +32,7 @@ const ORDEM_FORMAS = Object.keys(FORMAS_PAGAMENTO) as FormaPagamento[];
 const ORDEM_COMO = Object.keys(REEMBOLSO_COMO) as ReembolsoComo[];
 const paraCampo = (c: number) => reais(c).replace(/^R\$\s?/, "");
 const nomeCliente = (c: ContaPagar) => c.adiantada?.cliente.nome ?? "";
+
 
 function CabPagar({ aoLancar }: { aoLancar?: () => void }) {
   return (
@@ -243,8 +244,8 @@ function PagarConteudo() {
                     <li key={c.id} className="fi-linha" style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}>
                       <div className="fi-quem">
                         <strong>{nomeCliente(c)}</strong>
-                        <small>{c.descricao} · {c.pagaEm ? `paga em ${diaCurto(c.pagaEm)}` : `vence em ${diaCurto(c.vencimento)}`}</small>
-                        <p className="fi-prox"><Icone nome="relogio" className="ico" />Como volta: <b>{REEMBOLSO_COMO[c.adiantada!.como]}</b></p>
+                        <small>{c.descricao}{c.adiantada!.caso ? ` · ${c.adiantada!.caso.nome}` : ""} · {c.pagaEm ? `paga em ${diaCurto(c.pagaEm)}` : `vence em ${diaCurto(c.vencimento)}`}</small>
+                        <p className="fi-prox"><Icone nome="relogio" className="ico" />Como volta: <b>{comoVolta(c)}</b></p>
                       </div>
                       <div className="fi-lado">
                         <span className="fi-v num">{reais(c.valorPago ?? c.valor)}</span>
@@ -301,6 +302,13 @@ export function PagarFinanceiro() {
 
 // ------------------------------------------------------------------------- Lançar conta
 
+/** A frase sob "Como o dinheiro volta": em que parcela o reembolso vai aparecer. */
+export function fraseDaParcela(p: ParcelaDoReembolso | null, cliente: string): string {
+  return p
+    ? `A próxima parcela de ${cliente} vence em ${diaCurto(p.vencimento)} e passa a mostrar este reembolso.`
+    : `${cliente} não tem parcela a vencer. O reembolso fica a reembolsar até haver uma, ou cobre à parte.`;
+}
+
 function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f: Feito) => void }) {
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
@@ -310,6 +318,8 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
   const [repete, setRepete] = useState(false);
   const [adiantada, setAdiantada] = useState(false);
   const [cliente, setCliente] = useState("");
+  const [caso, setCaso] = useState("");
+  const [para, setPara] = useState<ParaAdiantar | null>(null);
   const [como, setComo] = useState<ReembolsoComo | "">("");
   const [clientes, setClientes] = useState<{ id: string; nome: string }[] | null>(null);
   const [erros, setErros] = useState<string[]>([]);
@@ -327,6 +337,23 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
     void chamarPortal<ListaClientes>("/v1/escritorio/clientes?situacao=ATIVO").then((r) => setClientes(r.ok ? r.dados.clientes : []));
   }, [adiantada, clientes]);
 
+  // Os casos do cliente escolhido e a parcela em que o reembolso voltaria (F3.23).
+  useEffect(() => {
+    if (!adiantada || !cliente) return;
+    let vivo = true;
+    void chamarPortal<ParaAdiantar>(`/v1/escritorio/financeiro/adiantar?cliente=${cliente}`).then((r) => {
+      if (!vivo) return;
+      const p = r.ok ? r.dados : { casos: [], proximaParcela: null };
+      setPara(p);
+      const andamento = p.casos.filter((x) => x.situacao === "ANDAMENTO");
+      if (andamento.length === 1) setCaso(andamento[0]!.id);
+    });
+    return () => { vivo = false; };
+  }, [adiantada, cliente]);
+  const temCasos = !!para?.casos.length;
+  const nomeDoCliente = clientes?.find((x) => x.id === cliente)?.nome ?? "o cliente";
+  const parcelaPrevista: ParcelaDoReembolso | null = !para ? null : caso ? para.casos.find((x) => x.id === caso)?.proximaParcela ?? null : para.proximaParcela;
+
   async function enviar() {
     const e: string[] = [];
     const c = lerCentavos(valor);
@@ -336,6 +363,7 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
     if (!d) e.push("vencimento");
     if (!categoria) e.push("categoria");
     if (adiantada && !cliente) e.push("clienteId");
+    if (adiantada && temCasos && !caso) e.push("casoId");
     if (adiantada && !como) e.push("reembolsoComo");
     setFalha(null);
     if (e.length || erroArq) {
@@ -347,7 +375,7 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
       metodo: "POST",
       corpo: {
         descricao: descricao.trim(), valor: c, vencimento: d, categoria, forma: forma || null, repete, adiantada,
-        clienteId: adiantada ? cliente : null, reembolsoComo: adiantada ? como : null,
+        clienteId: adiantada ? cliente : null, casoId: adiantada && caso ? caso : null, reembolsoComo: adiantada ? como : null,
       },
     });
     if (r.ok) {
@@ -441,14 +469,15 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
             <input className="marcar" type="checkbox" checked={adiantada} onChange={(e) => setAdiantada(e.target.checked)} />
             <span>
               Foi adiantada para um cliente
-              <small>Vira valor a reembolsar, ligado ao cliente.</small>
+              <small>Vira valor a reembolsar, ligado ao cliente e ao caso.</small>
             </span>
           </label>
           {adiantada ? (
             <div className="fi-sub-op">
+              <div className="fi-sub-par">
               <div className="campo">
                 <label htmlFor="nc-cli">Cliente</label>
-                <select className="entrada" id="nc-cli" value={cliente} onChange={(e) => setCliente(e.target.value)}
+                <select className="entrada" id="nc-cli" value={cliente} onChange={(e) => { setCliente(e.target.value); setCaso(""); setPara(null); }}
                   aria-invalid={tem("clienteId") || undefined} aria-describedby={descritoPor(tem("clienteId") && "nc-cli-er")}>
                   <option value="">{clientes === null ? "Carregando os clientes…" : clientes.length ? "Escolha o cliente" : "Nenhum cliente ativo"}</option>
                   {(clientes ?? []).map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
@@ -456,13 +485,27 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
                 {tem("clienteId") ? <ErroCampo id="nc-cli-er">Escolha o cliente para quem o escritório pagou.</ErroCampo> : null}
               </div>
               <div className="campo">
+                <label htmlFor="nc-caso">Caso</label>
+                <select className="entrada" id="nc-caso" value={caso} onChange={(e) => setCaso(e.target.value)} disabled={!cliente || !para || !temCasos}
+                  aria-invalid={tem("casoId") || undefined} aria-describedby={tem("casoId") ? "nc-caso-er" : "nc-caso-aj"}>
+                  <option value="">{!cliente ? "Escolha antes o cliente" : !para ? "Carregando os casos…" : temCasos ? "Escolha o caso" : "Sem caso"}</option>
+                  {(para?.casos ?? []).map((x) => (
+                    <option key={x.id} value={x.id}>{x.numero ? `${x.nome} · ${formatarCnj(x.numero)}` : x.nome}{x.situacao === "ENCERRADO" ? " (encerrado)" : ""}</option>
+                  ))}
+                </select>
+                {tem("casoId") ? <ErroCampo id="nc-caso-er">Escolha o caso em que o escritório pagou.</ErroCampo>
+                  : <p className="ajuda" id="nc-caso-aj">{para && !temCasos ? "Este cliente não tem caso no Jurídico; o reembolso fica ligado só ao cliente." : "O reembolso fica ligado a este caso."}</p>}
+              </div>
+              </div>
+              <div className="campo">
                 <label htmlFor="nc-como">Como o dinheiro volta</label>
                 <select className="entrada" id="nc-como" value={como} onChange={(e) => setComo(e.target.value as ReembolsoComo)}
-                  aria-invalid={tem("reembolsoComo") || undefined} aria-describedby={descritoPor(tem("reembolsoComo") && "nc-como-er")}>
+                  aria-invalid={tem("reembolsoComo") || undefined} aria-describedby={tem("reembolsoComo") ? "nc-como-er" : como === "PROXIMA_PARCELA" && para ? "nc-como-aj" : undefined}>
                   <option value="">Escolha como volta</option>
                   {ORDEM_COMO.map((c) => <option key={c} value={c}>{REEMBOLSO_COMO[c]}</option>)}
                 </select>
-                {tem("reembolsoComo") ? <ErroCampo id="nc-como-er">Escolha como o cliente devolve o valor.</ErroCampo> : null}
+                {tem("reembolsoComo") ? <ErroCampo id="nc-como-er">Escolha como o cliente devolve o valor.</ErroCampo>
+                  : como === "PROXIMA_PARCELA" && para ? <p className="ajuda" id="nc-como-aj">{fraseDaParcela(parcelaPrevista, nomeDoCliente)}</p> : null}
               </div>
             </div>
           ) : null}
