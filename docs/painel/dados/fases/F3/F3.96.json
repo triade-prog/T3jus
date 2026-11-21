@@ -1,0 +1,11 @@
+{
+  "id": "F3.96",
+  "texto": "Carnê pelo WhatsApp: a ligação com a Meta tirar a mensagem da fila e entregar o PDF, \"entregue\" e \"lido\" na folha \"Carnê\", e o aviso \"Carnê de pagamento\" aprovado pela Meta para mandar fora da janela de 24 horas",
+  "peca": "S4",
+  "refs": [
+    "FI-23"
+  ],
+  "status": "pendente",
+  "ordem": 791,
+  "proximo": "Depende da ligação do WhatsApp com a Meta (PA-04) e da aprovação do modelo \"Carnê de pagamento\""
+}

@@ -1,0 +1,11 @@
+{
+  "data": "21/11/2026",
+  "inicio": "17:45",
+  "fim": "18:20",
+  "texto": "Gerar o PDF do carnê no servidor e deixar pronto o envio pelo WhatsApp, que fica na fila esperando a ligação com a Meta.",
+  "refs": [
+    "F3.79",
+    "F3.96",
+    "FI-23"
+  ]
+}

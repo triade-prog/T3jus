@@ -238,7 +238,73 @@ export interface CarneGerado {
   parcelas: { descricao: string; ordem: number; total: number; vencimento: string; valor: number; semValor: boolean }[];
   /** O que mudou depois do carnê (parcela cancelada, vencimento, valor ou chave Pix). Vazio: em dia. */
   mudancas: MudancaCarne[];
+  /** Para quem o carnê foi pelo WhatsApp (F3.79, decisão 11). */
+  envios?: EnvioCarne[];
 }
+
+// ------------------------------------------------------------------ Carnê pelo WhatsApp (F3.79)
+
+export interface EnvioCarne {
+  id: string;
+  para: string;
+  telefone: string;
+  em: string;
+  por: PessoaRef | null;
+  /** NA_FILA até a ligação com a Meta entregar. */
+  envio: "NA_FILA" | "ENVIADA" | "ENTREGUE" | "LIDA" | "FALHOU" | null;
+}
+
+export type BloqueioEnvioCarne = "WHATSAPP_NAO_LIGADO" | "SEM_WHATSAPP" | "JANELA_FECHADA_SEM_MODELO";
+
+/** GET /v1/escritorio/carnes/:id/envio: a prévia da mensagem, com o PDF gerado no servidor. */
+export interface PreviaEnvioCarne {
+  cliente: { nome: string };
+  para: { nome: string; papel: string | null; telefone: string } | null;
+  titular: { nome: string; telefone: string } | null;
+  escritorio: string;
+  ultimaDoCliente: string | null;
+  bloqueio: BloqueioEnvioCarne | null;
+  envios: EnvioCarne[];
+  texto: string;
+  arquivo: { nome: string; tamanho: number; folhas: number };
+}
+
+export const enviarCarneSchema = z.object({
+  area: z.enum(["FINANCEIRO", "CONTRATOS"]),
+  texto: z.string().trim().min(1).max(1024),
+  tambemCliente: z.boolean().default(false),
+});
+export type EnviarCarne = z.input<typeof enviarCarneSchema>;
+
+/** GET /v1/escritorio/carnes/:id/pdf: o link de 60 segundos para baixar o PDF. */
+export interface PdfDoCarne { url: string; nome: string; tamanho: number }
+
+const primeiro = (n: string) => n.trim().split(/\s+/)[0] ?? n;
+
+/**
+ * A mensagem que acompanha o PDF (estado carne-whats): "Olá, Marta! Aqui está o carnê dos
+ * honorários do Hélio, contrato C-2026-014: as parcelas 4 a 6, de R$ 850,00, que vencem todo dia 25."
+ */
+export function textoEnvioCarne(c: Pick<CarneParaImprimir, "cliente" | "contrato" | "parcelas" | "pix" | "escritorio">, para: string): string {
+  const ps = c.parcelas;
+  const doCliente = primeiro(para).toLowerCase() === primeiro(c.cliente.nome).toLowerCase() ? "dos seus honorários" : `dos honorários ${c.cliente.tipo === "PJ" ? "de" : "do"} ${c.cliente.tipo === "PJ" ? c.cliente.nome : primeiro(c.cliente.nome)}`;
+  let quais: string;
+  if (ps.length === 1) {
+    const p = ps[0]!;
+    quais = `a parcela ${p.ordem} de ${p.total}, de ${reaisTexto(p.valor)}, que vence em ${p.vencimento.slice(8, 10)}/${p.vencimento.slice(5, 7)}/${p.vencimento.slice(0, 4)}`;
+  } else {
+    const faixa = `as parcelas ${ps[0]!.ordem} a ${ps[ps.length - 1]!.ordem}`;
+    const mesmoValor = ps.every((p) => p.valor === ps[0]!.valor);
+    const mesmoDia = ps.every((p) => p.vencimento.slice(8, 10) === ps[0]!.vencimento.slice(8, 10));
+    quais = mesmoValor && mesmoDia ? `${faixa}, de ${reaisTexto(ps[0]!.valor)}, que vencem todo dia ${Number(ps[0]!.vencimento.slice(8, 10))}`
+      : `${faixa}, que somam ${reaisTexto(ps.reduce((s, p) => s + p.valor, 0))}`;
+  }
+  const como = c.pix ? "Em cada parcela tem o QR e o Pix copia e cola." : "Em cada parcela está o identificador para escrever na descrição do pagamento.";
+  return `Olá, ${primeiro(para)}! Aqui está o carnê ${doCliente}, contrato ${c.contrato.numero}: ${quais}.\n\n${como} Depois de pagar, mande o comprovante por aqui: o recibo chega nesta conversa.\n\n${c.escritorio.nome}`;
+}
+
+const reaisTexto = (centavos: number) =>
+  `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(centavos / 100)}`;
 
 export interface OpcoesCarne {
   contrato: { id: string; numero: string; objeto: string; situacao: string };
