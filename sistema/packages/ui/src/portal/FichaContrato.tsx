@@ -11,6 +11,7 @@ import { dataBr, hojeBrasilia, reais, type EventoContrato, type FichaContrato, t
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
+import { dataCurta, hora } from "../console/tempo.ts";
 import { diaCurto, lerDia } from "./agenda.ts";
 import { Selo } from "./Comercial.tsx";
 import { fraseDoContrato, janelaProgramacao, juntarItens, nomeSituacaoContrato, ROTAS_CONTRATOS, SELO_CONTRATO } from "./contratos.ts";
@@ -20,6 +21,7 @@ import { JanelaInscricoes, PessoasOab } from "./ContratoOab.tsx";
 import { CondicoesLeitura, SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
+import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
 
 type Aba = "contrato" | "recebimentos" | "documentos";
@@ -186,7 +188,10 @@ function Historico({ eventos, hoje }: { eventos: EventoContrato[]; hoje: string 
 function Recebimentos({ f, hoje, dono }: { f: FichaContrato; hoje: string; dono: string | undefined }) {
   const j = janelaProgramacao(f.recebimentos, hoje);
   const variaveis = f.condicoes.filter((c) => c.tipo === "EXITO" || c.tipo === "SUCUMBENCIA" || c.tipo === "ATO" || (c.tipo === "RECORRENTE" && c.etapa));
+  const pagas = f.recebimentos.filter((r) => r.pagoAntes);
+  const somaPagas = pagas.reduce((t, r) => t + (r.valor ?? 0), 0);
   return (
+    <div className="pg-grade">
     <section className="folha" aria-labelledby="t-rc" style={{ overflow: "hidden" }}>
       <div className="folha-cab">
         <div>
@@ -201,7 +206,11 @@ function Recebimentos({ f, hoje, dono }: { f: FichaContrato; hoje: string; dono:
       ) : (
         <>
           <div className="ct-totais">
-            <div><p>Programado{j.ate ? ` até ${dataBr(j.ate)}` : ""}</p><p className="hn-res-grande num">{reais(j.programado)}</p></div>
+            <div>
+              <p>Programado{j.ate ? ` até ${dataBr(j.ate)}` : ""}</p>
+              <p className="hn-res-grande num">{reais(j.programado)}</p>
+              {pagas.length ? <p className="pg-tot">Só o que passa pelo T3jus. Os <a href="#pago-antes">{reais(somaPagas)} pagos antes</a> ficam fora.</p> : null}
+            </div>
             <div><p>Depois dos 3 meses</p><p className="hn-res-grande num">{j.depois}</p></div>
             <div><p>Depende do caso</p><p className="hn-res-grande">{variaveis.length ? juntarItens(variaveis.map((c) => ({ EXITO: "Êxito", SUCUMBENCIA: "Sucumbência", ATO: "Por ato", RECORRENTE: "Recorrente" } as Record<string, string>)[c.tipo]!)) : "Nada"}</p></div>
           </div>
@@ -222,6 +231,88 @@ function Recebimentos({ f, hoje, dono }: { f: FichaContrato; hoje: string; dono:
       ) : (
         <p className="hn-pe"><Icone nome="cadeado" className="ico" /><span>Se cada recebimento foi pago ou está em atraso fica no Financeiro, que não está liberado para você.{dono ? ` Quem libera é ${dono}, sócio dono.` : ""}</span></p>
       )}
+    </section>
+    {pagas.length ? <PagoAntes f={f} pagas={pagas} soma={somaPagas} hoje={hoje} /> : null}
+    </div>
+  );
+}
+
+/** Quantas mostrar de cara na folha "Pago antes do T3jus" (pergunta 7: as 6 mais recentes). */
+const PAGAS_DE_CARA = 6;
+
+/**
+ * As parcelas que a planilha trouxe como já pagas (F3.73, VA-05). Só informação: não entram nos
+ * totais, em A receber nem no Caixa, e não geram recibo. Se alguma não foi paga, o caminho é
+ * desfazer a importação (pergunta 5).
+ */
+function PagoAntes({ f, pagas, soma, hoje }: { f: FichaContrato; pagas: RecebimentoPrevisto[]; soma: number; hoje: string }) {
+  const [todas, setTodas] = useState(false);
+  const recentes = [...pagas].sort((a, b) => (a.vencimento < b.vencimento ? 1 : a.vencimento > b.vencimento ? -1 : 0));
+  const mostrar = todas ? recentes : recentes.slice(0, PAGAS_DE_CARA);
+  const outras = recentes.length - mostrar.length;
+  const imp = f.importacao;
+  const doTipo = (t: RecebimentoPrevisto["tipo"]) => f.recebimentos.filter((r) => r.tipo === t && (r.pagoAntes || !r.cancelado)).length;
+  const total = doTipo(pagas[0]!.tipo);
+  const podeDesfazer = imp && !imp.desfeita && imp.desfazerAte && imp.desfazerAte.slice(0, 10) >= hoje;
+  return (
+    <section className="folha pg" aria-labelledby="t-pg" id="pago-antes" style={{ overflow: "hidden" }}>
+      <div className="folha-cab">
+        <div>
+          <h2 id="t-pg">Pago antes do T3jus</h2>
+          <p className="sub">{pagas.length === 1 ? "1 parcela que a planilha trouxe como já paga." : `${pagas.length} parcelas que a planilha trouxe como já pagas.`}</p>
+        </div>
+      </div>
+      <p className="pg-nota">
+        <Icone nome="escudo" className="ico" />
+        <span><b>Só informação.</b> Não entram nos totais acima, nem em A receber, nem no Caixa, e não geram recibo: o pagamento foi feito antes do T3jus, e a planilha não diz quando, como nem a quem.</span>
+      </p>
+      <table className="hn-tab">
+        <caption className="sr">Parcelas pagas antes do T3jus</caption>
+        <colgroup>{["14%", "34%", "18%", "15%", "19%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+        <thead><tr>{["Vencimento", "O quê", "Condição", "Valor", "Como veio"].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>
+        <tbody>
+          {mostrar.map((r) => {
+            const c = f.condicoes.find((x) => x.tipo === r.tipo);
+            return (
+              <tr key={r.id}>
+                <td><b className="num">{dataBr(r.vencimento)}</b></td>
+                <td data-r="O quê">{r.descricao}</td>
+                <td data-r="Condição">{c ? <SeloTipo c={c} /> : null}</td>
+                <td data-r="Valor"><span className="num hn-valor-c">{r.valor ? reais(r.valor) : "a definir"}</span></td>
+                <td data-r="Como veio"><Selo tom="neutro">Paga antes do T3jus</Selo></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {outras > 0 ? (
+        <div className="pg-acoes">
+          <button type="button" className="btn btn-sec" onClick={() => setTodas(true)}>
+            <Icone nome="baixo" className="ico" />
+            {outras === 1 ? "Mostrar a outra" : `Mostrar as outras ${outras}`}
+          </button>
+        </div>
+      ) : null}
+      <p className="pg-soma"><span>Soma das parcelas pagas antes, fora dos totais</span><b className="num">{reais(soma)}</b></p>
+      {imp ? (
+        <>
+          <dl className="pg-origem">
+            <div><dt>Veio da planilha</dt><dd>{imp.arquivo}{imp.linha ? <small>linha {imp.linha}</small> : null}</dd></div>
+            <div><dt>Importada por</dt><dd>{imp.por?.nome ?? "Alguém que saiu da equipe"}<small>{dataCurta(imp.em)}, às {hora(imp.em)}</small></dd></div>
+            <div><dt>Na planilha</dt><dd>“Parcelas pagas: {pagas.length}”<small>{pagas.length === 1 ? `a primeira de ${total}` : `as ${pagas.length} primeiras de ${total}`}</small></dd></div>
+          </dl>
+          <div className="pg-acoes">
+            <a className="btn btn-sec" href={ROTAS_IMPORTACAO.resultado(imp.id)}><Icone nome="historico" className="ico" />Ver a importação</a>
+            <p>
+              {imp.desfeita
+                ? "A importação foi desfeita."
+                : podeDesfazer
+                  ? `Alguma não foi paga? Até ${dataCurta(imp.desfazerAte!)} dá para desfazer a importação, corrigir a planilha e importar de novo.`
+                  : "Alguma não foi paga? O prazo para desfazer a importação acabou. Fale com o suporte para corrigir."}
+            </p>
+          </div>
+        </>
+      ) : null}
     </section>
   );
 }

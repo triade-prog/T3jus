@@ -5,7 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 730,
-  "proximo": "Desenho da folha “Pago antes do T3jus” na aba Recebimentos em project-files/t3jus/telas/portal-pendencias-pequenas, aguardando a aprovação da Carol; depois, programar"
+  "evidencia": "Folha “Pago antes do T3jus” na aba Recebimentos, abaixo da programação e só quando há parcela paga antes: regra de que não entram nos totais, em A receber, no Caixa nem geram recibo; as 6 mais recentes e “Mostrar as outras N”; soma fora dos totais; planilha, linha, quem importou e quando; “Ver a importação” e o prazo para desfazer. Migration 0470 (portal_contrato com pagoAntes e importacao); pgTAP 042 e e2e portal-contratos. Desenho aprovado em docs/design/aprovadas/portal-pendencias-pequenas"
 }

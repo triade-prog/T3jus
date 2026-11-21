@@ -1,0 +1,30 @@
+[
+ {
+  "nome": "ca-atalho",
+  "url": "conversa-avisos.html?estado=atalho"
+ },
+ {
+  "nome": "ca-janela",
+  "url": "conversa-avisos.html?estado=janela"
+ },
+ {
+  "nome": "ca-erro",
+  "url": "conversa-avisos.html?estado=erro"
+ },
+ {
+  "nome": "ca-registrado",
+  "url": "conversa-avisos.html?estado=registrado"
+ },
+ {
+  "nome": "ca-ja-fora",
+  "url": "conversa-avisos.html?estado=ja-fora"
+ },
+ {
+  "nome": "pg-rosa",
+  "url": "contrato-pago-antes.html?estado=rosa"
+ },
+ {
+  "nome": "pg-sem",
+  "url": "contrato-pago-antes.html?estado=sem-pago-antes"
+ }
+]

@@ -4123,6 +4123,55 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .ca-barra .ca-dica{flex-basis:100%;font-size:12px;color:var(--ambar-3)}
 @media print{.ca-folhas>.ca-aviso-tela{display:none!important}}
 
+/* Recebimentos · Pago antes do T3jus (F3.73; docs/design/aprovadas/portal-pendencias-pequenas) */
+.pg-grade{display:grid;gap:24px}
+.pg-nota{margin:0 24px 16px;display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5;color:var(--texto)}
+.pg-nota>.ico{flex:none;margin-top:1px;color:var(--vinho)}
+.pg-nota b{font-weight:600}
+.pg .hn-tab td{color:var(--texto-2)}
+.pg .hn-tab td b,.pg .hn-tab .hn-valor-c{color:var(--texto)}
+@media (min-width:761px){.pg .hn-tab tbody tr td:first-child{box-shadow:inset 3px 0 0 var(--vinho-4)}}
+.pg-soma{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding:12px 24px;margin:0;border-top:1px solid var(--divisor);font-size:13px;color:var(--texto-2)}
+.pg-soma b{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--texto)}
+.pg-origem{margin:0;padding:14px 24px 4px;border-top:1px solid var(--divisor);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 20px}
+.pg-origem dt{font-size:12px;color:var(--texto-2)}
+.pg-origem dd{margin:0;font-size:13.5px;font-weight:500;line-height:1.4;overflow-wrap:anywhere}
+.pg-origem dd small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+.pg-acoes{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:8px 24px 18px}
+.pg-acoes p{margin:0;font-size:12.5px;color:var(--texto-2);line-height:1.45;flex:1 1 280px}
+.ct-totais p.pg-tot{font-size:12px;color:var(--texto-2);line-height:1.45;margin-top:2px}
+.ct-totais p.pg-tot a{color:var(--vinho);font-weight:500}
+@media (max-width:760px){
+  .pg-nota{margin:0 16px 14px}
+  .pg-soma{padding:12px 16px}
+  .pg-origem{grid-template-columns:1fr;padding:12px 16px 4px}
+  .pg-acoes{padding:8px 16px 16px}
+  .pg-acoes .btn{flex:1 1 100%}
+  .pg-grade{gap:16px}
+}
+
+/* Conversa · atalho "Não receber avisos" (F3.65; docs/design/aprovadas/portal-pendencias-pequenas) */
+.ca-linha{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5;margin:0}
+.ca-linha>.ico{width:18px;height:18px;flex:none;margin-top:1px;color:var(--vinho-4)}
+.ca-linha b{font-weight:600}
+.ca-linha span{color:var(--texto-2)}
+.ca-linha span b{color:var(--texto)}
+.ca-fora{display:grid;gap:8px;padding:12px 14px 12px 16px;border-radius:var(--raio);background:var(--ambar-3);box-shadow:inset 3px 0 0 var(--vinho);color:var(--tinta)}
+.ca-fora strong{display:flex;align-items:flex-start;gap:8px;font-family:var(--serifa);font-size:17px;font-weight:600;color:var(--vinho);line-height:1.25}
+.ca-fora strong .ico{width:18px;height:18px;flex:none;margin-top:1px}
+.ca-fora p{margin:0;font-size:12.5px;line-height:1.5;color:var(--tinta)}
+.ca-acoes{display:grid;gap:8px}
+.ca-selos{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+.cv-sis.ca-sis{background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--ambar-2)}
+.cv-sis.ca-sis small{display:block;font-size:11.5px;color:var(--tinta)}
+.ca-cita{margin:0;padding:10px 14px;border-radius:var(--raio);background:var(--sal-2);border-left:3px solid var(--vinho-4);font-size:13px;line-height:1.5}
+.ca-cita q{display:block;font-family:var(--serifa);font-style:italic;font-size:16px;color:var(--tinta);quotes:"“" "”"}
+.ca-cita small{display:block;font-size:12px;color:var(--texto-2);margin-top:4px}
+.ca-cita small b{font-weight:500;color:var(--texto)}
+.sa-j .opcao .ca-agora{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:11.5px;font-weight:600;color:var(--vinho)}
+.sa-j .opcao .ca-agora .ico{width:14px;height:14px}
+.ca-selos .sa-selo{background:var(--ambar-2);color:var(--tinta)}
+.ca-selos .sa-selo .ico{width:14px;height:14px}
 /* ==========================================================================
    Contratos · as inscrições na OAB de cada advogado (EX-12, F3.74), prefixo oe-. Tela
    aprovada em docs/design/aprovadas/portal-equipe-oab (contratos.html).
@@ -4164,8 +4213,6 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
   .oe-pe-ins{padding:12px 16px 16px}
   .oe-pe-ins .btn{width:100%;min-height:44px}
 }
-
-/* ==========================================================================
    Portal · Início: próximas audiências (F3.2, EX-06). Prefixo pa-. Desenho aprovado em
    docs/design/aprovadas/portal-inicio-audiencias. Mora dentro da folha "Agenda de hoje";
    reaproveita .agenda, .ev, --t e .ar-pe.
@@ -4192,3 +4239,9 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
   .pa-cab{padding:14px 16px 0}
   .pa-ev{grid-template-columns:60px minmax(0,1fr);gap:10px}
 }
+=======
+/* Cliente e caso lado a lado na conta adiantada (F3.23) */
+.fi-sub-par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.fi-sub-par{grid-template-columns:1fr}}
+
+/* ===================================================================

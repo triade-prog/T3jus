@@ -26,6 +26,8 @@ export interface PedidoSemAvisos {
   pedidoEm: string;
   registradoEm: string;
   registradoPor: { id: string; nome: string } | null;
+  /** A mensagem do cliente que originou o pedido, quando veio da conversa (F3.65). */
+  mensagem?: { id: string; texto: string | null; em: string } | null;
   retirada: {
     em: string;
     por: { id: string; nome: string } | null;
@@ -55,6 +57,9 @@ export const semAvisosSchema = z.object({
   canal: z.enum(["WHATSAPP", "TELEFONE", "PRESENCIAL", "EMAIL"]).optional(),
   pedidoEm: dia.optional(),
   retirar: z.boolean().optional(),
+  /** Pela conversa (F3.65): a conversa e a mensagem do cliente que originou o pedido. */
+  conversaId: z.string().uuid().optional(),
+  mensagemId: z.string().uuid().optional(),
 });
 
 // ------------------------------------------------------------------ Sino

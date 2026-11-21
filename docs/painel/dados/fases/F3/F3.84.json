@@ -1,0 +1,11 @@
+{
+  "id": "F3.84",
+  "texto": "Na folha “Pago antes do T3jus”, botão “Não foi paga” que passa a parcela para A receber sem desfazer a importação",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 840,
+  "proximo": "Por ora, parcela que não foi paga se corrige desfazendo a importação em até 7 dias (pergunta 5 do desenho aprovado). Desenhar o botão e a regra quando a Carol pedir"
+}

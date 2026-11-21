@@ -73,6 +73,8 @@ export interface RecebimentoPrevisto {
   origem: "PROGRAMADO" | "BASE";
   criadoEm: string;
   cancelado: { em: string; motivo: string } | null;
+  /** Paga antes do T3jus, vinda da planilha (F3.73): só informação, nasce cancelada. */
+  pagoAntes?: boolean;
   base: { valor: number; fonte: FonteBase; por: PessoaRef; em: string } | null;
 }
 export interface EventoContrato { em: string; acao: string; autor: string | null; dados: Record<string, unknown> }
@@ -90,6 +92,18 @@ export interface FichaContrato extends ContratoLinha {
   financeiro: boolean;
   recebimentos: RecebimentoPrevisto[];
   historico: EventoContrato[];
+  /** A importação de planilha de onde o contrato veio (F3.73), ou nulo. */
+  importacao?: OrigemImportacaoContrato | null;
+}
+
+export interface OrigemImportacaoContrato {
+  id: string;
+  arquivo: string;
+  linha: number | null;
+  por: PessoaRef | null;
+  em: string;
+  desfazerAte: string | null;
+  desfeita: boolean;
 }
 
 /** Inscrição da pessoa com a marca de escolhida neste contrato. */

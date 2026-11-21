@@ -130,3 +130,10 @@ export function origemConta(c: Pick<ContaPagar, "recorrente" | "adiantada" | "fo
 }
 
 export const nomeReembolso = (c: keyof typeof REEMBOLSO_COMO) => REEMBOLSO_COMO[c];
+
+/** Como o reembolso volta; "junto com a parcela 2/3, de 28/11" quando já se sabe a parcela (F3.23). */
+export function comoVolta(c: ContaPagar): string {
+  const a = c.adiantada!;
+  if (a.como === "PROXIMA_PARCELA" && a.parcela) return `junto com a ${a.parcela.descricao.toLowerCase()}, de ${diaCurto(a.parcela.vencimento)}`;
+  return REEMBOLSO_COMO[a.como];
+}
