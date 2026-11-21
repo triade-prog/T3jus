@@ -71,7 +71,8 @@ export type TipoAvisoSino =
   | "PETICAO_REVISAR" | "PETICAO_DECIDIDA" | "PETICAO_PASSADA"
   | "BASE_DO_MES" | "PEDIDO_CONTRATO" | "CONTRATO_GERADO"
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
-  | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX";
+  | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
+  | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO";
 
 export interface AvisoSino {
   id: string;
@@ -93,8 +94,10 @@ export interface AvisoSino {
     arquivo?: string; quantos?: number;
     /** Carnê desatualizado (F3.80): o carnê, quando foi gerado e se foi você quem gerou. */
     carne?: string; gerado?: string; gerou?: boolean; parcela?: string;
+    /** O êxito conferido no Financeiro (F3.14): o valor calculado pelo contrato e a explicação de não cobrar. */
+    calculado?: number; explicacao?: string;
   };
-  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios";
+  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios" | "casos";
   origemId: string;
   em: string;
   lido: boolean;

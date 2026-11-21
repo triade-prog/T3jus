@@ -1116,6 +1116,7 @@ function ItemParcelas({ a }: { a: AcertoCaso }) {
 function detalheDaPendencia(x: PendenciaCaso): string {
   if (x.tipo === "REPASSE") return `${PARA_DESTINACAO[x.para!].toLowerCase()} · combinado para até ${diaCurto(x.prazo!)}`;
   if (x.tipo === "PARCELA") return `parcela do contrato · vence em ${diaCurto(x.vencimento!)}`;
+  if (x.tipo === "EXITO") return "êxito calculado no encerramento, esperando a conferência em A receber";
   if (x.tipo === "PARCELA_SEM_VALOR") return "parcela do contrato ainda sem valor (base do mês ou etapa do caso)";
   return "o escritório adiantou e o cliente ainda não reembolsou";
 }

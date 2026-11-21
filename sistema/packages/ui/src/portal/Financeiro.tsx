@@ -12,6 +12,7 @@ import {
   cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
   type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido, type ContaPagar, CATEGORIAS_SAIDA,
+  type ExitoParaConferir, type ExitosParaConferir,
 } from "@t3jus/domain";
 import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
@@ -24,6 +25,7 @@ import { diasEntre } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { primeiroNome } from "./equipe.ts";
 import { Toast } from "./FichaCliente.tsx";
+import { BlocoExitos, JanelaConferir, JanelaNaoCobrar } from "./FinanceiroExito.tsx";
 import { comoVolta, gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela, textoCobranca } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
@@ -43,6 +45,20 @@ const paraCampo = (c: number) => reais(c).replace(/^R\$\s?/, "");
 function SeloDaParcela({ p, hoje }: { p: Pick<ParcelaLinha, "situacao" | "vencimento" | "falta" | "pagaEm">; hoje: string }) {
   const s = seloParcela(p, hoje);
   return <Selo tom={s.tom} icone={s.icone}>{s.texto}</Selo>;
+}
+
+/** De onde veio a parcela do êxito (F3.14): "Do encerramento do caso em 18/11, conferido por Diego." */
+function OrigemExito({ p }: { p: Pick<ParcelaLinha, "exito"> }) {
+  const x = p.exito;
+  if (!x) return null;
+  return <p className="fi-motivo">Do encerramento do caso em {diaCurto(diaDoInstante(x.encerradoEm))}, conferido por {primeiroNome(x.conferido.por.nome)}.</p>;
+}
+
+/** O reembolso que vai junto com a parcela (F3.85): "Leva junto: custas da apelação, R$ 1.248,36." */
+function LevaJunto({ p }: { p: Pick<ParcelaLinha, "reembolso"> }) {
+  const r = p.reembolso;
+  if (!r?.valor) return null;
+  return <p className="fi-motivo"><b>Leva junto:</b> reembolso {r.contas.map((c) => c.descricao.toLowerCase()).join(", ")}, {reais(r.valor)}.</p>;
 }
 
 /** Motivo e próxima ação, como na lista e no Resumo. */
@@ -98,12 +114,41 @@ function ReceberConteudo() {
   const [agrupar, setAgrupar] = useState<"VENCIMENTO" | "CLIENTE">("VENCIMENTO");
   const [registrar, setRegistrar] = useState<ParcelaLinha | "escolher" | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
+  const [conferir, setConferir] = useState<ExitoParaConferir | null>(null);
+  const [naoCobrar, setNaoCobrar] = useState<ExitoParaConferir | null>(null);
+  const [novas, setNovas] = useState<string[]>([]);
+  const exitos = useCarga<ExitosParaConferir>("/v1/escritorio/financeiro/exitos");
   useEffect(() => {
     const t = setTimeout(() => setQ(busca.trim()), 250);
     return () => clearTimeout(t);
   }, [busca]);
   const filtro = `mostrar=${mostrar}${q ? `&q=${encodeURIComponent(q)}` : ""}${responsavel ? `&responsavel=${responsavel}` : ""}${forma ? `&forma=${forma}` : ""}`;
   const { dados, recarregar } = useCarga<ListaReceber>(`/v1/escritorio/financeiro/receber?${filtro}`);
+  const blocoExitos = exitos.dados && exitos.dados !== "erro" ? <BlocoExitos dados={exitos.dados} aoConferir={setConferir} /> : null;
+  const janelasExito = (
+    <>
+      {conferir ? (
+        <JanelaConferir x={conferir} aoFechar={() => setConferir(null)} aoNaoCobrar={() => { setNaoCobrar(conferir); setConferir(null); }}
+          aoFeito={(p, v) => {
+            const x = conferir;
+            setConferir(null);
+            setNovas((n) => [...n, p.id]);
+            setFeito({ titulo: "Êxito lançado em A receber.", texto: `${reais(v)} de ${x.cliente.nome}, para ${dataBr(p.vencimento)}. Ficou no histórico do caso e do contrato.` });
+            exitos.recarregar();
+            recarregar();
+          }} />
+      ) : null}
+      {naoCobrar ? (
+        <JanelaNaoCobrar x={naoCobrar} aoVoltar={() => { setConferir(naoCobrar); setNaoCobrar(null); }}
+          aoFeito={() => {
+            const x = naoCobrar;
+            setNaoCobrar(null);
+            setFeito({ titulo: "Êxito não cobrado.", texto: `O êxito de ${x.cliente.nome} saiu da lista. O motivo ficou no histórico do caso.` });
+            exitos.recarregar();
+          }} />
+      ) : null}
+    </>
+  );
 
   if (dados === "erro") return <div className="fi"><CabReceber /><ErroAoCarregar oque="as parcelas" aoTentar={recarregar} /></div>;
   if (!dados) return <div className="fi"><CabReceber /><Carregando rotulo="Carregando as parcelas…" linhas={5} /></div>;
@@ -111,6 +156,7 @@ function ReceberConteudo() {
     return (
       <div className="fi">
         <CabReceber />
+        {blocoExitos}
         <section className="folha" aria-labelledby="t-rec" style={{ overflow: "hidden" }}>
           <h2 id="t-rec" className="sr">Parcelas</h2>
           <Estado icone="carteira" titulo="Nenhuma parcela a receber ainda"
@@ -118,6 +164,8 @@ function ReceberConteudo() {
             As parcelas saem das condições de cada contrato, na área Contratos, quando a assinatura é registrada. Ninguém digita parcela aqui.
           </Estado>
         </section>
+        {janelasExito}
+        {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
       </div>
     );
   }
@@ -138,6 +186,7 @@ function ReceberConteudo() {
   return (
     <div className="fi">
       <CabReceber aoRegistrar={() => setRegistrar("escolher")} />
+      {blocoExitos}
       <div className="fi-nums" role="group" aria-label="Mostrar">
         {numero("ABERTO", "Em aberto", t.aberto, "")}
         {numero("VENCIDAS", <><Icone nome="alerta" className="ico" />Vencidas</>, t.vencidas, "")}
@@ -200,11 +249,20 @@ function ReceberConteudo() {
                       </td>
                       <td data-r="Situação">
                         <div className="fi-sit">
-                          <SeloDaParcela p={p} hoje={hoje} />
+                          <span className="fi-selos">
+                            {novas.includes(p.id) ? <Selo tom="ativo">Novo</Selo> : null}
+                            {p.exito ? <Selo tom="ok" icone="balanca">Êxito</Selo> : null}
+                            <SeloDaParcela p={p} hoje={hoje} />
+                          </span>
+                          <OrigemExito p={p} />
+                          <LevaJunto p={p} />
                           {venc || p.cobranca ? <MotivoEAcao p={p} hoje={hoje} /> : null}
                         </div>
                       </td>
-                      <td data-r="Valor" className="fi-v num">{reais(p.noMes ?? p.falta)}</td>
+                      <td data-r="Valor" className="fi-v num">
+                        {reais(p.noMes ?? p.falta)}
+                        {p.reembolso?.valor && p.situacao !== "PAGA" ? <small className="fi-reemb"><Icone nome="devolver" className="ico" />+ reembolso {reais(p.reembolso.valor)}</small> : null}
+                      </td>
                       <td data-r="" className="fi-acao hn-acao">
                         {p.situacao !== "PAGA" ? (
                           <button className="btn btn-sec btn-compacto" type="button" onClick={() => setRegistrar(p)}>
@@ -232,6 +290,7 @@ function ReceberConteudo() {
         <JanelaRegistrar parcela={registrar === "escolher" ? null : registrar} aoFechar={() => setRegistrar(null)}
           aoFeito={(f) => { setRegistrar(null); setFeito(f); recarregar(); }} />
       ) : null}
+      {janelasExito}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );
@@ -284,6 +343,9 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
   const [motivos, setMotivos] = useState<Record<string, string>>({});
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [comReemb, setComReemb] = useState(false);
+  const [reembValor, setReembValor] = useState(parcela?.reembolso?.valor ? paraCampo(parcela.reembolso.valor) : "");
+  const [reembForma, setReembForma] = useState<FormaPagamento>("PIX");
   const corpo = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -296,11 +358,15 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
   const escolher = (id: string) => {
     const x = abertas?.find((a) => a.id === id) ?? null;
     setEscolhida(x);
+    setComReemb(false);
+    setReembValor(x?.reembolso?.valor ? paraCampo(x.reembolso.valor) : "");
     if (x) {
       setValor(paraCampo(x.falta));
       if (x.forma) setForma(x.forma);
     }
   };
+  const reemb = p?.reembolso?.valor ? p.reembolso : null;
+  const rc = comReemb && reemb ? lerCentavos(reembValor) : null;
 
   async function enviar() {
     const e: string[] = [];
@@ -314,6 +380,10 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
     if (!d) e.push("recebidoEm");
     else if (d > hoje) { e.push("recebidoEm"); m.recebidoEm = "FUTURO"; }
     if (multa.trim() && !mj) e.push("multaJuros");
+    if (comReemb && reemb) {
+      if (!rc) e.push("reembolsoValor");
+      else if (rc !== reemb.valor) { e.push("reembolsoValor"); m.reembolsoValor = rc > reemb.valor ? "ACIMA" : "INTEIRO"; }
+    }
     const docDig = pagDoc.replace(/\D/g, "");
     if (pagou === "OUTRO" && pagNome.trim().length < 2) e.push("pagador.nome");
     if (pagou !== "CLIENTE" && (pagou === "OUTRO" || docDig) && !(cpfValido(docDig) || cnpjValido(docDig))) e.push("pagador.documento");
@@ -327,11 +397,13 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
     const r = await chamarPortal<RecebimentoRegistrado>(`/v1/escritorio/financeiro/parcelas/${p.id}/recebimentos`, {
       metodo: "POST", corpo: {
         valor: c, multaJuros: mj, recebidoEm: d, forma, recibo,
+        reembolso: comReemb && reemb ? { valor: rc, forma: reembForma } : null,
         pagador: pagou === "CLIENTE" ? null : { tipo: pagou, nome: pagou === "OUTRO" ? pagNome.trim() : null, documento: pagDoc.replace(/\D/g, "") || null },
       },
     });
     if (r.ok) {
       const t = textoRecebido(p, r.dados, c!, hoje);
+      if (r.dados.reembolso) t.texto += ` O reembolso de ${reais(r.dados.reembolso.valor)} também ficou registrado.`;
       // O recebimento já existe; a falha do arquivo não o desfaz.
       if (arquivo) {
         setProgresso(0);
@@ -347,7 +419,8 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
     const campos = det?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       setErros(campos.map(String));
-      setMotivos(det?.motivo === "VALOR_ACIMA_DO_SALDO" ? { valor: "ACIMA" } : det?.motivo === "DATA_NO_FUTURO" ? { recebidoEm: "FUTURO" } : {});
+      setMotivos(det?.motivo === "VALOR_ACIMA_DO_SALDO" ? { valor: "ACIMA" } : det?.motivo === "DATA_NO_FUTURO" ? { recebidoEm: "FUTURO" }
+        : det?.motivo === "REEMBOLSO_ACIMA_DO_ADIANTADO" ? { reembolsoValor: "ACIMA" } : det?.motivo === "REEMBOLSO_INTEIRO" ? { reembolsoValor: "INTEIRO" } : {});
       return focarPrimeiroErro(corpo.current);
     }
     setFalha(textoDoErro(r.erro));
@@ -364,7 +437,7 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
           <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
           <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
             <Icone nome="check" className="ico" />
-            Registrar recebimento
+            {comReemb && reemb ? `Registrar ${reais((lerCentavos(valor) ?? 0) + (rc ?? 0))}` : "Registrar recebimento"}
           </button>
         </>
       }>
@@ -396,9 +469,27 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
             <span className="fi-v num">{reais(p.falta)}</span>
           </div>
         ) : null}
+        {p && reemb ? (
+          <div className="fi-reemb-faixa">
+            <p><Icone nome="devolver" className="ico" /><span><b>Esta parcela leva junto um reembolso.</b> {primeiroNome(p.cliente.nome)} deve pagar a parcela e o que o escritório adiantou no caso.</span></p>
+            <table>
+              <caption className="sr">Parcela e reembolso</caption>
+              <tbody>
+                <tr><th scope="row">{p.descricao}</th><td className="num">{reais(p.falta)}</td></tr>
+                {reemb.contas.map((c) => (
+                  <tr key={c.id}>
+                    <th scope="row">Reembolso · {c.descricao}<small>{c.pagaEm ? `adiantado em ${diaCurto(c.pagaEm)}` : "adiantado"}{c.caso ? ` no caso ${c.caso.nome}` : ""}</small></th>
+                    <td className="num">{reais(c.valor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot><tr><th scope="row">Total a pagar</th><td className="num">{reais(p.falta + reemb.valor)}</td></tr></tfoot>
+            </table>
+          </div>
+        ) : null}
         <div className="fi-dois">
           <div className="campo">
-            <label htmlFor="rg-valor">Valor recebido</label>
+            <label htmlFor="rg-valor">{reemb ? "Valor recebido da parcela" : "Valor recebido"}</label>
             <input className="entrada" id="rg-valor" type="text" inputMode="decimal" autoComplete="off" value={valor} onChange={(e) => setValor(e.target.value)}
               data-foco={parcela ? "" : undefined} aria-invalid={tem("valor") || undefined}
               aria-describedby={descritoPor(!tem("valor") && p && "rg-valor-aj", tem("valor") && "rg-valor-er")} />
@@ -442,9 +533,50 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
               : <p className="ajuda" id="rg-multa-aj">O que o cliente pagou a mais pelo atraso. Deixe em branco se não cobrou.</p>}
           </div>
         </div>
+        {p && reemb ? (
+          <fieldset className="fi-grupo-op">
+            <legend>Reembolso</legend>
+            <label className="opcao">
+              <input className="marcar" type="checkbox" checked={comReemb} onChange={(e) => setComReemb(e.target.checked)} />
+              <span>
+                O reembolso também foi pago
+                <small>Marque se {primeiroNome(p.cliente.nome)} pagou o que o escritório adiantou ({reais(reemb.valor)}). Desmarcado, o reembolso continua “A reembolsar”, ligado a esta parcela.</small>
+              </span>
+            </label>
+            {comReemb ? (
+              <div className="fi-sub-op">
+                <div className="fi-dois">
+                  <div className="campo">
+                    <label htmlFor="rg-reemb-valor">Valor do reembolso</label>
+                    <input className="entrada" id="rg-reemb-valor" type="text" inputMode="decimal" autoComplete="off" value={reembValor} onChange={(e) => setReembValor(e.target.value)}
+                      aria-invalid={tem("reembolsoValor") || undefined} aria-describedby={descritoPor(!tem("reembolsoValor") && "rg-reemb-valor-aj", tem("reembolsoValor") && "rg-reemb-valor-er")} />
+                    {tem("reembolsoValor") ? (
+                      <ErroCampo id="rg-reemb-valor-er">
+                        {motivos.reembolsoValor === "ACIMA" ? `O valor passa do que o escritório adiantou (${reais(reemb.valor)}).`
+                          : motivos.reembolsoValor === "INTEIRO" ? `O reembolso se registra inteiro: ${reais(reemb.valor)}. Se pagou só parte, deixe desmarcado por ora.`
+                          : "Escreva o valor em reais. Ex.: 1.248,36."}
+                      </ErroCampo>
+                    ) : <p className="ajuda" id="rg-reemb-valor-aj">Adiantado pelo escritório: {reais(reemb.valor)}.</p>}
+                  </div>
+                  <div className="campo">
+                    <label htmlFor="rg-reemb-forma">Forma do reembolso</label>
+                    <select className="entrada" id="rg-reemb-forma" value={reembForma} onChange={(e) => setReembForma(e.target.value as FormaPagamento)} aria-describedby="rg-reemb-forma-aj">
+                      {ORDEM_FORMAS.map((f) => <option key={f} value={f}>{FORMAS_PAGAMENTO[f]}</option>)}
+                    </select>
+                    <p className="ajuda" id="rg-reemb-forma-aj">Pode ser outra forma que a da parcela.</p>
+                  </div>
+                </div>
+                <p className="fi-reemb-total">
+                  <span>Total registrado: parcela {reais(lerCentavos(valor) ?? 0)} + reembolso {reais(rc ?? 0)}</span>
+                  <b className="num">{reais((lerCentavos(valor) ?? 0) + (rc ?? 0))}</b>
+                </p>
+              </div>
+            ) : null}
+          </fieldset>
+        ) : null}
         <p className="fi-caixa-fixa">
           <Icone nome="coluna" className="ico" />
-          <span>Entra no caixa <b>do escritório</b>: é honorário. Valores de terceiros se registram em Repasses.</span>
+          <span>Entra no caixa <b>do escritório</b>: é honorário{comReemb && reemb ? "; o reembolso devolve o que o escritório adiantou" : ""}. Valores de terceiros se registram em Repasses.</span>
         </p>
         <CampoAnexo rotulo="Comprovante" arquivo={arquivo} aoEscolher={(a, er) => { setArquivo(er ? null : a); setErroArq(er); }}
           erro={erroArq} progresso={progresso} />
@@ -700,8 +832,13 @@ function SituacaoNaFicha({ p, hoje }: { p: ParcelaDoContrato; hoje: string }) {
   }
   return (
     <div className="fi-sit">
-      <SeloDaParcela p={p} hoje={hoje} />
+      <span className="fi-selos">
+        {p.exito ? <Selo tom="ok" icone="balanca">Êxito</Selo> : null}
+        <SeloDaParcela p={p} hoje={hoje} />
+      </span>
       {nota ? <p className="fi-motivo">{nota}</p> : null}
+      <OrigemExito p={p} />
+      {p.situacao !== "PAGA" ? <LevaJunto p={p} /> : null}
     </div>
   );
 }
