@@ -10,7 +10,7 @@ import {
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ListaContratos, type PropostaParaContrato,
-  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, type ContaPagar, type ParaAdiantar, registrarRecebimentoSchema,
+  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
@@ -28,7 +28,7 @@ import {
   type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
   type RelatorioResponsaveis, type ResumoRelatorio,
-  deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio,
+  deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio, type AudienciasInicio,
   arquivarLgpdSchema, contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
 } from "@t3jus/domain";
@@ -374,6 +374,10 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // falhar sozinho, e o resumo do hero. "Da equipe" só para a dona; a área o banco confere.
   app.get("/v1/escritorio/inicio/resumo", async (c) => {
     return c.json(await deps.banco.rpc<ResumoInicio>("portal_inicio_resumo", quem(c)));
+  });
+  // As próximas audiências (F3.2, EX-06): da equipe toda, para todos do escritório.
+  app.get("/v1/escritorio/inicio/audiencias", async (c) => {
+    return c.json(await deps.banco.rpc<AudienciasInicio>("portal_inicio_audiencias", quem(c)));
   });
   const deInicio = (c: Context<VarsPortal>) => {
     const r = deInicioSchema.safeParse({ de: c.req.query("de") || undefined });
@@ -874,7 +878,15 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   });
 
   app.get("/v1/escritorio/financeiro/repasses/:id", async (c) => {
-    return c.json(await deps.banco.rpc<FichaRepasse>("portal_financeiro_repasse", { ...quem(c), p_levantamento: idDaRota(c, "id") }));
+    const f = await deps.banco.rpc<FichaRepasse>("portal_financeiro_repasse", { ...quem(c), p_levantamento: idDaRota(c, "id") });
+    // O acerto do caso, para o fechamento (F3.45), lido à parte.
+    const acerto = await deps.banco.rpc<AcertoCaso>("portal_financeiro_caso_acerto", { ...quem(c), p_caso: f.caso.id });
+    return c.json({ ...f, acerto });
+  });
+
+  // Encerrar o caso no financeiro (F3.45): só com tudo recebido e repassado; senão, PENDENCIAS com a lista.
+  app.post("/v1/escritorio/financeiro/casos/:id/encerrar", async (c) => {
+    return c.json(await deps.banco.rpc<AcertoCaso>("portal_financeiro_caso_encerrar", { ...quem(c), p_caso: idDaRota(c, "id") }));
   });
 
   app.post("/v1/escritorio/financeiro/repasses/:id/prestacao", async (c) => {

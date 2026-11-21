@@ -345,6 +345,34 @@ export interface FichaRepasse extends Levantamento {
   hoje: string;
   escritorio: string;
   historico: { acao: string; em: string; por: { id: string; nome: string } | null; dados: Record<string, unknown> }[];
+  /** O acerto do caso, para o fechamento (F3.45). */
+  acerto: AcertoCaso;
+}
+
+/** O que ainda segura o fechamento do caso no financeiro (F3.45, FI-08). */
+export interface PendenciaCaso {
+  tipo: "REPASSE" | "PARCELA" | "PARCELA_SEM_VALOR" | "REEMBOLSO";
+  nome: string;
+  valor: number | null;
+  para?: ParaDestinacao;
+  prazo?: string;
+  vencimento?: string;
+  levantamentoId?: string;
+  contratoId?: string;
+  contaId?: string;
+}
+
+/** O acerto do caso: o que entrou, o que foi pago, o que falta e se já foi encerrado. */
+export interface AcertoCaso {
+  casoId: string;
+  entrou: number;
+  destinadoPago: number;
+  faltaPagar: number;
+  parcelas: { total: number; pagas: number; ultima: string | null; falta: number };
+  prestacoesPendentes: number;
+  pendencias: PendenciaCaso[];
+  falta: number;
+  fechado: { em: string; por: { id: string; nome: string } } | null;
 }
 
 /** Soma dos dias úteis (segunda a sexta), como o banco faz. Os feriados ainda não entram. */

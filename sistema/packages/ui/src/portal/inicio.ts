@@ -1,10 +1,10 @@
 // Regras de tela do Início do Portal (F1.14, AP-06), separadas para testar sem navegador.
 
 import {
-  AREAS_PORTAL, FORMAS_PAGAMENTO, reais, type AreaPortal, type BlocoInicio, type ContatoDoDia, type ContatosDoInicio, type FormaPagamento,
+  AREAS_PORTAL, FORMAS_PAGAMENTO, MODALIDADES, reais, type AreaPortal, type AudienciasInicio, type CompromissoLinha, type BlocoInicio, type ContatoDoDia, type ContatosDoInicio, type FormaPagamento,
   type GrupoInicio, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ItemInicio, type ResumoInicio,
 } from "@t3jus/domain";
-import { DIAS_SEMANA, diaCurto, diaDaSemana as numeroDaSemana, diaDe, horaDe, nomeDoMes, somarDias } from "./agenda.ts";
+import { DIAS_CURTOS, DIAS_SEMANA, diaCurto, diaDaSemana as numeroDaSemana, diaDe, horaDe, nomeDoMes, somarDias } from "./agenda.ts";
 import { juntarComE } from "./clientes.ts";
 import { diasEntre } from "./comercial.ts";
 import { primeiroNome } from "./equipe.ts";
@@ -324,4 +324,34 @@ export function diaDoInicio(r: ResumoInicio): { n: number; titulo: string; sub: 
     sub: p && tipo ? `${tipo.toLowerCase()} às ${horaDe(p.inicio).replace(":00", "h").replace(":", "h")}` : r.compromissos ? "nenhum mais hoje" : "agenda livre",
   });
   return itens;
+}
+
+// ---------------------------------------------------------------------------------------
+// Próximas audiências (F3.2, EX-06), desenho aprovado em docs/design/aprovadas/portal-inicio-audiencias.
+
+const horaCurta = (iso: string) => horaDe(iso).replace(":00", "h").replace(":", "h");
+/** "Qui, 19/11", sobre a hora da audiência. */
+export const diaDaAudiencia = (iso: string) => {
+  const d = diaDe(iso);
+  return `${DIAS_CURTOS[numeroDaSemana(d)]}, ${diaMes(d)}`;
+};
+/** "na quinta, 26/11, às 13h30". */
+function quandoPorExtenso(iso: string): string {
+  const d = diaDe(iso);
+  const n = numeroDaSemana(d);
+  return `${n >= 5 ? "no" : "na"} ${DIAS_SEMANA[n]}, ${diaMes(d)}, às ${horaCurta(iso)}`;
+}
+/** "Presencial · TRT-2, Barra Funda · Marina e Gustavo". */
+export function linhaAudiencia(c: Pick<CompromissoLinha, "modalidade" | "local" | "responsavel" | "tambemVai">): string {
+  const quem = juntarComE([c.responsavel, ...c.tambemVai].map((p) => primeiroNome(p.nome)));
+  return [MODALIDADES[c.modalidade], c.local, quem].filter(Boolean).join(" · ");
+}
+/** O pé do trecho: quantas faltam, ou qual é a seguinte; no vazio, a linha em negrito. */
+export function peAudiencias(a: AudienciasInicio): { destaque: string | null; texto: string } {
+  const ate = diaMes(a.ate);
+  const seg = a.seguinte ? `${quandoPorExtenso(a.seguinte.inicio)}: ${a.seguinte.titulo}.` : null;
+  if (!a.total) return { destaque: "Nenhuma audiência nos próximos 7 dias.", texto: seg ? `A próxima é ${seg}` : "Nenhuma marcada depois disso." };
+  const resto = a.total - a.itens.length;
+  if (resto > 0) return { destaque: null, texto: `Mais ${resto === 1 ? "1 audiência" : `${resto} audiências`} até ${ate}.` };
+  return { destaque: null, texto: `Nenhuma outra até ${ate}.${seg ? ` A seguinte é ${seg}` : ""}` };
 }
