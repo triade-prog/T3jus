@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  alertaDeQueda, FORMAS_PAGAMENTO, PARA_DESTINACAO, quemEspera, reais, receitaPorGrupo, TIPOS_LEVANTAMENTO,
+  alertaDeQueda, FORMAS_PAGAMENTO, PARA_DESTINACAO, quemEspera, reais, receitaPorGrupo, TIPOS_LEVANTAMENTO, TIPOS_REQUISICAO,
   type AnexosDaExportacao, type CaixaFinanceiro, type DadosExportacao, type FormatoExportacao, type MesCaixa, type ParcelaLinha, type PreviaExportacao,
   type RepassePendente, type ResumoFinanceiro, type TerceirosNaConta,
 } from "@t3jus/domain";
@@ -24,6 +24,7 @@ import { Toast } from "./FichaCliente.tsx";
 import { mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela } from "./financeiro.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { FolhaACaminho } from "./ACaminho.tsx";
 import { arquivoContador, nomeMesAno } from "./planilha.ts";
 
 type Feito = { titulo: string; texto: string };
@@ -435,6 +436,21 @@ export function ResumoDoFinanceiro() {
 
 // -------------------------------------------------------------------------------------- Caixa
 
+/** Passou da data estimada: saiu da previsão até alguém mudar a data em Repasses. */
+function PassouDaData({ c }: { c: CaixaFinanceiro }) {
+  const lista = c.aCaminho.itens.filter((r) => r.passou);
+  const n = c.aCaminho.passou.n;
+  return (
+    <div className="fi-aviso-in">
+      <Aviso tom="atencao" icone="alerta"
+        titulo={n === 1 ? `1 ${TIPOS_REQUISICAO[lista[0]?.tipo ?? "RPV"].titulo} passou da data estimada e saiu da previsão.` : `${n} RPVs e precatórios passaram da data estimada e saíram da previsão.`}
+        acoes={<a className="btn btn-sec btn-compacto" href={`${ROTAS_FINANCEIRO.repasses}#t-cam`}><Icone nome="agenda" className="ico" />Mudar a data</a>}>
+        {lista.map((r) => `${r.cliente.nome}, ${TIPOS_REQUISICAO[r.tipo].titulo}: ${reais(r.parteEscritorio)} do escritório, era ${nomeDoMes(r.estimadaMes)}`).join("; ")}. Volta à previsão quando tiver data nova.
+      </Aviso>
+    </div>
+  );
+}
+
 function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
   const max = Math.max(...c.meses.flatMap((m) => [m.entradasPrevistas, m.entradasRealizadas ?? 0]), 1);
   const primeiro = c.meses[0]!.mes;
@@ -450,12 +466,17 @@ function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
           <div className={m.mes === c.mes ? "fi-mes fi-hoje" : "fi-mes"} key={m.mes}>
             <span className="rot">{maiuscula(nomeDoMes(m.mes))}{sub(m) ? <small>{sub(m)}</small> : null}</span>
             <span className="fi-duplo" aria-hidden="true">
-              <span className="fi-trilho"><i className="prev" style={{ width: largura(m.entradasPrevistas, max) }} /></span>
+              <span className="fi-trilho">
+                <i className="prev" style={{ width: largura(m.entradasPrevistas, max) }} />
+                {futuro(m) && m.aCaminho ? (
+                  <i className="rpv" style={{ left: largura(m.entradasPrevistas - m.aCaminho, max), width: largura(m.aCaminho, max), borderRadius: "0 4px 4px 0" }} />
+                ) : null}
+              </span>
               {futuro(m) ? null : <span className="fi-trilho"><i className="real" style={{ width: largura(m.entradasRealizadas ?? 0, max) }} /></span>}
             </span>
             <span className="val">
               {futuro(m)
-                ? <><b className="num">{reais(m.entradasPrevistas)}</b> previstos</>
+                ? <><b className="num">{reais(m.entradasPrevistas)}</b> previstos{m.aCaminho ? <><br />dos quais {reais(m.aCaminho)} de RPV</> : null}</>
                 : <><b className="num">{reais(m.entradasRealizadas ?? 0)}</b> realizados<br />de {reais(m.entradasPrevistas)} previstos</>}
             </span>
           </div>
@@ -464,7 +485,9 @@ function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
       <p className="legenda fi-leg">
         <span><i style={{ background: "var(--ambar-3)", boxShadow: "inset 0 0 0 1px var(--vinho-4)" }} />Previsto</span>
         <span><i style={{ background: "var(--vinho)" }} />Realizado</span>
+        {c.aCaminho.n ? <span><i style={{ background: "var(--ambar)" }} />RPV ou precatório com data estimada</span> : null}
       </p>
+      {c.aCaminho.passou.n ? <PassouDaData c={c} /> : null}
       <p className="fi-sub3" style={{ marginTop: 0 }}>Mês a mês</p>
       <div style={{ overflowX: "auto" }} className="so-pc">
         <table className="fi-tab fi-tab-caixa">
@@ -569,16 +592,7 @@ function CaixaConteudo() {
       <div className="fi-grade">
         <div className="fi-col"><FolhaPrevistoCaixa c={c} /></div>
         <aside className="fi-col" aria-label="A caminho e contador">
-          <Folha id="t-rpvs" titulo="RPVs e precatórios a caminho" icone="balanca" sub="Só a parte do escritório entra na previsão. A do cliente vai para Repasses quando chegar.">
-            <div className="fi-reserva">
-              <Icone nome="cadeado" className="ico" />
-              <span><b>O RPV ou precatório expedido</b>, com a data estimada e a parte do escritório na previsão, chega numa próxima entrega. Quando o valor entrar, registre em Repasses.</span>
-            </div>
-            <div className="fi-reserva">
-              <Icone nome="cadeado" className="ico" />
-              <span><b>Atualização do valor</b> entre a requisição e o pagamento, com a diferença entre o previsto e o recebido, ainda está em validação com os pilotos.</span>
-            </div>
-          </Folha>
+          <FolhaACaminho a={c.aCaminho} titulo="RPVs e precatórios a caminho" ateMes={c.meses[c.meses.length - 1]!.mes} verEm={`${ROTAS_FINANCEIRO.repasses}#t-cam`} />
           <FolhaContador c={c} aoExportar={() => setExportar(true)} />
           <section className="folha" aria-labelledby="t-conc" style={{ overflow: "hidden" }}>
             <div className="folha-cab"><div><h2 id="t-conc"><Icone nome="sincronia" className="ico" />Conferência com o extrato</h2></div></div>

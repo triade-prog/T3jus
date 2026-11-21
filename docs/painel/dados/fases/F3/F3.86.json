@@ -1,0 +1,11 @@
+{
+  "id": "F3.86",
+  "texto": "Anexar o ofício requisitório (PDF) ao registrar o RPV ou precatório a caminho",
+  "peca": "S4",
+  "refs": [
+    "FI-09"
+  ],
+  "status": "pendente",
+  "ordem": 860,
+  "proximo": "O desenho aprovado (rv-registrar) tem o anexo opcional do ofício; a primeira entrega registra o expedido sem ele. Falta guardar o PDF com os anexos do caso e mostrar na folha A caminho"
+}

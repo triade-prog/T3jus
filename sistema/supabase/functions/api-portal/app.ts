@@ -11,7 +11,7 @@ import {
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema,
-  propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema,
+  propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
@@ -912,6 +912,20 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/financeiro/repasses", async (c) => {
     const d = await lerCorpo(c, registrarLevantamentoSchema);
     return c.json(await deps.banco.rpc<{ id: string }>("portal_financeiro_levantamento_registrar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  // RPV e precatório a caminho (F3.48): registrar o expedido e mudar a data (ou não vai entrar).
+  // "Entrou na conta" é o registrar do levantamento acima, com requisicaoId.
+  app.post("/v1/escritorio/financeiro/a-caminho", async (c) => {
+    const d = await lerCorpo(c, registrarRequisicaoSchema);
+    return c.json(await deps.banco.rpc<RequisicaoACaminho>("portal_financeiro_requisicao_registrar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.post("/v1/escritorio/financeiro/a-caminho/:id/data", async (c) => {
+    const d = await lerCorpo(c, dataRequisicaoSchema);
+    return c.json(await deps.banco.rpc<RequisicaoACaminho>("portal_financeiro_requisicao_data", {
+      ...quem(c), p_requisicao: idDaRota(c, "id"), p_dados: d,
+    }));
   });
 
   app.get("/v1/escritorio/financeiro/repasses/:id", async (c) => {

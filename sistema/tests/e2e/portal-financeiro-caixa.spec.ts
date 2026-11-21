@@ -109,11 +109,19 @@ const CAIXA = {
     { mes: "2026-10-01", entradasPrevistas: 4720000, entradasRealizadas: 4505000, saidasPrevistas: 4140000, saidasRealizadas: 4087000, saldo: 3245000 },
     { mes: "2026-11-01", entradasPrevistas: 4830000, entradasRealizadas: 3124000, saidasPrevistas: 4090000, saidasRealizadas: 2338000, saldo: 4031000 },
     { mes: "2026-12-01", entradasPrevistas: 4690000, entradasRealizadas: null, saidasPrevistas: 4660000, saidasRealizadas: null, saldo: 4015000 },
-    { mes: "2027-01-01", entradasPrevistas: 4966000, entradasRealizadas: null, saidasPrevistas: 4130000, saidasRealizadas: null, saldo: 4851000 },
+    { mes: "2027-01-01", entradasPrevistas: 4966000, aCaminho: 486000, entradasRealizadas: null, saidasPrevistas: 4130000, saidasRealizadas: null, saldo: 4851000 },
     { mes: "2027-02-01", entradasPrevistas: 4520000, entradasRealizadas: null, saidasPrevistas: 4130000, saidasRealizadas: null, saldo: 5241000 },
   ],
   exportacoes: [{ mes: "2026-09-01", formato: "XLSX", em: "2026-10-05T14:00:00Z", por: MARINA }],
   mesesExportar: ["2026-11-01", "2026-10-01", "2026-09-01"],
+  aCaminho: { total: 675000, n: 2, naPrevisao: 486000, passou: { valor: 189000, n: 1 }, itens: [
+    { id: "ad000000-0000-4000-8000-000000000001", tipo: "RPV", tribunal: "TRF3", devedor: "INSS", numero: null, valorRequisitado: 630000, parteEscritorio: 189000,
+      parteRegra: "30% de êxito", expedidoEm: "2026-08-03", estimadaMes: "2026-10-01", situacao: "A_CAMINHO", passou: true, criadoEm: "2026-08-03T12:00:00Z",
+      caso: { id: "ca1", nome: "Castro x INSS" }, cliente: { id: "c1", nome: "Irene Castro" }, contratoId: null, levantamentoId: null },
+    { id: "ad000000-0000-4000-8000-000000000002", tipo: "RPV", tribunal: "TJSP", devedor: "Prefeitura", numero: null, valorRequisitado: 1620000, parteEscritorio: 486000,
+      parteRegra: "30% de êxito", expedidoEm: "2026-11-10", estimadaMes: "2027-01-01", situacao: "A_CAMINHO", passou: false, criadoEm: "2026-11-10T12:00:00Z",
+      caso: { id: "ca2", nome: "Nascimento x Prefeitura" }, cliente: { id: "c2", nome: "Eduardo Nascimento" }, contratoId: null, levantamentoId: null },
+  ] },
 };
 const PREVIA_OUT = {
   mes: "2026-10-01", aberto: false, recebimentos: { n: 41, valor: 4382000 }, honorariosTransferidos: { n: 1, valor: 123000 },
@@ -189,8 +197,10 @@ test.describe("Financeiro do Portal, Resumo e Caixa (FI-03, FI-06, FI-09, FI-21,
     await simular(page, {
       ...comuns(),
       "GET /v1/escritorio/financeiro/repasses": { corpo: {
-        hoje: HOJE, prazoDias: 3, algum: false, totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0 },
+        hoje: HOJE, prazoDias: 3, algum: false, eu: "aa000000-0000-4000-8000-000000000001", podeEditar: true, podemCuidar: [],
+        totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0, atrasados: 0, repassesAtrasados: 0, semMotivo: 0 },
         repassadoMes: { valor: 0, clientes: 0 }, repassados: [], levantamentos: [], casos: [],
+        aCaminho: { total: 0, n: 0, naPrevisao: 0, passou: { valor: 0, n: 0 }, itens: [] },
       } },
     });
     await page.goto(`${P}/financeiro/repasses?registrar=1`);
@@ -224,7 +234,16 @@ test.describe("Financeiro do Portal, Resumo e Caixa (FI-03, FI-06, FI-09, FI-21,
     await expect(cont).toContainText("Exportado em 05/10");
     await expect(cont).toContainText("Outubro de 2026Pronto para exportar");
     await expect(cont).toContainText("Pronto a partir de 01/12");
-    await expect(page.getByRole("region", { name: "RPVs e precatórios a caminho" })).toContainText("ainda está em validação com os pilotos");
+    // F3.48: o RPV com data estimada em âmbar no mês dele; o que passou sai da previsão, com aviso.
+    await expect(meses).toContainText("dos quais R$ 4.860,00 de RPV");
+    await expect(prev).toContainText("RPV ou precatório com data estimada");
+    await expect(prev.getByRole("alert").or(prev.getByRole("status")).filter({ hasText: "1 RPV passou da data estimada e saiu da previsão." })).toBeVisible();
+    await expect(prev).toContainText("Irene Castro, RPV: R$ 1.890,00 do escritório, era outubro");
+    const rpvs = page.getByRole("region", { name: "RPVs e precatórios a caminho" });
+    await expect(rpvs).toContainText("Eduardo Nascimento · RPV");
+    await expect(rpvs).toContainText("Passou da data estimada");
+    await expect(rpvs.getByRole("link", { name: "Ver em Repasses" })).toHaveAttribute("href", "/financeiro/repasses#t-cam");
+    await expect(rpvs.getByRole("button", { name: /Mudar a data/ })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Conferência com o extrato" })).toContainText("Este é o lugar dela.");
     await semViolacoes(page);
   });

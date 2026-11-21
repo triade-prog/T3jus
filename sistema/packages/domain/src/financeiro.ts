@@ -389,6 +389,8 @@ export const registrarLevantamentoSchema = z.object({
   valor: z.number().int().nullish(),
   entrouEm: txt(20),
   divisao: z.array(linhaDivisaoSchema).max(20).default([]),
+  /** Quando vem de um RPV ou precatório a caminho (F3.48): liga os dois. */
+  requisicaoId: txt(40),
 });
 export type RegistrarLevantamento = z.input<typeof registrarLevantamentoSchema>;
 
@@ -448,6 +450,70 @@ export const anotarAtrasoSchema = z.object({
 });
 export type AnotarAtraso = z.input<typeof anotarAtrasoSchema>;
 
+// ------------------------------------------------------------------ RPV e precatório a caminho (F3.48)
+
+export type TipoRequisicao = "RPV" | "PRECATORIO";
+export const TIPOS_REQUISICAO: Record<TipoRequisicao, { titulo: string; ajuda: string }> = {
+  RPV: { titulo: "RPV", ajuda: "Requisição de pequeno valor. Costuma ser paga em até 2 meses depois de expedida." },
+  PRECATORIO: { titulo: "Precatório", ajuda: "Entra no orçamento de quem paga. Apresentado até 2 de abril, costuma ser pago até o fim do ano seguinte." },
+};
+
+export interface RequisicaoACaminho {
+  id: string;
+  tipo: TipoRequisicao;
+  tribunal: string;
+  devedor: string;
+  numero: string | null;
+  valorRequisitado: number;
+  parteEscritorio: number;
+  parteRegra: string | null;
+  expedidoEm: string;
+  /** Primeiro dia do mês estimado. */
+  estimadaMes: string;
+  situacao: "A_CAMINHO" | "ENTROU" | "NAO_VAI_ENTRAR";
+  levantamentoId: string | null;
+  passou: boolean;
+  criadoEm: string;
+  caso: { id: string; nome: string; parteContraria: string | null };
+  cliente: { id: string; nome: string };
+}
+
+export interface ACaminho {
+  total: number;
+  n: number;
+  naPrevisao: number;
+  passou: { valor: number; n: number };
+  itens: RequisicaoACaminho[];
+}
+
+export const registrarRequisicaoSchema = z.object({
+  tipo: txt(20),
+  casoId: txt(40),
+  clienteId: txt(40),
+  tribunal: txt(80),
+  devedor: txt(120),
+  numero: txt(60),
+  valor: z.number().int().nullish(),
+  expedidoEm: txt(20),
+  estimadaMes: txt(20),
+});
+export type RegistrarRequisicao = z.input<typeof registrarRequisicaoSchema>;
+
+export const dataRequisicaoSchema = z.object({
+  situacao: z.enum(["A_CAMINHO", "NAO_VAI_ENTRAR"]).nullish(),
+  estimadaMes: txt(20),
+  motivo: z.string().max(300).nullish(),
+});
+
+/** A data estimada sugerida (aaaa-mm-01): RPV, 2 meses depois; precatório até 2/4, dezembro do ano seguinte; depois, do outro. */
+export function estimadaSugerida(tipo: TipoRequisicao, expedidoEm: string): string {
+  const ano = Number(expedidoEm.slice(0, 4));
+  const mes = Number(expedidoEm.slice(5, 7));
+  if (tipo === "PRECATORIO") return `${expedidoEm.slice(5, 10) <= "04-02" ? ano + 1 : ano + 2}-12-01`;
+  const m = mes + 2;
+  return `${m > 12 ? ano + 1 : ano}-${String(((m - 1) % 12) + 1).padStart(2, "0")}-01`;
+}
+
 export const prazoRepasseSchema = z.object({ prazoRepasseDias: z.number().int().nullish() });
 
 /** Quem pode cuidar de um repasse: da equipe, com a área Financeiro (F3.71). */
@@ -483,6 +549,8 @@ export interface ListaRepasses {
   /** Quem está vendo, para o filtro "Os meus". */
   eu: string;
   podeEditar: boolean;
+  /** RPV e precatório expedidos que ainda não entraram (F3.48). */
+  aCaminho: ACaminho;
   /** Quem pode ser a próxima ação de um atraso (tem a área Financeiro). */
   podemCuidar: PodeCuidarRepasse[];
   repassadoMes: { valor: number; clientes: number };
@@ -653,6 +721,8 @@ export interface ResumoFinanceiro {
 
 export interface MesCaixa {
   mes: string;
+  /** Já somado em entradasPrevistas: a parte do escritório nos RPVs e precatórios a caminho (F3.48). */
+  aCaminho?: number;
   entradasPrevistas: number;
   entradasRealizadas: number | null;
   saidasPrevistas: number;
@@ -667,6 +737,8 @@ export interface CaixaFinanceiro {
   fechaMes: number;
   terceiros: TerceirosNaConta;
   meses: MesCaixa[];
+  /** F3.48: a parte do escritório nos RPVs e precatórios a caminho. */
+  aCaminho: ACaminho;
   exportacoes: { mes: string; formato: FormatoExportacao; em: string; por: PessoaRef | null }[];
   mesesExportar: string[];
 }

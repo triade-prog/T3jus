@@ -10,8 +10,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  contaPrestacao, dataBr, hojeBrasilia, MOTIVOS_ATRASO_REPASSE, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
-  type AcertoCaso, type Destinacao, type MotivoAtrasoRepasse, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
+  contaPrestacao, dataBr, hojeBrasilia, TIPOS_REQUISICAO, MOTIVOS_ATRASO_REPASSE, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
+  type AcertoCaso, type Destinacao, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -25,6 +25,7 @@ import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { FolhaACaminho, JanelaExpedido, JanelaDataRequisicao, mesAno } from "./ACaminho.tsx";
 import { atrasada, FolhaQuemCuida, JanelaAnotarAtraso, JanelaTrocarResponsavel, NotaAtraso, SeloAtraso } from "./RepasseCuida.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -60,20 +61,25 @@ function SeloFeitos({ l, hoje }: { l: Pick<Levantamento, "feitos" | "total" | "d
   );
 }
 
-function CabRepasses({ aoRegistrar }: { aoRegistrar?: () => void }) {
+function CabRepasses({ aoRegistrar, aoExpedido }: { aoRegistrar?: () => void; aoExpedido?: () => void }) {
   return (
     <div className="pt-cab">
       <div>
         <p className="sobretitulo">Financeiro</p>
         <h1>Repasses</h1>
         <span className="fio" aria-hidden="true" />
-        <p className="lede">Dinheiro de terceiros que entra pelo escritório: quanto é de cada um, o que já foi repassado e o que falta.</p>
+        <p className="lede">Dinheiro de terceiros que entra pelo escritório: quanto é de cada um, o que já foi repassado, o que falta e o que ainda está a caminho.</p>
       </div>
       {aoRegistrar ? (
-        <button className="btn btn-pri" type="button" onClick={aoRegistrar} style={{ marginBottom: 6 }}>
-          <Icone nome="escudo" className="ico" />
-          Registrar alvará ou RPV
-        </button>
+        <span className="rv-cab-bot" style={{ marginBottom: 6 }}>
+          {aoExpedido ? (
+            <button className="btn btn-sec" type="button" onClick={aoExpedido}><Icone nome="balanca" className="ico" />Registrar RPV expedido</button>
+          ) : null}
+          <button className="btn btn-pri" type="button" onClick={aoRegistrar}>
+            <Icone nome="escudo" className="ico" />
+            Registrar alvará ou RPV
+          </button>
+        </span>
       ) : null}
     </div>
   );
@@ -185,8 +191,14 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
   const [prestacao, setPrestacao] = useState<Levantamento | null>(null);
   const [anotar, setAnotar] = useState<{ l: Levantamento; d: Destinacao } | null>(null);
   const [quem, setQuem] = useState<string>("TODOS");
+  const [expedido, setExpedido] = useState(false);
+  const [mudarData, setMudarData] = useState<RequisicaoACaminho | null>(null);
+  const [entrou, setEntrou] = useState<RequisicaoACaminho | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const terminar = (f: Feito) => {
+    setExpedido(false);
+    setMudarData(null);
+    setEntrou(null);
     setAnotar(null);
     setRegistrar(false);
     setFeitoEm(null);
@@ -202,6 +214,9 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
           aoFechar={() => setAnotar(null)} aoFeito={terminar} />
       ) : null}
       {registrar && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} aoFechar={() => setRegistrar(false)} aoFeito={terminar} /> : null}
+      {entrou && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} de={entrou} aoFechar={() => setEntrou(null)} aoFeito={terminar} /> : null}
+      {expedido && dados && dados !== "erro" ? <JanelaExpedido casos={dados.casos} aoFechar={() => setExpedido(false)} aoFeito={terminar} /> : null}
+      {mudarData ? <JanelaDataRequisicao r={mudarData} hoje={hoje} aoFechar={() => setMudarData(null)} aoFeito={terminar} /> : null}
       {feitoEm ? <JanelaFeito l={feitoEm.l} d={feitoEm.d} aoFechar={() => setFeitoEm(null)} aoFeito={terminar} /> : null}
       {dispensar ? <JanelaDispensar d={dispensar.d} aoFechar={() => setDispensar(null)} aoFeito={terminar} /> : null}
       {prestacao ? <JanelaPrestacao l={prestacao} escritorio={escritorio} aoFechar={() => setPrestacao(null)} aoFeito={terminar} /> : null}
@@ -224,7 +239,7 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
   const visiveis = dados.levantamentos.filter((l) => quem === "TODOS" || (quem === "EU" ? l.responsavel.id === dados.eu : l.responsavel.id === quem));
   return (
     <div className="fi">
-      <CabRepasses aoRegistrar={() => setRegistrar(true)} />
+      <CabRepasses aoRegistrar={() => setRegistrar(true)} aoExpedido={dados.podeEditar ? () => setExpedido(true) : undefined} />
       <div className="fi-nums" role="group" aria-label="Números dos repasses">
         <a href="#t-blocos">
           <span className="r">A repassar</span>
@@ -245,10 +260,10 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
           <b className="num">{reais(t.honorarios)}</b>
           <small>para a conta do escritório</small>
         </a>
-        <a href="#t-repassados">
-          <span className="r">Repassado em {mes}</span>
-          <b className="num">{reais(dados.repassadoMes.valor)}</b>
-          <small>{dados.repassadoMes.clientes ? contar(dados.repassadoMes.clientes, "cliente", "clientes") : "nenhum cliente ainda"}</small>
+        <a href="#t-cam">
+          <span className="r">A caminho</span>
+          <b className="num">{reais(dados.aCaminho.total)}</b>
+          <small>{dados.aCaminho.n ? "do escritório, em RPV e precatório" : "nenhum RPV ou precatório"}</small>
         </a>
       </div>
       <div className="fi-grade">
@@ -285,6 +300,8 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
               </Estado>
             </section>
           )}
+          <FolhaACaminho a={dados.aCaminho} aoRegistrar={dados.podeEditar ? () => setExpedido(true) : undefined}
+            aoData={dados.podeEditar ? setMudarData : undefined} aoEntrou={dados.podeEditar ? setEntrou : undefined} />
         </div>
         <aside className="fi-col" aria-label="Como funciona e repassados">
           <ComoFunciona prazo={dados.prazoDias} />
@@ -327,11 +344,15 @@ export function RepassesFinanceiro() {
 
 type LinhaTela = { chave: string; para: ParaDestinacao; nome: string; regra: string | null; valor: string; contaId?: string; proposta: boolean };
 
-function JanelaRegistrar({ casos, prazoDias, aoFechar, aoFeito }: { casos: ListaRepasses["casos"]; prazoDias: number; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
+  casos: ListaRepasses["casos"]; prazoDias: number; aoFechar: () => void; aoFeito: (f: Feito) => void;
+  /** "Entrou na conta" de um RPV ou precatório a caminho (F3.48): já vem preenchida e liga os dois. */
+  de?: RequisicaoACaminho;
+}) {
   const hoje = hojeBrasilia();
   const opcoes = casos.flatMap((c) => (c.clientes ?? []).map((k) => ({ valor: `${c.id}|${k.id}`, rotulo: `${k.nome} · ${c.nome}`, cliente: k.nome })));
-  const [tipo, setTipo] = useState<TipoLevantamento | "">("");
-  const [alvo, setAlvo] = useState(opcoes.length === 1 ? opcoes[0]!.valor : "");
+  const [tipo, setTipo] = useState<TipoLevantamento | "">(de ? de.tipo : "");
+  const [alvo, setAlvo] = useState(de ? `${de.caso.id}|${de.cliente.id}` : opcoes.length === 1 ? opcoes[0]!.valor : "");
   const [valor, setValor] = useState("");
   const [dia, setDia] = useState(diaBr(hoje));
   const [div, setDiv] = useState<{ chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[] } | null>(null);
@@ -394,13 +415,13 @@ function JanelaRegistrar({ casos, prazoDias, aoFechar, aoFeito }: { casos: Lista
       ...(linhas ?? []).map((x) => ({ para: x.para, nome: x.nome.trim(), regra: x.regra, valor: lerCentavos(x.valor), contaId: x.contaId ?? null })),
     ];
     const r = await chamarPortal<{ id: string }>("/v1/escritorio/financeiro/repasses", {
-      metodo: "POST", corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao },
+      metodo: "POST", corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, ...(de ? { requisicaoId: de.id } : {}) },
     });
     setEnviando(false);
     if (r.ok) {
       return aoFeito({
         titulo: `${TIPOS_LEVANTAMENTO[tipo as TipoLevantamento]} registrado.`,
-        texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.`,
+        texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.${de ? " Saiu de “A caminho” e da previsão do Caixa." : ""}`,
       });
     }
     const campos = r.erro.detalhes?.campos;
@@ -413,7 +434,7 @@ function JanelaRegistrar({ casos, prazoDias, aoFechar, aoFeito }: { casos: Lista
   }
 
   return (
-    <Janela id="j-rpv" classe="fi-larga" aberta aoFechar={aoFechar} sobretitulo="Repasses" titulo="Registrar alvará ou RPV" descricao="j-rpv-d"
+    <Janela id="j-rpv" classe="fi-larga" aberta aoFechar={aoFechar} sobretitulo="Repasses" titulo={de ? "Registrar o levantamento" : "Registrar alvará ou RPV"} descricao="j-rpv-d"
       aoEnviar={() => void enviar()}
       pe={
         <>
@@ -425,7 +446,13 @@ function JanelaRegistrar({ casos, prazoDias, aoFechar, aoFeito }: { casos: Lista
         </>
       }>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
-        <p id="j-rpv-d">Diga o que entrou e de qual caso. A divisão sai do contrato, e você pode ajustar antes de registrar.</p>
+        <p id="j-rpv-d">{de ? "O dinheiro entrou na conta." : "Diga o que entrou e de qual caso."} A divisão sai do contrato, e você pode ajustar antes de registrar.</p>
+        {de ? (
+          <p className="rv-de">
+            <Icone nome="balanca" className="ico" />
+            <span>Vem do {TIPOS_REQUISICAO[de.tipo].titulo} a caminho: <b>{de.cliente.nome}</b>, requisitado {reais(de.valorRequisitado)}, estimado para {mesAno(de.estimadaMes)}. Ao registrar, ele sai de “A caminho” e da previsão do Caixa.</span>
+          </p>
+        ) : null}
         {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>Nada foi registrado ainda.</Aviso> : null}
         {falha ? <Aviso tom="urgencia" titulo="Nada foi registrado.">{falha}</Aviso> : null}
         <div className="fi-dois">
@@ -452,8 +479,9 @@ function JanelaRegistrar({ casos, prazoDias, aoFechar, aoFeito }: { casos: Lista
           <div className="campo">
             <label htmlFor="rp-valor">Valor levantado</label>
             <input className="entrada" id="rp-valor" type="text" inputMode="decimal" autoComplete="off" value={valor} onChange={(e) => setValor(e.target.value)}
-              aria-invalid={tem("valor") || undefined} aria-describedby={descritoPor(tem("valor") && "rp-valor-er")} />
-            {tem("valor") ? <ErroCampo id="rp-valor-er">Escreva o valor em reais. Ex.: 12.700,00.</ErroCampo> : null}
+              aria-invalid={tem("valor") || undefined} aria-describedby={descritoPor(!!de && !tem("valor") && "rp-valor-aj", tem("valor") && "rp-valor-er")} />
+            {tem("valor") ? <ErroCampo id="rp-valor-er">Escreva o valor em reais. Ex.: 12.700,00.</ErroCampo>
+              : de ? <p className="ajuda" id="rp-valor-aj">Requisitado: {reais(de.valorRequisitado)}. O que entra costuma vir corrigido.</p> : null}
           </div>
           <div className="campo">
             <label htmlFor="rp-dia">Dia em que entrou</label>

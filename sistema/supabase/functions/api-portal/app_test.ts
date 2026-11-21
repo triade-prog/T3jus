@@ -1696,3 +1696,18 @@ Deno.test("F3.46: os motivos do atraso no domínio são os mesmos do banco", asy
   const lista = /motivo\s+text not null check \(motivo in \(([^)]+)\)/.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
   assertEquals(lista, Object.keys(MOTIVOS_ATRASO_REPASSE));
 });
+
+Deno.test("F3.48: registrar o RPV a caminho e mudar a data levam os dados ao banco; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { tipo: "RPV", casoId: CLIENTE, clienteId: CLIENTE, tribunal: "TJSP", devedor: "Prefeitura", valor: 1840000, expedidoEm: "2026-11-18", estimadaMes: "2027-01-01" };
+  await m.pedir("/v1/escritorio/financeiro/a-caminho", { metodo: "POST", corpo, cookie });
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_requisicao_registrar")!;
+  assertEquals([ch.args.p_escritorio, (ch.args.p_dados as { valor: number }).valor], [AURORA, 1840000]);
+  await m.pedir(`/v1/escritorio/financeiro/a-caminho/${CLIENTE}/data`, { metodo: "POST", corpo: { situacao: "NAO_VAI_ENTRAR", motivo: "Cancelado." }, cookie });
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_financeiro_requisicao_data")!.args.p_requisicao, CLIENTE);
+  const ruim = await m.pedir(`/v1/escritorio/financeiro/a-caminho/${CLIENTE}/data`, { metodo: "POST", corpo: { situacao: "TALVEZ" }, cookie });
+  assertEquals((await erro(ruim)).detalhes?.campos, ["situacao"]);
+  await m.pedir("/v1/escritorio/financeiro/repasses", { metodo: "POST", corpo: { tipo: "RPV", requisicaoId: CLIENTE, divisao: [] }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_financeiro_levantamento_registrar")!.args.p_dados as { requisicaoId: string }).requisicaoId, CLIENTE);
+});

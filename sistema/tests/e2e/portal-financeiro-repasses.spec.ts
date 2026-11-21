@@ -70,7 +70,21 @@ const LISTA = {
   repassados: [{ levantamentoId: id(2), cliente: "Irene Castro", tipo: "RPV", valor: 2512800, feitoEm: dia(-3) }],
   levantamentos: [LEV],
   casos: [{ id: CASO.id, nome: CASO.nome, parteContraria: "INSS", clientes: [{ id: BEN.id, nome: BEN.nome }] }],
+  aCaminho: { total: 0, n: 0, naPrevisao: 0, passou: { valor: 0, n: 0 }, itens: [] as unknown[] },
 };
+// RPV e precatório a caminho (F3.48): um que passou da data estimada e um para daqui a dois meses.
+const mesMais = (n: number) => { const [a, m] = dia(0).split("-").map(Number); const d = new Date(Date.UTC(a!, m! - 1 + n, 1)); return d.toISOString().slice(0, 10); };
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const mesAno = (m: string) => `${MESES[Number(m.slice(5, 7)) - 1]} de ${m.slice(0, 4)}`;
+const IRENE = { id: "be000000-0000-4000-8000-000000000002", nome: "Irene Castro" };
+const req = (n: number, extra: Record<string, unknown>) => ({
+  id: `ad000000-0000-4000-8000-00000000000${n}`, tipo: "RPV", tribunal: "TRF3", devedor: "INSS", numero: null, valorRequisitado: 630000,
+  parteEscritorio: 189000, parteRegra: "30% de êxito", expedidoEm: dia(-120), estimadaMes: mesMais(-1), situacao: "A_CAMINHO", passou: true,
+  criadoEm: `${dia(-100)}T12:00:00Z`, caso: { id: CASO.id, nome: CASO.nome }, cliente: IRENE, contratoId: null, levantamentoId: null, ...extra,
+});
+const PASSOU = req(1, {});
+const EDUARDO = req(2, { valorRequisitado: 1620000, parteEscritorio: 486000, estimadaMes: mesMais(2), passou: false, cliente: BEN, tribunal: "TJSP", devedor: "Prefeitura" });
+const COM_CAMINHO = { ...LISTA, aCaminho: { total: 675000, n: 2, naPrevisao: 486000, passou: { valor: 189000, n: 1 }, itens: [PASSOU, EDUARDO] } };
 const VAZIA = { ...LISTA, algum: false, totais: { aRepassar: 0, repassesPendentes: 0, honorarios: 0, casos: 0, atrasados: 0, repassesAtrasados: 0, semMotivo: 0 }, repassadoMes: { valor: 0, clientes: 0 }, repassados: [], levantamentos: [] };
 const ACERTO = {
   casoId: CASO.id, entrou: 2156656, destinadoPago: 0, faltaPagar: 2156656,
@@ -351,6 +365,85 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(bloco).toContainText(`Próxima ação: ${ddmm(1)}, cobrar a nota por e-mail · Bianca`);
     await expect(bloco.getByRole("button", { name: "Mudar a anotação de Dr. Rui Tavares" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Números dos repasses" })).toContainText("todos com motivo");
+  });
+
+  test("F3.48: a folha A caminho, registrar o expedido com a parte do escritório pelo contrato", async ({ page }) => {
+    const novo = req(3, { valorRequisitado: 1840000, parteEscritorio: 381000, estimadaMes: mesMais(2), passou: false, cliente: BEN, criadoEm: new Date().toISOString(), expedidoEm: dia(0), tribunal: "TJSP", devedor: "Prefeitura de Santo André" });
+    const depois = { ...COM_CAMINHO, aCaminho: { ...COM_CAMINHO.aCaminho, total: 1056000, n: 3, itens: [PASSOU, EDUARDO, novo] } };
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, COM_CAMINHO),
+      "GET /v1/escritorio/financeiro/repasses": [{ corpo: COM_CAMINHO }, { corpo: depois }],
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: PROPOSTA },
+      "POST /v1/escritorio/financeiro/a-caminho": { status: 201, corpo: novo },
+    });
+    await page.goto(`${P}/financeiro/repasses`);
+    const nums = page.getByRole("group", { name: "Números dos repasses" });
+    await expect(nums).toContainText("A caminho");
+    await expect(nums).toContainText("R$ 6.750,00");
+    const folha = page.getByRole("region", { name: "A caminho" });
+    await expect(folha).toContainText("Irene Castro · RPV");
+    await expect(folha).toContainText("Passou da data estimada");
+    await expect(folha).toContainText(`Era ${mesAno(mesMais(-1))}`);
+    await expect(folha).toContainText(`Data estimada: ${mesAno(mesMais(2))}`);
+    await expect(folha).toContainText("Parte do escritório em 2 requisições");
+    await semViolacoes(page);
+
+    await page.getByRole("button", { name: "Registrar RPV expedido" }).click();
+    const j = page.getByRole("dialog", { name: "Registrar RPV ou precatório expedido" });
+    await expect(j.getByRole("radio", { name: /^RPV/ })).toBeFocused();
+    await expect(j.getByLabel("Data estimada de pagamento")).toHaveValue(`${mesMais(2).slice(5, 7)}/${mesMais(2).slice(0, 4)}`);
+    await j.getByLabel("Data estimada de pagamento").fill("01/2020");
+    await j.getByRole("button", { name: "Registrar a caminho" }).click();
+    await expect(j.getByRole("alert").filter({ hasText: "Falta acertar" })).toBeVisible();
+    await expect(j.getByText("Escreva o tribunal, por exemplo: TJSP.")).toBeVisible();
+    await expect(j.getByText(/A data estimada vem depois da expedição/)).toBeVisible();
+    await semViolacoes(page);
+    await j.getByLabel("Caso").selectOption(`${CASO.id}|${BEN.id}`);
+    await j.getByLabel("Tribunal").fill("TJSP");
+    await j.getByLabel("Quem paga", { exact: true }).fill("Prefeitura de Santo André");
+    await j.getByLabel("Valor requisitado").fill("18.400,00");
+    await j.getByLabel("Data estimada de pagamento").fill(`${mesMais(2).slice(5, 7)}/${mesMais(2).slice(0, 4)}`);
+    await expect(j).toContainText("Honorários · 30% de êxito");
+    await expect(j).toContainText("R$ 3.810,00");
+    await expect(j).toContainText(`entram na previsão do Caixa em ${mesAno(mesMais(2))}`);
+    await j.getByRole("button", { name: "Registrar a caminho" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "RPV a caminho registrado." })).toBeVisible();
+    const post = pedidos.find((p) => p.metodo === "POST" && p.caminho.endsWith("/a-caminho"))!;
+    expect(post.corpo).toEqual({ tipo: "RPV", casoId: CASO.id, clienteId: BEN.id, tribunal: "TJSP", devedor: "Prefeitura de Santo André", numero: null,
+      valor: 1840000, expedidoEm: dia(0), estimadaMes: mesMais(2) });
+    await expect(folha).toContainText("Novo");
+  });
+
+  test("F3.48: mudar a data com motivo e, quando entra, o registrar já vem preenchido", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, COM_CAMINHO),
+      [`POST /v1/escritorio/financeiro/a-caminho/${PASSOU.id}/data`]: { corpo: { ...PASSOU, estimadaMes: mesMais(1), passou: false } },
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: PROPOSTA },
+      "POST /v1/escritorio/financeiro/repasses": { status: 201, corpo: { id: id(3) } },
+    });
+    await page.goto(`${P}/financeiro/repasses`);
+    await page.getByRole("button", { name: "Mudar a data de Irene Castro" }).click();
+    const j = page.getByRole("dialog", { name: "Mudar a data estimada" });
+    await j.getByRole("button", { name: "Salvar a data" }).click();
+    await expect(j.getByText("Escreva o mês, deste em diante, no formato mm/aaaa.")).toBeVisible();
+    await expect(j.getByText("Escreva o motivo, com pelo menos 5 letras.")).toBeVisible();
+    await semViolacoes(page);
+    await j.getByRole("textbox", { name: "Nova data estimada" }).fill(`${mesMais(1).slice(5, 7)}/${mesMais(1).slice(0, 4)}`);
+    await j.getByLabel("Por quê").fill("O TRF3 publicou a nova data.");
+    await j.getByRole("button", { name: "Salvar a data" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Data estimada mudada." })).toBeVisible();
+    const post = pedidos.find((p) => p.caminho.endsWith("/data"))!;
+    expect(post.corpo).toEqual({ situacao: "A_CAMINHO", estimadaMes: mesMais(1), motivo: "O TRF3 publicou a nova data." });
+
+    await page.getByRole("button", { name: `Entrou na conta: RPV de ${BEN.nome}` }).click();
+    const r = page.getByRole("dialog", { name: "Registrar o levantamento" });
+    await expect(r).toContainText("Vem do RPV a caminho");
+    await expect(r).toContainText("Requisitado: R$ 16.200,00");
+    await r.getByLabel("Valor levantado").fill("16.300,00");
+    await r.getByRole("button", { name: "Registrar", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saiu de “A caminho” e da previsão do Caixa." })).toBeVisible();
+    const lev = pedidos.find((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/repasses")!;
+    expect((lev.corpo as { requisicaoId: string }).requisicaoId).toBe(EDUARDO.id);
   });
 
   test("Sem a área Financeiro, Repasses não abre", async ({ page }) => {
