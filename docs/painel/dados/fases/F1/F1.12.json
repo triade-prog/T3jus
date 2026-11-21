@@ -5,8 +5,7 @@
   "refs": [
     "PT-23"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 32,
-  "nota": "A ação já fica no histórico interno e no da equipe do Portal (decisão 3 da Carol). O aviso por e-mail pede um remetente de e-mails do sistema, que ainda não existe; a última troca de senha pede gravar o evento acesso.senha_trocada.",
-  "proximo": "Quando houver o envio de e-mails do sistema, mandar o aviso de autenticador tirado e gravar acesso.senha_trocada para mostrar a última troca"
+  "evidencia": "api-console manda pelo Resend (nao-responda@t3jus.pro) o aviso de autenticador tirado à própria pessoa, com o texto do desenho aprovado; sem RESEND_API_KEY nas funções, a ação segue e a resposta diz avisoEnviado false. Migration 0540 grava pessoas.senha_trocada_em ao redefinir a senha e a ficha de acesso mostra \"última troca em\". pgTAP 048; Deno suporte_test.ts; e2e console-suporte.spec.ts"
 }

@@ -38,9 +38,9 @@ select is((select array_agg(chave) from limites_uso), array['login:novo'], 'o co
 select is((select count(*)::int from historico where acao = 'acesso.entrou'), 1,
   'PT-11: entrada no sistema com mais de 6 meses sai do histórico; a recente fica');
 select is((select count(*)::int from historico where acao = 'caso.criado'), 1,
-  'evento do escritório fica (o prazo depende do fim do contrato, ainda sem gatilho)');
-select ok((select j -> 'sem_gatilho' from r2) ? 'escritorios' and not ((select j -> 'sem_gatilho' from r2) ? 'pessoas'),
-  'o resultado lista os prazos que ainda não têm gatilho (a guarda de 5 anos, F0.15); a saída da pessoa já tem');
+  'evento do escritório fica (sai só no fim da guarda, F0.15)');
+select is((select j -> 'sem_gatilho' from r2), '["equipe_funcoes", "equipe_t3"]'::jsonb,
+  'o resultado lista os prazos que ainda não têm gatilho (só a equipe T3jus); a saída da pessoa e a guarda de 5 anos (F0.15) já têm');
 
 -- Regra 4: a contagem fica no histórico, sem dado pessoal.
 select is((select dados -> 'apagados' from historico where acao = 'dados.prazos_aplicados' order by id desc limit 1),

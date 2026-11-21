@@ -4,6 +4,7 @@
   "quem": "Carol",
   "precisa_em": "F1",
   "refs": [],
-  "status": "pendente",
-  "ordem": 20
+  "status": "feito",
+  "ordem": 20,
+  "evidencia": "Projetos portal-t3jus, console-t3jus e site-t3jus na Vercel, com a produção vindo do main"
 }

@@ -2,6 +2,7 @@
 // ação pede motivo e o banco decide quem pode ver e agir (PT-24).
 import { assertEquals } from "@std/assert";
 import { criarApiConsole } from "./app.ts";
+import type { MensagemEmail } from "../_shared/email.ts";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
@@ -19,7 +20,8 @@ function ficha(id: string, extra: Record<string, unknown> = {}) {
   };
 }
 
-function montar(opcoes: { podeAgir?: boolean; handlers?: Record<string, (a: Record<string, unknown>) => unknown> } = {}) {
+function montar(opcoes: { podeAgir?: boolean; handlers?: Record<string, (a: Record<string, unknown>) => unknown>; emailFalha?: boolean } = {}) {
+  const emails: MensagemEmail[] = [];
   const falso = authFalso([{ id: CAROLINA, email: ENTRAR.email, senha: ENTRAR.senha }]);
   const convites = adminFalso({ [EMAIL_MARINA]: MARINA, "diego@ribeiromatos.adv.br": DIEGO }, new Set(), new Set([MARINA]));
   const db = bancoFalso({
@@ -38,8 +40,9 @@ function montar(opcoes: { podeAgir?: boolean; handlers?: Record<string, (a: Reco
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
     banco: db.banco, auth: falso.auth, admin: convites.admin, urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo", arquivos: arquivosFalsos().arquivos,
+    emails: { enviar: (m) => (opcoes.emailFalha ? Promise.reject(new Error("Resend respondeu 500")) : (emails.push(m), Promise.resolve())) },
   });
-  return { pedir: pedido(app, "api-console"), ...falso, ...db, ...convites };
+  return { pedir: pedido(app, "api-console"), emails, ...falso, ...db, ...convites };
 }
 
 async function entrar(m: ReturnType<typeof montar>): Promise<string> {
@@ -129,8 +132,12 @@ Deno.test("tirar o autenticador exige conferir a identidade, tira no Auth e desc
   assertEquals(await erro(sem), { codigo: "VALIDATION_ERROR", detalhes: { campos: ["identidadeConferida"] } });
   assertEquals(m.removidos, []);
   const r = await m.pedir(`/v1/suporte/pessoas/${MARINA}/tirar-autenticador`, { corpo: { motivo: "Perdeu o celular", identidadeConferida: true }, cookie });
-  assertEquals(await r.json(), { aparelhos: 2 });
+  assertEquals(await r.json(), { aparelhos: 2, avisoEnviado: true });
   assertEquals(m.removidos, [MARINA]);
+  // F1.12: a própria pessoa recebe o aviso no e-mail cadastrado.
+  assertEquals(m.emails.map((e) => [e.para, e.assunto]), [[EMAIL_MARINA, "O autenticador da sua conta no T3jus foi tirado"]]);
+  assertEquals(m.emails[0]!.texto.includes("Se não foi você que pediu, fale com o escritório agora."), true);
+  assertEquals(m.emails[0]!.html.includes("Olá, Marina."), true);
   assertEquals(chamou(m, "console_suporte_desconectar")[0]!.args.p_tirar_autenticador, true);
   // Sem autenticador, não há o que tirar.
   const de_novo = await m.pedir(`/v1/suporte/pessoas/${MARINA}/tirar-autenticador`, { corpo: { motivo: "De novo", identidadeConferida: true }, cookie });
@@ -162,4 +169,12 @@ Deno.test("histórico de suporte com o motivo", async () => {
   const cookie = await entrar(m);
   const r = await (await m.pedir(`/v1/suporte/pessoas/${MARINA}/historico`, { cookie })).json();
   assertEquals(r.eventos[0], { ocorridoEm: "2026-11-18T18:20:00Z", autor: { id: CAROLINA, nome: "Carol" }, acao: "suporte.desconectou", dados: { motivo: "Trocou de celular", aparelhos: 2 } });
+});
+
+Deno.test("F1.12: se o e-mail de aviso não sai, o autenticador continua tirado", async () => {
+  const m = montar({ emailFalha: true });
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/suporte/pessoas/${MARINA}/tirar-autenticador`, { corpo: { motivo: "Perdeu o celular", identidadeConferida: true }, cookie });
+  assertEquals(await r.json(), { aparelhos: 2, avisoEnviado: false });
+  assertEquals(m.removidos, [MARINA]);
 });
