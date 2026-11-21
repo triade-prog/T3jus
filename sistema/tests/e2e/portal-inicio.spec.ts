@@ -297,3 +297,43 @@ test.describe("Início: bloco Comercial com os contatos do dia (F1.14, AP-06)", 
     await semViolacoes(page);
   });
 });
+
+test.describe("Início completo: cobrança do dia, prazo em 2 dias e petição para revisar", () => {
+  test("F3.38 e F3.76: o prazo com o lembrete em A acompanhar e a petição em Para hoje, no Jurídico de Larissa", async ({ page }) => {
+    const LARISSA = { id: "a0000000-0000-4000-8000-000000000104", nome: "Larissa Costa" };
+    await simular(page, {
+      ...COMUNS,
+      "/v1/escritorio": { corpo: ESC_LARISSA },
+      "GET /v1/escritorio/inicio/resumo": { corpo: resumo({ areas: ["JURIDICO"], pedem: { JURIDICO: 1 }, total: 1 }) },
+      "GET /v1/escritorio/inicio/juridico?de=MEUS": { corpo: juridicoDados({ escritorioPrazosHoje: null, pedem: 1, atrasadas: 0, prazosHoje: 0, total: 2, mostrando: 2, grupos: [
+        { chave: "HOJE", total: 1, itens: [{ tipo: "PETICAO", id: "x1", em: dia(0), responsavel: LARISSA, modelo: "Contestação", versao: 1, enviadaEm: dia(-1),
+          por: { id: "f", nome: "Felipe Matos" }, caso: { id: "s5", nome: "Souza x Construtora Atlas" },
+          prazo: { id: "z9", descricao: "Contestação", em: dia(2), dataFinal: dia(2) } }] },
+        { chave: "ACOMPANHAR", total: 1, itens: [{ tipo: "PRAZO", id: "z2", em: dia(2), responsavel: LARISSA, descricao: "Memoriais", fazerAte: null, dataFinal: dia(2),
+          lembrete: true, caso: { id: "s6", nome: "Castro x Banco Horizonte", numero: null, tribunal: null } }] },
+      ] }) },
+    });
+    await page.goto(P);
+    const j = bloco(page, "Jurídico");
+    await expect(page.getByRole("list", { name: "Para hoje · 1" })).toContainText("Revisar a petição que Felipe mandou ontem");
+    await expect(j.getByRole("link", { name: "Contestação · Souza x Construtora Atlas" })).toHaveAttribute("href", "/juridico/peticoes/x1");
+    const acompanhar = page.getByRole("list", { name: "A acompanhar · 1" });
+    await expect(acompanhar).toContainText("Preparar");
+    await expect(acompanhar).toContainText("em 2 dias");
+    await semViolacoes(page);
+  });
+
+  test("F3.21: a cobrança com a ação de hoje, antes do vencimento, aparece para cobrar", async ({ page }) => {
+    const f = financeiroDados();
+    const item = { tipo: "PARCELA", id: "p9", em: dia(20), responsavel: MARINA, descricao: "parcela 1/2", valor: 100000, forma: "PIX",
+      contrato: { id: "c9", numero: "C-2026-009" }, cliente: { id: "k9", nome: "Gabriela Teixeira" },
+      cobranca: { motivo: null, proxData: dia(0), proxOque: "mandar o Pix da primeira parcela" } };
+    await simular(page, marina({ "GET /v1/escritorio/inicio/financeiro?de=MEUS": { corpo: { ...f, escritorio: { ...f.escritorio, total: 1, mostrando: 1, vencidas: 0, valorVencido: 0,
+      grupos: [{ chave: "HOJE", total: 1, itens: [item] }] } } } }));
+    await page.goto(P);
+    const fin = bloco(page, "Financeiro").getByRole("list", { name: "Para hoje · 1" });
+    await expect(fin).toContainText("Próxima ação hoje: mandar o Pix da primeira parcela");
+    await expect(fin.getByRole("link", { name: "Gabriela Teixeira · parcela 1/2" })).toHaveAttribute("href", "/financeiro/a-receber/contratos/c9");
+    await semViolacoes(page);
+  });
+});
