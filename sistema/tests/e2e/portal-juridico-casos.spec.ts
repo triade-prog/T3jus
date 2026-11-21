@@ -85,7 +85,7 @@ const FICHA = {
   etapas: ETAPAS,
   mudancas: [
     { para: { ordem: 5, nome: "Sentença" }, de: { ordem: 4, nome: "Instrução" }, motivo: "Sentença publicada: procedente em parte.", resultado: null,
-      aviso: "Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no seu processo contra Mercado Bom Preço: o juiz decidiu o caso. Vamos explicar a decisão e o que dá para fazer agora. Qualquer dúvida, é só responder esta mensagem.",
+      aviso: "Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no caso Pereira x Mercado Bom Preço: o juiz decidiu o caso. Vamos explicar a decisão e o que dá para fazer agora. Qualquer dúvida, é só responder esta mensagem.",
       avisoEnviadoEm: null, por: MARINA, em: "2026-11-07T13:00:00Z" },
     { para: { ordem: 1, nome: "Preparação" }, de: null, motivo: "Caso cadastrado.", resultado: null, aviso: null, avisoEnviadoEm: null, por: LARISSA, em: "2026-03-03T13:00:00Z" },
   ],
@@ -199,6 +199,28 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     await semViolacoes(page);
   });
 
+  test("F3.37: com o WhatsApp ligado, o aviso de etapa sai para cada cliente e a ficha diz como está cada um", async ({ page }) => {
+    const mudanca = {
+      ...FICHA.mudancas[0],
+      envios: [
+        { cliente: { id: JOANA.id, nome: JOANA.nome }, situacao: "CONCLUIDA", motivo: null, mensagem: { envio: "LIDA", em: "2026-11-07T13:10:00Z", envioEm: "2026-11-07T15:00:00Z", motivo: null } },
+        { cliente: { id: CARLOS.id, nome: CARLOS.nome }, situacao: "FICOU_DE_FORA", motivo: "Sem WhatsApp no contato principal da ficha.", mensagem: null },
+      ],
+    };
+    const ficha = { ...FICHA, avisoEtapa: { whatsappLigado: true, automacaoLigada: true }, mudancas: [mudanca, FICHA.mudancas[1]] };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    await expect(page.getByRole("region", { name: "Aviso ao cliente" })).toContainText("Sai pela automação “Etapa do caso”");
+    const mud = page.getByRole("region", { name: "Mudanças de etapa" });
+    await mud.getByRole("button", { name: "Ver o aviso preparado" }).click();
+    await expect(mud).toContainText(`${JOANA.nome}: lido`);
+    await expect(mud).toContainText(`${CARLOS.nome}: não saiu: sem WhatsApp no contato principal da ficha.`);
+    await page.getByRole("button", { name: "Mudar etapa" }).click();
+    await page.getByRole("dialog", { name: "Mudar etapa" }).getByRole("radio", { name: /Recurso/ }).check();
+    await expect(page.getByRole("dialog", { name: "Mudar etapa" })).toContainText("Sai pela automação “Etapa do caso”, pelo WhatsApp do escritório");
+    await semViolacoes(page);
+  });
+
   test("Ficha sem Contratos nem Financeiro: sem os valores e diz quem vê", async ({ page }) => {
     await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: SEM_HONORARIOS } });
     await page.goto(`${P}/juridico/casos/${CASO}`);
@@ -219,7 +241,8 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     await expect(j).toContainText("Agora: 5. Sentença, desde 07/11/2026, por Marina Ribeiro.");
     await expect(j.getByRole("radio", { name: /Sentença/ })).toBeDisabled();
     await j.getByRole("radio", { name: /Recurso/ }).check();
-    await expect(j.getByText("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no seu processo contra Mercado Bom Preço: vamos pedir para o tribunal rever a decisão.")).toBeVisible();
+    await expect(j.getByText("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no caso Pereira x Mercado Bom Preço: vamos pedir para o tribunal rever a decisão.")).toBeVisible();
+    await expect(j).toContainText("O WhatsApp do escritório ainda não está ligado ao T3jus");
     await j.getByRole("button", { name: "Mudar para Recurso e avisar" }).click();
     await expect(j.getByLabel("Motivo")).toBeFocused();
     await expect(j).toContainText("Escreva o motivo");

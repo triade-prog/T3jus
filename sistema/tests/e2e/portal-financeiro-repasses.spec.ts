@@ -254,6 +254,28 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     expect(pedidos.some((p) => p.caminho.endsWith("/prestacao") && p.metodo === "POST")).toBe(true);
   });
 
+  test("F3.44: com o WhatsApp ligado, a prestação revisada entra na fila do número do escritório e o repasse mostra quando foi lida", async ({ page }) => {
+    const ligada = { ...LISTA, levantamentos: [{ ...LEV, whatsappLigado: true }] };
+    const naFila = { id: "m1", envio: "NA_FILA", em: `${dia(0)}T13:15:00Z`, envioEm: null, motivo: null, para: BEN.nome, telefone: "+5511974561180" };
+    const depois = { ...LISTA, levantamentos: [{ ...LEV, whatsappLigado: true, prestacaoEm: `${dia(0)}T13:15:00Z`, prestacaoPor: MARINA,
+      prestacao: { ...naFila, envio: "LIDA", envioEm: `${dia(0)}T14:02:00Z` } }] };
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, ligada),
+      "GET /v1/escritorio/financeiro/repasses": [{ corpo: ligada }, { corpo: depois }],
+      [`POST /v1/escritorio/financeiro/repasses/${id(1)}/prestacao/envio`]: { status: 201, corpo: { ...LEV, prestacao: naFila } },
+    });
+    await page.goto(`${P}/financeiro/repasses`);
+    await page.getByRole("button", { name: `Prestação de contas a ${BEN.nome}` }).click();
+    const j = page.getByRole("dialog", { name: "Prestação de contas a Benedito" });
+    await expect(j).toContainText("Sai pelo WhatsApp do escritório.");
+    await expect(j.getByRole("link", { name: "Abrir no WhatsApp" })).toHaveCount(0);
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Mandar pelo WhatsApp" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Prestação de contas na fila do WhatsApp." })).toBeVisible();
+    expect(pedidos.some((p) => p.caminho.endsWith("/prestacao/envio") && p.metodo === "POST")).toBe(true);
+    await expect(page.getByText("Prestação de contas: lida pelo cliente em")).toBeVisible();
+  });
+
   test("Ficha do repasse: o que ainda está com o escritório, cada parte, o fechamento e o histórico", async ({ page }) => {
     await simular(page, comuns());
     await page.goto(`${P}/financeiro/repasses/${id(1)}`);

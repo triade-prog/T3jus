@@ -11,7 +11,7 @@ import {
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema, lancarExitoSchema, naoCobrarExitoSchema, type ExitosParaConferir, type ExitoParaConferir, type ParcelaLinha,
-  propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
+  propostaRepasseSchema, textoPrestacaoContas, type Levantamento, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, enviarContadorSchema, salvarAjustesSchema, corrigirAberturaSchema, definirMetaSchema,
   type AjustesFinanceiro, type EnvioContador, type MetasReceita, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
@@ -991,6 +991,16 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<{ id: string; prestacaoEm: string }>("portal_financeiro_prestacao_enviada", {
       ...quem(c), p_levantamento: idDaRota(c, "id"),
     }));
+  });
+
+  // Mandar a prestação de contas pelo WhatsApp do escritório (F3.44): o texto sai do registro,
+  // o mesmo da prévia, e entra na fila da conversa. Quem entrega é a ligação com a Meta.
+  app.post("/v1/escritorio/financeiro/repasses/:id/prestacao/envio", async (c) => {
+    const id = idDaRota(c, "id");
+    const l = await deps.banco.rpc<Levantamento>("portal_financeiro_repasse", { ...quem(c), p_levantamento: id });
+    return c.json(await deps.banco.rpc<Levantamento>("portal_financeiro_prestacao_enviar", {
+      ...quem(c), p_levantamento: id, p_dados: { texto: textoPrestacaoContas(l, l.escritorioNome ?? "") },
+    }), 201);
   });
 
   app.post("/v1/escritorio/financeiro/destinacoes/:id/feito", async (c) => {

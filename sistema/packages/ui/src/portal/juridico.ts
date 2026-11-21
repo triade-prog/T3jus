@@ -1,7 +1,7 @@
 // Jurídico do Portal, parte 1 (EX-01, EX-03, EX-07, EX-14): rotas, textos e contas da tela,
 // sem React, para os testes de unidade. As regras de verdade estão no servidor.
 
-import { AREAS_DIREITO, formatarCnj, PAPEIS_CASO, type AreaDireito, type Etapa, type LinhaCaso, type PapelCaso } from "@t3jus/domain";
+import { AREAS_DIREITO, formatarCnj, PAPEIS_CASO, type AreaDireito, type EnvioEtapa, type Etapa, type LinhaCaso, type PapelCaso } from "@t3jus/domain";
 
 export const ROTAS_JURIDICO = {
   casos: "/juridico/casos",
@@ -130,4 +130,29 @@ export function textoEsperando(oque: string, desde: string | null, hoje: string)
 /** "26/11 · qui". */
 export function diaDaSemanaCurto(data: string): string {
   return `${ddmm(data)} · ${SEMANA[semanaDe(data)]!.slice(0, 3)}`;
+}
+
+// ------------------------------------------------------------------------- Aviso de etapa (F3.37)
+
+/** Se o aviso de etapa sai agora: o WhatsApp do escritório e a automação "Etapa do caso". */
+export function fraseAvisoEtapa(a: { whatsappLigado: boolean; automacaoLigada: boolean } | undefined): { sai: boolean; texto: string } {
+  if (!a?.whatsappLigado) {
+    return { sai: false, texto: "O WhatsApp do escritório ainda não está ligado ao T3jus: o aviso fica guardado nas mudanças de etapa, pronto para copiar e mandar." };
+  }
+  if (!a.automacaoLigada) {
+    return { sai: false, texto: "A automação “Etapa do caso” está desligada em Conversas: o aviso fica guardado nas mudanças de etapa e não sai." };
+  }
+  return { sai: true, texto: "Sai pela automação “Etapa do caso”, pelo WhatsApp do escritório, para cada cliente no próprio número." };
+}
+
+const ENVIO_ETAPA: Record<string, string> = { NA_FILA: "na fila", ENVIADA: "enviado", ENTREGUE: "entregue", LIDA: "lido", FALHOU: "não entregue" };
+
+/** Onde está o aviso de etapa de um cliente: na fila, entregue, lido, ou por que não saiu. */
+export function situacaoEnvioEtapa(e: EnvioEtapa): string {
+  if (e.mensagem) return ENVIO_ETAPA[e.mensagem.envio] ?? "na fila";
+  if (e.situacao === "FICOU_DE_FORA" || e.situacao === "FALHOU") {
+    const m = e.motivo ?? "não saiu.";
+    return `não saiu: ${m.charAt(0).toLowerCase()}${m.slice(1)}`;
+  }
+  return "ainda não saiu";
 }

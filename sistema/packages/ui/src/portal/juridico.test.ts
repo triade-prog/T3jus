@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { textoAvisoEtapa } from "@t3jus/domain";
 import * as mod from "./juridico.ts";
-import { botaoMudar, juntarNomes, linhaProcesso, posicaoEtapa, proximaEtapa, telefoneBr } from "./juridico.ts";
+import { botaoMudar, fraseAvisoEtapa, juntarNomes, situacaoEnvioEtapa, linhaProcesso, posicaoEtapa, proximaEtapa, telefoneBr } from "./juridico.ts";
 
 const etapas = [1, 2, 3, 4, 5, 6, 7, 8].map((ordem) => ({ ordem, nome: `E${ordem}` }));
 
@@ -30,8 +30,24 @@ describe("Jurídico, casos (EX-01, EX-03, EX-14)", () => {
   });
 
   it("o aviso ao cliente igual ao do servidor", () => {
-    expect(textoAvisoEtapa("Joana Pereira", "Ribeiro & Matos", "Mercado Bom Preço", "vamos pedir para o tribunal rever a decisão."))
-      .toBe("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no seu processo contra Mercado Bom Preço: vamos pedir para o tribunal rever a decisão. Qualquer dúvida, é só responder esta mensagem.");
+    expect(textoAvisoEtapa("Joana Pereira", "Ribeiro & Matos", "Joana x Mercado Bom Preço", "vamos pedir para o tribunal rever a decisão."))
+      .toBe("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Novidade no caso Joana x Mercado Bom Preço: vamos pedir para o tribunal rever a decisão. Qualquer dúvida, é só responder esta mensagem.");
+  });
+});
+
+describe("Aviso de etapa pela fila do WhatsApp (F3.37)", () => {
+  it("diz se o aviso sai", () => {
+    expect(fraseAvisoEtapa({ whatsappLigado: true, automacaoLigada: true }).sai).toBe(true);
+    expect(fraseAvisoEtapa({ whatsappLigado: false, automacaoLigada: true }).texto).toContain("ainda não está ligado");
+    expect(fraseAvisoEtapa({ whatsappLigado: true, automacaoLigada: false }).texto).toContain("está desligada");
+    expect(fraseAvisoEtapa(undefined).sai).toBe(false);
+  });
+  it("a situação de cada cliente", () => {
+    const c = { id: "1", nome: "Eduardo Nascimento" };
+    expect(situacaoEnvioEtapa({ cliente: c, situacao: "CONCLUIDA", motivo: null, mensagem: { envio: "LIDA", em: "2026-12-01T13:15:00Z", envioEm: null, motivo: null } })).toBe("lido");
+    expect(situacaoEnvioEtapa({ cliente: c, situacao: "FICOU_DE_FORA", motivo: "Sem WhatsApp no contato principal da ficha.", mensagem: null }))
+      .toBe("não saiu: sem WhatsApp no contato principal da ficha.");
+    expect(situacaoEnvioEtapa({ cliente: c, situacao: null, motivo: null, mensagem: null })).toBe("ainda não saiu");
   });
 });
 

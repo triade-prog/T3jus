@@ -369,7 +369,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { id: CLIENTE, mes: d.mes, formato: d.formato, recebimentos: [], despesas: [], terceiros: [] };
     },
     portal_financeiro_repasse_proposta: () => ({ contrato: null, linhas: [], cliente: 100, falta: 0 }),
-    portal_financeiro_repasse: (a) => ({ id: a.p_levantamento, caso: { id: ANA } }),
+    portal_financeiro_repasse: (a) => ({
+      id: a.p_levantamento, caso: { id: ANA }, tipo: "RPV", valor: 100000, escritorioNome: "Aurora Advocacia",
+      cliente: { id: ANA, nome: "Benedito Souza", telefone: "+5511974561180" },
+      destinacoes: [{ id: ANA, para: "CLIENTE", nome: "Benedito Souza", valor: 70000, situacao: "FEITO", feitoEm: "2026-11-30", prazo: "2026-11-30" },
+                    { id: ANA, para: "HONORARIOS", nome: "Honorários de êxito", valor: 30000, situacao: "FEITO", feitoEm: "2026-11-30", prazo: "2026-11-30" }],
+    }),
+    portal_financeiro_prestacao_enviar: (a) => ({ id: a.p_levantamento, prestacao: { envio: "NA_FILA", texto: (a.p_dados as { texto: string }).texto } }),
     portal_financeiro_caso_acerto: (a) => ({ casoId: a.p_caso, pendencias: [] }),
     portal_financeiro_exitos: () => ({ total: 840000, n: 1, itens: [{ id: ANA, calculado: 840000 }] }),
     portal_financeiro_exito_lancar: (a) => {
@@ -2013,6 +2019,18 @@ Deno.test("F3.84, VA-05: \"Não foi paga\" e \"Foi paga, sim\" vão ao banco com
   const f = await m.pedir(`/v1/escritorio/recebimentos/${CLIENTE}/foi-paga`, { cookie, corpo: { motivo: "Achei o comprovante" } });
   assertEquals((await f.json()).contratoId, CLIENTE);
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_pago_antes_foi_paga")!.args.p_dados, { motivo: "Achei o comprovante" });
+});
+
+Deno.test("F3.44: a prestação de contas pelo WhatsApp leva o texto montado do registro, o mesmo da prévia", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/prestacao/envio`, { corpo: { texto: "o navegador não manda o texto" }, cookie });
+  assertEquals(r.status, 201);
+  const a = m.chamadas.find((c) => c.funcao === "portal_financeiro_prestacao_enviar")!.args;
+  assertEquals([a.p_escritorio, a.p_levantamento], [AURORA, CLIENTE]);
+  const texto = (a.p_dados as { texto: string }).texto;
+  assertEquals(texto.startsWith("Olá, Benedito. Aqui é do escritório Aurora Advocacia."), true);
+  assertEquals(texto.includes("Fica para você: R$ 700,00"), true);
 });
 
 Deno.test("F3.81: o PNG do logo é conferido de novo na API e guardado na pasta do escritório da sessão", async () => {

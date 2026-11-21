@@ -22,7 +22,7 @@ import { Busca, CabAmbar, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
 import { SeloTipo } from "./Honorarios.tsx";
 import { centavos as lerCentavos } from "./honorarios.ts";
-import { botaoMudar, diaDaSemanaCurto, juntarNomes, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr, urgenciaPrazo } from "./juridico.ts";
+import { botaoMudar, diaDaSemanaCurto, fraseAvisoEtapa, juntarNomes, situacaoEnvioEtapa, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr, urgenciaPrazo } from "./juridico.ts";
 import { JanelaPrazo, JanelaTarefa, OQueTrava, PrazosETarefas, SeloUrgencia } from "./JuridicoPrazos.tsx";
 import { DocumentosDoCaso, JanelaEnviarDocumento, JanelaJaChegou, JanelaPedirDeNovo, JanelaPedirDocumento } from "./JuridicoDocumentos.tsx";
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
@@ -783,7 +783,7 @@ function JanelaEtapa({ f, escritorio, aberta, aoFechar, aoFeito }: {
                 para && primeiro ? (
                   <>
                     <p className="jr-previa-t"><Icone nome="whats" className="ico ico-s" />Prévia do aviso para {primeiro.nome.split(/\s+/)[0]}</p>
-                    <p className="jr-previa">{textoAvisoEtapa(primeiro.nome, escritorio.nome, f.parteContraria, texto || "…")}</p>
+                    <p className="jr-previa">{textoAvisoEtapa(primeiro.nome, escritorio.nome, f.nome, texto || "…")}</p>
                     {ajustando ? (
                       <div className="campo">
                         <label htmlFor="je-txt">O meio do aviso, só desta vez</label>
@@ -797,7 +797,7 @@ function JanelaEtapa({ f, escritorio, aberta, aoFechar, aoFeito }: {
                         <button className="jr-link" type="button" onClick={() => { setMeio(para.textoCliente); setAjustando(true); }}>Ajustar só desta vez</button>
                       </p>
                     )}
-                    <p className="ajuda">O envio pelo WhatsApp chega com Conversas. Até lá, o aviso fica guardado nas mudanças de etapa, pronto para copiar e mandar.</p>
+                    <p className="ajuda">{fraseAvisoEtapa(f.avisoEtapa).texto}</p>
                   </>
                 ) : <p className="ajuda">Escolha a nova etapa para ver a prévia do aviso.</p>
               ) : null}
@@ -1081,8 +1081,12 @@ function AvisoCliente({ f }: { f: FichaCaso }) {
       <div className="folha-cab" style={{ paddingBottom: 8 }}><div><h2 id="t-ac" style={{ fontSize: 20 }}>Aviso ao cliente</h2></div></div>
       <div className="hn-folha-acao" style={{ paddingTop: 0 }}>
         <p className="jr-ligado"><Icone nome="whats" className="ico ico-s" />{f.avisarCliente ? `Ligado para ${juntarNomes(f.clientes.map((c) => c.nome.split(/\s+/)[0]!))}` : "Desligado neste caso"}</p>
-        <p>A cada mudança de etapa, os clientes recebem um aviso simples pelo WhatsApp do escritório. O envio chega com Conversas; até lá, o texto fica guardado nas mudanças de etapa.</p>
-        {ultimo ? <p>Último aviso preparado: <b>{diaCurto(diaDoInstante(ultimo.em))} · {ultimo.para.nome}</b>, ainda não enviado.</p> : null}
+        <p>A cada mudança de etapa, os clientes recebem um aviso simples pelo WhatsApp do escritório. {fraseAvisoEtapa(f.avisoEtapa).texto}</p>
+        {ultimo ? (
+          ultimo.envios?.some((e) => e.mensagem)
+            ? <p>Último aviso: <b>{diaCurto(diaDoInstante(ultimo.em))} · {ultimo.para.nome}</b>, {ultimo.envios.map((e) => `${e.cliente.nome.split(/\s+/)[0]} ${situacaoEnvioEtapa(e)}`).join("; ")}.</p>
+            : <p>Último aviso preparado: <b>{diaCurto(diaDoInstante(ultimo.em))} · {ultimo.para.nome}</b>, ainda não enviado.</p>
+        ) : null}
       </div>
     </section>
   );
@@ -1109,6 +1113,13 @@ function Mudancas({ f }: { f: FichaCaso }) {
                   {aberto === i ? (
                     <>
                       <p className="jr-previa">{m.aviso}</p>
+                      {m.envios?.length ? (
+                        <ul className="jr-envios">
+                          {m.envios.map((e) => (
+                            <li key={e.cliente.id}><Icone nome="whats" className="ico ico-s" />{e.cliente.nome}: {situacaoEnvioEtapa(e)}</li>
+                          ))}
+                        </ul>
+                      ) : null}
                       <button className="btn btn-sec btn-compacto" type="button" onClick={() => void navigator.clipboard?.writeText(m.aviso!)}>
                         <Icone nome="copiar" className="ico" />
                         Copiar o texto

@@ -1814,6 +1814,8 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 .jr-mudancas p{margin:0;font-size:14px}
 .jr-mudancas .jr-motivo{font-family:var(--serifa);font-style:italic;color:var(--vinho);margin:2px 0 6px}
 .jr-mudancas .jr-previa{margin:8px 0}
+.jr-envios{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px;font-size:13px;color:var(--texto-2)}
+.jr-envios li{display:flex;align-items:center;gap:6px}
 @media (max-width:760px){
   .jr-lista .hn-ferr>select.entrada{flex:1 1 100%}
   .jr-onde{padding:0 16px 8px}

@@ -4,6 +4,7 @@
 // confere a forma do pedido.
 
 import type { MarcaNoDocumento } from "./logo.ts";
+import type { EnvioMensagem } from "./conversas.ts";
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import type { Condicao, TipoHonorario } from "./honorarios.ts";
@@ -618,11 +619,21 @@ export interface Levantamento {
   responsavel: { id: string; nome: string };
   prestacaoEm: string | null;
   prestacaoPor: { id: string; nome: string } | null;
+  /** A prestação de contas na fila do WhatsApp (F3.44): a situação e a hora em que o cliente leu. */
+  prestacao?: MensagemPrestacao | null;
+  /** O WhatsApp do escritório está ligado: "Mandar pelo WhatsApp" no lugar de "Marcar como enviada". */
+  whatsappLigado?: boolean;
+  escritorioNome?: string;
   caso: { id: string; nome: string; parteContraria: string | null; area: string };
   cliente: { id: string; nome: string; telefone: string | null };
   feitos: number;
   total: number;
   destinacoes: Destinacao[];
+}
+
+/** A mensagem da prestação de contas na conversa do cliente (F3.44). */
+export interface MensagemPrestacao {
+  id: string; envio: EnvioMensagem; em: string; envioEm: string | null; motivo: string | null; para: string | null; telefone: string | null;
 }
 
 export interface ListaRepasses {

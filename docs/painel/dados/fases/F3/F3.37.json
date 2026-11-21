@@ -1,11 +1,11 @@
 {
   "id": "F3.37",
-  "texto": "Enviar pelo WhatsApp do escritório o aviso de mudança de etapa já preparado na ficha, a cada cliente do caso",
+  "texto": "O aviso de mudança de etapa sai pela fila do WhatsApp do escritório a cada cliente do caso, no próprio número, com o aviso \"Etapa do caso\", e a ficha mostra para quem saiu",
   "peca": "B3",
   "refs": [
     "EX-14"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 370,
-  "proximo": "O texto já fica gravado em cada mudança de etapa. Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79)"
+  "evidencia": "Migration 0720 (a automação pronta \"Etapa do caso\" manda um aviso por cliente do caso, cada um no número do contato principal e com o primeiro nome dele; o meio do aviso, da etapa ou ajustado só desta vez, fica guardado à parte e não sai mais dobrado; a ficha mostra a situação de cada cliente e se o aviso sai: WhatsApp ligado e automação ligada); a janela de mudar etapa mostra o aviso \"Novidade no caso {caso}\" que vai para a Meta (aprovado pela Carol em 21/11/2026); teste pgTAP 100, Vitest juridico.test (+2) e e2e portal-juridico-casos (+1)"
 }

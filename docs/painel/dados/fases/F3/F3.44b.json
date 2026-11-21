@@ -1,0 +1,11 @@
+{
+  "id": "F3.44b",
+  "texto": "A prestação de contas sai de fato pelo WhatsApp do escritório: a ligação com a Meta tira a mensagem da fila e marca entregue e lida, com a hora",
+  "peca": "S6",
+  "refs": [
+    "FI-12"
+  ],
+  "status": "pendente",
+  "ordem": 441,
+  "proximo": "Depende só da ligação do WhatsApp com a Meta (F3.58) e do aviso \"Prestação de contas\" aprovado pela Meta. A mensagem já fica na fila, com os campos do aviso em dados.campos"
+}
