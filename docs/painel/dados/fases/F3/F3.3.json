@@ -8,5 +8,5 @@
   "status": "pendente",
   "ordem": 30,
   "nota": "Hoje o lembrete fica marcado e a tela diz que ainda não sai, porque o WhatsApp do escritório não está ligado.",
-  "proximo": "Quando o motor de mensagens e o número do escritório estiverem ligados, enviar os lembretes marcados e os avisos de cancelamento"
+  "proximo": "Enviar os lembretes marcados e os avisos de cancelamento. Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79)"
 }
