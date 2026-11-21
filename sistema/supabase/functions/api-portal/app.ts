@@ -10,7 +10,7 @@ import {
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type ListaContratos, type PropostaParaContrato,
-  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, registrarRecebimentoSchema,
+  anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, type ListaPagar, type ContaPagar, type ParaAdiantar, registrarRecebimentoSchema,
   propostaRepasseSchema, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
@@ -791,7 +791,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   // As parcelas, os recebimentos e a cobrança de um contrato.
   app.get("/v1/escritorio/financeiro/contratos/:id", async (c) => {
-    return c.json(await deps.banco.rpc<ParcelasContrato>("portal_financeiro_contrato", { ...quem(c), p_contrato: idDaRota(c, "id") }));
+    const args = { ...quem(c), p_contrato: idDaRota(c, "id") };
+    const f = await deps.banco.rpc<ParcelasContrato>("portal_financeiro_contrato", args);
+    // O que o escritório adiantou nos casos do contrato (F3.23), lido à parte.
+    const adiantados = await deps.banco.rpc<ContaPagar[]>("portal_financeiro_contrato_adiantados", args);
+    return c.json({ ...f, adiantados });
   });
 
   // Registrar recebimento: baixa a parcela do mês dela; o dinheiro conta no dia em que entrou.
@@ -816,6 +820,13 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const mostrar = (c.req.query("mostrar") || "SEMANA").toUpperCase();
     if (!(MOSTRAR_PAGAR as readonly string[]).includes(mostrar)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
     return c.json(await deps.banco.rpc<ListaPagar>("portal_financeiro_pagar", { ...quem(c), p_mostrar: mostrar }));
+  });
+
+  // Para a janela de lançar conta adiantada: os casos do cliente e a parcela em que o reembolso volta.
+  app.get("/v1/escritorio/financeiro/adiantar", async (c) => {
+    const cliente = c.req.query("cliente") ?? "";
+    if (!UUID.test(cliente)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["cliente"] });
+    return c.json(await deps.banco.rpc<ParaAdiantar>("portal_financeiro_adiantar", { ...quem(c), p_cliente: cliente.toLowerCase() }));
   });
 
   app.post("/v1/escritorio/financeiro/contas", async (c) => {

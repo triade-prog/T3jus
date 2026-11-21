@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
-  type RecebimentoRegistrado, type TipoCobranca,
+  type RecebimentoRegistrado, type TipoCobranca, type ContaPagar, CATEGORIAS_SAIDA,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -21,7 +21,7 @@ import { diasEntre } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { primeiroNome } from "./equipe.ts";
 import { Toast } from "./FichaCliente.tsx";
-import { gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela, textoCobranca } from "./financeiro.ts";
+import { comoVolta, gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela, textoCobranca } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
@@ -797,6 +797,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
               <p className="pt-pe-folha"><Icone nome="relogio" className="ico" /><span>{contar(f.aguardandoBase, "parcela espera", "parcelas esperam")} a base do mês para ter valor. Ela se informa em Contratos, em Honorários.</span></p>
             ) : null}
           </section>
+          {f.adiantados?.length ? <AdiantadoNoCaso contas={f.adiantados} /> : null}
         </div>
         <aside className="fi-col" aria-label="Carnê e cobrança">
           <FolhaCarne contrato={f.id} area="FINANCEIRO" escritorio={escritorio} aberta={carne} aoAbrir={() => setCarne(true)} aoFechar={() => setCarne(false)} />
@@ -813,6 +814,42 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
       ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
+  );
+}
+
+/** O que o escritório adiantou nos casos deste contrato e como volta (F3.23, FI-07). */
+function AdiantadoNoCaso({ contas }: { contas: ContaPagar[] }) {
+  return (
+    <section className="folha" aria-labelledby="t-adi" style={{ overflow: "hidden" }}>
+      <div className="folha-cab">
+        <div>
+          <h2 id="t-adi"><Icone nome="reenviar" className="ico" />Adiantado pelo escritório neste caso</h2>
+          <p className="sub">Vira valor a reembolsar pelo cliente, ligado a este caso.</p>
+        </div>
+      </div>
+      <ul className="fi-linhas">
+        {contas.map((c) => (
+          <li key={c.id} className="fi-linha" style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}>
+            <div className="fi-quem">
+              <strong>{c.descricao}</strong>
+              <small>
+                {c.pagaEm ? `Paga pelo escritório em ${diaCurto(c.pagaEm)}` : `Vence em ${diaCurto(c.vencimento)}, ainda não paga`}
+                {c.adiantada?.caso ? ` · ${c.adiantada.caso.nome}` : ""} · categoria “{CATEGORIAS_SAIDA[c.categoria]}”
+              </small>
+              {c.adiantada && !c.adiantada.reembolsadoEm ? (
+                <p className="fi-prox"><Icone nome="relogio" className="ico" />Reembolso combinado: <b>{comoVolta(c)}</b></p>
+              ) : null}
+            </div>
+            <div className="fi-lado">
+              <span className="fi-v num">{reais(c.valorPago ?? c.valor)}</span>
+              {c.adiantada?.reembolsadoEm
+                ? <Selo tom="ok" icone="check">Reembolsado em {diaCurto(c.adiantada.reembolsadoEm)}</Selo>
+                : <Selo tom="atencao">A reembolsar</Selo>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

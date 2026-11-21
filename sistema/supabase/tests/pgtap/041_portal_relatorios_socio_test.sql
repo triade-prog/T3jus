@@ -71,8 +71,8 @@ select portal_financeiro_receber_registrar(socia, rm, r.id, jsonb_build_object('
 select ajustar_relogio(('2026-11-18 12:00-03'::timestamptz - now()));
 create temp table adi as select
   (portal_financeiro_conta_lancar(socia, rm, jsonb_build_object('descricao', 'Custas iniciais', 'categoria', 'CUSTAS',
-     'valor', 48500, 'vencimento', '2026-11-03', 'adiantada', true, 'clienteId', cli.hel, 'reembolsoComo', 'PROXIMA_PARCELA')) ->> 'id')::uuid id
-  from ids, cli;
+     'valor', 48500, 'vencimento', '2026-11-03', 'adiantada', true, 'clienteId', cli.hel, 'casoId', cs.hel, 'reembolsoComo', 'PROXIMA_PARCELA')) ->> 'id')::uuid id
+  from ids, cli, cs;
 select portal_financeiro_conta_paga(socia, rm, adi.id, jsonb_build_object('pagaEm', '2026-11-03', 'valor', 48500)) from ids, adi;
 create temp table lv as select
   (portal_financeiro_levantamento_registrar(socia, rm, jsonb_build_object('tipo', 'ALVARA', 'casoId', cs.lima, 'clienteId', cli.ben,

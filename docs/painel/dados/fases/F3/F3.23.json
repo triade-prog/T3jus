@@ -3,9 +3,10 @@
   "texto": "Reembolso ligado ao caso e mostrado na próxima parcela do cliente",
   "peca": "S3",
   "refs": [
-    "FI-07"
+    "FI-07",
+    "CH-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 230,
-  "proximo": "Vem com o Jurídico: o caso na janela de lançar conta e a parcela seguinte do contrato mostrando o reembolso; hoje o reembolso fica ligado ao cliente"
+  "evidencia": "Migration 0511: a conta adiantada guarda o caso (obrigatório quando o cliente tem caso, e tem de ser dele); a parcela em que o reembolso volta é calculada (a primeira do cliente a partir do lançamento, preferindo o contrato do caso); rota GET /financeiro/adiantar; campo Caso e a frase da próxima parcela na janela de lançar conta; o adiantado mostra o caso e a parcela; a ficha do contrato ganha \"Adiantado pelo escritório neste caso\"; a divisão do alvará só leva os reembolsos do próprio caso. pgTAP 052, teste do api-portal e e2e do A pagar e da ficha."
 }
