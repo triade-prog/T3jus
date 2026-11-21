@@ -98,6 +98,17 @@ describe("F0.8: repasse /api", () => {
     expect((await repassar(docx(`v1/escritorio/peticoes/${id}/decisao`), ctx(["v1", "escritorio", "peticoes", id, "decisao"]))).status).toBe(400);
   });
 
+  it("F3.16: o modelo de contrato, procuração ou declaração passa como arquivo; gerar continua só em JSON", async () => {
+    const id = "a1600000-0000-4000-8000-000000000001";
+    const docx = (caminho: string) => new Request(`https://portal.exemplo/api/${caminho}`, {
+      method: "POST", body: new Uint8Array(1000), headers: { "content-type": "application/octet-stream" } });
+    for (const caminho of ["v1/escritorio/documentos/modelos", "v1/escritorio/documentos/modelos/conferir", `v1/escritorio/documentos/modelos/${id}/versoes`]) {
+      mockFetch(new Response("{}", { status: 201 }));
+      expect((await repassar(docx(caminho), ctx(caminho.split("/")))).status, caminho).toBe(201);
+    }
+    expect((await repassar(docx(`v1/escritorio/contratos/${id}/documentos`), ctx(["v1", "escritorio", "contratos", id, "documentos"]))).status).toBe(400);
+  });
+
   it("F3.81: o PNG do logo passa como arquivo só no envio do logo", async () => {
     mockFetch(new Response("{}", { status: 201 }));
     const png = (caminho: string) => new Request(`https://portal.exemplo/api/${caminho}?nome=logo.png&formato=PNG&bytes=86000`, {

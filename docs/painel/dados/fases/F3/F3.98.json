@@ -1,0 +1,11 @@
+{
+  "id": "F3.98",
+  "texto": "Quem assina pelo cliente menor ou incapaz na procuração e no contrato: campos novos no cadastro do cliente e o texto do representante nos documentos",
+  "peca": "S2",
+  "refs": [
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 793,
+  "proximo": "Desenhar os campos do responsável legal na ficha do cliente (hoje só a empresa tem quem assina) e levar a qualificação dele aos documentos"
+}

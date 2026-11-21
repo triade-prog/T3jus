@@ -5,7 +5,8 @@
   "refs": [
     "CH-08"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 160,
-  "proximo": "Programar o desenho aprovado em docs/design/aprovadas/portal-procuracoes (D20); validar com os pilotos e a advogada parceira (CH-08)"
+  "proximo": "Programar as telas aprovadas: lista de documentos, Modelos e Enviar modelo, a página de gerar com a prévia por documento, o resultado com Baixar todos, Anexar os assinados e a aba Documentos da ficha do contrato",
+  "evidencia": "Servidor pronto: migration 0680_documentos_contrato.sql (modelos do escritório e versões só por acréscimo, documentos gerados por versão com os outorgados, os poderes e o que saiu marcado, os assinados nos anexos ligados à versão e com a data da assinatura, lista com o que falta anexar), teste 091_documentos_contrato_test.sql (52), packages/domain/src/documentos.ts (20 campos, 10 poderes especiais, 4 modelos padrão marcados como em revisão, a declaração de empresa no texto de pessoa jurídica, condições de honorário em alíneas com valor por extenso, o que falta marcado sem bloquear) com 13 testes vitest, rotas /v1/escritorio/documentos/* e /v1/escritorio/contratos/:id/documentos* (api-portal/documentos.ts: padrão no timbrado com o logo, modelo do escritório preenchido, prévia sem gravar, .zip de Baixar todos) com 6 testes Deno, e o repasse do Portal aceitando o .docx dos modelos"
 }

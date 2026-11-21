@@ -16,7 +16,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const hojeBrasilia = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
 /** O PNG do logo para o cabeçalho; nulo quando a marca é o nome em letra ou o arquivo sumiu. */
-async function logoDaProposta(deps: DepsPortal, escritorio: string, m: MarcaNoDocumento | null): Promise<LogoDocx | undefined> {
+export async function logoDaProposta(deps: DepsPortal, escritorio: string, m: MarcaNoDocumento | null): Promise<LogoDocx | undefined> {
   if (m?.tipo !== "LOGO" || !m.logoId || !UUID.test(m.logoId) || !m.largura || !m.altura) return undefined;
   const png = await deps.arquivos.baixar(`${escritorio}/logos/${m.logoId}.png`);
   if (!png) return undefined;
