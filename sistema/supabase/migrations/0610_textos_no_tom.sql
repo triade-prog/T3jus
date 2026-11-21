@@ -22,7 +22,9 @@ end $$;
 -- ---------------------------------------------------------------------------------------
 -- Avisos prontos do WhatsApp.
 
-create temporary table d5_avisos (chave text primary key, antes text not null, depois text not null);
+-- Tabela comum (não temporária): o SQL Editor do Supabase não guarda tabela temporária entre
+-- um comando e outro. Ela sai no fim da migration.
+create table d5_avisos (chave text primary key, antes text not null, depois text not null);
 insert into d5_avisos values
   ('PAGAMENTO_RECEBIDO',
    'Olá, {nome}. Recebemos o pagamento de {valor} referente a {parcela}. Obrigado!',
