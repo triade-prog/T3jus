@@ -7,6 +7,6 @@
   ],
   "status": "andamento",
   "ordem": 190,
-  "proximo": "Mandar o PDF ao cliente pelo WhatsApp (vem com Conversas). Logo do escritório e registro da sociedade na OAB no timbrado: desenho aprovado em docs/design/aprovadas/portal-nao-paga-logo (parte B), programar junto do F3.81",
-  "evidencia": "Página /recibos/:id do Portal com o recibo em A4 no timbrado do escritório e \"Baixar PDF ou imprimir\" (o PDF sai do navegador); \"Quem pagou\" em Registrar recebimento (cliente, contato principal ou outra pessoa, com CPF ou CNPJ conferido); cópia do que foi no papel guardada junto do número; \"Ver o recibo\" no aviso e \"Recibo 0187\" na tabela abrem o recibo em outra aba (migration 0533, pgTAP 056, Deno app_test e recibo.test, e2e portal-financeiro F3.19)."
+  "proximo": "Mandar o PDF ao cliente pelo WhatsApp (vem com Conversas).",
+  "evidencia": "Página /recibos/:id do Portal com o recibo em A4 no timbrado do escritório e \"Baixar PDF ou imprimir\" (o PDF sai do navegador); \"Quem pagou\" em Registrar recebimento (cliente, contato principal ou outra pessoa, com CPF ou CNPJ conferido); cópia do que foi no papel guardada junto do número; \"Ver o recibo\" no aviso e \"Recibo 0187\" na tabela abrem o recibo em outra aba (migration 0533, pgTAP 056, Deno app_test e recibo.test, e2e portal-financeiro F3.19). Logo do escritório e registro da sociedade na OAB no timbrado do recibo (migration 0601, e2e portal-nao-paga-logo)."
 }

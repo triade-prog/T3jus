@@ -13,7 +13,7 @@ import qrcode from "qrcode-generator";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   brCodePix, chavePixParaLer, dataBr, hojeBrasilia, LIMITE_CIDADE, LIMITE_INSTRUCOES, LIMITE_RECEBEDOR, normalizarChavePix, pixDaParcela,
-  reais, telefoneBr, textoPix, TIPOS_CHAVE_PIX, txidParcela,
+  fraseOabSociedade, reais, telefoneBr, textoPix, TIPOS_CHAVE_PIX, txidParcela,
   type AreaCarne, type CarneGerado, type CarneParaImprimir, type FormatoCarne, type MudancaCarne, type OpcoesCarne, type ParcelaParaCarne,
   type RecebimentoEscritorio, type RecebimentoSalvo, type TipoChavePix,
 } from "@t3jus/domain";
@@ -27,6 +27,7 @@ import { Toast, type Feito } from "./FichaCliente.tsx";
 import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { chamarPortal, MolduraPortal, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { BarraEscritorio, ROTAS_ESCRITORIO } from "./WhatsApp.tsx";
+import { JanelaRemoverLogo, LogoNoDocumento, MarcaParaLer, MarcaTimbrado, type DadosTimbrado, type EstadoMarca } from "./MarcaTimbrado.tsx";
 
 /** A página do carnê para imprimir. `imprimir` abre a impressão assim que a folha carrega. */
 export function rotaCarne(id: string, area: AreaCarne, imprimir = false): string {
@@ -99,11 +100,15 @@ function Tesoura({ topo }: { topo?: boolean }) {
 
 type Impressa = CarneParaImprimir["parcelas"][number];
 
+/** O alto da via e da capa: o logo do dia do carnê (F3.81) ou o nome em letra; o CNPJ e a OAB embaixo. */
 function MarcaEscritorio({ c }: { c: CarneParaImprimir }) {
+  const m = c.marca;
+  const cnpj = c.escritorio.cnpj ? `CNPJ ${c.escritorio.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}` : null;
+  const oab = m?.oab ?? c.escritorio.oab ?? null;
   return (
     <div className="ca-marca">
-      <span className="ca-esc">{c.escritorio.nome}</span>
-      {c.escritorio.cnpj ? <span className="ca-doc">CNPJ {c.escritorio.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}</span> : null}
+      {m?.tipo === "LOGO" && m.logoId ? <LogoNoDocumento marca={m} nome={c.escritorio.nome} classe="ca-logo" /> : <span className="ca-esc">{c.escritorio.nome}</span>}
+      {cnpj || oab ? <span className="ca-doc">{[cnpj, oab].filter(Boolean).join(" · ")}</span> : null}
     </div>
   );
 }
@@ -730,6 +735,7 @@ function OndeAparece({ r }: { r: RecebimentoEscritorio }) {
           <ul className="cn-lista">
             <li><Icone nome="carne" className="ico" /><span><b>Carnê de cada contrato</b>: o QR, o Pix copia e cola, a chave e o recebedor em cada parcela.</span></li>
             <li><Icone nome="doc" className="ico" /><span><b>Capa do carnê</b>: as instruções de pagamento. Sem chave Pix, elas vão no lugar do Pix.</span></li>
+            <li><Icone nome="doc" className="ico" /><span><b>Recibo de cada recebimento</b>: a marca e o registro na OAB no timbrado.</span></li>
             <li><Icone nome="check" className="ico" /><span><b>A baixa continua manual</b>, em Registrar recebimento. O identificador da parcela ajuda a achar o pagamento no extrato.</span></li>
           </ul>
         </div>
@@ -745,28 +751,22 @@ function OndeAparece({ r }: { r: RecebimentoEscritorio }) {
   );
 }
 
-function MarcaNoCarne({ nome }: { nome: string }) {
-  return (
-    <section className="folha" aria-labelledby="t-rm">
-      <div className="folha-cab">
-        <div>
-          <h2 id="t-rm"><Icone nome="imagem" className="ico" />Marca no carnê</h2>
-          <p className="sub">O carnê é do escritório: o nome dele fica no alto de cada parcela. O T3jus aparece só no rodapé, em letra pequena.</p>
-        </div>
-      </div>
-      <div className="cn-form">
-        <div className="cn-marca-esc">
-          <span className="fi-rotulo">Prévia</span>
-          <span className="cn-marca-prev" aria-hidden="true"><b>{nome}</b></span>
-          <span className="sr">{nome}, em letra serifada vinho.</span>
-        </div>
-        <p className="ajuda">Sai bem em qualquer impressora, colorida ou preto e branco.</p>
-      </div>
-    </section>
-  );
+/** O que a marca e o timbrado usam do escritório. */
+function dadosTimbrado(e: EscritorioPortal, oab: string | null): DadosTimbrado {
+  const cnpj = e.cnpj ? e.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : null;
+  const local = [e.endereco, [e.cidade, e.uf].filter(Boolean).join(", ")].filter(Boolean).join(" · ") || null;
+  return { nome: e.nome, cnpj, oab, local };
 }
 
-function SoLeitura({ r, nome }: { r: RecebimentoEscritorio; nome: string }) {
+function estadoDaMarca(r: RecebimentoEscritorio): EstadoMarca {
+  const logo = r.marca === "LOGO" ? r.logo ?? null : null;
+  return {
+    marca: logo ? "LOGO" : "LETRA", logo, jeito: r.logoJeito ?? (logo && logo.largura < 2 * logo.altura ? "LOGO_E_NOME" : "SO_LOGO"),
+    cor: r.logoCor ?? "ARQUIVO", oabUf: r.oabUf ?? "", oabNumero: r.oabNumero ?? "",
+  };
+}
+
+function SoLeitura({ r, escritorio }: { r: RecebimentoEscritorio; escritorio: EscritorioPortal }) {
   const tem = r.pixTipo && r.pixChave;
   return (
     <div className="fi-col">
@@ -783,7 +783,8 @@ function SoLeitura({ r, nome }: { r: RecebimentoEscritorio; nome: string }) {
             <div><dt>Nome do recebedor</dt><dd>{r.recebedor ?? "—"}</dd></div>
             <div><dt>Cidade</dt><dd>{r.cidade ?? "—"}</dd></div>
             <div><dt>Instruções de pagamento</dt><dd style={{ fontWeight: 400 }}>{r.instrucoes ?? "—"}</dd></div>
-            <div><dt>Marca no carnê</dt><dd>{nome}, em letra</dd></div>
+            <MarcaParaLer e={estadoDaMarca(r)} d={dadosTimbrado(escritorio, r.oab ?? null)}
+              desde={r.marca === "LOGO" && r.atualizadoEm ? diaCurto(diaDoInstante(r.atualizadoEm)) : null} />
           </dl>
           {tem ? <TesteDoPix tipo={r.pixTipo!} chave={r.pixChave!} recebedor={r.recebedor ?? ""} cidade={r.cidade ?? ""} /> : null}
         </div>
@@ -792,7 +793,7 @@ function SoLeitura({ r, nome }: { r: RecebimentoEscritorio; nome: string }) {
   );
 }
 
-function FormRecebimento({ r, nome, aoSalvo }: { r: RecebimentoEscritorio; nome: string; aoSalvo: (s: RecebimentoSalvo, trocou: boolean) => void }) {
+function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio; escritorio: EscritorioPortal; aoSalvo: (s: RecebimentoSalvo, trocou: boolean, marca: string | null) => void }) {
   const [tipo, setTipo] = useState<TipoChavePix | "">(r.pixTipo ?? "");
   const [chave, setChave] = useState(r.pixTipo && r.pixChave ? chavePixParaLer(r.pixTipo, r.pixChave) : "");
   const [recebedor, setRecebedor] = useState(r.recebedor ?? "");
@@ -802,7 +803,20 @@ function FormRecebimento({ r, nome, aoSalvo }: { r: RecebimentoEscritorio; nome:
   const [falha, setFalha] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [confirmar, setConfirmar] = useState(false);
+  const [marca, setMarca] = useState<EstadoMarca>(() => estadoDaMarca(r));
+  const [versao, setVersao] = useState(r.versao);
+  const [naoSalvo, setNaoSalvo] = useState<number | null>(null);
+  const [erroMarca, setErroMarca] = useState(false);
+  const [erroOab, setErroOab] = useState<("oabUf" | "oabNumero")[]>([]);
+  const [remover, setRemover] = useState(false);
   const form = useRef<HTMLFormElement>(null);
+  const mudarMarca = (m: Partial<EstadoMarca>) => {
+    setMarca((x) => ({ ...x, ...m }));
+    if (m.marca || m.logo) setErroMarca(false);
+    if (m.cor) setNaoSalvo(null);
+    if ("oabUf" in m || "oabNumero" in m) setErroOab([]);
+  };
+  const salvoEm = r.marca === "LOGO" && r.logo && r.atualizadoEm ? `salvo em ${diaCurto(diaDoInstante(r.atualizadoEm))}, às ${horaDoInstante(r.atualizadoEm)}` : null;
   const tem = (c: Campo) => erros.includes(c);
   /** Ao mexer num campo, o erro dele sai (volta no próximo Salvar, se ainda valer). */
   const limpar = (...cs: Campo[]) => setErros((e) => (e.some((x) => cs.includes(x)) ? e.filter((x) => !cs.includes(x)) : e));
@@ -826,30 +840,61 @@ function FormRecebimento({ r, nome, aoSalvo }: { r: RecebimentoEscritorio; nome:
     return e;
   }
 
+  /** A marca e a OAB (F3.81, F3.19): logo marcado sem arquivo; seccional sem número e o contrário. */
+  function conferirMarca(): { marca: boolean; oab: ("oabUf" | "oabNumero")[] } {
+    const n = marca.oabNumero.replace(/\D/g, "");
+    const oab: ("oabUf" | "oabNumero")[] = [];
+    if (marca.oabUf && !n) oab.push("oabNumero");
+    if (!marca.oabUf && n) oab.push("oabUf");
+    if (n && !/^[1-9][0-9]{0,5}$/.test(n)) oab.push("oabNumero");
+    return { marca: marca.marca === "LOGO" && !marca.logo, oab };
+  }
+
   const trocaChave = () => !!r.pixChave && (norm !== r.pixChave || rec !== (r.recebedor ?? "") || cid !== (r.cidade ?? ""));
 
   function pedirSalvar() {
     setFalha(null);
     const e = conferir();
+    const m = conferirMarca();
     setErros(e);
-    if (e.length) return focarPrimeiroErro(form.current);
+    setErroMarca(m.marca);
+    setErroOab(m.oab);
+    if (e.length || m.marca || m.oab.length) {
+      if (!e.length && m.marca) return requestAnimationFrame(() => document.getElementById("lg-logo")?.querySelector<HTMLElement>("label.btn")?.focus());
+      return focarPrimeiroErro(form.current);
+    }
     if (trocaChave()) { setConfirmar(true); return; }
     void salvar();
   }
 
-  async function salvar() {
+  async function salvar(semLogo = false) {
     setConfirmar(false);
+    setRemover(false);
     setSalvando(true);
     const algum = !!tipo;
+    const m = semLogo ? { ...marca, marca: "LETRA" as const } : marca;
     const res = await chamarPortal<RecebimentoSalvo>("/v1/escritorio/recebimento", {
       metodo: "PUT",
-      corpo: { versao: r.versao, pixTipo: algum ? tipo : null, pixChave: algum ? chave : null, recebedor: algum ? recebedor : null, cidade: algum ? cidade : null, instrucoes: instrucoes.trim() || null },
+      corpo: {
+        versao, pixTipo: algum ? tipo : null, pixChave: algum ? chave : null, recebedor: algum ? recebedor : null, cidade: algum ? cidade : null, instrucoes: instrucoes.trim() || null,
+        marca: m.marca, logoId: m.marca === "LOGO" ? m.logo?.id ?? null : null,
+        logoJeito: m.marca === "LOGO" ? m.jeito : null, logoCor: m.marca === "LOGO" ? m.cor : null,
+        oabUf: m.oabUf || null, oabNumero: m.oabNumero.replace(/\D/g, "") || null,
+      },
     });
     setSalvando(false);
-    if (res.ok) return aoSalvo(res.dados, trocaChave());
+    if (res.ok && res.dados.naoSalvo) {
+      // Pergunta 7: o resto foi salvo e a marca não; a página fica aberta para escolher outra forma.
+      setVersao(res.dados.versao);
+      setNaoSalvo(res.dados.naoSalvo.contraste);
+      return requestAnimationFrame(() => document.querySelector<HTMLElement>('input[name="lg-c"][aria-invalid="true"]')?.focus());
+    }
+    if (res.ok) return aoSalvo(res.dados, trocaChave(), semLogo ? "remover" : m.marca === "LOGO" && (r.marca !== "LOGO" || r.logo?.id !== m.logo?.id) ? "logo" : null);
     const c = res.erro.detalhes?.campos;
     if (res.erro.codigo === "VALIDATION_ERROR" && Array.isArray(c) && c.length) {
-      setErros(c.map(String) as Campo[]);
+      const cs = c.map(String);
+      setErros(cs.filter((x) => x !== "oabUf" && x !== "oabNumero") as Campo[]);
+      setErroOab(cs.filter((x): x is "oabUf" | "oabNumero" => x === "oabUf" || x === "oabNumero"));
       return focarPrimeiroErro(form.current);
     }
     setFalha(res.erro.codigo === "VERSION_CONFLICT" ? "Outra pessoa mudou o recebimento antes de você. Recarregue a página para ver o que mudou." : textoDoErro(res.erro));
@@ -942,7 +987,8 @@ function FormRecebimento({ r, nome, aoSalvo }: { r: RecebimentoEscritorio; nome:
           </div>
         </div>
       </section>
-      <MarcaNoCarne nome={nome} />
+      <MarcaTimbrado e={marca} mudar={mudarMarca} d={dadosTimbrado(escritorio, fraseOabSociedade(marca.oabUf, marca.oabNumero))}
+        salvoEm={salvoEm} erroMarca={erroMarca} erroOab={erroOab} naoSalvo={naoSalvo} aoRemover={() => setRemover(true)} />
       <div className="form-pe">
         <span className="esq-pe">Cada mudança fica no histórico do escritório. Os carnês novos já saem com ela.</span>
         <button className="btn btn-pri" type="submit" disabled={salvando} aria-busy={salvando || undefined}>
@@ -964,6 +1010,7 @@ function FormRecebimento({ r, nome, aoSalvo }: { r: RecebimentoEscritorio; nome:
           <li><Icone nome="carne" className="ico" /><span><b>Os carnês já gerados ficam marcados como desatualizados</b>, para gerar de novo. O QR deles continua pagando na chave antiga enquanto ela existir no banco.</span></li>
         </ul>
       </Janela>
+      <JanelaRemoverLogo aberta={remover} aoFechar={() => setRemover(false)} aoRemover={() => void salvar(true)} />
     </>
   );
 }
@@ -995,12 +1042,12 @@ export function RecebimentoPortal() {
             <p className="sobretitulo">Escritório</p>
             <h1>Recebimento</h1>
             <span className="fio" aria-hidden="true" />
-            <p className="lede">Como os clientes pagam o escritório: a chave Pix e as instruções que vão no carnê.</p>
+            <p className="lede">Como os clientes pagam o escritório: a chave Pix, as instruções do carnê e a marca que vai no carnê e no recibo.</p>
           </div>
         </div>
         {!r.dono ? (
           <Aviso tom="info" icone="cadeado" titulo="Você vê esta página só para ler.">
-            Quem muda a chave Pix e as instruções é {dona}, a sócia dona. Se algo estiver errado, fale com ela.
+            Quem muda a chave Pix, as instruções e a marca é {dona}, a sócia dona. Se algo estiver errado, fale com ela.
           </Aviso>
         ) : null}
         {desat ? (
@@ -1010,12 +1057,14 @@ export function RecebimentoPortal() {
         ) : null}
         <div className="fi-grade">
           {r.dono
-            ? <FormRecebimento key={r.versao} r={r} nome={escritorio.nome} aoSalvo={(s, trocou) => {
+            ? <FormRecebimento key={r.versao} r={r} escritorio={escritorio} aoSalvo={(s, trocou, m) => {
                 setDesat(trocou ? s.desatualizados : 0);
-                setFeito({ titulo: trocou ? "Chave Pix trocada" : "Recebimento salvo", texto: "Os próximos carnês já saem assim." });
+                setFeito(m === "logo" ? { titulo: "Marca salva: o logo do escritório.", texto: "Os próximos carnês e recibos já saem com o logo. Os já emitidos ficam como saíram." }
+                  : m === "remover" ? { titulo: "Logo removido.", texto: "Os próximos carnês e recibos saem com o nome em letra. Os já emitidos ficam como saíram." }
+                  : { titulo: trocou ? "Chave Pix trocada" : "Recebimento salvo", texto: "Os próximos carnês e recibos já saem assim." });
                 setVez((v) => v + 1);
               }} />
-            : <SoLeitura r={r} nome={escritorio.nome} />}
+            : <SoLeitura r={r} escritorio={escritorio} />}
           <OndeAparece r={r} />
         </div>
       </div>

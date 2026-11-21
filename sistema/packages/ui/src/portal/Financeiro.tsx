@@ -196,11 +196,13 @@ function ReceberConteudo() {
                         <div className="fi-forma">
                           <b>{nomeForma(p.forma) ?? "Forma a combinar"}</b>
                           {cob ? <small>{cob}</small> : null}
+                          {p.semAvisoAutomatico ? <small>Sem aviso automático</small> : null}
                         </div>
                       </td>
                       <td data-r="Situação">
                         <div className="fi-sit">
                           <SeloDaParcela p={p} hoje={hoje} />
+                          {p.eraPagoAntes ? <span className="selo selo-neutro">Era paga antes do T3jus</span> : null}
                           {venc || p.cobranca ? <MotivoEAcao p={p} hoje={hoje} /> : null}
                         </div>
                       </td>
@@ -701,6 +703,7 @@ function SituacaoNaFicha({ p, hoje }: { p: ParcelaDoContrato; hoje: string }) {
   return (
     <div className="fi-sit">
       <SeloDaParcela p={p} hoje={hoje} />
+      {p.eraPagoAntes ? <span className="selo selo-neutro">Era paga antes do T3jus</span> : null}
       {nota ? <p className="fi-motivo">{nota}</p> : null}
     </div>
   );

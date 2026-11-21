@@ -125,7 +125,8 @@ test.describe("Carnê de pagamento do Portal (FI-23)", () => {
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Recebimento salvo" })).toBeVisible();
     const put = pedidos.find((p) => p.metodo === "PUT")!;
-    expect(put.corpo).toEqual({ versao: 0, pixTipo: "CNPJ", pixChave: "11.222.333/0001-81", recebedor: "Ribeiro e Matos Soc Adv", cidade: "São Paulo", instrucoes: null });
+    expect(put.corpo).toEqual({ versao: 0, pixTipo: "CNPJ", pixChave: "11.222.333/0001-81", recebedor: "Ribeiro e Matos Soc Adv", cidade: "São Paulo", instrucoes: null,
+      marca: "LETRA", logoId: null, logoJeito: null, logoCor: null, oabUf: null, oabNumero: null });
     await expect(page.getByRole("textbox", { name: "Chave Pix", exact: true })).toHaveValue("11.222.333/0001-81");
   });
 
@@ -159,9 +160,9 @@ test.describe("Carnê de pagamento do Portal (FI-23)", () => {
     });
     await page.goto(`${P}/meu-escritorio/recebimento`);
     await expect(page.getByText("Você vê esta página só para ler.")).toBeVisible();
-    await expect(page.getByText("Quem muda a chave Pix e as instruções é Marina Ribeiro")).toBeVisible();
+    await expect(page.getByText("Quem muda a chave Pix, as instruções e a marca é Marina Ribeiro")).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Chave Pix", exact: true })).toHaveCount(0);
-    await expect(page.getByText("11.222.333/0001-81")).toBeVisible();
+    await expect(page.getByText("11.222.333/0001-81", { exact: true })).toBeVisible();
     await expect(page.getByRole("img", { name: "QR Code do Pix de teste, sem valor" })).toBeVisible();
     await semViolacoes(page);
   });

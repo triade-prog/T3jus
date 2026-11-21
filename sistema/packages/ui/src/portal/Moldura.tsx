@@ -28,6 +28,8 @@ export interface EscritorioPortal {
   cidade: string | null;
   uf: string | null;
   endereco: string | null;
+  /** O registro da sociedade na OAB, "OAB/SP 31.874" (F3.19, decisão 23); null se não há. */
+  oabSociedade?: string | null;
   contatos: { nome: string; papel?: string | null; telefone?: string | null; email?: string | null }[];
   ultimaExportacao: { em: string; por: string | null } | null;
   /** Contrato encerrado, nos 30 dias só para consulta (F0.14); fora disso, null. */

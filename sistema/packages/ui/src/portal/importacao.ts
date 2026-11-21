@@ -15,6 +15,7 @@ export const ROTAS_IMPORTACAO = {
   /** Um passo de uma importação já começada (colunas ou prévia). */
   passo: (id: string, passo: "colunas" | "previa") => `${BASE}/${id}?passo=${passo}`,
   resultado: (id: string) => `/clientes/importacoes/${id}`,
+  desfazer: (id: string) => `/clientes/importacoes/${id}?desfazer=1`,
   historico: "/clientes/importacoes",
   clientes: (id: string, juntados = false) => `/clientes?importacao=${id}${juntados ? "&juntados=1" : ""}`,
 };

@@ -4,6 +4,7 @@
 // escritório, o valor da parcela e o identificador dela. A baixa continua manual, em
 // "Registrar recebimento". As regras de quem pode o quê estão no banco (0450_portal_carne.sql).
 
+import type { CorLogo, JeitoLogo, LogoEscritorio, MarcaDocumento, MarcaNoDocumento } from "./logo.ts";
 import { z } from "zod";
 import { cpfValido } from "./clientes.ts";
 import { cnpjValido } from "./console.ts";
@@ -138,6 +139,13 @@ export const salvarRecebimentoSchema = z.object({
   recebedor: txt(60),
   cidade: txt(60),
   instrucoes: txt(1000),
+  // A marca no carnê e no recibo e o registro da sociedade na OAB (F3.81, F3.19).
+  marca: z.enum(["LETRA", "LOGO"]).nullish(),
+  logoId: z.string().regex(/^[0-9a-f-]{36}$/i).nullish(),
+  logoJeito: z.enum(["SO_LOGO", "LOGO_E_NOME"]).nullish(),
+  logoCor: z.enum(["ARQUIVO", "UMA_COR"]).nullish(),
+  oabUf: txt(2),
+  oabNumero: txt(12),
 });
 export type SalvarRecebimento = z.input<typeof salvarRecebimentoSchema>;
 
@@ -156,12 +164,23 @@ export interface RecebimentoEscritorio {
   atualizadoEm: string | null;
   /** Sugestões para o recebedor e a cidade, vindas da ficha do escritório. */
   sugestao: { recebedor: string; cidade: string | null; cnpj: string | null };
+  /** O que vai no alto do carnê e do recibo (F3.81). */
+  marca?: MarcaDocumento;
+  logoJeito?: JeitoLogo | null;
+  logoCor?: CorLogo;
+  logo?: LogoEscritorio | null;
+  /** O registro da sociedade na OAB (F3.19, pergunta 5). */
+  oabUf?: string | null;
+  oabNumero?: string | null;
+  oab?: string | null;
 }
 
 export interface RecebimentoSalvo {
   versao: number;
   /** Carnês que ficaram desatualizados com a troca da chave. */
   desatualizados: number;
+  /** O que não foi salvo, com o motivo: o logo claro demais nas cores do arquivo (pergunta 7). */
+  naoSalvo?: { marca: "LOGO_SEM_CONTRASTE"; contraste: number } | null;
 }
 
 // ------------------------------------------------------------------ Carnê
@@ -236,7 +255,9 @@ export interface CarneParaImprimir {
   formato: FormatoCarne;
   capa: boolean;
   geradoEm: string;
-  escritorio: { nome: string; cnpj: string | null; endereco: string | null; cidade: string | null; uf: string | null; whatsapp: string | null };
+  /** A marca guardada no dia do carnê (F3.81); sem ela, o nome em letra. */
+  marca?: MarcaNoDocumento | null;
+  escritorio: { nome: string; cnpj: string | null; endereco: string | null; cidade: string | null; uf: string | null; whatsapp: string | null; oab?: string | null };
   cliente: { nome: string; documento: string | null; tipo: "PF" | "PJ" };
   contrato: { id: string; numero: string; objeto: string };
   pix: { tipo: TipoChavePix; chave: string; recebedor: string; cidade: string } | null;

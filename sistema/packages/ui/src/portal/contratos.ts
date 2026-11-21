@@ -67,8 +67,9 @@ export function resumoContrato(lista: Condicao[]): {
 export function janelaProgramacao(lista: RecebimentoPrevisto[], hoje: string): { mostrar: RecebimentoPrevisto[]; depois: number; ate: string | null; programado: number } {
   const limite = somarMesesDia(hoje, 3);
   const vivos = lista.filter((r) => !r.cancelado);
-  // As pagas antes do T3jus (F3.73) ficam na folha delas, fora da programação.
-  const mostrar = lista.filter((r) => !r.pagoAntes && r.vencimento <= limite);
+  // As pagas antes do T3jus (F3.73) ficam na folha delas, fora da programação. A que passou para
+  // A receber e voltou ("Foi paga, sim", F3.84) também: ela está de novo na folha.
+  const mostrar = lista.filter((r) => !r.pagoAntes && !(r.eraPagoAntes && r.cancelado) && r.vencimento <= limite);
   const ultimo = vivos.length ? vivos[vivos.length - 1]!.vencimento : null;
   return {
     mostrar,
@@ -114,6 +115,20 @@ export function fraseDoContrato(e: EventoContrato): { oque: string; detalhe?: st
         detalhe: nomes.map((n) => `${n}: ${depois[n] ?? "sem OAB"}${antes[n] ? ` (antes, ${antes[n]})` : ""}.`).join(" ") || undefined,
       };
     }
+    // "Não foi paga" e "Foi paga, sim" (F3.84): a parcela, o vencimento e o motivo.
+    case "contrato.parcela_nao_paga": {
+      const manteve = d.vencimento === d.vencimentoPlanilha;
+      return {
+        oque: `passou a ${String(d.descricao ?? "parcela").toLowerCase()} para A receber`,
+        detalhe: `Não foi paga. ${manteve ? "Vencimento mantido" : "Novo vencimento"}: ${dataBr(String(d.vencimento))}. Motivo: “${String(d.motivo)}”.`,
+        forte: true,
+      };
+    }
+    case "contrato.parcela_foi_paga":
+      return {
+        oque: `voltou a ${String(d.descricao ?? "parcela").toLowerCase()} para “Pago antes do T3jus”`,
+        detalhe: `Foi paga, sim. Motivo: “${String(d.motivo)}”.`,
+      };
     case "contrato.responsavel_passado":
       return { oque: "O contrato passou para outra pessoa da equipe, porque o responsável saiu." };
     case "estado.mudou":

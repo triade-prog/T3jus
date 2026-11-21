@@ -30,6 +30,12 @@ function areaDaConsulta(c: Context): (typeof AREAS)[number] {
 /** O que o banco devolve para imprimir: o mesmo do carnê, sem o Pix montado e com o documento inteiro. */
 type CarneDoBanco = Omit<CarneParaImprimir, "parcelas"> & { parcelas: Omit<CarneParaImprimir["parcelas"][number], "pix">[] };
 
+function pick<T extends object, K extends keyof T>(o: T, chaves: K[]): Partial<Pick<T, K>> {
+  const r: Partial<Pick<T, K>> = {};
+  for (const k of chaves) if (o[k] !== undefined) r[k] = k === "logoId" && typeof o[k] === "string" ? (o[k] as string).toLowerCase() as T[K] : o[k];
+  return r;
+}
+
 export function rotasCarne(app: Hono<VarsPortal>, deps: DepsPortal) {
   const quem = (c: Context<VarsPortal>) => ({ p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") });
 
@@ -59,7 +65,11 @@ export function rotasCarne(app: Hono<VarsPortal>, deps: DepsPortal) {
     if (campos.length) throw new ErroDominio("VALIDATION_ERROR", { campos });
     return c.json(await deps.banco.rpc<RecebimentoSalvo>("portal_recebimento_salvar", {
       ...quem(c),
-      p_dados: { versao: d.versao, pixTipo: tipo, pixChave: chave, recebedor, cidade, instrucoes: d.instrucoes?.trim() || null },
+      p_dados: {
+        versao: d.versao, pixTipo: tipo, pixChave: chave, recebedor, cidade, instrucoes: d.instrucoes?.trim() || null,
+        // A marca e a OAB só vão quando a tela manda (o banco mantém o que não veio).
+        ...pick(d, ["marca", "logoId", "logoJeito", "logoCor", "oabUf", "oabNumero"]),
+      },
     }));
   });
 

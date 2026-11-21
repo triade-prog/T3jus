@@ -74,7 +74,7 @@ const F19 = {
 const L41 = linha(41, "Rosa Almeida", "Aposentadoria por idade", "ATIVO", [{ tipo: "PARCELADO", total: 800000, parcelas: 10, primeiro: dia(-240) }], MARINA);
 const F41 = {
   ...L41, observacoes: null, versao: 1, assinadoEm: dia(-250), assinaturaPor: MARINA, encerradoEm: null, motivoEncerramento: null,
-  proposta: null, advogados: [MARINA], financeiro: true, historico: [],
+  proposta: null, advogados: [MARINA], financeiro: true, historico: [], podeMarcarNaoPaga: true,
   recebimentos: Array.from({ length: 10 }, (_, i) => recebimento(40 + i, `Parcela ${i + 1} de 10`, -240 + i * 30, 80000, {
     tipo: "PARCELADO",
     ...(i < 8 ? { pagoAntes: true, cancelado: { em: em(-1, "15:42"), motivo: "Paga antes do T3jus (importação)" } } : { pagoAntes: false }),

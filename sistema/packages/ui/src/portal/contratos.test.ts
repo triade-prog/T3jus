@@ -46,3 +46,22 @@ describe("EX-12: inscrições no histórico do contrato", () => {
       .toEqual({ oque: "mudou as inscrições na OAB do contrato", detalhe: "Felipe Matos: OAB/RJ nº 245.880-S (antes, OAB/SP nº 287.104)." });
   });
 });
+
+describe("F3.84: \"Não foi paga\" e \"Foi paga, sim\"", () => {
+  it("a parcela que voltou para A receber entra na programação; a que voltou para a folha sai", () => {
+    const paga = { ...rec("2026-11-10", 80000, true), pagoAntes: true, corrigida: true };
+    const nova = { ...rec("2026-11-10", 80000), id: "nova", eraPagoAntes: true, podeVoltar: true };
+    const desfeita = { ...rec("2026-10-10", 80000, true), id: "desfeita", eraPagoAntes: true };
+    const j = janelaProgramacao([desfeita, paga, nova, rec("2026-12-10", 80000)], "2026-11-18");
+    expect(j.mostrar.map((r) => r.id)).toEqual(["nova", "2026-12-1080000"]);
+    expect(j.programado).toBe(160000);
+  });
+
+  it("o histórico diz a parcela, o vencimento e o motivo", () => {
+    expect(fraseDoContrato({ em: "", acao: "contrato.parcela_nao_paga", autor: "Marina Ribeiro",
+      dados: { descricao: "Parcela 2 de 6", vencimentoPlanilha: "2026-11-10", vencimento: "2026-11-10", motivo: "Rosa só pagou a primeira" } }))
+      .toEqual({ oque: "passou a parcela 2 de 6 para A receber", detalhe: "Não foi paga. Vencimento mantido: 10/11/2026. Motivo: “Rosa só pagou a primeira”.", forte: true });
+    expect(fraseDoContrato({ em: "", acao: "contrato.parcela_foi_paga", autor: "Marina Ribeiro", dados: { descricao: "Parcela 2 de 6", motivo: "Mandou o comprovante" } })!.oque)
+      .toBe("voltou a parcela 2 de 6 para “Pago antes do T3jus”");
+  });
+});

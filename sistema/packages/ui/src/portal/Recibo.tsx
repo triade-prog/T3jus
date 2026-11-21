@@ -15,6 +15,7 @@ import { Carregando, ErroAoCarregar } from "../console/pecas.tsx";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { chamarPortal } from "./Moldura.tsx";
+import { LogoNoDocumento } from "./MarcaTimbrado.tsx";
 
 const fuso = { timeZone: "America/Sao_Paulo" } as const;
 const horaDe = (em: string) => new Intl.DateTimeFormat("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit" }).format(new Date(em)).replace(":", "h");
@@ -24,13 +25,16 @@ const diaDe = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: 
 export function FolhaRecibo({ r }: { r: ReciboParaImprimir }) {
   const total = totalDoRecibo(r);
   const n = numeroDoRecibo(r);
-  const linhas = linhasTimbrado({ ...r.escritorio, contatos: r.escritorio.contatos ?? undefined });
+  const linhas = linhasTimbrado({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined });
   const docCli = documentoComNome(r.cliente.documento);
   const venc = dataBr(r.parcela.vencimento);
   return (
     <article className="rb-folha" aria-label={`Recibo nº ${n}`}>
       <header className="rb-timbre">
-        <div className="rb-marca"><span className="rb-esc">{r.escritorio.nome}</span><span className="rb-esc-sub">Advocacia</span></div>
+        {/* O logo do dia do recibo (F3.81, decisão 24), na caixa de até 92 × 20 mm; sem ele, o nome em letra. */}
+        {r.marca?.tipo === "LOGO" && r.marca.logoId
+          ? <div className="rb-marca"><LogoNoDocumento marca={r.marca} nome={r.escritorio.nome} classe="rb-logo" /></div>
+          : <div className="rb-marca"><span className="rb-esc">{r.escritorio.nome}</span><span className="rb-esc-sub">Advocacia</span></div>}
         <p className="rb-ender">
           {linhas.slice(1).map((l, i) => <span key={i}>{i ? <br /> : null}{l}</span>)}
           {r.escritorio.whatsapp ? <><br />WhatsApp {r.escritorio.whatsapp}</> : null}

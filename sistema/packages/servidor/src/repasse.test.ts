@@ -98,6 +98,14 @@ describe("F0.8: repasse /api", () => {
     expect((await repassar(docx(`v1/escritorio/peticoes/${id}/decisao`), ctx(["v1", "escritorio", "peticoes", id, "decisao"]))).status).toBe(400);
   });
 
+  it("F3.81: o PNG do logo passa como arquivo só no envio do logo", async () => {
+    mockFetch(new Response("{}", { status: 201 }));
+    const png = (caminho: string) => new Request(`https://portal.exemplo/api/${caminho}?nome=logo.png&formato=PNG&bytes=86000`, {
+      method: "POST", body: new Uint8Array(1000), headers: { "content-type": "application/octet-stream" } });
+    expect((await repassar(png("v1/escritorio/recebimento/logo"), ctx(["v1", "escritorio", "recebimento", "logo"]))).status).toBe(201);
+    expect((await repassar(png("v1/escritorio/recebimento"), ctx(["v1", "escritorio", "recebimento"]))).status).toBe(400);
+  });
+
   it("função fora do ar vira UPSTREAM_UNAVAILABLE", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("fetch failed"); }));
     const r = await repassar(new Request("https://portal.exemplo/api/v1/saude"), ctx(["v1", "saude"]));

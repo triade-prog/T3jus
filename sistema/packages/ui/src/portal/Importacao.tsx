@@ -1520,6 +1520,8 @@ export function ResultadoImportacao({ id }: { id: string }) {
       if (!vivo) return;
       if (r.ok && r.dados.situacao === "PREVIA") return irPara(ROTAS_IMPORTACAO.passo(id, r.dados.temPrevia ? "previa" : "colunas"));
       setImp(r.ok ? r.dados : "erro");
+      // "Desfazer a importação" da ficha do contrato (F3.84) chega com ?desfazer=1 e abre a janela.
+      if (r.ok && r.dados.podeDesfazer && new URLSearchParams(window.location.search).has("desfazer")) setDesfazer(true);
       if (r.ok && r.dados.fora > 0 && r.dados.situacao === "CONCLUIDA") {
         void chamarPortal<LinhasFora>(`${API}/${encodeURIComponent(id)}/fora`).then((f) => vivo && f.ok && setFora(f.dados));
       }

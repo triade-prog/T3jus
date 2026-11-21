@@ -4192,6 +4192,143 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
   .pg-grade{gap:16px}
 }
 
+/* Recebimentos · "Não foi paga" e "Foi paga, sim" (F3.84; docs/design/aprovadas/portal-nao-paga-logo) */
+.np-acao{text-align:right;white-space:nowrap;padding-right:24px!important}
+.pg .hn-tab td.np-acao{color:var(--texto)}
+.np-o small{display:block;font-size:12px;color:var(--texto-2);line-height:1.4;margin-top:2px}
+.np-o .btn{margin-top:6px}
+.np-caminhos{margin:0;padding:12px 24px 18px;display:grid;gap:10px;border-top:1px solid var(--divisor)}
+.np-caminhos li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--texto-2);list-style:none}
+.np-caminhos li .ico{flex:none;margin-top:2px;color:var(--vinho)}
+.np-caminhos li b{color:var(--texto);font-weight:500}
+.np-caminhos a{color:var(--vinho);font-weight:500}
+.np-caminhos .np-ac{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.janela.np-janela{width:min(640px,calc(100vw - 32px))}
+.np-oque{margin:0;padding:12px 16px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:8px;list-style:none}
+.np-oque li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5}
+.np-oque li .ico{flex:none;margin-top:2px;color:var(--vinho)}
+.np-oque b{font-weight:600}
+.np-parc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 16px;margin:0;padding:12px 16px;border:1px solid var(--borda-folha);border-radius:var(--raio)}
+.np-parc dt{font-size:12px;color:var(--texto-2)}
+.np-parc dd{margin:0;font-weight:500}
+.np-venc .x-ops-l{grid-template-columns:1fr}
+.np-data{margin:8px 0 0 34px;max-width:240px}
+.np-aviso-auto{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:0;border-radius:var(--raio);background:var(--ambar-3);color:var(--tinta);font-size:13px;line-height:1.5}
+.np-aviso-auto .ico{flex:none;margin-top:2px;color:var(--vinho)}
+.np-aviso-auto b{font-weight:600}
+.np-pe-nota{margin-right:auto;align-self:center;font-size:12px;color:var(--texto-2);max-width:300px;line-height:1.45}
+.np-quem{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:0;font-size:13px}
+.np-quem dt{color:var(--texto-2)}
+.np-quem dd{margin:0;font-weight:500}
+.np-hist{padding:0 24px 18px}
+.np-hist .eventos small{display:block}
+.np-hist q{font-family:var(--serifa);font-style:italic;font-size:15px;color:var(--texto)}
+.np-hist .eventos li>div p{margin:0}
+.fi-sit .selo-neutro{margin-top:4px}
+#t-hr .ico{width:18px;height:18px;margin-right:8px;vertical-align:-3px;color:var(--vinho)}
+@media (max-width:760px){
+  .np-caminhos{padding:12px 16px 16px}
+  .np-caminhos .np-ac .btn{flex:1 1 100%}
+  .np-parc{grid-template-columns:1fr 1fr}
+  .np-data{margin-left:0;max-width:none}
+  .janela.np-janela{width:100%}
+  .np-pe-nota{display:none}
+  .np-hist{padding:0 16px 16px}
+  .pg .hn-tab td.np-acao .btn{width:100%}
+}
+
+/* Escritório › Recebimento · Marca e timbrado (F3.81, F3.19; docs/design/aprovadas/portal-nao-paga-logo). O logo é do
+   escritório e vem nas cores dele: aparece sempre sobre papel branco, como no papel impresso. */
+.lg-bloco{display:grid;gap:14px;padding:16px;border:1px solid var(--borda-folha);border-radius:var(--raio)}
+.lg-bloco h3{font-size:18px;line-height:1.2;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0}
+.lg-bloco h3 .ico{color:var(--vinho)}
+.lg-bloco h3 .opcional{font-family:var(--sans);font-size:13px;font-weight:400;color:var(--texto-2)}
+.lg-bloco>p.ajuda{margin:-8px 0 0}
+.lg-soltar{display:grid;justify-items:center;gap:8px;padding:22px 16px;text-align:center;border:2px dashed var(--vinho-4);border-radius:var(--raio);background:var(--sal-2)}
+.lg-soltar>.ico{width:32px;height:32px;color:var(--vinho)}
+.lg-soltar p{margin:0}
+.lg-soltar strong{font-weight:500}
+.lg-soltar .ajuda{max-width:52ch}
+.lg-soltar.lg-erro{border-color:var(--vinho-3)}
+.lg-soltar.lg-arrastando{background:var(--ambar-3)}
+.lg-soltar label.btn,.lg-arq-ac label.btn{cursor:pointer}
+.lg-soltar input:focus-visible+label,.lg-arq-ac input:focus-visible+label{outline:3px solid var(--vinho);outline-offset:2px}
+.lg-regras{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.lg-regras li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--texto-2)}
+.lg-regras li .ico{flex:none;margin-top:2px;color:var(--vinho)}
+.lg-regras b{color:var(--texto);font-weight:500}
+.lg-arq{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}
+.lg-miniatura{display:grid;place-items:center;height:96px;padding:10px;background:#fff;border:1px solid var(--borda-folha);border-radius:var(--raio)}
+.lg-miniatura img{max-width:100%;max-height:72px;display:block}
+.lg-arq-info{display:grid;gap:2px;min-width:0}
+.lg-arq-info strong{font-weight:500;overflow-wrap:anywhere}
+.lg-arq-info small{font-size:12px;color:var(--texto-2)}
+.lg-arq-ac{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.lg-conf{margin:0;padding:0;list-style:none;display:grid;border-top:1px solid var(--divisor)}
+.lg-conf li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid var(--divisor);font-size:13px;line-height:1.5}
+.lg-conf li .ico{margin-top:1px;color:var(--vinho)}
+.lg-conf li b{font-weight:600}
+.lg-conf li.lg-nao,.lg-conf li.lg-nao .ico,.lg-conf li.lg-nao b{color:var(--vinho-3)}
+.lg-conf small{display:block;color:var(--texto-2);font-size:12px}
+.lg-prev{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.lg-prev figure{margin:0;display:grid;gap:6px;min-width:0}
+.lg-prev figcaption{font-size:12px;color:var(--texto-2)}
+.lg-prev figcaption b{color:var(--texto);font-weight:500}
+.lg-papel{background:#fff;border:1px solid var(--borda-folha);border-radius:4px;padding:12px 14px;box-shadow:0 6px 16px -12px rgba(42,26,34,.45);min-height:92px}
+.lg-pb .lg-papel{filter:grayscale(1)}
+.lg-cn{display:grid;gap:5px}
+.lg-cn-top{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+.lg-m{flex:1;min-width:0;display:block}
+.lg-cn img{display:block;max-width:100%;max-height:38px}
+.lg-lado{display:flex;align-items:center;gap:6px}
+.lg-cn .lg-lado img{width:34px;height:34px;max-width:none;object-fit:contain}
+.lg-letra{font-family:var(--serifa);font-weight:600;color:var(--vinho);line-height:1}
+.lg-cn .lg-letra{font-size:17px}
+.lg-num{margin:0;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--texto-2);text-align:right;line-height:1.3}
+.lg-num b{display:block;font-family:var(--serifa);font-size:17px;letter-spacing:0;color:var(--tinta);text-transform:none}
+.lg-doc{margin:0;font-size:9px;color:var(--texto-2)}
+.lg-fio{position:relative;height:2px;background:var(--vinho)}
+.lg-fio::before{content:"";position:absolute;left:0;top:-2px;width:34px;height:5px;background:var(--ambar)}
+.lg-rb{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.lg-rb img{display:block;max-width:100%;max-height:50px}
+.lg-rb .lg-lado img{width:46px;height:46px;max-width:none;object-fit:contain}
+.lg-rb .lg-letra{font-size:21px}
+.lg-rb p{margin:0;flex:0 0 auto;max-width:48%;font-size:8.5px;line-height:1.45;color:var(--texto-2);text-align:right}
+.lg-rb p b{color:var(--tinta);font-weight:600}
+.lg-uma{display:flex;align-items:center;gap:12px;padding:8px 12px;background:#fff;border:1px solid var(--borda-folha);border-radius:var(--raio)}
+.lg-uma img{max-height:30px;max-width:180px;display:block}
+.lg-uma span{font-size:12px;color:var(--texto-2)}
+/* Em uma cor só, na cor da tinta (pergunta 7): o mesmo desenho, só a cor muda. */
+img.lg-uma-cor{filter:brightness(0)}
+.lg-grupo .x-ops-l{grid-template-columns:1fr 1fr}
+.lg-grupo.lg-com-erro .x-ops-l{border-left:3px solid var(--vinho-3);padding-left:10px}
+.lg-oab{display:grid;grid-template-columns:160px minmax(0,220px);gap:16px;align-items:start}
+.lg-ro-marca{display:grid;gap:8px}
+.lg-ro-marca .lg-papel{max-width:360px}
+.cn-ro div.lg-ro-marca,.cn-ro .lg-ro-marca div{display:block;padding:0;border:0;grid-template-columns:none}
+.cn-ro .lg-ro-marca div.lg-papel{display:grid;gap:5px;padding:12px 14px;border:1px solid var(--borda-folha);margin-top:8px}
+.cn-ro .lg-ro-marca div.lg-cn-top{display:flex}
+.cn-ro .lg-ro-marca div.lg-fio{height:2px}
+/* No papel: a caixa do logo é de até 56 × 12 mm no carnê e 92 × 20 mm no recibo, sem esticar (decisão 16). */
+.ca-logo{display:block;max-width:56mm;height:12mm}
+.ca-logo img{display:block;max-width:56mm;max-height:12mm;width:auto;height:auto}
+.ca-logo.lg-lado{display:flex;align-items:center;gap:2mm;height:12mm}
+.ca-logo.lg-lado img{height:12mm;width:12mm;object-fit:contain}
+.ca-logo.lg-lado .lg-letra{font-size:13pt}
+.rb-logo{display:block;max-width:92mm}
+.rb-logo img{display:block;max-width:92mm;max-height:20mm;width:auto;height:auto}
+.rb-logo.lg-lado{display:flex;align-items:center;gap:3mm}
+.rb-logo.lg-lado img{height:20mm;width:20mm;object-fit:contain}
+.rb-logo.lg-lado .lg-letra{font-size:22pt}
+@media (max-width:760px){
+  .lg-arq{grid-template-columns:1fr}
+  .lg-prev{grid-template-columns:1fr}
+  .lg-grupo .x-ops-l{grid-template-columns:1fr}
+  .lg-oab{grid-template-columns:1fr 1fr}
+  .lg-arq-ac .btn{flex:1 1 100%}
+  .lg-bloco{padding:14px 12px}
+}
+
 /* Conversa · atalho "Não receber avisos" (F3.65; docs/design/aprovadas/portal-pendencias-pequenas) */
 .ca-linha{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5;margin:0}
 .ca-linha>.ico{width:18px;height:18px;flex:none;margin-top:1px;color:var(--vinho-4)}

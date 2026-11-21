@@ -5,7 +5,7 @@
   "refs": [
     "FI-23"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 810,
-  "proximo": "Desenho aprovado em docs/design/aprovadas/portal-nao-paga-logo (parte B): programar o envio do logo com conferência em Escritório › Recebimento e o logo no carnê (migration 0601)"
+  "evidencia": "Escritório › Recebimento › Marca e timbrado: envio do logo (PNG, JPG ou SVG até 1 MB) com conferência de tamanho e contraste na tela e de novo na API, corte da margem, escolha de como imprimir (cores ou uma cor) e de como entra (logo só ou logo e nome), prévia do carnê e do recibo em cores e em P&B, remover logo; o logo entra no alto do carnê no lugar do nome em letra (migration 0601, pgTAP 066, logo.test do domínio, Deno app_test, e2e portal-nao-paga-logo e portal-carne)."
 }

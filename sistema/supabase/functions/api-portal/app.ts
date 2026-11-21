@@ -44,6 +44,7 @@ import { rotasCarne } from "./carne.ts";
 import { rotasAnexos } from "./anexos.ts";
 import { rotasContratosOab } from "./contratos_oab.ts";
 import { rotasPropostaDocx } from "./proposta_docx.ts";
+import { rotasPagoAntesLogo } from "./pago_antes_logo.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
 import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
@@ -1357,6 +1358,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   rotasAnexos(app, deps);
   rotasContratosOab(app, deps);
   rotasPropostaDocx(app, deps);
+  rotasPagoAntesLogo(app, deps);
 
   return app;
 }

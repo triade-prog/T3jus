@@ -120,6 +120,18 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   CONTRATO_NAO_VIGENTE: "O contrato não está vigente: o carnê sai só de contrato assinado e em andamento.",
   SEM_PARCELAS: "Escolha ao menos uma parcela para o carnê.",
   PARCELA_PAGA: "Uma das parcelas escolhidas já foi paga. Recarregue a página e escolha de novo.",
+  // "Não foi paga" e "Foi paga, sim" (F3.84).
+  NAO_E_PAGO_ANTES: "Esta parcela não veio da planilha como paga antes do T3jus. Recarregue a página para ver.",
+  VENCIMENTO_INVALIDO: "Escolha uma data de até um ano antes do vencimento da planilha e de até três anos a partir de hoje.",
+  JA_VOLTOU: "A parcela já voltou para “Pago antes do T3jus”. Recarregue a página para ver.",
+  // O logo do escritório (F3.81).
+  LOGO_FORMATO: "O T3jus não lê este arquivo como logo. Envie o logo em PNG, JPG ou SVG.",
+  LOGO_GRANDE: "O arquivo passa de 1 MB. Salve o logo de novo em PNG, sem foto de fundo.",
+  LOGO_PEQUENO: "O logo é pequeno demais e sairia borrado. Envie o arquivo original, com 600 px ou mais no lado maior.",
+  LOGO_COMPRIDO: "O logo é mais de 8 vezes mais largo que alto. Envie uma versão menos comprida.",
+  LOGO_VAZIO: "O arquivo não tem desenho: está todo transparente ou branco.",
+  LOGO_SVG_INSEGURO: "O SVG tem código ou busca coisas de fora. Exporte o logo de novo em PNG.",
+  LOGO_DE_OUTRO_ESCRITORIO: "Este logo não é do escritório. Envie o arquivo de novo.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
