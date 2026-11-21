@@ -139,7 +139,7 @@ select is((select portal_peticao(beatriz, rm, (g2.j ->> 'id')::uuid) -> 'pode' -
 
 -- Versão nova (decisão 23).
 select is((teste.erro($$ select portal_peticao_versao_gravar(felipe, rm, (g2.j ->> 'id')::uuid, '{"origem": "DOCX_EDITADO"}', pg_temp.resultado()) from ids, g2 $$)) -> 'detalhe' ->> 'motivo',
-  'SEM_PERMISSAO', 'só quem gerou (ou a sócia dona) envia a versão nova');
+  'SO_QUEM_GEROU', 'só quem gerou (ou a sócia dona) envia a versão nova');
 select is((select portal_peticao_versao_gravar(beatriz, rm, (g2.j ->> 'id')::uuid,
             jsonb_build_object('origem', 'DOCX_EDITADO', 'resolvidos', jsonb_build_array(k1.j ->> 'id'), 'recado', 'Corrigi o endereço'), pg_temp.resultado()) ->> 'versao' from ids, g2, k1),
   '2', 'o .docx editado vira a v2 e volta para a revisão');

@@ -74,7 +74,7 @@ const CAMPOS: Record<string, string> = {
   responsavel_id: "responsável", tambem_vai: "quem também vai", lembrete_cliente: "lembrete", observacoes: "observações",
 };
 
-function JanelaCancelar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: FichaCompromisso; aoFechar: () => void; aoFeito: () => void }) {
+function JanelaCancelar({ aberta, f, escritorio, aoFechar, aoFeito }: { aberta: boolean; f: FichaCompromisso; escritorio: string; aoFechar: () => void; aoFeito: () => void }) {
   const ids = useId();
   const [motivo, setMotivo] = useState("");
   const [avisar, setAvisar] = useState(true);
@@ -126,7 +126,7 @@ function JanelaCancelar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: 
           <span>
             Avisar {primeiroNome(f.cliente.nome)} pelo WhatsApp
             <small>
-              Mensagem: “{maiuscula(nomeTipo.replace(/^(a|o) /, ""))} de {diaCurto(d)}, às {horaDe(f.inicio).replace(":00", "h")}, foi cancelad{nomeTipo.startsWith("a ") ? "a" : "o"}. O escritório avisa a nova data.” Sai quando o WhatsApp do escritório estiver ligado.
+              Mensagem: “Olá, {primeiroNome(f.contatoCliente?.nome ?? f.cliente.nome)}. Aqui é do escritório {escritorio}. {maiuscula(nomeTipo)} de {diaCurto(d)}, às {horaDe(f.inicio).replace(":00", "h")}, foi cancelad{nomeTipo.startsWith("a ") ? "a" : "o"}. Se houver nova data, avisamos por aqui. Qualquer dúvida, é só responder esta mensagem.” Sai quando o WhatsApp do escritório estiver ligado.
             </small>
           </span>
         </label>
@@ -448,7 +448,7 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
       <JanelaCompromisso aberta={editar} inicial={rascunhoDe(f)} editar={f} pessoas={pessoas} clientes={clientes} casos={casos} tiposEscritos={f.tipoEscrito ? [f.tipoEscrito] : []}
         eu={escritorio.pessoa} aoFechar={() => setEditar(false)}
         aoFeito={(m: Marcado) => { setEditar(false); setFeito({ titulo: m.titulo, texto: m.texto }); void carregar(); }} />
-      <JanelaCancelar aberta={cancelar} f={f} aoFechar={() => setCancelar(false)}
+      <JanelaCancelar aberta={cancelar} f={f} escritorio={escritorio?.nome ?? ""} aoFechar={() => setCancelar(false)}
         aoFeito={() => { setCancelar(false); setFeito({ titulo: "Compromisso cancelado.", texto: "Ele continua na agenda, riscado, com o motivo no histórico." }); void carregar(); }} />
       {feito ? (
         <div className="aviso aviso-sucesso toast" role="status">

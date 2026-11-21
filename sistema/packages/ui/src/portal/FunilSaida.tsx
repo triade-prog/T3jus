@@ -131,7 +131,7 @@ export function JanelaEncerrarFunil({ alvo, aoFechar, aoFeito }: { alvo: AlvoFun
       setErros(campos.map(String));
       return focarPrimeiroErro(corpo.current);
     }
-    setFalha(`${textoDoErro(r.erro)} Nada foi salvo: ${primeiro} continua em “Primeiro contato”. O que você escolheu continua aqui; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada foi salvo: ${primeiro} continua em “Primeiro contato”. O que você escolheu continua aqui.`);
   }
 
   const tem = (c: string) => erros.includes(c);
@@ -203,7 +203,7 @@ export function JanelaVoltarFunil({ alvo, hoje, aoFechar, aoFeito }: { alvo: Alv
     const r = await chamarPortal<SaidaFunil>(`/v1/escritorio/clientes/${alvo.id}/funil/voltar`, { metodo: "POST" });
     setEnviando(false);
     if (r.ok) return aoFeito(alvo);
-    setFalha(`${textoDoErro(r.erro)} Nada foi salvo; tente de novo.`);
+    setFalha(`${textoDoErro(r.erro)} Nada foi salvo.`);
   }
 
   return (

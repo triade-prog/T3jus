@@ -27,7 +27,7 @@ export type ChaveAviso = keyof typeof AVISOS_WHATSAPP;
 export const ASSUNTOS_IA = {
   ANDAMENTO_CASO: { nome: "Andamento do caso", de: "Do texto da etapa escrito pelo Jurídico. Nunca o processo inteiro.", extra: ", em linguagem simples" },
   COMPROMISSOS: { nome: "Compromissos", de: "Audiência, reunião e perícia da Agenda, com data, hora e local.", extra: "" },
-  PARCELAS: { nome: "Parcelas e segunda via", de: "Valor, vencimento e o link de pagamento do Financeiro.", extra: "" },
+  PARCELAS: { nome: "Parcelas e segunda via", de: "Valor e vencimento, do Financeiro. Pedido de segunda via passa para uma pessoa.", extra: "" },
   DOCUMENTOS: { nome: "Documentos pedidos", de: "O que falta mandar e se já chegou.", extra: "" },
   ENDERECO_HORARIO: { nome: "Endereço e horário", de: "Das respostas do escritório.", extra: "" },
   ARQUIVOS: { nome: "Receber arquivos", de: "Guarda na conversa e passa para alguém conferir.", extra: "" },

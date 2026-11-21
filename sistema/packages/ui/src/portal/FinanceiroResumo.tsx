@@ -533,7 +533,7 @@ function JanelaMeta({ r, aoFechar, aoFeito }: { r: ResumoFinanceiro; aoFechar: (
     }
     const cs = x.erro.detalhes?.campos;
     if (x.erro.codigo === "VALIDATION_ERROR" && Array.isArray(cs) && cs.length) { setErros(cs.map(String)); return focarErro(corpo.current); }
-    setFalha(`${textoDoErro(x.erro)} Nada foi salvo: ${nomeDoMes(r.mes)} continua com a meta de antes. O valor que você escreveu continua aqui; tente de novo.`);
+    setFalha(`${textoDoErro(x.erro)} Nada foi salvo: ${nomeDoMes(r.mes)} continua com a meta de antes. O valor que você escreveu continua aqui.`);
   }
 
   return (

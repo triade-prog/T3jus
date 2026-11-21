@@ -61,7 +61,7 @@ select is((select x.situacao || ' ' || x.passo_id from automacao_execucoes x joi
   'Irene recebeu o 1º aviso e espera para o 2º');
 select is((select x.proximo_em from automacao_execucoes x join ex on ex.id = x.id where ex.k = 'ire'), '2026-11-25 10:12-03'::timestamptz, 'espera 7 dias');
 select is((select m.texto from conversa_mensagens m join conversas c on c.id = m.conversa_id where c.telefone = '+5511996027731' and m.autor = 'AVISO'),
-  'Olá, Irene. A parcela ' || (select descricao from parc where k = 'ire') || ', de R$ 1.800,00, venceu em 15/11 e ainda não aparece como paga. Se já pagou, pode desconsiderar. Qualquer dúvida, é só responder.',
+  'Olá, Irene. Aqui é do escritório Ribeiro & Matos. O valor de R$ 1.800,00 (' || (select descricao from parc where k = 'ire') || ') venceu em 15/11 e ainda não aparece como pago. Se já pagou, pode desconsiderar esta mensagem. Se precisar dos dados para pagar ou quiser conversar sobre o pagamento, é só responder aqui.',
   'o aviso entra na conversa com os campos preenchidos e sem a frase do link');
 select is((select m.envio || ' ' || m.aviso_tipo from conversa_mensagens m join conversas c on c.id = m.conversa_id where c.telefone = '+5511996027731' and m.autor = 'AVISO'),
   'NA_FILA Parcela em atraso · 1º aviso', 'na fila de envio, com o nome do passo');
@@ -77,7 +77,7 @@ select is((select x.situacao || ' · ' || x.motivo from automacao_execucoes x jo
   'paga, a parcela sai da cobrança');
 select is((select m.texto from conversa_mensagens m join conversas c on c.id = m.conversa_id where c.telefone = '+5511996027733' and m.aviso_tipo = 'Pagamento recebido'
             order by m.criada_em desc limit 1),
-  'Olá, Rui. Recebemos o pagamento de R$ 1.800,00 referente a ' || (select descricao from parc where k = 'con') || '. Obrigado!',
+  'Olá, Rui. Aqui é do escritório Ribeiro & Matos. Recebemos o pagamento de R$ 1.800,00 (' || (select descricao from parc where k = 'con') || '). Agradecemos. Qualquer dúvida, é só responder esta mensagem.',
   'e recebe o aviso de pagamento recebido');
 
 -- Sete dias depois, o 2º aviso. Na semana seguinte, à noite, espera o horário.
@@ -116,7 +116,7 @@ create temp table lem as select x.id from automacao_execucoes x join comp on com
 select is((select situacao || ' ' || to_char(proximo_em at time zone 'America/Sao_Paulo', 'DD/MM HH24:MI') from automacao_execucoes x join lem using (id)),
   'EM_ANDAMENTO 08/12 07:30', 'o 1º lembrete sai e o 2º espera 2 horas antes da audiência');
 select is((select m.texto from conversa_mensagens m join conversas c on c.id = m.conversa_id where c.telefone = '+5511996027731' and m.aviso_tipo = 'Lembrete · 1 dia antes'),
-  'Olá, Irene. Lembrete: Audiência de conciliação em 08/12, às 09:30, em Fórum Central, sala 4. Qualquer dúvida, é só responder.', 'o lembrete com data, hora e local');
+  'Olá, Irene. Aqui é do escritório Ribeiro & Matos. Lembrete: Audiência de conciliação, no dia 08/12, às 09:30. Local: Fórum Central, sala 4. Responda CONFIRMO, ou escreva se tiver alguma dúvida.', 'o lembrete com data, hora e local');
 select ajustar_relogio(('2026-12-08 08:00-03'::timestamptz - now()));
 select automacoes_rodar();
 select is((select situacao from automacao_execucoes x join lem using (id)), 'CONCLUIDA', 'depois do 2º lembrete, sem resposta, a execução termina');

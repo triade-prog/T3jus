@@ -660,14 +660,14 @@ export function contaPrestacao(
   const doCliente = l.destinacoes.find((d) => d.para === "CLIENTE");
   const data = (s: string) => s.split("-").reverse().slice(0, 2).join("/");
   return {
-    abertura: `Olá, ${primeiro}. Aqui é o escritório ${escritorio}. ${O_SEU_LEVANTAMENTO[l.tipo]}, e esta é a conta de como ficou:`,
+    abertura: `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. ${O_SEU_LEVANTAMENTO[l.tipo]}, e esta é a conta de como ficou:`,
     descontos: l.destinacoes
       .filter((d) => d.para !== "CLIENTE" && d.situacao !== "DISPENSADO")
       .map((d) => ({ rotulo: d.nome, valor: d.valor })),
     fica: doCliente?.valor ?? 0,
     fecho: doCliente?.feitoEm
-      ? `Já transferimos o seu valor em ${data(doCliente.feitoEm)}. Qualquer dúvida, é só responder.`
-      : `Vamos transferir o seu valor até ${data(doCliente?.prazo ?? "")}. Qualquer dúvida, é só responder.`,
+      ? `Já transferimos o seu valor em ${data(doCliente.feitoEm)}. Qualquer dúvida, é só responder esta mensagem.`
+      : `Vamos transferir o seu valor até ${data(doCliente?.prazo ?? "")}. Qualquer dúvida, é só responder esta mensagem.`,
   };
 }
 
