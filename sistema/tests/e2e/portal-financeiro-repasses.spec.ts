@@ -186,6 +186,25 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     });
   });
 
+  test("F3.94: a parte \"honorários\" diz qual parcela do êxito baixa, e o aviso diz que baixou", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: { ...PROPOSTA, exito: [{ id: id(9), descricao: "Êxito · Lima x INSS", vencimento: dia(10), falta: 381000 }] } },
+      "POST /v1/escritorio/financeiro/repasses": { status: 201, corpo: { id: id(3), exitoBaixado: [{ parcelaId: id(9), descricao: "Êxito · Lima x INSS", valor: 381000, paga: true }] } },
+    });
+    await page.goto(`${P}/financeiro/repasses`);
+    await page.getByRole("button", { name: "Registrar alvará ou RPV" }).first().click();
+    const j = page.getByRole("dialog", { name: "Registrar alvará ou RPV" });
+    await j.getByLabel("O que entrou").selectOption("ALVARA");
+    await j.getByLabel("Valor levantado").fill("12.700,00");
+    const tab = j.getByRole("table", { name: "Para quem vai cada parte" });
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toContainText("Dá baixa na parcela “Êxito · Lima x INSS” (falta R$ 3.810,00)");
+    await expect(tab.getByRole("row", { name: /Reembolso/ })).not.toContainText("Dá baixa");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alvará registrado." })).toContainText("A parcela “Êxito · Lima x INSS” foi baixada pela divisão.");
+  });
+
   test("Feito e dispensar: o dia do repasse; dispensar pede o motivo", async ({ page }) => {
     const pedidos = await simular(page, {
       ...comuns(),

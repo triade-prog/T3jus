@@ -355,7 +355,7 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
   const [alvo, setAlvo] = useState(de ? `${de.caso.id}|${de.cliente.id}` : opcoes.length === 1 ? opcoes[0]!.valor : "");
   const [valor, setValor] = useState("");
   const [dia, setDia] = useState(diaBr(hoje));
-  const [div, setDiv] = useState<{ chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[] } | null>(null);
+  const [div, setDiv] = useState<{ chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[]; exito?: PropostaRepasse["exito"] } | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [futuro, setFuturo] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
@@ -382,7 +382,7 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
       const linhasProposta = r.ok
         ? r.dados.linhas.map((x, i) => ({ chave: `p${i}`, para: x.para, nome: x.nome, regra: x.regra, valor: paraCampo(x.valor), contaId: x.contaId, proposta: true }))
         : [];
-      setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null, linhas: linhasProposta });
+      setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null, linhas: linhasProposta, exito: r.ok ? r.dados.exito : undefined });
     });
   }, [chaveAtual, casoId, clienteId, total]);
 
@@ -414,14 +414,15 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
       { para: "CLIENTE", valor: doCliente },
       ...(linhas ?? []).map((x) => ({ para: x.para, nome: x.nome.trim(), regra: x.regra, valor: lerCentavos(x.valor), contaId: x.contaId ?? null })),
     ];
-    const r = await chamarPortal<{ id: string }>("/v1/escritorio/financeiro/repasses", {
+    const r = await chamarPortal<{ id: string; exitoBaixado?: { descricao: string; valor: number; paga: boolean }[] }>("/v1/escritorio/financeiro/repasses", {
       metodo: "POST", corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, ...(de ? { requisicaoId: de.id } : {}) },
     });
     setEnviando(false);
     if (r.ok) {
       return aoFeito({
         titulo: `${TIPOS_LEVANTAMENTO[tipo as TipoLevantamento]} registrado.`,
-        texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.${de ? " Saiu de “A caminho” e da previsão do Caixa." : ""}`,
+        texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.${de ? " Saiu de “A caminho” e da previsão do Caixa." : ""}`
+          + (r.dados.exitoBaixado ?? []).map((b) => ` A parcela “${b.descricao}” ${b.paga ? "foi baixada" : `recebeu ${reais(b.valor)}`} pela divisão.`).join(""),
       });
     }
     const campos = r.erro.detalhes?.campos;
@@ -513,7 +514,13 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
                     <tr key={x.chave}>
                       <td>
                         {x.proposta ? (
-                          <div className="fi-quem"><strong>{x.nome}</strong>{x.regra ? <small>{x.regra}</small> : null}</div>
+                          <div className="fi-quem">
+                            <strong>{x.nome}</strong>{x.regra ? <small>{x.regra}</small> : null}
+                            {/* F3.94: a parte "honorários" baixa a parcela do êxito do cliente no caso. */}
+                            {x.para === "HONORARIOS" && div?.exito?.length
+                              ? <small className="rp-baixa"><Icone nome="check" className="ico" />Dá baixa na parcela {div.exito.map((e) => `“${e.descricao}” (falta ${reais(e.falta)})`).join(" e ")}</small>
+                              : null}
+                          </div>
                         ) : (
                           <div className="rp-manual">
                             <label className="sr" htmlFor={`rp-para-${i}`}>Quem é</label>
