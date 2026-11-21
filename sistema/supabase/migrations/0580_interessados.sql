@@ -788,7 +788,7 @@ begin
   v_contratos := jsonb_build_object('encerrados', v_encerrados, 'acessos_fechados', v_fechados,
                                     'entradas_apagadas', v_entradas, 'guardas_terminadas', v_guardas);
 
-  -- Interessados que não viraram cliente (0570): 12 meses depois do último contato.
+  -- Interessados que não viraram cliente (0580): 12 meses depois do último contato.
   if prazo_aprovado('interessados') then
     v_n := apagar_interessados_vencidos();
     -- Só aparece na contagem quando apagou alguém (a contagem dos outros prazos não muda).

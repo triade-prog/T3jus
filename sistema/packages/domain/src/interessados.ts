@@ -1,5 +1,5 @@
 // Interessados (F2.2, F2.3; SC-02, SC-05): o pedido de demonstração do site e o Console ›
-// Comercial › Interessados. Os mesmos valores estão no banco (0570_interessados.sql).
+// Comercial › Interessados. Os mesmos valores estão no banco (0580_interessados.sql).
 // Desenho aprovado: docs/design/aprovadas/site-comercial.
 
 import { z } from "zod";

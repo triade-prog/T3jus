@@ -23,4 +23,4 @@ Na Vercel: projeto `site-t3jus`, diretório raiz `sistema/apps/site`; o `vercel.
 
 - As páginas continuam estáticas; só `src/pages/api/pedido-demonstracao.ts` roda no servidor, pelo adaptador `@astrojs/vercel`. Ela confere o pedido com `src/lib/pedido.ts` (as mesmas regras do navegador), ignora robô (campo isca preenchido ou envio em menos de 3 segundos) e repassa à api-console (`POST /v1/site/pedidos`) com o segredo de repasse e o IP de quem pediu.
 - O projeto do site na Vercel precisa de duas variáveis: `SUPABASE_FUNCTIONS_URL` (o endereço das Edge Functions, terminado em `/functions/v1`) e `REPASSE_SEGREDO` (o mesmo segredo dos apps). Sem elas, a rota responde 503 e a página mostra a falha com o e-mail como saída.
-- O banco (migration 0570) guarda o interessado, aplica os limites e junta o pedido repetido; a api-console manda a resposta automática pelo Resend. O interessado aparece em Console › Comercial › Interessados.
+- O banco (migration 0580) guarda o interessado, aplica os limites e junta o pedido repetido; a api-console manda a resposta automática pelo Resend. O interessado aparece em Console › Comercial › Interessados.
