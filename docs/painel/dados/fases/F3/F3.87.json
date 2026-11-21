@@ -1,0 +1,11 @@
+{
+  "id": "F3.87",
+  "texto": "Automações: testar os gatilhos cliente novo e documento pendente com um cliente de verdade (hoje a simulação usa dados de exemplo)",
+  "peca": "B3",
+  "refs": [
+    "PA-06"
+  ],
+  "status": "pendente",
+  "ordem": 822,
+  "proximo": "Levar a escolha de cliente real da simulação para os dois gatilhos novos"
+}

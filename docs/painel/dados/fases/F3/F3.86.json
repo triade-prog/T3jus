@@ -1,0 +1,11 @@
+{
+  "id": "F3.86",
+  "texto": "Automações: aviso no sino para quem pediu o documento quando o cliente manda um arquivo na conversa (o pedido não se fecha sozinho)",
+  "peca": "B3",
+  "refs": [
+    "PA-06"
+  ],
+  "status": "pendente",
+  "ordem": 821,
+  "proximo": "Decisão 7 do desenho dos gatilhos novos: programar o aviso quando chegar arquivo na conversa de cliente com documento pedido em aberto"
+}

@@ -34,6 +34,8 @@ const DISPAROU: Record<Gatilho, string> = {
   ETAPA_CASO: "a etapa do caso mudou no Jurídico, e a etapa tem texto para o cliente.",
   LEMBRETE_AUDIENCIA: "o compromisso do cliente na Agenda está chegando.",
   PRESTACAO_CONTAS: "o repasse ao cliente foi registrado no Financeiro.",
+  CLIENTE_NOVO: "a pessoa virou cliente do escritório (primeira proposta aceita ou primeiro contrato assinado).",
+  DOCUMENTO_PENDENTE: "o documento pedido ao cliente no Jurídico não chegou no prazo.",
 };
 
 function Situacao({ a, compacto }: { a: AvisoAutomatico; compacto: boolean }) {

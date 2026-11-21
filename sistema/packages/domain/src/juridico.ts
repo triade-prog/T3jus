@@ -347,6 +347,8 @@ export interface DocumentoFaltando {
   repedidoEm: string | null;
   cliente: { id: string; nome: string; telefone: string | null };
   pedidoPor: PessoaRef;
+  /** O lembrete automático do documento pendente (PA-06), quando há automação ligada. */
+  lembrete?: { automacao: { id: string; nome: string }; enviadoEm: string; ate: string | null; passaPara: PessoaRef | null } | null;
 }
 
 export interface DocumentoDoCaso {

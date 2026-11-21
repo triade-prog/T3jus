@@ -19,7 +19,7 @@ select portal_convidar(socia, rm, gustavo, 'Gustavo Lima', array['FINANCEIRO']),
        portal_convidar(socia, rm, felipe, 'Felipe Matos', array['JURIDICO']) from ids;
 
 select is((select portal_automacao_ia_contexto(gustavo, rm) -> 'gatilhos' from ids),
-  '["PAGAMENTO_RECEBIDO","PARCELA_VAI_VENCER","PARCELA_ATRASO","PRESTACAO_CONTAS"]'::jsonb, 'PA-01: só os gatilhos das áreas de quem pede');
+  '["PAGAMENTO_RECEBIDO","PARCELA_VAI_VENCER","PARCELA_ATRASO","PRESTACAO_CONTAS","CLIENTE_NOVO"]'::jsonb, 'PA-01: só os gatilhos das áreas de quem pede, e o cliente novo, que é de Conversas (PA-06)');
 select is((select jsonb_array_length(portal_automacao_ia_contexto(gustavo, rm) -> 'ligadas') from ids), 6, 'as seis prontas ligadas entram no contexto');
 select ok((select portal_automacao_ia_contexto(gustavo, rm) -> 'pessoas' @> jsonb_build_array(jsonb_build_object('id', gustavo, 'areas', '["FINANCEIRO"]'::jsonb)) from ids),
   'a equipe vai com as áreas');

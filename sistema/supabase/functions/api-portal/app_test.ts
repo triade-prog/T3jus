@@ -1275,8 +1275,11 @@ Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sa
 Deno.test("PA-03: gatilhos e tipos de passo do domínio são os mesmos do banco", async () => {
   const { GATILHOS, TIPOS_PASSO } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0320_portal_automacoes.sql", import.meta.url));
+  // A 0570 refaz a lista de campos com os gatilhos cliente novo e documento pendente: vale a última.
+  const sql570 = await Deno.readTextFile(new URL("../../migrations/0570_automacoes_gatilhos_novos.sql", import.meta.url));
   for (const [g, info] of Object.entries(GATILHOS)) {
-    const linha = new RegExp(`when '${g}' then array\\[([^\\]]+)\\]`).exec(sql)?.[1];
+    const re = new RegExp(`when '${g}' then array\\[([^\\]]+)\\]`);
+    const linha = (re.exec(sql570) ?? re.exec(sql))?.[1];
     assertEquals(linha?.match(/'([^']+)'/g)?.map((x) => x.slice(1, -1)), info.campos, g);
   }
   const tipos = /v_ok := case v_tipo([\s\S]+?) end;/.exec(sql)?.[1]?.match(/when '([A-Z]+)'/g)?.map((x) => x.slice(6, -1));
