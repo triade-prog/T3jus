@@ -12,6 +12,8 @@ import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Aviso, Estado } from "../console/pecas.tsx";
 import { hora } from "../console/tempo.ts";
 import { chamarPortal } from "./Moldura.tsx";
+import { valorDaProposta } from "./comercial.ts";
+import { ROTAS_CONTRATOS } from "./contratos.ts";
 
 const FUSO = "America/Sao_Paulo";
 const diaDe = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: FUSO, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
@@ -101,6 +103,21 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         detalhe: [d.sobre ? `${d.sobre}${d.mes && d.de ? `, mês ${d.mes} de ${d.de}` : ""}.` : null,
           d.vencimento ? `Sem a base, a cobrança de ${d.vencimento.split("-").reverse().join("/")} não sai.` : null].filter(Boolean).join(" "),
         onde: "Informar a base", href: "/contratos/honorarios", selo: { tom: "atencao", texto: "Base do mês" },
+      };
+    case "PEDIDO_CONTRATO": {
+      // IN-01: o Comercial pediu o contrato da proposta aceita; gerar abre o Novo contrato preenchido.
+      const valor = d.condicoes?.length ? valorDaProposta(d.condicoes) : null;
+      return {
+        icone: "pena", titulo: <><b>{d.quem}</b> pediu o contrato de <b>{d.cliente}</b></>,
+        detalhe: `Proposta ${d.proposta}${d.servico ? `, ${d.servico.toLowerCase()}` : ""}${d.aceita ? `, aceita em ${d.aceita.slice(8, 10)}/${d.aceita.slice(5, 7)}` : ""}${valor ? `: ${valor}` : ""}. O contrato nasce com as condições da proposta.`,
+        onde: "Gerar o contrato", href: ROTAS_CONTRATOS.daProposta(a.origemId), selo: { tom: "andamento", texto: "Pedido" },
+      };
+    }
+    case "CONTRATO_GERADO":
+      return {
+        icone: "check", titulo: <><b>{d.quem}</b> gerou o contrato de <b>{d.cliente}</b></>,
+        detalhe: `O contrato ${d.contrato} nasceu da proposta ${d.proposta}, que você pediu.`,
+        onde: "Ver a proposta", href: ROTAS_CONTRATOS.proposta(a.origemId), selo: { tom: "ok", texto: "Contrato gerado" },
       };
     case "PRAZO_2_DIAS":
       return {

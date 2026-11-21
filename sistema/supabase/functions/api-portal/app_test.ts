@@ -159,6 +159,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       podeContrato: true, quemTemContratos: [], contratoPedidoEm: null, historico: [],
     }),
     portal_pessoas_oab: () => [{ id: ANA, nome: "Ana", oab: [] }],
+    portal_contratos_pedidos: () => [],
     portal_contrato_inscricoes: () => [],
     portal_contrato_inscricoes_mudar: (a) => {
       if (!(a.p_ids as string[]).length) erroBanco("TC422", { campos: [`inscricoes.${a.p_alvo}`], motivos: { [`inscricoes.${a.p_alvo}`]: "INSCRICAO_OBRIGATORIA" } });
@@ -620,6 +621,16 @@ Deno.test("EX-12: incluir, mudar (com a versão) e remover a inscrição", async
   assertEquals(sem.status, 400);
   const rem = await m.pedir(`/v1/escritorio/equipe/oab/${VL_LARA}/remover`, { metodo: "POST", corpo: { versao: 3 }, cookie });
   assertEquals(rem.status, 200);
+});
+
+Deno.test("IN-01: os pedidos de contrato vêm da sessão, e a rota não cai na ficha do contrato", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/contratos/pedidos", { cookie });
+  assertEquals(r.status, 200);
+  assertEquals(await r.json(), []);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_contratos_pedidos")!.args, { p_pessoa: ANA, p_escritorio: AURORA });
+  assert(!m.chamadas.some((c) => c.funcao === "portal_contrato"));
 });
 
 Deno.test("PA-02: área desconhecida não chega ao banco", async () => {

@@ -119,6 +119,15 @@ export interface AdvogadoNoContrato {
 /** Pessoa da equipe com as inscrições, para marcar os advogados do contrato. */
 export interface PessoaComOab { id: string; nome: string; oab: InscricaoOab[] }
 
+// Pedido de contrato feito pelo Comercial que ainda não virou contrato (IN-01, F3.11).
+export interface PedidoContrato {
+  proposta: { id: string; numero: string; servico: string; aceitaEm: string | null };
+  cliente: { id: string; nome: string };
+  condicoes: Condicao[];
+  pedidoPor: PessoaRef;
+  pedidoEm: string;
+}
+
 export interface PropostaParaContrato {
   id: string;
   numero: string;
