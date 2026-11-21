@@ -1,0 +1,102 @@
+[
+ {
+  "nome": "np-folha",
+  "url": "contrato-nao-paga.html?estado=folha"
+ },
+ {
+  "nome": "np-janela",
+  "url": "contrato-nao-paga.html?estado=janela"
+ },
+ {
+  "nome": "np-erros",
+  "url": "contrato-nao-paga.html?estado=erros"
+ },
+ {
+  "nome": "np-falha",
+  "url": "contrato-nao-paga.html?estado=falha"
+ },
+ {
+  "nome": "np-conflito",
+  "url": "contrato-nao-paga.html?estado=conflito"
+ },
+ {
+  "nome": "np-feito",
+  "url": "contrato-nao-paga.html?estado=feito"
+ },
+ {
+  "nome": "np-voltar",
+  "url": "contrato-nao-paga.html?estado=voltar"
+ },
+ {
+  "nome": "np-sem-financeiro",
+  "url": "contrato-nao-paga.html?estado=sem-financeiro"
+ },
+ {
+  "nome": "np-a-receber",
+  "url": "financeiro-nao-paga.html?estado=a-receber"
+ },
+ {
+  "nome": "lg-escolher",
+  "url": "escritorio-logo.html?estado=escolher"
+ },
+ {
+  "nome": "lg-largo",
+  "url": "escritorio-logo.html?estado=largo"
+ },
+ {
+  "nome": "lg-quadrado",
+  "url": "escritorio-logo.html?estado=quadrado"
+ },
+ {
+  "nome": "lg-claro",
+  "url": "escritorio-logo.html?estado=claro"
+ },
+ {
+  "nome": "lg-recusa",
+  "url": "escritorio-logo.html?estado=recusa"
+ },
+ {
+  "nome": "lg-salvo",
+  "url": "escritorio-logo.html?estado=salvo"
+ },
+ {
+  "nome": "lg-remover",
+  "url": "escritorio-logo.html?estado=remover"
+ },
+ {
+  "nome": "lg-letra",
+  "url": "escritorio-logo.html?estado=letra"
+ },
+ {
+  "nome": "lg-equipe",
+  "url": "escritorio-logo.html?estado=equipe"
+ },
+ {
+  "nome": "a4c-largo",
+  "url": "carne-logo-a4.html?estado=largo"
+ },
+ {
+  "nome": "a4c-quadrado",
+  "url": "carne-logo-a4.html?estado=quadrado"
+ },
+ {
+  "nome": "a4c-pb",
+  "url": "carne-logo-a4.html?estado=pb"
+ },
+ {
+  "nome": "a4c-uma-cor",
+  "url": "carne-logo-a4.html?estado=uma-cor"
+ },
+ {
+  "nome": "a4r-largo",
+  "url": "recibo-logo-a4.html?estado=largo"
+ },
+ {
+  "nome": "a4r-quadrado",
+  "url": "recibo-logo-a4.html?estado=quadrado"
+ },
+ {
+  "nome": "a4r-pb",
+  "url": "recibo-logo-a4.html?estado=pb"
+ }
+]
