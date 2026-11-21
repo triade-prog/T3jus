@@ -4216,3 +4216,6 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 /* Cliente e caso lado a lado na conta adiantada (F3.23) */
 .fi-sub-par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 @media (max-width:760px){.fi-sub-par{grid-template-columns:1fr}}
+/* Encerrar o caso no financeiro (F3.45) */
+.fi-fecha-acao{padding:0 24px 24px}
+.fi-fechado{display:flex;gap:10px;align-items:flex-start;margin:0;font-size:13px;color:var(--vinho)}

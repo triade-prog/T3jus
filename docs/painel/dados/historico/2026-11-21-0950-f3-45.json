@@ -1,0 +1,11 @@
+{
+  "data": "21/11/2026",
+  "inicio": "09:50",
+  "fim": "10:20",
+  "texto": "Encerrar o caso no financeiro: só com tudo recebido e repassado; com pendência, a janela diz o que falta, com os valores, e leva a registrar o repasse (migration 0512).",
+  "refs": [
+    "F3.45",
+    "FI-08",
+    "PT-03"
+  ]
+}

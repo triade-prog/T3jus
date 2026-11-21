@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   contaPrestacao, dataBr, hojeBrasilia, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
-  type Destinacao, type FichaRepasse, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
+  type AcertoCaso, type Destinacao, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -786,6 +786,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
   const [feitoEm, setFeitoEm] = useState<Destinacao | null>(null);
   const [dispensar, setDispensar] = useState<Destinacao | null>(null);
   const [prestacao, setPrestacao] = useState(false);
+  const [encerrar, setEncerrar] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
   const nome = dados && dados !== "erro" ? dados.cliente.nome : null;
   useEffect(() => {
@@ -795,6 +796,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
     setFeitoEm(null);
     setDispensar(null);
     setPrestacao(false);
+    setEncerrar(false);
     setFeito(x);
     recarregar();
   };
@@ -947,6 +949,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
             </div>
             <ul className="fi-check">
               <li><Icone nome="check" className="ico" /><span>{TIPOS_LEVANTAMENTO[f.tipo]} registrado em {dataBr(f.entrouEm)}</span></li>
+              <ItemParcelas a={f.acerto} />
               {f.destinacoes.map((d) => (
                 <li key={d.id} className={pendente(d) ? "falta" : undefined}>
                   <Icone nome={pendente(d) ? "alerta" : "check"} className="ico" />
@@ -963,9 +966,17 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
               </li>
             </ul>
             </div>
-            <div className="fi-reserva">
-              <Icone nome="cadeado" className="ico" />
-              <span><b>Encerrar o caso no financeiro</b> chega na próxima entrega, junto com as parcelas do contrato na mesma conta.</span>
+            <div className="fi-fecha-acao">
+              {f.acerto.fechado ? (
+                <p className="fi-fechado">
+                  <Icone nome="check" className="ico" />
+                  <span>Caso encerrado no financeiro em {diaCurto(diaDoInstante(f.acerto.fechado.em))}, por {f.acerto.fechado.por.nome}.</span>
+                </p>
+              ) : (
+                <button className="btn btn-sec" type="button" onClick={() => setEncerrar(true)} style={{ width: "100%" }}>
+                  <Icone nome="cadeado" className="ico" />Encerrar o caso no financeiro
+                </button>
+              )}
             </div>
           </section>
           <HistoricoRepasse f={f} hoje={hoje} />
@@ -974,8 +985,125 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
       {feitoEm ? <JanelaFeito l={f} d={feitoEm} aoFechar={() => setFeitoEm(null)} aoFeito={terminar} /> : null}
       {dispensar ? <JanelaDispensar d={dispensar} aoFechar={() => setDispensar(null)} aoFeito={terminar} /> : null}
       {prestacao ? <JanelaPrestacao l={f} escritorio={f.escritorio} aoFechar={() => setPrestacao(false)} aoFeito={terminar} /> : null}
+      {encerrar ? (
+        <JanelaEncerrar f={f} aoFechar={() => setEncerrar(false)} aoFeito={terminar}
+          aoRegistrar={(id) => { const d = f.destinacoes.find((x) => x.id === id); setEncerrar(false); if (d) setFeitoEm(d); }} />
+      ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
+  );
+}
+
+/** As parcelas dos contratos do caso no fechamento (F3.45). */
+function ItemParcelas({ a }: { a: AcertoCaso }) {
+  const p = a.parcelas;
+  if (!p.total) return null;
+  const todas = p.pagas === p.total;
+  return (
+    <li className={todas ? undefined : "falta"}>
+      <Icone nome={todas ? "check" : "alerta"} className="ico" />
+      <span>
+        {todas ? "Parcelas do contrato todas recebidas" : <><b>Parcelas do contrato:</b> {p.falta ? `falta receber ${reais(p.falta)}` : "há parcela ainda sem valor"}</>}
+        <small style={{ display: "block", color: "var(--texto-2)" }}>
+          {p.pagas} de {p.total}{todas && p.ultima ? `, a última em ${diaCurto(p.ultima)}` : " recebidas"}
+        </small>
+      </span>
+    </li>
+  );
+}
+
+/** O que falta, em palavras, para cada pendência do fechamento. */
+function detalheDaPendencia(x: PendenciaCaso): string {
+  if (x.tipo === "REPASSE") return `${PARA_DESTINACAO[x.para!].toLowerCase()} · combinado para até ${diaCurto(x.prazo!)}`;
+  if (x.tipo === "PARCELA") return `parcela do contrato · vence em ${diaCurto(x.vencimento!)}`;
+  if (x.tipo === "PARCELA_SEM_VALOR") return "parcela do contrato ainda sem valor (base do mês ou etapa do caso)";
+  return "o escritório adiantou e o cliente ainda não reembolsou";
+}
+
+/**
+ * Encerrar o caso no financeiro (decisão 13, FI-08). O botão nunca fica desabilitado: com
+ * pendência, a janela (alertdialog, foco em Voltar ao caso) diz o que falta, com valores, e leva
+ * a registrar o repasse; sem pendência, pede a confirmação.
+ */
+function JanelaEncerrar({ f, aoFechar, aoFeito, aoRegistrar }: {
+  f: FichaRepasse; aoFechar: () => void; aoFeito: (x: Feito) => void; aoRegistrar: (destinacao: string) => void;
+}) {
+  const [pend, setPend] = useState<{ lista: PendenciaCaso[]; falta: number }>({ lista: f.acerto.pendencias, falta: f.acerto.falta });
+  const [falha, setFalha] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const desc = `Este é o caso de ${f.cliente.nome}, ${TIPOS_LEVANTAMENTO[f.tipo]} de ${dataBr(f.entrouEm)}.`;
+
+  async function enviar() {
+    setFalha(null);
+    setEnviando(true);
+    const r = await chamarPortal<AcertoCaso>(`/v1/escritorio/financeiro/casos/${f.caso.id}/encerrar`, { metodo: "POST", corpo: {} });
+    setEnviando(false);
+    if (r.ok) return aoFeito({ titulo: "Caso encerrado no financeiro.", texto: `${f.caso.nome}: tudo recebido e repassado. O encerramento ficou no histórico do caso.` });
+    if (r.erro.detalhes?.motivo === "PENDENCIAS") {
+      return setPend({ lista: (r.erro.detalhes.pendencias ?? []) as PendenciaCaso[], falta: Number(r.erro.detalhes.falta ?? 0) });
+    }
+    setFalha(textoDoErro(r.erro));
+  }
+
+  if (pend.lista.length) {
+    const repasses = pend.lista.filter((x) => x.tipo === "REPASSE");
+    const daqui = repasses.find((x) => x.levantamentoId === f.id);
+    const destino = daqui ? f.destinacoes.find((d) => pendente(d) && d.nome === daqui.nome && d.valor === daqui.valor) : undefined;
+    const titulo = repasses.length === pend.lista.length
+      ? `Ainda há ${contar(repasses.length, "repasse pendente", "repasses pendentes")} neste caso.`
+      : `Ainda há ${contar(pend.lista.length, "pendência", "pendências")} neste caso.`;
+    return (
+      <Janela id="j-enc" aberta alerta aoFechar={aoFechar} sobretitulo="Fechamento do caso" titulo="Ainda não dá para encerrar" descricao="j-enc-d"
+        aoEnviar={() => (destino ? aoRegistrar(destino.id) : aoFechar())}
+        pe={
+          <>
+            <button className="btn btn-sec" type="button" onClick={aoFechar} data-foco="">Voltar ao caso</button>
+            {destino ? (
+              <button className="btn btn-pri" type="submit">
+                <Icone nome="enviar" className="ico" />Registrar repasse {destino.para === "CLIENTE" ? `a ${primeiroNome(destino.nome)}` : `ao ${PARA_DESTINACAO[destino.para].toLowerCase()}`}
+              </button>
+            ) : null}
+          </>
+        }>
+        <div style={{ display: "grid", gap: 16 }}>
+          <p id="j-enc-d">{desc}</p>
+          <Aviso tom="urgencia" titulo={titulo}>
+            O financeiro do caso só encerra com tudo recebido e tudo repassado.{pend.falta ? ` Faltam ${reais(pend.falta)}.` : ""}
+          </Aviso>
+          <ul className="fi-check">
+            {pend.lista.map((x, i) => (
+              <li key={i} className="falta">
+                <Icone nome="alerta" className="ico" />
+                <span>
+                  <b>{x.nome}:</b>{x.valor !== null ? ` ${reais(x.valor)}` : ""}
+                  <small style={{ display: "block", color: "var(--texto-2)" }}>{detalheDaPendencia(x)}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Aviso tom="info" icone="ajuda">
+            Registre o que falta e o caso fica pronto para encerrar. Se algum repasse não vai acontecer (por exemplo, o perito abriu mão), registre isso no repasse, com o motivo. Assim nada some sem explicação.
+          </Aviso>
+        </div>
+      </Janela>
+    );
+  }
+
+  return (
+    <Janela id="j-enc" aberta aoFechar={aoFechar} sobretitulo="Fechamento do caso" titulo="Encerrar o caso no financeiro" descricao="j-enc-d" aoEnviar={() => void enviar()}
+      pe={
+        <>
+          <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
+          <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined} data-foco="">
+            <Icone nome="cadeado" className="ico" />Encerrar o caso
+          </button>
+        </>
+      }>
+      <div style={{ display: "grid", gap: 16 }}>
+        <p id="j-enc-d">{desc} Tudo foi recebido e repassado. O encerramento fica no histórico do caso, com o seu nome e a hora.</p>
+        {falha ? <Aviso tom="urgencia" titulo="O caso não foi encerrado.">{falha}</Aviso> : null}
+      </div>
+    </Janela>
   );
 }
 

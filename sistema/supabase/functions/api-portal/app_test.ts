@@ -305,7 +305,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { id: CLIENTE, mes: d.mes, formato: d.formato, recebimentos: [], despesas: [], terceiros: [] };
     },
     portal_financeiro_repasse_proposta: () => ({ contrato: null, linhas: [], cliente: 100, falta: 0 }),
-    portal_financeiro_repasse: (a) => ({ id: a.p_levantamento }),
+    portal_financeiro_repasse: (a) => ({ id: a.p_levantamento, caso: { id: ANA } }),
+    portal_financeiro_caso_acerto: (a) => ({ casoId: a.p_caso, pendencias: [] }),
+    portal_financeiro_caso_encerrar: (a) => {
+      if (a.p_caso === CLIENTE) erroBanco("TC422", { motivo: "PENDENCIAS", falta: 381840, pendencias: [{ tipo: "REPASSE", nome: "Dr. Rui Tavares", valor: 150000 }] });
+      return { casoId: a.p_caso, fechado: { em: "2026-11-21T12:00:00Z", por: { id: ANA, nome: "Ana" } } };
+    },
     portal_financeiro_prestacao_enviada: (a) => ({ id: a.p_levantamento, prestacaoEm: "2026-11-19T22:00:00Z" }),
     portal_financeiro_conta_reembolsada: (a) => ({ id: a.p_conta, reembolsadoEm: (a.p_dados as { reembolsadoEm: string }).reembolsadoEm }),
     portal_compromisso: (a) => ({ id: a.p_compromisso, titulo: "Conciliação" }),
@@ -1531,4 +1536,17 @@ Deno.test("FI-23: gerar o carnê e imprimir com o Pix de cada parcela; a vencida
   assertMatch(k.parcelas[1].pix, /^000201.*5406850\.00.*0511C2026014P04.*6304[0-9A-F]{4}$/);
   assert(!k.parcelas[0].pix.includes("5406"), "a vencida sai sem valor");
   assertEquals((await m.pedir("/v1/escritorio/carnes/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("F3.45, FI-08: a ficha do repasse traz o acerto do caso; encerrar devolve as pendências", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const f = await (await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}`, { cookie })).json();
+  assertEquals(f.acerto.casoId, ANA);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_financeiro_caso_acerto")!.args.p_escritorio, AURORA);
+  const ok = await (await m.pedir(`/v1/escritorio/financeiro/casos/${ANA}/encerrar`, { corpo: {}, cookie })).json();
+  assertEquals(ok.fechado.por.nome, "Ana");
+  const e = await erro(await m.pedir(`/v1/escritorio/financeiro/casos/${CLIENTE}/encerrar`, { corpo: {}, cookie }));
+  assertEquals([e.detalhes?.motivo, e.detalhes?.falta], ["PENDENCIAS", 381840]);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/casos/x/encerrar", { corpo: {}, cookie })).status, 404);
 });
