@@ -19,5 +19,5 @@ export default async function Pagina({ params, searchParams }: {
   // Atalhos de outras telas: abrir a ficha já editando, a janela de mudar o estágio ou o aviso
   // de escritório recém-cadastrado.
   const q = await searchParams;
-  return <FichaCliente id={id} aba={aba} editar={q.editar === "1"} mudar={q.mudar === "1"} cadastrado={q.cadastrado === "1"} />;
+  return <FichaCliente id={id} aba={aba} editar={q.editar === "1"} mudar={q.mudar === "1"} cadastrado={q.cadastrado === "1"} consulta={q.consulta === "1"} />;
 }

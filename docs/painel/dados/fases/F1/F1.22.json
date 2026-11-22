@@ -1,0 +1,12 @@
+{
+  "id": "F1.22",
+  "texto": "Aviso de fatura em atraso no sino do Console, para a Administração e o Financeiro",
+  "peca": "C1",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67.4,
+  "nota": "Parte do desenho aprovado em docs/design/aprovadas/console-cobranca que ficou fora de F1.19. O menu Cobrança já mostra a contagem de faturas em atraso.",
+  "proximo": "Mandar ao sino do Console o aviso de fatura em atraso (7 e 30 dias), ligado à fatura"
+}

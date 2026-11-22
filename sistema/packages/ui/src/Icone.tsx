@@ -354,6 +354,12 @@ const DESENHOS = {
   carne: <><path d="M3.5 5h17v14h-17Z" /><path d="M8.5 5v2M8.5 9.5v2M8.5 14v2M8.5 18.5V19" /><path d="M11.5 9.5h6M11.5 13h6M11.5 16h3.5" /></>,
   impressora: <><path d="M7 9V3.5h10V9" /><path d="M7 17H4V9h16v8h-3" /><path d="M7 14h10v6.5H7Z" /></>,
   qr: <><path d="M4 4h6v6H4ZM14 4h6v6h-6ZM4 14h6v6H4Z" /><path d="M14 14h2v2h-2ZM18 18h2v2h-2ZM14 18h2M18 14h2" /></>,
+  // Cobrança dos escritórios (CO-06, desenho aprovado em 20/11/2026).
+  fatura: <><path d="M5.5 3h13v18l-2.2-1.5L14 21l-2-1.5L10 21l-2.3-1.5L5.5 21Z" /><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4" /></>,
+  barras: <path d="M3.5 5v14M6.5 5v14M9 5v14M12.5 5v14M15 5v14M18 5v14M20.5 5v14" />,
+  planos: <><path d="m12 3.5 8.5 4.5-8.5 4.5L3.5 8Z" /><path d="m3.5 12 8.5 4.5 8.5-4.5" /><path d="m3.5 16 8.5 4.5 8.5-4.5" /></>,
+  arquivar: <><path d="M3.5 4.5h17v4h-17Z" /><path d="M5 8.5v11h14v-11" /><path d="M12 11.5v5M9.5 14l2.5 2.5 2.5-2.5" /></>,
+  pagar: <><path d="M3 6.5h18v11H3Z" /><path d="M3 10h18" /><path d="M6.5 14.5h4" /></>,
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

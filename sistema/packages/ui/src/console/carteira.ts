@@ -19,6 +19,16 @@ export interface ClienteCarteira {
   ultimaAtividade: string;
   /** Fim do contrato registrado (marcado ou já encerrado); null enquanto não houver. */
   encerramento?: DatasContrato | null;
+  /** Fatura do T3jus em atraso (CO-06): dias do atraso mais antigo; null sem atraso. */
+  cobranca?: { atrasoDias: number | null; soConsultaDesde: string | null } | null;
+}
+
+/** Dias da fatura em atraso mais antiga (0 sem atraso). Não entra em "Com pendência". */
+export const atrasoDe = (c: Pick<ClienteCarteira, "cobranca">) => c.cobranca?.atrasoDias ?? 0;
+
+/** Só os escritórios com fatura em atraso, do atraso maior para o menor (desenho, decisão 23). */
+export function comAtraso<T extends Pick<ClienteCarteira, "cobranca" | "nome" | "estagio">>(lista: T[]): T[] {
+  return lista.filter((c) => atrasoDe(c) > 0).sort((a, b) => atrasoDe(b) - atrasoDe(a) || a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 /** O convite vale 1 hora (decisão da Carol, 18/11/2026). */

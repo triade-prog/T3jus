@@ -1,12 +1,12 @@
 {
   "id": "F1.19",
-  "texto": "Telas da cobrança no Console: área Cobrança (faturas, planos e régua), aba Assinatura com carnê, atraso na carteira e aviso de fatura em atraso no sino",
+  "texto": "Telas da cobrança no Console: área Cobrança (faturas, planos e régua), fatura aberta, aba Assinatura com carnê e atraso na carteira",
   "peca": "C1",
   "refs": [
     "CO-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 67.1,
-  "nota": "O servidor está pronto (F1.18). Desenho aprovado em docs/design/aprovadas/console-cobranca.",
-  "proximo": "Programar as telas da cobrança no Console seguindo docs/design/aprovadas/console-cobranca"
+  "nota": "Desenho aprovado em docs/design/aprovadas/console-cobranca. O aviso de fatura em atraso no sino ficou em F1.22. O PDF do carnê e a nota fiscal aparecem como lugar reservado até F1.21.",
+  "evidencia": "Área Cobrança em /cobranca, /cobranca/planos e /cobranca/regua (packages/ui/src/console/Cobranca.tsx): números do mês, atraso por idade, lista com busca, filtros de escritório, mês, forma e situação; planos com criar, editar, arquivar, desarquivar e pessoa a mais. Fatura aberta em /cobranca/faturas/:escritorio/:fatura (FaturaCobranca.tsx): itens, como pagar (Pix e boleto reservados), histórico e próximos lembretes, registrar pagamento com motivo e conflito de versão, lembrete agora e cancelar com motivo. Aba Assinatura na ficha (AbaAssinatura.tsx): preparar, editar com erros por campo e comparação no conflito, mudar de plano com a prévia, atraso, só consulta e devolver o acesso com motivo, carnê e carnê novo, faixa de só consulta em todas as abas, Implantação e Suporte sem valores. Carteira com o selo 'Fatura em atraso · N dias', o filtro e o atalho para Cobrança. Menu Cobrança com a contagem. Testes: tests/e2e/console-cobranca.spec.ts (24 no celular e no computador, com axe)."
 }
