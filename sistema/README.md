@@ -498,6 +498,19 @@ Pergunta 1 do desenho aprovado (estado `previa-casos`), em duas etapas, como a C
 - **Desfazer:** os casos vão para Encerrados com `encerrado_por = 'IMPORTACAO_DESFEITA'` e sem resultado; os casos que já existiam perdem só o cliente ligado. Caso mexido depois (prazo, atendimento, outra etapa, contrato) fica como está e aparece na lista.
 - **Falta:** trazer os arquivados como encerrados e a linha "veio da importação" na ficha do caso (F3.116).
 
+### Importar do Astrea, parte 3: o financeiro antigo só como informação (F3.56, F3.113; VA-05)
+
+Pergunta 2 do desenho aprovado (estado `previa-financeiro`, decisões 23, 24, 26 e 28). Migration `0820_importar_financeiro.sql`, teste `112_importar_financeiro_test.sql`, e2e `portal-importacao-sistemas.spec.ts` (parte 3) e `portal-ficha-ligada.spec.ts` (a folha na ficha). Telas em `packages/ui/src/portal/ImportacaoFinanceiro.tsx`.
+
+- **Outra importação filha:** ao importar os clientes do backup do Astrea, a aba Lançamentos vira mais uma importação (`o_que = 'FINANCEIRO'`, `pai_id` = a dos clientes), em PREVIA, com as colunas ligadas pelo modelo (`LANCAMENTO` em `modelos_sistemas.ts`). O resultado dos clientes mostra "Depois, o financeiro" (`imp_json` traz `filhaFinanceiro`; `filha` continua sendo a dos processos). Pela planilha do ADVBOX, o financeiro fica de fora (decisão 17).
+- **Despacho:** as funções de nome original de 0810 ganharam o sufixo `_cc` (clientes e casos); as novas olham `o_que = 'FINANCEIRO'`.
+- **Campos** (`imp_campos_lancamento`): cliente ou CPF/CNPJ do cliente, número do processo (liga ao caso que já está no Jurídico, quando houver), descrição, data, valor, pago ou em aberto e receita ou despesa. Obrigatórios: o cliente, o valor e a situação. As despesas do escritório não entram na prévia e são contadas em `fora_tipo.DESPESAS`.
+- **Problemas:** `CLIENTE_FALTA`, `CLIENTE_NAO_ENCONTRADO`, `CLIENTE_AMBIGUO`, `VALOR_FALTA`, `VALOR_INVALIDO` (erros) e `CAMPO_INVALIDO` na data (aviso: entra sem a data).
+- **Tabelas:** `historico_financeiro_anterior` (cada lançamento, PAGO ou EM_ABERTO, com `desfeito_em`) e `lembrete_contrato` (um por cliente e caso com valor em aberto). Nenhuma das duas entra no Caixa, em A receber, nos relatórios do contador ou nos recibos. O gatilho `contratos_resolve_lembrete` resolve o lembrete aberto quando um contrato do cliente é criado.
+- **Na ficha:** `GET /v1/escritorio/clientes/:id/anterior` (`portal_cliente_anterior`) traz o total pago antes do T3jus, os lembretes abertos (com "Criar o contrato") e os 50 lançamentos mais recentes. Quem não tem Financeiro nem Contratos recebe `anterior: null`.
+- **Desfazer:** o histórico e os lembretes abertos saem das fichas (`desfeito_em`); o lembrete que já virou contrato fica e aparece como mexido (`LEMBRETE`). Os clientes ficam como estão. O financeiro ligado a um caso não deixa o caso "mexido" no desfazer dos processos.
+- **Falta:** a lista dos lembretes do escritório (o "Ver lembretes" do resultado), a prévia agrupada em Recebidos, Em aberto e Despesas, com as despesas listadas, e dispensar um lembrete à mão (F3.117).
+
 ### OAB de cada advogado na Equipe (F3.15; EX-12)
 
 Tela aprovada em `docs/design/aprovadas/portal-equipe-oab` (Carol, 20/11/2026). Migration `0430_equipe_oab.sql`, teste `043_equipe_oab_test.sql`, e2e `portal-equipe-oab.spec.ts`.

@@ -245,6 +245,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_contrato_caso_opcoes: (a) => ({ contrato: { id: a.p_contrato }, casoLigado: null, escolhe: true }),
     portal_contrato_caso: () => ({ casoId: CLIENTE }),
     portal_cliente_itens: (a) => ({ [String(a.p_tipo).toLowerCase()]: [] }),
+    portal_cliente_anterior: () => ({ anterior: { origem: "ASTREA", pago: 200000, total: 4, lembretes: [], lancamentos: [], importacao: null } }),
     portal_contrato_base: (a) => ({ id: a.p_recebimento, valor: 63540, vencimento: "2026-12-15" }),
     portal_financeiro_receber: (a) => ({ algum: true, parcelas: [], mostrar: a.p_mostrar, forma: a.p_forma, responsavel: a.p_responsavel }),
     portal_financeiro_contrato: (a) => ({ id: a.p_contrato, parcelas: [] }),
@@ -1207,6 +1208,16 @@ Deno.test("CH-01, CH-04, IN-01: criar o contrato da proposta, registrar a assina
   assertEquals((await erro(await m.pedir("/v1/escritorio/contratos?mostrar=todos", { cookie }))).detalhes?.campos, ["mostrar"]);
   assertEquals((await (await m.pedir("/v1/escritorio/contratos?mostrar=base", { cookie })).json()).mostrar, "BASE");
   assertEquals((await m.pedir("/v1/escritorio/contratos/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("F3.56 parte 3: o financeiro do sistema antigo na ficha do cliente; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/anterior`, { cookie })).json();
+  assertEquals([r.anterior.origem, r.anterior.pago], ["ASTREA", 200000]);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_cliente_anterior")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_cliente], [AURORA, CLIENTE]);
+  assertEquals((await m.pedir("/v1/escritorio/clientes/nao-e-id/anterior", { cookie })).status, 404);
 });
 
 Deno.test("F3.110, F3.111, CH-10: as abas da ficha, a assinatura que abre o caso e abrir o caso depois; o escritório vem da sessão", async () => {
