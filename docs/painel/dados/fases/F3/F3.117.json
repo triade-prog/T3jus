@@ -1,10 +1,9 @@
 {
   "id": "F3.117",
-  "texto": "Termo de curatela como anexo na ficha do cliente (F3.98, pergunta 2 do desenho D25): enviar o PDF opcional e juntá-lo à procuração gerada",
-  "peca": "S2",
+  "texto": "Financeiro importado do Astrea (F3.56, parte 3): a lista dos lembretes de contrato do escritório (o “Ver lembretes” do resultado), a prévia agrupada em Recebidos, Em aberto e Despesas, com as despesas listadas, e dispensar um lembrete à mão",
+  "peca": "S7",
   "refs": [
-    "AP-01",
-    "CH-08"
+    "VA-05"
   ],
   "status": "pendente",
   "ordem": 958

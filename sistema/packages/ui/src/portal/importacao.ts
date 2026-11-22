@@ -61,7 +61,7 @@ export const SELO_PROBLEMA: Record<CodigoProblema, string> = {
 };
 
 /** A explicação de cada problema, com o que fazer. */
-export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplicado" | "telefoneDe"> & Partial<Pick<LinhaPrevia, "casoExistente" | "caso">>): string {
+export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplicado" | "telefoneDe"> & Partial<Pick<LinhaPrevia, "casoExistente" | "caso" | "lancamento">>): string {
   const campo = NOMES_CAMPO_IMPORTACAO[p.campo] ?? p.campo;
   const v = p.valor ? `“${p.valor}”` : "";
   switch (p.codigo) {
@@ -73,7 +73,8 @@ export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplica
     case "EMAIL_INVALIDO": return `${v} não parece um e-mail.`;
     case "NOME_FALTA": return "A linha não tem o nome do cliente.";
     case "DATA_INVALIDA": return `${campo} ${v}: a data não existe ou ainda não chegou. Escreva como 10/09/2026.`;
-    case "VALOR_INVALIDO": return `${v} não dá para ler como valor. Escreva como 4.800,00 (ou 30% no êxito).`;
+    case "VALOR_INVALIDO": if (l?.lancamento) return `${v} não dá para ler como valor. Escreva como 1.500,00.`;
+      return `${v} não dá para ler como valor. Escreva como 4.800,00 (ou 30% no êxito).`;
     case "PARCELAS_INVALIDAS": return "O parcelado precisa do número de parcelas, de 1 a 120.";
     case "PRIMEIRO_FALTA": return "Falta o primeiro vencimento (no fixo, a data do pagamento).";
     case "PAGAS_INVALIDAS": return `${v} parcelas pagas é mais do que o contrato tem.`;
@@ -82,12 +83,13 @@ export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplica
       return p.valor ? `${v} não está na Equipe. Escolha no passo 2 quem fica com os contratos dele.` : "Falta o responsável pelo contrato.";
     case "OBJETO_FALTA": return "O contrato precisa do objeto (o serviço contratado).";
     case "TIPO_FALTA": return p.valor ? `${v} não é um tipo de honorário que a planilha traz. Use fixo, parcelado, mensal ou êxito.` : "Falta o tipo de honorário.";
-    case "VALOR_FALTA": return "O contrato precisa do valor.";
+    case "VALOR_FALTA": return l?.lancamento ? "O lançamento precisa do valor. Escreva o valor ou pule a linha." : "O contrato precisa do valor.";
     case "DUPLICADO": return l?.duplicado ? `Mesmo CPF de ${l.duplicado.nome}, já cadastrado.` : "Mesmo CPF de um cliente já cadastrado.";
     case "TELEFONE_DE_OUTRO": return l?.telefoneDe ? `É o telefone de ${l.telefoneDe.nome}. Pode ser da família.` : "É o telefone de outro cliente. Pode ser da família.";
     case "SEM_ASSINATURA": return "O contrato entra em elaboração e vai ao Financeiro quando a assinatura for registrada.";
     case "FORA_DA_LISTA": return `${v} não está na lista de ${campo.toLowerCase()}. O campo fica vazio, ou escolha um da lista.`;
-    case "CAMPO_INVALIDO": return `${campo} ${v} não dá para ler. O campo fica vazio, ou corrija.`;
+    case "CAMPO_INVALIDO": if (l?.lancamento) return `A data ${v} não existe ou ainda não chegou. O lançamento entra sem a data, ou corrija.`;
+      return `${campo} ${v} não dá para ler. O campo fica vazio, ou corrija.`;
     case "CLIENTE_FALTA": return "A linha não traz o nome nem o CPF do cliente. Escreva um dos dois ou pule a linha.";
     case "CLIENTE_NAO_ENCONTRADO": return `${v || "O cliente"} não bate com nenhum cliente cadastrado. Escreva o nome como está no cadastro, ou o CPF, ou pule a linha.`;
     case "CLIENTE_AMBIGUO": return `Há mais de um cliente chamado ${v}. Escreva o CPF ou CNPJ para dizer qual é.`;

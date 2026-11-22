@@ -24,6 +24,13 @@ describe("modelos dos outros sistemas (F3.56)", () => {
     expect([p[0]!.destino, p[0]!.porModelo]).toEqual(["CASOS", { 0: "numero", 1: "cliente", 2: "situacao_processo" }]);
   });
 
+  it("parte 3: a aba dos lançamentos é lida, com as colunas ligadas pelo modelo", () => {
+    const p = prepararAbas("ASTREA", [{ nome: "Lançamentos", linhas: 1, colunas: ["Data", "Cliente", "Descrição", "Valor (R$)", "Situação", "Tipo", "Conta"],
+      celulas: [["10/03/2026", "Ana", "Honorários", "1.500,00", "Pago", "Receita", "Itaú"]] }]);
+    expect([p[0]!.destino, p[0]!.lida, p[0]!.porModelo]).toEqual(["FINANCEIRO", true,
+      { 0: "lanc_data", 1: "cliente", 2: "lanc_descricao", 3: "lanc_valor", 4: "lanc_situacao", 5: "lanc_tipo" }]);
+  });
+
   it("decisão 9: o tipo de contato separa cliente, parte contrária e terceiros", () => {
     expect(["Cliente", "clientes", "Parte contrária", "Réu", "Adverso", "Testemunha", "Perito", "Correspondente"].map(sugerirTipoContato))
       .toEqual(["CLIENTE", "CLIENTE", "PARTE_CONTRARIA", "PARTE_CONTRARIA", "PARTE_CONTRARIA", "FORA", "FORA", "FORA"]);

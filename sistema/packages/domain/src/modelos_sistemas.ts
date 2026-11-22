@@ -62,6 +62,18 @@ const PROCESSO: Sinonimos = {
   responsavel: ["responsavel", "advogado responsavel", "advogado", "responsavel pelo processo"],
 };
 
+/** As colunas de um lançamento do financeiro do Astrea (F3.56, parte 3). */
+const LANCAMENTO: Sinonimos = {
+  lanc_data: ["data", "data do lancamento", "vencimento", "data de vencimento", "data do pagamento", "competencia"],
+  cliente: ["cliente", "nome do cliente", "pagador", "contato"],
+  cliente_documento: ["cpf/cnpj do cliente", "cpf do cliente", "cnpj do cliente", "cpf/cnpj"],
+  numero: ["processo", "numero do processo", "numero cnj"],
+  lanc_descricao: ["descricao", "historico", "lancamento", "referente a", "observacao do lancamento"],
+  lanc_valor: ["valor", "valor do lancamento", "valor r"],
+  lanc_situacao: ["situacao", "status", "pago", "situacao do pagamento"],
+  lanc_tipo: ["tipo", "natureza", "receita/despesa", "tipo de lancamento", "categoria"],
+};
+
 export const MODELO_ASTREA: Modelo = {
   versao: "astrea-2026-11",
   abas: [
@@ -75,7 +87,7 @@ export const MODELO_ASTREA: Modelo = {
       },
     },
     { destino: "CASOS", nomes: ["processos", "processos e casos", "casos", "acoes"], colunas: PROCESSO },
-    { destino: "FINANCEIRO", nomes: ["lancamentos", "financeiro", "lancamentos financeiros"] },
+    { destino: "FINANCEIRO", nomes: ["lancamentos", "financeiro", "lancamentos financeiros"], colunas: LANCAMENTO },
     { destino: "TAREFAS", nomes: ["tarefas", "atividades"] },
     { destino: "AGENDA", nomes: ["agenda", "compromissos", "prazos", "audiencias"] },
     { destino: "PUBLICACOES", nomes: ["publicacoes", "intimacoes", "andamentos"] },
@@ -102,11 +114,10 @@ export const MODELOS: Record<OrigemSistema, Modelo> = { ASTREA: MODELO_ASTREA, A
 /** As abas que ficam de fora sem nem chegar ao T3jus (decisão 7): tarefas, agenda e publicações. */
 export const DESTINOS_NAO_LIDOS: readonly DestinoAba[] = ["TAREFAS", "AGENDA", "PUBLICACOES"];
 /**
- * As abas que entram nesta versão: os contatos e os processos (que viram a segunda prévia, depois
- * dos clientes). Os lançamentos (histórico financeiro) vêm na próxima entrega do F3.56; até lá,
- * ficam de fora e não são lidos.
+ * As abas que entram: os contatos, os processos (que viram a segunda prévia, depois dos clientes) e
+ * os lançamentos (o financeiro antigo, só como informação na ficha do cliente).
  */
-export const DESTINOS_IMPORTAVEIS: readonly DestinoAba[] = ["CLIENTES", "CASOS"];
+export const DESTINOS_IMPORTAVEIS: readonly DestinoAba[] = ["CLIENTES", "CASOS", "FINANCEIRO"];
 
 /** O destino de uma aba pelo nome, ou nulo se o modelo não a conhece. */
 export function destinoDaAba(origem: OrigemSistema, nome: string): DestinoAba | null {

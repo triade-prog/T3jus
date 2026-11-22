@@ -26,6 +26,7 @@ import { ROTAS_JURIDICO } from "./juridico.ts";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
+import { FolhaSistemaAntigo } from "./ImportacaoFinanceiro.tsx";
 import { FolhaFunilCliente } from "./FunilSaida.tsx";
 import { FolhaSemAvisos, SeloSemAvisos, useAvisosCliente } from "./SemAvisos.tsx";
 import { AbaItensCliente, DirPasso, NoEscritorio, BotaoPasso, type JanelaLigada } from "./FichaLigada.tsx";
@@ -128,7 +129,7 @@ function Dados({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
         {item(pf ? "CPF" : "CNPJ", f.documento ? <><span className="num">{formatarDocumento(f.documento)}</span>{conf}</> : null)}
         {pf ? (
           <>
-            {menor ? item("Data de nascimento", f.nascimento ? `${dataBr(f.nascimento)}${f.assina?.idade != null ? ` · ${f.assina.idade} anos` : ""}` : null) : null}
+            {menor ? item("Data de nascimento", f.nascimento ? `${dataBr(f.nascimento)}${typeof f.assina?.idade === "number" ? ` · ${f.assina.idade} anos` : ""}` : null) : null}
             {item("Nacionalidade", f.nacionalidade)}
             {menor && !f.rg ? (
               <div>
@@ -1165,6 +1166,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
               <Contatos f={f} aoEditar={editar} />
               <FolhaSemAvisos f={f} dados={avisos.dados} eu={escritorio.pessoa} podeEscrever={!soConsulta(escritorio) && !arquivado}
                 aoFeito={(x) => { setFeito(x); avisos.recarregar(); }} />
+              <FolhaSistemaAntigo cliente={f.id} podeCriarContrato={!soConsulta(escritorio) && !arquivado && escritorio.areas.includes("CONTRATOS")} />
             </>
           )
         }

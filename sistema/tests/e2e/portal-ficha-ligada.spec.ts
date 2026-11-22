@@ -130,6 +130,31 @@ test.describe("Ficha do cliente ligada (F3.110, F3.111)", () => {
     await semViolacoes(page);
   });
 
+  test("F3.56 parte 3: o financeiro do Astrea na ficha, com o pago antes e o lembrete de criar o contrato", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: FICHA },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET /v1/escritorio/clientes/${cid(1)}/anterior`]: { corpo: { anterior: {
+        origem: "ASTREA", importacao: { id: "f1", arquivo: "backup-astrea.xlsx", em: "2026-11-22T19:50:00Z" }, pago: 230000, total: 3,
+        lembretes: [{ id: "l1", valor: 125000, lancamentos: 1, caso: { id: CASO, nome: "Prado x INSS" } }],
+        lancamentos: [
+          { data: "2026-11-15", descricao: "Honorários · parcela 2 de 4", valor: 125000, situacao: "EM_ABERTO", caso: "Prado x INSS" },
+          { data: "2026-10-10", descricao: "Honorários · parcela 1 de 4", valor: 150000, situacao: "PAGO", caso: "Prado x INSS" },
+          { data: null, descricao: "Consulta", valor: 80000, situacao: "PAGO", caso: null },
+        ],
+      } } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const antigo = page.getByRole("region", { name: "Do Astrea" });
+    await expect(antigo).toContainText("Só informação: fora do Caixa");
+    await expect(antigo).toContainText("R$ 1.250,00 em aberto no Astrea, no caso Prado x INSS.");
+    await expect(antigo.getByRole("link", { name: "Criar o contrato" })).toHaveAttribute("href", `/contratos/contratos/novo?cliente=${cid(1)}`);
+    await expect(antigo).toContainText("R$ 2.300,00 pagos antes do T3jus");
+    await expect(antigo.getByRole("list", { name: "Lançamentos do Astrea" }).getByRole("listitem")).toHaveCount(3);
+    await semViolacoes(page);
+  });
+
   test("assinatura na ficha: abre o caso junto e leva à ficha do caso (CH-10)", async ({ page }) => {
     await page.route("**/arquivos-falsos/**", (rota) => rota.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
     const pedidos = await simular(page, {

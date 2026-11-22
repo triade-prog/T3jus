@@ -26,7 +26,7 @@ import {
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
   colunasImportacaoSchema, tirarMetaSchema, VALIDADE_LINK_PASTA_S, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema,
   LIMITE_ARQUIVO_BYTES, LIMITE_BACKUP_LINHAS, lerPlanilha, MODELOS, prepararAbas, backupLidoSchema, descomprimirJson, type AbaLida, type AbaParaOBanco, ligacaoImportacaoSchema, linhaImportacaoSchema, type Importacao, type LinhaPrevia, type LinhasFora,
-  type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
+  type FinanceiroAnterior, type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
   type RelatorioResponsaveis, type ResumoRelatorio,
   deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio, type AudienciasInicio,
@@ -759,6 +759,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.get("/v1/escritorio/clientes/:id/funil", async (c) =>
     c.json(await deps.banco.rpc<ClienteFunil>("portal_cliente_funil", { ...quem(c), p_cliente: idDaRota(c, "id") })));
+
+  // Ficha do cliente: o financeiro do sistema antigo, só como informação (F3.56, parte 3). Quem não é
+  // do Financeiro nem dos Contratos recebe nulo.
+  app.get("/v1/escritorio/clientes/:id/anterior", async (c) =>
+    c.json(await deps.banco.rpc<{ anterior: FinanceiroAnterior | null }>("portal_cliente_anterior", { ...quem(c), p_cliente: idDaRota(c, "id") })));
 
   // As abas Propostas, Contratos e Casos da ficha (F3.110): cada uma entra pela própria área.
   for (const [aba, tipo] of [["propostas", "PROPOSTAS"], ["contratos", "CONTRATOS"], ["casos", "CASOS"]] as const) {
