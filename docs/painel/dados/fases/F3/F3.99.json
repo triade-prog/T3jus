@@ -1,0 +1,11 @@
+{
+  "id": "F3.99",
+  "texto": "Anexar o assinado em várias fotos (até 10 por documento), além do PDF único",
+  "peca": "S2",
+  "refs": [
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 794,
+  "proximo": "Hoje a janela Anexar os assinados aceita um arquivo por documento (PDF ou foto). Falta aceitar até 10 fotos por documento, como diz a decisão 17 do desenho aprovado"
+}

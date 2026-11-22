@@ -1,0 +1,68 @@
+// As contas das telas de Procurações e modelos (F3.16), sem React.
+import { describe, expect, it } from "vitest";
+import type { DadosDocumentos } from "@t3jus/domain";
+import { botaoGerar, errosDocumentos, formInicialDocumentos, fraseVaoSair, pedidoDocumentos, problemaDoAssinado, seloAssinado, tituloFaltas } from "./procuracoes.ts";
+
+const insc = (id: string) => ({ id, uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" }) as const;
+const base = (extra: Partial<DadosDocumentos> = {}): DadosDocumentos => ({
+  contrato: { id: "c", numero: "C-2026-033", objeto: "Aposentadoria", estado: "ELABORACAO", assinadoEm: null, versao: 1 },
+  cliente: { id: "cl", nome: "Benedito Souza Lima", tipo: "PF", documento: null, nacionalidade: null, estadoCivil: null, profissao: null, rg: null, rgOrgao: null,
+    endereco: null, bairro: null, cidade: null, uf: null, cep: null, repNome: null, repCargo: null, repDocumento: null, repEstadoCivil: null, repProfissao: null, versao: 1 },
+  condicoes: [], casos: [],
+  advogados: [
+    { pessoaId: "m", nome: "Marina Ribeiro", noContrato: true, responsavel: true, inscricoes: [insc("i1")], escolhidas: ["i1"] },
+    { pessoaId: "l", nome: "Larissa Costa", noContrato: false, responsavel: false, inscricoes: [insc("i2")], escolhidas: ["i2"] },
+  ],
+  semOab: [], escritorio: { nome: "Ribeiro & Matos", cnpj: null, endereco: null, cidade: "São Paulo", uf: "SP", oab: null }, marca: null, hoje: "2026-11-21",
+  modelos: [
+    { tipo: "CONTRATO", modeloId: null, nome: "Contrato de honorários", numero: null, padrao: "CONTRATO", emRevisao: true },
+    { tipo: "PROCURACAO", modeloId: null, nome: "Procuração", numero: null, padrao: "PROCURACAO", emRevisao: true },
+    { tipo: "HIPOSSUFICIENCIA", modeloId: null, nome: "Declaração de hipossuficiência", numero: null, padrao: "HIPOSSUFICIENCIA_PF", emRevisao: true },
+  ],
+  atuais: [], ultima: null, mudancas: [], poderesIniciais: ["ACORDO", "RECEBER_QUITAR"],
+  ...extra,
+});
+
+describe("Procurações e modelos: a página de gerar", () => {
+  it("começa com os três documentos, os advogados do contrato e os poderes na ordem da tela", () => {
+    const f = formInicialDocumentos(base());
+    expect(f.docs).toEqual(["CONTRATO", "PROCURACAO", "HIPOSSUFICIENCIA"]);
+    expect(f.outorgados).toEqual({ m: ["i1"] });
+    expect(f.poderes).toEqual(["RECEBER_QUITAR", "ACORDO"]);
+    expect(f.cidadeData).toBe("São Paulo, 21 de novembro de 2026");
+    expect(fraseVaoSair(base(), f)).toBe("Vão sair 3 arquivos .docx: contrato, procuração e declaração.");
+    expect(botaoGerar(base(), f)).toBe("Gerar 3 documentos");
+    expect(pedidoDocumentos(base(), f).outorgados).toEqual([{ pessoaId: "m", inscricoes: ["i1"] }]);
+  });
+
+  it("o contrato já assinado e o documento com assinado vêm desmarcados; gerar de novo vira versão 2", () => {
+    const d = base({
+      contrato: { id: "c", numero: "C-2026-033", objeto: "x", estado: "ATIVO", assinadoEm: "2026-09-02", versao: 2 },
+      atuais: [{ chave: "PROCURACAO", tipo: "PROCURACAO", modeloId: null, numero: 1, geradoEm: "2026-09-01T12:00:00Z", assinado: false }],
+      ultima: { geracaoId: "g", em: "2026-09-01T12:00:00Z", por: { id: "m", nome: "Marina Ribeiro" }, documentos: [{ tipo: "CONTRATO", modeloId: null }, { tipo: "PROCURACAO", modeloId: null }],
+        outorgados: [{ pessoaId: "l", inscricoes: ["i2"] }], poderes: ["DESISTIR"], outroPoder: "representar perante o INSS", cidadeData: "x" },
+    });
+    const f = formInicialDocumentos(d);
+    expect(f.docs).toEqual(["PROCURACAO"]);
+    expect(f.outorgados).toEqual({ l: ["i2"] });
+    expect(f.outroPoder).toBe("representar perante o INSS");
+    expect(botaoGerar(d, f)).toBe("Gerar a versão 2");
+  });
+
+  it("só bloqueia nenhum documento e nenhum outorgado (e o tamanho dos textos)", () => {
+    const f = { docs: [], outorgados: {}, poderes: [], outroPoder: "", cidadeData: "SP" };
+    expect(errosDocumentos(f)).toEqual({ documentos: "DOCUMENTO_OBRIGATORIO", outorgados: "SEM_OUTORGADO", cidadeData: "CIDADE_DATA_OBRIGATORIA" });
+    expect(tituloFaltas(["o RG"], "Benedito Souza Lima")).toBe("Falta 1 dado de Benedito: o RG.");
+    expect(tituloFaltas(["o RG", "a profissão"], "Benedito Souza Lima")).toBe("Faltam 2 dados de Benedito: o RG e a profissão.");
+  });
+});
+
+describe("Procurações e modelos: os assinados", () => {
+  it("o .docx gerado não serve como assinado; PDF e foto até 10 MB, sim", () => {
+    expect(problemaDoAssinado("contrato.docx", 100)).toMatch(/é o .docx gerado/);
+    expect(problemaDoAssinado("contrato.pdf", 11 * 1024 * 1024)).toMatch(/10 MB/);
+    expect(problemaDoAssinado("foto.JPG", 900)).toBeNull();
+    expect(seloAssinado("PROCURACAO", "2026-10-30")).toBe("Assinada em 30/10");
+    expect(seloAssinado("CONTRATO", null)).toBe("Assinado");
+  });
+});
