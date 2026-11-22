@@ -49,3 +49,15 @@ export function rotaArea(area: AreaPortal, secao?: string): string {
   return secao ? `${base}/${secao}` : base;
 }
 
+
+/**
+ * A trilha do topo numa área: área › seção › o que vier depois. Quando a seção tem o mesmo nome
+ * da área (Contratos › Contratos), fica um nome só, que leva à lista da seção (D29).
+ */
+export function trilhaDaArea(
+  area: AreaPortal, nome: string, s: { chave: string; nome: string }, trilha: { nome: string; href?: string }[] = [],
+): { nome: string; href?: string }[] {
+  const secao = trilha.length ? { nome: s.nome, href: rotaArea(area, s.chave) } : { nome: s.nome };
+  if (s.nome === nome) return [secao, ...trilha];
+  return [{ nome, href: rotaArea(area) }, secao, ...trilha];
+}

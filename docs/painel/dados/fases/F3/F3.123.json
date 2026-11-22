@@ -1,9 +1,12 @@
 {
   "id": "F3.123",
-  "texto": "Dar às tabelas .hn-tab do Portal uma base própria (ou tirar co-carteira do MolduraArea): hoje herdam do Console table-layout:auto, cabeçalho sem quebra e 1ª coluna com 250 px, e podem cortar a última coluna com nomes ou valores longos",
+  "texto": "Arrumar o período (30 dias, 90 dias, 12 meses) da Origem dos contatos e do Funil numa pílula única que não se parte, e a coluna \"Contratado (valor certo)\" da Origem que saía cortada",
   "peca": "S2",
-  "refs": [],
-  "status": "pendente",
-  "ordem": 964,
-  "proximo": "Varrer as telas do Portal com .hn-tab em várias larguras e propor a correção ampla, passando pela especialista de frontend e pela Carol"
+  "refs": [
+    "AP-03",
+    "AP-04"
+  ],
+  "status": "feito",
+  "ordem": 981,
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-origem-periodo; portal.css (.cm-cab-per, .chips.cm-periodo, .cm-org-tab e cartões em folha estreita) e Comercial.tsx; e2e tests/e2e/portal-comercial.spec.ts (38 passam, com o novo \"Período fica numa linha só e a tabela da Origem cabe na folha\")"
 }

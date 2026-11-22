@@ -1,6 +1,6 @@
 # Portal: Comercial, período "30 dias / 90 dias / 12 meses" e tabela da Origem · notas
 
-> **Aprovado pela Carol em 22/11/2026, às 19h44 (Bahia),** com a pílula única, sem mudar nada. As outras perguntas seguem a recomendação: cartões na folha estreita da Origem; a correção ampla das outras `.hn-tab` fica para outra entrega (F3.123 no painel).
+> **Aprovado pela Carol em 22/11/2026, às 19h44 (Bahia),** com a pílula única, sem mudar nada. As outras perguntas seguem a recomendação: cartões na folha estreita da Origem; a correção ampla das outras `.hn-tab` fica para outra entrega (F3.124 no painel).
 
 As comparações (antes à esquerda, depois à direita) estão em `comparacao-*.webp`. O HTML e as capturas avulsas não vêm para o repositório: `sh _fonte/gerar.sh <pasta>` refaz tudo (a pasta precisa ter `_fonte/` dentro).
 
