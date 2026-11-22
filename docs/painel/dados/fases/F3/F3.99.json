@@ -5,7 +5,7 @@
   "refs": [
     "CH-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 794,
-  "proximo": "Hoje a janela Anexar os assinados aceita um arquivo por documento (PDF ou foto). Falta aceitar até 10 fotos por documento, como diz a decisão 17 do desenho aprovado"
+  "evidencia": "Na janela Anexar os assinados, cada documento aceita um PDF ou de 1 a 10 fotos (JPG ou PNG, até 10 MB cada), sem misturar. As fotos são reduzidas no navegador e viram um PDF só, uma foto por página na ordem do nome (packages/domain/src/pdf_fotos.ts, 3 testes vitest; packages/ui/src/portal/fotos.ts). O assinado continua um arquivo por documento, sem migration nem mudança na api-portal. problemaDosAssinados com 7 casos novos em procuracoes.test.ts e cenário novo em tests/e2e/portal-procuracoes.spec.ts (11 fotos barradas, 3 fotos viram 1 PDF, celular e computador, com axe)."
 }
