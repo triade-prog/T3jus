@@ -5,8 +5,8 @@
   "refs": [
     "CO-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 67.4,
   "nota": "Parte do desenho aprovado em docs/design/aprovadas/console-cobranca que ficou fora de F1.19. O menu Cobrança já mostra a contagem de faturas em atraso.",
-  "proximo": "Mandar ao sino do Console o aviso de fatura em atraso (7 e 30 dias), ligado à fatura"
+  "evidencia": "Migration 0691_sino_fatura_atraso.sql: o aviso FATURA_ATRASO nasce dos eventos da régua (portal.aviso_aceso aos 7 dias e consulta.proposta aos 30), uma vez cada, para a Administração e o Financeiro com vínculo ao escritório (PT-24), ligado à fatura; o sino só mostra enquanto a pessoa vê Cobrança. Teste 105_sino_fatura_atraso_test.sql (16). Tela: packages/ui/src/console/Sino.tsx (aviso com o mês, o valor, os dias e \"Abrir a fatura\"; selo de atenção aos 7 e de urgência aos 30; sino vazio do Financeiro), 2 cenários novos em tests/e2e/console-interessado-sino.spec.ts (celular e computador, com axe). Sem mudança na api-console."
 }

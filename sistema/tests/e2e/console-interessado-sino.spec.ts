@@ -180,7 +180,57 @@ test.describe("Console: sino de avisos", () => {
     await sino(page).click();
     const painel = page.getByRole("dialog", { name: "Avisos" });
     await expect(painel.getByRole("heading", { name: "Nenhum aviso para você por enquanto." })).toBeVisible();
-    await expect(painel.getByText(/Em estudo: fatura de escritório em atraso/)).toBeVisible();
+    await expect(painel.getByText(/Em estudo: pedido de suporte novo/)).toBeVisible();
+    await expect(painel.getByText(/sobre fatura em atraso, para a Administração e o Financeiro/)).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  // F1.22: a fatura de escritório em atraso, aos 7 e aos 30 dias, para quem vê Cobrança.
+  const FIN = { ...SESSAO, nome: "Marta Quintela", funcoes: ["FINANCEIRO"], acoes: ["console.cobranca.ver", "console.cobranca.editar"] };
+  const ESC = "e0000000-0000-4000-8000-0000000000b1";
+  const FAT = "fa000000-0000-4000-8000-000000000001";
+  const fatura = (id: string, dias: number, marco: "AVISO" | "CONSULTA", lido: boolean) => ({
+    id, tipo: "FATURA_ATRASO", interessadoId: null, faturaId: FAT, lido, agora: null, em: new Date(Date.now() - (marco === "AVISO" ? 23 : 0) * 86400e3).toISOString(),
+    dados: { escritorio: "Bacuri Advocacia Trabalhista", escritorioId: ESC, competencia: "2026-10-01", vencimento: "2026-10-10", totalCentavos: 19000, dias, marco },
+  });
+  const AVISOS_FIN = { novos: 1, total: 2, veInteressados: false, veCobranca: true, itens: [fatura("f2", 30, "CONSULTA", false), fatura("f1", 7, "AVISO", true)] };
+
+  test("fatura em atraso: o Financeiro recebe aos 7 e aos 30 dias, e o aviso leva à fatura", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/sessao": { corpo: FIN },
+      "/v1/avisos": { corpo: AVISOS_FIN },
+      "POST /v1/avisos/f2/lido": { corpo: { ...AVISOS_FIN, novos: 0 } },
+      [`/v1/clientes/${ESC}/faturas/${FAT}`]: { status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } },
+    });
+    await page.goto(`${C}/suporte`);
+    await expect(sino(page)).toHaveAccessibleName("Avisos, 1 novo");
+    await sino(page).click();
+    const painel = page.getByRole("dialog", { name: "Avisos" });
+    const novo = painel.getByRole("link", { name: /Fatura em atraso há 30 dias: Bacuri Advocacia Trabalhista/ });
+    await expect(novo).toHaveAttribute("href", `/cobranca/faturas/${ESC}/${FAT}`);
+    await expect(painel.getByText(/Fatura de outubro de 2026 · R\$\s190,00 · venceu em 10\/10\. Já dá para propor o Portal só para consulta/)).toBeVisible();
+    await expect(painel.getByText("Em atraso · 30 dias")).toHaveClass(/selo-urgente/);
+    await expect(painel.getByText(/O Portal já mostra o aviso ao sócio dono/)).toBeVisible();
+    await expect(painel.getByText("Em atraso · 7 dias")).toHaveClass(/selo-atencao/);
+    await expect(painel.getByText(/no lugar de origem/)).toBeVisible();
+    await semViolacoes(page);
+    await novo.click();
+    await page.waitForURL(`**/cobranca/faturas/${ESC}/${FAT}`);
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === "/v1/avisos/f2/lido")).toBe(true);
+  });
+
+  test("Financeiro sem aviso: o sino diz que chega a fatura em atraso", async ({ page }) => {
+    await simular(page, {
+      "/v1/sessao": { corpo: FIN },
+      "/v1/avisos": { corpo: { novos: 0, total: 0, veInteressados: false, veCobranca: true, itens: [] } },
+    });
+    await page.goto(`${C}/suporte`);
+    await sino(page).click();
+    const painel = page.getByRole("dialog", { name: "Avisos" });
+    await expect(painel.getByRole("heading", { name: "Nenhum aviso por enquanto." })).toBeVisible();
+    await expect(painel.getByText("Chega aqui o que pede você na Cobrança. Cada aviso leva à fatura.")).toBeVisible();
+    await expect(painel.getByText(/em atraso há 7 dias e há 30 dias/)).toBeVisible();
+    await expect(painel.getByText(/Pedido de demonstração novo/)).toHaveCount(0);
     await semViolacoes(page);
   });
 
