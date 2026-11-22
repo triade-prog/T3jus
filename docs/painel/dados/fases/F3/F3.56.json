@@ -7,6 +7,6 @@
   ],
   "status": "andamento",
   "ordem": 560,
-  "proximo": "Aplicar a migration 0790 com o ok da Carol e publicar a api-portal; conferir as abas e as colunas do modelo com o backup real do Astrea e a planilha do ADVBOX de um piloto",
-  "evidencia": "Parte 1, os clientes: escolher a origem (só a sócia dona vê Astrea e ADVBOX), o backup do Astrea lido no navegador com só as abas que entram indo ao T3jus, as abas, as colunas ligadas pelo modelo, o tipo de contato (só clientes entram) e a planilha de clientes do ADVBOX até 10.000 linhas. Migration 0790_importar_sistemas.sql, testes 110_importar_sistemas_test.sql, modelos_sistemas.test.ts, app_test.ts (F3.56) e e2e portal-importacao-sistemas.spec.ts."
+  "proximo": "Aplicar as migrations 0790 e 0810 com o ok da Carol e publicar a api-portal; conferir as abas e as colunas do modelo com o backup real do Astrea e as planilhas do ADVBOX de um piloto; partes que faltam em F3.113 a F3.116",
+  "evidencia": "Parte 1, os clientes: escolher a origem (só a sócia dona vê Astrea e ADVBOX), o backup do Astrea lido no navegador com só as abas que entram indo ao T3jus, as abas, as colunas ligadas pelo modelo, o tipo de contato (só clientes entram) e a planilha de clientes do ADVBOX até 10.000 linhas. Migration 0790_importar_sistemas.sql, testes 110_importar_sistemas_test.sql, modelos_sistemas.test.ts, app_test.ts (F3.56) e e2e portal-importacao-sistemas.spec.ts. Parte 2, os processos ativos como casos: ver F3.112."
 }

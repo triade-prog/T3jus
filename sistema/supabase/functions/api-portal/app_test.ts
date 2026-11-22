@@ -1013,6 +1013,7 @@ Deno.test("F3.56: o backup do Astrea chega lido e comprimido; a API reconhece as
       { nome: "Contatos", linhas: 1, colunas: ["Nome", "Tipo", "CPF/CNPJ", "Celular", "Observações"], celulas: [["Rosa Almeida", "Cliente", "529.982.247-25", "11 98451-2290", "x"]] },
       { nome: "Tarefas", linhas: 97, colunas: null, celulas: null },
       { nome: "Honorários", linhas: 1, colunas: ["Cliente", "Valor"], celulas: [["Rosa", "100"]] },
+      { nome: "Processos", linhas: 1, colunas: ["Número", "Cliente", "Fase"], celulas: [["1000123-25.2025.5.02.0001", "Rosa Almeida", "Inicial"]] },
     ],
   });
   const r = await m.pedir("/v1/escritorio/importacoes?oQue=CLIENTES&origem=ASTREA&nome=backup.xlsx", { bruto: backup, cookie });
@@ -1023,6 +1024,8 @@ Deno.test("F3.56: o backup do Astrea chega lido e comprimido; a API reconhece as
     { nome: "Contatos", linhas: 1, destino: "CLIENTES", reconhecida: true, porModelo: { 0: "nome", 1: "tipo_contato", 2: "documento", 3: "telefone" } },
     { nome: "Tarefas", linhas: 97, destino: "TAREFAS", reconhecida: true, porModelo: {} },
     { nome: "Honorários", linhas: 1, destino: "FORA", reconhecida: false, porModelo: {} },
+    // A parte 2: os processos chegam e viram a segunda prévia, depois dos clientes.
+    { nome: "Processos", linhas: 1, destino: "CASOS", reconhecida: true, porModelo: { 0: "numero", 1: "cliente", 2: "etapa" } },
   ]);
   assertEquals(d.abas[1], { nome: "Tarefas", colunas: [], linhas: [] });
   assertEquals(d.abas[2].linhas, [["Rosa", "100"]]);
@@ -1031,6 +1034,10 @@ Deno.test("F3.56: o backup do Astrea chega lido e comprimido; a API reconhece as
   const csv = new TextEncoder().encode("Nome do cliente;CPF/CNPJ;Celular\nRosa Almeida;529.982.247-25;11 98451-2290\n");
   const adv = await (await m.pedir("/v1/escritorio/importacoes?oQue=CLIENTES&origem=ADVBOX_PLANILHA&nome=clientes.csv", { bruto: csv, cookie })).json();
   assertEquals([adv.origem, adv.modelo, adv.sistema[0].porModelo], ["ADVBOX_PLANILHA", "advbox-2026-11", { 0: "nome", 1: "documento", 2: "telefone" }]);
+  // A planilha de processos do ADVBOX: oQue = CASOS, ligada pelo modelo dos processos.
+  const proc = new TextEncoder().encode("Processo;Cliente;Advogado responsável;Status\n1000123-25.2025.5.02.0001;Rosa Almeida;Marina;Ativo\n");
+  const p = await (await m.pedir("/v1/escritorio/importacoes?oQue=CASOS&origem=ADVBOX_PLANILHA&nome=processos.csv", { bruto: proc, cookie })).json();
+  assertEquals([p.oQue, p.sistema[0].destino, p.sistema[0].porModelo], ["CASOS", "CASOS", { 0: "numero", 1: "cliente", 2: "responsavel", 3: "situacao_processo" }]);
 });
 
 Deno.test("F1.15: o pedido de exclusão confere data, canal e quem pediu", async () => {

@@ -17,6 +17,13 @@ describe("modelos dos outros sistemas (F3.56)", () => {
       .toEqual({ 0: "nome", 1: "documento", 2: "origem" });
   });
 
+  it("parte 2: as colunas dos processos pelo modelo, no Astrea e na planilha de processos do ADVBOX", () => {
+    expect(ligarPeloModelo("ASTREA", "CASOS", ["Número do processo", "Cliente", "Parte contrária", "Área", "Fase", "Situação", "Responsável", "Valor da causa", "Observações"]))
+      .toEqual({ 0: "numero", 1: "cliente", 2: "parte_contraria", 3: "area", 4: "etapa", 5: "situacao_processo", 6: "responsavel", 7: "valor_causa" });
+    const p = prepararAbas("ADVBOX_PLANILHA", [{ nome: "Processos", linhas: 1, colunas: ["Processo", "Cliente", "Status"], celulas: [["1", "Ana", "Ativo"]] }], "CASOS");
+    expect([p[0]!.destino, p[0]!.porModelo]).toEqual(["CASOS", { 0: "numero", 1: "cliente", 2: "situacao_processo" }]);
+  });
+
   it("decisão 9: o tipo de contato separa cliente, parte contrária e terceiros", () => {
     expect(["Cliente", "clientes", "Parte contrária", "Réu", "Adverso", "Testemunha", "Perito", "Correspondente"].map(sugerirTipoContato))
       .toEqual(["CLIENTE", "CLIENTE", "PARTE_CONTRARIA", "PARTE_CONTRARIA", "PARTE_CONTRARIA", "FORA", "FORA", "FORA"]);
@@ -30,11 +37,11 @@ describe("modelos dos outros sistemas (F3.56)", () => {
       { nome: "Planilha1", colunas: ["Cliente"], linhas: [["Caio"]] },
     ]);
     expect(b.abas.map((a) => [a.nome, a.linhas, a.celulas !== null])).toEqual([
-      ["Contatos", 2, true], ["Processos", 1, false], ["Publicações", 3, false], ["Planilha1", 1, true],
+      ["Contatos", 2, true], ["Processos", 1, true], ["Publicações", 3, false], ["Planilha1", 1, true],
     ]);
     const p = prepararAbas("ASTREA", b.abas);
     expect(p.map((a) => [a.destino, a.reconhecida, a.lida])).toEqual([
-      ["CLIENTES", true, true], ["CASOS", true, false], ["PUBLICACOES", true, false], ["FORA", false, true],
+      ["CLIENTES", true, true], ["CASOS", true, true], ["PUBLICACOES", true, false], ["FORA", false, true],
     ]);
   });
 

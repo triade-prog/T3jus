@@ -44,6 +44,24 @@ const QUALIFICACAO: Sinonimos = {
   uf: ["uf", "estado"],
 };
 
+/** As colunas de um processo, nos dois sistemas (F3.56, parte 2). */
+const PROCESSO: Sinonimos = {
+  numero: ["numero", "numero do processo", "processo", "numero cnj", "n do processo", "no do processo", "numero/processo"],
+  cliente: ["cliente", "clientes", "nome do cliente", "cliente principal", "cliente/parte"],
+  cliente_documento: ["cpf/cnpj do cliente", "cpf do cliente", "cnpj do cliente", "documento do cliente"],
+  caso_nome: ["titulo", "nome do caso", "assunto", "acao", "tipo de acao", "pasta"],
+  area: ["area", "area do direito", "area de atuacao", "materia", "natureza"],
+  parte_contraria: ["parte contraria", "partes contrarias", "contrario", "contraria", "parte adversa", "adverso", "reu"],
+  tribunal: ["tribunal", "orgao", "justica"],
+  vara: ["vara", "juizo", "vara/juizo", "comarca", "foro"],
+  valor_causa: ["valor da causa", "valor"],
+  distribuido_em: ["data de distribuicao", "distribuicao", "distribuido em", "data da distribuicao"],
+  etapa: ["fase", "etapa", "fase processual", "fase atual"],
+  situacao_processo: ["situacao", "status", "situacao do processo", "status do processo"],
+  papel: ["polo", "posicao do cliente", "papel do cliente", "polo do cliente", "posicao"],
+  responsavel: ["responsavel", "advogado responsavel", "advogado", "responsavel pelo processo"],
+};
+
 export const MODELO_ASTREA: Modelo = {
   versao: "astrea-2026-11",
   abas: [
@@ -56,7 +74,7 @@ export const MODELO_ASTREA: Modelo = {
         ...QUALIFICACAO,
       },
     },
-    { destino: "CASOS", nomes: ["processos", "processos e casos", "casos", "acoes"] },
+    { destino: "CASOS", nomes: ["processos", "processos e casos", "casos", "acoes"], colunas: PROCESSO },
     { destino: "FINANCEIRO", nomes: ["lancamentos", "financeiro", "lancamentos financeiros"] },
     { destino: "TAREFAS", nomes: ["tarefas", "atividades"] },
     { destino: "AGENDA", nomes: ["agenda", "compromissos", "prazos", "audiencias"] },
@@ -64,7 +82,7 @@ export const MODELO_ASTREA: Modelo = {
   ],
 };
 
-/** O relatório de clientes que o ADVBOX exporta em planilha (uma aba). */
+/** Os relatórios que o ADVBOX exporta em planilha: o de clientes e o de processos (uma aba cada). */
 export const MODELO_ADVBOX_CLIENTES: Modelo = {
   versao: "advbox-2026-11",
   abas: [{
@@ -75,7 +93,7 @@ export const MODELO_ADVBOX_CLIENTES: Modelo = {
       origem: ["origem", "origem do cliente", "como conheceu"],
       ...QUALIFICACAO,
     },
-  }],
+  }, { destino: "CASOS", nomes: [], colunas: PROCESSO }],
 };
 
 export type OrigemSistema = "ASTREA" | "ADVBOX_PLANILHA";
@@ -84,10 +102,11 @@ export const MODELOS: Record<OrigemSistema, Modelo> = { ASTREA: MODELO_ASTREA, A
 /** As abas que ficam de fora sem nem chegar ao T3jus (decisão 7): tarefas, agenda e publicações. */
 export const DESTINOS_NAO_LIDOS: readonly DestinoAba[] = ["TAREFAS", "AGENDA", "PUBLICACOES"];
 /**
- * As abas que entram nesta versão. Processos (casos) e lançamentos (histórico financeiro) vêm nas
- * próximas entregas do F3.56; até lá, ficam de fora e não são lidas.
+ * As abas que entram nesta versão: os contatos e os processos (que viram a segunda prévia, depois
+ * dos clientes). Os lançamentos (histórico financeiro) vêm na próxima entrega do F3.56; até lá,
+ * ficam de fora e não são lidos.
  */
-export const DESTINOS_IMPORTAVEIS: readonly DestinoAba[] = ["CLIENTES"];
+export const DESTINOS_IMPORTAVEIS: readonly DestinoAba[] = ["CLIENTES", "CASOS"];
 
 /** O destino de uma aba pelo nome, ou nulo se o modelo não a conhece. */
 export function destinoDaAba(origem: OrigemSistema, nome: string): DestinoAba | null {
@@ -198,10 +217,14 @@ export interface AbaParaOBanco {
   porModelo: Record<string, CampoImportacao>;
 }
 
-/** No servidor: reconhece as abas e liga as colunas pelo modelo do sistema. */
-export function prepararAbas(origem: OrigemSistema, abas: readonly { nome: string; linhas: number; colunas: string[] | null; celulas: string[][] | null }[]): AbaParaOBanco[] {
+/**
+ * No servidor: reconhece as abas e liga as colunas pelo modelo do sistema. A planilha do ADVBOX tem
+ * uma aba só, a do relatório que a pessoa escolheu (clientes ou processos).
+ */
+export function prepararAbas(origem: OrigemSistema, abas: readonly { nome: string; linhas: number; colunas: string[] | null; celulas: string[][] | null }[],
+  oQue: "CLIENTES" | "CASOS" = "CLIENTES"): AbaParaOBanco[] {
   return abas.map((a, i) => {
-    const conhecido = origem === "ADVBOX_PLANILHA" ? (i === 0 ? "CLIENTES" : null) : destinoDaAba(origem, a.nome);
+    const conhecido = origem === "ADVBOX_PLANILHA" ? (i === 0 ? oQue : null) : destinoDaAba(origem, a.nome);
     const lida = a.colunas !== null && a.celulas !== null && (conhecido === null || DESTINOS_IMPORTAVEIS.includes(conhecido));
     const destino: DestinoAba = conhecido ?? "FORA";
     return {

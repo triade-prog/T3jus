@@ -473,7 +473,7 @@ Tela aprovada em `docs/design/aprovadas/portal-importacao` (Carol, 20/11/2026; 3
 - **Passos:** criar (sugere a ligação pelo nome da coluna, sem campos de contrato sem a área Contratos e sem origem sem a Comercial), `POST …/:id/pares` (os valores de responsável, tipo e origem, com a sugestão; traz também as colunas da aba pedida), `PATCH …/:id/colunas` (grava a ligação e monta a prévia; `CAMPO_OBRIGATORIO_SEM_COLUNA` com os campos que faltam), `GET …/:id/linhas` (50 por página), `PATCH …/:id/linhas/:n` (corrigir, decidir ou pular), `POST …/:id/decisoes` (juntar todas), `POST …/:id/importar` (tudo ou nada; `PREVIA_MUDOU` se um cadastro novo virou duplicado).
 - **Depois:** o resultado, `GET …/:id/fora` (a planilha das linhas de fora, montada na tela, até o fim do prazo), `GET`/`POST …/:id/desfazer` (7 dias, quem importou ou o sócio dono; clientes inativos, contratos encerrados, parcelas canceladas, os campos juntados voltam; o que foi mexido depois fica), o histórico em Clientes › Importações e a linha "veio da planilha" nas fichas (`GET …/:id/origem`, com o id do cliente ou do contrato).
 - **Pago antes do T3jus (F3.73, migration 0470):** `portal_contrato` marca `pagoAntes` em cada recebimento e traz `importacao` (planilha, linha, quem importou, até quando desfazer). A aba Recebimentos mostra essas parcelas numa folha à parte, fora da programação e dos totais.
-- **Falta:** os processos e o financeiro antigo do Astrea e a conexão com a API do ADVBOX (F3.56, partes 2 e 3) e o botão "Não foi paga" na folha das pagas antes (F3.84).
+- **Falta:** o financeiro antigo do Astrea e a conexão com a API do ADVBOX (F3.56, parte 3 e F3.114) e o botão "Não foi paga" na folha das pagas antes (F3.84).
 
 ### Importar do Astrea e do ADVBOX, parte 1: os clientes (F3.56; VA-05)
 
@@ -485,6 +485,18 @@ Tela aprovada em `docs/design/aprovadas/portal-importacao-sistemas` (Carol, 21/1
 - **O modelo de cada sistema** fica no código (`packages/domain/src/modelos_sistemas.ts`, versão gravada em `importacoes.modelo`): reconhece as abas pelo nome e liga as colunas (`por_modelo`, que a tela mostra como "Pelo modelo do Astrea"). Os nomes vêm do desenho e precisam ser conferidos com o backup real de um piloto; nome desconhecido não é erro, a pessoa escolhe.
 - **Tipo de contato:** a coluna "Tipo" do Astrea vira `tipo_contato`, com pares (cliente, parte contrária, fica de fora). Só os do tipo cliente entram na prévia; os outros são contados em `importacoes.fora_tipo` e o tipo não vai para o cadastro.
 - **Telas:** `/clientes/importar` (a dona escolhe a origem), `/clientes/importar/astrea`, `/clientes/importar/advbox`, `…/:id?passo=abas` (as abas do backup) e `?origem=planilha` para a planilha.
+
+### Importar do Astrea e do ADVBOX, parte 2: os processos como casos (F3.56, F3.112; VA-05)
+
+Pergunta 1 do desenho aprovado (estado `previa-casos`), em duas etapas, como a Carol escolheu em 22/11/2026: primeiro os clientes, depois os processos, cada etapa com a sua prévia e o seu desfazer. Migration `0810_importar_processos.sql`, teste `111_importar_processos_test.sql`, e2e `portal-importacao-sistemas.spec.ts` (parte 2). Telas em `packages/ui/src/portal/ImportacaoCasos.tsx`.
+
+- **Importação filha:** ao importar os clientes do backup do Astrea, a aba Processos vira outra importação (`o_que = 'CASOS'`, `pai_id` = a dos clientes), em PREVIA, com a ligação pelo modelo. O resultado dos clientes mostra "Agora os processos", que leva às colunas dela (`imp_json` traz `pai` e `filha`). No ADVBOX, a pessoa escolhe "A de processos" e envia a planilha com `oQue=CASOS&origem=ADVBOX_PLANILHA`.
+- **Despacho:** as funções da planilha ganharam o sufixo `_clientes` (`imp_reconferir_clientes`, `imp_importar_clientes`, `imp_desfazer_clientes` etc.); as de nome original olham `o_que` e chamam a versão de clientes ou a de casos (`imp_conferir_caso`, `imp_importar_casos`, `imp_desfazer_plano_casos`).
+- **Campos** (`imp_campos_caso`): cliente (nome) ou CPF/CNPJ do cliente, número, nome do caso (sem ele, "Cliente x Parte contrária"), área, parte contrária, tribunal, vara, valor da causa, distribuído em, fase (vira etapa do escritório, com o nome antigo guardado), situação, papel e responsável. Obrigatórios: o cliente e o responsável pelo caso (pares com a Equipe). Os pares de situação separam ativos e arquivados: só os ativos entram; os arquivados são contados em `fora_tipo.ARQUIVADOS`.
+- **Problemas:** `CLIENTE_FALTA`, `CLIENTE_NAO_ENCONTRADO`, `CLIENTE_AMBIGUO` (corrigir com o nome ou o CPF), `NUMERO_CNJ_INVALIDO` (corrigir ou apagar), `RESPONSAVEL_FALTA`, `CASO_DUPLICADO` (aviso: juntar liga o cliente ao caso que existe, sem criar outro) e `CAMPO_INVALIDO` (aviso: deixa o campo vazio).
+- **Importar:** tudo ou nada; cada caso entra sem contrato, com `casos.importacao_id`, e a ligação a um caso que já existia leva `caso_clientes.importacao_id`. Prazos, audiências, tarefas, andamentos e documentos não vêm, e nenhuma mensagem vai ao cliente.
+- **Desfazer:** os casos vão para Encerrados com `encerrado_por = 'IMPORTACAO_DESFEITA'` e sem resultado; os casos que já existiam perdem só o cliente ligado. Caso mexido depois (prazo, atendimento, outra etapa, contrato) fica como está e aparece na lista.
+- **Falta:** trazer os arquivados como encerrados e a linha "veio da importação" na ficha do caso (F3.116).
 
 ### OAB de cada advogado na Equipe (F3.15; EX-12)
 

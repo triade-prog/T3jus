@@ -53,10 +53,15 @@ export const SELO_PROBLEMA: Record<CodigoProblema, string> = {
   SEM_ASSINATURA: "Sem a data da assinatura",
   FORA_DA_LISTA: "Valor fora da lista",
   CAMPO_INVALIDO: "Campo que não dá para ler",
+  CLIENTE_FALTA: "Sem o cliente",
+  CLIENTE_NAO_ENCONTRADO: "Sem cliente",
+  CLIENTE_AMBIGUO: "Mais de um cliente com o nome",
+  NUMERO_CNJ_INVALIDO: "Número do processo inválido",
+  CASO_DUPLICADO: "Possível duplicado",
 };
 
 /** A explicação de cada problema, com o que fazer. */
-export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplicado" | "telefoneDe">): string {
+export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplicado" | "telefoneDe"> & Partial<Pick<LinhaPrevia, "casoExistente" | "caso">>): string {
   const campo = NOMES_CAMPO_IMPORTACAO[p.campo] ?? p.campo;
   const v = p.valor ? `“${p.valor}”` : "";
   switch (p.codigo) {
@@ -72,7 +77,9 @@ export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplica
     case "PARCELAS_INVALIDAS": return "O parcelado precisa do número de parcelas, de 1 a 120.";
     case "PRIMEIRO_FALTA": return "Falta o primeiro vencimento (no fixo, a data do pagamento).";
     case "PAGAS_INVALIDAS": return `${v} parcelas pagas é mais do que o contrato tem.`;
-    case "RESPONSAVEL_FALTA": return p.valor ? `${v} não está na Equipe. Escolha no passo 2 quem fica com os contratos dele.` : "Falta o responsável pelo contrato.";
+    case "RESPONSAVEL_FALTA":
+      if (l?.caso) return p.valor ? `${v} não está na Equipe. Volte ao passo 2 e escolha quem fica com os casos dele.` : "Falta o responsável pelo caso.";
+      return p.valor ? `${v} não está na Equipe. Escolha no passo 2 quem fica com os contratos dele.` : "Falta o responsável pelo contrato.";
     case "OBJETO_FALTA": return "O contrato precisa do objeto (o serviço contratado).";
     case "TIPO_FALTA": return p.valor ? `${v} não é um tipo de honorário que a planilha traz. Use fixo, parcelado, mensal ou êxito.` : "Falta o tipo de honorário.";
     case "VALOR_FALTA": return "O contrato precisa do valor.";
@@ -81,6 +88,13 @@ export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplica
     case "SEM_ASSINATURA": return "O contrato entra em elaboração e vai ao Financeiro quando a assinatura for registrada.";
     case "FORA_DA_LISTA": return `${v} não está na lista de ${campo.toLowerCase()}. O campo fica vazio, ou escolha um da lista.`;
     case "CAMPO_INVALIDO": return `${campo} ${v} não dá para ler. O campo fica vazio, ou corrija.`;
+    case "CLIENTE_FALTA": return "A linha não traz o nome nem o CPF do cliente. Escreva um dos dois ou pule a linha.";
+    case "CLIENTE_NAO_ENCONTRADO": return `${v || "O cliente"} não bate com nenhum cliente cadastrado. Escreva o nome como está no cadastro, ou o CPF, ou pule a linha.`;
+    case "CLIENTE_AMBIGUO": return `Há mais de um cliente chamado ${v}. Escreva o CPF ou CNPJ para dizer qual é.`;
+    case "NUMERO_CNJ_INVALIDO": return "Os dígitos de conferência não batem. Confira no tribunal, ou apague o número para importar sem ele e completar depois.";
+    case "CASO_DUPLICADO": return l?.casoExistente
+      ? `Mesmo número do caso ${l.casoExistente.nome}, já no Jurídico. Juntar liga o cliente ao caso que existe e não cria outro.`
+      : "Mesmo número de um caso que já está no Jurídico.";
   }
 }
 

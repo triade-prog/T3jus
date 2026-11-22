@@ -26,6 +26,7 @@ import {
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { planilhaXlsx } from "./planilha.ts";
 import { PassoAbas } from "./ImportacaoSistemas.tsx";
+import { AvisoArquivados, EntrouCasos, LinhaDoCaso, PassoColunasCasos, ProcessosEsperam, ResumoCasos, SemLinhasCasos } from "./ImportacaoCasos.tsx";
 
 export const API = "/v1/escritorio/importacoes";
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -537,6 +538,7 @@ function ImportacaoComecada({ id, passo, aba, escritorio }: { id: string; passo:
   }
   if (passo === "previa" && imp.temPrevia) return <PassoPrevia imp={imp} />;
   if (passo === "abas" && imp.abasSistema && imp.origem === "ASTREA") return <PassoAbas imp={imp} />;
+  if (imp.oQue === "CASOS") return <PassoColunasCasos imp={imp} />;
   return <PassoColunas imp={imp} escritorio={escritorio} abaInicial={aba} />;
 }
 
@@ -549,7 +551,7 @@ const GRUPOS_PARES = ["responsavel", "tipo", "origem", "tipoContato"] as const;
 const NOMES_TIPO_CONTATO: Record<TipoContato, string> = { CLIENTE: "Cliente", PARTE_CONTRARIA: "Parte contrária", FORA: "Não importar" };
 const AJUDA_TIPO_CONTATO: Record<TipoContato, string> = {
   CLIENTE: "",
-  PARTE_CONTRARIA: "Não viram clientes. Os processos, com as partes contrárias, entram numa próxima versão do T3jus.",
+  PARTE_CONTRARIA: "Não viram clientes. A parte contrária entra no caso de cada processo, na prévia dos processos.",
   FORA: "Ficam de fora: o cadastro de clientes não guarda terceiros.",
 };
 
@@ -881,7 +883,7 @@ function PassoColunas({ imp, escritorio, abaInicial }: { imp: Importacao; escrit
   );
 }
 
-function GrupoPares({ titulo, itens, escolhido, opcoes, vazio, prefixo, ajuda, rotuloDe, aoEscolher }: {
+export function GrupoPares({ titulo, itens, escolhido, opcoes, vazio, prefixo, ajuda, rotuloDe, aoEscolher }: {
   titulo: string; itens: ParValor[]; escolhido: Record<string, string>; opcoes: { v: string; t: string }[]; vazio: string; prefixo: string;
   ajuda?: (p: ParValor) => string; rotuloDe?: (p: ParValor) => string; aoEscolher: (chave: string, valor: string) => void;
 }) {
@@ -917,7 +919,7 @@ function GrupoPares({ titulo, itens, escolhido, opcoes, vazio, prefixo, ajuda, r
 // ------------------------------------------------------------------------------- passo 3: a prévia
 
 type Filtro = "todas" | "ERRO" | "AVISO" | "PRONTA" | "PULADA";
-type Aberta = { numero: number; modo: "corrigir" | "decidir" | "gera" } | null;
+export type Aberta = { numero: number; modo: "corrigir" | "decidir" | "gera" } | null;
 
 const CAMPOS_ERRO_EXTRA: Partial<Record<string, CampoImportacao[]>> = {
   CONTATO_OBRIGATORIO: ["telefone", "email"],
@@ -929,6 +931,9 @@ const CAMPOS_ERRO_EXTRA: Partial<Record<string, CampoImportacao[]>> = {
   NOME_FALTA: ["nome"],
   RESPONSAVEL_FALTA: ["responsavel"],
   SEM_ASSINATURA: ["assinatura"],
+  CLIENTE_FALTA: ["cliente", "cliente_documento"],
+  CLIENTE_NAO_ENCONTRADO: ["cliente", "cliente_documento"],
+  CLIENTE_AMBIGUO: ["cliente", "cliente_documento"],
 };
 
 /** Os campos que o "Corrigir" abre: os dos problemas, mais o telefone quando ele é o assunto. */
@@ -956,6 +961,8 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
   const [falhou, setFalhou] = useState<ErroApi | null>(null);
   const [vez, setVez] = useState(0);
   const ids = useId();
+  const casos = imp.oQue === "CASOS";
+  const sistema = SISTEMA_ORIGEM[imp.origem];
 
   useEffect(() => {
     const t = setTimeout(() => setQ(busca.trim()), 250);
@@ -1009,10 +1016,12 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
 
   async function juntarTodas() {
     setOcupado(-1);
-    const r = await chamarPortal<ResumoPrevia & { decididas: number }>(`${API}/${imp.id}/decisoes`, { corpo: { codigo: "DUPLICADO", decisao: "JUNTAR" } });
+    const r = await chamarPortal<ResumoPrevia & { decididas: number }>(`${API}/${imp.id}/decisoes`, { corpo: { codigo: casos ? "CASO_DUPLICADO" : "DUPLICADO", decisao: "JUNTAR" } });
     setOcupado(null);
     if (!r.ok) return setAvisoTopo({ tom: "urgencia", titulo: "Não deu para juntar.", texto: textoDoErro(r.erro) });
-    setAvisoTopo({ tom: "sucesso", titulo: `${plural(r.dados.decididas, "linha juntada", "linhas juntadas")} aos cadastros que já existiam.`, texto: "Só os campos vazios de cada cadastro vão receber o dado da planilha." });
+    setAvisoTopo(casos
+      ? { tom: "sucesso", titulo: `${plural(r.dados.decididas, "linha juntada", "linhas juntadas")} aos casos que já existiam.`, texto: "Cada cliente se liga ao caso que já está no Jurídico; nenhum caso novo é criado para elas." }
+      : { tom: "sucesso", titulo: `${plural(r.dados.decididas, "linha juntada", "linhas juntadas")} aos cadastros que já existiam.`, texto: "Só os campos vazios de cada cadastro vão receber o dado da planilha." });
     setVez((v) => v + 1);
   }
 
@@ -1032,7 +1041,7 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
   }
 
   const escolhas = [imp.arquivo, `${plural(Object.values(imp.ligacao).filter(Boolean).length, "coluna ligada", "colunas ligadas")}`, resumo ? `${plural(resumo.contagens.lidas, "linha conferida", "linhas conferidas")}` : ""];
-  const voltar = [INICIO_ORIGEM[imp.origem], imp.origem === "ASTREA" ? ROTAS_IMPORTACAO.abas(imp.id) : ROTAS_IMPORTACAO.passo(imp.id, "colunas"), ROTAS_IMPORTACAO.passo(imp.id, "previa")];
+  const voltar = [casos && imp.pai ? ROTAS_IMPORTACAO.resultado(imp.pai) : INICIO_ORIGEM[imp.origem], imp.origem === "ASTREA" && !casos ? ROTAS_IMPORTACAO.abas(imp.id) : ROTAS_IMPORTACAO.passo(imp.id, "colunas"), ROTAS_IMPORTACAO.passo(imp.id, "previa")];
 
   if (importando || falhou) {
     return (
@@ -1044,7 +1053,7 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
             <span className="icone-estado"><Icone nome="alerta" className="ico" /></span>
             <h2>A importação não foi feita</h2>
             <p>
-              O servidor parou no meio e desfez tudo: nenhum cliente, contrato ou parcela entrou. As suas correções e decisões da prévia continuam guardadas por
+              O servidor parou no meio e desfez tudo: {casos ? "nenhum caso entrou no Jurídico" : "nenhum cliente, contrato ou parcela entrou"}. As suas correções e decisões da prévia continuam guardadas por
               24 horas. Tente de novo; se continuar, mande o código ao suporte.
             </p>
             <div className="acoes">
@@ -1058,7 +1067,7 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
             <Folha id="t-imp" titulo="Importando" sub={imp.arquivo}>
               <div className="im-prog" aria-busy="true">
                 <div className="pt-gerando" role="status" aria-live="polite">
-                  <p><b>Importando {plural(resumo?.contagens.prontas ?? 0, "linha", "linhas")}.</b> Clientes primeiro, depois os contratos e as parcelas.</p>
+                  <p><b>Importando {plural(resumo?.contagens.prontas ?? 0, "linha", "linhas")}.</b> {casos ? "Cada processo vira um caso no Jurídico, ligado ao cliente." : "Clientes primeiro, depois os contratos e as parcelas."}</p>
                   <div className="pt-barra-indet" aria-hidden="true" />
                 </div>
                 <Lgpd><b>Ou entra tudo ou nada.</b> Se algo falhar no meio, nada fica pela metade e a prévia continua guardada.</Lgpd>
@@ -1084,20 +1093,21 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
   const c = resumo.contagens;
   const final = c.erro === 0 && c.aviso === 0;
   const fora = c.erro + c.aviso + c.puladas;
+  const lidas = casos ? { r: "processos lidos", sub: "só os ativos" } : { r: "linhas lidas", sub: "da planilha" };
   const nums: { n: number; dc: string; r: string; sub: string; f: Filtro }[] = final
     ? [
-        { n: c.lidas, dc: "", r: "linhas lidas", sub: "da planilha", f: "todas" },
+        { n: c.lidas, dc: "", r: lidas.r, sub: lidas.sub, f: "todas" },
         { n: c.prontas, dc: "hn-d-vinho", r: "vão entrar", sub: `${c.prontas - c.corrigidas - c.decididas} prontas, ${c.corrigidas} corrigidas e ${c.decididas} decididas`, f: "PRONTA" },
         { n: 0, dc: "hn-d-hoje", r: "com aviso", sub: "todas decididas", f: "AVISO" },
         { n: c.puladas, dc: "", r: "puladas", sub: "vão para a planilha de fora", f: "PULADA" },
       ]
     : [
-        { n: c.lidas, dc: "", r: "linhas lidas", sub: "da planilha", f: "todas" },
+        { n: c.lidas, dc: "", r: lidas.r, sub: lidas.sub, f: "todas" },
         { n: c.prontas, dc: "hn-d-vinho", r: "prontas", sub: "entram como estão", f: "PRONTA" },
         { n: c.aviso, dc: "hn-d-hoje", r: "com aviso", sub: "você decide", f: "AVISO" },
         { n: c.erro, dc: "hn-d-urg", r: "com erro", sub: "corrija ou pule", f: "ERRO" },
       ];
-  const duplicadas = filtro === "AVISO" ? linhas.filter((l) => l.situacao === "AVISO" && l.duplicado && !l.decisao).length : 0;
+  const duplicadas = filtro === "AVISO" ? linhas.filter((l) => l.situacao === "AVISO" && (casos ? l.casoExistente && l.problemas.some((p) => p.codigo === "CASO_DUPLICADO") : l.duplicado) && !l.decisao).length : 0;
   const contTexto: Record<Filtro, string> = {
     todas: `${plural(total, "linha", "linhas")} na ordem da planilha · a linha 1 tem os nomes das colunas`,
     ERRO: `${plural(total, "linha com erro", "linhas com erro")}. Cada uma diz o que está errado. Linha com erro não entra até ser corrigida ou pulada.`,
@@ -1119,9 +1129,9 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
         <h2 id="t-prev" className="sr">Linhas da planilha</h2>
         <form className="im-ferr" role="search" onSubmit={(e) => e.preventDefault()}>
           <div className="campo-busca">
-            <label className="sr" htmlFor={`${ids}-b`}>Buscar na prévia por nome, CPF ou número da linha</label>
+            <label className="sr" htmlFor={`${ids}-b`}>{casos ? "Buscar na prévia por caso, número ou cliente" : "Buscar na prévia por nome, CPF ou número da linha"}</label>
             <Icone nome="busca" className="ico" />
-            <input className="entrada" id={`${ids}-b`} type="search" placeholder="Nome, CPF ou número da linha" autoComplete="off" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <input className="entrada" id={`${ids}-b`} type="search" placeholder={casos ? "Caso, número ou cliente" : "Nome, CPF ou número da linha"} autoComplete="off" value={busca} onChange={(e) => setBusca(e.target.value)} />
           </div>
           <Chips rotulo="Mostrar" atual={filtro} aoEscolher={(v) => { setFiltro(v as Filtro); setAberta(null); }}
             opcoes={[
@@ -1133,7 +1143,13 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
             ]} />
         </form>
         <p className="im-cont" role="status">{q ? `${plural(total, "linha encontrada", "linhas encontradas")} para “${q}”` : contTexto[filtro]}</p>
-        {duplicadas > 1 ? (
+        {duplicadas > 1 && casos ? (
+          <p className="im-massa">
+            <Icone nome="balanca" className="ico" />
+            <span><b>{plural(duplicadas, "linha", "linhas")}</b> têm o mesmo número de um caso que já está no Jurídico. Dá para juntar todas de uma vez: cada cliente se liga ao caso que existe.</span>
+            <button className="btn btn-sec" type="button" disabled={ocupado === -1} onClick={() => void juntarTodas()}><Icone nome="check" className="ico" />Juntar as {duplicadas}</button>
+          </p>
+        ) : duplicadas > 1 ? (
           <p className="im-massa">
             <Icone nome="pessoas" className="ico" />
             <span><b>{plural(duplicadas, "linha", "linhas")}</b> têm o mesmo CPF de um cliente já cadastrado. Dá para juntar todas de uma vez: só entram os campos vazios de cada cadastro.</span>
@@ -1142,15 +1158,18 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
         ) : null}
         {linhas.length ? (
           <>
-            <div className="im-cab-l" aria-hidden="true"><span>Linha</span><span>Cliente</span><span>{imp.contratos ? "Contrato e o que gera no Financeiro" : "Contatos"}</span><span>Situação</span></div>
-            <ul className="im-linhas" aria-label="Linhas da planilha">
-              {linhas.map((l) => (
+            <div className="im-cab-l" aria-hidden="true"><span>Linha</span><span>{casos ? "Caso" : "Cliente"}</span><span>{casos ? "Cliente e responsável" : imp.contratos ? "Contrato e o que gera no Financeiro" : "Contatos"}</span><span>Situação</span></div>
+            <ul className="im-linhas" aria-label={casos ? "Processos" : "Linhas da planilha"}>
+              {linhas.map((l) => casos ? (
+                <LinhaDoCaso key={l.numero} l={l} origem={sistema} aberta={aberta?.numero === l.numero ? aberta.modo : null} ocupado={ocupado === l.numero}
+                  aoAbrir={(modo) => setAberta(modo ? { numero: l.numero, modo } : null)} aoMudar={(d) => mudarLinha(l.numero, d)} />
+              ) : (
                 <LinhaDaPrevia key={l.numero} l={l} contratos={imp.contratos} aberta={aberta?.numero === l.numero ? aberta.modo : null} ocupado={ocupado === l.numero}
                   aoAbrir={(modo) => setAberta(modo ? { numero: l.numero, modo } : null)} aoMudar={(d) => mudarLinha(l.numero, d)} linhasDe={linhas} />
               ))}
             </ul>
           </>
-        ) : (
+        ) : casos ? <SemLinhasCasos q={q} /> : (
           <Estado icone="busca" titulo="Nenhuma linha aqui">{q ? "Nenhuma linha com esse nome, CPF ou número." : "Nenhuma linha nesta situação."}</Estado>
         )}
         {linhas.length < total ? (
@@ -1172,6 +1191,7 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
           <p className="sub">Conta feita no servidor, em centavos exatos. Nada foi salvo.</p>
         </div>
       </div>
+      {casos ? <ResumoCasos resumo={resumo} final={final} origem={sistema} /> : (
       <div className="hn-res-bloco">
         <h3>Clientes</h3>
         <p className="hn-res-grande">{(resumo.clientes.novos + resumo.clientes.juntados).toLocaleString("pt-BR")}</p>
@@ -1181,6 +1201,7 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
           {!final && c.aviso ? <li>mais o que você decidir {c.aviso === 1 ? "no" : "nos"} <b>{c.aviso}</b> {c.aviso === 1 ? "aviso" : "avisos"}</li> : null}
         </ul>
       </div>
+      )}
       {imp.contratos ? (
         <>
           <div className="hn-res-bloco">
@@ -1256,14 +1277,16 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
 
 /** Os contatos do backup que não viraram clientes (decisão 9 do F3.56). */
 function ForaDoTipo({ imp }: { imp: Importacao }) {
-  const f = imp.foraTipo;
+  const t = imp.foraTipo;
+  if (t && "ARQUIVADOS" in t) return <AvisoArquivados n={t.ARQUIVADOS} />;
+  const f = t;
   if (!f || f.PARTE_CONTRARIA + f.FORA === 0) return null;
   const partes = [f.PARTE_CONTRARIA ? plural(f.PARTE_CONTRARIA, "parte contrária", "partes contrárias") : "", f.FORA ? plural(f.FORA, "terceiro", "terceiros") : ""].filter(Boolean).join(" e ");
   return (
     <Aviso tom="info" titulo={f.PARTE_CONTRARIA + f.FORA === 1 ? "1 contato do backup não é cliente e ficou de fora da prévia."
       : `${plural(f.PARTE_CONTRARIA + f.FORA, "", "contatos do backup não são clientes e ficaram de fora da prévia.")}`}>
       São {partes}, pelo tipo de contato que você ligou no passo 2. Eles não entram no cadastro de clientes.
-      {f.PARTE_CONTRARIA ? " As partes contrárias voltam com os processos, numa próxima versão do T3jus." : ""}
+      {f.PARTE_CONTRARIA ? " As partes contrárias entram nos casos, na prévia dos processos." : ""}
     </Aviso>
   );
 }
@@ -1399,7 +1422,7 @@ function LinhaDaPrevia({ l, contratos, aberta, ocupado, aoAbrir, aoMudar, linhas
   );
 }
 
-function Corrigir({ l, ocupado, aoFechar, aoMudar }: {
+export function Corrigir({ l, ocupado, aoFechar, aoMudar }: {
   l: LinhaPrevia; ocupado: boolean; aoFechar: () => void;
   aoMudar: (d: { campos?: Partial<Record<CampoImportacao, string>>; decisao?: DecisaoLinha | null }) => Promise<{ erro?: string }>;
 }) {
@@ -1421,13 +1444,13 @@ function Corrigir({ l, ocupado, aoFechar, aoMudar }: {
           const p = l.problemas.find((x) => x.campo === c || (CAMPOS_ERRO_EXTRA[x.codigo] ?? []).includes(c));
           const cid = `im-${c}-${l.numero}`;
           const tipo = c === "email" ? "email" : c === "telefone" ? "tel" : "text";
-          const im = c === "documento" || c === "parcelas" || c === "pagas" ? "numeric" : c === "telefone" ? "tel" : undefined;
+          const im = c === "documento" || c === "cliente_documento" || c === "parcelas" || c === "pagas" ? "numeric" : c === "telefone" ? "tel" : undefined;
           return (
             <div key={c} className="campo c3">
               <label htmlFor={cid}>{NOMES_CAMPO_IMPORTACAO[c]}</label>
               <input className="entrada" id={cid} type={tipo} inputMode={im} autoFocus={i === 0} value={valores[c] ?? ""}
                 aria-invalid={p ? true : undefined} aria-describedby={p ? `${cid}-er` : undefined}
-                placeholder={c === "primeiro" || c === "assinatura" ? "10/09/2026" : undefined}
+                placeholder={c === "primeiro" || c === "assinatura" || c === "distribuido_em" ? "10/09/2026" : undefined}
                 onChange={(e) => setValores((v) => ({ ...v, [c]: e.target.value }))} />
               {p ? <ErroCampo id={`${cid}-er`}>{explicaProblema(p, l)}</ErroCampo> : null}
             </div>
@@ -1554,9 +1577,12 @@ function JanelaConfirmar({ aberta, imp, resumo, aoFechar, aoImportar }: {
           <button className="btn btn-pri" type="submit" data-foco><Icone nome="check" className="ico" />Importar {plural(c.prontas, "linha", "linhas")}</button>
         </>
       }>
-      <p id="janela-confirmar-d">Da planilha {imp.arquivo}, com as correções e decisões que você fez na prévia.</p>
+      <p id="janela-confirmar-d">{imp.oQue === "CASOS" ? "Os processos" : "Da planilha"} {imp.arquivo}, com as correções e decisões que você fez na prévia.</p>
       <ul className="im-desf">
-        <li><Icone nome="pessoas" className="ico" /><span><b>{plural(resumo.clientes.novos + resumo.clientes.juntados, "cliente", "clientes")}:</b> {resumo.clientes.novos} {resumo.clientes.novos === 1 ? "novo" : "novos"}{resumo.clientes.juntados ? ` e ${resumo.clientes.juntados} juntados a cadastros que já existiam (só os campos vazios)` : ""}.</span></li>
+        {imp.oQue === "CASOS" ? (
+          <li><Icone nome="balanca" className="ico" /><span><b>{plural((resumo.casos?.novos ?? 0) + (resumo.casos?.juntados ?? 0), "caso", "casos")} no Jurídico:</b> {resumo.casos?.novos ?? 0} {(resumo.casos?.novos ?? 0) === 1 ? "novo, sem contrato" : "novos, sem contrato"}{resumo.casos?.juntados ? ` e ${resumo.casos.juntados} que já existiam ganham o cliente` : ""}. Nenhuma mensagem vai ao cliente.</span></li>
+        ) : null}
+        {imp.oQue === "CASOS" ? null : <li><Icone nome="pessoas" className="ico" /><span><b>{plural(resumo.clientes.novos + resumo.clientes.juntados, "cliente", "clientes")}:</b> {resumo.clientes.novos} {resumo.clientes.novos === 1 ? "novo" : "novos"}{resumo.clientes.juntados ? ` e ${resumo.clientes.juntados} juntados a cadastros que já existiam (só os campos vazios)` : ""}.</span></li>}
         {imp.contratos ? (
           <>
             <li><Icone nome="pena" className="ico" /><span><b>{plural(resumo.contratos.ativos + resumo.contratos.elaboracao, "contrato", "contratos")}:</b> {resumo.contratos.ativos} ativos{resumo.contratos.elaboracao ? ` e ${resumo.contratos.elaboracao} em elaboração, que vão ao Financeiro quando a assinatura for registrada` : ""}.</span></li>
@@ -1567,7 +1593,7 @@ function JanelaConfirmar({ aberta, imp, resumo, aoFechar, aoImportar }: {
       </ul>
       <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
         <Lgpd><b>Ou entra tudo ou nada.</b> Se algo falhar no meio, nada fica pela metade. Ao terminar, o arquivo é apagado do servidor.</Lgpd>
-        <Lgpd icone="historico">Dá para desfazer até <b>{prazoCurto(prazo)}</b> (7 dias), em Clientes › Importações. A importação fica no histórico com o seu nome e a hora.</Lgpd>
+        <Lgpd icone="historico">Dá para desfazer até <b>{prazoCurto(prazo)}</b> (7 dias), em Clientes › Importações{imp.oQue === "CASOS" ? ", sem mexer nos clientes" : ""}. A importação fica no histórico com o seu nome e a hora.</Lgpd>
       </div>
     </Janela>
   );
@@ -1623,6 +1649,7 @@ export function ResultadoImportacao({ id }: { id: string }) {
         }
         const quandoFoi = quando(imp.importadoEm ?? imp.criadoEm);
         const novos = r.clientes - r.juntados;
+        const casos = imp.oQue === "CASOS";
         return (
           <div className="im">
             <Passos atual={5} origem={imp.origem} escolhas={[imp.arquivo, "", `${plural(r.linhas + r.fora, "linha conferida", "linhas conferidas")}`, imp.desfeita ? "desfeita" : `feita ${quandoFoi}`]} />
@@ -1634,7 +1661,7 @@ export function ResultadoImportacao({ id }: { id: string }) {
                 <div className="im-fim-num">
                   <div>
                     <span className="disco hn-d-vinho" aria-hidden="true"><span>{r.linhas}</span></span>
-                    <span><b>{r.linhas === 1 ? "linha entrou" : "linhas entraram"}</b><small>{plural(r.clientes, "cliente", "clientes")}{imp.contratos ? ` e ${plural(r.contratos, "contrato", "contratos")}` : ""}</small></span>
+                    <span><b>{r.linhas === 1 ? "linha entrou" : "linhas entraram"}</b><small>{casos ? `${plural(r.casos ?? 0, "caso novo", "casos novos")} no Jurídico` : `${plural(r.clientes, "cliente", "clientes")}${imp.contratos ? ` e ${plural(r.contratos, "contrato", "contratos")}` : ""}`}</small></span>
                   </div>
                   <div>
                     <span className="disco" aria-hidden="true"><span>{r.fora}</span></span>
@@ -1646,13 +1673,15 @@ export function ResultadoImportacao({ id }: { id: string }) {
             </div>
             {imp.desfeita ? (
               <Aviso tom="atencao" icone="historico" titulo={`Desfeita em ${quando(imp.desfeita.em)}, por ${imp.desfeita.por.nome}.`}>
-                Motivo: “{imp.desfeita.motivo}”. Os clientes ficaram inativos, os contratos encerrados e as parcelas canceladas, tudo com o motivo e no histórico.
+                Motivo: “{imp.desfeita.motivo}”. {casos ? "Os casos foram para Encerrados, marcados “importação desfeita”, e os casos que já existiam perderam só o cliente ligado." : "Os clientes ficaram inativos, os contratos encerrados e as parcelas canceladas, tudo com o motivo e no histórico."}
               </Aviso>
             ) : null}
+            {!imp.desfeita ? <ProcessosEsperam imp={imp} /> : null}
             <Grade rotulo="Arquivo e desfazer"
               principal={
                 <>
-                  <Folha id="t-entrou" titulo="O que entrou" sub={imp.desfeita ? "O que a importação criou saiu do uso do dia a dia e ficou no histórico." : "Tudo já está no cadastro, nos contratos e no Financeiro."}>
+                  <Folha id="t-entrou" titulo="O que entrou" sub={imp.desfeita ? "O que a importação criou saiu do uso do dia a dia e ficou no histórico." : casos ? "Tudo já está no Jurídico." : "Tudo já está no cadastro, nos contratos e no Financeiro."}>
+                    {casos ? <EntrouCasos imp={imp} /> : (
                     <ul className="im-entrou">
                       <li>
                         <span className="im-ci"><Icone nome="pessoa-mais" className="ico" /></span>
@@ -1687,6 +1716,7 @@ export function ResultadoImportacao({ id }: { id: string }) {
                         </>
                       ) : null}
                     </ul>
+                    )}
                   </Folha>
                   {r.fora ? (
                     <Folha id="t-fora" titulo="Ficaram de fora" sub={plural(r.fora, "linha", "linhas")}>
@@ -1695,7 +1725,7 @@ export function ResultadoImportacao({ id }: { id: string }) {
                           {fora.linhas.slice(0, 3).map((l) => (
                             <li key={l.numero}>
                               <b>Linha {l.numero}</b>
-                              <span>{l.valores.nome ?? "Sem o nome"}<small>{(l.problemas.filter((p) => p.nivel === "ERRO")[0] ?? l.problemas[0]) ? SELO_PROBLEMA[(l.problemas.filter((p) => p.nivel === "ERRO")[0] ?? l.problemas[0])!.codigo] : "Não entrou"}{l.situacao === "PULADA" ? " · pulada" : ""}</small></span>
+                              <span>{(casos ? l.valores.caso_nome ?? l.valores.numero ?? l.valores.cliente : l.valores.nome) ?? "Sem o nome"}<small>{(l.problemas.filter((p) => p.nivel === "ERRO")[0] ?? l.problemas[0]) ? SELO_PROBLEMA[(l.problemas.filter((p) => p.nivel === "ERRO")[0] ?? l.problemas[0])!.codigo] : "Não entrou"}{l.situacao === "PULADA" ? " · pulada" : ""}</small></span>
                             </li>
                           ))}
                           {fora.linhas.length > 3 ? (
@@ -1728,7 +1758,7 @@ export function ResultadoImportacao({ id }: { id: string }) {
                   {imp.podeDesfazer && imp.desfazerAte ? (
                     <Folha id="t-desf" titulo="Desfazer esta importação" sub={`Até ${prazoCurto(imp.desfazerAte)}`}>
                       <div className="hn-folha-acao">
-                        <p>Os clientes ficam inativos, os contratos encerrados e as parcelas canceladas, tudo com o motivo e no histórico. Nada é apagado em silêncio. O que alguém já mexeu depois fica como está.</p>
+                        <p>{casos ? "Os casos vão para Encerrados, marcados “importação desfeita”, e os que já existiam perdem só o cliente ligado. Os clientes ficam como estão." : "Os clientes ficam inativos, os contratos encerrados e as parcelas canceladas, tudo com o motivo e no histórico."} Nada é apagado em silêncio. O que alguém já mexeu depois fica como está.</p>
                         <button className="btn btn-perigo" type="button" onClick={() => setDesfazer(true)}><Icone nome="historico" className="ico" />Desfazer importação</button>
                       </div>
                     </Folha>
@@ -1797,7 +1827,7 @@ export function ImportacoesHistorico() {
             </section>
           )}
           <JanelaDesfazer imp={desfazer} aoFechar={() => setDesfazer(null)}
-            aoFeito={(f) => { setDesfazer(null); setFeito(`${plural(f.clientes, "cliente ficou inativo", "clientes ficaram inativos")}${f.contratos ? `, ${plural(f.contratos, "contrato encerrado", "contratos encerrados")}` : ""}. Tudo com o motivo e no histórico.`); setVez((v) => v + 1); }} />
+            aoFeito={(f) => { setDesfazer(null); setFeito(f.casos !== undefined ? `${plural(f.casos, "caso foi", "casos foram")} para Encerrados${f.ligacoes ? `, e ${plural(f.ligacoes, "caso que já existia perdeu", "casos que já existiam perderam")} o cliente ligado` : ""}. Tudo com o motivo e no histórico.` : `${plural(f.clientes, "cliente ficou inativo", "clientes ficaram inativos")}${f.contratos ? `, ${plural(f.contratos, "contrato encerrado", "contratos encerrados")}` : ""}. Tudo com o motivo e no histórico.`); setVez((v) => v + 1); }} />
         </div>
       )}
     </Pagina>
@@ -1807,7 +1837,8 @@ export function ImportacoesHistorico() {
 function LinhaHistorico({ i, aoDesfazer }: { i: Importacao; aoDesfazer: () => void }) {
   const [erro, setErro] = useState("");
   const r = i.resumo;
-  const oQue = r ? [plural(r.clientes, "cliente", "clientes"), i.contratos ? plural(r.contratos, "contrato", "contratos") : "", i.contratos && r.parcelas ? plural(r.parcelas, "parcela", "parcelas") : ""].filter(Boolean).join(", ") : "—";
+  const oQue = r && i.oQue === "CASOS" ? [plural(r.casos ?? 0, "caso", "casos"), r.juntadosCasos ? `${r.juntadosCasos} ${r.juntadosCasos === 1 ? "juntado" : "juntados"}` : ""].filter(Boolean).join(", ")
+    : r ? [plural(r.clientes, "cliente", "clientes"), i.contratos ? plural(r.contratos, "contrato", "contratos") : "", i.contratos && r.parcelas ? plural(r.parcelas, "parcela", "parcelas") : ""].filter(Boolean).join(", ") : "—";
   const prazoAberto = !!i.desfazerAte && new Date(i.desfazerAte) > new Date();
   return (
     <tr className={i.desfeita ? "im-desfeita" : undefined}>
@@ -1816,7 +1847,7 @@ function LinhaHistorico({ i, aoDesfazer }: { i: Importacao; aoDesfazer: () => vo
       </td>
       <td data-r="Origem"><SeloOrigem origem={i.origem} leve /></td>
       <td data-r="O que entrou">
-        <div>{oQue}<small>{i.desfeita ? "todos inativados ao desfazer" : i.fora ? `${plural(i.fora, "linha", "linhas")} de fora` : "nenhuma linha de fora"}</small></div>
+        <div>{oQue}<small>{i.desfeita ? (i.oQue === "CASOS" ? "todos encerrados ao desfazer" : "todos inativados ao desfazer") : i.fora ? `${plural(i.fora, "linha", "linhas")} de fora` : "nenhuma linha de fora"}</small></div>
       </td>
       <td data-r="Situação">
         {i.desfeita ? (
@@ -1893,14 +1924,20 @@ function JanelaDesfazer({ imp, aoFechar, aoFeito }: { imp: Importacao | null; ao
       ) : (
         <>
           <ul className="im-desf">
-            <li><Icone nome="pessoas" className="ico" /><span><b>{plural(p.clientes, "cliente novo fica inativo", "clientes novos ficam inativos")}</b>, com o motivo. Saem da lista do dia a dia e continuam no filtro Inativos.</span></li>
+            {p.casos !== undefined ? (
+              <>
+                <li><Icone nome="balanca" className="ico" /><span><b>{plural(p.casos, "caso vai", "casos vão")} para Encerrados</b>, marcados “importação desfeita”, sem resultado. Saem da lista do dia a dia.</span></li>
+                {p.ligacoes ? <li><Icone nome="trocar" className="ico" /><span><b>{plural(p.ligacoes, "caso que já existia perde", "casos que já existiam perdem")}</b> só o cliente que a importação ligou.</span></li> : null}
+                <li><Icone nome="pessoas" className="ico" /><span><b>Os clientes ficam como estão.</b> Eles vieram de outra importação, que tem o seu próprio desfazer.</span></li>
+              </>
+            ) : <li><Icone nome="pessoas" className="ico" /><span><b>{plural(p.clientes, "cliente novo fica inativo", "clientes novos ficam inativos")}</b>, com o motivo. Saem da lista do dia a dia e continuam no filtro Inativos.</span></li>}
             {p.juntados ? <li><Icone nome="trocar" className="ico" /><span><b>{p.juntados === 1 ? "O cadastro completado volta ao que era:" : `Os ${p.juntados} cadastros completados voltam ao que eram:`}</b> os campos que a planilha preencheu ficam vazios de novo.</span></li> : null}
             {p.contratos ? <li><Icone nome="pena" className="ico" /><span><b>{plural(p.contratos, "contrato fica encerrado", "contratos ficam encerrados")}</b>, e {plural(p.parcelas, "a parcela, cancelada", "as parcelas, canceladas")}, com o motivo.</span></li> : null}
           </ul>
           {p.mexidos.length ? (
             <div style={{ margin: "14px 0" }}>
               <Aviso tom="atencao" titulo={`${plural(p.mexidos.length, "item já foi mexido", "itens já foram mexidos")} depois da importação e ${p.mexidos.length === 1 ? "fica" : "ficam"} como está.`}>
-                {p.mexidos.slice(0, 6).map((m) => `${m.tipo === "CLIENTE" ? "Cliente" : "Contrato"} ${m.nome}`).join("; ")}{p.mexidos.length > 6 ? ` e mais ${p.mexidos.length - 6}` : ""}. Decida um por um, na ficha de cada um.
+                {p.mexidos.slice(0, 6).map((m) => `${m.tipo === "CLIENTE" ? "Cliente" : m.tipo === "CASO" ? "Caso" : "Contrato"} ${m.nome}`).join("; ")}{p.mexidos.length > 6 ? ` e mais ${p.mexidos.length - 6}` : ""}. Decida um por um, na ficha de cada um.
               </Aviso>
             </div>
           ) : null}

@@ -1203,13 +1203,15 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
       if (!sistema.some((a) => a.lida && a.celulas.length > 0)) throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_VAZIO" });
     } else {
       try {
-        abas = await lerPlanilha(bytes, q.data.nome);
+        // A planilha do ADVBOX tem até 10.000 linhas; a comum, 2.000.
+        abas = await lerPlanilha(bytes, q.data.nome, origem === "ADVBOX_PLANILHA" ? { bytes: LIMITE_ARQUIVO_BYTES, linhas: LIMITE_BACKUP_LINHAS } : undefined);
       } catch (e) {
         if (e instanceof ErroArquivo) throw new ErroDominio("VALIDATION_ERROR", { motivo: e.motivo });
         throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_FORMATO" });
       }
       if (origem === "ADVBOX_PLANILHA") {
-        sistema = prepararAbas("ADVBOX_PLANILHA", abas.map((a) => ({ nome: a.nome, linhas: a.linhas.length, colunas: a.colunas, celulas: a.linhas })));
+        sistema = prepararAbas("ADVBOX_PLANILHA", abas.map((a) => ({ nome: a.nome, linhas: a.linhas.length, colunas: a.colunas, celulas: a.linhas })),
+          q.data.oQue === "CASOS" ? "CASOS" : "CLIENTES");
       }
     }
     if (sistema) abas = sistema.map((a) => ({ nome: a.nome, colunas: a.colunas, linhas: a.celulas }));
