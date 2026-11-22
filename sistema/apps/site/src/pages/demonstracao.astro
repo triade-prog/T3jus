@@ -2,13 +2,14 @@
 import Base from "../layouts/Base.astro";
 import Topo from "../components/Topo.astro";
 import Rodape from "../components/Rodape.astro";
+import "../styles/paginas.css";
 import Pedido from "../components/Pedido.astro";
 import { privacidadePronta } from "../config";
 ---
 <Base titulo="Pedir demonstração · T3jus" descricao="Peça uma demonstração do T3jus: uma conversa por vídeo para ver o sistema com a rotina do seu escritório de advocacia e combinar o valor, sem compromisso." rota="/demonstracao">
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<Topo atual="/demonstracao" />
 <div class="abertura interna"><div class="lado" aria-hidden="true"></div><svg class="ico estatua" aria-hidden="true"><use href="#i-coluna"/></svg>
-  <Topo atual="/demonstracao" />
   <div class="miolo"><div id="conteudo" class="cab-int sobre-vinho"><nav class="trilha-int" aria-label="Você está em"><a href="/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Demonstração</span></nav>
   <span class="sobretitulo">Demonstração</span><h1>Veja o T3jus com a rotina do <i>seu escritório.</i></h1><span class="fio" aria-hidden="true"></span><p class="lede">Conte um pouco sobre o escritório. A nossa equipe responde para marcar uma conversa por vídeo, sem compromisso.</p></div></div>
 </div><main><div class="miolo dem-grade">
@@ -23,5 +24,5 @@ import { privacidadePronta } from "../config";
     {privacidadePronta && (<section class="caixa-d" aria-labelledby="t-email-d"><h3 id="t-email-d">Prefere escrever?</h3><p>Mande um e-mail com o nome do escritório e o melhor horário.</p><a class="btn btn-sec" href="mailto:contato@t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg>contato@t3jus.pro</a></section>)}
   </aside>
 </div></main>
-<Rodape />
+<Rodape atual="/demonstracao" />
 </Base>

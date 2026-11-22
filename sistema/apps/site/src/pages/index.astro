@@ -2,130 +2,200 @@
 import Base from "../layouts/Base.astro";
 import Topo from "../components/Topo.astro";
 import Rodape from "../components/Rodape.astro";
+import "../styles/inicio.css";
 const dados = {"@context":"https://schema.org","@type":"Organization","name":"T3jus","url":"https://t3jus.pro/","logo":"https://t3jus.pro/marca/icone-app.svg","email":"contato@t3jus.pro"};
 ---
-<Base titulo="T3jus · Gestão para escritórios de advocacia" descricao="Do primeiro atendimento ao honorário recebido: atendimento pelo WhatsApp do escritório, contratos e parcelas, carnê com Pix, repasses, caixa, prazos e agenda num só lugar." rota="/" dadosEstruturados={dados}>
+<Base titulo="T3jus · Gestão para escritórios de advocacia" descricao="Propostas, contratos, parcelas, repasses, prazos e agenda ligados aos casos. Cada pessoa do escritório vê o que pede atenção hoje." rota="/" dadosEstruturados={dados}>
+<Fragment slot="cabeca">
+<link rel="preload" href="/fontes/alegreya-500-italico.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fontes/poppins-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" as="image" href="/telas/abertura-inicio.webp" media="(min-width: 761px)" fetchpriority="high">
+<script is:inline>(function(d){try{if(matchMedia("(prefers-reduced-motion: no-preference)").matches&&matchMedia("(min-width: 1021px) and (min-height: 820px)").matches)d.classList.add("historia")}catch(e){}})(document.documentElement);</script>
+</Fragment>
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
-<div class="abertura inicio" style="--corte:58%">
-  <div class="lado" aria-hidden="true"></div>
-  <svg class="ico estatua" aria-hidden="true"><use href="#i-coluna"/></svg>
-  <div class="fita" aria-hidden="true"><i style="background:#692746"></i><i style="background:#87335B"></i><i style="background:#AC3F6B"></i><i style="background:#AC788D"></i><i style="background:#DD9760"></i><i style="background:#E9AE90"></i><i style="background:#F2CDB3"></i><i style="background:#F2ECE8"></i><i style="background:#F1E6DF"></i></div>
-  <Topo atual="/" />
-  <div class="miolo heroi" id="conteudo">
-    <div class="texto sobre-vinho">
-      <span class="sobretitulo">Gestão para escritórios de advocacia</span>
-      <h1>Do primeiro atendimento ao <i>honorário recebido.</i></h1>
-      <span class="fio" aria-hidden="true"></span>
-      <p class="lede">O T3jus junta o comercial e o financeiro do escritório aos casos: o cliente atendido pelo WhatsApp do escritório, contratos com parcelas, carnê com o seu Pix, repasses, caixa, prazos e agenda. Num só lugar, e cada pessoa vê só a parte dela.</p>
-      <div class="acoes"><a class="btn btn-claro" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a><a class="btn btn-contorno" href="/como-funciona">Ver como funciona</a></div>
-      <p class="nota-h"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Uma conversa com a nossa equipe, sem compromisso.</p>
-    </div>
-    <div class="folhas"><div class="f-ambar" aria-hidden="true"></div><div class="f-timbre" aria-hidden="true"></div><div class="demo" role="img" aria-label="Exemplo da tela Hoje no escritório, com dados fictícios: uma conversa respondida pela assistente virtual, uma parcela que vence hoje, um alvará com repasse a fazer e um prazo de contestação.">
-  <div aria-hidden="true">
-  <div class="demo-cab"><p class="t">Hoje no escritório</p><span class="ex">Exemplo com dados fictícios</span></div><span class="fio"></span>
-  <ul class="demo-lista">
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-whats"/></svg></span><span><b>Marta Corrêa perguntou do processo</b><small>A assistente respondeu com a etapa do caso. Ninguém precisou parar.</small></span></li>
-    <li><span class="bola a"><svg class="ico" aria-hidden="true"><use href="#i-carne"/></svg></span><span><b>Parcela 4 de 6 vence hoje</b><small>Hélio Batista · <span class="val">R$ 850,00</span> · carnê com o Pix do escritório</small></span></li>
-    <li><span class="bola v"><svg class="ico" aria-hidden="true"><use href="#i-repasse"/></svg></span><span><b>Alvará de R$ 18.400,00 entrou</b><small>Repassar R$ 12.880,00 a Ana Souza até 28/11</small></span></li>
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg></span><span><b>Contestação até 25/11</b><small>Caso 0801234 · Dra. Marina Ribeiro</small></span></li>
-  </ul></div>
-</div><img class="selo-marca" src="/marca/selo-cor.svg" width="150" height="150" alt=""></div>
+<Topo atual="/" />
+<main id="conteudo">
+<section class="abertura" aria-labelledby="t-abertura">
+  <img class="coluna-fundo" src="/marca/simbolo-vinho.svg" width="473" height="479" alt="" aria-hidden="true">
+  <img class="coluna-fundo dir" src="/marca/simbolo-vinho.svg" width="473" height="479" alt="" aria-hidden="true">
+  <div class="miolo ab-texto">
+    <p class="pilula"><b>Portal</b>Gestão para escritórios de advocacia de 3 a 10 pessoas</p>
+    <h1 id="t-abertura">O dia do escritório inteiro, <em>numa tela só.</em></h1>
+    <p class="lede">Propostas, contratos, parcelas, repasses, prazos e agenda, ligados aos casos. Cada pessoa abre o T3jus e vê o que pede atenção hoje, do primeiro contato ao honorário recebido.</p>
+    <div class="acoes"><a class="btn btn-claro" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a><a class="btn btn-contorno" href="#por-dentro">Ver o sistema por dentro</a></div>
   </div>
-</div>
-<main>
-<section class="fatos" aria-label="O básico sobre o T3jus"><div class="miolo"><ul>
-  <li><svg class="ico" aria-hidden="true"><use href="#i-servidor"/></svg><span><b>Servidores no Brasil</b>em São Paulo</span></li>
-  <li><svg class="ico" aria-hidden="true"><use href="#i-escudo"/></svg><span><b>Cada escritório separado</b>conferido no servidor, sempre</span></li>
-  <li><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg><span><b>Cada pessoa com o seu acesso</b>sem senha compartilhada</span></li>
-  <li><svg class="ico" aria-hidden="true"><use href="#i-baixar"/></svg><span><b>Os dados são seus</b>exporte tudo quando quiser</span></li>
-</ul></div></section>
+  <figure class="ab-tela" aria-labelledby="leg-abertura">
+    <div class="janela" id="janela-abertura">
+      <div class="barra" aria-hidden="true"><i></i><i></i><i></i><span><svg class="ico"><use href="#i-cadeado"/></svg>app.t3jus.pro</span></div>
+      <picture>
+        <source media="(max-width: 760px)" srcset="/telas/abertura-inicio-celular.webp" width="780" height="1688">
+        <img src="/telas/abertura-inicio.webp" width="2560" height="1800" fetchpriority="high" alt="O Início do Portal da sócia Marina Ribeiro, do escritório fictício Ribeiro & Matos, na quarta-feira, 18 de novembro: 6 itens pedem a atenção dela hoje nas 4 áreas e há 2 compromissos; abaixo, um cartão por área (Comercial, Contratos, Financeiro e Jurídico) com o contato para hoje, a cobrança parada, a parcela vencida e o prazo atrasado, e a agenda do dia com uma audiência às 14h30.">
+      </picture>
+    </div>
+    <div class="anot anot-1" aria-hidden="true"><span class="disco"><svg class="ico"><use href="#i-pessoas"/></svg></span><span><b>Só as áreas dela</b>Cada pessoa vê o que foi liberado para ela.</span></div>
+    <div class="anot anot-2" aria-hidden="true"><span class="disco"><svg class="ico"><use href="#i-relogio"/></svg></span><span><b><span class="conta" data-ate="6">6</span> pedem você hoje</b>E <span class="conta" data-ate="2">2</span> compromissos na agenda: o que cobrar, entregar e acompanhar.</span></div>
+    <figcaption class="ab-legenda" id="leg-abertura"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Tela real do Portal, com dados fictícios. Cada pessoa vê só as áreas liberadas para ela.</figcaption>
+  </figure>
+</section>
 
-<section class="secao" aria-labelledby="t-dores"><div class="miolo">
-  <div class="sec-cab"><span class="sobretitulo">Quando tudo passa pelo sócio</span><h2 id="t-dores">O escritório cresce, e o dinheiro escapa nos intervalos.</h2><span class="fio" aria-hidden="true"></span>
-  <p class="lede">Em escritórios de 3 a 10 pessoas, quem decide também atende, cobra e confere o caixa. O T3jus foi pensado para esses intervalos.</p></div>
-  <ul class="dores">
-    <li class="dor"><span class="disco"><svg class="ico" aria-hidden="true"><use href="#i-whats"/></svg></span><h3>O cliente escreve no WhatsApp de alguém</h3><p>E a resposta depende de quem viu. A pergunta sobre o processo para o trabalho de quem estava no prazo.</p></li>
-    <li class="dor"><span class="disco"><svg class="ico" aria-hidden="true"><use href="#i-moeda"/></svg></span><h3>A parcela atrasa e ninguém percebe</h3><p>O contrato tinha entrada, parcelas e êxito. A planilha só mostra o que alguém lembrou de lançar.</p></li>
-    <li class="dor"><span class="disco"><svg class="ico" aria-hidden="true"><use href="#i-repasse"/></svg></span><h3>O alvará sai e o repasse fica para depois</h3><p>O dinheiro do cliente entra junto com o do escritório, e a conta só fecha quando alguém refaz tudo.</p></li>
+<section class="secao" aria-labelledby="t-destaques"><div class="miolo">
+  <div class="cab centro" data-revelar><span class="sobre">Já funciona hoje</span><h2 id="t-destaques">Onde o dinheiro escapava, agora <em>tem dono e data.</em></h2><p>Três intervalos que, num escritório pequeno, dependiam de alguém lembrar.</p></div>
+  <div class="destaques">
+    <article class="destaque d-ambar" aria-labelledby="t-d1" data-revelar>
+      <div class="d-texto">
+        <p class="d-tag"><span>Financeiro · A receber</span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></p>
+        <h3 id="t-d1">A parcela atrasada aparece, com o motivo e a próxima ação.</h3>
+        <ul class="d-lista">
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Vencidas por idade, com o motivo anotado e quem cuida da cobrança</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Carnê em PDF com o Pix do próprio escritório, sem intermediário</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Recibo em PDF de cada pagamento, para mandar ao cliente</li>
+        </ul>
+        <p class="d-num">01 / 03</p>
+      </div>
+      <div class="d-tela"><div class="folha"><picture><source media="(max-width: 760px)" srcset="/telas/destaque-a-receber-celular.webp" width="780" height="1688"><img src="/telas/destaque-a-receber.webp" width="1664" height="1930" loading="lazy" alt="Tela A receber do Portal, com dados fictícios: R$ 4.600,00 em aberto, R$ 2.050,00 vencidos e R$ 31.240,00 recebidos em novembro; a parcela de Daniela Rocha Mendes, vencida há 74 dias, mostra o motivo (está desempregada e pediu para pagar depois do acordo) e a próxima ação em 26/11, com a responsável."></picture><div class="realce" style="--x:1.5%;--y:43.4%;--w:97%;--h:17.4%" aria-hidden="true"><i></i><i></i><i></i><i></i><b class="dir">O motivo e a próxima ação</b></div></div></div>
+    </article>
+    <article class="destaque d-vinho" aria-labelledby="t-d2" data-revelar>
+      <div class="d-texto">
+        <p class="d-tag"><span>Financeiro · Repasses</span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></p>
+        <h3 id="t-d2">O alvará entra, e cada parte tem prazo para receber.</h3>
+        <ul class="d-lista">
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Alvará, RPV, precatório e acordo como dinheiro de terceiros, fora do caixa</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>A divisão sai do contrato: o cliente, os honorários, o perito</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O caso só fecha com tudo recebido e tudo repassado</li>
+        </ul>
+        <p class="d-num">02 / 03</p>
+      </div>
+      <div class="d-tela"><div class="folha"><picture><source media="(max-width: 760px)" srcset="/telas/destaque-repasses-celular.webp" width="780" height="1688"><img src="/telas/destaque-repasses.webp" width="1648" height="1680" loading="lazy" alt="Tela Repasses do Portal, com dados fictícios: R$ 15.096,59 a repassar e R$ 854,00 atrasados; o RPV de Benedito Souza Lima, de R$ 21.566,56, dividido entre o cliente, os honorários de êxito e o perito, cada parte com prazo e o botão Feito."></picture><div class="realce" style="--x:1.6%;--y:38.7%;--w:48.9%;--h:28.6%" aria-hidden="true"><i></i><i></i><i></i><i></i><b class="esq cima">Cada parte com o seu prazo</b></div></div></div>
+    </article>
+    <article class="destaque d-papel" aria-labelledby="t-d3" data-revelar>
+      <div class="d-texto">
+        <p class="d-tag"><span>Jurídico · Prazos</span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></p>
+        <h3 id="t-d3">Nenhum prazo sem dono, e a urgência escrita.</h3>
+        <ul class="d-lista">
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Cada prazo com responsável e a margem do “fazer até”</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Lembrete 2 dias antes, no Início e no sino de avisos</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Os prazos aparecem sozinhos na agenda da equipe</li>
+        </ul>
+        <p class="d-num">03 / 03</p>
+      </div>
+      <div class="d-tela"><div class="folha"><picture><source media="(max-width: 760px)" srcset="/telas/destaque-prazos-celular.webp" width="780" height="1090"><img src="/telas/destaque-prazos.webp" width="1456" height="1388" loading="lazy" alt="Tela Prazos do Jurídico, com dados fictícios: 5 prazos abertos, 2 vencem hoje, quarta-feira, 18/11: a contestação de Souza x Construtora Atlas, com Felipe Matos, e a manifestação sobre laudo de Andrade x Unimed Paulistana, com Larissa Costa, ambas marcadas Vence hoje."></picture><div class="realce" style="--x:1.9%;--y:26.2%;--w:96.2%;--h:41.2%" aria-hidden="true"><i></i><i></i><i></i><i></i><b class="esq">Vencem hoje, cada um com dono</b></div></div></div>
+    </article>
+  </div>
+  <div class="retrato" data-revelar>
+    <picture><source media="(max-width: 1020px)" srcset="/fotos/advogada-leitura-celular.webp" width="720" height="720"><img src="/fotos/advogada-leitura.webp" width="1448" height="621" loading="lazy" alt="Advogada de blazer vinho e óculos, sentada à mesa do escritório, lê com atenção uma folha que segura na mão, com um notebook aberto e pastas à frente; ao fundo, estante de madeira com livros e uma janela com luz de fim de tarde."></picture>
+    <div class="retrato-texto"><span class="sobre" style="--i:0">Para escritórios de 3 a 10 pessoas</span><p class="frase" style="--i:1">Quem decide também atende, cobra e confere o caixa.</p><p style="--i:2">O T3jus cuida dos intervalos entre uma coisa e outra, para sobrar tempo para o trabalho jurídico.</p></div>
+  </div>
+</div></section>
+
+<section class="secao produto" id="por-dentro" aria-labelledby="t-dentro">
+  <img class="coluna-fundo" src="/marca/simbolo-vinho.svg" width="473" height="479" alt="" aria-hidden="true">
+  <div class="miolo">
+  <div class="cab centro" data-revelar><span class="sobre">Por dentro do Portal</span><h2 id="t-dentro">Um caminho só, do primeiro contato <em>ao honorário recebido.</em></h2><p>Cada área do escritório tem a sua tela, e cada etapa leva à próxima sem redigitar.</p><p class="dica-rolar"><svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg>Role a página para passar pelas quatro áreas, ou escolha uma aba.</p></div>
+  <div class="trilho" id="trilho"><div class="palco">
+  <div class="abas" role="tablist" aria-label="Áreas do Portal, na ordem do caminho">
+    <button class="aba" role="tab" id="a-comercial" aria-controls="p-comercial" aria-selected="true"><span class="fio" aria-hidden="true"></span><span class="n" aria-hidden="true">1</span><span><b>Comercial</b><small>Atendimento e proposta</small></span></button>
+    <button class="aba" role="tab" id="a-contratos" aria-controls="p-contratos" aria-selected="false" tabindex="-1"><span class="fio" aria-hidden="true"></span><span class="n" aria-hidden="true">2</span><span><b>Contratos</b><small>Honorários e carnê</small></span></button>
+    <button class="aba" role="tab" id="a-juridico" aria-controls="p-juridico" aria-selected="false" tabindex="-1"><span class="fio" aria-hidden="true"></span><span class="n" aria-hidden="true">3</span><span><b>Jurídico</b><small>Casos, prazos e agenda</small></span></button>
+    <button class="aba" role="tab" id="a-financeiro" aria-controls="p-financeiro" aria-selected="false" tabindex="-1"><span class="fio" aria-hidden="true"></span><span class="n" aria-hidden="true">4</span><span><b>Financeiro</b><small>Recebido e repassado</small></span></button>
+  </div>
+  <div class="painel" role="tabpanel" id="p-comercial" aria-labelledby="a-comercial" tabindex="0">
+    <div class="p-texto"><div><h3>A proposta sai no timbrado e, aceita, vira contrato.</h3><p>Cada contato tem origem, retorno e responsável. A proposta guarda a situação e as condições de honorário, sem redigitar nada depois.</p></div><ul class="p-lista"><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Atendimentos com o retorno de cada um e o funil do escritório</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Proposta em Word no timbrado, com a marca do escritório</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Aceita, gera o contrato com as mesmas condições</li></ul></div>
+    <figure class="p-tela"><div class="janela"><div class="barra" aria-hidden="true"><i></i><i></i><i></i><span><svg class="ico"><use href="#i-cadeado"/></svg>app.t3jus.pro</span></div><picture><source media="(max-width: 760px)" srcset="/telas/aba-comercial-celular.webp" width="780" height="1688"><img src="/telas/aba-comercial.webp" width="2560" height="1600" loading="lazy" alt="Ficha da proposta P-2026-016, Divórcio consensual, para Gabriela Teixeira, com dados fictícios: em negociação, honorário parcelado de R$ 4.000,00 em 4 parcelas, e o retorno marcado para hoje, 18/11: responder à contraproposta, em que a cliente pediu 5 parcelas, com Marina Ribeiro."></picture></div><figcaption class="p-legenda">Comercial › Propostas › a ficha de uma proposta em negociação. Tela real, dados fictícios.</figcaption></figure>
+  </div>
+  <div class="painel" role="tabpanel" id="p-contratos" aria-labelledby="a-contratos" tabindex="0" hidden>
+    <div class="p-texto"><div><h3>Do contrato saem as parcelas, e das parcelas, o carnê.</h3><p>Fixo, parcelado, mensal, êxito e percentual recorrente no mesmo contrato. As datas e os valores vêm dele, e o carnê sai pronto para imprimir.</p></div><ul class="p-lista"><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Contrato, procuração e declaração no timbrado, em Word e PDF</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Carnê com o QR do Pix do próprio escritório, sem boleto nem intermediário</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Assinatura registrada com o arquivo assinado anexado</li></ul></div>
+    <figure class="p-tela"><div class="janela"><div class="barra" aria-hidden="true"><i></i><i></i><i></i><span><svg class="ico"><use href="#i-cadeado"/></svg>app.t3jus.pro</span></div><picture><source media="(max-width: 760px)" srcset="/telas/aba-contratos-celular.webp" width="780" height="1688"><img src="/telas/aba-contratos.webp" width="2560" height="1600" loading="lazy" alt="Janela Gerar carnê do contrato C-2026-014, de Hélio Batista Corrêa, com dados fictícios: as 3 parcelas que ainda vão vencer, 3 parcelas por folha, com capa, o Pix do escritório (chave CNPJ) e a prévia das 2 folhas A4 com o QR de cada parcela."></picture></div><figcaption class="p-legenda">A janela Gerar carnê, na ficha do contrato. Tela real, dados fictícios.</figcaption></figure>
+  </div>
+  <div class="painel" role="tabpanel" id="p-juridico" aria-labelledby="a-juridico" tabindex="0" hidden>
+    <div class="p-texto"><div><h3>Cada caso com a sua etapa, os prazos e quem cuida.</h3><p>Casos com vários clientes, etapas definidas pelo escritório, prazos e tarefas com responsável e os documentos que faltam. A agenda junta audiências e prazos da equipe toda.</p></div><ul class="p-lista"><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Etapas do jeito do escritório, com a próxima à vista</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Petições a partir dos modelos do escritório, em Word</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Agenda da equipe com audiências, reuniões e prazos</li></ul></div>
+    <figure class="p-tela"><div class="janela"><div class="barra" aria-hidden="true"><i></i><i></i><i></i><span><svg class="ico"><use href="#i-cadeado"/></svg>app.t3jus.pro</span></div><picture><source media="(max-width: 760px)" srcset="/telas/aba-juridico-celular.webp" width="780" height="1688"><img src="/telas/aba-juridico.webp" width="2560" height="1600" loading="lazy" alt="Ficha do caso Pereira x Mercado Bom Preço, trabalhista, com dados fictícios: etapa 5 de 8, Sentença, desde 07/11, com a próxima etapa, Recurso; abaixo, os dados do processo no TRT-2 e as petições do caso."></picture></div><figcaption class="p-legenda">Jurídico › Casos e processos › a ficha de um caso. Tela real, dados fictícios.</figcaption></figure>
+  </div>
+  <div class="painel" role="tabpanel" id="p-financeiro" aria-labelledby="a-financeiro" tabindex="0" hidden>
+    <div class="p-texto"><div><h3>O mês do escritório ao lado do dinheiro de terceiros, sem somar.</h3><p>O que entrou, o que venceu, o que entra nos próximos 7 dias e o que é do cliente, cada um no seu lugar. O contador recebe a planilha e os comprovantes do mês.</p></div><ul class="p-lista"><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Previsto contra realizado, com a meta do mês</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>A pagar, caixa e reembolso de custas ligado ao caso</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Exportação para o contador, com os comprovantes em .zip</li></ul></div>
+    <figure class="p-tela"><div class="janela"><div class="barra" aria-hidden="true"><i></i><i></i><i></i><span><svg class="ico"><use href="#i-cadeado"/></svg>app.t3jus.pro</span></div><picture><source media="(max-width: 760px)" srcset="/telas/aba-financeiro-celular.webp" width="780" height="1688"><img src="/telas/aba-financeiro.webp" width="2560" height="1600" loading="lazy" alt="Resumo do Financeiro, com dados fictícios: R$ 31.240,00 recebidos em novembro, de R$ 48.300,00 previstos (65%), R$ 7.050,00 vencidos e R$ 8.000,00 que entram em 7 dias; ao lado, R$ 30.284,96 de terceiros na conta, que não são do escritório."></picture></div><figcaption class="p-legenda">Financeiro › Resumo, na quarta-feira, 18 de novembro. Tela real, dados fictícios.</figcaption></figure>
+  </div>
+  </div><div class="trilho-resto" aria-hidden="true"></div></div>
+  <div class="meio-cta" data-revelar><p><b>Quer ver estas telas com a rotina do seu escritório?</b> A demonstração usa um exemplo parecido com o seu.</p><a class="btn btn-pri" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div>
+</div></section>
+
+<section class="secao" aria-labelledby="t-existe"><div class="miolo">
+  <div class="cab largo" data-revelar><span class="sobre">O que tem no T3jus</span><h2 id="t-existe">Primeiro, o que já existe. <em>Depois, o que vem.</em></h2><p>Cada parte tem a sua situação de hoje, dita com clareza.</p></div>
+  <ul class="legenda" aria-label="O que cada situação quer dizer" data-revelar>
+    <li><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span>construído e testado</li>
+    <li><span class="st st-prep"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Em preparação</span>construído; falta um passo de fora</li>
+    <li><span class="st st-plan"><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Planejado</span>ainda não existe, sem data</li>
   </ul>
+  <div class="existe">
+    <div class="pronto" data-revelar>
+      <h3>Também no T3jus <span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></h3>
+      <ul class="grade-pronto">
+        <li style="--i:0"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-inicio"/></svg></span><span><b>Início por áreas</b><span>Cada pessoa abre e vê o que cobrar, entregar e acompanhar hoje.</span></span></li>
+        <li style="--i:1"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg></span><span><b>Áreas liberadas por pessoa</b><span>O sócio dono marca o que cada um vê: Comercial, Contratos, Financeiro, Jurídico.</span></span></li>
+        <li style="--i:2"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg></span><span><b>Documentos no timbrado</b><span>Proposta, contrato, procuração e declaração, em Word e PDF.</span></span></li>
+        <li style="--i:3"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-pena"/></svg></span><span><b>Petições a partir de modelos</b><span>Os modelos do escritório preenchidos com o cliente e o caso, para revisar.</span></span></li>
+        <li style="--i:4"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-fatura"/></svg></span><span><b>Recibo de cada pagamento</b><span>Em PDF, para baixar e mandar ao cliente.</span></span></li>
+        <li style="--i:5"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-baixar"/></svg></span><span><b>Importar de planilha</b><span>Clientes e contratos que o escritório já tem, com as parcelas pagas antes.</span></span></li>
+      </ul>
+    </div>
+    <div class="caminho">
+      <div class="caixa caixa-prep" data-revelar>
+        <h3>A caminho <span class="st st-prep"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Em preparação</span></h3>
+        <div class="mini-tela"><img src="/telas/a-caminho-conversas.webp" width="734" height="1300" loading="lazy" alt="A conversa de Hélio Batista Corrêa na tela Conversas do Portal, com dados fictícios: a mensagem da esposa sobre uma proposta de acordo de R$ 18.000,00, em que a assistente virtual passou a pergunta sobre uma proposta de acordo para a advogada do caso, com o motivo."></div>
+        <div class="item-c"><b>Atendimento pelo WhatsApp do escritório, com a assistente virtual</b><p>A tela está pronta. <strong>Falta:</strong> a ligação oficial com a Meta, para o número do escritório funcionar de verdade.</p></div>
+        <div class="item-c"><b>Trazer os dados do Astrea e do ADVBOX</b><p>Clientes, processos e o financeiro antigo. <strong>Falta:</strong> conferir com os arquivos reais de um escritório piloto.</p></div>
+      </div>
+      <div class="caixa caixa-plan" data-revelar>
+        <h3>Planejado <span class="st st-plan"><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Planejado</span></h3>
+        <ul>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Cobrança por Pix ou boleto com baixa automática ao pagar</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Leitura automática de publicações e intimações</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Assinatura eletrônica do contrato e da procuração</li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Agenda ligada ao Google Agenda ou ao Outlook</li>
+        </ul>
+        <p>Sem data prometida. Se algum é essencial para você, conte na demonstração.</p>
+      </div>
+    </div>
+  </div>
 </div></section>
 
-<section class="secao clara" aria-labelledby="t-caminho"><div class="miolo">
-  <div class="sec-cab"><span class="sobretitulo">Um caminho só</span><h2 id="t-caminho">Cada etapa leva à próxima, sem redigitar.</h2><span class="fio" aria-hidden="true"></span></div>
-  <ol class="caminho">
-    <li><span class="disco" aria-hidden="true">1</span><h3>Atendimento</h3><p>O cliente fala com o escritório, e cada retorno tem dono e data.</p></li>
-    <li><span class="disco" aria-hidden="true">2</span><h3>Proposta</h3><p>Proposta no papel timbrado, com situação e responsável.</p></li>
-    <li><span class="disco" aria-hidden="true">3</span><h3>Contrato e honorários</h3><p>Fixo, parcelado, mensal, êxito: as parcelas saem do contrato.</p></li>
-    <li><span class="disco" aria-hidden="true">4</span><h3>Caso, prazos e agenda</h3><p>Etapas do seu jeito, prazos e audiências de toda a equipe.</p></li>
-    <li><span class="disco" aria-hidden="true">5</span><h3>Recebido e repassado</h3><p>O que entrou, o que é do cliente e o que falta, sem somar o que não é seu.</p></li>
-  </ol>
-  <p class="caminho-pe"><a class="link-seta" href="/como-funciona">Ver cada etapa em detalhe<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></p>
-</div></section>
-
-<section class="secao" aria-labelledby="t-recursos"><div class="miolo">
-  <div class="sec-cab"><span class="sobretitulo">O que tem no T3jus</span><h2 id="t-recursos">O que já existe, e o que ainda não.</h2><span class="fio" aria-hidden="true"></span>
-  <p class="lede">Preferimos dizer com clareza. Cada parte tem a sua situação de hoje.</p></div>
-  <ul class="legenda" aria-label="O que cada situação quer dizer">
-    <li><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span><span>construído e testado</span></li>
-    <li><span class="st st-prep"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Em preparação</span><span>construído; falta ligar a um serviço de fora</span></li>
-    <li><span class="st st-plan"><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Planejado</span><span>ainda não existe</span></li>
+<section class="dados" aria-labelledby="t-dados">
+  <img class="coluna-fundo" src="/marca/simbolo-sal.svg" width="473" height="479" alt="" aria-hidden="true">
+  <div class="miolo">
+  <div class="cab largo" data-revelar><span class="sobre">Seus dados</span><h2 id="t-dados">Sigilo profissional, levado a sério.</h2></div>
+  <ul class="dados-grade" data-revelar>
+    <li style="--i:0"><svg class="ico" aria-hidden="true"><use href="#i-escudo"/></svg><b>Cada escritório separado</b><span>Toda leitura e gravação conferem o escritório no servidor, nunca no navegador.</span></li>
+    <li style="--i:1"><svg class="ico" aria-hidden="true"><use href="#i-servidor"/></svg><b>No Brasil</b><span>Banco de dados e arquivos em São Paulo.</span></li>
+    <li style="--i:2"><svg class="ico" aria-hidden="true"><use href="#i-cadeado"/></svg><b>O acesso de cada um</b><span>Cada pessoa entra com o próprio e-mail. Ninguém da equipe T3jus vê a sua senha.</span></li>
+    <li style="--i:3"><svg class="ico" aria-hidden="true"><use href="#i-baixar"/></svg><b>Os dados são seus</b><span>O sócio dono exporta tudo do escritório quando quiser.</span></li>
   </ul>
-  <ul class="recursos">
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-whats"/></svg></span><span class="st st-prep"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Em preparação</span></div><h3>Atendimento pelo WhatsApp do escritório</h3>
-      <p>O cliente fala com o número do próprio escritório. A assistente virtual responde com o que está no T3jus e passa para uma pessoa quando não sabe, com o motivo.</p>
-      <p class="falta"><b>Falta:</b> a ligação oficial com a Meta, para o seu número funcionar de verdade.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-pena"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Atendimentos e propostas</h3>
-      <p>Cada contato com origem, retorno e responsável. Proposta em .docx no timbrado do escritório e, aceita, vira contrato com as mesmas condições.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-moeda"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Contratos e honorários</h3>
-      <p>Fixo, parcelado, mensal, êxito, sucumbência e percentual recorrente no mesmo contrato. As parcelas e as datas saem dele.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-carne"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Carnê com o Pix do escritório</h3>
-      <p>Um PDF com as parcelas destacáveis e o QR do Pix do próprio escritório, para imprimir ou mandar ao cliente. Sem boleto e sem intermediário.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-carteira"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Financeiro e caixa</h3>
-      <p>A receber, a pagar, contas do mês, reembolso de custas, previsto contra realizado e a exportação para o contador em planilha.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-repasse"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Repasses</h3>
-      <p>Alvará, RPV, precatório e acordo como dinheiro de terceiros, com a divisão do contrato e prazo para cada parte. O caso só fecha com tudo repassado.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-balanca"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Casos, prazos e agenda</h3>
-      <p>Casos com vários clientes, etapas definidas pelo escritório, prazos e tarefas com responsável, documentos que faltam e a agenda da equipe.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Petições a partir de modelos</h3>
-      <p>Os modelos do escritório preenchidos com os dados do cliente e do caso, em .docx, para o advogado revisar.</p></li>
-    <li class="recurso"><div class="topo-r"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg></span><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></div><h3>Áreas liberadas por pessoa</h3>
-      <p>O sócio dono convida a equipe e marca o que cada pessoa vê: Comercial, Contratos, Financeiro, Jurídico. Ele vê tudo.</p></li>
-  </ul>
-  <div class="planejado"><div><h3>Planejado</h3><p class="sub">Está na nossa lista, sem data prometida. Se algum destes é essencial para você, conte na demonstração.</p></div>
-    <ul>
-      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Cobrança por Pix ou boleto com baixa automática ao pagar</li>
-      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Procuração e declaração geradas no timbrado do escritório</li>
-      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Leitura automática de publicações e intimações</li>
-      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Assinatura eletrônica do contrato e da procuração</li>
-      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Agenda ligada ao Google Agenda ou ao Outlook</li>
-      <li><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Importar direto de outros sistemas jurídicos (hoje, por planilha)</li>
-    </ul></div>
+  <p class="dados-pe" data-revelar>O escritório é o controlador dos dados e o T3jus, o operador, como manda a LGPD. Quem fez o quê, e quando, fica no histórico.</p>
 </div></section>
 
-<section class="faixa-vinho sobre-vinho" aria-labelledby="t-dados"><svg class="ico estatua" aria-hidden="true"><use href="#i-balanca"/></svg><div class="miolo">
-  <span class="sobretitulo">Seus dados</span><h2 id="t-dados">Sigilo profissional, levado a sério.</h2><span class="fio" aria-hidden="true"></span>
-  <p class="lede">Os dados dos seus clientes são do escritório. O T3jus só guarda e trata o que o escritório pede, como manda a LGPD.</p>
-  <ul class="dados">
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-escudo"/></svg></span><span><b>Cada escritório separado</b><span>Toda leitura e toda gravação conferem o escritório no servidor, nunca no navegador.</span></span></li>
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-servidor"/></svg></span><span><b>No Brasil</b><span>Banco de dados e arquivos em São Paulo.</span></span></li>
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-historico"/></svg></span><span><b>Nada some em silêncio</b><span>Quem fez o quê, e quando, fica no histórico.</span></span></li>
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-cadeado"/></svg></span><span><b>Acesso de cada um</b><span>Cada pessoa entra com o próprio e-mail. Ninguém da equipe T3jus vê a sua senha.</span></span></li>
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-baixar"/></svg></span><span><b>Exportação completa</b><span>O sócio dono baixa todos os dados do escritório quando quiser.</span></span></li>
-    <li><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-funcoes"/></svg></span><span><b>Controlador e operador</b><span>O escritório é o controlador dos dados; o T3jus, o operador.</span></span></li>
-  </ul>
-</div></section>
-
-<section class="secao" aria-labelledby="t-preco"><div class="miolo preco">
-  <div class="sec-cab"><span class="sobretitulo">Valor</span><h2 id="t-preco">Combinado com você, na demonstração.</h2><span class="fio" aria-hidden="true"></span>
-  <p class="lede">Os planos ainda estão sendo definidos. Na conversa, entendemos o tamanho da equipe e o que vocês usam hoje, e combinamos o valor antes de qualquer compromisso.</p></div>
-  <div class="cartao-p"><h3>Na demonstração, você vê</h3>
-    <ul><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O T3jus com um exemplo parecido com o seu escritório</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Como trazer os clientes e contratos da sua planilha</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O que já existe e o que ainda é planejado</li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O valor para o tamanho da sua equipe</li></ul>
-    <a class="btn btn-pri" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div>
-</div></section>
 <section class="chamada" aria-labelledby="t-chamada"><div class="miolo">
-  <div><span class="sobretitulo">Vamos conversar</span><h2 id="t-chamada">Veja o T3jus com a rotina do seu escritório.</h2><p class="lede">Conte rapidinho como o escritório funciona hoje. A nossa equipe responde para marcar um horário.</p></div>
-  <div class="cartao-c"><a class="btn btn-pri" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a><p class="ou"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg><span>Prefere e-mail? <a href="mailto:contato@t3jus.pro">contato@t3jus.pro</a></span></p></div>
+  <div class="bloco" data-revelar>
+    <div>
+      <span class="sobre">Vamos conversar</span>
+      <h2 id="t-chamada">Veja o T3jus com a rotina do seu escritório.</h2>
+      <p>Uma conversa com a nossa equipe, sem compromisso. O valor é combinado na demonstração: os planos ainda estão sendo definidos.</p>
+      <div class="acoes"><a class="btn btn-pri" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div>
+      <p class="ou"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg><span>Prefere e-mail?</span> <a href="mailto:contato@t3jus.pro">contato@t3jus.pro</a></p>
+      <img class="selo-bloco" src="/marca/selo-cor.svg" width="1162" height="1162" alt="" aria-hidden="true">
+    </div>
+    <div class="lado">
+    <img class="foto-conversa" src="/fotos/consulta-juridica.webp" srcset="/fotos/consulta-juridica-celular.webp 720w, /fotos/consulta-juridica.webp 1200w" sizes="(max-width: 760px) 100vw, 480px" width="1200" height="900" loading="lazy" alt="Advogada de blazer vinho, sorrindo, conversa com um homem que aparece de costas, do outro lado de uma mesa de mármore com notebook, caderno e pasta de documentos; ao fundo, estante com livros e flores vinho.">
+    <div class="ver">
+      <h3>Na demonstração, você vê</h3>
+      <ul>
+        <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O T3jus com um exemplo parecido com o seu escritório</li>
+        <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Como trazer os clientes e contratos que você já tem</li>
+        <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O que já existe e o que ainda é planejado</li>
+        <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O valor para o tamanho da sua equipe</li>
+      </ul>
+    </div>
+    </div>
+  </div>
 </div></section>
 </main>
-<Rodape />
+<Rodape atual="/" />
+<script>import "../scripts/movimento.ts";</script>
 </Base>
