@@ -1,10 +1,10 @@
 {
   "id": "F3.127",
-  "texto": "Contrato ativo sem caso aparece como contrato ativo no próximo passo e pode ganhar um caso pela ficha do contrato",
-  "peca": "S3",
+  "texto": "Passo de fechamento na ficha do cliente depois da etapa final (êxito, repasse, financeiro, contrato)",
+  "peca": "S5",
   "refs": [
-    "CH-13"
+    "EX-16"
   ],
   "status": "pendente",
-  "ordem": 1030
+  "ordem": 1010
 }

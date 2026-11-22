@@ -1,11 +1,10 @@
 {
   "id": "F3.128",
-  "texto": "Cadastrar como cliente pela conversa com nome e telefone, ligando a conversa; primeira reunião com o contato; botão do próximo passo só no quadro âmbar da ficha",
-  "peca": "S2",
+  "texto": "Encerrar em cadeia: \"Ver o acerto\" na ficha do caso e encerrar os contratos junto com o caso no financeiro",
+  "peca": "S4",
   "refs": [
-    "AP-07",
-    "AP-02"
+    "EX-17"
   ],
   "status": "pendente",
-  "ordem": 1040
+  "ordem": 1020
 }

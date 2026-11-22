@@ -1,10 +1,11 @@
 {
   "id": "F3.125",
-  "texto": "Passo de fechamento na ficha do cliente depois da etapa final (êxito, repasse, financeiro, contrato)",
-  "peca": "S5",
+  "texto": "Anexar o contrato assinado em Contratos › Modelos abre a mesma pergunta do caso da assinatura; filtro \"Assinados sem caso\" em Contratos e aviso no Jurídico",
+  "peca": "S3",
   "refs": [
-    "EX-16"
+    "CH-11"
   ],
   "status": "pendente",
-  "ordem": 1010
+  "ordem": 990,
+  "proximo": "Programar depois que a Carol aprovar o desenho D30"
 }
