@@ -4,7 +4,7 @@
 -- reprovar, a aprovada nos documentos do caso, os modelos do escritório, nada se apaga e o
 -- isolamento (PT-01, PT-03).
 begin;
-select plan(57);
+select plan(60);
 
 create temp table ids as select
   teste.pessoa('Marina Ribeiro') as socia,
@@ -73,6 +73,15 @@ select is((select array_agg(a ->> 'nome' order by a ->> 'nome') from d, jsonb_ar
   array['Beatriz Nogueira', 'Gustavo Lima'], 'quem tem Jurídico e não tem OAB fica de fora, com o nome');
 select is((select j -> 'revisor' ->> 'nome' from d), 'Felipe Matos', 'decisão 17: a estagiária manda para o responsável');
 select is((select j -> 'clientes' -> 0 ->> 'rg' from d), '28.441.903-1', 'AP-01: a qualificação vem da ficha do cliente');
+-- F3.106: cada advogado vem com os dados de Sua conta (0760), para o nome completo e a qualificação.
+select is((select a -> 'dados' ->> 'nomeCompleto' from d, jsonb_array_elements(j -> 'advogados') a where a ->> 'nome' = 'Larissa Costa'),
+  'Larissa Costa', 'F3.106: sem Sua conta preenchida, o nome completo é o do convite');
+select portal_conta_dados_salvar(felipe, rm, 0, '{"nomeCompleto": "Felipe Augusto Matos", "tratamento": "ADVOGADO", "nacionalidade": "brasileiro",
+  "estadoCivil": "CASADO", "cpf": "529.982.247-25", "enderecoDoEscritorio": true}') from ids;
+select is((select a -> 'dados' ->> 'nomeCompleto' from ids, cs, jsonb_array_elements(portal_peticao_dados(beatriz, rm, cs.pereira) -> 'advogados') a
+            where a ->> 'pessoaId' = ids.felipe::text), 'Felipe Augusto Matos', 'F3.106: o formulário traz o nome completo de Sua conta');
+select is((select (portal_peticao_preparar(beatriz, rm, cs.pereira, pg_temp.pedido(array[cli.joana], pg_temp.adv(ids.felipe, ids.rm))) -> 'dados' -> 'advogados' -> 0 -> 'dados' ->> 'cpf')
+             from ids, cs, cli), '52998224725', 'F3.106: a geração lê os mesmos dados no servidor');
 select is((select portal_peticao_dados(felipe, rm, cs.pereira) ->> 'semRevisao' from ids, cs), 'RESPONSAVEL', 'o responsável não passa pela revisão');
 select is((select portal_peticao_dados(socia, rm, cs.pereira) ->> 'semRevisao' from ids, cs), 'SOCIO_DONO', 'nem a sócia dona');
 select is((select portal_peticao_dados(beatriz, rm, cs.lima) -> 'revisor' ->> 'nome' from ids, cs), 'Marina Ribeiro',

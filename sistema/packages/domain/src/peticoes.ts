@@ -12,6 +12,7 @@ import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import { ESTADOS_CIVIS, formatarDocumento, type EstadoCivil } from "./clientes.ts";
 import { dinheiro, formatar } from "./dinheiro.ts";
+import { faltasDoAdvogado, qualificacaoDoAdvogado, ROTULO_FALTA_ADVOGADO, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
 import { CAMPO_DOCX, MARCA_FALTA, type ParagrafoDocx } from "./docx.ts";
 import { AREAS_DIREITO, formatarCnj, type AreaDireito } from "./juridico.ts";
 import { fraseOab, type InscricaoOab, type TipoOab, type UfBrasil } from "./portal.ts";
@@ -64,7 +65,8 @@ export const CAMPOS_PETICAO: readonly CampoPeticao[] = [
   { campo: "PARTE_CONTRARIA_QUALIFICACAO", grupo: "Caso e processo", descricao: "CNPJ ou CPF e endereço, quando o caso tiver", origem: "cadastro" },
   { campo: "VALOR_CAUSA", grupo: "Caso e processo", descricao: "R$ 86.400,00", origem: "formulario" },
   { campo: "VALOR_CAUSA_EXTENSO", grupo: "Caso e processo", descricao: "“oitenta e seis mil e quatrocentos reais”", origem: "formulario" },
-  { campo: "ADVOGADOS_OAB", grupo: "Advogados", descricao: "Nome e inscrições de quem assina: “MARINA RIBEIRO, OAB/SP nº 214.538, e …”", origem: "cadastro" },
+  { campo: "ADVOGADOS_OAB", grupo: "Advogados", descricao: "Nome completo e inscrições de quem assina: “MARINA RIBEIRO, OAB/SP nº 214.538, e …”", origem: "cadastro" },
+  { campo: "ADVOGADOS_QUALIFICACAO", grupo: "Advogados", descricao: "Cada advogado que assina com a qualificação completa: nome, nacionalidade, estado civil, OAB, RG, CPF e endereço profissional (de Sua conta)", origem: "cadastro" },
   { campo: "ADVOGADOS_ASSINATURA", grupo: "Advogados", descricao: "O bloco de assinatura, uma linha por advogado", origem: "cadastro" },
   { campo: "ENDERECAMENTO", grupo: "Formulário e escritório", descricao: "Para quem vai a petição; vem montado da vara do caso", origem: "formulario" },
   { campo: "CIDADE_DATA", grupo: "Formulário e escritório", descricao: "“São Paulo, 18 de novembro de 2026”", origem: "formulario" },
@@ -82,6 +84,7 @@ export function sugestaoCampo(campo: string): string | null {
   const c = campo.toUpperCase();
   const regras: [RegExp, string][] = [
     [/RECLAMAD|REU|RE_|CONTRARI|REQUERID|EMPRESA/, "PARTE_CONTRARIA"],
+    [/QUALIFICA.*ADVOG|ADVOG.*QUALIFICA|QUALIFICA.*PROCURADOR/, "ADVOGADOS_QUALIFICACAO"],
     [/QUALIFICA/, "PARTES_QUALIFICACAO"],
     [/RECLAMANTE|AUTOR|REQUERENTE|CLIENTE|NOME/, "CLIENTE_NOME"],
     [/CPF|DOCUMENTO/, "CLIENTE_CPF"],
@@ -285,6 +288,8 @@ export interface AdvogadoDaPeticao {
   responsavel: boolean;
   socioDono: boolean;
   inscricoes: InscricaoOab[];
+  /** Os dados de Sua conta (EX-15, F3.106); sem eles, só o nome e a OAB. */
+  dados?: DadosDocumentoPessoa | null;
 }
 
 export interface CasoDaPeticao {
@@ -317,6 +322,8 @@ export interface DadosPeticao {
   semOab: PessoaRef[];
   escritorio: EscritorioDaPeticao;
   hoje: string;
+  /** Quem está na sessão, para o link de completar os dados (Sua conta ou Equipe). */
+  eu?: string;
   /** Quem revisa, se a pessoa da sessão gerar: null quando sai aprovada (decisão 17). */
   revisor: PessoaRef | null;
   /** Por que não passa pela revisão: "RESPONSAVEL" ou "SOCIO_DONO". */
@@ -488,6 +495,19 @@ export interface ValoresPeticao {
   origem: Record<string, OrigemValor>;
   /** O que saiu marcado, para o resumo e o resultado: "RG de Carlos Henrique Dias". */
   marcados: string[];
+  /** Dos marcados, os dos advogados ("CPF de Rafael Menezes"): só contam se o modelo usa a qualificação. */
+  marcadosAdvogados?: string[];
+}
+
+/** O nome que vai na petição: o completo de Sua conta (EX-15) ou, sem ele, o da Equipe. */
+export function nomeDoAdvogadoNaPeticao(a: Pick<AdvogadoDaPeticao, "nome" | "dados">): string {
+  return a.dados?.nomeCompleto?.trim() || a.nome;
+}
+
+/** O que falta de cada advogado escolhido (sem a OAB, que quem assina sempre tem). */
+export function faltasDoAdvogadoNaPeticao(a: AdvogadoDaPeticao, esc: EscritorioDaPeticao): DadoQueConta[] {
+  if (!a.dados) return [];
+  return faltasDoAdvogado(a.dados, a.inscricoes, esc).filter((f) => f !== "OAB");
 }
 
 /** Os valores de cada campo, com a origem e o que saiu marcado (decisões 7, 8 e 14). */
@@ -502,6 +522,8 @@ export function montarValores(d: DadosPeticao, e: EscolhasPeticao): ValoresPetic
     .filter((a): a is AdvogadoDaPeticao => !!a && a.inscricoes.length > 0);
   const marcados: string[] = [];
   for (const p of partes) for (const f of faltasDoCliente(p)) marcados.push(`${f === "RG" || f === "CPF" || f === "CNPJ" ? f : f[0]!.toUpperCase() + f.slice(1)} de ${p.nome}`);
+  const marcadosAdvogados = advogados.flatMap((a) => faltasDoAdvogadoNaPeticao(a, d.escritorio).map((f) => `${ROTULO_FALTA_ADVOGADO[f]} de ${a.nome}`));
+  marcados.push(...marcadosAdvogados);
 
   const primeiro = partes[0];
   const numero = (e.numero ?? "").replace(/\D/g, "") || d.caso.numero;
@@ -510,7 +532,8 @@ export function montarValores(d: DadosPeticao, e: EscolhasPeticao): ValoresPetic
   const qualifContraria = e.parteContrariaQualificacao === undefined ? d.caso.parteContrariaQualificacao : e.parteContrariaQualificacao;
 
   const qualificada = (c: ClienteDaPeticao) => `${c.nome.toUpperCase()}, ${qualificacaoDoCliente(c)}`;
-  const nomeAdv = (a: AdvogadoDaPeticao) => a.nome.toUpperCase();
+  const nomeAdv = (a: AdvogadoDaPeticao) => nomeDoAdvogadoNaPeticao(a).toUpperCase();
+  const qualificacaoAdv = (a: AdvogadoDaPeticao) => (a.dados ? qualificacaoDoAdvogado(a.dados, a.inscricoes, d.escritorio) : `${nomeAdv(a)}, ${frase(a)}`);
   const frase = (a: AdvogadoDaPeticao) => fraseOab(a.inscricoes);
 
   const valores: Record<string, string> = {
@@ -532,6 +555,9 @@ export function montarValores(d: DadosPeticao, e: EscolhasPeticao): ValoresPetic
       ? advogados.map((a) => `${nomeAdv(a)}, ${frase(a)}`).reduce((s, x, i, l) => (i === 0 ? x : `${s}${i === l.length - 1 ? ", e " : ", "}${x}`), "")
       : falta("ADVOGADOS"),
     ADVOGADOS_ASSINATURA: advogados.length ? advogados.map((a) => `${nomeAdv(a)}\n${frase(a)}`).join("\n\n") : falta("ASSINATURA"),
+    ADVOGADOS_QUALIFICACAO: advogados.length
+      ? advogados.map(qualificacaoAdv).reduce((s, x, i, l) => (i === 0 ? x : `${s}${i === l.length - 1 ? ", e " : ", "}${x}`), "")
+      : falta("ADVOGADOS"),
     ENDERECAMENTO: e.enderecamento.trim(),
     CIDADE_DATA: e.cidadeData.trim(),
     ESCRITORIO_NOME: d.escritorio.nome,
@@ -543,14 +569,18 @@ export function montarValores(d: DadosPeticao, e: EscolhasPeticao): ValoresPetic
   for (const c of CAMPOS_PETICAO) origem[c.campo] = c.origem === "formulario" ? "formulario" : "cadastro";
   if (e.numero?.replace(/\D/g, "")) origem.NUMERO_PROCESSO = "formulario";
   if (e.parteContrariaQualificacao !== undefined && e.parteContrariaQualificacao !== d.caso.parteContrariaQualificacao) origem.PARTE_CONTRARIA_QUALIFICACAO = "formulario";
-  return { valores, origem, marcados };
+  return { valores, origem, marcados, marcadosAdvogados };
 }
 
 /** Os marcados que o modelo de fato usa (o que falta, mas o modelo não pede, não conta). */
 export function marcadosDoModelo(v: ValoresPeticao, campos: readonly string[]): string[] {
   const usa = (c: string) => campos.includes(c);
   const deCliente = usa("PARTES_QUALIFICACAO") || usa("CLIENTE_QUALIFICACAO") || usa("CLIENTE_RG") || usa("CLIENTE_CPF") || usa("CLIENTE_ENDERECO");
-  return v.marcados.filter((m) => (m === "Número do processo" ? usa("NUMERO_PROCESSO") : deCliente));
+  const deAdvogado = new Set(v.marcadosAdvogados ?? []);
+  return v.marcados.filter((m) => {
+    if (deAdvogado.has(m)) return usa("ADVOGADOS_QUALIFICACAO");
+    return m === "Número do processo" ? usa("NUMERO_PROCESSO") : deCliente;
+  });
 }
 
 // ------------------------------------------------------------------------------- prévia

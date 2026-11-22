@@ -328,6 +328,44 @@ test.describe("Jurídico › Petições (EX-09)", () => {
     await semViolacoes(page);
   });
 
+  test("F3.106: nome completo de Sua conta, [ADVOGADOS_QUALIFICACAO] e o que falta de cada advogado", async ({ page }) => {
+    const dadosAdv = (nomeCompleto: string, extra: Record<string, unknown> = {}) => ({
+      nomeCompleto, tratamento: "ADVOGADO", nacionalidade: "brasileiro", estadoCivil: "CASADO", cpf: "52998224725", rg: "12.345.678-90", rgOrgao: "SSP/SP",
+      enderecoDoEscritorio: false, cep: null, endereco: "Av. Paulista, 1.000", bairro: null, cidade: "São Paulo", uf: "SP",
+      emailProfissional: null, telefoneProfissional: null, atualizadoEm: null, atualizadoPor: null, versao: 1, ...extra,
+    });
+    const base = dados(null, "SOCIO_DONO");
+    const comDados = {
+      ...base, eu: MARINA.id,
+      advogados: [
+        { ...base.advogados[0], dados: dadosAdv("Marina Ribeiro de Andrade", { tratamento: "ADVOGADA" }) },
+        { ...base.advogados[1], dados: dadosAdv("Felipe Augusto Matos", { cpf: null, estadoCivil: null }) },
+      ],
+    };
+    const MOD_Q = "d2000000-0000-4000-8000-000000000002";
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/juridico/casos": { corpo: { hoje: "2026-11-18", etapas: [], totais: { andamento: 0, encerrados: 0, prazoHoje: 0 }, responsaveis: [], souDono: true, casos: [] } },
+      "GET /v1/escritorio/peticoes/modelos": { corpo: { ...MODELOS, modelos: [modelo(MOD_Q, "Inicial com qualificação", "QUALQUER", false, ["ENDERECAMENTO", "PARTES_QUALIFICACAO", "ADVOGADOS_QUALIFICACAO", "CIDADE_DATA"])] } },
+      [`GET /v1/escritorio/peticoes/casos/${CASO}/dados`]: { corpo: comDados },
+      [`POST /v1/escritorio/peticoes/casos/${CASO}/previa`]: { corpo: { ...previa(null, "SOCIO_DONO"), marcados: ["Estado civil de Felipe Matos", "CPF de Felipe Matos"] } },
+    });
+    await page.goto(`${P}/juridico/peticoes/nova?caso=${CASO}`);
+    await page.getByRole("radio", { name: /Inicial com qualificação/ }).check();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByText("No documento: MARINA RIBEIRO DE ANDRADE, OAB/SP nº 214.538.")).toBeVisible();
+    await page.getByRole("checkbox", { name: /Felipe Matos/ }).check();
+    await expect(page.getByText("No documento: MARINA RIBEIRO DE ANDRADE, OAB/SP nº 214.538, e FELIPE AUGUSTO MATOS, OAB/SP nº 287.104 e OAB/RJ nº 245.880-S.")).toBeVisible();
+    await expect(page.getByRole("list", { name: "O que falta no cadastro" })).toContainText("Faltam 3 dados: o RG de Carlos, o estado civil de Felipe e o CPF de Felipe.");
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Ver a prévia" }).click();
+    await expect(page.getByRole("list", { name: "Passo 4 de 4" })).toBeVisible();
+    await expect(page.getByText("Falta CPF de Felipe Matos.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Completar os dados de Felipe na Equipe (abre numa aba nova)" }).first()).toHaveAttribute("href", `/equipe/pessoas/${FELIPE.id}`);
+    await semViolacoes(page);
+    expect(pedidos.find((p) => p.caminho.endsWith("/previa"))!.corpo).toMatchObject({ advogados: [{ pessoaId: MARINA.id }, { pessoaId: FELIPE.id }] });
+  });
+
   test("Revisar: comentário no parágrafo, decisão sem comentário barrada, pedir ajuste e passar a revisão", async ({ page }) => {
     const com = { id: COM(1), versao: 1, autor: FELIPE, paragrafo: 2, trecho: "CONSTRUTORA ATLAS LTDA., com sede na Rua Tagipuru, 235", texto: "O endereço da sede mudou em setembro.",
       criadoEm: "2026-11-18T17:30:00Z", enviado: false, resolvidoEm: null, resolvidoNaVersao: null };

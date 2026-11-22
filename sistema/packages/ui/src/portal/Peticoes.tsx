@@ -9,7 +9,7 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  AREAS_DIREITO, AREAS_MODELO, campoConhecido, CAMPOS_PETICAO, cidadeDataPadrao, enderecamentoSugerido, faltasDoCliente, formatarCnj, reais, TIPOS_PECA,
+  AREAS_DIREITO, AREAS_MODELO, campoConhecido, CAMPOS_MUDADOS_DADOS, CAMPOS_PETICAO, cidadeDataPadrao, enderecamentoSugerido, faltasDoAdvogadoNaPeticao, faltasDoCliente, formatarCnj, reais, TIPOS_PECA,
   type AreaModelo, type CampoPeticao, type ConferenciaModelo, type DadosPeticao, type LinhaCaso, type LinhaPeticao, type ListaCasos, type ListaModelos,
   type ListaPeticoes, type ModeloPeticao, type ParagrafoPrevia, type PreviaPeticao, type ResultadoGerar, type SituacaoPeticao, type TipoPeca,
 } from "@t3jus/domain";
@@ -25,7 +25,8 @@ import {
   linhaVersaoModelo, modelosParaCaso, papelAdvogado, primeiroNome, quando, quemAssina, RESUMO_ERRO, ROTAS_PETICOES, SELO_PETICAO, tamanhoArquivo,
   textoMarcados, usado,
 } from "./peticoes.ts";
-import { chamarPortal, irPara, type EscritorioPortal } from "./Moldura.tsx";
+import { rotaPessoaEquipe } from "./EquipeOab.tsx";
+import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -725,6 +726,12 @@ export function faltasDoForm(d: DadosPeticao, f: Form, campos: string[]): string
       for (const x of faltasDoCliente(c)) out.push(`${x === "RG" || x === "CPF" || x === "CNPJ" ? `o ${x}` : `${x.startsWith("e") ? "o" : "a"} ${x}`} de ${primeiroNome(c.nome)}`);
     }
   }
+  if (campos.includes("ADVOGADOS_QUALIFICACAO")) {
+    for (const a of d.advogados.filter((x) => f.escolhidos[x.pessoaId]?.length)) {
+      const escolhido = { ...a, inscricoes: a.inscricoes.filter((i) => f.escolhidos[a.pessoaId]!.includes(i.id)) };
+      for (const x of faltasDoAdvogadoNaPeticao(escolhido, d.escritorio)) out.push(`${x === "TRATAMENTO" ? "o tratamento (advogada ou advogado)" : CAMPOS_MUDADOS_DADOS[x as Exclude<typeof x, "OAB">]} de ${primeiroNome(a.nome)}`);
+    }
+  }
   if (campos.includes("NUMERO_PROCESSO") && !d.caso.numero && !f.numero.trim()) out.unshift("o número do processo");
   return out;
 }
@@ -1216,6 +1223,7 @@ function NovaConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
   const semNumero = previa.marcados.includes("Número do processo");
   const outrosMarcados = previa.marcados.filter((m) => m !== "Número do processo");
   const clienteDoMarcado = (m: string) => d.clientes.find((c) => m.endsWith(` de ${c.nome}`));
+  const advogadoDoMarcado = (m: string) => d.advogados.find((a) => m.endsWith(` de ${a.nome}`));
   const pulou = frasePulaRevisao(previa.semRevisao, escritorio.dono && previa.semRevisao === "RESPONSAVEL");
   return grade(
     <section className="folha" aria-labelledby="t-pv">
@@ -1254,9 +1262,11 @@ function NovaConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
           ) : null}
           {outrosMarcados.map((m) => {
             const cl = clienteDoMarcado(m);
+            const adv = cl ? undefined : advogadoDoMarcado(m);
             return (
               <li key={m}><Icone nome="pena" className="ico" /><span><b>Falta {m.replace(/^(\S)/, (x) => x.toLowerCase()).replace(/^(rg|cpf|cnpj)\b/i, (x) => x.toUpperCase())}.</b> Dá para gerar assim: sai marcado para completar no Word.
-                {cl ? <span className="pe-fa"><a href={ROTAS_PETICOES.cliente(cl.id)} target="_blank" rel="noopener">Completar na ficha de {primeiroNome(cl.nome)}</a></span> : null}</span></li>
+                {cl ? <span className="pe-fa"><a href={ROTAS_PETICOES.cliente(cl.id)} target="_blank" rel="noopener">Completar na ficha de {primeiroNome(cl.nome)}</a></span> : null}
+                {adv ? <span className="pe-fa"><a href={adv.pessoaId === d.eu ? ROTAS_PORTAL.conta : rotaPessoaEquipe(adv.pessoaId)} target="_blank" rel="noopener">{adv.pessoaId === d.eu ? "Completar em Sua conta" : `Completar os dados de ${primeiroNome(adv.nome)} na Equipe`}<span className="sr"> (abre numa aba nova)</span></a></span> : null}</span></li>
             );
           })}
           {previa.desconhecidos.length ? (

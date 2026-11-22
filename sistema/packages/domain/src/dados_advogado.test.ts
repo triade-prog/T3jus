@@ -4,6 +4,9 @@ import {
   type DadosDocumentoPessoa,
 } from "./dados_advogado.ts";
 import { marcadosDoModeloDocumento, montarValoresDocumento, type DadosDocumentos } from "./documentos.ts";
+import {
+  CAMPOS_PETICAO, campoConhecido, faltasDoAdvogadoNaPeticao, marcadosDoModelo, montarValores, sugestaoCampo, type DadosPeticao,
+} from "./peticoes.ts";
 
 const ESC = { endereco: "Av. Tancredo Neves, 1.632, sala 1.208, Caminho das Árvores", cidade: "Salvador", uf: "BA" };
 const BA = { id: "i1", uf: "BA" as const, numero: "63876", letra: "S", tipo: "PRINCIPAL" as const, versao: 1, texto: "OAB/BA 63.876-S", documento: "OAB/BA nº 63.876-S" };
@@ -90,5 +93,58 @@ describe("os documentos usam a qualificação (EX-15)", () => {
     expect(v.marcadosAdvogados).toEqual(["Estado civil de Rafael Menezes", "CPF de Rafael Menezes"]);
     expect(marcadosDoModeloDocumento(v, ["ADVOGADOS_QUALIFICACAO"])).toEqual(["Estado civil de Rafael Menezes", "CPF de Rafael Menezes"]);
     expect(marcadosDoModeloDocumento(v, ["ADVOGADOS_OAB"])).toEqual([]);
+  });
+});
+
+describe("a qualificação do advogado nas petições (F3.106)", () => {
+  const RAFAEL: DadosDocumentoPessoa = { ...dadosDocumentoVazios("Rafael Menezes"), nomeCompleto: "Rafael Augusto Menezes Lima", tratamento: "ADVOGADO", nacionalidade: "brasileiro", rg: "13.204.887-45", rgOrgao: "SSP/SE" };
+  const peticao: DadosPeticao = {
+    caso: { id: "k1", nome: "Pereira x Mercado", area: "TRABALHISTA", numero: "10010223320265020045", vara: null, tribunal: null, sistema: null, parteContraria: "Mercado", parteContrariaQualificacao: null, valorCausa: null, responsavel: { id: "p1", nome: "Carol Santana" } },
+    clientes: [],
+    advogados: [
+      { pessoaId: "p1", nome: "Carol Santana", responsavel: true, socioDono: true, inscricoes: [BA], dados: CAROL },
+      { pessoaId: "p2", nome: "Rafael Menezes", responsavel: false, socioDono: false, inscricoes: [SE], dados: RAFAEL },
+      { pessoaId: "p3", nome: "Lia Souza", responsavel: false, socioDono: false, inscricoes: [{ ...SE, id: "i3", numero: "2001" }] },
+    ],
+    semOab: [],
+    escritorio: { nome: "Santana Advocacia", ...ESC },
+    hoje: "2026-11-22",
+    revisor: null,
+    semRevisao: "SOCIO_DONO",
+  };
+  const escolhas = { partes: [], enderecamento: "x", cidadeData: "Salvador, 22 de novembro de 2026", advogados: [{ pessoaId: "p1", inscricoes: ["i1"] }, { pessoaId: "p2", inscricoes: ["i2"] }] };
+
+  it("o campo novo é aceito nos modelos e o nome solto sugere ele", () => {
+    expect(campoConhecido("ADVOGADOS_QUALIFICACAO")).toBe(true);
+    expect(sugestaoCampo("QUALIFICACAO_ADVOGADOS")).toBe("ADVOGADOS_QUALIFICACAO");
+    expect(sugestaoCampo("QUALIFICACAO_AUTOR")).toBe("PARTES_QUALIFICACAO");
+  });
+
+  it("OAB e assinatura saem com o nome completo de Sua conta, não o da Equipe", () => {
+    const v = montarValores(peticao, escolhas);
+    expect(v.valores.ADVOGADOS_OAB).toBe("CAROLINA SOARES SANTANA, OAB/BA nº 63.876-S, e RAFAEL AUGUSTO MENEZES LIMA, OAB/SE nº 1.288");
+    expect(v.valores.ADVOGADOS_ASSINATURA).toBe("CAROLINA SOARES SANTANA\nOAB/BA nº 63.876-S\n\nRAFAEL AUGUSTO MENEZES LIMA\nOAB/SE nº 1.288");
+  });
+
+  it("[ADVOGADOS_QUALIFICACAO] traz cada um qualificado e marca o que falta, sem bloquear", () => {
+    const v = montarValores(peticao, escolhas);
+    expect(v.valores.ADVOGADOS_QUALIFICACAO).toBe(
+      `${qualificacaoDoAdvogado(CAROL, [BA], ESC)}, e RAFAEL AUGUSTO MENEZES LIMA, brasileiro, [ESTADO CIVIL: falta], advogado inscrito na OAB/SE sob o nº 1.288, ` +
+        "portador do RG nº 13.204.887-45 SSP/SE, inscrito no CPF sob o nº [CPF: falta], com escritório profissional na Av. Tancredo Neves, 1.632, sala 1.208, Caminho das Árvores, Salvador/BA",
+    );
+    expect(v.marcadosAdvogados).toEqual(["Estado civil de Rafael Menezes", "CPF de Rafael Menezes"]);
+    expect(marcadosDoModelo(v, ["ADVOGADOS_QUALIFICACAO"])).toEqual(["Estado civil de Rafael Menezes", "CPF de Rafael Menezes"]);
+    expect(marcadosDoModelo(v, ["ADVOGADOS_OAB", "NUMERO_PROCESSO"])).toEqual([]);
+    expect(faltasDoAdvogadoNaPeticao(peticao.advogados[1]!, peticao.escritorio)).toEqual(["ESTADO_CIVIL", "CPF"]);
+  });
+
+  it("quem ainda não tem os dados sai com o nome da Equipe e a OAB, sem marcar nada", () => {
+    const v = montarValores(peticao, { ...escolhas, advogados: [{ pessoaId: "p3", inscricoes: ["i3"] }] });
+    expect(v.valores.ADVOGADOS_QUALIFICACAO).toBe("LIA SOUZA, OAB/SE nº 2.001");
+    expect(v.marcados).toEqual([]);
+  });
+
+  it("o campo aparece na lista de campos aceitos, no grupo Advogados", () => {
+    expect(CAMPOS_PETICAO.find((c) => c.campo === "ADVOGADOS_QUALIFICACAO")?.grupo).toBe("Advogados");
   });
 });
