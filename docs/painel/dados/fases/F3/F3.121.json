@@ -1,0 +1,14 @@
+{
+  "id": "F3.121",
+  "texto": "Programar os dados do escritório para os documentos: colunas novas em escritorios (tipo, razão social, sede em partes, telefone, e-mail, site), edição pela sócia dona no Portal e pela equipe no Console, endereço de cobrança igual ao da sede, OAB da sociedade no cartão, Advogados nos documentos em Escritório e os campos ESCRITORIO_* nos documentos",
+  "peca": "S7",
+  "refs": [
+    "PA-07",
+    "EX-15",
+    "CH-08",
+    "CO-02"
+  ],
+  "status": "andamento",
+  "ordem": 962,
+  "proximo": "Programar os dados do escritório (desenho aprovado em docs/design/aprovadas/escritorio-dados-documentos) e pedir o ok da Carol para aplicar a migration"
+}
