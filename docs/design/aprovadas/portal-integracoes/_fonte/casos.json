@@ -1,0 +1,70 @@
+[
+ {
+  "nome": "vazio",
+  "url": "integracoes.html?estado=vazio"
+ },
+ {
+  "nome": "lista",
+  "url": "integracoes.html?estado=lista"
+ },
+ {
+  "nome": "criar",
+  "url": "integracoes.html?estado=criar"
+ },
+ {
+  "nome": "criar-erros",
+  "url": "integracoes.html?estado=criar-erros"
+ },
+ {
+  "nome": "criada",
+  "url": "integracoes.html?estado=criada"
+ },
+ {
+  "nome": "ficha",
+  "url": "integracoes.html?estado=ficha"
+ },
+ {
+  "nome": "revogar",
+  "url": "integracoes.html?estado=revogar"
+ },
+ {
+  "nome": "revogada",
+  "url": "integracoes.html?estado=revogada"
+ },
+ {
+  "nome": "limite",
+  "url": "integracoes.html?estado=limite"
+ },
+ {
+  "nome": "webhooks",
+  "url": "integracoes.html?estado=webhooks"
+ },
+ {
+  "nome": "webhook-criar",
+  "url": "integracoes.html?estado=webhook-criar"
+ },
+ {
+  "nome": "webhook-criado",
+  "url": "integracoes.html?estado=webhook-criado"
+ },
+ {
+  "nome": "webhook-pausado",
+  "url": "integracoes.html?estado=webhook-pausado"
+ },
+ {
+  "nome": "so-consulta",
+  "url": "integracoes.html?estado=so-consulta"
+ },
+ {
+  "nome": "nao-dona",
+  "url": "integracoes.html?estado=nao-dona"
+ },
+ {
+  "nome": "erro",
+  "url": "integracoes.html?estado=erro"
+ },
+ {
+  "nome": "carregando",
+  "url": "integracoes.html?estado=carregando"
+ }
+]

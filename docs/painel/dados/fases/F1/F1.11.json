@@ -6,5 +6,7 @@
     "PT-15"
   ],
   "status": "pendente",
-  "ordem": 60
+  "ordem": 60,
+  "nota": "Desenho aprovado em 22/11/2026 (D26, docs/design/aprovadas/portal-integracoes/). Decisão da Carol: nada é programado antes de existir o primeiro parceiro.",
+  "proximo": "Quando houver o primeiro parceiro: api-parceiros com chaves, escopos de leitura, limites, registro de acesso e a tela de Integrações; webhooks só se ele precisar de tempo real."
 }

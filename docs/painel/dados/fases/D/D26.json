@@ -1,0 +1,11 @@
+{
+  "id": "D26",
+  "texto": "Desenho da API de integração para parceiros e da tela Escritório › Integrações: chaves por escritório, escopos de leitura, limites, avisos ao parceiro (webhooks), LGPD e isolamento",
+  "peca": "S7",
+  "refs": [
+    "PT-15"
+  ],
+  "status": "feito",
+  "ordem": 76,
+  "evidencia": "Desenho técnico em docs/design/aprovadas/portal-integracoes/API.md, aprovado pela Carol em 22/11/2026 às 11h10 (Bahia) com as 5 recomendações; tela em docs/design/aprovadas/portal-integracoes/ (17 estados, computador e celular, axe sem violação), aprovada em 22/11/2026 às 13h15 (Bahia) com as 5 recomendações do NOTAS.md"
+}
