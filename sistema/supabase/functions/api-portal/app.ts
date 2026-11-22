@@ -39,6 +39,7 @@ import type { AdminAuth } from "../_shared/auth.ts";
 import { entregarWhatsapp, type EntregaWhatsapp } from "./envio_whatsapp.ts";
 import { criarApp } from "../_shared/app.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
+import { baixarDocumentoCobranca, type DocumentoCobranca } from "../_shared/cobranca_pdf.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { rotasPeticoes } from "./peticoes.ts";
@@ -178,6 +179,16 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Escritório › Plano e faturas (F1.18, CO-06): só o sócio dono; o banco confere.
   app.get("/v1/escritorio/faturas", async (c) =>
     c.json(await deps.banco.rpc("portal_plano_faturas", { p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") })));
+
+  // O PDF da fatura e o recibo do T3jus (F1.21): só o sócio dono, e só com os dados do T3jus completos.
+  for (const [rota, recibo] of [["pdf", false], ["recibo", true]] as const) {
+    app.get(`/v1/escritorio/faturas/:fatura/${rota}`, async (c) => {
+      const d = await deps.banco.rpc<DocumentoCobranca>("portal_plano_faturas_documento", {
+        p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId"), p_fatura: idDaRota(c, "fatura"), p_recibo: recibo,
+      });
+      return c.json(await baixarDocumentoCobranca(deps.arquivos, c.get("escritorioId"), d, recibo));
+    });
+  }
 
   // Equipe do escritório (PA-02): só o sócio dono. O banco confere em cada chamada.
   const quem = (c: Context<VarsPortal>) => ({ p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") });

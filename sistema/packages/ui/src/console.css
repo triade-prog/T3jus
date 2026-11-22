@@ -2158,3 +2158,11 @@
 .co .end-falta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}.co .end-falta .cb-peq{flex-basis:100%}
 .co .end-falta .end-link{font:inherit;font-weight:500;color:var(--vinho);background:none;border:0;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;min-height:24px;text-decoration:underline;text-underline-offset:2px}
 @media (max-width:760px){.co .end-grade{grid-template-columns:1fr}.co .end-grade>*{grid-column:1/-1!important}.co .end-grupo{padding:12px}}
+/* Baixar o PDF da fatura e do recibo (F1.21, desenho cobranca-pdfs): o padrão do PDF do contrato */
+.co .pdf-gira{width:16px;height:16px;border-radius:50%;border:2px solid var(--sal-2);border-top-color:var(--vinho);animation:pdf-gira .9s linear infinite;flex:none}
+@keyframes pdf-gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.co .pdf-gira{animation:none;border-right-color:var(--vinho)}}
+.co .pdf-status{margin:0;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--texto-2)}
+.co .pdf-status b{color:var(--texto);font-weight:500}
+.co .pdf-erro .aviso{margin:0}
+.co .pdf-erro .codigo{margin:6px 0 0;font-size:11px;color:var(--texto-2);letter-spacing:.04em}

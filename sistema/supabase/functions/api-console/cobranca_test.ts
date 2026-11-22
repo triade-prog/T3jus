@@ -5,6 +5,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { criarApiConsole } from "./app.ts";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
 import { emailCobranca, type EnvioCobranca, type MensagemEmail } from "../_shared/email.ts";
+import { BASE } from "../_shared/cobranca_pdf_exemplos.ts";
 
 const MARTA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const RENATA = "1c8d4f1f-6e2b-4d3c-8f9a-2b3c4d5e6f70";
@@ -40,6 +41,10 @@ function montar(opcoes: { semEmail?: boolean; falhaEmail?: boolean } = {}) {
     console_assinatura: () => ({ valores: true, assinatura: null }),
     console_assinatura_salvar: () => ({ id: "a", versao: 1 }),
     console_portal_so_consulta: () => erroBanco("TC401"),
+    console_fatura_documento: (a) => {
+      if (a.p_recibo) erroBanco("TC422", { motivo: "RECIBO_SO_DE_FATURA_PAGA" });
+      return BASE;
+    },
     rotina_cobranca_envios_pendentes: () => {
       const r = fila;
       fila = [];
@@ -47,9 +52,10 @@ function montar(opcoes: { semEmail?: boolean; falhaEmail?: boolean } = {}) {
     },
     rotina_cobranca_envio_registrar: () => null,
   });
+  const arq = arquivosFalsos();
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
     banco: db.banco, auth: falso.auth, admin: adminFalso({ "renata@cedrolima.adv.br": RENATA }).admin,
-    urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo", arquivos: arquivosFalsos().arquivos,
+    urlApp: "https://console.exemplo", urlPortal: "https://portal.exemplo", arquivos: arq.arquivos,
     emails: opcoes.semEmail ? undefined : {
       enviar: (m) => {
         if (opcoes.falhaEmail) return Promise.reject(new Error("Resend respondeu 500"));
@@ -58,7 +64,7 @@ function montar(opcoes: { semEmail?: boolean; falhaEmail?: boolean } = {}) {
       },
     },
   });
-  return { pedir: pedido(app, "api-console"), mandados, ...db };
+  return { pedir: pedido(app, "api-console"), mandados, arq, ...db };
 }
 
 async function entrar(m: ReturnType<typeof montar>): Promise<string> {
@@ -154,4 +160,22 @@ Deno.test("CO-06: o e-mail da régua é curto e educado, sem juros nem ameaça",
   assert(!cancelada.texto.includes("Ver a fatura"));
   assertStringIncludes(emailCobranca({ ...base, tipo: "RECIBO", fatura: { ...base.fatura, pagaEm: "2026-11-17" } }, "https://app.t3jus.pro", "x@y.z").texto,
     "Recebemos o pagamento da fatura de novembro de 2026 da Cedro & Lima Advocacia, de R$ 968,00, em 17/11/2026.");
+});
+
+Deno.test("F1.21: o PDF da fatura sai na hora, guardado na pasta do escritório, com link curto; o recibo só de fatura paga", async () => {
+  const m = montar();
+  assertEquals((await erro(await m.pedir(`/v1/clientes/${CEDRO}/faturas/${FATURA}/pdf`))).codigo, "UNAUTHORIZED");
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/clientes/${CEDRO}/faturas/${FATURA}/pdf`, { cookie });
+  assertEquals(r.status, 200);
+  const corpo = await r.json();
+  assertEquals(corpo.nome, "fatura-2026-0187.pdf");
+  assertStringIncludes(corpo.url, `${CEDRO}/cobranca/fatura-2026-0187.pdf`);
+  assertEquals(m.chamadas.find((c) => c.funcao === "console_fatura_documento")?.args, { p_pessoa: MARTA, p_escritorio: CEDRO, p_fatura: FATURA, p_recibo: false });
+  const pdf = m.arq.bytes.get(`${CEDRO}/cobranca/fatura-2026-0187.pdf`)!;
+  assertEquals(new TextDecoder().decode(pdf.slice(0, 5)), "%PDF-");
+  // De novo: troca o anterior (a fatura pode ter mudado de situação).
+  assertEquals((await m.pedir(`/v1/clientes/${CEDRO}/faturas/${FATURA}/pdf`, { cookie })).status, 200);
+  const recibo = await erro(await m.pedir(`/v1/clientes/${CEDRO}/faturas/${FATURA}/recibo`, { cookie }));
+  assertEquals(recibo.detalhes?.motivo, "RECIBO_SO_DE_FATURA_PAGA");
 });

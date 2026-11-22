@@ -10,7 +10,9 @@ import {
   brl, competenciaCurta, dataBr, detalheFatura, diaMes, FORMA_ICONE, PASSO_REGUA, porDia, seloFatura, textoEvento,
   type CarneCb, type EventoCb, type FaturaCb,
 } from "./cobranca.ts";
+import { Aviso } from "./pecas.tsx";
 import { hora } from "./tempo.ts";
+import type { ErroApi, Resposta } from "../api.ts";
 
 export const hrefFatura = (escritorio: string, fatura: string) => `/cobranca/faturas/${escritorio}/${fatura}`;
 export const hrefAssinatura = (escritorio: string) => `/clientes/${escritorio}/assinatura`;
@@ -468,5 +470,82 @@ export function FolhaCarne({ carne, aviso, acoes, rodape, classe = "folha", titu
         <span>{rodape}</span>
       </p>
     </section>
+  );
+}
+
+/**
+ * Baixar o PDF da fatura, do recibo ou do carnê (F1.21, desenho cobranca-pdfs, decisão 17): o
+ * botão vira "Preparando o PDF" (aria-disabled, não disabled), a linha role=status diz que o
+ * arquivo baixa sozinho e, se falhar, um aviso role=alert preso ao botão, com "Tentar de novo" e
+ * o código. É o padrão aprovado do PDF do contrato.
+ */
+export function useBaixarDoc(chamar: (caminho: string) => Promise<Resposta<{ url: string }>>) {
+  const [preparando, setPreparando] = useState<string | null>(null);
+  const [falhou, setFalhou] = useState<{ chave: string; caminho: string; erro: ErroApi } | null>(null);
+  async function baixar(chave: string, caminho: string) {
+    if (preparando) return;
+    setFalhou(null);
+    setPreparando(chave);
+    const r = await chamar(caminho);
+    setPreparando(null);
+    if (!r.ok) return setFalhou({ chave, caminho, erro: r.erro });
+    window.location.assign(r.dados.url);
+  }
+  return { baixar, preparando, falhou };
+}
+export type BaixarDoc = ReturnType<typeof useBaixarDoc>;
+
+export function BotaoBaixarDoc({ doc, chave, caminho, rotulo, sr, classe = "btn btn-sec" }: {
+  doc: BaixarDoc; chave: string; caminho: string; rotulo: string; sr?: string; classe?: string;
+}) {
+  const compacto = classe.includes("btn-compacto");
+  if (doc.preparando === chave) {
+    return (
+      <button className={classe} type="button" aria-disabled="true" aria-describedby={`doc-st-${chave}`}>
+        <span className="pdf-gira" aria-hidden="true" />
+        Preparando o PDF{sr ? <span className="sr">: {sr}</span> : null}
+      </button>
+    );
+  }
+  return (
+    <button className={classe} type="button" onClick={() => void doc.baixar(chave, caminho)}>
+      <Icone nome="baixar" className={compacto ? "ico ico-s" : "ico"} />
+      {rotulo}
+      {sr ? <span className="sr"> {sr}</span> : null}
+    </button>
+  );
+}
+
+/** A linha "Preparando" e o erro, logo abaixo do botão. `de`: "da fatura de dezembro". */
+export function SituacaoDoc({ doc, chave, de, nadaMudou, contato }: { doc: BaixarDoc; chave: string; de: string; nadaMudou: string; contato: string }) {
+  const erro = doc.falhou?.chave === chave ? doc.falhou : null;
+  const codigo = erro ? String(erro.erro.detalhes?.motivo ?? erro.erro.codigo) : "";
+  return (
+    <>
+      <div id={`doc-st-${chave}`} role="status">
+        {doc.preparando === chave ? (
+          <p className="pdf-status">
+            <Icone nome="relogio" className="ico ico-s" />
+            <span>
+              <b>Preparando o PDF {de}.</b> Leva alguns segundos; o arquivo baixa sozinho.
+            </span>
+          </p>
+        ) : null}
+      </div>
+      {erro ? (
+        <div className="pdf-erro">
+          <Aviso tom="urgencia" titulo={`Não deu para preparar o PDF ${de}.`}
+            acoes={
+              <button className="btn btn-sec btn-compacto" type="button" onClick={() => void doc.baixar(erro.chave, erro.caminho)}>
+                <Icone nome="reenviar" className="ico ico-s" />
+                Tentar de novo<span className="sr">: PDF {de}</span>
+              </button>
+            }>
+            {nadaMudou} Tente de novo em instantes; se não sair, escreva para {contato}.
+          </Aviso>
+          <p className="codigo">{codigo}</p>
+        </div>
+      ) : null}
+    </>
   );
 }

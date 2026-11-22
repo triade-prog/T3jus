@@ -53,6 +53,7 @@ import {
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
+import { baixarDocumentoCobranca, type DocumentoCobranca } from "../_shared/cobranca_pdf.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
@@ -797,6 +798,14 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   // atende e se a fatura é dele.
   app.get("/v1/clientes/:id/faturas/:fatura", async (c) =>
     c.json(await rpc("console_cobranca_fatura", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id"), p_fatura: idDaRota(c, "fatura") })));
+  // O PDF da fatura e o do recibo (F1.21, desenho cobranca-pdfs): montados na hora, com a fatura como está.
+  for (const [rota, recibo] of [["pdf", false], ["recibo", true]] as const) {
+    app.get(`/v1/clientes/:id/faturas/:fatura/${rota}`, async (c) => {
+      const id = idDaRota(c, "id");
+      const d = await rpc<DocumentoCobranca>("console_fatura_documento", { p_pessoa: pessoa(c), p_escritorio: id, p_fatura: idDaRota(c, "fatura"), p_recibo: recibo });
+      return c.json(await baixarDocumentoCobranca(deps.arquivos, id, d, recibo));
+    });
+  }
   app.post("/v1/clientes/:id/faturas/:fatura/pagamento-manual", async (c) => {
     const id = idDaRota(c, "id");
     const fatura = idDaRota(c, "fatura");

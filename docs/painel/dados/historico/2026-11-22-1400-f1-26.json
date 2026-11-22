@@ -1,0 +1,9 @@
+{
+  "data": "22/11/2026",
+  "inicio": "14:00",
+  "fim": "18:30",
+  "texto": "PDF da fatura e do recibo da cobrança dos escritórios (F1.26): migration 0695, o PDF montado na api-console e na api-portal e os botões de baixar no Console e no Portal, com Preparando e erro com código. O Portal só oferece quando os dados do T3jus como emissor estiverem completos.",
+  "refs": [
+    "CO-06"
+  ]
+}

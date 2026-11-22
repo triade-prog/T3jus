@@ -12,7 +12,9 @@ import { brl, centavosDe, dataBr, diasEntre, lerDataBr, numeroFatura, reaisDe, t
 import { formatarCnpj } from "./ficha.ts";
 import { CARTEIRA, chamarConsole, COBRANCA, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
-import { ComoPagar, FormaFatura, hrefAssinatura, HistoricoFatura, ProximosLembretes, SeloFatura } from "./PecasCobranca.tsx";
+import {
+  BotaoBaixarDoc, ComoPagar, FormaFatura, hrefAssinatura, HistoricoFatura, ProximosLembretes, SeloFatura, SituacaoDoc, useBaixarDoc,
+} from "./PecasCobranca.tsx";
 import { hora } from "./tempo.ts";
 
 /** Como foi pago, no registro manual (nomes do desenho). */
@@ -315,6 +317,7 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
   const [feito, setFeito] = useState<{ titulo: string; texto: string } | null>(null);
   const [lembrando, setLembrando] = useState(false);
   const [erroLembrete, setErroLembrete] = useState<ErroApi | null>(null);
+  const doc = useBaixarDoc((caminho) => chamarConsole<{ url: string }>(caminho));
   const carregar = useCallback(async () => {
     setErro(null);
     const r = await chamarConsole<FaturaAberta>(`/v1/clientes/${escritorioId}/faturas/${faturaId}`);
@@ -600,6 +603,23 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
                       </h2>
                     </div>
                     <div className="cb-acoes">
+                      {(() => {
+                        // A fatura em PDF sai em qualquer situação; o recibo, só da fatura paga (F1.21).
+                        const base = `/v1/clientes/${f.escritorio.id}/faturas/${f.id}`;
+                        const de = `de ${mes}`;
+                        return (
+                          <>
+                            <BotaoBaixarDoc doc={doc} chave="fatura" caminho={`${base}/pdf`} rotulo="Baixar a fatura (PDF)" />
+                            <SituacaoDoc doc={doc} chave="fatura" de={`da fatura ${de}`} nadaMudou="Nada mudou na fatura." contato="o suporte" />
+                            {f.situacao === "PAGA" ? (
+                              <>
+                                <BotaoBaixarDoc doc={doc} chave="recibo" caminho={`${base}/recibo`} rotulo="Baixar o recibo (PDF)" />
+                                <SituacaoDoc doc={doc} chave="recibo" de={`do recibo ${de}`} nadaMudou="Nada mudou no pagamento." contato="o suporte" />
+                              </>
+                            ) : null}
+                          </>
+                        );
+                      })()}
                       {aberta && f.permissoes.editar ? (
                         <>
                           <button className="btn btn-pri" type="button" onClick={() => { setFeito(null); setJanela("pagar"); }}>
