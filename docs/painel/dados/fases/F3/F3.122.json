@@ -1,0 +1,11 @@
+{
+  "id": "F3.122",
+  "texto": "Baixar o contrato no cabeçalho da ficha do contrato (Word e PDF nas três abas; com o assinado, só o assinado; sem documento, Gerar o contrato) e a trilha sem \"Contratos › Contratos\"",
+  "peca": "S6",
+  "refs": [
+    "CH-08"
+  ],
+  "status": "feito",
+  "ordem": 980,
+  "evidencia": "BaixarContratoNoCabecalho em packages/ui/src/portal/Procuracoes.tsx com a conta baixarNoCabecalho em procuracoes.ts (vitest procuracoes.test.ts, 5 testes) e trilhaDaArea em areas.ts (vitest portal.test.ts, 2 testes); e2e 'D29' em tests/e2e/portal-procuracoes.spec.ts (2 testes, celular e computador, com axe). Sem migration nem mudança na api-portal. Desenho aprovado em docs/design/aprovadas/portal-contrato-pdf-na-ficha (D29)."
+}

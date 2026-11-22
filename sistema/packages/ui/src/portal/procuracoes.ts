@@ -5,7 +5,7 @@
 
 import {
   cidadeDataDocumento, CODIGOS_PODERES, DOCUMENTOS_CONTRATO, fraseOutorgados, outorgadosEscolhidos,
-  type DadosDocumentos, type EscolhasDocumentos, type ModeloEmUso, type PoderEspecial, type TipoDocumentoContrato,
+  type Anexo, type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ModeloEmUso, type PoderEspecial, type TipoDocumentoContrato,
 } from "@t3jus/domain";
 
 export const ROTAS_DOCUMENTOS = {
@@ -212,4 +212,40 @@ export function rotuloAssinado(tipo: TipoDocumentoContrato): string {
   if (tipo === "PROCURACAO") return "Procuração assinada";
   if (tipo === "HIPOSSUFICIENCIA") return "Declaração assinada";
   return "Documento assinado";
+}
+
+// ------------------------------------------------------------- Baixar o contrato no cabeçalho (D29)
+
+const diaBrasilia = (em: string) => {
+  const d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
+  return `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+};
+
+/** O que a linha "Baixar o contrato" do cabeçalho da ficha mostra (D29, docs/design/aprovadas/portal-contrato-pdf-na-ficha). */
+export type BaixarNoCabecalho =
+  | { tipo: "gerado"; documentoId: string; qual: string }
+  | { tipo: "assinado"; anexoId: string; nome: string; formato: "PDF" | "foto"; qual: string }
+  | { tipo: "gerar" }
+  | null;
+
+/**
+ * Sai sempre o contrato de honorários da versão mais recente gerada; com o assinado dessa versão,
+ * só o assinado (pergunta 4). Sem contrato gerado: o assinado da folha Assinatura (pergunta 3),
+ * senão "Gerar o contrato" para quem pode e fora de encerrado (pergunta 2). Nada enquanto carrega.
+ */
+export function baixarNoCabecalho(
+  docs: DocumentosDoContrato | null | "erro", assinados: Anexo[] | null, situacao: "ELABORACAO" | "ATIVO" | "ENCERRADO",
+): BaixarNoCabecalho {
+  if (!docs || docs === "erro") return null;
+  const doc = docs.documentos.find((d) => d.tipo === "CONTRATO");
+  const formato = (nome: string) => (/\.pdf$/i.test(nome) ? "PDF" as const : "foto" as const);
+  if (doc) {
+    const a = doc.atual.assinados[0];
+    if (a) return { tipo: "assinado", anexoId: a.anexoId, nome: a.nome, formato: formato(a.nome), qual: `${a.nome} · anexado em ${diaBrasilia(a.enviadoEm)}` };
+    return { tipo: "gerado", documentoId: doc.atual.id, qual: `v${doc.atual.numero} · gerado em ${diaBrasilia(doc.atual.geradoEm)}` };
+  }
+  const a = assinados?.[0];
+  if (a) return { tipo: "assinado", anexoId: a.id, nome: a.nome, formato: formato(a.nome), qual: `${a.nome} · anexado em ${diaBrasilia(a.enviadoEm)}` };
+  if (docs.podeGerar && situacao !== "ENCERRADO") return { tipo: "gerar" };
+  return null;
 }

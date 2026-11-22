@@ -29,7 +29,7 @@ import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { ROTAS_FINANCEIRO, seloParcela } from "./financeiro.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { HistoricoRecebimentos, JanelaFoiPaga, JanelaNaoPaga, textoAtraso } from "./NaoPaga.tsx";
-import { DocumentosDaFicha, feitoDosAssinados, JanelaAssinados, proximoDosDocumentos } from "./Procuracoes.tsx";
+import { BaixarContratoNoCabecalho, DocumentosDaFicha, feitoDosAssinados, JanelaAssinados, proximoDosDocumentos } from "./Procuracoes.tsx";
 
 type Aba = "contrato" | "recebimentos" | "documentos";
 type Feito = { titulo: string; texto: string };
@@ -659,6 +659,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
               </p>
             </div>
           </div>
+          <BaixarContratoNoCabecalho f={f} docs={docs} assinados={assinados} />
         </div>
         <Dir f={f} aoAssinar={() => setJanela("assinatura")} docs={proximoDosDocumentos(docs)} aoAnexarDocs={() => setJanelaDocs({})} />
       </div>

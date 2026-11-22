@@ -7,7 +7,7 @@ import { AREAS_PORTAL, type AreaPortal } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
 import { Carregando, ErroAoCarregar, Estado } from "../console/pecas.tsx";
 import { primeiroNome } from "./equipe.ts";
-import { rotaArea, SECOES_AREA } from "./areas.ts";
+import { SECOES_AREA, trilhaDaArea } from "./areas.ts";
 import { MolduraPortal, ROTAS_PORTAL, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
 
 export function MolduraArea({ area, secao, trilha = [], pagina = "co-equipe co-carteira", children }: {
@@ -21,7 +21,7 @@ export function MolduraArea({ area, secao, trilha = [], pagina = "co-equipe co-c
   const { escritorio, erro, recarregar } = useEscritorioPortal();
   const nome = AREAS_PORTAL[area];
   const s = SECOES_AREA[area].find((x) => x.chave === secao) ?? SECOES_AREA[area][0]!;
-  const base = [{ nome, href: rotaArea(area) }, trilha.length ? { nome: s.nome, href: rotaArea(area, s.chave) } : { nome: s.nome }, ...trilha];
+  const base = trilhaDaArea(area, nome, s, trilha);
 
   if (erro || !escritorio) {
     return (

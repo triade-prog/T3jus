@@ -1,0 +1,11 @@
+{
+  "id": "D29",
+  "texto": "Desenho do Baixar o contrato no cabeçalho da ficha: Word e PDF nas três abas, o assinado, Gerar o contrato quando não há documento e a trilha sem \"Contratos › Contratos\"",
+  "peca": "S6",
+  "refs": [
+    "CH-08"
+  ],
+  "status": "feito",
+  "ordem": 79,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-contrato-pdf-na-ficha/ (5 estados, computador e celular, axe sem violação), aprovado pela Carol em 22/11/2026 às 19h24 (Bahia) com as 5 recomendações do NOTAS.md"
+}
