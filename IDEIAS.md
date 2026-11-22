@@ -42,6 +42,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CH-07 | Uma etapa do caso gera a cobrança e avisa o financeiro (ex.: requisição expedida vira valor a receber com data prevista) | [V1] |
 | CH-08 | Procuração e contrato de honorários gerados com os dados do cliente e dos advogados (nome, OAB), com a declaração de hipossuficiência quando houver, no papel timbrado do escritório, em arquivo editável | [VAL] |
 | CH-09 | Assinatura eletrônica do contrato de honorários e da procuração | [VAL] |
+| CH-10 | Ao registrar a assinatura do contrato, o cliente vai direto para Jurídico › Casos e processos: o caso abre já preenchido com os dados do contrato (ou o cliente entra num caso que já existe), e o contrato de consultoria pode dizer que não tem caso (Carol pediu em 21/11/2026) | [V1] |
 
 ## 4. Financeiro e repasses
 
@@ -194,7 +195,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 |---|---|
 | 1. Painel do dia | 7 |
 | 2. Atendimento e propostas | 6 |
-| 3. Contratos e honorários | 9 |
+| 3. Contratos e honorários | 10 |
 | 4. Financeiro e repasses | 23 |
 | 5. Execução jurídica | 15 |
 | 6. Indicadores | 15 |
@@ -203,4 +204,4 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 6 |
 | 11. Portal do advogado | 6 |
-| **Total** | **127** |
+| **Total** | **128** |
