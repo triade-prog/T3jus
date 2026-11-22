@@ -12,7 +12,7 @@
     "AP-08",
     "EX-18"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 80,
-  "proximo": "Desenho da jornada do cliente com a especialista de frontend, depois a aprovação da Carol"
+  "evidencia": "Desenho em docs/design/aprovadas/portal-jornada-fechamento/ (40 estados, computador e celular, axe sem violação), aprovado pela Carol em 22/11/2026 às 20h22 (Bahia) com as 11 recomendações do NOTAS.md; a pergunta 5 ficou sem desenho (F3.132)"
 }
