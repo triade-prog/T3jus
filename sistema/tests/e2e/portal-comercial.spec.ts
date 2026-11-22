@@ -508,6 +508,33 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await semViolacoes(page);
   });
 
+  test("Período fica numa linha só e a tabela da Origem cabe na folha", async ({ page }) => {
+    await simular(page, comuns());
+    for (const [w, h] of [[1600, 1000], [1440, 900], [1280, 800], [1024, 768], [390, 844]]) {
+      await page.setViewportSize({ width: w, height: h });
+      for (const rota of ["origem", "funil"]) {
+        await page.goto(`${P}/comercial/${rota}`);
+        const grupo = page.getByRole("group", { name: "Período" });
+        await expect(grupo).toBeVisible();
+        const tops = await grupo.getByRole("button").evaluateAll((bs) => bs.map((b) => Math.round(b.getBoundingClientRect().top)));
+        expect(new Set(tops).size, `${rota} em ${w}px: período numa linha`).toBe(1);
+        const alturas = await grupo.getByRole("button").evaluateAll((bs) => bs.map((b) => b.getBoundingClientRect().height));
+        for (const a of alturas) expect(a).toBeGreaterThanOrEqual(44);
+        await expect(grupo.getByRole("button", { name: "90 dias" })).toHaveAttribute("aria-pressed", "true");
+      }
+      // Nada da Origem sai da folha (antes, a última coluna era cortada).
+      await page.goto(`${P}/comercial/origem`);
+      await expect(page.getByRole("row").filter({ hasText: "Indicação de cliente" })).toBeVisible();
+      const vaza = await page.locator(".cm-org-tab").evaluate((t) => {
+        const f = t.closest(".folha")!.getBoundingClientRect();
+        // Nos cartões, o cabeçalho fica escondido só para o leitor de tela (1 px): ele não conta.
+        const cab = t.querySelector("thead")!.getBoundingClientRect().width > 1 ? "th, td" : "td";
+        return Math.max(0, ...Array.from(t.querySelectorAll(cab)).map((c) => c.getBoundingClientRect().right - f.right));
+      });
+      expect(vaza, `Origem em ${w}px: nada sai da folha`).toBeLessThanOrEqual(0.5);
+    }
+  });
+
   test("Quem não tem a área Comercial vê quem libera", async ({ page }) => {
     await simular(page, comuns(SEM_AREA));
     await page.goto(`${P}/comercial/propostas`);

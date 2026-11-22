@@ -62,9 +62,9 @@ export function SeloRetorno({ r, hoje, prefixo = "", semData = "—" }: { r: { e
   return <span className={prefixo ? "hn-sem" : "num"}>{prefixo ? `${prefixo}em ${diaCurto(r.em)}` : q === diaCurto(r.em) ? q : `${diaCurto(r.em)} · ${q}`}</span>;
 }
 
-export function Chips({ rotulo, opcoes, atual, aoEscolher }: { rotulo: string; opcoes: { v: string; t: string }[]; atual: string; aoEscolher: (v: string) => void }) {
+export function Chips({ rotulo, opcoes, atual, aoEscolher, classe }: { rotulo: string; opcoes: { v: string; t: string }[]; atual: string; aoEscolher: (v: string) => void; classe?: string }) {
   return (
-    <div className="chips" role="group" aria-label={rotulo}>
+    <div className={classe ? `chips ${classe}` : "chips"} role="group" aria-label={rotulo}>
       {opcoes.map((o) => (
         <button key={o.v} type="button" aria-pressed={o.v === atual} onClick={() => aoEscolher(o.v)}>{o.t}</button>
       ))}
@@ -478,7 +478,7 @@ export function PropostasComercial() {
 // ------------------------------------------------------------------------- Funil e Origem
 
 function Periodo({ atual, aoEscolher }: { atual: PeriodoComercial; aoEscolher: (p: PeriodoComercial) => void }) {
-  return <Chips rotulo="Período" atual={atual} aoEscolher={(v) => aoEscolher(v as PeriodoComercial)}
+  return <Chips rotulo="Período" classe="cm-periodo" atual={atual} aoEscolher={(v) => aoEscolher(v as PeriodoComercial)}
     opcoes={(["30", "90", "12"] as PeriodoComercial[]).map((k) => ({ v: k, t: PERIODOS_COMERCIAL[k] }))} />;
 }
 
@@ -535,7 +535,7 @@ function FunilConteudo() {
     <div className="hn">
       {cab}
       <section className="folha" aria-labelledby="t-cv">
-        <div className="folha-cab">
+        <div className="folha-cab cm-cab-per">
           <div>
             <h2 id="t-cv">Quanto vira contrato</h2>
             <p className="sub">Primeiros contatos de {per} e o que aconteceu com cada um.</p>
@@ -633,7 +633,7 @@ function OrigemConteudo() {
       <div className="hn-grade">
         <div className="hn-col">
           <section className="folha" aria-labelledby="t-or" style={{ overflow: "hidden" }}>
-            <div className="folha-cab">
+            <div className="folha-cab cm-cab-per">
               <div>
                 <h2 id="t-or">De onde vêm os clientes</h2>
                 <p className="sub">{contar(d.total, "primeiro contato", "primeiros contatos")} de {textoPeriodo(d.de, d.ate)}. A origem é a que foi marcada no cadastro do cliente.</p>
@@ -647,7 +647,7 @@ function OrigemConteudo() {
                   <span><i style={{ background: "var(--vinho-4)" }} />recebeu proposta, não fechou</span>
                   <span><i style={{ background: "var(--ambar-2)" }} />só o primeiro contato</span>
                 </div>
-                <table className="hn-tab">
+                <table className="hn-tab cm-org-tab">
                   <caption className="sr">Origem dos contatos</caption>
                   <colgroup>{["31%", "11%", "11%", "11%", "17%", "19%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                   <thead>

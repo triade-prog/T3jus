@@ -1,0 +1,12 @@
+{
+  "id": "F3.122",
+  "texto": "Arrumar o período (30 dias, 90 dias, 12 meses) da Origem dos contatos e do Funil numa pílula única que não se parte, e a coluna \"Contratado (valor certo)\" da Origem que saía cortada",
+  "peca": "S2",
+  "refs": [
+    "AP-03",
+    "AP-04"
+  ],
+  "status": "feito",
+  "ordem": 963,
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-origem-periodo; portal.css (.cm-cab-per, .chips.cm-periodo, .cm-org-tab e cartões em folha estreita) e Comercial.tsx; e2e tests/e2e/portal-comercial.spec.ts (38 passam, com o novo \"Período fica numa linha só e a tabela da Origem cabe na folha\")"
+}
