@@ -12,14 +12,16 @@ import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { dataCurta, hora } from "../console/tempo.ts";
-import { diaCurto, lerDia } from "./agenda.ts";
+import { diaCurto } from "./agenda.ts";
 import { Selo } from "./Comercial.tsx";
 import { fraseDoContrato, janelaProgramacao, juntarItens, nomeSituacaoContrato, ROTAS_CONTRATOS, SELO_CONTRATO } from "./contratos.ts";
 import { Toast } from "./FichaCliente.tsx";
 import { FolhaCarne } from "./Carne.tsx";
 import { JanelaInscricoes, PessoasOab } from "./ContratoOab.tsx";
 import { CondicoesLeitura, SeloTipo } from "./Honorarios.tsx";
-import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
+import { chamarPortal, irPara, type EscritorioPortal } from "./Moldura.tsx";
+import { JanelaAssinaturaCaso } from "./CasoDaAssinatura.tsx";
+import { ROTAS_JURIDICO } from "./juridico.ts";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { abrirAnexo, CampoAnexo, enviarAnexo } from "./Anexos.tsx";
 import { tamanhoLegivel } from "../console/documentos.ts";
@@ -494,79 +496,6 @@ function LinhaRecebimento({ r, f, hoje, aoFoiPaga, comSituacao }: {
   );
 }
 
-function JanelaAssinatura({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: FichaContrato; aoFechar: () => void; aoFeito: (n: number) => void }) {
-  const hoje = hojeBrasilia();
-  const [em, setEm] = useState(dataBr(hoje));
-  const [erro, setErro] = useState(false);
-  const [falha, setFalha] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
-  const [arquivo, setArquivo] = useState<File | null>(null);
-  const [erroArq, setErroArq] = useState<string | null>(null);
-  const [progresso, setProgresso] = useState<number | null>(null);
-  const [anexado, setAnexado] = useState(false);
-  const corpo = useRef<HTMLDivElement>(null);
-  async function enviar() {
-    const dia = lerDia(em);
-    setFalha(null);
-    const semData = !dia || dia > hoje;
-    const semArquivo = !anexado && !arquivo ? "Anexe o contrato assinado: PDF ou a foto das páginas." : !anexado ? erroArq : null;
-    setErro(semData);
-    setErroArq(semArquivo);
-    if (semData || semArquivo) return focarPrimeiroErro(corpo.current);
-    setEnviando(true);
-    // Primeiro o arquivo; a assinatura só se registra com ele guardado.
-    if (!anexado && arquivo) {
-      setProgresso(0);
-      const e = await enviarAnexo("CONTRATO", f.id, arquivo, null, setProgresso);
-      setProgresso(null);
-      if (e) {
-        setEnviando(false);
-        return setFalha(`O arquivo não foi guardado, e a assinatura não foi registrada. ${e}`);
-      }
-      setAnexado(true);
-    }
-    const r = await chamarPortal<{ recebimentos: number }>(`/v1/escritorio/contratos/${f.id}/assinatura`, { metodo: "POST", corpo: { versao: f.versao, assinadoEm: dia } });
-    setEnviando(false);
-    if (r.ok) return aoFeito(r.dados.recebimentos);
-    if (r.erro.codigo === "VALIDATION_ERROR") {
-      setErro(true);
-      return focarPrimeiroErro(corpo.current);
-    }
-    setFalha(r.erro.codigo === "VERSION_CONFLICT" ? "Alguém mudou este contrato agora há pouco. Feche, recarregue a página e registre de novo." : textoDoErro(r.erro));
-  }
-  return (
-    <Janela id="j-assinatura" aberta={aberta} aoFechar={aoFechar} sobretitulo={`${f.numero} · ${f.cliente.nome}`} titulo="Registrar assinatura" descricao="j-assinatura-d"
-      aoEnviar={() => void enviar()}
-      pe={
-        <>
-          <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
-          <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
-            <Icone nome="check" className="ico" />
-            Registrar e ativar
-          </button>
-        </>
-      }>
-      <div ref={corpo} style={{ display: "grid", gap: 16 }}>
-        <p id="j-assinatura-d">Anexe o contrato assinado e diga a data. O contrato fica ativo e a programação dos recebimentos passa a existir, a partir de hoje. Fica no histórico, com seu nome e a hora.</p>
-        {falha ? <Aviso tom="urgencia" titulo="A assinatura não foi registrada.">{falha}</Aviso> : null}
-        <div className="campo">
-          <label htmlFor="as-data">Data da assinatura</label>
-          <input className="entrada" id="as-data" type="text" inputMode="numeric" autoComplete="off" value={em} onChange={(e) => setEm(e.target.value)} data-foco=""
-            aria-invalid={erro || undefined} aria-describedby={descritoPor("as-data-aj", erro && "as-data-er")} />
-          <p className="ajuda" id="as-data-aj">dd/mm/aaaa. Hoje ou antes, desde a criação do contrato.</p>
-          {erro ? <ErroCampo id="as-data-er">Escreva a data da assinatura, hoje ou antes, desde que o contrato foi criado, no formato dd/mm/aaaa.</ErroCampo> : null}
-        </div>
-        {anexado ? (
-          <Aviso tom="sucesso" titulo="O arquivo assinado já está guardado.">Falta só registrar a assinatura.</Aviso>
-        ) : (
-          <CampoAnexo rotulo="Contrato assinado" opcional={false} ajuda="O PDF digitalizado ou as fotos das páginas, num arquivo só."
-            arquivo={arquivo} aoEscolher={(a, e) => { setArquivo(e ? null : a); setErroArq(e); }} erro={erroArq} progresso={progresso} />
-        )}
-      </div>
-    </Janela>
-  );
-}
-
 function JanelaAnexarAssinado({ f, aoFechar, aoFeito }: { f: FichaContrato; aoFechar: () => void; aoFeito: () => void }) {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -767,12 +696,20 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             </aside>
           </div>
         )}
-      <JanelaAssinatura key={janela === "assinatura" ? "a" : "x"} aberta={janela === "assinatura"} f={f} aoFechar={() => setJanela(null)}
-        aoFeito={(n) => {
-          setJanela(null);
-          setFeito({ titulo: "Assinatura registrada", texto: `O contrato está ativo. ${n === 1 ? "1 recebimento foi programado" : `${n} recebimentos foram programados`}.` });
-          void carregar();
-        }} />
+      {janela === "assinatura" ? (
+        // A mesma janela da ficha do cliente (F3.111, decisão 21): a assinatura abre o caso.
+        <JanelaAssinaturaCaso aberta contrato={f.id} aoFechar={() => setJanela(null)}
+          aoFeito={(r) => {
+            if (r.casoId && r.podeVerCaso) return irPara(`${ROTAS_JURIDICO.caso(r.casoId)}?assinado=1`);
+            setJanela(null);
+            const n = r.recebimentos;
+            setFeito({
+              titulo: "Assinatura registrada",
+              texto: `O contrato está ativo. ${n === 1 ? "1 recebimento foi programado" : `${n} recebimentos foram programados`}.${r.semCaso ? " Ele ficou sem caso." : r.casoId ? ` O caso abriu em Jurídico${r.responsavel ? `, com ${r.responsavel}` : ""}.` : ""}`,
+            });
+            void carregar();
+          }} />
+      ) : null}
       <JanelaEncerrar key={janela === "encerrar" ? "e" : "y"} aberta={janela === "encerrar"} f={ficha} aoFechar={() => setJanela(null)}
         aoFeito={(n) => {
           setJanela(null);

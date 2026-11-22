@@ -4,6 +4,7 @@
 // vê e edita a ficha, sem origem, próximo contato nem atendimentos; só o Comercial inativa;
 // atendimento não se edita nem se apaga; a lista de origens é fixa.
 
+import type { ContagensCliente, NoEscritorio, PassoCliente } from "./ficha_ligada.ts";
 import { z } from "zod";
 import { normalizarTelefone, cnpjValido, UFS } from "./console.ts";
 
@@ -345,6 +346,8 @@ export interface ClienteLinha {
   exclusao?: { em: string; protocolo: string };
   /** Só no cliente arquivado a pedido (F1.16). */
   arquivamento?: { em: string; protocolo: string };
+  /** O próximo passo (F3.110), só nos ativos. */
+  passo?: PassoCliente;
 }
 export interface ListaClientes {
   comercial: boolean;
@@ -408,6 +411,10 @@ export interface FichaCliente {
   arquivamento?: (PedidoExclusao & { em: string }) | null;
   /** Só para a dona: o contrato e o processo que fazem o pedido virar arquivamento (F1.16). */
   vinculosLgpd?: VinculosLgpd | null;
+  /** O próximo passo, as contagens das abas e o "No escritório" (F3.110). Não vêm no excluído nem no arquivado. */
+  passo?: PassoCliente;
+  contagens?: ContagensCliente;
+  noEscritorio?: NoEscritorio;
 }
 
 export interface VinculosLgpd {

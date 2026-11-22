@@ -1153,10 +1153,20 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
   }, [carregar, vez]);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
-    if (!q.has("criado")) return;
+    // Da assinatura do contrato (CH-10, F3.111): o caso abriu junto.
+    const assinado = q.has("assinado");
+    // Da ficha do cliente (F3.111): "Abrir o caso" de um contrato já assinado.
+    const aberto = q.has("aberto");
+    if (!q.has("criado") && !assinado && !aberto) return;
     q.delete("criado");
+    q.delete("assinado");
+    q.delete("aberto");
     window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
-    void Promise.resolve().then(() => setFeito({ titulo: "Caso cadastrado", texto: "Ele está na lista de Casos e processos, na etapa escolhida." }));
+    void Promise.resolve().then(() => setFeito(aberto
+      ? { titulo: "Caso aberto", texto: "O cliente e o contrato estão neste caso. Número, vara e parte contrária entram aqui quando houver." }
+      : assinado
+      ? { titulo: "Assinatura registrada e caso aberto", texto: "O contrato está ativo e o caso está em Casos e processos, na primeira etapa. Número, vara e parte contrária entram aqui quando houver." }
+      : { titulo: "Caso cadastrado", texto: "Ele está na lista de Casos e processos, na etapa escolhida." }));
   }, []);
 
   if (f === "erro") return <ErroAoCarregar oque="o caso" aoTentar={() => setVez((v) => v + 1)} />;

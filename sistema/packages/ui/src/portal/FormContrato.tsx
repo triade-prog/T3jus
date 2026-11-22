@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  conferirCondicao, dataBr, hojeBrasilia, reais,
+  AREAS_DIREITO, conferirCondicao, dataBr, hojeBrasilia, reais,
   type ClienteLinha, type Condicao, type FichaContrato, type ListaClientes, type PessoaComOab, type PropostaParaContrato,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -27,6 +27,8 @@ type Pessoa = PessoaComOab;
 interface Rascunho {
   clienteId: string;
   objeto: string;
+  /** A área do direito (F3.111): opcional, leva a área ao caso aberto na assinatura. */
+  area: string;
   responsavelId: string;
   advogados: string[];
   /** As inscrições escolhidas de cada advogado (EX-12); sem a pessoa, vão todas. */
@@ -41,17 +43,18 @@ const MSG: Record<string, string> = {
   propostaId: "A proposta não é deste cliente. Abra o contrato a partir da proposta de novo.",
   objeto: "Escreva o objeto do contrato, de 2 a 400 letras. Ex.: Aposentadoria por idade.",
   responsavelId: "Escolha quem responde pelo contrato.",
+  area: "Escolha uma área da lista, ou deixe sem área.",
   advogados: "Marque pelo menos um advogado. Sem ele, o contrato e a procuração não têm quem assine pelo escritório.",
   condicoes: "Marque pelo menos um tipo de honorário.",
   observacoes: "Escreva até 3.000 letras.",
   motivo: "Escreva o motivo da mudança, de 3 a 500 letras. Ele fica no histórico do contrato.",
 };
 const ROTULO: Record<string, string> = {
-  clienteId: "Cliente", propostaId: "Proposta", objeto: "Objeto do contrato", responsavelId: "Responsável", advogados: "Advogados no contrato",
+  clienteId: "Cliente", propostaId: "Proposta", objeto: "Objeto do contrato", responsavelId: "Responsável", area: "Área do direito", advogados: "Advogados no contrato",
   condicoes: "Tipos de honorário", observacoes: "Observações", motivo: "Motivo da mudança",
 };
 const ID: Record<string, string> = {
-  clienteId: "nv-cli", propostaId: "nv-cli", objeto: "nv-obj", responsavelId: "nv-resp", advogados: "nv-adv", condicoes: "nv-tipos", observacoes: "nv-obs", motivo: "nv-mot",
+  clienteId: "nv-cli", propostaId: "nv-cli", objeto: "nv-obj", responsavelId: "nv-resp", area: "nv-area", advogados: "nv-adv", condicoes: "nv-tipos", observacoes: "nv-obs", motivo: "nv-mot",
 };
 
 /** Só as condições completas entram no resumo; as outras dizem o que falta. */
@@ -121,6 +124,7 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
   const [r, setR] = useState<Rascunho>(() => ({
     clienteId: ficha?.cliente.id ?? proposta?.cliente.id ?? "",
     objeto: ficha?.objeto ?? proposta?.servico ?? "",
+    area: ficha?.area ?? "",
     responsavelId: ficha?.responsavel.id ?? proposta?.responsavel.id ?? "",
     advogados: ficha?.advogados.map((a) => a.id) ?? [],
     inscricoes: Object.fromEntries((ficha?.inscricoes ?? []).filter((a) => a.inscricoes.length > 1)
@@ -157,6 +161,7 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
     setEnviando(true);
     const base = {
       objeto: r.objeto,
+      area: r.area || null,
       observacoes: r.observacoes.trim() || null,
       responsavelId: r.responsavelId || null,
       advogados: r.advogados,
@@ -314,11 +319,15 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
                 )}
               </div>
               {campo("objeto", "nv-obj", "Objeto do contrato", "c6", { ajuda: "O serviço contratado, como vai no documento." })}
-              <div className="c6">
-                <p className="pt-comuns">
-                  <Icone nome="balanca" className="ico" />
-                  <span>Os casos do Jurídico se ligam ao contrato quando a área Jurídico existir. O contrato pode ser criado agora.</span>
-                </p>
+              <div className="campo c3">
+                <label htmlFor="nv-area">Área do direito<span className="opcional"> (opcional)</span></label>
+                <select className="entrada" id="nv-area" value={r.area} onChange={(ev) => mudar({ area: ev.target.value })} aria-invalid={tem("area") || undefined}
+                  aria-describedby={descritoPor("nv-area-aj", tem("area") && "nv-area-er")}>
+                  <option value="">Sem área</option>
+                  {Object.entries(AREAS_DIREITO).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+                </select>
+                <p className="ajuda" id="nv-area-aj">Vai para o caso que abre em Jurídico quando a assinatura for registrada.</p>
+                {tem("area") ? <ErroCampo id="nv-area-er">{MSG.area}</ErroCampo> : null}
               </div>
 
               <div className="hn-passo">

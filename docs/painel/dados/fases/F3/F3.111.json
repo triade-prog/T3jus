@@ -6,6 +6,7 @@
     "CH-10",
     "EX-01"
   ],
-  "status": "pendente",
-  "ordem": 952
+  "status": "feito",
+  "ordem": 952,
+  "evidencia": "Programado: migration 0740 (contratos.area e sem_caso, portal_contrato_assinatura_caso, portal_contrato_caso, aviso CASO_ABERTO_NA_ASSINATURA; teste pgTAP 105), CasoDaAssinatura.tsx (Registrar assinatura com O caso em Jurídico, Abrir o caso) na ficha do cliente e na do contrato, área do direito no formulário do contrato e o aviso no Sino; e2e portal-ficha-ligada e portal-contratos"
 }

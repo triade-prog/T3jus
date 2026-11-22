@@ -419,6 +419,15 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
     window.history.replaceState(null, "", window.location.pathname);
     void Promise.resolve().then(() => setFeito(t));
   }, []);
+  // Da ficha do cliente (F3.110): "Registrar resposta" abre a proposta com a janela da resposta.
+  const responder = f && f !== "erro" && f !== "nao" && (f.situacao === "ENVIADA" || f.situacao === "NEGOCIACAO");
+  useEffect(() => {
+    if (!responder) return;
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has("responder")) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    void Promise.resolve().then(() => setJanela(true));
+  }, [responder]);
 
   if (f === "erro") return <ErroAoCarregar oque="a proposta" aoTentar={() => void carregar()} />;
   if (f === "nao") return <ErroAoCarregar oque="a proposta" aoTentar={() => void carregar()} texto="Ela não existe ou é de outro escritório. Volte para Propostas e abra de novo." />;

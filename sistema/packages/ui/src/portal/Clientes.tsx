@@ -12,6 +12,7 @@ import { Carregando, ErroAoCarregar, Estado } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { dataBr, rotuloProx } from "./clientes.ts";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
+import { PassoNaLista } from "./FichaLigada.tsx";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
 
 export type FiltroClientes = "ativos" | "inativos" | "vencidos";
@@ -256,6 +257,8 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
   );
 
   const hrefFicha = (c: ClienteLinha) => `${ROTAS_PORTAL.clientes}/${c.id}`;
+  // A coluna "Próximo passo" (F3.110, decisão 13): vem nos clientes ativos.
+  const comPasso = !!lista?.some((c) => c.passo);
   const tabela = lista && lista.length ? (
     <>
       <table className="so-pc cl-tab">
@@ -263,17 +266,19 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
         <colgroup>
           {comercial ? (
             <>
-              <col style={{ width: "26%" }} />
-              <col style={{ width: "24%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "22%" }} />
-              <col style={{ width: "13%" }} />
+              <col style={{ width: comPasso ? "18%" : "26%" }} />
+              <col style={{ width: comPasso ? "17%" : "24%" }} />
+              <col style={{ width: comPasso ? "13%" : "15%" }} />
+              <col style={{ width: comPasso ? "18%" : "22%" }} />
+              {comPasso ? <col style={{ width: "21%" }} /> : null}
+              <col style={{ width: comPasso ? "13%" : "13%" }} />
             </>
           ) : (
             <>
-              <col style={{ width: "42%" }} />
-              <col style={{ width: "40%" }} />
-              <col style={{ width: "18%" }} />
+              <col style={{ width: comPasso ? "30%" : "42%" }} />
+              <col style={{ width: comPasso ? "29%" : "40%" }} />
+              {comPasso ? <col style={{ width: "25%" }} /> : null}
+              <col style={{ width: comPasso ? "16%" : "18%" }} />
             </>
           )}
         </colgroup>
@@ -287,6 +292,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                 <th scope="col">Próximo contato</th>
               </>
             ) : null}
+            {comPasso ? <th scope="col">Próximo passo</th> : null}
             <th scope="col">Situação</th>
           </tr>
         </thead>
@@ -327,6 +333,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                     <td>{c.situacao === "ATIVO" ? <Prox c={c} hoje={hoje} /> : <span className="cl-sem">—</span>}</td>
                   </>
                 ) : null}
+                {comPasso ? <td><PassoNaLista c={c} /></td> : null}
                 <td>
                   <SeloSituacao situacao={c.situacao} />
                 </td>
@@ -382,6 +389,11 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                 <div className="c-selos">
                   {c.situacao !== "ATIVO" ? <SeloSituacao situacao={c.situacao} /> : null}
                   {comercial && c.situacao === "ATIVO" ? <Prox c={c} hoje={hoje} /> : null}
+                </div>
+              ) : null}
+              {c.passo && c.situacao === "ATIVO" ? (
+                <div className="fl-c-acao cl-passo-cel">
+                  <PassoNaLista c={c} />
                 </div>
               ) : null}
             </li>

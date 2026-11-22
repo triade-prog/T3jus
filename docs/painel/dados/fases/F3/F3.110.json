@@ -7,7 +7,7 @@
     "AP-05",
     "IN-01"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 951,
-  "proximo": "Programar a ficha do cliente ligada (desenho aprovado em docs/design/aprovadas/portal-ficha-cliente-ligada), migrations 0740-0749"
+  "evidencia": "Programado: migration 0740 (cliente_passo, cliente_no_escritorio, portal_cliente_itens; teste pgTAP 105), rotas GET /clientes/:id/propostas|contratos|casos na api-portal, FichaLigada.tsx (âmbar Próximo passo com a trilha, abas por área, No escritório) e coluna Próximo passo com Gerar proposta em Clientes.tsx; e2e tests/e2e/portal-ficha-ligada.spec.ts e unidade fichaLigada.test.ts"
 }

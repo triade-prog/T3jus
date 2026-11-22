@@ -8,6 +8,8 @@ import type { Condicao, TipoHonorario } from "./honorarios.ts";
 import type { PessoaRef } from "./clientes.ts";
 import type { InscricaoOab } from "./portal.ts";
 import type { SituacaoParcela } from "./financeiro.ts";
+import type { AreaDireito } from "./juridico.ts";
+import type { CasoLigado } from "./ficha_ligada.ts";
 
 export const SITUACOES_CONTRATO = { ELABORACAO: "Em elaboração", ATIVO: "Ativo", ENCERRADO: "Encerrado" } as const;
 export type SituacaoContrato = keyof typeof SITUACOES_CONTRATO;
@@ -31,6 +33,8 @@ export const dadosContratoSchema = z.object({
   condicoes: z.array(condicaoSchema).max(7).default([]),
   /** Quais inscrições na OAB de cada advogado vão no documento (EX-12): {pessoaId: [inscrição]}. Sem a pessoa, vão todas. */
   inscricoes: z.record(z.string().max(40), z.array(z.string().max(40)).max(30)).nullish(),
+  /** A área do direito (pergunta 6 da ficha ligada): opcional, leva a área ao caso aberto na assinatura. */
+  area: z.string().max(40).nullish(),
 });
 export type DadosContrato = z.input<typeof dadosContratoSchema>;
 
@@ -95,6 +99,10 @@ export interface RecebimentoPrevisto {
 }
 export interface EventoContrato { em: string; acao: string; autor: string | null; dados: Record<string, unknown> }
 export interface FichaContrato extends ContratoLinha {
+  /** A área do direito, o "não tem caso" e o caso ligado (F3.111). Sem Jurídico, o caso vem só com o responsável. */
+  area?: AreaDireito | null;
+  semCaso?: boolean;
+  caso?: CasoLigado | null;
   observacoes: string | null;
   versao: number;
   assinadoEm: string | null;
