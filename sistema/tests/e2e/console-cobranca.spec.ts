@@ -149,6 +149,59 @@ test.describe("Console: cobrança dos escritórios", () => {
     expect(post?.corpo).toEqual({ versao: 1, pagoEm: hoje, valorCentavos: 19000, forma: "PIX", motivo: "Pix direto na conta, comprovante no e-mail de hoje." });
   });
 
+  test("F1.21: baixar a fatura em PDF, o preparando, o erro com o código e o recibo da paga", async ({ page }) => {
+    const baixados: string[] = [];
+    await page.route("**/baixado/**", async (r) => {
+      baixados.push(new URL(r.request().url()).pathname);
+      await r.fulfill({ status: 200, contentType: "application/pdf", headers: { "content-disposition": "attachment" }, body: "%PDF-1.7" });
+    });
+    let solta: () => void = () => {};
+    const segura = new Promise<void>((ok) => (solta = ok));
+    await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${BACURI.id}/faturas/${F1}`]: { corpo: ABERTA },
+      [`/v1/clientes/${BACURI.id}/faturas/${F1}/pdf`]: [
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "FATURA_PDF_INDISPONIVEL" } } } },
+        { corpo: { url: `${C}/baixado/fatura.pdf`, nome: "fatura.pdf", tamanho: 1 } },
+      ],
+    });
+    await page.goto(`${C}/cobranca/faturas/${BACURI.id}/${F1}`);
+    const baixar = page.getByRole("button", { name: "Baixar a fatura (PDF)" });
+    await expect(baixar).toBeVisible();
+    await expect(page.getByRole("button", { name: /Baixar o recibo/ })).toHaveCount(0);
+    await baixar.click();
+    const erro = page.getByRole("alert").filter({ hasText: "Não deu para preparar o PDF da fatura" });
+    await expect(erro).toContainText("Nada mudou na fatura.");
+    await expect(page.getByText("FATURA_PDF_INDISPONIVEL")).toBeVisible();
+    await semViolacoes(page);
+
+    // Tentar de novo: o botão vira "Preparando o PDF" até a resposta chegar e o arquivo baixa sozinho.
+    await page.route(`**/api/v1/clientes/${BACURI.id}/faturas/${F1}/pdf`, async (r) => {
+      await segura;
+      await r.fallback();
+    });
+    await erro.getByRole("button", { name: /Tentar de novo/ }).click();
+    const preparando = page.getByRole("button", { name: /Preparando o PDF/ });
+    await expect(preparando).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByRole("status").filter({ hasText: "o arquivo baixa sozinho" })).toBeVisible();
+    await semViolacoes(page);
+    solta();
+    await expect.poll(() => baixados).toEqual(["/baixado/fatura.pdf"]);
+  });
+
+  test("F1.21: fatura paga tem o recibo em PDF", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${BACURI.id}/faturas/${F1}`]: { corpo: { ...ABERTA, situacao: "PAGA", atrasoDias: null, pagaEm: hoje, baixa: "MANUAL", formaPaga: "PIX" } },
+      [`/v1/clientes/${BACURI.id}/faturas/${F1}/recibo`]: { corpo: { url: `${C}/baixado/recibo.pdf`, nome: "recibo.pdf", tamanho: 1 } },
+    });
+    await page.route("**/baixado/**", (r) => r.fulfill({ status: 200, contentType: "application/pdf", headers: { "content-disposition": "attachment" }, body: "%PDF-1.7" }));
+    await page.goto(`${C}/cobranca/faturas/${BACURI.id}/${F1}`);
+    await page.getByRole("button", { name: "Baixar o recibo (PDF)" }).click();
+    await expect.poll(() => pedidos.some((x) => x.caminho.endsWith("/recibo"))).toBe(true);
+    await semViolacoes(page);
+  });
+
   test("fatura: conflito mostra quem registrou antes e não registra de novo", async ({ page }) => {
     await simular(page, {
       "/v1/sessao": { corpo: ADM },
@@ -163,6 +216,44 @@ test.describe("Console: cobrança dos escritórios", () => {
     await expect(j.getByText(/Marta Quintela registrou um pagamento nesta fatura/)).toBeVisible();
     await expect(j.getByRole("button", { name: "Fechar e conferir" })).toBeVisible();
     await semViolacoes(page);
+  });
+
+  test("F1.21: o carnê em uso baixa em PDF da folha do carnê, e o erro diz o código", async ({ page }) => {
+    const CARNE = {
+      id: "c0000000-0000-4000-8000-0000000000c1", numero: "2026/2027", parcelas: 12, valorParcelaCentavos: 49000, diaVencimento: 10,
+      primeiraCompetencia: comp(-50), ultimaCompetencia: comp(280), geradoEm: `${dia(-60)}T12:00:00Z`, geradoPor: "Carol", substituidoEm: null,
+      substituidoMotivo: null, pdf: false,
+      itens: Array.from({ length: 12 }, (_, i) => ({
+        id: `p0000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`, numero: i + 1, competencia: comp(-50 + 30 * i), vencimento: dia(-45 + 30 * i),
+        valorCentavos: 49000, situacao: i < 2 ? "PAGA" : "A_VENCER", faturaId: null, pagaEm: i < 2 ? dia(-50 + 30 * i) : null, emAtraso: false, canceladaMotivo: null,
+      })),
+    };
+    const baixados: string[] = [];
+    await page.route("**/baixado/**", async (r) => {
+      baixados.push(new URL(r.request().url()).pathname);
+      await r.fulfill({ status: 200, contentType: "application/pdf", headers: { "content-disposition": "attachment" }, body: "%PDF-1.7" });
+    });
+    await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${AROEIRA.id}`]: { corpo: ficha(AROEIRA, PERMISSOES) },
+      [`/v1/clientes/${AROEIRA.id}/notas`]: { corpo: { notas: [] } },
+      [`/v1/clientes/${AROEIRA.id}/assinatura`]: { corpo: assinatura({ forma: "CARNE", carne: { emUso: [CARNE], substituidos: [], valorHojeCentavos: 49000 } }) },
+      [`/v1/clientes/${AROEIRA.id}/carnes/${CARNE.id}/pdf`]: [
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "CARNE_PDF_INDISPONIVEL" } } } },
+        { corpo: { url: `${C}/baixado/carne-2026-2027.pdf`, nome: "carne-2026-2027.pdf", tamanho: 1 } },
+      ],
+    });
+    await page.goto(`${C}/clientes/${AROEIRA.id}/assinatura`);
+    const baixar = page.getByRole("button", { name: "Baixar o carnê (PDF)" });
+    await expect(baixar).not.toHaveAttribute("aria-disabled");
+    await expect(page.getByText("Até o Banco Inter ser ligado, sai sem os códigos e o escritório não o vê no Portal.")).toBeVisible();
+    await baixar.click();
+    const erro = page.getByRole("alert").filter({ hasText: "Não deu para preparar o PDF do carnê 2026/2027." });
+    await expect(erro).toContainText("Nada mudou no carnê.");
+    await expect(page.getByText("CARNE_PDF_INDISPONIVEL")).toBeVisible();
+    await semViolacoes(page);
+    await erro.getByRole("button", { name: /Tentar de novo/ }).click();
+    await expect.poll(() => baixados).toEqual(["/baixado/carne-2026-2027.pdf"]);
   });
 
   test("assinatura em dia: dados, mudar de plano com prévia e motivo", async ({ page }) => {
