@@ -246,6 +246,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_contrato_assinatura_caso: (a) => ({ id: a.p_contrato, versao: Number(a.p_versao) + 1, recebimentos: 3, casoId: CLIENTE, podeVerCaso: true }),
     portal_contrato_caso_opcoes: (a) => ({ contrato: { id: a.p_contrato }, casoLigado: null, escolhe: true }),
     portal_contrato_caso: () => ({ casoId: CLIENTE }),
+    portal_contratos_sem_caso: () => ({ podeAbrir: true, quemAbre: null, contratos: [] }),
     portal_cliente_itens: (a) => ({ [String(a.p_tipo).toLowerCase()]: [] }),
     portal_cliente_anterior: () => ({ anterior: { origem: "ASTREA", pago: 200000, total: 4, lembretes: [], lancamentos: [], importacao: null } }),
     portal_contrato_base: (a) => ({ id: a.p_recebimento, valor: 63540, vencimento: "2026-12-15" }),
@@ -1214,8 +1215,10 @@ Deno.test("CH-01, CH-04, IN-01: criar o contrato da proposta, registrar a assina
   assertEquals(novo.status, 201);
   const ch = m.chamadas.find((c) => c.funcao === "portal_contrato_criar_area")!;
   assertEquals([ch.args.p_escritorio, (ch.args.p_dados as { advogados: string[] }).advogados], [AURORA, [ANA]]);
-  const a = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/assinatura`, { corpo: { versao: 1, assinadoEm: "2026-11-18" }, cookie })).json();
-  assertEquals([a.versao, a.recebimentos, a.em], [2, 3, "2026-11-18"]);
+  // CH-11: sem o caso, a assinatura é recusada; com ele, vai junto.
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/assinatura`, { corpo: { versao: 1, assinadoEm: "2026-11-18" }, cookie }))).detalhes?.campos, ["caso"]);
+  const a = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/assinatura`, { corpo: { versao: 1, assinadoEm: "2026-11-18", caso: { modo: "SEM" } }, cookie })).json();
+  assertEquals([a.versao, a.recebimentos], [2, 3]);
   const sem = await erro(await m.pedir(`/v1/escritorio/contratos/${CLIENTE}`, { metodo: "PUT", corpo: { versao: 2, ...dados }, cookie }));
   assertEquals(sem.detalhes?.campos, ["motivo"]);
   const ed = m.chamadas.find((c) => c.funcao === "portal_contrato_condicoes_area")!;
@@ -1256,6 +1259,11 @@ Deno.test("F3.110, F3.111, CH-10: as abas da ficha, a assinatura que abre o caso
   const ab = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/caso`, { corpo: { caso: { modo: "JUNTAR", casoId: CLIENTE } }, cookie })).json();
   assertEquals(ab.casoId, CLIENTE);
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_contrato_caso")!.args.p_escritorio, AURORA);
+  // CH-11, F3.125: "não tem caso" pelo Abrir o caso e a lista dos assinados sem caso.
+  await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/caso`, { corpo: { caso: { modo: "SEM" } }, cookie });
+  assertEquals((m.chamadas.filter((c) => c.funcao === "portal_contrato_caso").at(-1)!.args.p_caso as { modo: string }).modo, "SEM");
+  assertEquals((await (await m.pedir("/v1/escritorio/contratos/sem-caso", { cookie })).json()).contratos, []);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_contratos_sem_caso")!.args.p_escritorio, AURORA);
 });
 
 Deno.test("EX-12: as inscrições de cada advogado no contrato; a pessoa e o escritório vêm da sessão", async () => {

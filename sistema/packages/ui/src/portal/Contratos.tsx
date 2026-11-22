@@ -21,6 +21,7 @@ import { SeloTipo } from "./Honorarios.tsx";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { ROTAS_COMERCIAL } from "./comercial.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { TabelaSemCaso, useSemCaso } from "./SemCaso.tsx";
 import { chamarPortal } from "./Moldura.tsx";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
 
@@ -96,6 +97,10 @@ function BlocoPedidos({ pedidos }: { pedidos: PedidoContrato[] }) {
 
 function ContratosConteudo() {
   const [mostrar, setMostrar] = useState<MostrarContratos>("ATIVOS");
+  // CH-11, F3.125: o filtro "Assinados sem caso" (decisão 7) vem de outra rota.
+  const [semCasoAberto, setSemCasoAberto] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mostrar") === "sem-caso");
+  const { semCaso, recarregarSemCaso } = useSemCaso();
+  const nSemCaso = semCaso?.contratos.length ?? 0;
   const [busca, setBusca] = useState("");
   const [q, setQ] = useState("");
   useEffect(() => {
@@ -142,15 +147,25 @@ function ContratosConteudo() {
       <section className="folha" aria-labelledby="t-cl" style={{ overflow: "hidden" }}>
         <h2 id="t-cl" className="sr">Lista de contratos</h2>
         <Busca id="ct-b" rotulo="Buscar por cliente, número ou objeto" dica="Cliente, número do contrato ou objeto" valor={busca} aoMudar={setBusca}>
-          <Chips rotulo="Mostrar" atual={mostrar} aoEscolher={(v) => setMostrar(v as MostrarContratos)}
+          <Chips rotulo="Mostrar" atual={semCasoAberto ? "SEM_CASO" : mostrar}
+            aoEscolher={(v) => { if (v === "SEM_CASO") return setSemCasoAberto(true); setSemCasoAberto(false); setMostrar(v as MostrarContratos); }}
             opcoes={[
               { v: "ATIVOS", t: `Ativos e em elaboração (${c.ativos + c.elaboracao})` },
               { v: "ENCERRADOS", t: `Encerrados (${c.encerrados})` },
               { v: "BASE", t: `Base do mês a pedir (${c.base})` },
+              ...(nSemCaso || semCasoAberto ? [{
+                v: "SEM_CASO",
+                t: nSemCaso
+                  ? <><Icone nome="balanca" className="ico" />Assinados sem caso<span className="jf-n" aria-hidden="true">{nSemCaso}</span><span className="sr"> ({nSemCaso})</span></>
+                  : "Assinados sem caso (0)",
+              }] : []),
             ]} />
         </Busca>
-        <p className="hn-cont" role="status">{resumo}</p>
-        {n ? (
+        {semCasoAberto ? (
+          semCaso ? <TabelaSemCaso d={semCaso} aoMudou={recarregarSemCaso} aoVerTodos={() => setSemCasoAberto(false)} /> : <Carregando rotulo="Carregando os contratos…" linhas={2} />
+        ) : null}
+        {semCasoAberto ? null : <p className="hn-cont" role="status">{resumo}</p>}
+        {semCasoAberto ? null : n ? (
           <table className="hn-tab">
             <caption className="sr">Contratos</caption>
             <colgroup>{["27%", "29%", "14%", "17%", "13%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>

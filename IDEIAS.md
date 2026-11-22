@@ -28,6 +28,8 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | AP-04 | Origem dos contatos | [V1] |
 | AP-05 | Propostas com situação e responsável | [V1] |
 | AP-06 | Acompanhamento e próximo contato | [V1] |
+| AP-07 | Cadastro que nasce da conversa: "Cadastrar como cliente" no WhatsApp já traz o nome e o telefone, liga a conversa ao cliente novo e a primeira reunião já sai com ele (Carol pediu em 22/11/2026) | [V1] |
+| AP-08 | Documentos pessoais do cliente (RG e CPF, comprovante de residência e outros) guardados na ficha do cliente, servindo a todos os casos dele, com aviso quando o comprovante fica velho (Carol pediu em 22/11/2026) | [V1] |
 
 ## 3. Contratos e honorários
 
@@ -43,6 +45,9 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CH-08 | Procuração e contrato de honorários gerados com os dados do cliente e dos advogados (nome, OAB), com a declaração de hipossuficiência quando houver, no papel timbrado do escritório, em arquivo editável | [VAL] |
 | CH-09 | Assinatura eletrônica do contrato de honorários e da procuração | [VAL] |
 | CH-10 | Ao registrar a assinatura do contrato, o cliente vai direto para Jurídico › Casos e processos: o caso abre já preenchido com os dados do contrato (ou o cliente entra num caso que já existe), e o contrato de consultoria pode dizer que não tem caso (Carol pediu em 21/11/2026) | [V1] |
+| CH-11 | Toda assinatura passa pela mesma pergunta do caso, inclusive ao anexar o contrato assinado; a lista de Contratos e o Jurídico mostram os contratos assinados que ficaram sem caso (Carol pediu em 22/11/2026) | [V1] |
+| CH-12 | Na assinatura, se o cliente já tem um caso em andamento sem contrato, a sugestão é juntar o contrato a esse caso, para o mesmo processo não virar dois casos (Carol pediu em 22/11/2026) | [V1] |
+| CH-13 | Contrato ativo sem caso (consultoria, mensal) aparece como contrato ativo na ficha do cliente, sem pedir proposta nova, e pode ganhar um caso depois (Carol pediu em 22/11/2026) | [V1] |
 
 ## 4. Financeiro e repasses
 
@@ -91,6 +96,9 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | EX-13 | Agenda sincronizada com Google Agenda ou Outlook | [VAL] |
 | EX-14 | Aviso ao cliente pelo WhatsApp quando o caso muda de etapa, explicado em linguagem simples | [V1] |
 | EX-15 | Qualificação completa de cada advogado (nome completo, nacionalidade, estado civil, CPF, RG, endereço profissional e contatos), como a do cliente, preenchida em Sua conta e usada em todos os documentos gerados | [V1] |
+| EX-16 | Fechamento do caso de ponta a ponta: depois da etapa final, a ficha do cliente mostra o que falta (conferir o êxito, repassar, encerrar no financeiro, encerrar o contrato) e só no fim volta a sugerir proposta nova (Carol pediu em 22/11/2026) | [V1] |
+| EX-17 | Encerrar em cadeia: a ficha do caso leva ao acerto no financeiro, e encerrar o caso no financeiro oferece encerrar junto os contratos ligados a ele (Carol pediu em 22/11/2026) | [V1] |
+| EX-18 | Documentos para dar início ao processo: o escritório monta uma lista por área (ex.: previdenciário pede CNIS e laudos), que vira pedido ao cliente quando o caso abre, aproveita o que já está na ficha e entra no próximo passo até tudo chegar (Carol pediu em 22/11/2026) | [V1] |
 
 ## 6. Indicadores
 
@@ -195,14 +203,14 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | Seção | Ideias |
 |---|---|
 | 1. Painel do dia | 7 |
-| 2. Atendimento e propostas | 6 |
-| 3. Contratos e honorários | 10 |
+| 2. Atendimento e propostas | 8 |
+| 3. Contratos e honorários | 13 |
 | 4. Financeiro e repasses | 23 |
-| 5. Execução jurídica | 15 |
+| 5. Execução jurídica | 18 |
 | 6. Indicadores | 15 |
 | 7. A validar com os pilotos | 8 |
 | 8. Princípios técnicos e de qualidade | 26 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 6 |
 | 11. Portal do advogado | 7 |
-| **Total** | **129** |
+| **Total** | **137** |
