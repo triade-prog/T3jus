@@ -186,6 +186,19 @@ export function problemaDoAssinado(nome: string, tamanho: number): string | null
   return null;
 }
 
+/** Várias páginas (F3.99): um PDF só ou até 10 fotos, sem misturar. Cada foto vale como um arquivo. */
+export function problemaDosAssinados(arquivos: { name: string; size: number }[]): string | null {
+  if (arquivos.length <= 1) return arquivos[0] ? problemaDoAssinado(arquivos[0].name, arquivos[0].size) : null;
+  if (arquivos.some((a) => /\.docx?$/i.test(a.name))) return problemaDoAssinado(arquivos.find((a) => /\.docx?$/i.test(a.name))!.name, 1);
+  if (arquivos.some((a) => !/\.(jpe?g|png)$/i.test(a.name))) return "Para várias páginas, escolha um PDF só ou até 10 fotos, sem misturar PDF e foto.";
+  if (arquivos.length > 10) return `São ${arquivos.length} fotos, e o limite é 10 por documento. Junte as páginas num PDF só.`;
+  for (const a of arquivos) {
+    const p = problemaDoAssinado(a.name, a.size);
+    if (p) return `${a.name}: ${p.charAt(0).toLowerCase()}${p.slice(1)}`;
+  }
+  return null;
+}
+
 /** "Assinado em 30/10" (a lista e a aba Documentos). */
 export function seloAssinado(tipo: TipoDocumentoContrato, dia: string | null): string {
   const fem = tipo === "PROCURACAO" || tipo === "HIPOSSUFICIENCIA";

@@ -233,7 +233,7 @@ export function whatsLegivel(v: string): string {
 
 // ---------------------------------------------------------------- sino do Console (F2.6)
 
-export type TipoAvisoConsole = "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO";
+export type TipoAvisoConsole = "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO" | "FATURA_ATRASO";
 
 export interface AvisoConsole {
   id: string;
@@ -251,8 +251,18 @@ export interface AvisoConsole {
     passo?: string;
     data?: string;
     responsavel?: string;
+    /** Fatura em atraso (F1.22): o marco da régua (7 dias, aviso no Portal; 30, proposta de só consulta). */
+    escritorioId?: string;
+    numero?: string;
+    competencia?: string;
+    vencimento?: string;
+    totalCentavos?: number;
+    dias?: number;
+    marco?: "AVISO" | "CONSULTA";
   };
   interessadoId: string | null;
+  /** Fatura em atraso: a fatura do aviso. */
+  faturaId?: string | null;
   em: string;
   lido: boolean;
   /** Pedido novo: quem cuida agora (null se ninguém). */
@@ -263,6 +273,8 @@ export interface ListaAvisosConsole {
   novos: number;
   total: number;
   veInteressados: boolean;
+  /** Vê Cobrança (Administração e Financeiro): recebe o aviso de fatura em atraso. */
+  veCobranca?: boolean;
   itens: AvisoConsole[];
   marcados?: number;
 }

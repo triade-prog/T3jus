@@ -20,6 +20,7 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, foca
 import { iniciais } from "../console/tempo.ts";
 import { lerDia } from "./agenda.ts";
 import { abrirAnexo, enviarAnexo } from "./Anexos.tsx";
+import { juntarFotos, ordenarFotos } from "./fotos.ts";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
 import { chamarPortal, irPara, ROTAS_PORTAL } from "./Moldura.tsx";
@@ -29,7 +30,7 @@ import { CabPeticoes, LegendaPrevia, Papel, SeloDados, useBaixar } from "./Petic
 import { contar, erroDoArquivo, Quando, quando, tamanhoArquivo } from "./peticoes.ts";
 import {
   API_DOCUMENTOS, botaoGerar, chaveModelo, chavesAssinadas, ERROS_DOCUMENTO, errosDocumentos, formInicialDocumentos, fraseNoDocumentoOutorgados,
-  fraseVaoSair, juntar, nomeCurto, origemModelo, PODERES_TELA, pedidoDocumentos, problemaDoAssinado, RESUMO_ERRO_DOCUMENTO, ROTAS_DOCUMENTOS,
+  fraseVaoSair, juntar, nomeCurto, origemModelo, PODERES_TELA, pedidoDocumentos, problemaDosAssinados, RESUMO_ERRO_DOCUMENTO, ROTAS_DOCUMENTOS,
   rotuloAssinado, seloAba, seloAssinado, tituloFaltas, type FormDocumentos,
 } from "./procuracoes.ts";
 
@@ -1179,30 +1180,33 @@ export function feitoDosAssinados(r: ResultadoAssinados): Feito {
     : { titulo: r.n === 1 ? "Assinado anexado." : `${r.n} assinados anexados.`, texto: `${r.n === 1 ? "Ficou guardado" : "Ficaram guardados"} no contrato${r.numero ? ` ${r.numero}` : ""}, aba Documentos.` };
 }
 
-interface Bloco { arquivo: File | null; data: string }
+interface Bloco { arquivos: File[]; data: string }
 
 function CampoAssinado({ id, doc, b, erro, aoMudar, progresso }: {
   id: string; doc: DocumentoDoContrato; b: Bloco; erro: string | null; aoMudar: (b: Bloco) => void; progresso: number | null;
 }) {
   const entrada = useRef<HTMLInputElement>(null);
   const rot = rotuloAssinado(doc.tipo);
+  const um = b.arquivos[0];
+  const varias = b.arquivos.length > 1;
   return (
     <div className="campo">
       <p className="pe-rot" id={`${id}-r`}>{rot}</p>
       <input ref={entrada} type="file" accept="application/pdf,image/jpeg,image/png" className="sr" tabIndex={-1} aria-hidden="true"
-        onChange={(e) => { const a = e.target.files?.[0]; if (a) aoMudar({ ...b, arquivo: a }); e.target.value = ""; }} />
+        multiple onChange={(e) => { const a = [...(e.target.files ?? [])]; if (a.length) aoMudar({ ...b, arquivos: a }); e.target.value = ""; }} />
       <div className={erro ? "pe-arq erro" : "pe-arq"} role="group" aria-labelledby={`${id}-r`}>
         <span className="pe-ci" aria-hidden="true"><Icone nome="doc" className="ico" /></span>
         <div>
-          <b>{b.arquivo ? b.arquivo.name : "Nenhum arquivo escolhido"}</b>
-          <small>{b.arquivo ? `${/\.pdf$/i.test(b.arquivo.name) ? "PDF" : /\.(jpe?g|png)$/i.test(b.arquivo.name) ? "Foto" : (b.arquivo.name.split(".").pop() ?? "").toUpperCase()} · ${tamanhoArquivo(b.arquivo.size)}` : "Pode ficar em branco se ainda não foi assinado"}</small>
+          <b>{varias ? `${b.arquivos.length} fotos: ${ordenarFotos(b.arquivos).map((a) => a.name).join(", ")}` : um ? um.name : "Nenhum arquivo escolhido"}</b>
+          <small>{varias ? `Viram um PDF só, uma foto por página, na ordem do nome · ${tamanhoArquivo(b.arquivos.reduce((t, a) => t + a.size, 0))}`
+            : um ? `${/\.pdf$/i.test(um.name) ? "PDF" : /\.(jpe?g|png)$/i.test(um.name) ? "Foto" : (um.name.split(".").pop() ?? "").toUpperCase()} · ${tamanhoArquivo(um.size)}` : "Pode ficar em branco se ainda não foi assinado"}</small>
         </div>
         <button id={`${id}-bt`} className="btn btn-sec btn-compacto" type="button" onClick={() => entrada.current?.click()} disabled={progresso !== null}
           data-erro={erro ? "" : undefined} aria-describedby={descritoPor(`${id}-aj`, erro && `${id}-er`)}>
-          <Icone nome="enviar" className="ico ico-s" />{b.arquivo ? "Trocar arquivo" : "Escolher arquivo"}<span className="sr">: {rot.toLowerCase()}</span>
+          <Icone nome="enviar" className="ico ico-s" />{um ? "Trocar arquivo" : "Escolher arquivo"}<span className="sr">: {rot.toLowerCase()}</span>
         </button>
       </div>
-      <p className="ajuda" id={`${id}-aj`}>PDF ou foto, até 10 MB. Várias páginas: junte num PDF só.</p>
+      <p className="ajuda" id={`${id}-aj`}>PDF ou foto, até 10 MB. Várias páginas: um PDF só ou até 10 fotos.</p>
       {erro ? <ErroCampo id={`${id}-er`}>{erro}</ErroCampo> : null}
       {progresso !== null ? <div className="jr-progresso"><progress max={100} value={progresso} aria-label={`Enviando: ${rot.toLowerCase()}`} /><span>{progresso}%</span></div> : null}
     </div>
@@ -1228,17 +1232,17 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
     const l = base.length ? base : pronto.documentos;
     return [...l].sort((a, b) => (a.tipo === "CONTRATO" ? -1 : b.tipo === "CONTRATO" ? 1 : 0));
   })() : [];
-  const bloco = (k: string): Bloco => blocos[k] ?? { arquivo: null, data: `${hoje.slice(8, 10)}/${hoje.slice(5, 7)}/${hoje.slice(0, 4)}` };
-  const ativa = !!pronto && pronto.contrato.estado === "ELABORACAO" && docs.some((x) => x.tipo === "CONTRATO" && !feitos.includes(x.chave) && bloco(x.chave).arquivo);
+  const bloco = (k: string): Bloco => blocos[k] ?? { arquivos: [], data: `${hoje.slice(8, 10)}/${hoje.slice(5, 7)}/${hoje.slice(0, 4)}` };
+  const ativa = !!pronto && pronto.contrato.estado === "ELABORACAO" && docs.some((x) => x.tipo === "CONTRATO" && !feitos.includes(x.chave) && bloco(x.chave).arquivos.length);
 
   async function enviar() {
     if (!pronto) return;
     setFalha(null);
     const e: Record<string, string> = {};
-    const escolhidos = docs.filter((x) => !feitos.includes(x.chave) && bloco(x.chave).arquivo);
+    const escolhidos = docs.filter((x) => !feitos.includes(x.chave) && bloco(x.chave).arquivos.length);
     for (const x of escolhidos) {
       const b = bloco(x.chave);
-      const p = problemaDoAssinado(b.arquivo!.name, b.arquivo!.size);
+      const p = problemaDosAssinados(b.arquivos);
       if (p) e[`${x.chave}:arq`] = p;
       const dia = lerDia(b.data);
       if (!dia) e[`${x.chave}:data`] = "Escreva a data da assinatura no formato dd/mm/aaaa.";
@@ -1247,6 +1251,22 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
     if (!escolhidos.length && docs[0]) e[`${docs[0].chave}:arq`] = "Escolha o arquivo de ao menos um documento assinado.";
     setErros(e);
     if (Object.keys(e).length) return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
+    // Várias fotos viram um PDF só antes de enviar qualquer coisa (F3.99): o assinado continua
+    // sendo um arquivo por documento.
+    const arquivos = new Map<string, File>();
+    const naoJuntou: Record<string, string> = {};
+    setEnviando(escolhidos[0]!.chave);
+    for (const x of escolhidos) {
+      const b = bloco(x.chave);
+      const a = b.arquivos.length > 1 ? await juntarFotos(b.arquivos) : b.arquivos[0]!;
+      if (typeof a === "string") naoJuntou[`${x.chave}:arq`] = a;
+      else arquivos.set(x.chave, a);
+    }
+    if (Object.keys(naoJuntou).length) {
+      setEnviando(null);
+      setErros(naoJuntou);
+      return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
+    }
     const ok: string[] = [...feitos];
     let ativou = false;
     for (const x of escolhidos) {
@@ -1254,7 +1274,8 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
       setEnviando(x.chave);
       setProgresso(0);
       const dia = lerDia(b.data)!;
-      const erro = await enviarAnexo("CONTRATO", contrato, b.arquivo!, null, setProgresso, { documentoId: x.atual.id, assinadoEm: dia });
+      const arquivo = arquivos.get(x.chave)!;
+      const erro = await enviarAnexo("CONTRATO", contrato, arquivo, null, setProgresso, { documentoId: x.atual.id, assinadoEm: dia });
       setProgresso(null);
       if (erro) {
         setEnviando(null);

@@ -83,6 +83,12 @@ export function fraseDoEvento(e: EventoHistorico, nomeDe: (id: string) => string
       return { quem, fez: "cancelou os convites pendentes do escritório", detalhe: typeof d.quantidade === "number" ? `${d.quantidade} ${d.quantidade === 1 ? "convite" : "convites"}` : undefined };
     case "contrato.acesso_fechado":
       return { quem, fez: "fechou o acesso do escritório, 30 dias depois do fim do contrato", detalhe: typeof d.sessoes === "number" ? `${d.sessoes} ${d.sessoes === 1 ? "sessão encerrada" : "sessões encerradas"}` : undefined };
+    case "contrato.aviso_enviado": {
+      const quemRecebe = pessoa ? `${pessoa}, quem cuida do escritório,` : "quem cuida do escritório";
+      return d.tipo === "FECHA_EM_3"
+        ? { quem, fez: `lembrou ${quemRecebe} por e-mail que o acesso fecha em 3 dias`, detalhe: `Acesso fecha em ${dataDoEvento(d.acesso_fecha_em)}` }
+        : { quem, fez: `avisou ${quemRecebe} por e-mail do fim do contrato`, detalhe: `Prazo para baixar os dados: até ${dataDoEvento(d.consulta_ate)}` };
+    }
     case "pessoa.entrada_apagada":
       return { quem, fez: `apagou a entrada (e-mail e senha) de ${alvo ?? "uma pessoa"}`, detalhe: "90 dias sem nenhum acesso · o nome continua como autor no histórico" };
     case "dados.prazos_aplicados":

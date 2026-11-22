@@ -1,7 +1,7 @@
 // As contas das telas de Procurações e modelos (F3.16), sem React.
 import { describe, expect, it } from "vitest";
 import type { DadosDocumentos } from "@t3jus/domain";
-import { botaoGerar, errosDocumentos, formInicialDocumentos, fraseVaoSair, pedidoDocumentos, problemaDoAssinado, seloAssinado, tituloFaltas } from "./procuracoes.ts";
+import { botaoGerar, errosDocumentos, formInicialDocumentos, fraseVaoSair, pedidoDocumentos, problemaDoAssinado, problemaDosAssinados, seloAssinado, tituloFaltas } from "./procuracoes.ts";
 
 const insc = (id: string) => ({ id, uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" }) as const;
 const base = (extra: Partial<DadosDocumentos> = {}): DadosDocumentos => ({
@@ -62,6 +62,15 @@ describe("Procurações e modelos: os assinados", () => {
     expect(problemaDoAssinado("contrato.docx", 100)).toMatch(/é o .docx gerado/);
     expect(problemaDoAssinado("contrato.pdf", 11 * 1024 * 1024)).toMatch(/10 MB/);
     expect(problemaDoAssinado("foto.JPG", 900)).toBeNull();
+    // Várias páginas (F3.99): um PDF só ou até 10 fotos, sem misturar.
+    const foto = (n: number) => ({ name: `IMG_${n}.jpg`, size: 2_000_000 });
+    expect(problemaDosAssinados([])).toBeNull();
+    expect(problemaDosAssinados([foto(1), foto(2), { name: "p3.png", size: 900 }])).toBeNull();
+    expect(problemaDosAssinados(Array.from({ length: 10 }, (_, i) => foto(i)))).toBeNull();
+    expect(problemaDosAssinados(Array.from({ length: 11 }, (_, i) => foto(i)))).toMatch(/São 11 fotos, e o limite é 10/);
+    expect(problemaDosAssinados([foto(1), { name: "resto.pdf", size: 900 }])).toMatch(/sem misturar PDF e foto/);
+    expect(problemaDosAssinados([foto(1), { name: "contrato.docx", size: 900 }])).toMatch(/é o .docx gerado/);
+    expect(problemaDosAssinados([foto(1), { name: "grande.jpg", size: 11 * 1024 * 1024 }])).toMatch(/^grande\.jpg: o arquivo passou de 10 MB/);
     expect(seloAssinado("PROCURACAO", "2026-10-30")).toBe("Assinada em 30/10");
     expect(seloAssinado("CONTRATO", null)).toBe("Assinado");
   });

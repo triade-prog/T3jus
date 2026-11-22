@@ -2,15 +2,18 @@
 // O sino do Console (F2.6; SC-02, SC-05), tela aprovada em
 // docs/design/aprovadas/console-interessado-sino. Segue o sino aprovado do Portal (o mesmo CSS
 // si-): no computador o painel desce do sino sem cobrir a página; no celular ocupa a tela. Nesta
-// versão chegam três avisos, todos de interessado: o pedido novo do site (para todos que veem
+// versão chegam três avisos de interessado: o pedido novo do site (para todos que veem
 // Interessados), o interessado passado para você e o próximo passo vencido (uma vez, às 7h do dia
-// seguinte). Quem não vê Interessados tem o sino vazio, com o porquê.
+// seguinte). E um de cobrança (F1.22): a fatura de escritório em atraso, aos 7 e aos 30 dias, para
+// a Administração e o Financeiro que atendem o escritório. Quem não vê nenhum dos dois tem o sino
+// vazio, com o porquê.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { TAMANHOS_INTERESSADO, type AvisoConsole, type ListaAvisosConsole } from "@t3jus/domain";
+import { mesPorExtenso, TAMANHOS_INTERESSADO, type AvisoConsole, type ListaAvisosConsole } from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
+import { brl } from "./cobranca.ts";
 import { diaMes } from "./interessados.ts";
-import { chamarConsole, INTERESSADOS } from "./Moldura.tsx";
+import { chamarConsole, COBRANCA, INTERESSADOS } from "./Moldura.tsx";
 import { Aviso, Estado } from "./pecas.tsx";
 import { hora } from "./tempo.ts";
 
@@ -53,6 +56,21 @@ export function descreverAvisoConsole(a: AvisoConsole, hoje = hojeIso()): { icon
           d.responsavel ? `Responsável: ${d.responsavel}.` : null].filter(Boolean).join(". ").replace(/\.\./g, "."),
         onde: "Abrir o interessado", href, selo: { tom: "urgente", texto: "Vencido" },
       };
+    case "FATURA_ATRASO": {
+      // Os dois marcos da régua aprovada (decisão 4 da cobrança): 7 dias e 30 dias.
+      const dias = d.dias ?? 0;
+      const consulta = d.marco === "CONSULTA";
+      const fatura = [d.competencia ? `Fatura de ${mesPorExtenso(d.competencia)}` : "Fatura", typeof d.totalCentavos === "number" ? brl(d.totalCentavos) : null,
+        d.vencimento ? `venceu em ${d.vencimento.slice(8, 10)}/${d.vencimento.slice(5, 7)}` : null].filter(Boolean).join(" · ");
+      return {
+        icone: "carteira", titulo: <>Fatura em atraso há {dias} {dias === 1 ? "dia" : "dias"}: <b>{d.escritorio ?? "escritório"}</b></>,
+        detalhe: `${fatura}. ${consulta
+          ? "Já dá para propor o Portal só para consulta, sempre com a sua confirmação."
+          : "O Portal já mostra o aviso ao sócio dono."}`,
+        onde: "Abrir a fatura", href: d.escritorioId && a.faturaId ? `${COBRANCA}/faturas/${d.escritorioId}/${a.faturaId}` : `${COBRANCA}/faturas`,
+        selo: consulta ? { tom: "urgente", texto: `Em atraso · ${dias} dias` } : { tom: "atencao", texto: `Em atraso · ${dias} dias` },
+      };
+    }
   }
 }
 
@@ -82,13 +100,20 @@ export function BotaoSinoConsole({ cls, novos, aberto, aoClicar }: { cls: "icone
   );
 }
 
-const EXPLICA = (
-  <ul className="cs-explica">
-    <li><Icone nome="maleta" className="ico" /><span>Um pedido de demonstração novo pelo site</span></li>
-    <li><Icone nome="pessoa-mais" className="ico" /><span>Um interessado que alguém passou para você</span></li>
-    <li><Icone nome="relogio" className="ico" /><span>O próximo passo de um interessado seu que venceu</span></li>
-  </ul>
-);
+function Explica({ interessados, cobranca }: { interessados: boolean; cobranca: boolean }) {
+  return (
+    <ul className="cs-explica">
+      {interessados ? (
+        <>
+          <li><Icone nome="maleta" className="ico" /><span>Um pedido de demonstração novo pelo site</span></li>
+          <li><Icone nome="pessoa-mais" className="ico" /><span>Um interessado que alguém passou para você</span></li>
+          <li><Icone nome="relogio" className="ico" /><span>O próximo passo de um interessado seu que venceu</span></li>
+        </>
+      ) : null}
+      {cobranca ? <li><Icone nome="carteira" className="ico" /><span>A fatura de um escritório que você atende em atraso há 7 dias e há 30 dias</span></li> : null}
+    </ul>
+  );
+}
 
 export function PainelSinoConsole({ sino, aberto, aoFechar }: { sino: ReturnType<typeof useSinoConsole>; aberto: boolean; aoFechar: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -155,21 +180,23 @@ export function PainelSinoConsole({ sino, aberto, aoFechar }: { sino: ReturnType
     );
   } else if (!ok) {
     conteudo = <p className="sr" role="status">Carregando os avisos…</p>;
-  } else if (!ok.total && !ok.veInteressados) {
+  } else if (!ok.total && !ok.veInteressados && !ok.veCobranca) {
     conteudo = (
       <Estado icone="sino" titulo="Nenhum aviso para você por enquanto." acoes={
         <ul className="cs-explica">
           <li><Icone nome="cadeado" className="ico" /><span>Pedido de demonstração e interessado não chegam aqui: têm dados pessoais de quem pediu.</span></li>
-          <li><Icone nome="carteira" className="ico" /><span>Em estudo: fatura de escritório em atraso, pedido de suporte novo e fim de contrato chegando.</span></li>
+          <li><Icone nome="carteira" className="ico" /><span>Em estudo: pedido de suporte novo e fim de contrato chegando.</span></li>
         </ul>
       }>
-        Nesta primeira versão, o sino só avisa sobre interessados, que são da Administração e da Implantação. Os avisos do Financeiro e do Suporte entram depois.
+        Nesta versão, o sino avisa sobre interessados, para a Administração e a Implantação, e sobre fatura em atraso, para a Administração e o Financeiro. Os avisos do Suporte entram depois.
       </Estado>
     );
   } else if (!ok.total) {
     conteudo = (
-      <Estado icone="sino" titulo="Nenhum aviso por enquanto." acoes={EXPLICA}>
-        Chega aqui o que pede você no Comercial. Cada aviso leva à ficha do interessado.
+      <Estado icone="sino" titulo="Nenhum aviso por enquanto." acoes={<Explica interessados={ok.veInteressados} cobranca={!!ok.veCobranca} />}>
+        {ok.veInteressados && ok.veCobranca ? "Chega aqui o que pede você no Comercial e na Cobrança. Cada aviso leva à ficha do interessado ou à fatura."
+          : ok.veCobranca ? "Chega aqui o que pede você na Cobrança. Cada aviso leva à fatura."
+          : "Chega aqui o que pede você no Comercial. Cada aviso leva à ficha do interessado."}
       </Estado>
     );
   } else {
@@ -251,7 +278,7 @@ export function PainelSinoConsole({ sino, aberto, aoFechar }: { sino: ReturnType
       {lista === "erro" ? null : (
         <p className="si-pe">
           <Icone nome="historico" className="ico" />
-          <span>{ok && !ok.veInteressados
+          <span>{ok && (!ok.veInteressados || ok.veCobranca)
             ? "Os avisos ficam aqui por 30 dias. Marcar como lido não apaga nada, e o que o aviso conta continua no lugar de origem."
             : "Os avisos ficam aqui por 30 dias. Marcar como lido não apaga nada, e o que o aviso conta continua na ficha do interessado."}</span>
         </p>
