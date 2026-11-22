@@ -7,8 +7,8 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   dataBr, formatarDocumento, LIMITE_ARQUIVO_BYTES, NOMES_CAMPO_IMPORTACAO, ORIGENS, reais,
-  telefoneBr,
-  type CampoImportacao, type ColunaImportacao, type DecisaoLinha, type Importacao, type LinhaPrevia, type LinhasFora, type OQueImportar,
+  NOMES_ORIGEM_IMPORTACAO, telefoneBr,
+  type CampoImportacao, type OrigemDados, type TipoContato, type ColunaImportacao, type DecisaoLinha, type Importacao, type LinhaPrevia, type LinhasFora, type OQueImportar,
   type ParesImportacao, type ParValor, type PlanoDesfazer, type PreviaImportacao, type ProblemaLinha, type ResumoPrevia,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -25,13 +25,14 @@ import {
 } from "./importacao.ts";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { planilhaXlsx } from "./planilha.ts";
+import { PassoAbas } from "./ImportacaoSistemas.tsx";
 
-const API = "/v1/escritorio/importacoes";
+export const API = "/v1/escritorio/importacoes";
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-const plural = (n: number, um: string, varios: string) => `${n.toLocaleString("pt-BR")} ${n === 1 ? um : varios}`;
+export const plural = (n: number, um: string, varios: string) => `${n.toLocaleString("pt-BR")} ${n === 1 ? um : varios}`;
 const prazoCurto = (iso: string) => dataCurta(iso);
 /** "hoje, 15h42" ou "12/11, 10h05", no horário de Brasília. */
-function quando(iso: string) {
+export function quando(iso: string) {
   const dia = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
   return dia.format(new Date(iso)) === dia.format(new Date()) ? `hoje, ${hora(iso)}` : `${dataCurta(iso)}, ${hora(iso)}`;
 }
@@ -45,7 +46,7 @@ const LGPD_ARQ = (
 
 // ------------------------------------------------------------------------------- peças comuns
 
-function Lgpd({ icone = "escudo", children }: { icone?: NomeIcone; children: ReactNode }) {
+export function Lgpd({ icone = "escudo", children }: { icone?: NomeIcone; children: ReactNode }) {
   return (
     <p className="im-lgpd">
       <Icone nome={icone} className="ico" />
@@ -54,7 +55,7 @@ function Lgpd({ icone = "escudo", children }: { icone?: NomeIcone; children: Rea
   );
 }
 
-function Folha({ id, titulo, sub, acoes, children, estilo }: {
+export function Folha({ id, titulo, sub, acoes, children, estilo }: {
   id: string; titulo: string; sub?: ReactNode; acoes?: ReactNode; children: ReactNode; estilo?: React.CSSProperties;
 }) {
   return (
@@ -71,7 +72,7 @@ function Folha({ id, titulo, sub, acoes, children, estilo }: {
   );
 }
 
-function Grade({ principal, lateral, rotulo = "Como funciona a importação" }: { principal: ReactNode; lateral: ReactNode; rotulo?: string }) {
+export function Grade({ principal, lateral, rotulo = "Como funciona a importação" }: { principal: ReactNode; lateral: ReactNode; rotulo?: string }) {
   return (
     <div className="hn-grade">
       <div className="hn-col">{principal}</div>
@@ -80,26 +81,48 @@ function Grade({ principal, lateral, rotulo = "Como funciona a importação" }: 
   );
 }
 
-function CabFluxo({ lede }: { lede?: string }) {
+const TITULO_ORIGEM: Record<OrigemDados, string> = { PLANILHA: "Importar planilha", ASTREA: "Importar do Astrea", ADVBOX_PLANILHA: "Importar do ADVBOX" };
+const ICONE_ORIGEM: Record<OrigemDados, NomeIcone> = { PLANILHA: "doc", ASTREA: "enviar", ADVBOX_PLANILHA: "doc" };
+/** Onde começa cada origem (o passo 1). */
+export const INICIO_ORIGEM: Record<OrigemDados, string> = { PLANILHA: ROTAS_IMPORTACAO.planilha, ASTREA: ROTAS_IMPORTACAO.astrea, ADVBOX_PLANILHA: ROTAS_IMPORTACAO.advbox };
+/** O nome curto do sistema, para "Pelo modelo do Astrea". */
+export const SISTEMA_ORIGEM: Record<OrigemDados, string> = { PLANILHA: "", ASTREA: "Astrea", ADVBOX_PLANILHA: "ADVBOX" };
+
+/** O selo da origem (decisão 4 do F3.56), escrito em tudo o que veio de outro sistema. */
+export function SeloOrigem({ origem, leve = false }: { origem: OrigemDados; leve?: boolean }) {
+  return (
+    <span className={`is-orig${leve ? " is-orig-l" : ""}`}>
+      <Icone nome={ICONE_ORIGEM[origem]} className="ico" />
+      <span className="sr">Origem: </span>{NOMES_ORIGEM_IMPORTACAO[origem]}
+    </span>
+  );
+}
+
+export function CabFluxo({ lede, origem = "PLANILHA", titulo }: { lede?: string; origem?: OrigemDados; titulo?: string }) {
+  const sistema = origem !== "PLANILHA";
   return (
     <div className="pt-cab">
       <div>
-        <p className="sobretitulo">Clientes</p>
-        <h1>Importar planilha</h1>
+        <p className="sobretitulo">{sistema || titulo ? "Clientes · Importar dados" : "Clientes"}</p>
+        <h1>{titulo ?? TITULO_ORIGEM[origem]}</h1>
         <span className="fio" aria-hidden="true" />
         {lede ? <p className="lede">{lede}</p> : null}
+        {sistema ? <p style={{ marginTop: 12 }}><SeloOrigem origem={origem} /></p> : null}
       </div>
     </div>
   );
 }
 
 const NOMES_PASSOS = ["O arquivo", "As colunas", "A prévia", "Importar"];
+const NOMES_PASSOS_BACKUP = ["O backup", "Abas e colunas", "A prévia", "Importar"];
 
 /** Os quatro passos (decisão 2). Os feitos levam de volta, quando dá. */
-function Passos({ atual, escolhas = [], voltar = [] }: { atual: number; escolhas?: string[]; voltar?: (string | undefined)[] }) {
+export function Passos({ atual, escolhas = [], voltar = [], origem = "PLANILHA" }: {
+  atual: number; escolhas?: string[]; voltar?: (string | undefined)[]; origem?: OrigemDados;
+}) {
   return (
     <ol className="im-passos" aria-label={`Passo ${Math.min(atual, 4)} de 4`}>
-      {NOMES_PASSOS.map((nome, i) => {
+      {(origem === "ASTREA" ? NOMES_PASSOS_BACKUP : NOMES_PASSOS).map((nome, i) => {
         const n = i + 1;
         const conteudo = (
           <>
@@ -160,7 +183,7 @@ function QuemImporta({ contratos }: { contratos: boolean }) {
 }
 
 /** Uma moldura de página de Clientes, com o escritório carregado. */
-function Pagina({ trilha, children }: { trilha: { nome: string; href?: string }[]; children: (e: EscritorioPortal) => ReactNode }) {
+export function Pagina({ trilha, children }: { trilha: { nome: string; href?: string }[]; children: (e: EscritorioPortal) => ReactNode }) {
   const { escritorio, erro, recarregar } = useEscritorioPortal();
   const t = [{ nome: "Clientes", href: ROTAS_PORTAL.clientes }, ...trilha];
   return (
@@ -172,7 +195,7 @@ function Pagina({ trilha, children }: { trilha: { nome: string; href?: string }[
 
 // ------------------------------------------------------------------------------- passo 1: o arquivo
 
-const PROBLEMAS_ARQUIVO: Record<string, { titulo: string; texto: (nome: string) => string }> = {
+export const PROBLEMAS_ARQUIVO: Record<string, { titulo: string; texto: (nome: string) => string }> = {
   ARQUIVO_FORMATO: {
     titulo: "Este arquivo não é uma planilha.",
     texto: (n) => `“${n}” não é .xlsx nem .csv. Envie a planilha em .xlsx ou .csv. No Google Planilhas: Arquivo › Fazer download › Microsoft Excel (.xlsx). Nada foi importado e o arquivo já foi apagado.`,
@@ -202,21 +225,21 @@ const OUTROS_PROBLEMAS: [string, string, string][] = [
   ["Sem os nomes das colunas", "A primeira linha precisa trazer o nome de cada coluna, como “Nome” e “CPF”. Sem eles, não dá para ligar as colunas.", "SEM_CABECALHO"],
 ];
 
-function kb(bytes: number) {
+export function kb(bytes: number) {
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-export function ImportarPlanilha({ id, modelo = false, passo }: {
-  id?: string; modelo?: boolean; passo?: "colunas" | "previa";
+export function ImportarPlanilha({ id, modelo = false, passo, aba }: {
+  id?: string; modelo?: boolean; passo?: "abas" | "colunas" | "previa"; aba?: number;
 }) {
   return (
-    <Pagina trilha={[{ nome: "Importar planilha" }]}>
-      {(e) => (id ? <ImportacaoComecada id={id} passo={passo ?? "colunas"} escritorio={e} /> : <PassoArquivo escritorio={e} modeloAberto={modelo} />)}
+    <Pagina trilha={[{ nome: id ? "Importar dados" : "Importar planilha" }]}>
+      {(e) => (id ? <ImportacaoComecada id={id} passo={passo ?? "colunas"} aba={aba} escritorio={e} /> : <PassoArquivo escritorio={e} modeloAberto={modelo} />)}
     </Pagina>
   );
 }
 
-function PassoArquivo({ escritorio, modeloAberto }: { escritorio: EscritorioPortal; modeloAberto: boolean }) {
+export function PassoArquivo({ escritorio, modeloAberto }: { escritorio: EscritorioPortal; modeloAberto: boolean }) {
   const temContratos = escritorio.areas.includes("CONTRATOS");
   const [oQue, setOQue] = useState<OQueImportar>(temContratos ? "CLIENTES_CONTRATOS" : "CLIENTES");
   const [lendo, setLendo] = useState<{ nome: string; tamanho: number } | null>(null);
@@ -483,7 +506,7 @@ function JanelaModelo({ aberta, contratos, aoFechar }: { aberta: boolean; contra
 
 // ------------------------------------------------------------------------------- importação começada
 
-function ImportacaoComecada({ id, passo, escritorio }: { id: string; passo: "colunas" | "previa"; escritorio: EscritorioPortal }) {
+function ImportacaoComecada({ id, passo, aba, escritorio }: { id: string; passo: "abas" | "colunas" | "previa"; aba?: number; escritorio: EscritorioPortal }) {
   const [imp, setImp] = useState<Importacao | "erro" | null>(null);
   const [vez, setVez] = useState(0);
   useEffect(() => {
@@ -502,23 +525,33 @@ function ImportacaoComecada({ id, passo, escritorio }: { id: string; passo: "col
   if (imp.situacao !== "PREVIA" || !imp.colunas) {
     return (
       <div className="im">
-        <CabFluxo />
+        <CabFluxo origem={imp.origem} />
         <section className="folha">
           <Estado icone="historico" moldura titulo={imp.situacao === "EXPIRADA" ? "Esta prévia passou de 24 horas e foi apagada" : "Esta importação foi cancelada"}
-            acoes={<a className="btn btn-pri" href={ROTAS_IMPORTACAO.enviar}><Icone nome="enviar" className="ico" />Enviar a planilha de novo</a>}>
-            O arquivo e as correções da prévia já foram apagados. Nada entrou no cadastro. Envie a planilha de novo para recomeçar.
+            acoes={<a className="btn btn-pri" href={INICIO_ORIGEM[imp.origem]}><Icone nome="enviar" className="ico" />{imp.origem === "ASTREA" ? "Enviar o backup de novo" : "Enviar a planilha de novo"}</a>}>
+            O arquivo e as correções da prévia já foram apagados. Nada entrou no cadastro. {imp.origem === "ASTREA" ? "Envie o backup de novo para recomeçar." : "Envie a planilha de novo para recomeçar."}
           </Estado>
         </section>
       </div>
     );
   }
   if (passo === "previa" && imp.temPrevia) return <PassoPrevia imp={imp} />;
-  return <PassoColunas imp={imp} escritorio={escritorio} />;
+  if (passo === "abas" && imp.abasSistema && imp.origem === "ASTREA") return <PassoAbas imp={imp} />;
+  return <PassoColunas imp={imp} escritorio={escritorio} abaInicial={aba} />;
 }
 
 // ------------------------------------------------------------------------------- passo 2: colunas
 
-type Escolhas = { responsavel: Record<string, string>; tipo: Record<string, string>; origem: Record<string, string> };
+type Escolhas = { responsavel: Record<string, string>; tipo: Record<string, string>; origem: Record<string, string>; tipoContato: Record<string, string> };
+const GRUPOS_PARES = ["responsavel", "tipo", "origem", "tipoContato"] as const;
+
+/** O que cada tipo de contato do backup vira (decisão 9 do F3.56). */
+const NOMES_TIPO_CONTATO: Record<TipoContato, string> = { CLIENTE: "Cliente", PARTE_CONTRARIA: "Parte contrária", FORA: "Não importar" };
+const AJUDA_TIPO_CONTATO: Record<TipoContato, string> = {
+  CLIENTE: "",
+  PARTE_CONTRARIA: "Não viram clientes. Os processos, com as partes contrárias, entram numa próxima versão do T3jus.",
+  FORA: "Ficam de fora: o cadastro de clientes não guarda terceiros.",
+};
 
 const TEXTO_FORA = { OBSERVACAO: "Observação livre não entra: pode trazer dado que o cadastro não pede (LGPD).", AREA: "A área entra no Jurídico, quando o caso for cadastrado." };
 
@@ -527,7 +560,7 @@ function ligacaoSugerida(cols: ColunaImportacao[], contratos: boolean, comercial
   const usado = new Set<string>();
   const r: Record<string, CampoImportacao | ""> = {};
   for (const c of cols) {
-    const s = c.sugestao;
+    const s = c.modelo ?? c.sugestao;
     const pode = s && (contratos || !ehCampoContrato(s)) && (comercial || (s !== "origem" && s !== "origem_indicacao")) && !usado.has(s);
     r[String(c.indice)] = pode ? s : "";
     if (pode) usado.add(s);
@@ -535,8 +568,10 @@ function ligacaoSugerida(cols: ColunaImportacao[], contratos: boolean, comercial
   return r;
 }
 
-function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: EscritorioPortal }) {
+function PassoColunas({ imp, escritorio, abaInicial }: { imp: Importacao; escritorio: EscritorioPortal; abaInicial?: number }) {
   const [aba, setAba] = useState(imp.aba);
+  const sistema = SISTEMA_ORIGEM[imp.origem];
+  const backup = imp.origem === "ASTREA";
   const [colunas, setColunas] = useState<ColunaImportacao[]>(imp.colunas ?? []);
   const [ligacao, setLigacao] = useState<Record<string, CampoImportacao | "">>(() => {
     const r: Record<string, CampoImportacao | ""> = {};
@@ -546,6 +581,7 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
   const [pares, setPares] = useState<ParesImportacao | null>(null);
   const [escolhas, setEscolhas] = useState<Escolhas>({
     responsavel: { ...(imp.pares.responsavel ?? {}) }, tipo: { ...(imp.pares.tipo ?? {}) }, origem: { ...(imp.pares.origem ?? {}) },
+    tipoContato: { ...(imp.pares.tipoContato ?? {}) },
   });
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<{ campos: Obrigatorio[]; texto?: string } | null>(null);
@@ -562,11 +598,13 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
       const lig = Object.fromEntries(Object.entries(ligacao).filter(([, v]) => v));
       void chamarPortal<ParesImportacao>(`${API}/${imp.id}/pares`, { corpo: { aba, ligacao: lig } }).then((r) => {
         if (!vivo || !r.ok) return;
-        setPares(r.dados);
+        // A API anterior ao F3.56 não manda o tipo de contato.
+        const d: ParesImportacao = { ...r.dados, tipoContato: r.dados.tipoContato ?? [] };
+        setPares(d);
         setEscolhas((e) => {
-          const n: Escolhas = { responsavel: { ...e.responsavel }, tipo: { ...e.tipo }, origem: { ...e.origem } };
-          for (const g of ["responsavel", "tipo", "origem"] as const) {
-            for (const p of r.dados[g]) if (n[g][p.chave] === undefined) n[g][p.chave] = p.sugestao ?? "";
+          const n: Escolhas = { responsavel: { ...e.responsavel }, tipo: { ...e.tipo }, origem: { ...e.origem }, tipoContato: { ...e.tipoContato } };
+          for (const g of GRUPOS_PARES) {
+            for (const p of d[g]) if (n[g][p.chave] === undefined) n[g][p.chave] = p.sugestao ?? "";
           }
           return n;
         });
@@ -578,6 +616,12 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave, imp.id]);
+
+  // A aba escolhida no passo das abas do backup.
+  useEffect(() => {
+    if (abaInicial !== undefined && abaInicial !== imp.aba && imp.abas?.some((a) => a.indice === abaInicial)) void trocarAba(abaInicial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abaInicial]);
 
   async function trocarAba(nova: number) {
     setAba(nova);
@@ -626,7 +670,8 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
     topo.current?.scrollIntoView({ block: "start" });
   }
 
-  const ligadasPeloNome = colunas.filter((c) => ligacao[String(c.indice)] && ligacao[String(c.indice)] === c.sugestao).length;
+  const ligadasPeloModelo = colunas.filter((c) => ligacao[String(c.indice)] && ligacao[String(c.indice)] === c.modelo).length;
+  const ligadasPeloNome = colunas.filter((c) => ligacao[String(c.indice)] && ligacao[String(c.indice)] !== c.modelo && ligacao[String(c.indice)] === c.sugestao).length;
   const ligadas = colunas.filter((c) => ligacao[String(c.indice)]).length;
   // O grupo de cada coluna sai da sugestão (estável enquanto a pessoa ajusta).
   const doContrato = (c: ColunaImportacao) => contratos && (ehCampoContrato(c.sugestao) || c.foraMotivo === "AREA" || ehCampoContrato(ligacao[String(c.indice)]));
@@ -646,9 +691,9 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
   }
 
   const tabela = (cols: ColunaImportacao[], grupo: "cliente" | "contrato", cap: string) => {
-    const opcoes = grupo === "contrato" ? camposDoGrupo("contrato", imp.comercial) : [
+    const opcoes: CampoImportacao[] = grupo === "contrato" ? camposDoGrupo("contrato", imp.comercial) : [
       ...camposDoGrupo("cliente", imp.comercial),
-      ...(contratos ? [] : []),
+      ...(backup ? (["tipo_contato"] as const) : []),
     ];
     return (
       <table className="hn-tab im-map">
@@ -684,6 +729,8 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
                 <td data-r="Como foi ligada">
                   {!v ? (
                     <div className="im-sit"><Selo tom="neutro" icone="xis">Fica de fora</Selo>{fora ? <small>{fora}</small> : null}</div>
+                  ) : v === c.modelo ? (
+                    <div className="im-sit im-sit-nome"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do {sistema}</span></div>
                   ) : v === c.sugestao ? (
                     <div className="im-sit im-sit-nome"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo nome</span></div>
                   ) : (
@@ -704,10 +751,18 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
     return c ? c.nome : NOMES_CAMPO_IMPORTACAO[campo];
   };
 
-  const blocoPares = pares && (pares.responsavel.length || pares.tipo.length || pares.origem.length) ? (
-    <Folha id="t-pares" titulo="Valores que viram itens das listas do T3jus"
-      sub="Cada valor diferente da planilha, com quantas linhas o usam. Estado civil e UF são reconhecidos sozinhos.">
+  const blocoPares = pares && (pares.responsavel.length || pares.tipo.length || pares.origem.length || pares.tipoContato.length) ? (
+    <Folha id="t-pares" titulo={sistema ? "Valores que viram itens do T3jus" : "Valores que viram itens das listas do T3jus"}
+      sub={sistema ? `Cada valor diferente do ${backup ? "backup" : "arquivo"}, com quantas linhas o usam. Ligue uma vez; vale para todas as linhas.`
+        : "Cada valor diferente da planilha, com quantas linhas o usam. Estado civil e UF são reconhecidos sozinhos."}>
       <div style={{ paddingBottom: 12 }}>
+        {pares.tipoContato.length ? (
+          <GrupoPares titulo={`${imp.abas?.find((a) => a.indice === aba)?.nome ?? "Contatos"} · coluna “${nomeColuna("tipo_contato")}”`} itens={pares.tipoContato}
+            escolhido={escolhas.tipoContato} prefixo="k" opcoes={Object.entries(NOMES_TIPO_CONTATO).map(([v, t]) => ({ v, t }))} vazio="Cliente"
+            ajuda={(p) => AJUDA_TIPO_CONTATO[(escolhas.tipoContato[p.chave] || "CLIENTE") as TipoContato]}
+            rotuloDe={(p) => (p.chave === "" ? "Sem o tipo" : `“${p.valor}”`)}
+            aoEscolher={(k, v) => setEscolhas((e) => ({ ...e, tipoContato: { ...e.tipoContato, [k]: v } }))} />
+        ) : null}
         {pares.responsavel.length ? (
           <GrupoPares titulo={Object.values(ligacao).includes("responsavel") ? `Coluna “${nomeColuna("responsavel")}”` : "Responsável pelos contratos"}
             itens={pares.responsavel} escolhido={escolhas.responsavel} prefixo="r"
@@ -750,7 +805,7 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
       <Folha id="t-col" titulo="Ligue as colunas aos campos do T3jus" sub={`${imp.arquivo} · ${plural(linhasAba, "linha", "linhas")} · ${plural(colunas.length, "coluna", "colunas")}`}
         estilo={{ overflow: "hidden" }}>
         <div ref={topo} className="im-aba">
-          {imp.abas && imp.abas.length > 1 ? (
+          {imp.abas && imp.abas.length > 1 && !backup ? (
             <div className="campo">
               <label htmlFor="im-aba">Aba da planilha</label>
               <select className="entrada" id="im-aba" value={aba} onChange={(e) => void trocarAba(Number(e.target.value))}>
@@ -758,7 +813,11 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
               </select>
             </div>
           ) : null}
-          <p>Ligamos {ligadasPeloNome} de {plural(colunas.length, "coluna", "colunas")} pelo nome{ligadas > ligadasPeloNome ? ` e você ligou mais ${ligadas - ligadasPeloNome}` : ""}. Confira cada uma e ajuste o que precisar.</p>
+          {sistema ? (
+            <p>Ligamos {plural(ligadasPeloModelo, "coluna", "colunas")} da aba {imp.abas?.find((a) => a.indice === aba)?.nome ?? ""} pelo modelo do {sistema}{ligadasPeloNome ? ` e ${ligadasPeloNome} pelo nome` : ""}{ligadas > ligadasPeloModelo + ligadasPeloNome ? `; você ligou mais ${ligadas - ligadasPeloModelo - ligadasPeloNome}` : ""}. Confira cada uma e ajuste o que precisar.</p>
+          ) : (
+            <p>Ligamos {ligadasPeloNome} de {plural(colunas.length, "coluna", "colunas")} pelo nome{ligadas > ligadasPeloNome ? ` e você ligou mais ${ligadas - ligadasPeloNome}` : ""}. Confira cada uma e ajuste o que precisar.</p>
+          )}
         </div>
         {aviso}
         <p className="im-grupo-t"><Icone nome="pessoas" className="ico" />Cliente · {plural(colsCli.length, "coluna", "colunas")}</p>
@@ -771,7 +830,7 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
         ) : null}
         <div className="im-pe">
           <span className="im-pe-t">As colunas que ficam de fora não são lidas. Nada entrou no cadastro ainda.</span>
-          <a className="btn btn-fantasma" href={ROTAS_IMPORTACAO.enviar}><Icone nome="esquerda" className="ico" />Voltar</a>
+          <a className="btn btn-fantasma" href={backup ? ROTAS_IMPORTACAO.abas(imp.id) : INICIO_ORIGEM[imp.origem]}><Icone nome="esquerda" className="ico" />Voltar</a>
           <button className="btn btn-pri" type="button" disabled={enviando} onClick={() => void verPrevia()}>
             <Icone nome="olho" className="ico" />
             {enviando ? "Conferindo as linhas…" : "Ver a prévia"}
@@ -815,8 +874,8 @@ function PassoColunas({ imp, escritorio }: { imp: Importacao; escritorio: Escrit
 
   return (
     <div className="im">
-      <CabFluxo />
-      <Passos atual={2} escolhas={[imp.arquivo]} voltar={[ROTAS_IMPORTACAO.enviar]} />
+      <CabFluxo origem={imp.origem} />
+      <Passos atual={2} escolhas={[imp.arquivo]} voltar={[INICIO_ORIGEM[imp.origem]]} origem={imp.origem} />
       <Grade principal={principal} lateral={lateral} rotulo="O que é obrigatório" />
     </div>
   );
@@ -973,13 +1032,13 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
   }
 
   const escolhas = [imp.arquivo, `${plural(Object.values(imp.ligacao).filter(Boolean).length, "coluna ligada", "colunas ligadas")}`, resumo ? `${plural(resumo.contagens.lidas, "linha conferida", "linhas conferidas")}` : ""];
-  const voltar = [ROTAS_IMPORTACAO.enviar, ROTAS_IMPORTACAO.passo(imp.id, "colunas"), ROTAS_IMPORTACAO.passo(imp.id, "previa")];
+  const voltar = [INICIO_ORIGEM[imp.origem], imp.origem === "ASTREA" ? ROTAS_IMPORTACAO.abas(imp.id) : ROTAS_IMPORTACAO.passo(imp.id, "colunas"), ROTAS_IMPORTACAO.passo(imp.id, "previa")];
 
   if (importando || falhou) {
     return (
       <div className="im">
-        <CabFluxo />
-        <Passos atual={4} escolhas={[...escolhas, falhou ? "não feita" : "em andamento"]} voltar={voltar} />
+        <CabFluxo origem={imp.origem} />
+        <Passos atual={4} escolhas={[...escolhas, falhou ? "não feita" : "em andamento"]} voltar={voltar} origem={imp.origem} />
         {falhou ? (
           <div className="estado estado-erro" role="alert">
             <span className="icone-estado"><Icone nome="alerta" className="ico" /></span>
@@ -1014,8 +1073,8 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
   if (erroCarga) {
     return (
       <div className="im">
-        <CabFluxo />
-        <Passos atual={3} escolhas={escolhas} voltar={voltar} />
+        <CabFluxo origem={imp.origem} />
+        <Passos atual={3} escolhas={escolhas} voltar={voltar} origem={imp.origem} />
         <ErroAoCarregar oque="a prévia" aoTentar={() => setVez((v) => v + 1)} />
       </div>
     );
@@ -1177,8 +1236,8 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
 
   return (
     <div className="im">
-      <CabFluxo />
-      <Passos atual={3} escolhas={escolhas} voltar={voltar} />
+      <CabFluxo origem={imp.origem} />
+      <Passos atual={3} escolhas={escolhas} voltar={voltar} origem={imp.origem} />
       <nav className="folha hn-numeros" aria-label="Resumo da prévia">
         {nums.map((x) => (
           <a key={x.r} href="#t-prev" aria-current={filtro === x.f ? "true" : undefined} onClick={(e) => { e.preventDefault(); setFiltro(x.f); setAberta(null); }}>
@@ -1188,9 +1247,24 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
           </a>
         ))}
       </nav>
+      <ForaDoTipo imp={imp} />
       <Grade principal={principal} lateral={lateral} rotulo="O que vai entrar" />
       <JanelaConfirmar aberta={confirmar} imp={imp} resumo={resumo} aoFechar={() => setConfirmar(false)} aoImportar={() => void importar()} />
     </div>
+  );
+}
+
+/** Os contatos do backup que não viraram clientes (decisão 9 do F3.56). */
+function ForaDoTipo({ imp }: { imp: Importacao }) {
+  const f = imp.foraTipo;
+  if (!f || f.PARTE_CONTRARIA + f.FORA === 0) return null;
+  const partes = [f.PARTE_CONTRARIA ? plural(f.PARTE_CONTRARIA, "parte contrária", "partes contrárias") : "", f.FORA ? plural(f.FORA, "terceiro", "terceiros") : ""].filter(Boolean).join(" e ");
+  return (
+    <Aviso tom="info" titulo={f.PARTE_CONTRARIA + f.FORA === 1 ? "1 contato do backup não é cliente e ficou de fora da prévia."
+      : `${plural(f.PARTE_CONTRARIA + f.FORA, "", "contatos do backup não são clientes e ficaram de fora da prévia.")}`}>
+      São {partes}, pelo tipo de contato que você ligou no passo 2. Eles não entram no cadastro de clientes.
+      {f.PARTE_CONTRARIA ? " As partes contrárias voltam com os processos, numa próxima versão do T3jus." : ""}
+    </Aviso>
   );
 }
 
@@ -1472,7 +1546,7 @@ function JanelaConfirmar({ aberta, imp, resumo, aoFechar, aoImportar }: {
   const [agora] = useState(() => Date.now());
   const prazo = new Date(agora + 7 * 86_400_000).toISOString();
   return (
-    <Janela id="janela-confirmar" aberta={aberta} aoFechar={aoFechar} sobretitulo="Importar planilha" titulo={`Importar ${plural(c.prontas, "linha", "linhas")}?`}
+    <Janela id="janela-confirmar" aberta={aberta} aoFechar={aoFechar} sobretitulo={TITULO_ORIGEM[imp.origem] ?? "Importar planilha"} titulo={`Importar ${plural(c.prontas, "linha", "linhas")}?`}
       descricao="janela-confirmar-d" aoEnviar={aoImportar}
       pe={
         <>
@@ -1551,10 +1625,10 @@ export function ResultadoImportacao({ id }: { id: string }) {
         const novos = r.clientes - r.juntados;
         return (
           <div className="im">
-            <Passos atual={5} escolhas={[imp.arquivo, "", `${plural(r.linhas + r.fora, "linha conferida", "linhas conferidas")}`, imp.desfeita ? "desfeita" : `feita ${quandoFoi}`]} />
+            <Passos atual={5} origem={imp.origem} escolhas={[imp.arquivo, "", `${plural(r.linhas + r.fora, "linha conferida", "linhas conferidas")}`, imp.desfeita ? "desfeita" : `feita ${quandoFoi}`]} />
             <div className="cabeca-ambar campo-ambar cabeca-equipe im-fim">
               <div>
-                <p className="sobretitulo">Importação de {quandoFoi}</p>
+                <p className="sobretitulo">{imp.origem !== "PLANILHA" ? `${NOMES_ORIGEM_IMPORTACAO[imp.origem]} · ` : ""}Importação de {quandoFoi}</p>
                 <h1>{imp.desfeita ? "Importação desfeita" : "Importação concluída"}</h1>
                 <span className="fio" aria-hidden="true" />
                 <div className="im-fim-num">
@@ -1695,7 +1769,7 @@ export function ImportacoesHistorico() {
               <span className="fio" aria-hidden="true" />
               <p className="lede">Cada planilha importada pelo escritório, com quem, quando e o que entrou. Desfazer vale por 7 dias.</p>
             </div>
-            <a className="btn btn-escuro" href={ROTAS_IMPORTACAO.enviar} style={{ marginBottom: 6 }}><Icone nome="enviar" className="ico" />Importar planilha</a>
+            <a className="btn btn-escuro" href={ROTAS_IMPORTACAO.enviar} style={{ marginBottom: 6 }}><Icone nome="enviar" className="ico" />Importar dados</a>
           </div>
           {feito ? <Aviso tom="sucesso" titulo="Importação desfeita.">{feito}</Aviso> : null}
           {lista === null ? <Carregando rotulo="Carregando as importações…" linhas={3} /> : lista === "erro" ? <ErroAoCarregar oque="as importações" aoTentar={() => setVez((v) => v + 1)} /> : (
@@ -1704,8 +1778,8 @@ export function ImportacoesHistorico() {
               {lista.length ? (
                 <table className="hn-tab im-hist">
                   <caption className="sr">Importações do escritório</caption>
-                  <colgroup><col style={{ width: "30%" }} /><col style={{ width: "24%" }} /><col style={{ width: "24%" }} /><col style={{ width: "22%" }} /></colgroup>
-                  <thead><tr><th scope="col">Arquivo</th><th scope="col">O que entrou</th><th scope="col">Situação</th><th scope="col">Ações</th></tr></thead>
+                  <colgroup><col style={{ width: "26%" }} /><col style={{ width: "14%" }} /><col style={{ width: "20%" }} /><col style={{ width: "21%" }} /><col style={{ width: "19%" }} /></colgroup>
+                  <thead><tr><th scope="col">Arquivo</th><th scope="col">Origem</th><th scope="col">O que entrou</th><th scope="col">Situação</th><th scope="col">Ações</th></tr></thead>
                   <tbody>
                     {lista.map((i) => <LinhaHistorico key={i.id} i={i} aoDesfazer={() => setDesfazer(i)} />)}
                   </tbody>
@@ -1740,6 +1814,7 @@ function LinhaHistorico({ i, aoDesfazer }: { i: Importacao; aoDesfazer: () => vo
       <td>
         <div className="esc"><div><b><a href={ROTAS_IMPORTACAO.resultado(i.id)}>{i.arquivo}</a></b><small>{quando(i.importadoEm ?? i.criadoEm)} · {i.por.nome}</small></div></div>
       </td>
+      <td data-r="Origem"><SeloOrigem origem={i.origem} leve /></td>
       <td data-r="O que entrou">
         <div>{oQue}<small>{i.desfeita ? "todos inativados ao desfazer" : i.fora ? `${plural(i.fora, "linha", "linhas")} de fora` : "nenhuma linha de fora"}</small></div>
       </td>

@@ -1,0 +1,10 @@
+{
+  "id": "F3.115",
+  "texto": "Na lista vazia de Clientes, a importação como ação principal com as três origens como atalhos (F3.56, decisão 3 do desenho)",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 956
+}

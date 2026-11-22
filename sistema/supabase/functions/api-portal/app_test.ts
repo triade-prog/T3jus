@@ -3,7 +3,7 @@ import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
 import type { Cerebro } from "../_shared/ia.ts";
 import type { Emails, MensagemEmail } from "../_shared/email.ts";
-import { abrirEntrada, abrirTexto, conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosDocumentos, type DadosPeticao } from "@t3jus/domain";
+import { abrirEntrada, abrirTexto, comprimirJson, conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosDocumentos, type DadosPeticao } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -999,6 +999,34 @@ Deno.test("F3.55: a planilha é lida na API e ao banco vão só as células; arq
   const lj = await linha.json(); assertEquals(lj.linha?.numero, 4, JSON.stringify(lj));
   const ruim = await m.pedir(`/v1/escritorio/importacoes/${CLIENTE}/linhas/4`, { metodo: "PATCH", corpo: { campos: { senha: "x" } }, cookie });
   assertEquals(ruim.status, 400);
+});
+
+Deno.test("F3.56: o backup do Astrea chega lido e comprimido; a API reconhece as abas e liga as colunas pelo modelo", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const backup = await comprimirJson({
+    abas: [
+      { nome: "Contatos", linhas: 1, colunas: ["Nome", "Tipo", "CPF/CNPJ", "Celular", "Observações"], celulas: [["Rosa Almeida", "Cliente", "529.982.247-25", "11 98451-2290", "x"]] },
+      { nome: "Tarefas", linhas: 97, colunas: null, celulas: null },
+      { nome: "Honorários", linhas: 1, colunas: ["Cliente", "Valor"], celulas: [["Rosa", "100"]] },
+    ],
+  });
+  const r = await m.pedir("/v1/escritorio/importacoes?oQue=CLIENTES&origem=ASTREA&nome=backup.xlsx", { bruto: backup, cookie });
+  assertEquals(r.status, 201);
+  const d = await r.json();
+  assertEquals([d.origem, d.modelo], ["ASTREA", "astrea-2026-11"]);
+  assertEquals(d.sistema, [
+    { nome: "Contatos", linhas: 1, destino: "CLIENTES", reconhecida: true, porModelo: { 0: "nome", 1: "tipo_contato", 2: "documento", 3: "telefone" } },
+    { nome: "Tarefas", linhas: 97, destino: "TAREFAS", reconhecida: true, porModelo: {} },
+    { nome: "Honorários", linhas: 1, destino: "FORA", reconhecida: false, porModelo: {} },
+  ]);
+  assertEquals(d.abas[1], { nome: "Tarefas", colunas: [], linhas: [] });
+  assertEquals(d.abas[2].linhas, [["Rosa", "100"]]);
+  const ruim = await m.pedir("/v1/escritorio/importacoes?oQue=CLIENTES&origem=ASTREA&nome=backup.xlsx", { bruto: new TextEncoder().encode("não é gzip"), cookie });
+  assertEquals((await erro(ruim)).detalhes?.motivo, "ARQUIVO_FORMATO");
+  const csv = new TextEncoder().encode("Nome do cliente;CPF/CNPJ;Celular\nRosa Almeida;529.982.247-25;11 98451-2290\n");
+  const adv = await (await m.pedir("/v1/escritorio/importacoes?oQue=CLIENTES&origem=ADVBOX_PLANILHA&nome=clientes.csv", { bruto: csv, cookie })).json();
+  assertEquals([adv.origem, adv.modelo, adv.sistema[0].porModelo], ["ADVBOX_PLANILHA", "advbox-2026-11", { 0: "nome", 1: "documento", 2: "telefone" }]);
 });
 
 Deno.test("F1.15: o pedido de exclusão confere data, canal e quem pediu", async () => {

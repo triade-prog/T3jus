@@ -8,6 +8,13 @@ import type { PessoaRef } from "./clientes.ts";
 
 export const LIMITE_ARQUIVO_BYTES = 5 * 1024 * 1024;
 export const LIMITE_LINHAS = 2000;
+/** O backup de outro sistema (F3.56) traz o escritório inteiro: até 20 MB e 10.000 linhas por aba. */
+export const LIMITE_BACKUP_BYTES = 20 * 1024 * 1024;
+export const LIMITE_BACKUP_LINHAS = 10000;
+
+export interface LimitesLeitura { bytes: number; linhas: number }
+const LIMITES_PLANILHA: LimitesLeitura = { bytes: LIMITE_ARQUIVO_BYTES, linhas: LIMITE_LINHAS };
+export const LIMITES_BACKUP: LimitesLeitura = { bytes: LIMITE_BACKUP_BYTES, linhas: LIMITE_BACKUP_LINHAS };
 
 export type MotivoArquivo = "ARQUIVO_FORMATO" | "ARQUIVO_VAZIO" | "ARQUIVO_GRANDE" | "ARQUIVO_PROTEGIDO" | "SEM_CABECALHO";
 
@@ -232,7 +239,7 @@ export function lerCsv(texto: string): string[][] {
 // ------------------------------------------------------------------------------------- abas
 
 /** A primeira linha não vazia traz os nomes; sem nome, ou com cara de dado (CPF, data, e-mail), não serve. */
-function montarAba(nome: string, celulas: string[][]): AbaLida | null {
+function montarAba(nome: string, celulas: string[][], limiteLinhas: number): AbaLida | null {
   const cheia = (l: string[]) => l.some((c) => c !== "");
   const ini = celulas.findIndex(cheia);
   if (ini < 0) return null;
@@ -251,7 +258,7 @@ function montarAba(nome: string, celulas: string[][]): AbaLida | null {
   let fim = dados.length;
   while (fim > 0 && !cheia(dados[fim - 1]!)) fim--;
   const linhas = dados.slice(0, fim).map((l) => Array.from({ length: largura }, (_, i) => l[i] ?? ""));
-  if (linhas.length > LIMITE_LINHAS) throw new ErroArquivo("ARQUIVO_GRANDE");
+  if (linhas.length > limiteLinhas) throw new ErroArquivo("ARQUIVO_GRANDE");
   return { nome: nome.slice(0, 100), colunas: nomes.slice(0, 60), linhas: linhas.map((l) => l.slice(0, 60)) };
 }
 
@@ -260,9 +267,9 @@ function comeca(b: Uint8Array, ...bytes: number[]) {
 }
 
 /** Lê o arquivo enviado. Erros de arquivo saem como ErroArquivo, com o motivo da tela. */
-export async function lerPlanilha(b: Uint8Array, nome: string): Promise<AbaLida[]> {
+export async function lerPlanilha(b: Uint8Array, nome: string, limites: LimitesLeitura = LIMITES_PLANILHA): Promise<AbaLida[]> {
   if (b.length === 0) throw new ErroArquivo("ARQUIVO_VAZIO");
-  if (b.length > LIMITE_ARQUIVO_BYTES) throw new ErroArquivo("ARQUIVO_GRANDE");
+  if (b.length > limites.bytes) throw new ErroArquivo("ARQUIVO_GRANDE");
   let brutas: { nome: string; celulas: string[][] }[];
   if (comeca(b, 0xd0, 0xcf, 0x11, 0xe0)) {
     // Arquivo do Office com senha (ou .xls antigo): o T3jus não pede a senha.
@@ -279,7 +286,7 @@ export async function lerPlanilha(b: Uint8Array, nome: string): Promise<AbaLida[
   } else {
     throw new ErroArquivo("ARQUIVO_FORMATO");
   }
-  const abas = brutas.slice(0, 20).map((a) => montarAba(a.nome, a.celulas));
+  const abas = brutas.slice(0, 20).map((a) => montarAba(a.nome, a.celulas, limites.linhas));
   if (abas.every((a) => a === null || a.linhas.length === 0)) throw new ErroArquivo("ARQUIVO_VAZIO");
   return abas.map((a, i) => a ?? { nome: brutas[i]!.nome, colunas: [], linhas: [] });
 }
@@ -287,6 +294,11 @@ export async function lerPlanilha(b: Uint8Array, nome: string): Promise<AbaLida[
 // ------------------------------------------------------------------------------------- tipos da API
 
 export type OQueImportar = "CLIENTES" | "CLIENTES_CONTRATOS";
+/** De onde vêm os dados (F3.56): a planilha de sempre, o backup do Astrea ou a planilha do ADVBOX. */
+export type OrigemDados = "PLANILHA" | "ASTREA" | "ADVBOX_PLANILHA";
+export const NOMES_ORIGEM_IMPORTACAO: Record<OrigemDados, string> = {
+  PLANILHA: "Planilha", ASTREA: "Astrea · backup", ADVBOX_PLANILHA: "ADVBOX · planilha",
+};
 export type SituacaoImportacao = "PREVIA" | "CONCLUIDA" | "DESFEITA" | "CANCELADA" | "EXPIRADA";
 export type SituacaoLinha = "PRONTA" | "AVISO" | "ERRO" | "PULADA" | "IMPORTADA";
 export type DecisaoLinha = "JUNTAR" | "NOVO" | "SEGUIR" | "PULAR";
@@ -297,7 +309,11 @@ export const CAMPOS_CLIENTE_IMPORTACAO = [
   "rg", "rg_orgao", "cep", "endereco", "bairro", "cidade", "uf", "origem", "origem_indicacao",
 ] as const;
 export const CAMPOS_CONTRATO_IMPORTACAO = ["objeto", "tipo", "valor", "parcelas", "primeiro", "pagas", "assinatura", "responsavel"] as const;
-export type CampoImportacao = (typeof CAMPOS_CLIENTE_IMPORTACAO)[number] | (typeof CAMPOS_CONTRATO_IMPORTACAO)[number];
+/** Só no backup de outro sistema: separa cliente, parte contrária e terceiros (decisão 9 do F3.56). */
+export const CAMPO_TIPO_CONTATO = "tipo_contato";
+export type CampoImportacao = (typeof CAMPOS_CLIENTE_IMPORTACAO)[number] | (typeof CAMPOS_CONTRATO_IMPORTACAO)[number] | typeof CAMPO_TIPO_CONTATO;
+/** O que o tipo de contato vira: cliente, parte contrária nos casos ou fica de fora. */
+export type TipoContato = "CLIENTE" | "PARTE_CONTRARIA" | "FORA";
 
 /** Os nomes da tela (os do desenho aprovado). */
 export const NOMES_CAMPO_IMPORTACAO: Record<CampoImportacao, string> = {
@@ -306,7 +322,7 @@ export const NOMES_CAMPO_IMPORTACAO: Record<CampoImportacao, string> = {
   rg_orgao: "Órgão emissor do RG", cep: "CEP", endereco: "Endereço", bairro: "Bairro", cidade: "Cidade", uf: "UF", origem: "Origem",
   origem_indicacao: "Quem indicou", objeto: "Objeto do contrato", tipo: "Tipo de honorário", valor: "Valor (total, mensal ou percentual)",
   parcelas: "Número de parcelas", primeiro: "Primeiro vencimento", pagas: "Parcelas já pagas", assinatura: "Data da assinatura",
-  responsavel: "Responsável pelo contrato",
+  responsavel: "Responsável pelo contrato", tipo_contato: "Tipo de contato",
 };
 
 export interface ColunaImportacao {
@@ -316,13 +332,33 @@ export interface ColunaImportacao {
   exemplo: string | null;
   campo: CampoImportacao | null;
   sugestao: CampoImportacao | null;
+  /** O campo pelo modelo do sistema (Astrea, ADVBOX); nulo na planilha. */
+  modelo: CampoImportacao | null;
   foraMotivo: "OBSERVACAO" | "AREA" | null;
 }
+
+/** Uma aba do backup, reconhecida ou não pelo modelo do sistema. */
+export interface AbaSistema {
+  indice: number;
+  nome: string;
+  linhas: number;
+  destino: DestinoAba;
+  reconhecida: boolean;
+  /** Lida e guardada para a prévia (as abas que ficam de fora não chegam ao T3jus). */
+  lida: boolean;
+}
+export type DestinoAba = "CLIENTES" | "CASOS" | "FINANCEIRO" | "TAREFAS" | "AGENDA" | "PUBLICACOES" | "FORA";
 
 export interface Importacao {
   id: string;
   arquivo: string;
   oQue: OQueImportar;
+  origem: OrigemDados;
+  /** A versão do modelo do sistema usada para ligar (por exemplo, astrea-2026-11). */
+  modelo: string | null;
+  abasSistema: AbaSistema[] | null;
+  /** Contatos do backup que não viraram clientes, por tipo. */
+  foraTipo: { PARTE_CONTRARIA: number; FORA: number } | null;
   situacao: SituacaoImportacao;
   versao: number;
   criadoEm: string;
@@ -334,7 +370,9 @@ export interface Importacao {
   aba: number;
   colunas: ColunaImportacao[] | null;
   ligacao: Record<string, CampoImportacao>;
-  pares: { responsavel?: Record<string, string>; tipo?: Record<string, string>; origem?: Record<string, string> };
+  pares: {
+    responsavel?: Record<string, string>; tipo?: Record<string, string>; origem?: Record<string, string>; tipoContato?: Record<string, string>;
+  };
   temPrevia: boolean;
   importadoEm: string | null;
   desfazerAte: string | null;
@@ -350,7 +388,9 @@ export interface ResultadoImportacao {
 }
 
 export interface ParValor { chave: string; valor: string; n: number; sugestao: string | null }
-export interface ParesImportacao { responsavel: ParValor[]; tipo: ParValor[]; origem: ParValor[]; equipe: PessoaRef[]; colunas: ColunaImportacao[] }
+export interface ParesImportacao {
+  responsavel: ParValor[]; tipo: ParValor[]; origem: ParValor[]; tipoContato: ParValor[]; equipe: PessoaRef[]; colunas: ColunaImportacao[];
+}
 
 export interface ContagensPrevia { lidas: number; prontas: number; aviso: number; erro: number; puladas: number; corrigidas: number; decididas: number }
 export interface ResumoPrevia {
@@ -411,8 +451,12 @@ export interface LinhasFora {
   linhas: { numero: number; valores: Partial<Record<CampoImportacao, string>>; situacao: SituacaoLinha; problemas: ProblemaLinha[] }[];
 }
 
-const campo = z.enum([...CAMPOS_CLIENTE_IMPORTACAO, ...CAMPOS_CONTRATO_IMPORTACAO]);
-export const enviarImportacaoSchema = z.object({ oQue: z.enum(["CLIENTES", "CLIENTES_CONTRATOS"]), nome: z.string().trim().min(1).max(200) });
+const campo = z.enum([...CAMPOS_CLIENTE_IMPORTACAO, ...CAMPOS_CONTRATO_IMPORTACAO, CAMPO_TIPO_CONTATO]);
+export const enviarImportacaoSchema = z.object({
+  oQue: z.enum(["CLIENTES", "CLIENTES_CONTRATOS"]),
+  nome: z.string().trim().min(1).max(200),
+  origem: z.enum(["PLANILHA", "ASTREA", "ADVBOX_PLANILHA"]).default("PLANILHA"),
+});
 export const ligacaoImportacaoSchema = z.object({
   aba: z.number().int().min(0).max(19).optional(),
   ligacao: z.record(z.string().regex(/^[0-9]{1,2}$/), z.union([campo, z.literal("")])),
@@ -423,6 +467,7 @@ export const colunasImportacaoSchema = ligacaoImportacaoSchema.extend({
     responsavel: z.record(z.string().max(200), z.string().max(40)).optional(),
     tipo: z.record(z.string().max(200), z.string().max(40)).optional(),
     origem: z.record(z.string().max(200), z.string().max(40)).optional(),
+    tipoContato: z.record(z.string().max(200), z.string().max(40)).optional(),
   }).optional(),
 });
 export const linhaImportacaoSchema = z.object({
