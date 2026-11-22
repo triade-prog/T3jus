@@ -309,3 +309,80 @@ ${botao ? `<tr><td style="padding:20px 32px 0 32px;"><a href="${escapar(link)}" 
   const texto = `${ola}\n\n${paragrafos.join("\n\n")}${botao ? `\n\n${botao}: ${link}` : ""}\n\nDúvidas: ${contato}\n\nT3jus · Sistema Jurídico · t3jus.pro\nEste endereço não recebe respostas.`;
   return { assunto, html, texto, responderPara: contato };
 }
+
+// ---------------------------------------------------------------------------------------
+// Fim do contrato do escritório (F0.16, PT-11). Desenho aprovado em
+// docs/design/aprovadas/console-fim-contrato: a sócia dona recebe um e-mail no dia do fim, com
+// o prazo para baixar os dados, e outro 3 dias antes de o acesso fechar. O contato é o
+// CONTATO_T3JUS, ainda provisório: quem chama passa o endereço.
+
+export interface AvisoFimContrato {
+  tipo: "FIM" | "FECHA_EM_3";
+  escritorio: string;
+  socio: string | null;
+  fimEm: string;
+  consultaAte: string;
+  acessoFechaEm: string;
+  guardaAte: string;
+  /** Quantos dias faltam para o acesso fechar, no dia do envio. */
+  diasParaFechar: number;
+}
+
+export function avisoFimContrato(a: AvisoFimContrato, urlPortal: string, contato: string): Omit<MensagemEmail, "para"> {
+  const primeiro = (a.socio ?? "").trim().split(/\s+/)[0] ?? "";
+  const ola = primeiro ? `Olá, ${primeiro}.` : "Olá.";
+  const exportar = "Escritório › Exportar os dados";
+  const guarda = `Depois disso, nada é apagado: os dados ficam guardados pelo T3jus até ${diaBr(a.guardaAte)}, e uma cópia pode ser pedida pelo contato abaixo.`;
+  let assunto: string;
+  let titulo: string;
+  let paragrafos: string[];
+  if (a.tipo === "FIM") {
+    assunto = `O contrato da ${a.escritorio} com o T3jus terminou`;
+    titulo = "O contrato com o T3jus terminou";
+    paragrafos = [
+      `O contrato da ${a.escritorio} com o T3jus terminou em ${diaBr(a.fimEm)}. Até ${diaBr(a.consultaAte)}, o Portal fica só para consulta: a equipe vê tudo, mas não cria nem muda nada.`,
+      `Nesse prazo, baixe os dados do escritório no Portal, em ${exportar}. Em ${diaBr(a.acessoFechaEm)}, o acesso ao Portal fecha.`,
+      guarda,
+    ];
+  } else {
+    const quando = a.diasParaFechar <= 1 ? "amanhã" : `em ${a.diasParaFechar} dias`;
+    assunto = `O acesso ao Portal do T3jus fecha ${quando}`;
+    titulo = assunto;
+    paragrafos = [
+      `O acesso da ${a.escritorio} ao Portal do T3jus fecha em ${diaBr(a.acessoFechaEm)}, porque o contrato terminou em ${diaBr(a.fimEm)}. Até ${diaBr(a.consultaAte)}, ainda dá para baixar os dados do escritório, em ${exportar}.`,
+      `Se já baixou, pode desconsiderar este e-mail. ${guarda}`,
+    ];
+  }
+  const botao = "Baixar os dados no Portal";
+  const fonte = "font-family:'Source Sans 3',Arial,Helvetica,sans-serif;";
+  const link = `${urlPortal}/meu-escritorio`;
+  const html = `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>${escapar(titulo)}</title>
+</head>
+<body style="margin:0;padding:0;background:#F2ECE8;">
+<div style="display:none;max-height:0;overflow:hidden;">Os dados podem ser baixados até ${diaBr(a.consultaAte)}.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2ECE8;">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#FFFFFF;border:1px solid #E6D9D0;border-radius:12px;">
+<tr><td style="padding:28px 32px 8px 32px;border-top:4px solid #DD9760;border-radius:12px 12px 0 0;">
+<img src="https://t3jus.pro/marca/logo-email.png" width="160" height="56" alt="T3jus" style="display:block;border:0;">
+</td></tr>
+<tr><td style="padding:16px 32px 0 32px;font-family:Alegreya,Georgia,'Times New Roman',serif;font-size:24px;line-height:1.3;color:#692746;font-weight:700;">${escapar(titulo)}</td></tr>
+<tr><td style="padding:12px 32px 0 32px;${fonte}font-size:16px;line-height:1.55;color:#2A1A22;">${escapar(ola)}</td></tr>
+${paragrafos.map((p) => `<tr><td style="padding:12px 32px 0 32px;${fonte}font-size:16px;line-height:1.55;color:#2A1A22;">${escapar(p)}</td></tr>`).join("\n")}
+<tr><td style="padding:20px 32px 0 32px;"><a href="${escapar(link)}" style="display:inline-block;background:#692746;color:#FFFFFF;${fonte}font-size:15px;font-weight:600;text-decoration:none;padding:12px 20px;border-radius:8px;">${escapar(botao)}</a></td></tr>
+<tr><td style="padding:24px 32px 28px 32px;${fonte}font-size:13px;line-height:1.5;color:#5E4A54;">Dúvidas ou pedido de cópia: <a href="mailto:${escapar(contato)}" style="color:#692746;">${escapar(contato)}</a></td></tr>
+</table>
+<p style="margin:16px 0 0 0;${fonte}font-size:12px;color:#5E4A54;">T3jus · Sistema Jurídico · <a href="https://t3jus.pro" style="color:#5E4A54;">t3jus.pro</a><br>Este endereço não recebe respostas.</p>
+</td></tr>
+</table>
+</body>
+</html>`;
+  const texto = `${ola}\n\n${paragrafos.join("\n\n")}\n\n${botao}: ${link}\n\nDúvidas ou pedido de cópia: ${contato}\n\nT3jus · Sistema Jurídico · t3jus.pro\nEste endereço não recebe respostas.`;
+  return { assunto, html, texto, responderPara: contato };
+}

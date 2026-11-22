@@ -5,7 +5,8 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
-  "proximo": "Ainda não programado: a rotina da noite deve mandar os dois e-mails pelo Resend. O texto cita o contato do T3jus, que hoje é provisório (atendimento@exemplo.com.br, CONTATO_T3JUS); falta a Carol dizer o e-mail real",
-  "ordem": 160
+  "status": "feito",
+  "proximo": "Carol aprovar os textos dos dois e-mails, aplicar a migration 0780 e publicar a api-console. O contato citado é o provisório CONTATO_T3JUS (atendimento@exemplo.com.br): trocar a constante em packages/domain/src/contrato.ts quando o e-mail real vier",
+  "ordem": 160,
+  "evidencia": "Migration 0780_avisos_fim_contrato (fila contrato_avisos, rotina das 8h pelo pg_cron t3jus-avisos-fim), rota /v1/rotina/avisos-fim-contrato e envio na hora ao encerrar com fim hoje na api-console, e-mail avisoFimContrato em _shared/email.ts, frase \"Só equipe\" no histórico da ficha; testes 104_avisos_fim_contrato_test.sql, api-console/avisos_fim_test.ts e console/historico.test.ts"
 }

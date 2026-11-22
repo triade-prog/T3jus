@@ -17,10 +17,11 @@ Estes saem pela API do Resend, com o segredo `RESEND_API_KEY` nas Edge Functions
 | E-mail | Quando sai | Onde está |
 |---|---|---|
 | Autenticador tirado | O suporte tira o autenticador de alguém no Console (F1.12): a própria pessoa fica sabendo e, se não foi ela que pediu, fala com o escritório | `sistema/supabase/functions/_shared/email.ts` |
+| Fim do contrato (F0.16) | À sócia dona: no dia do fim do contrato (na hora, se a Administração encerra com fim hoje; senão, às 8h) e 3 dias antes de o acesso ao Portal fechar, com o prazo para baixar os dados. Fila `contrato_avisos` (migration 0780), rota `/v1/rotina/avisos-fim-contrato` | `avisoFimContrato` em `sistema/supabase/functions/_shared/email.ts` |
 
 A chave pode ser a mesma do SMTP ou uma nova (**API Keys > Create API Key**, nome `supabase-funcoes`, **Sending access**, domínio `t3jus.pro`). Só a Carol cola.
 
-Ainda não sai: o aviso de fim de contrato (F0.16).
+O contato que os e-mails da cobrança e do fim do contrato citam é o `CONTATO_T3JUS` (`sistema/packages/domain/src/contrato.ts`), ainda provisório. Para trocar, mude a constante e publique a api-console.
 
 ## Remetente
 
