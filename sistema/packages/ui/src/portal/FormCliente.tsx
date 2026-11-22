@@ -6,18 +6,21 @@
 // (PT-19) mostra quem salvou antes e a hora, e compara só os campos que mudaram.
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ESTADOS_CIVIS, ORIGENS, UFS, type PossivelDuplicado, type TipoCliente } from "@t3jus/domain";
+import {
+  CAPACIDADES, ESTADOS_CIVIS, hojeBrasilia, MODOS_CURATELA, ORIGENS, PAPEIS_CURATELA, PAPEIS_MENOR, situacaoNoDia, UFS, type Capacidade,
+  type PossivelDuplicado, type TipoCliente,
+} from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro } from "../console/pecas.tsx";
 import { dataLonga } from "../console/tempo.ts";
 import {
-  campoDoServidor, conferirCliente, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato,
+  campoDoServidor, conferirCliente, dataBr, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato,
   type ErrosCliente, type RascunhoCliente,
 } from "./clientes.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 
-type CampoTexto = Exclude<keyof RascunhoCliente, "tipo" | "contatos" | "principal">;
+type CampoTexto = Exclude<keyof RascunhoCliente, "tipo" | "contatos" | "principal" | "rlMoraJunto">;
 const PROC = "procuração";
 
 function Uso({ children }: { children: ReactNode }) {
@@ -72,6 +75,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
     setR((x) => ({ ...x, [k]: v }));
     // Com os dígitos certos, o erro do documento some na hora e aparece "Dígitos conferidos".
     if (k === "documento" && erros.documento && documentoConfere(r.tipo, v)) setErros(({ documento: _d, ...resto }) => resto);
+    if (k === "rlDocumento" && erros.rlDocumento && documentoConfere("PF", v)) setErros(({ rlDocumento: _d, ...resto }) => resto);
   };
   const contato0 = r.contatos[0]!;
   const mudarContato = (chave: number, k: "nome" | "papel" | "telefone" | "email", v: string) =>
@@ -229,6 +233,151 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
     </div>
   ) : null;
 
+  // Quem assina (F3.98): o cliente assina por si, é menor ou está sob curatela. A data só do menor.
+  const primeiro = r.nome.trim().split(/\s+/)[0] || "o cliente";
+  const cap = (pf ? r.capacidade : "PLENA") as Capacidade;
+  const hoje = hojeBrasilia();
+  const nascIso = lerData(r.nascimento);
+  const sit = cap === "MENOR" ? situacaoNoDia("MENOR", nascIso, hoje) : null;
+  const menor = cap === "MENOR" && sit?.situacao !== "FEZ_18";
+  const menorDe16 = menor && (sit?.idade === null || sit?.idade === undefined || sit.idade < 16);
+  const mudarCap = (v: Capacidade) => {
+    setR((x) => ({ ...x, capacidade: v, rlPapel: "" }));
+    setErros(({ nascimento: _n, rlNome: _r, rlPapel: _p, rlDocumento: _d, ...resto }) => resto);
+  };
+  const rlDocOk = r.rlDocumento.trim() && !erros.rlDocumento && documentoConfere("PF", r.rlDocumento);
+  const calc = !sit || sit.idade === null ? (
+    <div className="rl-calc rl-neutro c3" role="status" aria-live="polite">
+      <Icone nome="ajuda" className="ico" />
+      <span>Com a data, o T3jus diz se {primeiro} é representado(a) ou assistido(a), e faz a conta de novo a cada documento gerado.</span>
+    </div>
+  ) : (
+    <div className="rl-calc c3" role="status" aria-live="polite">
+      <Icone nome="pessoas" className="ico" />
+      <span>
+        {sit.situacao === "REPRESENTADO" ? (
+          <><b>{primeiro} tem {sit.idade} anos hoje: é representado(a).</b> Só quem responde por {primeiro} assina. Aos 16 anos, em {dataBr(sit.faz16!)}, passa a ser assistido(a), e os dois assinam.</>
+        ) : sit.situacao === "ASSISTIDO" ? (
+          <><b>{primeiro} tem {sit.idade} anos hoje: é assistido(a).</b> {primeiro} e quem responde por {primeiro} assinam juntos. Aos 18 anos, em {dataBr(sit.faz18!)}, passa a assinar sozinho(a).</>
+        ) : (
+          <><b>{primeiro} já tem 18 anos e assina por si.</b> Para quem já é cliente, a ficha avisa e muda quando alguém confirmar.</>
+        )}
+      </span>
+    </div>
+  );
+  const dadosDeQuemAssina = (
+    <>
+      {campo("rlNome", "Nome completo", { classe: "c4", uso: true, ajuda: cap === "CURATELA" ? "Como está no termo de curatela." : "Como está no documento." })}
+      {campo("rlDocumento", "CPF", {
+        classe: "c2", uso: true, modo: "numeric", ajuda: rlDocOk ? undefined : "Conferimos os dígitos.",
+        depois: rlDocOk ? (<p className="cl-ok"><Icone nome="check" className="ico" />Dígitos conferidos</p>) : null,
+      })}
+      {campo("rlRg", "RG", { classe: "c2", uso: true })}
+      {campo("rlRgOrgao", "Órgão emissor e UF", { classe: "c2", ajuda: "Ex.: SSP/SP" })}
+      {campo("rlNacionalidade", "Nacionalidade", { classe: "c2", uso: true, ajuda: "Ex.: brasileira" })}
+      {selecao("rlEstadoCivil", "Estado civil", ESTADOS_CIVIS, { classe: "c2", uso: true })}
+      {campo("rlProfissao", "Profissão", { classe: "c2", uso: true })}
+      <div className="rl-mora">
+        <label className="opcao">
+          <input className="marcar" type="checkbox" checked={r.rlMoraJunto} onChange={(ev) => setR((x) => ({ ...x, rlMoraJunto: ev.target.checked }))} />
+          <span>
+            Mora com {primeiro}
+            <small>{r.rlMoraJunto ? "O endereço da qualificação vale para os dois (“ambos residentes na…”). Desmarque para escrever outro." : "Desmarcado: escreva abaixo o endereço de quem assina."}</small>
+          </span>
+        </label>
+      </div>
+      {r.rlMoraJunto ? null : (
+        <>
+          {campo("rlCep", "CEP", { classe: "c2", uso: true, modo: "numeric", auto: "postal-code" })}
+          {campo("rlEndereco", "Endereço (rua, número e complemento)", { classe: "c4", uso: true })}
+          {campo("rlBairro", "Bairro", { classe: "c2", uso: true })}
+          {campo("rlCidade", "Cidade", { classe: "c2", uso: true })}
+          {selecao("rlUf", "UF", UFS, { classe: "c2", uso: true })}
+        </>
+      )}
+    </>
+  );
+  const quemAssina = (
+    <>
+      <div className="cl-sec">
+        <h3>Quem assina</h3>
+        <small>Na procuração e no contrato</small>
+      </div>
+      <fieldset className="rl-cap" aria-describedby={`${ids}-cap-aj`}>
+        <legend>O cliente assina por si?{mudou("capacidade") ? <Mudou /> : null}</legend>
+        <div className="rl-ops">
+          {(Object.keys(CAPACIDADES) as Capacidade[]).map((c) => (
+            <label key={c} className="opcao">
+              <input className="marcar" type="radio" name={`${ids}-cap`} value={c} checked={cap === c} onChange={() => mudarCap(c)} />
+              <span>
+                {CAPACIDADES[c]}
+                <small>{c === "PLENA" ? "Maior de 18 anos" : c === "MENOR" ? "Assina o pai, a mãe ou o tutor" : "Assina o curador nomeado pelo juiz"}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="rl-aj" id={`${ids}-cap-aj`}>Na dúvida, deixe “Sim”. Dá para mudar depois, na ficha.</p>
+      </fieldset>
+      {cap === "MENOR" ? (
+        <div className="rl-painel" role="group" aria-label="Menor de 18 anos: data de nascimento e quem assina">
+          <div className="c6 cl-lgpd">
+            <Icone nome="escudo" className="ico" />
+            <span>
+              <b>Por que pedimos a data de nascimento.</b> Só de quem é menor, e só para saber, no dia de gerar cada documento, se é representado ou assistido.
+              De quem assina por si, não pedimos (LGPD).
+            </span>
+          </div>
+          {campo("nascimento", "Data de nascimento", { classe: "c3", uso: true, modo: "numeric", ajuda: "dd/mm/aaaa" })}
+          {calc}
+          <div className="rl-sub">
+            <h4>Quem assina por {primeiro}</h4>
+            <small>O pai, a mãe ou o tutor. Vai na procuração e no contrato.</small>
+          </div>
+          {selecao("rlPapel", "É", PAPEIS_MENOR, { classe: "c2", uso: true, ajuda: "Tutor é quem o juiz nomeou." })}
+          {dadosDeQuemAssina}
+        </div>
+      ) : cap === "CURATELA" ? (
+        <div className="rl-painel" role="group" aria-label="Sob curatela: quem assina e o termo">
+          <div className="c6 cl-lgpd">
+            <Icone nome="escudo" className="ico" />
+            <span>
+              <b>Só o que vai no documento.</b> Quem é o curador e os dados do termo, que vão na qualificação. Não pedimos o motivo da curatela, laudo nem data de
+              nascimento (LGPD).
+            </span>
+          </div>
+          <div className="rl-sub">
+            <h4>Quem assina por {primeiro}</h4>
+            <small>O curador, como está no termo de curatela</small>
+          </div>
+          {selecao("rlPapel", "É", PAPEIS_CURATELA, { classe: "c2", uso: true })}
+          {dadosDeQuemAssina}
+          <div className="rl-sub">
+            <h4>O termo de curatela</h4>
+            <small>Vai na qualificação e junto com a procuração</small>
+          </div>
+          <fieldset className="rl-termo" aria-describedby={`${ids}-modo-aj`}>
+            <legend>O que diz o termo{mudou("curModo") ? <Mudou /> : null}</legend>
+            <div className="rl-ops2">
+              {(Object.keys(MODOS_CURATELA) as (keyof typeof MODOS_CURATELA)[]).map((m) => (
+                <label key={m} className="opcao">
+                  <input className="marcar" type="radio" name={`${ids}-modo`} value={m} checked={(r.curModo || "REPRESENTA") === m}
+                    onChange={() => setR((x) => ({ ...x, curModo: m }))} />
+                  <span>
+                    {r.rlPapel === "CURADOR" ? MODOS_CURATELA[m].replace("A curadora", "O curador") : MODOS_CURATELA[m]}
+                    <small>{m === "REPRESENTA" ? "Representa. É o mais comum." : `Assiste. Quando o termo pede que ${primeiro} assine junto.`}</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="ajuda" id={`${ids}-modo-aj`}>Está na sentença ou no termo, nos limites da curatela.</p>
+          </fieldset>
+          {campo("curProcesso", "Número do processo da curatela", { classe: "c3", uso: true, opcional: true, modo: "numeric" })}
+          {campo("curVara", "Vara e comarca", { classe: "c6", uso: true, opcional: true })}
+        </div>
+      ) : null}
+    </>
+  );
+
   const nErros = Object.keys(erros).length;
   const qualificacao = (
     <details className="cl-qualif" open={qualAberta} onToggle={(e) => setQualAberta((e.target as HTMLDetailsElement).open)}>
@@ -238,7 +387,11 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
         </span>
         <span>
           <strong>Qualificação para procuração e contrato</strong>
-          <small>{pf ? "Nacionalidade, estado civil, profissão, RG e endereço. Pode completar depois." : "Sede e representante legal. Pode completar depois."}</small>
+          <small>
+            {!pf ? "Sede e representante legal. Pode completar depois."
+              : menorDe16 ? `Nacionalidade, RG e endereço de ${primeiro}. Pode completar depois.`
+                : "Nacionalidade, estado civil, profissão, RG e endereço. Pode completar depois."}
+          </small>
         </span>
         <span className="cl-abre">
           {qualAberta ? "Recolher" : "Preencher agora"}
@@ -250,18 +403,22 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           <Icone nome="escudo" className="ico" />
           <span>
             <b>Só o que vai para a procuração e o contrato.</b>{" "}
-            {pf
-              ? "Cada dado abaixo tem essa finalidade, e por isso não pedimos mais nada (nem data de nascimento, nem foto de documento)."
-              : "Endereço da sede e quem assina pela empresa."}{" "}
+            {!pf
+              ? "Endereço da sede e quem assina pela empresa."
+              : menorDe16
+                ? "Para quem tem menos de 16 anos, estado civil e profissão não vão no documento, e o RG é opcional."
+                : menor
+                  ? "Para quem tem 16 ou 17 anos, estado civil, profissão e RG são opcionais."
+                  : "Cada dado abaixo tem essa finalidade, e por isso não pedimos mais nada (nem data de nascimento, nem foto de documento)."}{" "}
             Quem guarda e responde por estes dados é o escritório (LGPD).
           </span>
         </div>
         {pf ? (
           <>
             {campo("nacionalidade", "Nacionalidade", { classe: "c2", uso: true, ajuda: "Ex.: brasileira" })}
-            {selecao("estadoCivil", "Estado civil", ESTADOS_CIVIS, { classe: "c2", uso: true })}
-            {campo("profissao", "Profissão", { classe: "c2", uso: true })}
-            {campo("rg", "RG", { classe: "c2", uso: true })}
+            {menorDe16 ? null : selecao("estadoCivil", "Estado civil", ESTADOS_CIVIS, { classe: "c2", uso: true, opcional: menor })}
+            {menorDe16 ? null : campo("profissao", "Profissão", { classe: "c2", uso: true, opcional: menor, ajuda: menor ? "Ex.: estudante" : undefined })}
+            {campo("rg", "RG", { classe: "c2", uso: true, opcional: menor })}
             {campo("rgOrgao", "Órgão emissor e UF", { classe: "c2", ajuda: "Ex.: SSP/SP" })}
             {campo("cep", "CEP", { classe: "c2", uso: true, modo: "numeric", auto: "postal-code" })}
             {campo("endereco", "Endereço (rua, número e complemento)", { classe: "c4", uso: true, auto: "street-address" })}
@@ -474,7 +631,8 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
         ) : null}
         {novo ? (
           <>
-            {campoContato("telefone", "Telefone ou WhatsApp", { classe: "c3", tipo: "tel", modo: "tel", ajuda: pf ? "Para falar com o cliente." : "Telefone ou e-mail: pelo menos um." })}
+            {campoContato("telefone", "Telefone ou WhatsApp", { classe: "c3", tipo: "tel", modo: "tel",
+              ajuda: !pf ? "Telefone ou e-mail: pelo menos um." : cap !== "PLENA" ? "Para falar com o cliente. Se ele não tem, use o de quem responde por ele." : "Para falar com o cliente." })}
             {campoContato("email", "E-mail", { classe: "c3", tipo: "email", modo: "email", opcional: true, ajuda: pf ? "Para falar com o cliente." : undefined })}
             {duplicados?.por === "telefone" ? avisoDuplicado : null}
           </>
@@ -491,13 +649,16 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           ) : null,
         })}
         {duplicados?.por === "documento" ? avisoDuplicado : null}
+        {pf ? quemAssina : null}
         {origem}
         {qualificacao}
         {novo ? null : contatosEdit}
         <div className="form-pe">
           <span className="esq-pe">
             {novo
-              ? "Os campos sem “(opcional)” são obrigatórios. O cadastro fica no histórico do escritório, com seu nome e a hora."
+              ? cap === "PLENA"
+                ? "Os campos sem “(opcional)” são obrigatórios. O cadastro fica no histórico do escritório, com seu nome e a hora."
+                : "Os campos sem “(opcional)” são obrigatórios. Para menor, também a data de nascimento e o nome de quem assina; para curatela, o nome do curador. O cadastro fica no histórico do escritório."
               : "Cada mudança vai para o histórico do escritório, com seu nome e os campos alterados."}
           </span>
           <button className="btn btn-fantasma" type="button" onClick={aoCancelar}>

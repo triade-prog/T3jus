@@ -13,6 +13,8 @@ import {
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { formatarTelefone } from "../console/ficha.ts";
+import { FaixaFez18, FolhaQuemAssina, FolhaQuemAssinava, FolhaTempo, JanelaAssinaPorSi, SeloQuemAssina } from "./ResponsavelLegal.tsx";
+import { ROTAS_DOCUMENTOS } from "./procuracoes.ts";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { dataLonga, hora } from "../console/tempo.ts";
 import {
@@ -111,6 +113,9 @@ function Dados({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
     </div>
   );
   const end = f.endereco && f.cidade && f.uf ? endereco(f) : null;
+  // F3.98: do menor, a data e a idade; abaixo de 16, estado civil e profissão não vão no documento.
+  const menor = pf && (f.assina?.situacao === "REPRESENTADO" || f.assina?.situacao === "ASSISTIDO");
+  const menor16 = menor && f.assina?.situacao === "REPRESENTADO";
   return (
     <Folha titulo="Dados e qualificação" sub={f.situacao === "INATIVO" ? "Guardados como estavam ao inativar." : f.situacao === "ARQUIVADO" ? "Guardados como estavam ao arquivar, só leitura." : "O que vai na procuração e no contrato."}
       acoes={aoEditar ? (
@@ -124,10 +129,16 @@ function Dados({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
         {item(pf ? "CPF" : "CNPJ", f.documento ? <><span className="num">{formatarDocumento(f.documento)}</span>{conf}</> : null)}
         {pf ? (
           <>
-            {item("RG", f.rg ? `${f.rg}${f.rgOrgao ? ` · ${f.rgOrgao}` : ""}` : null)}
+            {menor ? item("Data de nascimento", f.nascimento ? `${dataBr(f.nascimento)}${typeof f.assina?.idade === "number" ? ` · ${f.assina.idade} anos` : ""}` : null) : null}
             {item("Nacionalidade", f.nacionalidade)}
-            {item("Estado civil", f.estadoCivil ? ESTADOS_CIVIS[f.estadoCivil] : null)}
-            {item("Profissão", f.profissao)}
+            {menor && !f.rg ? (
+              <div>
+                <dt>RG</dt>
+                <dd className="falta">Não tem · opcional para menor</dd>
+              </div>
+            ) : item("RG", f.rg ? `${f.rg}${f.rgOrgao ? ` · ${f.rgOrgao}` : ""}` : null)}
+            {menor16 ? null : item("Estado civil", f.estadoCivil ? ESTADOS_CIVIS[f.estadoCivil] : null, { pede: !menor })}
+            {menor16 ? null : item("Profissão", f.profissao, { pede: !menor })}
             {item("Endereço", end, { inteira: true })}
           </>
         ) : (
@@ -707,7 +718,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const [editando, setEditando] = useState(editarAoAbrir);
   const [conflito, setConflito] = useState<Conflito | null>(null);
   const [meu, setMeu] = useState<RascunhoCliente | null>(null);
-  const [janela, setJanela] = useState<"registrar" | "inativar" | "reativar" | "pedir" | "excluir" | "recusar" | null>(null);
+  const [janela, setJanela] = useState<"registrar" | "inativar" | "reativar" | "pedir" | "excluir" | "recusar" | "por-si" | null>(null);
   const [abertura, setAbertura] = useState(0);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [destaque, setDestaque] = useState<string | null>(null);
@@ -959,6 +970,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
                 <>
                   <span className="selo selo-ativo">Ativo</span>
                   <SeloSemAvisos ativo={avisos.dados?.ativo} />
+                  <SeloQuemAssina f={f} />
                 </>
               ) : (
                 <span className="selo selo-neutro">Inativo</span>
@@ -1145,6 +1157,12 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           ) : (
             <>
               <Dados f={f} aoEditar={editar} />
+              {f.tipo === "PF" ? (
+                <>
+                  <FolhaQuemAssina f={f} aoEditar={editar} />
+                  <FolhaQuemAssinava f={f} />
+                </>
+              ) : null}
               <Contatos f={f} aoEditar={editar} />
               <FolhaSemAvisos f={f} dados={avisos.dados} eu={escritorio.pessoa} podeEscrever={!soConsulta(escritorio) && !arquivado}
                 aoFeito={(x) => { setFeito(x); avisos.recarregar(); }} />
@@ -1156,6 +1174,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           <>
             {fimLgpd ? <RegistroExclusao f={f} /> : null}
             {ativo ? <Procuracao f={f} aoEditar={editar} /> : null}
+            {f.tipo === "PF" && !excluido ? <FolhaTempo f={f} /> : null}
             {comercial ? <Origem f={f} /> : notaSemComercial}
             {situacao}
             {fimLgpd ? null : <NoEscritorio f={f} />}
@@ -1172,6 +1191,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
         {fimLgpd ? null : <FaixaPedido f={f} aoExcluir={() => abrir("excluir")} aoRecusar={() => abrir("recusar")} />}
         {abas}
         {faixaInativo}
+        {ativo && !editando ? (
+          <FaixaFez18 f={f} aoAtualizar={editar ? () => abrir("por-si") : undefined} gerarHref={ROTAS_DOCUMENTOS.gerar()} />
+        ) : null}
         {corpo}
       </div>
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
@@ -1193,6 +1215,10 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
       {f.podeInativar ? (
         <JanelaSituacao key={`s-${abertura}`} modo={janela === "inativar" || janela === "reativar" ? janela : null} f={f} escritorio={nomeEsc}
           aoFechar={() => setJanela(null)} aoFeito={(x) => void concluir(x)}
+          aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
+      ) : null}
+      {ativo && f.assina?.situacao === "FEZ_18" ? (
+        <JanelaAssinaPorSi key={`ps-${abertura}`} aberta={janela === "por-si"} f={f} aoFechar={() => setJanela(null)} aoFeito={(x) => void concluir(x)}
           aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
       ) : null}
       {fimLgpd ? null : (

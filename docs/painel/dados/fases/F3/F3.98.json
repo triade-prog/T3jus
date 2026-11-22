@@ -4,9 +4,10 @@
   "peca": "S2",
   "refs": [
     "AP-01",
-    "CH-08"
+    "CH-08",
+    "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 793,
-  "proximo": "Programar o desenho aprovado em docs/design/aprovadas/portal-responsavel-legal (D25): migration 0820, formulário e ficha, aviso dos 18 anos e documentos.ts"
+  "evidencia": "Programado: migration 0830 (capacidade, nascimento e quem assina na ficha; cliente_assina pela data; clientes_quem_assinava; portal_cliente_assina_por_si; representante no documento gerado; aviso CLIENTE_FEZ_18 com pg_cron; teste pgTAP 112), rota POST /clientes/:id/assina-por-si na api-portal, responsavel_legal.ts e documentos.ts (qualificação \"neste ato representado(a)/assistido(a) por\", curatela com o termo, assinatura em uma ou duas linhas; teste responsavel_legal.test.ts), FormCliente (Quem assina), ResponsavelLegal.tsx na ficha (Quem assina por, linha do tempo, faixa e janela dos 18 anos, Quem assinava), quadro em Gerar documentos e o aviso no Sino; e2e tests/e2e/portal-responsavel-legal.spec.ts"
 }

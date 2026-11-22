@@ -3,7 +3,7 @@
 
 import type { MiddlewareHandler } from "hono";
 import {
-  areasSchema, dadosDocumentoSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
+  areasSchema, assinaPorSiSchema, dadosDocumentoSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL, encerrarFunilSchema, type SaidaFunil, type ClienteFunil,
@@ -333,6 +333,15 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const { versao, ...d } = await lerCorpo(c, editarClienteSchema);
     const r = await deps.banco.rpc<{ id: string; versao: number }>("portal_cliente_editar", {
       ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: versao, p_dados: clienteParaBanco(d),
+    });
+    return c.json(r);
+  });
+
+  // "Agora assina por si" (F3.98, pergunta 3): só quando o cliente já fez 18 anos.
+  app.post("/v1/escritorio/clientes/:id/assina-por-si", async (c) => {
+    const d = await lerCorpo(c, assinaPorSiSchema);
+    const r = await deps.banco.rpc<{ id: string; versao: number }>("portal_cliente_assina_por_si", {
+      ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: d.versao, p_dados: { estado_civil: d.estadoCivil, profissao: d.profissao },
     });
     return c.json(r);
   });

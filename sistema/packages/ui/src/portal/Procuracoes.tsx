@@ -8,7 +8,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
-  CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, hojeBrasilia, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
+  CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, PAPEIS_RESPONSAVEL, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
@@ -781,7 +781,8 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   const tem = (k: string) => k in erros;
   const msg = (k: string) => ERROS_DOCUMENTO[erros[k] ?? ""] ?? "Confira este campo.";
   const cli = dados.cliente;
-  const faltas = faltasNoDocumento(cli);
+  const faltas = faltasNoDocumento(cli, dados.hoje);
+  const quem = quemAssina(cli, dados.hoje);
   const faltasAdv = dados.advogados
     .filter((a) => form_.outorgados[a.pessoaId]?.length)
     .map((a) => ({ a, f: a.dados ? faltasDoAdvogado(a.dados, a.inscricoes, dados.escritorio).filter((x) => x !== "OAB") : [] }))
@@ -888,6 +889,25 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                     acoes={<a className="btn btn-sec" href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />Completar na ficha<span className="sr"> (abre numa aba nova)</span></a>}>
                     Dá para gerar assim: {docsPedido.length > 1 ? `os ${docsPedido.length} documentos saem` : "o documento sai"} com o dado marcado, como [RG: falta], para preencher à mão ou no Word. Ou complete a ficha antes.
                   </Aviso>
+                </div>
+              ) : null}
+              {cli.tipo === "PF" && quem !== "PROPRIO" ? (
+                <div className="c6">
+                  <p className="pe-rot">Quem assina por {primeiro(cli.nome)}</p>
+                  <div className="pe-dado">
+                    <span>
+                      <b>{cli.rlNome || "Não cadastrado"}</b>
+                      <small>{[cli.rlPapel ? PAPEIS_RESPONSAVEL[cli.rlPapel] : null, cli.rlDocumento ? `CPF ${formatarDocumento(cli.rlDocumento)}` : null].filter(Boolean).join(" · ") || "Papel e CPF não cadastrados"}</small>
+                    </span>
+                    <span className="selo selo-implant">{rotuloQuemAssina(quem)}</span>
+                    <a className="pe-completar" style={{ marginLeft: "auto" }} href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener">Mudar na ficha<span className="sr"> (abre numa aba nova)</span></a>
+                  </div>
+                  <p className="ajuda">
+                    {quem === "REPRESENTADO" ? `${primeiro(cli.nome)} tem menos de 16 anos: a procuração e o contrato saem com “neste ato representado(a) por…”, e só ${cli.rlNome ? primeiro(cli.rlNome) : "quem responde"} assina.`
+                      : quem === "ASSISTIDO" ? `${primeiro(cli.nome)} tem 16 ou 17 anos: os documentos saem com “neste ato assistido(a) por…”, e os dois assinam.`
+                      : quem === "CURATELA_ASSISTE" ? "Sob curatela, com assistência: os documentos saem com “neste ato assistido(a) por…”, e os dois assinam. Junte o termo de curatela à procuração."
+                      : "Sob curatela: os documentos saem com “neste ato representado(a) por…”, e só quem foi nomeado pelo juiz assina. Junte o termo de curatela à procuração."}
+                  </p>
                 </div>
               ) : null}
               {cli.tipo === "PJ" ? (
@@ -1127,7 +1147,7 @@ function Resultado({ r, d, aoAnexar }: { r: ResultadoDocumentos; d: DadosDocumen
               {u.documentos.some((x) => x.tipo === "PROCURACAO") ? (
                 <div><dt>Poderes especiais</dt><dd>{u.poderes.length || u.outroPoder ? juntar([...u.poderes.map((p) => PODERES_ESPECIAIS[p] as string), ...(u.outroPoder ? [u.outroPoder] : [])]).replace(/^./, (c) => c.toUpperCase()) : "Só os gerais"}</dd></div>
               ) : null}
-              {u.representante ? <div><dt>Quem assina pela empresa</dt><dd>{u.representante.nome}{u.representante.cargo ? `, ${u.representante.cargo}` : ""}</dd></div> : null}
+              {u.representante ? <div><dt>{u.representante.cargo && /^(mãe|pai|tutora?|curadora?)$/i.test(u.representante.cargo) ? "Quem assinou pelo cliente" : "Quem assina pela empresa"}</dt><dd>{u.representante.nome}{u.representante.cargo ? `, ${u.representante.cargo}` : ""}</dd></div> : null}
               <div><dt>Cidade e data</dt><dd>{u.cidadeData}</dd></div>
               <div><dt>Saiu marcado</dt><dd>{marcados.length ? juntar(marcados) : "Nada"}</dd></div>
             </dl>

@@ -199,6 +199,13 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         detalhe: <>{d.caso ? `${d.caso}. ` : ""}{d.contrato ? `Contrato ${d.contrato}. ` : ""}Confira o nome, a área e a etapa.</>,
         onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "andamento", texto: "Caso novo" },
       };
+    case "CLIENTE_FEZ_18":
+      // F3.98, pergunta 3: o aviso vai para quem responde pelo contrato ativo ou pelo caso aberto.
+      return {
+        icone: "pessoas", titulo: <><b>{d.cliente ?? "Um cliente"}</b> fez 18 anos{d.em ? ` em ${d.em.slice(0, 5)}` : ""} e agora assina por si</>,
+        detalhe: `${d.quem ? `${d.quem} assinava pelo cliente. ` : ""}Atualize a ficha e, no caso em andamento, colha uma procuração nova, assinada só pelo cliente.`,
+        onde: "Abrir a ficha", href: `${ROTAS_PORTAL.clientes}/${a.origemId}`, selo: { tom: "atencao", texto: "Fez 18" },
+      };
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,

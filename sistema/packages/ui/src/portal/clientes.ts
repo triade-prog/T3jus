@@ -3,7 +3,7 @@
 // campos que mudaram no conflito (PT-19) e os rótulos de próximo contato.
 
 import {
-  cadastrarClienteSchema, cpfValido, cnpjValido, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, ORIGENS, TOTAL_QUALIFICACAO,
+  CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, ORIGENS, TOTAL_QUALIFICACAO,
   type DadosCliente, type FichaCliente, type ProxContato, type TipoCliente,
 } from "@t3jus/domain";
 import { formatarTelefone } from "../console/ficha.ts";
@@ -40,12 +40,37 @@ export interface RascunhoCliente {
   repProfissao: string;
   origem: string;
   origemIndicacao: string;
+  /** Quem assina (F3.98): PLENA, MENOR ou CURATELA. A data é escrita como dd/mm/aaaa. */
+  capacidade: string;
+  nascimento: string;
+  rlPapel: string;
+  rlNome: string;
+  rlDocumento: string;
+  rlRg: string;
+  rlRgOrgao: string;
+  rlNacionalidade: string;
+  rlEstadoCivil: string;
+  rlProfissao: string;
+  rlMoraJunto: boolean;
+  rlCep: string;
+  rlEndereco: string;
+  rlBairro: string;
+  rlCidade: string;
+  rlUf: string;
+  curModo: string;
+  curProcesso: string;
+  curVara: string;
   contatos: ContatoRascunho[];
   /** Chave do contato principal. */
   principal: number;
 }
 
-type CampoTexto = Exclude<keyof RascunhoCliente, "tipo" | "contatos" | "principal">;
+type CampoTexto = Exclude<keyof RascunhoCliente, "tipo" | "contatos" | "principal" | "rlMoraJunto">;
+
+const QUEM_ASSINA_VAZIO = {
+  capacidade: "PLENA", nascimento: "", rlPapel: "", rlNome: "", rlDocumento: "", rlRg: "", rlRgOrgao: "", rlNacionalidade: "", rlEstadoCivil: "",
+  rlProfissao: "", rlMoraJunto: true, rlCep: "", rlEndereco: "", rlBairro: "", rlCidade: "", rlUf: "", curModo: "REPRESENTA", curProcesso: "", curVara: "",
+};
 
 let proxima = 1;
 export const novaChaveContato = () => proxima++;
@@ -55,6 +80,7 @@ export function rascunhoVazio(tipo: TipoCliente = "PF"): RascunhoCliente {
   return {
     tipo, nome: "", documento: "", nacionalidade: "", estadoCivil: "", profissao: "", rg: "", rgOrgao: "", cep: "", endereco: "", bairro: "",
     cidade: "", uf: "", repNome: "", repCargo: "", repDocumento: "", repEstadoCivil: "", repProfissao: "", origem: "", origemIndicacao: "",
+    ...QUEM_ASSINA_VAZIO,
     contatos: [{ chave, nome: "", papel: "", telefone: "", email: "" }], principal: chave,
   };
 }
@@ -71,6 +97,11 @@ export function rascunhoDaFicha(f: FichaCliente): RascunhoCliente {
     profissao: f.profissao ?? "", rg: f.rg ?? "", rgOrgao: f.rgOrgao ?? "", cep: cep(f.cep), endereco: f.endereco ?? "", bairro: f.bairro ?? "",
     cidade: f.cidade ?? "", uf: f.uf ?? "", repNome: f.repNome ?? "", repCargo: f.repCargo ?? "", repDocumento: formatarDocumento(f.repDocumento),
     repEstadoCivil: f.repEstadoCivil ?? "", repProfissao: f.repProfissao ?? "", origem: f.origem ?? "", origemIndicacao: f.origemIndicacao ?? "",
+    capacidade: f.capacidade ?? "PLENA", nascimento: f.nascimento ? dataBr(f.nascimento) : "", rlPapel: f.rlPapel ?? "", rlNome: f.rlNome ?? "",
+    rlDocumento: formatarDocumento(f.rlDocumento), rlRg: f.rlRg ?? "", rlRgOrgao: f.rlRgOrgao ?? "", rlNacionalidade: f.rlNacionalidade ?? "",
+    rlEstadoCivil: f.rlEstadoCivil ?? "", rlProfissao: f.rlProfissao ?? "", rlMoraJunto: f.rlMoraJunto ?? true, rlCep: cep(f.rlCep ?? null),
+    rlEndereco: f.rlEndereco ?? "", rlBairro: f.rlBairro ?? "", rlCidade: f.rlCidade ?? "", rlUf: f.rlUf ?? "", curModo: f.curModo ?? "REPRESENTA",
+    curProcesso: f.curProcesso ?? "", curVara: f.curVara ?? "",
     contatos: contatos.map(({ principal: _p, ...c }) => c),
     principal: (contatos.find((c) => c.principal) ?? contatos[0])?.chave ?? 0,
   };
@@ -95,6 +126,20 @@ const TEXTOS: Partial<Record<CampoTexto | "contatos", string>> = {
   repProfissao: "Escreva a profissão com ao menos 2 letras.",
   origemIndicacao: "Escreva quem indicou com ao menos 2 letras.",
   contatos: "Marque um contato principal.",
+  nascimento: "Escreva a data de nascimento, como 14/03/2014. É com ela que o T3jus sabe quem assina.",
+  rlNome: "Escreva o nome de quem assina. Sem ele, a procuração não tem quem assine.",
+  rlPapel: "Escolha quem é.",
+  rlDocumento: "Confira o CPF: os dígitos não batem. Veja se algum número foi trocado, ou deixe em branco por agora.",
+  rlRg: "Confira o RG: precisa de ao menos 3 caracteres.",
+  rlRgOrgao: "Escreva o órgão emissor, como SSP/SP.",
+  rlNacionalidade: "Escreva a nacionalidade, como brasileira.",
+  rlProfissao: "Escreva a profissão com ao menos 2 letras.",
+  rlCep: "O CEP tem 8 números, como 04117-030.",
+  rlEndereco: "Escreva rua e número.",
+  rlBairro: "Escreva o bairro.",
+  rlCidade: "Escreva a cidade.",
+  curProcesso: "Confira o número do processo.",
+  curVara: "Escreva a vara e a comarca.",
 };
 
 export function textoDocumento(tipo: TipoCliente): string {
@@ -120,6 +165,20 @@ export function corpoDoRascunho(r: RascunhoCliente) {
       ...(c.id ? { id: c.id } : {}), nome: c.nome, papel: vazio(c.papel), telefone: vazio(c.telefone), email: vazio(c.email), principal: c.chave === r.principal,
     })),
   };
+  if (r.tipo === "PF" && r.capacidade !== "PLENA") {
+    const menor = r.capacidade === "MENOR";
+    Object.assign(base, {
+      capacidade: r.capacidade,
+      // Data que não existe vai como foi escrita: o esquema recusa e o erro fica no campo.
+      nascimento: menor && r.nascimento.trim() ? (lerData(r.nascimento) ?? r.nascimento.trim()) : null,
+      rlPapel: vazio(r.rlPapel), rlNome: vazio(r.rlNome), rlDocumento: vazio(r.rlDocumento), rlRg: vazio(r.rlRg), rlRgOrgao: vazio(r.rlRgOrgao),
+      rlNacionalidade: vazio(r.rlNacionalidade), rlEstadoCivil: vazio(r.rlEstadoCivil), rlProfissao: vazio(r.rlProfissao), rlMoraJunto: r.rlMoraJunto,
+      ...(r.rlMoraJunto ? {} : {
+        rlCep: vazio(r.rlCep), rlEndereco: vazio(r.rlEndereco), rlBairro: vazio(r.rlBairro), rlCidade: vazio(r.rlCidade), rlUf: vazio(r.rlUf),
+      }),
+      ...(menor ? {} : { curModo: vazio(r.curModo), curProcesso: vazio(r.curProcesso), curVara: vazio(r.curVara) }),
+    });
+  }
   if (r.tipo === "PJ") {
     Object.assign(base, {
       repNome: vazio(r.repNome), repCargo: vazio(r.repCargo), repDocumento: vazio(r.repDocumento), repEstadoCivil: vazio(r.repEstadoCivil),
@@ -152,7 +211,9 @@ export function errosDosCaminhos(r: RascunhoCliente, caminhos: (string | number)
       continue;
     }
     if (campo === "documento") erros.documento = textoDocumento(r.tipo);
-    else if (campo === "estadoCivil" || campo === "repEstadoCivil" || campo === "uf" || campo === "origem") erros[campo] = "Escolha uma das opções.";
+    else if (campo === "estadoCivil" || campo === "repEstadoCivil" || campo === "uf" || campo === "origem" || campo === "rlEstadoCivil" || campo === "rlUf")
+      erros[campo] = "Escolha uma das opções.";
+    else if (campo === "capacidade") erros.capacidade = "Escolha quem assina.";
     else if (typeof campo === "string" && campo in TEXTOS) erros[campo] = TEXTOS[campo as keyof typeof TEXTOS]!;
   }
   return erros;
@@ -168,11 +229,19 @@ const ROTULOS: Record<CampoTexto, string> = {
   rgOrgao: "Órgão emissor", cep: "CEP", endereco: "Endereço", bairro: "Bairro", cidade: "Cidade", uf: "UF", repNome: "Quem assina",
   repCargo: "Cargo de quem assina", repDocumento: "CPF de quem assina", repEstadoCivil: "Estado civil de quem assina",
   repProfissao: "Profissão de quem assina", origem: "Origem", origemIndicacao: "Quem indicou",
+  capacidade: "O cliente assina por si?", nascimento: "Data de nascimento", rlPapel: "Quem é", rlNome: "Nome de quem assina",
+  rlDocumento: "CPF de quem assina", rlRg: "RG de quem assina", rlRgOrgao: "Órgão do RG de quem assina", rlNacionalidade: "Nacionalidade de quem assina",
+  rlEstadoCivil: "Estado civil de quem assina", rlProfissao: "Profissão de quem assina", rlCep: "CEP de quem assina", rlEndereco: "Endereço de quem assina",
+  rlBairro: "Bairro de quem assina", rlCidade: "Cidade de quem assina", rlUf: "UF de quem assina", curModo: "O que diz o termo",
+  curProcesso: "Processo da curatela", curVara: "Vara da curatela",
 };
 
 function legivel(campo: CampoTexto, v: string): string {
   if (!v.trim()) return "Em branco";
-  if (campo === "estadoCivil" || campo === "repEstadoCivil") return ESTADOS_CIVIS[v as keyof typeof ESTADOS_CIVIS] ?? v;
+  if (campo === "estadoCivil" || campo === "repEstadoCivil" || campo === "rlEstadoCivil") return ESTADOS_CIVIS[v as keyof typeof ESTADOS_CIVIS] ?? v;
+  if (campo === "capacidade") return CAPACIDADES[v as keyof typeof CAPACIDADES] ?? v;
+  if (campo === "rlPapel") return PAPEIS_RESPONSAVEL[v as keyof typeof PAPEIS_RESPONSAVEL] ?? v;
+  if (campo === "curModo") return MODOS_CURATELA[v as keyof typeof MODOS_CURATELA] ?? v;
   if (campo === "origem") return ORIGENS[v as keyof typeof ORIGENS] ?? v;
   return v.trim();
 }
@@ -180,7 +249,7 @@ function legivel(campo: CampoTexto, v: string): string {
 /** Campos que mudaram entre a versão salva e o que a pessoa escreveu (conflito, PT-19). */
 export function diferencasCliente(salvo: RascunhoCliente, meu: RascunhoCliente): { chave: string; campo: string; salvo: string; meu: string }[] {
   const lista: { chave: string; campo: string; salvo: string; meu: string }[] = [];
-  const norm = (k: CampoTexto, s: string) => (k === "documento" || k === "repDocumento" || k === "cep" ? s.replace(/\D/g, "") : s.trim());
+  const norm = (k: CampoTexto, s: string) => (k === "documento" || k === "repDocumento" || k === "cep" || k === "rlDocumento" || k === "rlCep" ? s.replace(/\D/g, "") : s.trim());
   for (const k of Object.keys(ROTULOS) as CampoTexto[]) {
     if (norm(k, salvo[k]) !== norm(k, meu[k])) lista.push({ chave: k, campo: ROTULOS[k], salvo: legivel(k, salvo[k]), meu: legivel(k, meu[k]) });
   }
@@ -207,8 +276,8 @@ export function rotuloProx(p: Pick<ProxContato, "em">, hoje: string): { data: st
 }
 
 /** "5 de 6" e os nomes do que falta, para a procuração (CH-08). */
-export function prontosParaProcuracao(f: Pick<FichaCliente, "tipo" | "faltando">) {
-  const total = TOTAL_QUALIFICACAO[f.tipo];
+export function prontosParaProcuracao(f: Pick<FichaCliente, "tipo" | "faltando" | "totalQualificacao">) {
+  const total = f.totalQualificacao ?? TOTAL_QUALIFICACAO[f.tipo];
   return { prontos: total - f.faltando.length, total, faltam: f.faltando.map((k) => FALTANDO_QUALIFICACAO[k]) };
 }
 
