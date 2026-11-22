@@ -8,7 +8,7 @@ import {
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL, encerrarFunilSchema, type SaidaFunil, type ClienteFunil,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
-  assinaturaContratoSchema, baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
+  baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema, lancarExitoSchema, naoCobrarExitoSchema, type ExitosParaConferir, type ExitoParaConferir, type ParcelaLinha,
   propostaRepasseSchema, textoPrestacaoContas, type Levantamento, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
@@ -32,6 +32,7 @@ import {
   deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio, type AudienciasInicio,
   arquivarLgpdSchema, contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
+  abrirCasoDoContratoSchema, assinaturaComCasoSchema, type AssinaturaComCaso, type OpcoesCasoContrato,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -750,6 +751,12 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.get("/v1/escritorio/clientes/:id/funil", async (c) =>
     c.json(await deps.banco.rpc<ClienteFunil>("portal_cliente_funil", { ...quem(c), p_cliente: idDaRota(c, "id") })));
 
+  // As abas Propostas, Contratos e Casos da ficha (F3.110): cada uma entra pela própria área.
+  for (const [aba, tipo] of [["propostas", "PROPOSTAS"], ["contratos", "CONTRATOS"], ["casos", "CASOS"]] as const) {
+    app.get(`/v1/escritorio/clientes/:id/${aba}`, async (c) =>
+      c.json(await deps.banco.rpc<Record<string, unknown>>("portal_cliente_itens", { ...quem(c), p_cliente: idDaRota(c, "id"), p_tipo: tipo })));
+  }
+
   app.get("/v1/escritorio/comercial/origem", async (c) => {
     const periodo = c.req.query("periodo") || "90";
     if (!(periodo in PERIODOS_COMERCIAL)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["periodo"] });
@@ -784,7 +791,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/contratos", async (c) => {
     const d = await lerCorpo(c, dadosContratoSchema);
     // Com a escolha das inscrições de cada advogado (EX-12, 0530).
-    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_contrato_criar_oab", { ...quem(c), p_dados: d }), 201);
+    return c.json(await deps.banco.rpc<{ id: string; numero: string; versao: number }>("portal_contrato_criar_area", { ...quem(c), p_dados: d }), 201);
   });
 
   app.get("/v1/escritorio/contratos/:id", async (c) => {
@@ -797,17 +804,33 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Mudar condições, objeto e pessoas (PT-19). Contrato ativo pede motivo e refaz só o futuro.
   app.put("/v1/escritorio/contratos/:id", async (c) => {
     const { versao, ...d } = await lerCorpo(c, editarContratoSchema);
-    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number; novos: number }>("portal_contrato_condicoes_oab", {
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; cancelados: number; novos: number }>("portal_contrato_condicoes_area", {
       ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: versao, p_dados: d,
     }));
   });
 
   // Registrar a assinatura ativa o contrato e cria a programação dos recebimentos.
+  // Com "caso", a assinatura abre o caso, junta a um caso ou diz que não tem caso, tudo junto (CH-10, F3.111).
   app.post("/v1/escritorio/contratos/:id/assinatura", async (c) => {
-    const d = await lerCorpo(c, assinaturaContratoSchema);
+    const d = await lerCorpo(c, assinaturaComCasoSchema);
+    if (d.caso) {
+      return c.json(await deps.banco.rpc<AssinaturaComCaso>("portal_contrato_assinatura_caso", {
+        ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: d.versao, p_assinado_em: d.assinadoEm ?? null, p_caso: d.caso,
+      }));
+    }
     return c.json(await deps.banco.rpc<{ id: string; versao: number; recebimentos: number }>("portal_contrato_assinatura", {
       ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: d.versao, p_assinado_em: d.assinadoEm ?? null,
     }));
+  });
+
+  // O que a janela do caso precisa: o caso já ligado, a sugestão, os responsáveis e os casos para juntar.
+  app.get("/v1/escritorio/contratos/:id/caso", async (c) =>
+    c.json(await deps.banco.rpc<OpcoesCasoContrato>("portal_contrato_caso_opcoes", { ...quem(c), p_contrato: idDaRota(c, "id") })));
+
+  // Abrir o caso de um contrato já assinado (decisão 20). Exige a área Jurídico.
+  app.post("/v1/escritorio/contratos/:id/caso", async (c) => {
+    const d = await lerCorpo(c, abrirCasoDoContratoSchema);
+    return c.json(await deps.banco.rpc<{ casoId: string }>("portal_contrato_caso", { ...quem(c), p_contrato: idDaRota(c, "id"), p_caso: d.caso }));
   });
 
   app.post("/v1/escritorio/contratos/:id/encerrar", async (c) => {

@@ -288,9 +288,16 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
       ...comuns(),
       "POST /v1/escritorio/anexos": { status: 201, corpo: { id: ANEXO, enderecoDeEnvio: `${P}/arquivos-falsos/${ESC}/${ANEXO}?token=uso-unico` } },
       [`POST /v1/escritorio/anexos/${ANEXO}/concluir`]: { corpo: { id: ANEXO, categoria: "CONTRATO_ASSINADO", nome: "contrato-assinado.pdf" } },
+      // Quem assina aqui não tem a área Jurídico: o caso abre com os dados do contrato (F3.111, decisão 19).
+      [`GET /v1/escritorio/contratos/${ct(33)}/caso`]: { corpo: {
+        contrato: { id: ct(33), numero: "C-2026-033", objeto: "Aposentadoria por idade", situacao: "ELABORACAO", versao: 1, criadoEm: dia(-3), area: "PREVIDENCIARIO",
+                    cliente: { id: "c0", nome: "Benedito Souza Lima" } },
+        casoLigado: null, sugestao: { nome: "Benedito Souza Lima · Aposentadoria por idade", area: "PREVIDENCIARIO", responsavelId: FELIPE.id, papel: "AUTOR" },
+        responsavelSugerido: FELIPE, escolhe: false, responsaveis: null, casos: null,
+      } },
       [`POST /v1/escritorio/contratos/${ct(33)}/assinatura`]: [
         { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["assinadoEm"] } } } },
-        { corpo: { id: ct(33), versao: 2, recebimentos: 3 } },
+        { corpo: { id: ct(33), versao: 2, recebimentos: 3, casoId: "ca000000-0000-4000-8000-000000000033", podeVerCaso: false } },
       ],
     });
     await page.goto(`${P}/contratos/contratos/${ct(33)}`);
@@ -301,22 +308,24 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await semViolacoes(page);
     await page.getByRole("button", { name: "Registrar assinatura" }).click();
     const j = page.getByRole("dialog", { name: "Registrar assinatura" });
+    await expect(j.getByText("O caso abre em Jurídico", { exact: true })).toBeVisible();
+    await expect(j).toContainText("Felipe recebe o aviso no sino");
     await j.getByLabel("Data da assinatura").fill(br(-1));
     // Sem o arquivo assinado, nada vai ao servidor.
-    await j.getByRole("button", { name: "Registrar e ativar" }).click();
+    await j.getByRole("button", { name: "Registrar assinatura" }).click();
     await expect(j.getByLabel(/Contrato assinado/)).toHaveAttribute("aria-invalid", "true");
     await expect(j).toContainText("Anexe o contrato assinado");
     expect(pedidos.some((p) => p.caminho.endsWith("/assinatura"))).toBe(false);
     await j.getByLabel(/Contrato assinado/).setInputFiles({ name: "contrato-assinado.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(1200, 1) });
     await expect(j.getByRole("button", { name: "Tirar o anexo contrato-assinado.pdf" })).toBeVisible();
-    await j.getByRole("button", { name: "Registrar e ativar" }).click();
+    await j.getByRole("button", { name: "Registrar assinatura" }).click();
     await expect(j.getByLabel("Data da assinatura")).toHaveAttribute("aria-invalid", "true");
     await expect(j).toContainText("O arquivo assinado já está guardado.");
     await semViolacoes(page);
-    await j.getByRole("button", { name: "Registrar e ativar" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Assinatura registrada" })).toContainText("3 recebimentos foram programados");
+    await j.getByRole("button", { name: "Registrar assinatura" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Assinatura registrada" })).toContainText("3 recebimentos foram programados. O caso abriu em Jurídico, com Felipe Matos.");
     const corpo = pedidos.filter((p) => p.caminho === `/v1/escritorio/contratos/${ct(33)}/assinatura`).at(-1)?.corpo;
-    expect(corpo).toEqual({ versao: 1, assinadoEm: dia(-1) });
+    expect(corpo).toEqual({ versao: 1, assinadoEm: dia(-1), caso: { modo: "NOVO" } });
     // O arquivo foi uma vez só, antes da assinatura, ligado ao contrato.
     expect(envios).toEqual([`PUT /arquivos-falsos/${ESC}/${ANEXO}`]);
     expect(pedidos.filter((p) => p.caminho === "/v1/escritorio/anexos").map((p) => p.corpo)).toEqual([

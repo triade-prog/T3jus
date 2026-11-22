@@ -1,0 +1,211 @@
+// Ficha do cliente ligada (F3.110, F3.111), tela aprovada em
+// docs/design/aprovadas/portal-ficha-cliente-ligada: a coluna "Próximo passo" e "Gerar proposta"
+// na lista; o âmbar "Próximo passo" com o botão que segue o estado; as abas Propostas, Contratos e
+// Casos; o "No escritório"; e a assinatura que abre o caso. A API é simulada; aqui se testa a
+// tela, a acessibilidade e o que ela manda ao servidor.
+import { expect, test, type Page } from "@playwright/test";
+import { h, semViolacoes } from "./console-dados.ts";
+
+const P = "http://localhost:3000";
+const ESC = "e0000000-0000-4000-8000-0000000000a1";
+const cid = (n: number) => `c1000000-0000-4000-8000-0000000002${String(n).padStart(2, "0")}`;
+const MARINA = { id: "a0000000-0000-4000-8000-000000000101", nome: "Marina Ribeiro" };
+const DIEGO = { id: "a0000000-0000-4000-8000-000000000103", nome: "Diego Almeida" };
+const LARISSA = { id: "a0000000-0000-4000-8000-000000000105", nome: "Larissa Costa" };
+const CT = "b2000000-0000-4000-8000-000000000031";
+const PR = "b1000000-0000-4000-8000-000000000014";
+const CASO = "ca000000-0000-4000-8000-000000000001";
+const ANEXO = "f9000000-0000-4000-8000-000000000031";
+
+const ESCRITORIO = {
+  id: ESC, nome: "Ribeiro & Matos", pessoa: "Marina Ribeiro", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"],
+  socios: ["Marina Ribeiro"], pessoas: 5, outrosEscritorios: 0, funcoes: ["SOCIO"], cnpj: null, cidade: "São Paulo", uf: "SP", endereco: null,
+  contatos: [], ultimaExportacao: null,
+};
+const COM_DIEGO = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL", "FINANCEIRO"], funcoes: ["EQUIPE"] };
+
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const br = (n: number) => dia(n).split("-").reverse().join("/");
+
+const linha = (n: number, nome: string, passo: Record<string, unknown>) => ({
+  id: cid(n), tipo: "PF", nome, situacao: "ATIVO", versao: 1, origem: "GOOGLE", proxContato: null,
+  contatoPrincipal: { id: `d${cid(n).slice(1)}`, nome, papel: null, telefone: `+55119887766${String(n).padStart(2, "0")}`, email: null },
+  passo: { area: "COMERCIAL", pode: true, quemPode: null, item: null, ...passo },
+});
+const ATIVOS = [
+  linha(1, "Antônia Ferreira Prado", { tipo: "PROPOSTA_ANDAMENTO", item: { id: PR, numero: "P-2026-014", retorno: { em: dia(2), vencido: false } } }),
+  linha(2, "Daniela Rocha Mendes", { tipo: "SEM_PROPOSTA" }),
+  linha(3, "Gabriela Teixeira", { tipo: "CASO", area: "JURIDICO", item: { id: CASO, nome: "Teixeira x Banco Sul", etapa: { ordem: 7, nome: "Cumprimento" }, etapas: 8 } }),
+];
+
+const PASSO_ASSINAR = { tipo: "CONTRATO_ELABORACAO", area: "CONTRATOS", pode: true, quemPode: null, item: { id: CT, numero: "C-2026-031", objeto: "Pensão por morte", versao: 2, criadoEm: h(48) } };
+const FICHA = {
+  id: cid(1), tipo: "PF", nome: "Antônia Ferreira Prado", documento: "52998224725", nacionalidade: "brasileira", estadoCivil: "VIUVO", profissao: "Aposentada",
+  rg: "12.345.678-9", rgOrgao: "SSP/SP", cep: "04117030", endereco: "Rua das Acácias, 418", bairro: "Vila Mariana", cidade: "São Paulo", uf: "SP",
+  repNome: null, repCargo: null, repDocumento: null, repEstadoCivil: null, repProfissao: null, situacao: "ATIVO", inativadoEm: null,
+  motivoInativacao: null, inativadoPor: null, criadoEm: h(24 * 22), criadoPor: MARINA, versao: 3, comercial: true, podeInativar: true, faltando: [],
+  alterado: null, contatos: [{ id: "d0000000-0000-4000-8000-000000000201", nome: "Antônia Ferreira Prado", papel: null, telefone: "+5511987654321", email: null, principal: true }],
+  origem: "GOOGLE", origemIndicacao: null, atendimentos: 4, primeiroAtendimento: null,
+  proxContato: { em: dia(2), oque: "Confirmar a assinatura", vencido: false, responsavel: DIEGO },
+  passo: PASSO_ASSINAR,
+  contagens: { propostas: 2, contratos: 1, casos: 0 },
+  noEscritorio: {
+    proposta: { id: PR, numero: "P-2026-014", situacao: "ACEITA", servico: "Pensão por morte", em: h(24 * 10) },
+    contrato: { id: CT, numero: "C-2026-031", situacao: "ELABORACAO", objeto: "Pensão por morte", assinadoEm: null },
+  },
+};
+const OPCOES = {
+  contrato: { id: CT, numero: "C-2026-031", objeto: "Pensão por morte", situacao: "ELABORACAO", versao: 2, criadoEm: h(48), area: "PREVIDENCIARIO",
+              cliente: { id: cid(1), nome: "Antônia Ferreira Prado" } },
+  casoLigado: null,
+  sugestao: { nome: "Antônia Ferreira Prado · Pensão por morte", area: "PREVIDENCIARIO", responsavelId: LARISSA.id, papel: "AUTOR" },
+  responsavelSugerido: LARISSA, escolhe: true, responsaveis: [LARISSA, MARINA],
+  casos: [{ id: "ca000000-0000-4000-8000-000000000009", nome: "Prado e outros x INSS", clientes: 2 }],
+};
+const CONTRATOS = [{
+  id: CT, numero: "C-2026-031", objeto: "Pensão por morte", situacao: "ELABORACAO", cliente: { id: cid(1), nome: "Antônia Ferreira Prado", tipo: "PF" },
+  responsavel: LARISSA, condicoes: [{ tipo: "FIXO", valor: 150000, vencimento: dia(10) }], proximo: null, basePendente: null, criadoEm: h(48),
+  assinadoEm: null, semCaso: false, area: "PREVIDENCIARIO", proposta: { id: PR, numero: "P-2026-014" }, caso: null,
+}];
+
+type Resp = { status?: number; corpo: unknown };
+type Pedido = { metodo: string; caminho: string; busca: string; corpo: unknown };
+
+async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
+  const pedidos: Pedido[] = [];
+  await page.route("**/api/v1/**", async (rota) => {
+    const url = new URL(rota.request().url());
+    const caminho = url.pathname.replace(/^\/api/, "");
+    const metodo = rota.request().method();
+    pedidos.push({ metodo, caminho, busca: url.search, corpo: rota.request().postDataJSON() });
+    const r = rotas[`${metodo} ${caminho}${url.search}`] ?? rotas[`${metodo} ${caminho}`] ?? rotas[caminho];
+    const lista = Array.isArray(r) ? r : r ? [r] : [{ status: 404, corpo: { erro: { codigo: "NOT_FOUND" } } }];
+    const vez = pedidos.filter((p) => p.caminho === caminho && p.metodo === metodo && p.busca === url.search).length - 1;
+    const x = lista[Math.min(vez, lista.length - 1)]!;
+    await rota.fulfill({ status: x.status ?? 200, contentType: "application/json", body: JSON.stringify(x.corpo) });
+  });
+  return pedidos;
+}
+const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+
+test.describe("Ficha do cliente ligada (F3.110, F3.111)", () => {
+  test("lista: coluna Próximo passo, e Gerar proposta só na linha sem proposta", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      "GET /v1/escritorio/clientes?situacao=ATIVO": { corpo: { comercial: true, clientes: ATIVOS } },
+      "GET /v1/escritorio/clientes?situacao=INATIVO": { corpo: { comercial: true, clientes: [] } },
+    });
+    await page.goto(`${P}/clientes`);
+    const lista = ehCelular(page) ? page.getByRole("list", { name: "Clientes" }) : page.locator("table.cl-tab");
+    if (!ehCelular(page)) await expect(lista.getByRole("columnheader", { name: "Próximo passo" })).toBeVisible();
+    await expect(lista.getByText("Resposta da proposta")).toBeVisible();
+    await expect(lista.getByText(`P-2026-014 · retorno ${br(2).slice(0, 5)}`)).toBeVisible();
+    await expect(lista.getByText("Caso em andamento")).toBeVisible();
+    const gerar = lista.getByRole("link", { name: /^Gerar proposta/ });
+    await expect(gerar).toHaveCount(1);
+    await expect(gerar).toHaveAccessibleName("Gerar proposta para Daniela Rocha Mendes");
+    await expect(gerar).toHaveAttribute("href", `/comercial/propostas/nova?cliente=${cid(2)}`);
+    await semViolacoes(page);
+  });
+
+  test("ficha: o âmbar é o próximo passo, as abas trazem a contagem e o No escritório substitui o quadro", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: FICHA },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo" });
+    await expect(ambar.getByText("Colher a assinatura")).toBeVisible();
+    await expect(ambar.getByRole("list", { name: "Caminho do cliente no escritório" })).toContainText("Assinatura: é o próximo passo");
+    await expect(ambar.getByRole("button", { name: "Registrar assinatura" })).toBeVisible();
+    await expect(ambar.getByRole("button", { name: "Registrar atendimento" })).toBeVisible();
+    await expect(ambar).toContainText(`Próximo contato ${br(2).slice(0, 5)}, com Diego`);
+    const abas = page.getByRole("navigation", { name: "Seções da ficha" });
+    await expect(abas.getByRole("link")).toHaveText(["Ficha", "Atendimentos4", "Propostas2", "Contratos1", "Casos0"]);
+    const resumo = page.getByRole("region", { name: "No escritório" });
+    await expect(resumo).toContainText("P-2026-014 · aceita · Pensão por morte");
+    await expect(resumo.getByRole("link", { name: "Ver a aba Contratos" })).toHaveAttribute("href", `/clientes/${cid(1)}?aba=contratos`);
+    await expect(page.getByText("Contratos de honorários deste cliente aparecem aqui")).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("assinatura na ficha: abre o caso junto e leva à ficha do caso (CH-10)", async ({ page }) => {
+    await page.route("**/arquivos-falsos/**", (rota) => rota.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/clientes/${cid(1)}/contratos`]: { corpo: { contratos: CONTRATOS } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET /v1/escritorio/contratos/${CT}/caso`]: { corpo: OPCOES },
+      "POST /v1/escritorio/anexos": { status: 201, corpo: { id: ANEXO, enderecoDeEnvio: `${P}/arquivos-falsos/${ESC}/${ANEXO}?token=uso-unico` } },
+      [`POST /v1/escritorio/anexos/${ANEXO}/concluir`]: { corpo: { id: ANEXO, categoria: "CONTRATO_ASSINADO", nome: "assinado.pdf" } },
+      [`POST /v1/escritorio/contratos/${CT}/assinatura`]: [
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["caso.nome"] } } } },
+        { corpo: { id: CT, versao: 3, recebimentos: 1, casoId: CASO, podeVerCaso: true } },
+      ],
+    });
+    await page.goto(`${P}/clientes/${cid(1)}?aba=contratos`);
+    const tab = ehCelular(page) ? page.getByRole("list", { name: "Contratos de Antônia Ferreira Prado" }) : page.getByRole("table", { name: "Contratos de Antônia Ferreira Prado" });
+    await expect(tab).toContainText("veio da P-2026-014");
+    await expect(page.getByRole("navigation", { name: "Seções da ficha" }).getByRole("link", { name: /^Contratos/ })).toHaveAttribute("aria-current", "page");
+    await semViolacoes(page);
+    await page.getByRole("region", { name: "Próximo passo" }).getByRole("button", { name: "Registrar assinatura" }).click();
+    const j = page.getByRole("dialog", { name: "Registrar assinatura" });
+    await expect(j.getByLabel("Nome do caso")).toHaveValue("Antônia Ferreira Prado · Pensão por morte");
+    await expect(j.getByLabel("Área")).toHaveValue("PREVIDENCIARIO");
+    await expect(j.getByLabel("Responsável")).toHaveValue(LARISSA.id);
+    await expect(j.getByRole("radio", { name: /Este contrato não tem caso/ })).toBeVisible();
+    await semViolacoes(page);
+    await j.getByLabel("Data da assinatura").fill(br(0));
+    await j.getByLabel(/Contrato assinado/).setInputFiles({ name: "assinado.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(900, 1) });
+    await j.getByRole("button", { name: "Registrar e abrir o caso" }).click();
+    // O servidor recusou o caso: nem a assinatura nem o caso ficam, e o campo diz o que acertar.
+    await expect(j.getByLabel("Nome do caso")).toHaveAttribute("aria-invalid", "true");
+    await expect(j).toContainText("os dois andam juntos");
+    await j.getByLabel("Nome do caso").fill("Ferreira Prado x INSS");
+    await j.getByRole("button", { name: "Registrar e abrir o caso" }).click();
+    await expect(page).toHaveURL(new RegExp(`/juridico/casos/${CASO}`));
+    const corpo = pedidos.filter((p) => p.caminho === `/v1/escritorio/contratos/${CT}/assinatura`).at(-1)?.corpo;
+    expect(corpo).toEqual({ versao: 2, assinadoEm: dia(0), caso: { modo: "NOVO", nome: "Ferreira Prado x INSS", area: "PREVIDENCIARIO", responsavelId: LARISSA.id, papel: "AUTOR" } });
+    expect(pedidos.filter((p) => p.caminho === "/v1/escritorio/anexos")).toHaveLength(1);
+  });
+
+  test("sem a área do passo: diz quem pode e o botão vira Registrar atendimento; só as abas da pessoa", async ({ page }) => {
+    const passo = { ...PASSO_ASSINAR, pode: false, quemPode: ["Marina Ribeiro", "Felipe Matos"], item: null };
+    await simular(page, {
+      "/v1/escritorio": { corpo: COM_DIEGO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, passo, contagens: { propostas: 2 }, noEscritorio: { proposta: FICHA.noEscritorio.proposta } } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo" });
+    await expect(ambar).toContainText("Quem registra a assinatura tem a área Contratos: Marina e Felipe.");
+    await expect(ambar.getByRole("button", { name: "Registrar atendimento" })).toHaveClass(/btn-pri/);
+    await expect(ambar.getByRole("button", { name: "Registrar assinatura" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Seções da ficha" }).getByRole("link")).toHaveText(["Ficha", "Atendimentos4", "Propostas2"]);
+    await expect(page.getByRole("region", { name: "No escritório" }).getByRole("listitem")).toHaveCount(1);
+    await semViolacoes(page);
+  });
+
+  test("abas: Propostas com erro e tentar de novo; Casos vazio diz que o caso abre na assinatura", async ({ page }) => {
+    const sem = { ...FICHA, passo: { tipo: "SEM_PROPOSTA", area: "COMERCIAL", pode: true, quemPode: null, item: null } };
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: sem },
+      [`GET /v1/escritorio/clientes/${cid(1)}/propostas`]: [{ status: 500, corpo: { erro: { codigo: "INTERNAL_ERROR" } } }, { corpo: { propostas: [] } }],
+      [`GET /v1/escritorio/clientes/${cid(1)}/casos`]: { corpo: { casos: [] } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}?aba=propostas`);
+    await expect(page.getByRole("heading", { name: "Não deu para carregar as propostas de Antônia" })).toBeVisible();
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Tentar de novo" }).click();
+    await expect(page.getByRole("heading", { name: "Nenhuma proposta para Antônia ainda" })).toBeVisible();
+    const gerar = page.getByRole("link", { name: "Gerar proposta" });
+    await expect(gerar.first()).toHaveAttribute("href", `/comercial/propostas/nova?cliente=${cid(1)}`);
+    await page.goto(`${P}/clientes/${cid(1)}?aba=casos`);
+    await expect(page.getByText("O caso abre em Jurídico quando a assinatura do contrato for registrada", { exact: false })).toBeVisible();
+    await semViolacoes(page);
+  });
+});
