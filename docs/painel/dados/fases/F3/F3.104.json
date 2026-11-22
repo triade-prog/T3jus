@@ -1,11 +1,11 @@
 {
   "id": "F3.104",
-  "texto": "Baixar o contrato gerado também em PDF, além do .docx da aba Documentos",
+  "texto": "Baixar cada documento gerado (contrato, procuração, declaração) em Word e em PDF: na aba Documentos da ficha do contrato, na lista de Procurações e modelos, no resultado e no .zip",
   "peca": "S6",
   "refs": [
     "CH-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 797,
-  "proximo": "Programar o Baixar PDF aprovado (D23) na aba Documentos, depois que as telas de F3.16 (PR #103) forem mescladas"
+  "evidencia": "PDF montado na api-portal a partir do .docx da versão (documento_pdf.ts, pdf-lib: timbrado com logo, negrito, itálico, alinhamento, rodapé com contrato, versão e dia) e guardado ao lado do .docx; lerDocxParaPdf em packages/domain/src/docx.ts (vitest docx_pdf.test.ts, 4 testes) marca o modelo com tabela, imagem, caixa de texto ou colunas; .zip com as pastas Word e PDF; Deno app_test 'D23' e o do .zip; migration 0751_documento_pdf com pgTAP 104 (8 testes); tela com Word e PDF, Preparando, erro com saída, aviso do leiaute simples e o assinado (Procuracoes.tsx), e2e 'D23' em tests/e2e/portal-procuracoes.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-contrato-pdf (D23)."
 }

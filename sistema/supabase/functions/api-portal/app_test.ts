@@ -440,9 +440,10 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       usosPadrao: { HIPOSSUFICIENCIA_PF: 2, HIPOSSUFICIENCIA_PJ: 1 }, podeEnviar: true,
     }),
     portal_documento_modelo_enviar: (a) => ({ id: MODELO_DOC, tipo: (a.p_dados as { tipo?: string }).tipo ?? "PROCURACAO", nome: (a.p_dados as { nome?: string }).nome, versao: 1 }),
-    portal_documento_arquivo: (a) => ({ id: a.p_id, nome: "procuracao-c-2026-033-benedito-souza-lima.docx" }),
+    portal_documento_arquivo: (a) => ({ id: a.p_id, nome: "procuracao-c-2026-033-benedito-souza-lima.docx", versao: 2, geradoEm: "2026-11-21T19:02:00Z", contrato: "C-2026-033" }),
     portal_documento_geracao: () => ({ numero: "C-2026-033", cliente: "Benedito Souza Lima", versao: 1,
-      arquivos: [{ id: MODELO_DOC, nome: "contrato-c-2026-033-benedito-souza-lima.docx" }, { id: VERSAO_MODELO_DOC, nome: "procuracao-c-2026-033-benedito-souza-lima.docx" }] }),
+      arquivos: [{ id: MODELO_DOC, nome: "contrato-c-2026-033-benedito-souza-lima.docx", versao: 1, geradoEm: "2026-11-21T19:02:00Z" },
+                 { id: VERSAO_MODELO_DOC, nome: "procuracao-c-2026-033-benedito-souza-lima.docx", versao: 1, geradoEm: "2026-11-21T19:02:00Z" }] }),
     portal_peticao_preparar: (a) => ({ pedido: { ...(a.p_pedido as object), numero: null, valorCausa: 8640000, parteContrariaQualificacao: null }, dados: DADOS_PETICAO }),
     portal_peticao_gravar: (a) => {
       const r = a.p_resultado as { peticaoId: string; arquivo: string; marcados: string[] };
@@ -1805,17 +1806,40 @@ Deno.test("F3.16: enviar modelo confere o arquivo e avisa o campo esperado que f
 Deno.test("F3.16: Baixar todos junta os arquivos da geração num .zip com os nomes certos", async () => {
   const m = montar();
   const cookie = await noEscritorio(m);
-  m.storage.bytes.set(`${AURORA}/documentos/${MODELO_DOC}.docx`, new Uint8Array([1, 2, 3]));
-  m.storage.bytes.set(`${AURORA}/documentos/${VERSAO_MODELO_DOC}.docx`, new Uint8Array([4, 5]));
+  const contrato = await criarDocx([{ texto: "CONTRATO DE HONORÁRIOS", estilo: "titulo" }, { texto: "Cláusula primeira." }], ["Ribeiro & Matos"]);
+  const procuracao = await criarDocx([{ texto: "PROCURAÇÃO", estilo: "titulo" }]);
+  m.storage.bytes.set(`${AURORA}/documentos/${MODELO_DOC}.docx`, contrato);
+  m.storage.bytes.set(`${AURORA}/documentos/${VERSAO_MODELO_DOC}.docx`, procuracao);
   const r = await (await m.pedir(`/v1/escritorio/documentos/geracoes/${GERACAO_DOC}/zip`, { metodo: "POST", cookie })).json();
   assertMatch(r.url, /^https:\/\/storage\.exemplo\/ler\//);
   assertEquals(m.storage.leituras.at(-1), { caminho: `${AURORA}/documentos/zip/${GERACAO_DOC}.zip`, segundos: 60, nome: "documentos-c-2026-033-benedito-souza-lima.zip" });
   const zip = m.storage.bytes.get(`${AURORA}/documentos/zip/${GERACAO_DOC}.zip`)!;
   const entradas = lerZip(zip);
-  assertEquals([...entradas.keys()], ["contrato-c-2026-033-benedito-souza-lima.docx", "procuracao-c-2026-033-benedito-souza-lima.docx"]);
-  assertEquals(await abrirEntrada(zip, entradas.get("procuracao-c-2026-033-benedito-souza-lima.docx")!), new Uint8Array([4, 5]));
+  // D23, pergunta 2: Word e PDF, cada um na sua pasta.
+  assertEquals([...entradas.keys()], [
+    "Word/contrato-c-2026-033-benedito-souza-lima.docx", "Word/procuracao-c-2026-033-benedito-souza-lima.docx",
+    "PDF/contrato-c-2026-033-benedito-souza-lima.pdf", "PDF/procuracao-c-2026-033-benedito-souza-lima.pdf",
+  ]);
+  assertEquals(await abrirEntrada(zip, entradas.get("Word/procuracao-c-2026-033-benedito-souza-lima.docx")!), procuracao);
+  const pdfNoZip = await abrirEntrada(zip, entradas.get("PDF/contrato-c-2026-033-benedito-souza-lima.pdf")!);
+  assertEquals(new TextDecoder().decode(pdfNoZip.slice(0, 5)), "%PDF-");
   await m.pedir(`/v1/escritorio/documentos/${MODELO_DOC}/abrir`, { metodo: "POST", cookie });
   assertEquals(m.storage.leituras.at(-1)!.caminho, `${AURORA}/documentos/${MODELO_DOC}.docx`);
+});
+
+Deno.test("D23: o documento também sai em PDF, guardado ao lado do .docx, e diz se o modelo tem tabela ou imagem", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  m.storage.bytes.set(`${AURORA}/documentos/${MODELO_DOC}.docx`, await criarDocx([{ texto: "PROCURAÇÃO", estilo: "titulo" }, { texto: "Outorgante: Benedito." }], ["Ribeiro & Matos", "CNPJ 41.276.839/0001-34"]));
+  const r = await (await m.pedir(`/v1/escritorio/documentos/${MODELO_DOC}/abrir?formato=pdf`, { metodo: "POST", cookie })).json();
+  assertEquals(r.complexo, false);
+  assertEquals(m.storage.leituras.at(-1), { caminho: `${AURORA}/documentos/${MODELO_DOC}.pdf`, segundos: 60, nome: "procuracao-c-2026-033-benedito-souza-lima.pdf" });
+  assertEquals(m.storage.guardados.get(`${AURORA}/documentos/${MODELO_DOC}.pdf`)?.tipo, "application/pdf");
+  const pdf = new TextDecoder("latin1").decode(m.storage.bytes.get(`${AURORA}/documentos/${MODELO_DOC}.pdf`)!);
+  assert(pdf.startsWith("%PDF-"));
+  // Sem o .docx no Storage, o PDF não sai e o erro diz qual é.
+  const falta = await m.pedir(`/v1/escritorio/documentos/${VERSAO_MODELO_DOC}/abrir?formato=pdf`, { metodo: "POST", cookie });
+  assertEquals((await erro(falta)).detalhes, { motivo: "PDF_INDISPONIVEL" });
 });
 
 Deno.test("F3.16: o assinado entra pelos anexos com a versão e a data; data em formato errado é recusada", async () => {

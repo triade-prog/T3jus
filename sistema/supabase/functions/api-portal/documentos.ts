@@ -3,6 +3,7 @@
 // cada versão (0680_documentos_contrato.sql); aqui o .docx é montado ou preenchido na memória
 // (packages/domain/src/docx.ts) e gravado no Storage privado:
 //   <escritório>/documentos/<id>.docx              o documento gerado
+//   <escritório>/documentos/<id>.pdf               o mesmo em PDF, montado na primeira vez (D23)
 //   <escritório>/documentos/modelos/<versão>.docx  o modelo enviado pelo escritório
 //   <escritório>/documentos/zip/<geração>.zip      o "Baixar todos"
 // Os assinados entram pelo envio em duas etapas dos anexos (0520), com documentoId; o contrato
@@ -13,7 +14,7 @@ import {
   arquivarModeloDocumentoSchema, CAMPOS_DOCUMENTO, camposDoPadraoDocumento, conferenciaModeloDocumento, conferirDocx, criarDocx,
   enviarModeloDocumentoSchema, ErroDocx, ErroDominio, escolhasDocumentosSchema, escreverZip, filtroDocumentosSchema, LIMITE_MODELO_BYTES,
   linhasTimbrado, marcadosDoModeloDocumento, MODELOS_PADRAO_DOCUMENTO, modeloPadraoDocumento, montarValoresDocumento, nomeArquivoDocumento,
-  nomeZipDocumentos, preencherDocx, previaDocumento, TIPO_DOCX,
+  nomeDoPdf, nomeZipDocumentos, preencherDocx, previaDocumento, TIPO_DOCX,
   type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PadraoDocumento, type PreviaDocumento, type PreviaDocumentos, type ResultadoDocumentos,
   type TipoDocumentoContrato, type ValoresDocumento,
@@ -22,6 +23,7 @@ import { VALIDADE_LEITURA_S } from "../_shared/arquivos.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import type { DepsPortal, VarsPortal } from "./app.ts";
 import { logoDaProposta } from "./proposta_docx.ts";
+import { pdfDoDocx, type RodapePdf } from "./documento_pdf.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -249,21 +251,43 @@ export function rotasDocumentos(app: Hono<VarsPortal>, deps: DepsPortal) {
 
   // ------------------------------------------------------------------- baixar
 
+  // ?formato=pdf (D23): o PDF sai do .docx daquela versão, é guardado ao lado dele (o mesmo
+  // documento dá sempre o mesmo PDF) e abre por link temporário. `complexo` faz a tela avisar.
   app.post("/v1/escritorio/documentos/:id/abrir", async (c) => {
-    const r = await deps.banco.rpc<{ id: string; nome: string }>("portal_documento_arquivo", { ...quem(c), p_id: idDaRota(c, "id") });
-    return c.json(await link(`${pasta(c)}/${r.id}.docx`, r.nome));
+    const r = await deps.banco.rpc<{ id: string; nome: string } & Partial<RodapePdf>>("portal_documento_arquivo", { ...quem(c), p_id: idDaRota(c, "id") });
+    if (c.req.query("formato") !== "pdf") return c.json(await link(`${pasta(c)}/${r.id}.docx`, r.nome));
+    const { complexo } = await guardarPdf(c, r);
+    return c.json({ ...(await link(`${pasta(c)}/${r.id}.pdf`, nomeDoPdf(r.nome))), complexo });
   });
+
+  async function guardarPdf(c: Context<VarsPortal>, r: { id: string } & Partial<RodapePdf>): Promise<{ pdf: Uint8Array; complexo: boolean }> {
+    const docx = await deps.arquivos.baixar(`${pasta(c)}/${r.id}.docx`);
+    if (!docx) throw new ErroDominio("UPSTREAM_UNAVAILABLE", { motivo: "PDF_INDISPONIVEL" });
+    let feito: { pdf: Uint8Array; complexo: boolean };
+    try {
+      feito = await pdfDoDocx(docx, { contrato: r.contrato ?? "", versao: r.versao ?? 1, geradoEm: r.geradoEm ?? new Date().toISOString() });
+    } catch {
+      throw new ErroDominio("UPSTREAM_UNAVAILABLE", { motivo: "PDF_INDISPONIVEL" });
+    }
+    await deps.arquivos.enviar(`${pasta(c)}/${r.id}.pdf`, feito.pdf, "application/pdf", true);
+    return feito;
+  }
 
   // "Baixar todos (.zip)" de uma geração: monta uma vez e guarda (o conteúdo não muda).
   app.post("/v1/escritorio/documentos/geracoes/:id/zip", async (c) => {
     const geracao = idDaRota(c, "id");
-    const g = await deps.banco.rpc<{ numero: string; cliente: string; versao: number; arquivos: { id: string; nome: string }[] }>(
+    const g = await deps.banco.rpc<{ numero: string; cliente: string; versao: number; arquivos: { id: string; nome: string; versao?: number; geradoEm?: string }[] }>(
       "portal_documento_geracao", { ...quem(c), p_geracao: geracao });
+    // Word e PDF, cada um na sua pasta (D23, pergunta 2).
     const entradas = [];
     for (const a of g.arquivos) {
       const dados = await deps.arquivos.baixar(`${pasta(c)}/${a.id}.docx`);
       if (!dados) throw new ErroDominio("UPSTREAM_UNAVAILABLE");
-      entradas.push({ nome: a.nome, dados });
+      entradas.push({ nome: `Word/${a.nome}`, dados });
+    }
+    for (const a of g.arquivos) {
+      const { pdf } = await guardarPdf(c, { id: a.id, contrato: g.numero, versao: a.versao ?? g.versao, geradoEm: a.geradoEm });
+      entradas.push({ nome: `PDF/${nomeDoPdf(a.nome)}`, dados: pdf });
     }
     const caminho = `${pasta(c)}/zip/${geracao}.zip`;
     await deps.arquivos.enviar(caminho, await escreverZip(entradas, { guardar: true }), "application/zip", true);
