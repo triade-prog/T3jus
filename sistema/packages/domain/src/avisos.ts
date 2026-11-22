@@ -72,7 +72,7 @@ export type TipoAvisoSino =
   | "BASE_DO_MES" | "PEDIDO_CONTRATO" | "CONTRATO_GERADO"
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
   | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
-  | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA";
+  | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18";
 
 export interface AvisoSino {
   id: string;
@@ -96,8 +96,10 @@ export interface AvisoSino {
     carne?: string; gerado?: string; gerou?: boolean; parcela?: string;
     /** O êxito conferido no Financeiro (F3.14): o valor calculado pelo contrato e a explicação de não cobrar. */
     calculado?: number; explicacao?: string;
+    /** O cliente menor que fez 18 anos (F3.98): o dia (dd/mm/aaaa); "quem" é quem assinava, com o papel. */
+    em?: string;
   };
-  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios" | "casos";
+  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios" | "casos" | "clientes";
   origemId: string;
   em: string;
   lido: boolean;

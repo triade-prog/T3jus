@@ -54,6 +54,10 @@ export const FALTANDO_QUALIFICACAO = {
   REP_CARGO: "Cargo de quem assina",
   REP_DOCUMENTO: "CPF de quem assina",
   REP_QUALIFICACAO: "Estado civil e profissão de quem assina",
+  RL_DOCUMENTO: "CPF de quem assina",
+  RL_RG: "RG de quem assina",
+  RL_QUALIFICACAO: "Nacionalidade, estado civil e profissão de quem assina",
+  RL_ENDERECO: "Endereço de quem assina",
 } as const;
 export type Faltando = keyof typeof FALTANDO_QUALIFICACAO;
 /** Quantos dados a procuração pede, por tipo (as chaves acima). */
@@ -161,6 +165,45 @@ const campos = {
   repProfissao: opcional(2, 80),
   origem: opcionalEnum(chaves(ORIGENS)),
   origemIndicacao: opcional(2, 120),
+  // Quem assina pelo menor ou pelo curatelado (F3.98). Os valores são os de responsavel_legal.ts.
+  capacidade: z.enum(["PLENA", "MENOR", "CURATELA"]).optional().default("PLENA"),
+  nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish().transform((v) => v ?? null),
+  rlPapel: opcionalEnum(["MAE", "PAI", "TUTORA", "TUTOR", "CURADORA", "CURADOR"]),
+  rlNome: opcional(2, 120),
+  rlDocumento: documento.refine((v) => v === null || cpfValido(v), { message: "CPF inválido" }),
+  rlRg: opcional(3, 20),
+  rlRgOrgao: opcional(2, 20),
+  rlNacionalidade: opcional(2, 60),
+  rlEstadoCivil: opcionalEnum(chaves(ESTADOS_CIVIS)),
+  rlProfissao: opcional(2, 80),
+  rlMoraJunto: z.boolean().nullish().transform((v) => v ?? null),
+  rlCep: z
+    .string()
+    .trim()
+    .max(10)
+    .nullish()
+    .transform((v) => (v ? digitos(v) : null))
+    .refine((v) => v === null || /^\d{8}$/.test(v)),
+  rlEndereco: opcional(3, 200),
+  rlBairro: opcional(2, 80),
+  rlCidade: opcional(2, 80),
+  rlUf: opcionalEnum([...UFS] as [string, ...string[]]),
+  curModo: opcionalEnum(["REPRESENTA", "ASSISTE"]),
+  curProcesso: opcional(3, 40),
+  curVara: opcional(3, 160),
+};
+
+/** Quem assina (pergunta 6): o menor precisa da data e de quem assina; o curatelado, do curador. */
+type QuemAssinaCampos = { tipo?: TipoCliente; documento: string | null; capacidade: string; nascimento: string | null; rlNome: string | null;
+  rlPapel: string | null; rlDocumento: string | null };
+const quemAssinaRegras = (c: QuemAssinaCampos, ctx: z.RefinementCtx) => {
+  if (c.tipo === "PJ" || c.capacidade === "PLENA") return;
+  const erro = (campo: string, message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, path: [campo], message });
+  if (c.capacidade === "MENOR" && !c.nascimento) erro("nascimento", "Escreva a data de nascimento");
+  if (!c.rlNome) erro("rlNome", "Escreva o nome de quem assina");
+  const papeis = c.capacidade === "MENOR" ? ["MAE", "PAI", "TUTORA", "TUTOR"] : ["CURADORA", "CURADOR"];
+  if (!c.rlPapel || !papeis.includes(c.rlPapel)) erro("rlPapel", "Escolha quem é");
+  if (c.rlDocumento && c.rlDocumento === c.documento) erro("rlDocumento", "O CPF de quem assina é o mesmo do cliente");
 };
 
 const docConfere = (c: { tipo?: TipoCliente; documento: string | null }) =>
@@ -168,12 +211,21 @@ const docConfere = (c: { tipo?: TipoCliente; documento: string | null }) =>
 
 export const cadastrarClienteSchema = z
   .object({ tipo: z.enum(chaves(TIPOS_CLIENTE)), ...campos })
-  .refine(docConfere, { message: "Documento inválido", path: ["documento"] });
+  .refine(docConfere, { message: "Documento inválido", path: ["documento"] })
+  .superRefine(quemAssinaRegras);
 
 /** Editar: o tipo fica o do cadastro; a versão lida vai junto (PT-19). */
 export const editarClienteSchema = z
   .object({ versao: z.number().int().min(1), tipo: z.enum(chaves(TIPOS_CLIENTE)), ...campos })
-  .refine(docConfere, { message: "Documento inválido", path: ["documento"] });
+  .refine(docConfere, { message: "Documento inválido", path: ["documento"] })
+  .superRefine(quemAssinaRegras);
+
+/** A janela dos 18 anos: "Agora assina por si" (pergunta 3), com o que passa a ir no documento. */
+export const assinaPorSiSchema = z.object({
+  versao: z.number().int().min(1),
+  estadoCivil: opcionalEnum(chaves(ESTADOS_CIVIS)),
+  profissao: opcional(2, 80),
+});
 
 export type DadosCliente = z.output<typeof cadastrarClienteSchema>;
 
@@ -382,6 +434,33 @@ export interface FichaCliente {
   repDocumento: string | null;
   repEstadoCivil: EstadoCivil | null;
   repProfissao: string | null;
+  /** Quem assina pelo menor ou pelo curatelado (F3.98). */
+  capacidade?: "PLENA" | "MENOR" | "CURATELA";
+  nascimento?: string | null;
+  rlPapel?: "MAE" | "PAI" | "TUTORA" | "TUTOR" | "CURADORA" | "CURADOR" | null;
+  rlNome?: string | null;
+  rlDocumento?: string | null;
+  rlRg?: string | null;
+  rlRgOrgao?: string | null;
+  rlNacionalidade?: string | null;
+  rlEstadoCivil?: EstadoCivil | null;
+  rlProfissao?: string | null;
+  rlMoraJunto?: boolean | null;
+  rlCep?: string | null;
+  rlEndereco?: string | null;
+  rlBairro?: string | null;
+  rlCidade?: string | null;
+  rlUf?: string | null;
+  curModo?: "REPRESENTA" | "ASSISTE" | null;
+  curProcesso?: string | null;
+  curVara?: string | null;
+  /** Calculado no servidor com a data de hoje; só na pessoa física. */
+  assina?: { situacao: "PROPRIO" | "REPRESENTADO" | "ASSISTIDO" | "CURATELA" | "FEZ_18"; idade: number | null; faz16: string | null;
+    faz18: string | null; modo: "REPRESENTA" | "ASSISTE" | null } | null;
+  /** Quantos dados a procuração pede para este cliente (segue quem assina). */
+  totalQualificacao?: number;
+  /** Quem assinava pelo cliente antes dos 18 (a folha "Quem assinava com..."). */
+  quemAssinava?: { papel: "MAE" | "PAI" | "TUTORA" | "TUTOR"; nome: string | null; documento: string | null; ate: string; contratos: string[] } | null;
   situacao: SituacaoCliente;
   inativadoEm: string | null;
   motivoInativacao: string | null;
@@ -456,6 +535,25 @@ export const CAMPOS_CLIENTE_BANCO: Record<string, string> = {
   repProfissao: "rep_profissao",
   origem: "origem",
   origemIndicacao: "origem_indicacao",
+  capacidade: "capacidade",
+  nascimento: "nascimento",
+  rlPapel: "rl_papel",
+  rlNome: "rl_nome",
+  rlDocumento: "rl_documento",
+  rlRg: "rl_rg",
+  rlRgOrgao: "rl_rg_orgao",
+  rlNacionalidade: "rl_nacionalidade",
+  rlEstadoCivil: "rl_estado_civil",
+  rlProfissao: "rl_profissao",
+  rlMoraJunto: "rl_mora_junto",
+  rlCep: "rl_cep",
+  rlEndereco: "rl_endereco",
+  rlBairro: "rl_bairro",
+  rlCidade: "rl_cidade",
+  rlUf: "rl_uf",
+  curModo: "cur_modo",
+  curProcesso: "cur_processo",
+  curVara: "cur_vara",
 };
 
 /** Dias entre duas datas (aaaa-mm-dd), para "vencido há 5 dias". */

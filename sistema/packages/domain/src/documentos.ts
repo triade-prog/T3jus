@@ -20,6 +20,11 @@ import { cidadeDataPadrao, enderecoDoCliente, NOMES_CAMPOS, rgDoCliente, valorPo
 import { fraseOab, type InscricaoOab } from "./portal.ts";
 import { faltasDoAdvogado, qualificacaoDoAdvogado, ROTULO_FALTA_ADVOGADO, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
 import type { MarcaNoDocumento } from "./logo.ts";
+import { hojeBrasilia } from "./clientes.ts";
+import {
+  assinaturaComResponsavel, enderecoDoResponsavel, faltasDoResponsavel, qualificacaoDoResponsavel, quemAssina, trechoDaCuratela, trechoDoResponsavel,
+  type QuemAssina, type ResponsavelDoCliente,
+} from "./responsavel_legal.ts";
 
 // ------------------------------------------------------------------------------- tipos
 
@@ -66,8 +71,9 @@ export const CAMPOS_DOCUMENTO: readonly CampoDocumento[] = [
   { campo: "CLIENTE_CPF", grupo: "Cliente", descricao: "CPF (ou CNPJ) do cliente", origem: "cadastro" },
   { campo: "CLIENTE_RG", grupo: "Cliente", descricao: "RG do cliente, com o órgão", origem: "cadastro" },
   { campo: "CLIENTE_ENDERECO", grupo: "Cliente", descricao: "Endereço completo do cliente", origem: "cadastro" },
-  { campo: "REPRESENTANTE_NOME", grupo: "Cliente", descricao: "Quem assina pela empresa, em maiúsculas", origem: "cadastro" },
-  { campo: "REPRESENTANTE_QUALIFICACAO", grupo: "Cliente", descricao: "Cargo, estado civil, profissão e CPF de quem assina pela empresa", origem: "cadastro" },
+  { campo: "CLIENTE_NASCIMENTO", grupo: "Cliente", descricao: "A data de nascimento do cliente menor (14/03/2014)", origem: "cadastro" },
+  { campo: "REPRESENTANTE_NOME", grupo: "Cliente", descricao: "Quem assina pela empresa, pelo menor ou pelo curatelado, em maiúsculas", origem: "cadastro" },
+  { campo: "REPRESENTANTE_QUALIFICACAO", grupo: "Cliente", descricao: "A qualificação de quem assina pela empresa (cargo, estado civil, profissão e CPF), pelo menor ou pelo curatelado", origem: "cadastro" },
   { campo: "CLIENTE_ASSINATURA", grupo: "Cliente", descricao: "O bloco de assinatura do cliente, com quem o representa quando houver", origem: "cadastro" },
   { campo: "CONTRATO_NUMERO", grupo: "Contrato e honorários", descricao: "Número do contrato: “C-2026-033”", origem: "cadastro" },
   { campo: "CONTRATO_OBJETO", grupo: "Contrato e honorários", descricao: "O objeto do contrato, como está na ficha", origem: "cadastro" },
@@ -272,7 +278,7 @@ export function camposDoPadraoDocumento(m: ModeloPadraoDocumento): string[] {
 // ------------------------------------------------------------------------------- dados
 
 /** O cliente do contrato, com a qualificação do cadastro (AP-01) e quem assina pela empresa. */
-export interface ClienteDoDocumento {
+export interface ClienteDoDocumento extends ResponsavelDoCliente {
   id: string;
   nome: string;
   tipo: "PF" | "PJ";
@@ -407,8 +413,9 @@ export function qualificacaoDoRepresentante(c: ClienteDoDocumento): string {
   return partes.join(", ");
 }
 
-/** A qualificação do cliente no documento (AP-01), com quem representa a empresa (decisão 14). */
-export function qualificacaoNoDocumento(c: ClienteDoDocumento): string {
+/** A qualificação do cliente no documento (AP-01), com quem representa a empresa (decisão 14) ou
+ * quem assina pelo menor ou pelo curatelado (F3.98), pela data de hoje. */
+export function qualificacaoNoDocumento(c: ClienteDoDocumento, hoje: string = hojeBrasilia()): string {
   if (c.tipo === "PJ") {
     const cnpj = c.documento ? formatarDocumento(c.documento) : falta("CNPJ");
     const rep = c.repNome?.trim()
@@ -416,6 +423,8 @@ export function qualificacaoNoDocumento(c: ClienteDoDocumento): string {
       : `, neste ato representada por ${falta("REPRESENTANTE")}`;
     return `pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${cnpj}, com sede na ${enderecoDoCliente(c)}${rep}`;
   }
+  const quem = quemAssina(c, hoje);
+  if (quem !== "PROPRIO") return qualificacaoComResponsavel(c, quem);
   return [
     c.nacionalidade?.trim().toLowerCase() || falta("NACIONALIDADE"),
     estadoCivil(c.estadoCivil) ?? falta("ESTADO CIVIL"),
@@ -426,8 +435,36 @@ export function qualificacaoNoDocumento(c: ClienteDoDocumento): string {
   ].join(", ");
 }
 
-/** O que falta no cadastro, para o aviso no alto ("Falta 1 dado de Benedito: o RG"). */
-export function faltasNoDocumento(c: ClienteDoDocumento): string[] {
+/** Menor ou curatelado: a qualificação dele e a de quem assina, com o endereço de cada um (ou
+ * "ambos residentes", quando moram juntos). O menor de 16 não leva estado civil nem profissão; o
+ * RG dele entra quando houver (F3.98). */
+function qualificacaoComResponsavel(c: ClienteDoDocumento, quem: Exclude<QuemAssina, "PROPRIO">): string {
+  const curatela = quem === "CURATELA_REPRESENTA" || quem === "CURATELA_ASSISTE";
+  const cpf = `inscrito(a) no CPF sob o nº ${c.documento ? formatarDocumento(c.documento) : falta("CPF")}`;
+  const nac = c.nacionalidade?.trim().toLowerCase() || falta("NACIONALIDADE");
+  const juntos = c.rlMoraJunto !== false;
+  let doCliente: string[];
+  if (curatela) {
+    doCliente = [nac, estadoCivil(c.estadoCivil) ?? falta("ESTADO CIVIL"), c.profissao?.trim().toLowerCase() || falta("PROFISSÃO"),
+      `portador(a) do RG nº ${rgDoCliente(c)}`, cpf];
+  } else {
+    const nascido = `nascido(a) em ${c.nascimento ? dataBr(c.nascimento) : falta("DATA DE NASCIMENTO")}`;
+    doCliente = quem === "ASSISTIDO"
+      ? [nac, estadoCivil(c.estadoCivil), c.profissao?.trim().toLowerCase(), "menor púbere", nascido,
+         c.rg?.trim() ? `portador(a) do RG nº ${rgDoCliente(c)}` : null, cpf].filter((x): x is string => !!x)
+      : [nac, "menor impúbere", nascido, c.rg?.trim() ? `portador(a) do RG nº ${rgDoCliente(c)}` : null, cpf].filter((x): x is string => !!x);
+  }
+  const partes = [...doCliente];
+  if (!juntos) partes.push(`residente na ${enderecoDoCliente(c)}`);
+  partes.push(trechoDoResponsavel(c, quem));
+  partes.push(juntos ? `ambos residentes na ${enderecoDoCliente(c)}` : `residente na ${enderecoDoResponsavel(c)}`);
+  if (curatela) partes.push(trechoDaCuratela(c));
+  return partes.join(", ");
+}
+
+/** O que falta no cadastro, para o aviso no alto ("Falta 1 dado de Benedito: o RG"). Com o menor
+ * ou o curatelado, entra o que falta de quem assina (F3.98). */
+export function faltasNoDocumento(c: ClienteDoDocumento, hoje: string = hojeBrasilia()): string[] {
   const f: string[] = [];
   if (c.tipo === "PJ") {
     if (!c.documento) f.push("o CNPJ");
@@ -439,12 +476,16 @@ export function faltasNoDocumento(c: ClienteDoDocumento): string[] {
     }
     return f;
   }
+  const quem = quemAssina(c, hoje);
+  const menor = quem === "REPRESENTADO" || quem === "ASSISTIDO";
+  if (menor && !c.nascimento) f.push("a data de nascimento");
   if (!c.nacionalidade?.trim()) f.push("a nacionalidade");
-  if (!c.estadoCivil) f.push("o estado civil");
-  if (!c.profissao?.trim()) f.push("a profissão");
-  if (!c.rg?.trim()) f.push("o RG");
+  if (!menor && !c.estadoCivil) f.push("o estado civil");
+  if (!menor && !c.profissao?.trim()) f.push("a profissão");
+  if (!menor && !c.rg?.trim()) f.push("o RG");
   if (!c.documento) f.push("o CPF");
   if (!c.endereco?.trim()) f.push("o endereço");
+  if (quem !== "PROPRIO") f.push(...faltasDoResponsavel(c));
   return f;
 }
 
@@ -556,8 +597,9 @@ export function qualificacoesOutorgados(lista: ReturnType<typeof outorgadosEscol
 /** Os valores de cada campo, com a origem e o que saiu marcado (decisões 12 a 14). */
 export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos): ValoresDocumento {
   const c = d.cliente;
+  const hoje = d.hoje ?? hojeBrasilia();
   const outorgados = outorgadosEscolhidos(d, e);
-  const marcados = faltasNoDocumento(c).map((f) => `${inicialMaiuscula(f)} de ${c.nome}`);
+  const marcados = faltasNoDocumento(c, hoje).map((f) => `${inicialMaiuscula(f)} de ${c.nome}`);
   if (!d.escritorio.cnpj) marcados.push("CNPJ do escritório");
   if (!d.escritorio.endereco?.trim()) marcados.push("Endereço do escritório");
   if (!d.escritorio.oab?.trim()) marcados.push("Registro do escritório na OAB");
@@ -566,19 +608,24 @@ export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos
 
   const nomeCliente = c.nome.toUpperCase();
   const repNome = c.tipo === "PJ" ? (c.repNome?.trim() ? c.repNome.trim().toUpperCase() : falta("REPRESENTANTE")) : "";
+  const quem = quemAssina(c, hoje);
+  const cpfCliente = c.documento ? formatarDocumento(c.documento) : falta("CPF");
   const assinaCliente = c.tipo === "PJ"
     ? `_______________________________________\n${nomeCliente}\nCNPJ ${c.documento ? formatarDocumento(c.documento) : falta("CNPJ")}\npor ${repNome}${c.repCargo?.trim() ? `, ${c.repCargo.trim().toLowerCase()}` : ""}`
-    : `_______________________________________\n${nomeCliente}\nCPF ${c.documento ? formatarDocumento(c.documento) : falta("CPF")}`;
+    : quem !== "PROPRIO"
+      ? assinaturaComResponsavel(nomeCliente, cpfCliente, c, quem)
+      : `_______________________________________\n${nomeCliente}\nCPF ${cpfCliente}`;
   const esc = d.escritorio;
 
   const valores: Record<string, string> = {
     CLIENTE_NOME: nomeCliente,
-    CLIENTE_QUALIFICACAO: qualificacaoNoDocumento(c),
+    CLIENTE_QUALIFICACAO: qualificacaoNoDocumento(c, hoje),
+    CLIENTE_NASCIMENTO: c.nascimento ? dataBr(c.nascimento) : "",
     CLIENTE_CPF: c.documento ? formatarDocumento(c.documento) : falta(c.tipo === "PJ" ? "CNPJ" : "CPF"),
     CLIENTE_RG: c.tipo === "PJ" ? "" : rgDoCliente(c),
     CLIENTE_ENDERECO: enderecoDoCliente(c),
-    REPRESENTANTE_NOME: repNome,
-    REPRESENTANTE_QUALIFICACAO: qualificacaoDoRepresentante(c),
+    REPRESENTANTE_NOME: quem !== "PROPRIO" ? (c.rlNome?.trim() ? c.rlNome.trim().toUpperCase() : falta("QUEM ASSINA")) : repNome,
+    REPRESENTANTE_QUALIFICACAO: quem !== "PROPRIO" ? qualificacaoDoResponsavel(c) : qualificacaoDoRepresentante(c),
     CLIENTE_ASSINATURA: assinaCliente,
     CONTRATO_NUMERO: d.contrato.numero,
     CONTRATO_OBJETO: d.contrato.objeto.trim().replace(/[.;]+$/, ""),
@@ -606,7 +653,7 @@ export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos
 /** Os marcados que o modelo de fato usa (o que falta, mas o modelo não pede, não conta). */
 export function marcadosDoModeloDocumento(v: ValoresDocumento, campos: readonly string[]): string[] {
   const usa = (x: string) => campos.includes(x);
-  const deCliente = ["CLIENTE_QUALIFICACAO", "CLIENTE_CPF", "CLIENTE_RG", "CLIENTE_ENDERECO", "CLIENTE_ASSINATURA", "REPRESENTANTE_NOME", "REPRESENTANTE_QUALIFICACAO"].some(usa);
+  const deCliente = ["CLIENTE_QUALIFICACAO", "CLIENTE_CPF", "CLIENTE_RG", "CLIENTE_ENDERECO", "CLIENTE_ASSINATURA", "CLIENTE_NASCIMENTO", "REPRESENTANTE_NOME", "REPRESENTANTE_QUALIFICACAO"].some(usa);
   const deAdvogado = new Set(v.marcadosAdvogados ?? []);
   return v.marcados.filter((m) => {
     if (deAdvogado.has(m)) return usa("ADVOGADOS_QUALIFICACAO");
@@ -646,6 +693,12 @@ const NOMES_CAMPO_CLIENTE: Record<string, string> = {
   rg: "o RG", rg_orgao: "o órgão do RG", cep: "o CEP", endereco: "o endereço", bairro: "o bairro", cidade: "a cidade", uf: "a UF",
   rep_nome: "quem assina pela empresa", rep_cargo: "o cargo de quem assina", rep_documento: "o CPF de quem assina",
   rep_estado_civil: "o estado civil de quem assina", rep_profissao: "a profissão de quem assina",
+  capacidade: "quem assina pelo cliente", nascimento: "a data de nascimento", rl_papel: "quem assina pelo cliente", rl_nome: "quem assina pelo cliente",
+  rl_documento: "o CPF de quem assina", rl_rg: "o RG de quem assina", rl_rg_orgao: "o órgão do RG de quem assina",
+  rl_nacionalidade: "a nacionalidade de quem assina", rl_estado_civil: "o estado civil de quem assina", rl_profissao: "a profissão de quem assina",
+  rl_mora_junto: "o endereço de quem assina", rl_cep: "o endereço de quem assina", rl_endereco: "o endereço de quem assina",
+  rl_bairro: "o endereço de quem assina", rl_cidade: "o endereço de quem assina", rl_uf: "o endereço de quem assina",
+  cur_modo: "o que diz o termo de curatela", cur_processo: "o processo da curatela", cur_vara: "a vara da curatela",
 };
 /** Só os campos que entram nos documentos contam como mudança (decisão 19). */
 export const CAMPOS_CLIENTE_DOCUMENTO = Object.keys(NOMES_CAMPO_CLIENTE);

@@ -145,6 +145,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   CLIENTE_ARQUIVADO: "Este cliente foi arquivado a pedido do titular dos dados e não muda mais.",
   CLIENTE_EXCLUIDO: "Os dados deste cliente foram excluídos a pedido do titular.",
   CLIENTE_INATIVO: "Este cliente está inativo. Reative na ficha antes de registrar.",
+  CLIENTE_NAO_FEZ_18: "O cliente ainda não fez 18 anos. Até lá, quem assina continua o mesmo.",
   COMPROMISSO_CANCELADO: "Este compromisso foi cancelado e não muda mais. Recarregue a página para ver.",
   CONTATO_FORA_DA_FICHA: "Escolha um dos contatos da ficha do cliente.",
   CONTA_CANCELADA: "Esta conta foi cancelada e não recebe mais pagamento.",
