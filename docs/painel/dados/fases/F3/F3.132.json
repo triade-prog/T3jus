@@ -1,0 +1,12 @@
+{
+  "id": "F3.132",
+  "texto": "Fechamento no financeiro do caso que não teve RPV nem alvará: folha \"Fechamento do caso\" na ficha do contrato em Financeiro › A receber, para onde \"Ver o acerto\" leva",
+  "peca": "S4",
+  "refs": [
+    "EX-16",
+    "EX-17"
+  ],
+  "status": "pendente",
+  "ordem": 1060,
+  "proximo": "Desenhar a folha Fechamento do caso na ficha do contrato (pergunta 5 do D30, aprovada sem desenho)"
+}
