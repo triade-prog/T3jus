@@ -64,10 +64,10 @@ function Grade({ principal, lateral }: { principal: ReactNode; lateral: ReactNod
   );
 }
 
-function Folha({ titulo, sub, acoes, pequena, children, estilo }: { titulo: string; sub?: string; acoes?: ReactNode; pequena?: boolean; children: ReactNode; estilo?: React.CSSProperties }) {
+function Folha({ titulo, sub, acoes, pequena, children, estilo, classe }: { titulo: string; sub?: string; acoes?: ReactNode; pequena?: boolean; children: ReactNode; estilo?: React.CSSProperties; classe?: string }) {
   const id = useId();
   return (
-    <section className="folha" aria-labelledby={id} style={estilo}>
+    <section className={classe ? `folha ${classe}` : "folha"} aria-labelledby={id} style={estilo}>
       <div className="folha-cab" style={pequena ? { paddingBottom: 8 } : undefined}>
         <div>
           <h2 id={id} style={pequena ? { fontSize: 20 } : undefined}>
@@ -576,7 +576,7 @@ function Historico({ atendimentos, funil = [], f, hoje, destaque, acoes }: {
   const primeiro = f.nome.split(" ")[0];
   const excluido = f.situacao === "EXCLUIDO";
   return (
-    <Folha titulo="Histórico de atendimento" estilo={{ overflow: "hidden" }}
+    <Folha titulo="Histórico de atendimento" classe="cl-hist" estilo={{ overflow: "hidden" }}
       sub={excluido
         ? "Ficam a data, o canal, quem atendeu e o resumo, como foi escrito. Com quem se falou foi excluído com os dados do cliente."
         : "Cada conversa com o cliente ou a família: quando, por onde, quem atendeu e o combinado. Nada aqui é apagado."}

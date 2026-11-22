@@ -1,0 +1,10 @@
+{
+  "data": "22/11/2026",
+  "inicio": "18:46",
+  "fim": "19:15",
+  "texto": "Ficha do cliente: os botões do Histórico de atendimento ficam juntos numa linha, e as tabelas de Propostas, Contratos e Casos ganham o estilo aprovado, que faltava (F3.120).",
+  "refs": [
+    "AP-01",
+    "AP-05"
+  ]
+}

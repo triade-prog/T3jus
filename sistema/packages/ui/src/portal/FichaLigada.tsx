@@ -185,7 +185,7 @@ function useItens(cliente: string, aba: AbaLigada, vez: number) {
   return { d, carregar };
 }
 
-function Cartao({ nome, href, sub, dados, selos, acao }: { nome: string; href: string; sub: string; dados: [string, ReactNode][]; selos?: ReactNode; acao?: ReactNode }) {
+function Cartao({ nome, href, sub, dados, selos, acao }: { nome: string; href: string; sub: ReactNode; dados: [string, ReactNode][]; selos?: ReactNode; acao?: ReactNode }) {
   return (
     <li className="cartao">
       <div className="c-topo">
@@ -445,7 +445,7 @@ function AbaContratos({ lista, f, passo, juridico, aoJanela }: {
                 <td>
                   <div className="fl-num">
                     <a href={ROTAS_PASSO.contrato(c.id)}>{c.numero}</a>
-                    <small>{c.objeto}{c.proposta ? ` · veio da ${c.proposta.numero}` : ""}</small>
+                    <small>{c.objeto}{c.proposta ? <> · veio da <span className="fl-cod">{c.proposta.numero}</span></> : null}</small>
                   </div>
                 </td>
                 <td>
@@ -474,7 +474,7 @@ function AbaContratos({ lista, f, passo, juridico, aoJanela }: {
       </table>
       <ul className="cartoes so-cel fl-cards" aria-label={`Contratos de ${f.nome}`}>
         {lista.map((c) => (
-          <Cartao key={c.id} nome={c.numero} href={ROTAS_PASSO.contrato(c.id)} sub={`${c.objeto}${c.proposta ? ` · veio da ${c.proposta.numero}` : ""}`}
+          <Cartao key={c.id} nome={c.numero} href={ROTAS_PASSO.contrato(c.id)} sub={<>{c.objeto}{c.proposta ? <> · veio da <span className="fl-cod">{c.proposta.numero}</span></> : null}</>}
             dados={[["Honorários", valorDaProposta(c.condicoes)], ["Caso", casoTexto(c)]]} selos={situacao(c)} acao={acao(c)} />
         ))}
       </ul>
