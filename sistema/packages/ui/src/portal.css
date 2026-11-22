@@ -5108,3 +5108,59 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 @media (max-width:760px){.pe-adv-fs legend{white-space:normal;max-width:100%}
 .pe-adv-fs legend small{white-space:normal;display:inline}
 .cd-adv-dados{margin-left:0}.cd-adv-dados a{min-height:44px}}
+/* ===== Baixar em Word e em PDF (D23, docs/design/aprovadas/portal-contrato-pdf) ===== */
+.pr-docs>li.pdf-doc{row-gap:10px}
+.pdf-doc>.pe-ci{grid-row:1/3}
+.pdf-doc>.pdf-sit{justify-self:end}
+.pdf-doc>.pdf-sit .selo{margin-top:0}
+.pdf-doc>.pdf-bts,.pdf-doc>.pdf-mais{grid-column:2/-1}
+.pdf-mais:empty{display:none}
+.pdf-mais>[role=status]:empty{display:none}
+.pdf-bts{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.pdf-bx-w{display:inline-flex;align-items:center;gap:8px}
+.pdf-bx-rot{font-size:12px;color:var(--texto-2)}
+.pdf-bx{display:inline-flex;gap:0}
+.pdf-bx .btn{border-radius:0}
+.pdf-bx .btn:first-child{border-radius:var(--raio) 0 0 var(--raio)}
+.pdf-bx .btn:last-child{border-radius:0 var(--raio) var(--raio) 0;margin-left:-1px}
+.pdf-bx .btn:focus-visible{position:relative;z-index:1}
+.btn[aria-disabled=true]{cursor:progress}
+.pdf-gira{width:16px;height:16px;border-radius:50%;border:2px solid var(--sal);border-top-color:var(--vinho);animation:pdf-gira .9s linear infinite;flex:none}
+@keyframes pdf-gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.pdf-gira{animation:none;border-right-color:var(--vinho)}}
+.pdf-status{margin:10px 0 0;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--texto-2)}
+.pdf-status b{color:var(--texto);font-weight:500;display:inline;font-size:13px}
+.pdf-nota{margin:10px 0 0;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--raio);background:var(--ambar-3);color:var(--tinta,#2A1A22);font-size:13px;line-height:1.45}
+.pdf-nota .ico{flex:none;margin-top:2px;color:var(--vinho)}
+.pdf-nota b{font-weight:600;display:inline;font-size:13px}
+.pdf-erro{margin:10px 0 0}
+.pdf-erro .aviso{margin:0}
+.pdf-erro .aviso-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.pdf-erro .codigo{margin:6px 0 0;font-size:11px;color:var(--texto-2);letter-spacing:.04em}
+.pdf-sem{margin:10px 0 0;font-size:13px}
+.pdf-sem summary{display:inline-flex;align-items:center;gap:6px;min-height:44px;cursor:pointer;color:var(--vinho);font-weight:500}
+.pdf-sem .pdf-sem-c{padding:4px 0 6px 12px;border-left:2px solid var(--divisor);display:grid;gap:8px}
+.pdf-sem .pdf-sem-c p{margin:0;color:var(--texto-2);font-size:12px}
+.pdf-sem .pdf-sem-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--texto-2);font-size:12px}
+.pdf-sem .pdf-sem-l b{display:inline;color:var(--texto);font-weight:500;font-size:12px}
+.pdf-ajuda{display:flex;gap:10px;align-items:flex-start}
+.pdf-ajuda ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.pdf-ajuda b{display:inline;font-size:inherit}
+.pe-pronto>.pdf-status,.pe-pronto>.pdf-erro,.pe-pronto>.pdf-nota,.pe-pronto>[role=status]{margin-top:-4px}
+.pe-pronto>[role=status]:empty{display:none}
+.pr-tab .pdf-bx-w{flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:760px){
+  .pdf-doc>.pe-ci{grid-row:auto}
+  .pdf-doc>.pdf-sit{grid-column:2;justify-self:start}
+  .pdf-doc>.pdf-bts,.pdf-doc>.pdf-mais{grid-column:1/-1}
+  .pdf-bts{width:100%}
+  .pdf-bts>.btn{flex:1 1 100%}
+  .pdf-bx-w{flex:1 1 100%;flex-wrap:wrap;gap:4px}
+  .pdf-bx-rot{flex:1 1 100%}
+  .pdf-bx{flex:1 1 100%}
+  .pdf-bx .btn{flex:1 1 50%;min-height:44px;justify-content:center}
+  .pdf-bts>.btn{min-height:44px;justify-content:center}
+  .pdf-erro .aviso-acoes .btn{flex:1 1 auto}
+  .pe-arq{grid-template-columns:44px minmax(0,1fr)}
+  .pe-arq>.pdf-bx-w{grid-column:1/-1}
+}

@@ -1,0 +1,22 @@
+[
+ {
+  "nome": "ficha-pdf",
+  "url": "contrato-pdf.html?estado=ficha-pdf"
+ },
+ {
+  "nome": "pdf-preparando",
+  "url": "contrato-pdf.html?estado=pdf-preparando"
+ },
+ {
+  "nome": "pdf-erro",
+  "url": "contrato-pdf.html?estado=pdf-erro"
+ },
+ {
+  "nome": "pdf-modelo-proprio",
+  "url": "contrato-pdf.html?estado=pdf-modelo-proprio"
+ },
+ {
+  "nome": "assinado",
+  "url": "contrato-pdf.html?estado=assinado"
+ }
+]

@@ -195,7 +195,8 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     await expect(page.getByText("Diego Almeida não tem OAB na Equipe", { exact: false })).toBeVisible();
     await expect(page.getByRole("link", { name: "Gerar documentos" })).toHaveAttribute("href", "/contratos/modelos/gerar");
     await semViolacoes(page);
-    await page.getByRole("button", { name: "Baixar o contrato de Benedito" }).click();
+    await expect(page.getByRole("group", { name: "Baixar o contrato de Benedito" })).toBeVisible();
+    await page.getByRole("button", { name: "Baixar em Word (.docx, para editar): o contrato de Benedito" }).click();
     await expect.poll(() => pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/documentos/${DOC(1)}/abrir`)).toBe(true);
     await page.goto(`${P}/contratos/modelos`);
     await page.getByRole("button", { name: "Assinados (1)" }).click();
@@ -372,5 +373,77 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     ]);
     expect(pedidos.find((p) => p.caminho === `/v1/escritorio/contratos/${CT}/assinatura`)?.corpo).toEqual({ versao: 1, assinadoEm: "2026-11-21" });
     expect(envios).toHaveLength(2);
+  });
+
+  test("D23: na aba Documentos, cada documento baixa em Word e em PDF; preparando, erro, leiaute simples e o assinado", async ({ page }) => {
+    const ASS = "f9000000-0000-4000-8000-000000000051";
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${CT}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/contratos/${CT}/anexos`]: { corpo: { anexos: [] } },
+      [`GET /v1/escritorio/contratos/${CT}/documentos`]: [
+        { corpo: DOCS_CT },
+        { corpo: { ...DOCS_CT, faltam: 1, documentos: [{ ...DOCS_CT.documentos[0], situacao: "ASSINADO",
+          atual: versao(DOC(5), "CONTRATO", "contrato-honorarios-benedito-lima-v2.docx", 2,
+            [{ anexoId: ASS, nome: "contrato-assinado-benedito.pdf", assinadoEm: "2026-11-21", enviadoPor: MARINA, enviadoEm: "2026-11-21T20:20:00Z" }]) }, DOCS_CT.documentos[1]] } },
+      ],
+      [`POST /v1/escritorio/documentos/${DOC(5)}/abrir`]: { corpo: { url: `${P}/arquivo-falso.docx`, validadeSegundos: 60 } },
+    });
+    await page.route("**/arquivo-falso.*", (r) => r.fulfill({ status: 200, body: "x", headers: { "content-disposition": "attachment" } }));
+    // O PDF do contrato: a primeira vez demora e falha; a segunda sai, num leiaute simples.
+    let soltar: () => void = () => {};
+    const segura = new Promise<void>((r) => { soltar = r; });
+    let vezPdf = 0;
+    await page.route((u) => u.pathname.endsWith(`/documentos/${DOC(5)}/abrir`) && u.searchParams.get("formato") === "pdf", async (rota) => {
+      vezPdf++;
+      if (vezPdf === 1) {
+        await segura;
+        return rota.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ erro: { codigo: "UPSTREAM_UNAVAILABLE", detalhes: { motivo: "PDF_INDISPONIVEL" } } }) });
+      }
+      return rota.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: `${P}/arquivo-falso.pdf`, validadeSegundos: 60, complexo: true }) });
+    });
+
+    await page.goto(`${P}/contratos/contratos/${CT}?aba=documentos`);
+    await expect(page.getByRole("heading", { name: "Documentos deste contrato" })).toBeVisible();
+    const grupo = page.getByRole("group", { name: "Baixar o contrato", exact: true });
+    await expect(grupo.getByRole("button", { name: "Baixar em Word (.docx, para editar): o contrato" })).toBeVisible();
+    await expect(grupo.getByRole("button", { name: "Baixar em PDF (para mandar ou imprimir): o contrato" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Baixar a procuração", exact: true })).toBeVisible();
+    await expect(page.getByText("contrato-honorarios-benedito-lima-v2 ·", { exact: false })).toBeVisible();
+    await expect(page.getByText("PDF é para mandar ao cliente ou imprimir como está.", { exact: false })).toBeVisible();
+    await expect(page.getByText("O PDF sai do documento gerado.", { exact: false })).toBeVisible();
+    await semViolacoes(page);
+
+    await grupo.getByRole("button", { name: /^Baixar em PDF/ }).click();
+    const prep = page.getByRole("button", { name: /^Preparando o PDF\s?: o contrato$/ });
+    await expect(prep).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByRole("status").filter({ hasText: "Preparando o PDF do contrato." })).toContainText("o arquivo baixa sozinho");
+    // O Word e os outros documentos seguem livres.
+    await expect(grupo.getByRole("button", { name: /^Baixar em Word/ })).toBeEnabled();
+    await semViolacoes(page);
+    soltar();
+    const erro = page.getByRole("alert").filter({ hasText: "Não deu para preparar o PDF do contrato." });
+    await expect(erro).toContainText("Nada mudou no documento, e o Word continua para baixar.");
+    await expect(page.getByText("PDF_INDISPONIVEL")).toBeVisible();
+    await semViolacoes(page);
+    await erro.getByRole("button", { name: "Baixar o Word (.docx, para editar): o contrato" }).click();
+    await expect.poll(() => pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/documentos/${DOC(5)}/abrir` && p.busca === "")).toBe(true);
+    await erro.getByRole("button", { name: /^Tentar de novo\s?: PDF do contrato$/ }).click();
+    await expect(page.getByText("O PDF sai num leiaute simples, no timbrado.")).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "Não deu para preparar o PDF" })).toHaveCount(0);
+    expect(vezPdf).toBe(2);
+
+    // Versão anterior também tem Word e PDF.
+    await page.getByText("Versão anterior (1)").click();
+    await expect(page.getByRole("group", { name: "Baixar o contrato, versão 1" })).toBeVisible();
+
+    // Assinado: baixa o assinado como foi anexado; o sem-assinatura fica numa lista que abre.
+    await page.reload();
+    await expect(page.getByRole("button", { name: /^Baixar o assinado \(PDF\)\s?: o contrato$/ })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Baixar o contrato", exact: true })).toBeHidden();
+    await page.getByText("Sem assinatura (v2): Word e PDF").click();
+    await expect(page.getByText("O que vale é o assinado.", { exact: false })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Baixar o contrato, sem assinatura" })).toBeVisible();
+    await semViolacoes(page);
   });
 });
