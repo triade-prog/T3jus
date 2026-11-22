@@ -1,12 +1,12 @@
 {
   "id": "F1.21",
-  "texto": "Meio de pagamento da cobrança dos escritórios: Pix e boleto emitidos com baixa automática, PDF do carnê, da fatura e do recibo (também no Portal), nota fiscal, preços reais, remetente definitivo e o e-mail de cobrança na folha do Portal",
+  "texto": "Meio de pagamento da cobrança dos escritórios: Pix e boleto emitidos com baixa automática, PDF do carnê, da fatura e do recibo (também no Portal), nota fiscal, preços reais e remetente definitivo",
   "peca": "C1",
   "refs": [
     "CO-06"
   ],
   "status": "pendente",
   "ordem": 67.3,
-  "nota": "Hoje a fatura guarda Pix copia e cola e linha do boleto vazios, e a baixa é registrada à mão no Console. O e-mail sai pelo Resend com o contato provisório.",
-  "proximo": "Escolher o banco ou intermediador (o mesmo de F3.20) e o emissor de nota fiscal"
+  "nota": "Hoje a fatura guarda Pix copia e cola e linha do boleto vazios, e a baixa é registrada à mão no Console. O e-mail sai pelo Resend com o contato provisório. O e-mail de cobrança na folha do Portal saiu em F1.23. Os PDFs da fatura, do recibo e do carnê estão em desenho para a Carol aprovar.",
+  "proximo": "A Carol aprovar o desenho dos PDFs e escolher o banco ou intermediador (o mesmo de F3.20) e o emissor de nota fiscal"
 }

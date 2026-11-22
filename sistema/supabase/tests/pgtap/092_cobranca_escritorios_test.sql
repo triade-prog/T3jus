@@ -2,7 +2,7 @@
 -- faixa de pessoas, cobrança a partir do Ativo, desconto de implantação com motivo, aviso aos 7
 -- dias, só consulta aos 30 com confirmação da Administração e carnê de 12 parcelas.
 begin;
-select plan(82);
+select plan(83);
 
 create temp table ids as select
   teste.equipe('Carol', 'ADMINISTRACAO') as adm,
@@ -224,6 +224,8 @@ select is((teste.erro($$ delete from assinatura_carne_parcelas where carne_id = 
 select is((teste.erro($$ select portal_plano_faturas(diego, cedro) from ids, c $$)) ->> 'codigo', 'TC401', 'decisão 5: a equipe do escritório não vê as faturas');
 select is((select portal_plano_faturas(socia, cedro) -> 'assinatura' ->> 'plano' from ids, c), 'Banca', 'a sócia dona vê o plano');
 select is((select jsonb_array_length(portal_plano_faturas(socia, cedro) -> 'faturas') from ids, c), 1, 'e as faturas, sem as canceladas');
+select is((select portal_plano_faturas(socia, cedro) -> 'assinatura' ->> 'emailCobranca' from ids, c),
+  (select email_cobranca from assinaturas where escritorio_id = (select cedro from c)), 'F1.21: a sócia dona vê o e-mail para onde a fatura vai');
 
 -- Contrato encerrado: a régua para e a fatura ainda pode ser paga (desenho, estado 37).
 select console_encerrar_contrato(adm, pequi, pg_temp.vcli(pequi), jsonb_build_object('fimEm', hoje_brasilia(), 'motivo', 'Distrato', 'nomeConfirmado', 'Pequi Advocacia')) from ids, c;
