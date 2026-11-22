@@ -37,3 +37,4 @@ export * from "./pasta_contador.ts";
 export * from "./cobranca.ts";
 export * from "./documentos.ts";
 export * from "./dados_advogado.ts";
+export * from "./ficha_ligada.ts";

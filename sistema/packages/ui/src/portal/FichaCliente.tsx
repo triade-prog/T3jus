@@ -20,14 +20,18 @@ import {
   type RascunhoCliente,
 } from "./clientes.ts";
 import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
+import { ROTAS_JURIDICO } from "./juridico.ts";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { FolhaFunilCliente } from "./FunilSaida.tsx";
 import { FolhaSemAvisos, SeloSemAvisos, useAvisosCliente } from "./SemAvisos.tsx";
+import { AbaItensCliente, DirPasso, NoEscritorio, BotaoPasso, type JanelaLigada } from "./FichaLigada.tsx";
+import { JanelaAbrirCaso, JanelaAssinaturaCaso, type FimDaAssinatura } from "./CasoDaAssinatura.tsx";
+import type { AbaLigada } from "./fichaLigada.ts";
 import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaArquivar, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
-export type AbaCliente = "ficha" | "atendimentos";
+export type AbaCliente = "ficha" | "atendimentos" | AbaLigada;
 export type Feito = { titulo: string; texto: string; acoes?: ReactNode };
 
 export function Toast({ feito, aoFechar }: { feito: Feito; aoFechar: () => void }) {
@@ -254,25 +258,6 @@ function Origem({ f }: { f: FichaCliente }) {
     </Folha>
   );
 }
-
-const Reserva = () => (
-  <Folha titulo="Contratos e casos" pequena>
-    <div className="cl-reserva">
-      <div>
-        <Icone nome="pena" className="ico" />
-        <span>
-          <b>Contratos</b> de honorários deste cliente aparecem aqui quando a área Contratos tiver tela.
-        </span>
-      </div>
-      <div>
-        <Icone nome="balanca" className="ico" />
-        <span>
-          <b>Casos e processos</b> aparecem aqui quando o Jurídico tiver tela. Um processo pode ter mais de um cliente, e cada um aparece na própria ficha.
-        </span>
-      </div>
-    </div>
-  </Folha>
-);
 
 // ------------------------------------------------------------------------- janelas
 
@@ -556,14 +541,15 @@ function JanelaSituacao({ modo, f, escritorio, aoFechar, aoFeito, aoConflito }: 
 
 type LinhaHist = { ocorridoEm: string; a?: Atendimento; funil?: { tipo: "saiu" | "voltou"; s: SaidaFunil } };
 
-function Historico({ atendimentos, funil = [], f, hoje, destaque, aoRegistrar }: {
+function Historico({ atendimentos, funil = [], f, hoje, destaque, acoes }: {
   atendimentos: Atendimento[];
   /** Saídas do funil (F3.8): entram como linhas da equipe no histórico. */
   funil?: SaidaFunil[];
   f: FichaCliente;
   hoje: string;
   destaque: string | null;
-  aoRegistrar: (() => void) | null;
+  /** O botão do próximo passo e "Registrar atendimento" (F3.110). */
+  acoes: ReactNode;
 }) {
   const p = f.proxContato;
   const r = p ? rotuloProx(p, hoje) : null;
@@ -582,12 +568,7 @@ function Historico({ atendimentos, funil = [], f, hoje, destaque, aoRegistrar }:
       sub={excluido
         ? "Ficam a data, o canal, quem atendeu e o resumo, como foi escrito. Com quem se falou foi excluído com os dados do cliente."
         : "Cada conversa com o cliente ou a família: quando, por onde, quem atendeu e o combinado. Nada aqui é apagado."}
-      acoes={aoRegistrar ? (
-        <button data-muda className="btn btn-pri" type="button" onClick={aoRegistrar}>
-          <Icone nome="mais" className="ico" />
-          Registrar atendimento
-        </button>
-      ) : undefined}>
+      acoes={acoes || undefined}>
       {p && r?.tipo === "vencido" ? (
         <div className="cl-venc-aviso">
           <Aviso tom="urgencia" titulo={`O próximo contato venceu há ${r.dias === 1 ? "1 dia" : `${r.dias} dias`}.`}>
@@ -729,6 +710,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const [abertura, setAbertura] = useState(0);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [destaque, setDestaque] = useState<string | null>(null);
+  // A assinatura e o caso abrem na própria ficha (F3.111, decisões 15 a 20).
+  const [ligada, setLigada] = useState<JanelaLigada | null>(null);
+  const [vezAba, setVezAba] = useState(0);
   const hoje = hojeBrasilia();
   const avisos = useAvisosCliente(id, aba === "ficha");
 
@@ -789,6 +773,25 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     setJanela(j);
   };
 
+  const abrirLigada = (j: JanelaLigada) => {
+    setFeito(null);
+    setAbertura((n) => n + 1);
+    setLigada(j);
+  };
+
+  async function assinado(r: FimDaAssinatura) {
+    if (r.casoId && r.podeVerCaso) return irPara(`${ROTAS_JURIDICO.caso(r.casoId)}?assinado=1`);
+    setLigada(null);
+    setFeito({
+      titulo: "Assinatura registrada.",
+      texto: r.semCaso
+        ? "O contrato está ativo e os recebimentos passam a existir. Ele ficou sem caso; dá para abrir o caso depois."
+        : `O contrato está ativo e o caso abriu em Jurídico${r.responsavel ? `, com ${r.responsavel}, que recebeu o aviso no sino` : ""}.`,
+    });
+    await carregar();
+    setVezAba((n) => n + 1);
+  }
+
   async function concluir(x: Feito, depois?: () => Promise<unknown>) {
     setJanela(null);
     setFeito(x);
@@ -846,7 +849,10 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   // Arquivado a pedido (F1.16): os dados ficam, só leitura, com o registro do arquivamento.
   const arquivado = f.situacao === "ARQUIVADO";
   const fimLgpd = excluido || arquivado;
-  const abaAtual: AbaCliente = comercial ? aba : "ficha";
+  const cont = f.contagens ?? {};
+  const temAba = (a: AbaCliente) =>
+    a === "ficha" || (a === "atendimentos" ? comercial : !fimLgpd && cont[a] !== undefined);
+  const abaAtual: AbaCliente = temAba(aba) ? aba : "ficha";
   const editar = ativo ? () => { setFeito(null); setEditando(true); } : undefined;
   const p = f.proxContato;
   const r = p ? rotuloProx(p, hoje) : null;
@@ -854,8 +860,15 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const dona = escritorio.socios[0];
   const nomeDona = dona ?? "a sócia dona";
 
+  // O âmbar vira "Próximo passo" (F3.110, decisão 1) para quem pode dar o passo, para quem tem
+  // Comercial e, com o caso aberto, para todos; os outros veem a procuração, como antes.
+  const passo = ativo ? f.passo : undefined;
+  const comPasso = !!passo && (comercial || passo.pode || passo.tipo === "CASO");
   const dir = fimLgpd ? (
     <RegistroNoCabecalho f={f} />
+  ) : passo && comPasso ? (
+    <DirPasso f={f} passo={passo} comercial={comercial} hoje={hoje} editando={editando} aoRegistrar={comercial ? () => abrir("registrar") : null}
+      aoJanela={abrirLigada} />
   ) : comercial ? (
     <section className="dir campo-ambar" aria-labelledby="cl-t-prox">
       <p className="sobretitulo" id="cl-t-prox">
@@ -982,6 +995,12 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           Atendimentos<span className="q">{f.atendimentos ?? 0}</span>
         </a>
       ) : null}
+      {(["propostas", "contratos", "casos"] as const).filter(temAba).map((a) => (
+        <a key={a} href={`${base}?aba=${a}`} aria-current={abaAtual === a ? "page" : undefined}>
+          {a === "propostas" ? "Propostas" : a === "contratos" ? "Contratos" : "Casos"}
+          <span className="q">{cont[a] ?? 0}</span>
+        </a>
+      ))}
     </nav>
   );
 
@@ -1078,6 +1097,10 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
         lateral={<ExplicaEditar />}
       />
     );
+  } else if (abaAtual === "propostas" || abaAtual === "contratos" || abaAtual === "casos") {
+    corpo = (
+      <AbaItensCliente aba={abaAtual} f={f} passo={passo} hoje={hoje} vez={vezAba} juridico={cont.casos !== undefined} aoJanela={abrirLigada} />
+    );
   } else if (abaAtual === "atendimentos") {
     corpo = (
       <Grade
@@ -1088,7 +1111,15 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             <Carregando rotulo="Carregando os atendimentos…" linhas={4} />
           ) : (
             <Historico atendimentos={atendimentos} funil={funil && funil !== "erro" ? funil.eventos : []} f={f} hoje={hoje} destaque={destaque}
-              aoRegistrar={ativo ? () => abrir("registrar") : null} />
+              acoes={ativo ? (
+                <>
+                  {f.passo?.pode ? <BotaoPasso passo={f.passo} cliente={f.id} aoJanela={abrirLigada} /> : null}
+                  <button data-muda className={`btn ${f.passo?.pode ? "btn-sec" : "btn-pri"}`} type="button" onClick={() => abrir("registrar")}>
+                    <Icone nome="mais" className="ico" />
+                    Registrar atendimento
+                  </button>
+                </>
+              ) : null} />
           )
         }
         lateral={fimLgpd ? <RegistroExclusao f={f} /> : (
@@ -1125,7 +1156,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             {ativo ? <Procuracao f={f} aoEditar={editar} /> : null}
             {comercial ? <Origem f={f} /> : notaSemComercial}
             {situacao}
-            {fimLgpd ? null : <Reserva />}
+            {fimLgpd ? null : <NoEscritorio f={f} />}
           </>
         }
       />
@@ -1149,6 +1180,13 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             setDestaque(lista?.[0]?.id ?? null);
             if (abaAtual !== "atendimentos") irPara(`${base}?aba=atendimentos`);
           })} />
+      ) : null}
+      {ligada && ligada.tipo === "assinar" ? (
+        <JanelaAssinaturaCaso key={`as-${abertura}`} aberta contrato={ligada.contrato} aoFechar={() => setLigada(null)} aoFeito={(r) => void assinado(r)} />
+      ) : null}
+      {ligada && ligada.tipo === "caso" ? (
+        <JanelaAbrirCaso key={`ac-${abertura}`} aberta contrato={ligada.contrato} modoInicial={ligada.modo} aoFechar={() => setLigada(null)}
+          aoFeito={(r) => irPara(`${ROTAS_JURIDICO.caso(r.casoId)}?aberto=1`)} />
       ) : null}
       {f.podeInativar ? (
         <JanelaSituacao key={`s-${abertura}`} modo={janela === "inativar" || janela === "reativar" ? janela : null} f={f} escritorio={nomeEsc}

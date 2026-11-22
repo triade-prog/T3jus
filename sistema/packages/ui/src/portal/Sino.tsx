@@ -193,6 +193,12 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         detalhe: <>{d.motivo && d.motivo in MOTIVOS_NAO_COBRAR ? `${MOTIVOS_NAO_COBRAR[d.motivo as MotivoNaoCobrar]}. ` : ""}{d.explicacao ? fala(d.explicacao) : null}{d.caso ? ` ${d.caso}.` : ""}</>,
         onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "neutro", texto: "Não cobrado" },
       };
+    case "CASO_ABERTO_NA_ASSINATURA":
+      return {
+        icone: "balanca", titulo: <><b>{d.quem ?? "Alguém da equipe"}</b> registrou a assinatura de {d.cliente ?? "um cliente"}, e o caso abriu com você</>,
+        detalhe: <>{d.caso ? `${d.caso}. ` : ""}{d.contrato ? `Contrato ${d.contrato}. ` : ""}Confira o nome, a área e a etapa.</>,
+        onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "andamento", texto: "Caso novo" },
+      };
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,
