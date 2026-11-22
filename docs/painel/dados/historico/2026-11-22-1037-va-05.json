@@ -1,0 +1,9 @@
+{
+  "data": "22/11/2026",
+  "inicio": "10:37",
+  "fim": "10:45",
+  "texto": "Painel recontado até o PR #120 (159 de 185 entregas feitas): situação reescrita e migrations até 0830 aplicadas, com a api-portal v31.",
+  "refs": [
+    "VA-05"
+  ]
+}
