@@ -1,8 +1,10 @@
-// Importar do Astrea e do ADVBOX, parte 1: os clientes (F3.56, VA-05), tela aprovada em
+// Importar do Astrea e do ADVBOX (F3.56, VA-05), tela aprovada em
 // docs/design/aprovadas/portal-importacao-sistemas. A escolha da origem (só a sócia dona vê os
 // sistemas), o backup do Astrea lido no navegador (ao T3jus vão só as abas que podem entrar,
 // comprimidas), as abas, as colunas pelo modelo com o tipo de contato, a prévia com os contatos
-// que não viraram clientes, a planilha do ADVBOX e o histórico com a origem. A API é simulada.
+// que não viraram clientes, a planilha do ADVBOX e o histórico com a origem. Parte 2: os processos
+// ativos viram casos numa segunda prévia, depois dos clientes (colunas, prévia, resultado e a
+// planilha de processos do ADVBOX). A API é simulada.
 import { gunzipSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
 import { planilhaXlsx } from "../../packages/ui/src/portal/planilha.ts";
@@ -30,7 +32,7 @@ const COLUNAS = [
 const LIGACAO = { 0: "nome", 1: "tipo_contato", 2: "documento", 3: "email", 4: "telefone" };
 const ABAS_SISTEMA = [
   { indice: 0, nome: "Contatos", linhas: 486, destino: "CLIENTES", reconhecida: true, lida: true },
-  { indice: 1, nome: "Processos", linhas: 312, destino: "CASOS", reconhecida: true, lida: false },
+  { indice: 1, nome: "Processos", linhas: 312, destino: "CASOS", reconhecida: true, lida: true },
   { indice: 2, nome: "Lançamentos", linhas: 1204, destino: "FINANCEIRO", reconhecida: true, lida: false },
   { indice: 3, nome: "Tarefas", linhas: 97, destino: "TAREFAS", reconhecida: true, lida: false },
   { indice: 4, nome: "Honorários", linhas: 96, destino: "FORA", reconhecida: false, lida: true },
@@ -64,6 +66,50 @@ const FIM = {
   ...IMP, situacao: "CONCLUIDA", importadoEm: "2026-11-22T19:20:00Z", desfazerAte: "2026-11-29T19:20:00Z", podeDesfazer: true, abas: null, colunas: null,
   resumo: { clientes: 210, juntados: 2, juntadosIds: [], contratos: 0, ativos: 0, parcelas: 0, valor: 0, vencidas: 0, exitos: 0, valorPagoAntes: 0, linhas: 210, fora: 4 },
 };
+
+// Parte 2: os processos, numa importação filha da dos clientes do backup.
+const IDC = "f1000000-0000-4000-8000-000000000602";
+const ETAPA = "e1000000-0000-4000-8000-000000000001";
+const COLUNAS_CASOS = [
+  col(0, "A", "Número", "1004417-37.2025.5.02.0061", "numero"), col(1, "B", "Cliente", "Márcio Tavares", "cliente"),
+  col(2, "C", "Área", "Trabalhista", "area"), col(3, "D", "Fase", "Audiência marcada", "etapa"),
+  col(4, "E", "Situação", "Ativo", "situacao_processo"), col(5, "F", "Responsável", "Felipe Matos", "responsavel"),
+];
+const IMP_CASOS = {
+  ...IMP, id: IDC, oQue: "CASOS", abasSistema: null, pai: ID, filha: null, abas: [{ indice: 0, nome: "Processos", linhas: 312, colunas: 6 }],
+  colunas: COLUNAS_CASOS, ligacao: { 0: "numero", 1: "cliente", 2: "area", 3: "etapa", 4: "situacao_processo", 5: "responsavel" },
+};
+const PARES_CASOS = {
+  ...PARES, tipoContato: [], colunas: COLUNAS_CASOS, etapas: [{ id: ETAPA, nome: "Instrução" }],
+  responsavel: [{ chave: "felipe matos", valor: "Felipe Matos", n: 230, sugestao: FELIPE.id }, { chave: "joao antigo", valor: "João Antigo", n: 12, sugestao: null }],
+  area: [{ chave: "trabalhista", valor: "Trabalhista", n: 180, sugestao: "TRABALHISTA" }],
+  etapa: [{ chave: "audiencia marcada", valor: "Audiência marcada", n: 40, sugestao: ETAPA }],
+  situacaoProcesso: [{ chave: "ativo", valor: "Ativo", n: 241, sugestao: "ATIVO" }, { chave: "arquivado", valor: "Arquivado", n: 71, sugestao: "FORA" }],
+};
+const RESUMO_CASOS = {
+  ...RESUMO, contagens: { lidas: 241, prontas: 228, aviso: 9, erro: 4, puladas: 0, corrigidas: 0, decididas: 0 },
+  clientes: { novos: 0, juntados: 0 }, casos: { novos: 226, juntados: 2, clientes: 190 },
+};
+const caso = (nome: string, numero: string | null, extra: Record<string, unknown> = {}) => ({
+  nome, area: "TRABALHISTA", parteContraria: nome.split(" x ")[1] ?? null, numero, tribunal: "TRT-2", vara: null, valorCausa: 6420000,
+  distribuidoEm: null, etapa: { id: ETAPA, nome: "Instrução" }, etapaAntiga: "Audiência marcada", papel: "AUTOR", responsavel: FELIPE, ...extra,
+});
+const linhaCaso = (numero: number, cliente: string, k: ReturnType<typeof caso>, x: Record<string, unknown> = {}) => ({
+  numero, situacao: "PRONTA", decisao: null, problemas: [], valores: { cliente, numero: k.numero ?? "" }, corrigidas: [],
+  cliente: { nome: cliente, tipo: "PF", contatos: [] }, mesmaDe: null, telefoneDe: null, duplicado: null, contrato: null,
+  caso: k, clienteId: "c1", casoExistente: null, ...x,
+});
+const TAVARES = linhaCaso(14, "Márcio Tavares", caso("Tavares x Metalúrgica Andrade", "1004417-37.2025.5.02.0061"));
+const RAMOS = linhaCaso(15, "Benedito Ramos Filho", caso("Ramos x INSS", "5012398-62.2024.4.03.6100"), {
+  situacao: "AVISO", problemas: [{ codigo: "CASO_DUPLICADO", campo: "numero", nivel: "AVISO" }],
+  casoExistente: { id: "k1", nome: "Ramos x INSS", numero: "5012398-62.2024.4.03.6100", situacao: "ATIVO", clientes: ["Antônia Ferreira Prado"], jaNoCaso: false },
+});
+const ROTA = linhaCaso(16, "Transportadora Rota Sul Ltda.", caso("Rota Sul x Distribuidora Leste", null), {
+  situacao: "ERRO", problemas: [{ codigo: "NUMERO_CNJ_INVALIDO", campo: "numero", nivel: "ERRO", valor: "1000731-10.2025.5.02.0003" }],
+});
+const OKADA = linhaCaso(17, "", caso("Okada x Banco Horizonte", null), {
+  situacao: "ERRO", clienteId: null, valores: { cliente: "C. Okada" }, problemas: [{ codigo: "CLIENTE_NAO_ENCONTRADO", campo: "cliente", nivel: "ERRO", valor: "C. Okada" }],
+});
 
 type Resp = { status?: number; corpo: unknown };
 type Pedido = { metodo: string; caminho: string; busca: string; corpo: unknown; tipo: string | null; bruto: Buffer | null };
@@ -135,7 +181,7 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await page.goto(`${P}/clientes/importar/astrea`);
     await expect(page.getByRole("heading", { level: 1, name: "Importar do Astrea" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Peça o backup no Astrea" })).toContainText("“Seu backup do Astrea está pronto”");
-    await expect(page.getByRole("region", { name: "O que vem do Astrea" })).toContainText("Processos e financeiro, ainda não");
+    await expect(page.getByRole("region", { name: "O que vem do Astrea" })).toContainText("Processos ativos, como casos");
     await semViolacoes(page);
     await page.getByLabel("Escolher o backup").setInputFiles({ name: "backup-astrea.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: backup() });
     await expect(page).toHaveURL(`${P}/clientes/importar/${ID}?passo=abas`);
@@ -143,7 +189,7 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     expect(envio.busca).toBe("?oQue=CLIENTES&origem=ASTREA&nome=backup-astrea.xlsx");
     expect(envio.tipo).toBe("application/octet-stream");
     const lido = JSON.parse(gunzipSync(envio.bruto!).toString("utf8")) as { abas: { nome: string; linhas: number; celulas: string[][] | null }[] };
-    expect(lido.abas.map((a) => [a.nome, a.linhas, a.celulas?.length ?? null])).toEqual([["Contatos", 2, 2], ["Processos", 1, null], ["Tarefas", 1, null]]);
+    expect(lido.abas.map((a) => [a.nome, a.linhas, a.celulas?.length ?? null])).toEqual([["Contatos", 2, 2], ["Processos", 1, 1], ["Tarefas", 1, null]]);
   });
 
   test("Astrea, passo 2: as abas, as colunas pelo modelo e o tipo de contato", async ({ page }) => {
@@ -151,8 +197,9 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await page.goto(`${P}/clientes/importar/${ID}?passo=abas`);
     await expect(page.getByRole("status").filter({ hasText: "Este backup está um pouco diferente do modelo que conhecemos." })).toContainText("Uma aba é nova");
     const t = page.getByRole("table", { name: "Abas do backup" });
-    await expect(t).toContainText("Os processos, como casos no Jurídico, entram numa próxima versão do T3jus.");
-    await expect(page.getByLabel("Aba Processos: vai para")).toBeDisabled();
+    await expect(t.getByRole("row", { name: /^Processos/ })).toContainText("Casos no Jurídico");
+    await expect(t.getByRole("row", { name: /^Processos/ })).toContainText("Entram numa segunda prévia, depois dos clientes");
+    await expect(page.getByLabel("Aba Processos: vai para")).toHaveCount(0);
     await expect(page.getByLabel("Aba Contatos: vai para")).toHaveValue("CLIENTES");
     await semViolacoes(page);
     await expect(page.getByRole("link", { name: "Conferir as colunas" })).toHaveAttribute("href", `/clientes/importar/${ID}?passo=colunas&aba=0`);
@@ -203,5 +250,114 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     expect(pedidos.find((p) => p.metodo === "POST" && p.caminho === A)!.busca).toBe("?oQue=CLIENTES&origem=ADVBOX_PLANILHA&nome=clientes-advbox.csv");
     await expect(page.getByRole("table", { name: "Colunas do cliente" }).getByRole("row", { name: /^CPF\/CNPJ , coluna C/ })).toContainText("Pelo modelo do ADVBOX");
     await semViolacoes(page);
+  });
+  // ----------------------------------------------------------------------------- parte 2: os processos
+
+  test("processos, colunas: o responsável pelo caso é obrigatório e os arquivados ficam de fora", async ({ page }) => {
+    const pedidos = await simular(page, base({
+      [`GET ${A}/${IDC}`]: { corpo: IMP_CASOS },
+      [`POST ${A}/${IDC}/pares`]: { corpo: PARES_CASOS },
+      [`PATCH ${A}/${IDC}/colunas`]: { corpo: { versao: 3, ...RESUMO_CASOS } },
+    }));
+    await page.goto(`${P}/clientes/importar/${IDC}?passo=colunas`);
+    await expect(page.getByRole("heading", { level: 1, name: "Importar os processos do Astrea" })).toBeVisible();
+    const map = page.getByRole("table", { name: "Colunas dos processos" });
+    await expect(map.getByRole("row", { name: /^Cliente , coluna B/ })).toContainText("Pelo modelo do Astrea");
+    await expect(page.getByLabel("Coluna F, Responsável: vai para")).toHaveValue("responsavel");
+    await expect(page.getByLabel("“Arquivado” vira")).toHaveValue("FORA");
+    await expect(page.getByLabel("“Audiência marcada” vira")).toHaveValue("e1000000-0000-4000-8000-000000000001");
+    await expect(page.getByRole("region", { name: "Só os processos ativos" })).toContainText("71 processos arquivados ficam de fora da prévia.");
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Ver a prévia" }).click();
+    await expect(page.getByRole("alert").or(page.getByRole("status")).filter({ hasText: "Falta ligar 1 campo obrigatório" })).toContainText("Responsável pelo caso");
+    await page.getByLabel("“João Antigo” vira").selectOption(FELIPE.id);
+    await page.getByRole("button", { name: "Ver a prévia" }).click();
+    await expect(page).toHaveURL(`${P}/clientes/importar/${IDC}?passo=previa`);
+    const patch = pedidos.find((p) => p.metodo === "PATCH")!.corpo as { pares: { responsavel: Record<string, string>; situacaoProcesso: Record<string, string> } };
+    expect([patch.pares.responsavel, patch.pares.situacaoProcesso]).toEqual([{ "felipe matos": FELIPE.id, "joao antigo": FELIPE.id }, { ativo: "ATIVO", arquivado: "FORA" }]);
+  });
+
+  test("processos, prévia: o caso aberto, o mesmo número de um caso que existe, o número errado e o cliente que não bate", async ({ page }) => {
+    const prev = { ...IMP_CASOS, temPrevia: true, linhasLidas: 241, foraTipo: { ARQUIVADOS: 71 } };
+    const pedidos = await simular(page, base({
+      [`GET ${A}/${IDC}`]: { corpo: prev },
+      [`GET ${A}/${IDC}/linhas`]: { corpo: { importacao: prev, ...RESUMO_CASOS, linhas: [TAVARES, RAMOS, ROTA, OKADA], total: 241 } },
+      [`PATCH ${A}/${IDC}/linhas/15`]: { corpo: { versao: 3, ...RESUMO_CASOS, linha: { ...RAMOS, situacao: "PRONTA", decisao: "JUNTAR" } } },
+    }));
+    await page.goto(`${P}/clientes/importar/${IDC}?passo=previa`);
+    await expect(page.getByRole("navigation", { name: "Resumo da prévia" })).toContainText("processos lidos");
+    await expect(page.getByRole("status").filter({ hasText: "71 processos arquivados ficaram de fora da prévia." })).toBeVisible();
+    const res = page.getByRole("region", { name: "O que vai entrar" });
+    await expect(res).toContainText("Casos no Jurídico");
+    await expect(res).toContainText("Nenhum contrato");
+    const linhas = page.getByRole("list", { name: "Processos" });
+    await linhas.getByRole("listitem").filter({ hasText: "Tavares x Metalúrgica Andrade" }).getByRole("button", { name: "Ver o caso" }).click();
+    const caso = page.getByRole("group", { name: /O caso que vai entrar no Jurídico/ });
+    await expect(caso).toContainText("Instrução (“Audiência marcada” no Astrea)");
+    await expect(caso).toContainText("Márcio Tavares, autor(a)");
+    await expect(caso).toContainText("Entra sem contrato.");
+    await semViolacoes(page);
+    await caso.getByRole("button", { name: "Fechar" }).click();
+
+    const ramos = linhas.getByRole("listitem").filter({ hasText: "Ramos x INSS" });
+    await expect(ramos).toContainText("Mesmo número do caso Ramos x INSS, já no Jurídico.");
+    await ramos.getByRole("button", { name: "Decidir" }).click();
+    await expect(page.getByRole("radio", { name: /Juntar ao caso que já existe/ })).toBeChecked();
+    await page.getByRole("button", { name: "Confirmar a decisão" }).click();
+    expect(pedidos.find((p) => p.metodo === "PATCH")!.corpo).toEqual({ decisao: "JUNTAR" });
+
+    await expect(linhas.getByRole("listitem").filter({ hasText: "Rota Sul" })).toContainText("Número do processo inválido");
+    const okada = linhas.getByRole("listitem").filter({ hasText: "Okada x Banco Horizonte" });
+    await expect(okada).toContainText("Cliente não encontrado");
+    await okada.getByRole("button", { name: "Escolher o cliente" }).click();
+    await expect(page.getByLabel("Cliente", { exact: true })).toHaveValue("C. Okada");
+    await expect(page.getByLabel("CPF ou CNPJ do cliente")).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("processos, resultado: os clientes do backup chamam para os processos, e os casos levam ao Jurídico", async ({ page }) => {
+    const pai = { ...FIM, filha: { id: IDC, situacao: "PREVIA", linhas: 312, criadoEm: "2026-11-22T19:20:00Z" } };
+    const fimCasos = { ...IMP_CASOS, situacao: "CONCLUIDA", importadoEm: "2026-11-22T19:40:00Z", desfazerAte: "2026-11-29T19:40:00Z", podeDesfazer: true,
+      resumo: { ...FIM.resumo, clientes: 0, juntados: 0, linhas: 228, fora: 0, casos: 226, juntadosCasos: 2 } };
+    await simular(page, base({
+      [`GET ${A}/${ID}`]: { corpo: pai },
+      [`GET ${A}/${IDC}`]: { corpo: fimCasos },
+      [`GET ${A}`]: { corpo: { importacoes: [fimCasos, FIM] } },
+      [`GET ${A}/${IDC}/desfazer`]: { corpo: { clientes: 0, juntados: 0, contratos: 0, parcelas: 0, casos: 226, ligacoes: 2, mexidos: [{ tipo: "CASO", id: "x", nome: "Tavares x Metalúrgica Andrade" }] } },
+    }));
+    await page.goto(`${P}/clientes/importacoes/${ID}`);
+    const agora = page.getByRole("region", { name: "Agora os processos" });
+    await expect(agora).toContainText("312 processos da aba Processos esperam numa segunda prévia");
+    await expect(agora.getByRole("link", { name: "Conferir os processos" })).toHaveAttribute("href", `/clientes/importar/${IDC}?passo=colunas`);
+    await semViolacoes(page);
+
+    await page.goto(`${P}/clientes/importacoes/${IDC}`);
+    const entrou = page.getByRole("region", { name: "O que entrou" });
+    await expect(entrou).toContainText("226 casos novos");
+    await expect(entrou).toContainText("2 casos que já existiam ganharam o cliente");
+    await expect(entrou.getByRole("link", { name: "Ver casos" })).toHaveAttribute("href", "/juridico/casos");
+    await semViolacoes(page);
+
+    await page.goto(`${P}/clientes/importacoes`);
+    await expect(page.getByRole("table", { name: "Importações do escritório" })).toContainText("226 casos, 2 juntados");
+    await page.getByRole("button", { name: "Desfazer" }).first().click();
+    const janela = page.getByRole("alertdialog", { name: "Desfazer a importação?" });
+    await expect(janela).toContainText("226 casos vão para Encerrados");
+    await expect(janela).toContainText("2 casos que já existiam perdem só o cliente que a importação ligou.");
+    await expect(janela).toContainText("Caso Tavares x Metalúrgica Andrade");
+    await semViolacoes(page);
+  });
+
+  test("ADVBOX: a planilha de processos vai com oQue CASOS", async ({ page }) => {
+    const adv = { ...IMP_CASOS, origem: "ADVBOX_PLANILHA", pai: null, arquivo: "processos-advbox.csv" };
+    const pedidos = await simular(page, base({ [`POST ${A}`]: { status: 201, corpo: adv }, [`GET ${A}/${IDC}`]: { corpo: adv }, [`POST ${A}/${IDC}/pares`]: { corpo: PARES_CASOS } }));
+    await page.goto(`${P}/clientes/importar/advbox`);
+    await expect(page.getByRole("region", { name: "O que vem do ADVBOX" }).or(page.getByRole("region", { name: "O que muda pela planilha" }))).toContainText("planilha de processos");
+    await page.getByRole("radio", { name: /A de processos/ }).check();
+    await semViolacoes(page);
+    await page.getByLabel("Escolher a planilha").setInputFiles({ name: "processos-advbox.csv", mimeType: "text/csv", buffer: Buffer.from("Número;Cliente\n1000123-25.2025.5.02.0001;Rosa\n") });
+    await expect(page).toHaveURL(`${P}/clientes/importar/${IDC}?passo=colunas`);
+    expect(pedidos.find((p) => p.metodo === "POST" && p.caminho === A)!.busca).toBe("?oQue=CASOS&origem=ADVBOX_PLANILHA&nome=processos-advbox.csv");
+    await expect(page.getByRole("heading", { level: 1, name: "Importar os processos do ADVBOX" })).toBeVisible();
   });
 });

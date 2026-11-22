@@ -5,6 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
-  "ordem": 953
+  "status": "feito",
+  "ordem": 953,
+  "evidencia": "Os processos ativos viram casos no Jurídico, sem contrato, numa segunda prévia depois dos clientes do backup do Astrea (importação filha) ou pela planilha de processos do ADVBOX: colunas e pares (responsável pelo caso, área, etapa e situação; arquivados ficam de fora), prévia com o caso aberto, cliente não encontrado, número CNJ errado e caso com o mesmo número (juntar liga o cliente ao caso que existe), importar tudo ou nada e desfazer (casos em Encerrados, marcados importação desfeita). Migration 0810_importar_processos.sql, teste 111_importar_processos_test.sql, modelos_sistemas.test.ts, app_test.ts (F3.56) e e2e portal-importacao-sistemas.spec.ts (parte 2)."
 }

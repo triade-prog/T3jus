@@ -52,8 +52,8 @@ function QuemIs() {
 }
 
 /**
- * O que vem de cada sistema. Nesta versão entram os clientes; os processos (casos) e o financeiro
- * antigo, aprovados no desenho, vêm nas próximas entregas, e a tela diz isso.
+ * O que vem de cada sistema. Nesta versão entram os clientes e os processos ativos (casos, numa
+ * segunda prévia); o financeiro antigo, aprovado no desenho, vem na próxima entrega, e a tela diz isso.
  */
 function VemDe({ sistema }: { sistema: "Astrea" | "ADVBOX" }) {
   const item = (ok: boolean, t: string, s: string) => (
@@ -66,7 +66,10 @@ function VemDe({ sistema }: { sistema: "Astrea" | "ADVBOX" }) {
     <Folha id="t-vem" titulo={`O que vem do ${sistema}`}>
       <ul className="is-vem">
         {item(true, "Clientes", "Com contatos e qualificação. Quem já está no T3jus é juntado, só nos campos vazios.")}
-        {item(false, "Processos e financeiro, ainda não", "Os processos, como casos no Jurídico, e o histórico financeiro, só como informação, entram numa próxima versão do T3jus.")}
+        {item(true, "Processos ativos, como casos", sistema === "Astrea"
+          ? "No Jurídico, sem contrato, numa segunda prévia depois dos clientes. Os arquivados ficam de fora."
+          : "Pela planilha de processos, depois da de clientes. Cada processo se liga a um cliente já cadastrado.")}
+        {item(false, "Financeiro, ainda não", "O histórico financeiro, só como informação, entra numa próxima versão do T3jus.")}
         {item(false, "Contratos de honorários", "Crie na ficha do cliente ou importe pela planilha.")}
         {item(false, "Prazos, agenda e tarefas", "Prazo trazido sem conferência é risco. Cadastre os próximos no caso.")}
         {item(false, "Andamentos, publicações e documentos", "Ficam no sistema antigo. Os documentos que o caso pede, você envia no caso.")}
@@ -372,14 +375,15 @@ const ICONE_DESTINO: Record<DestinoAba, NomeIcone> = {
   CLIENTES: "pessoas", CASOS: "balanca", FINANCEIRO: "carteira", TAREFAS: "check", AGENDA: "agenda", PUBLICACOES: "doc", FORA: "ajuda",
 };
 const POR_QUE_FORA: Partial<Record<DestinoAba, string>> = {
-  CASOS: "Os processos, como casos no Jurídico, entram numa próxima versão do T3jus.",
+  CASOS: "Não foi lida: o backup não trouxe as colunas dos processos.",
   FINANCEIRO: "O histórico financeiro, só como informação, entra numa próxima versão do T3jus.",
   TAREFAS: "As tarefas se criam no caso, com responsável e data conferidos.",
   AGENDA: "Prazo e audiência trazidos sem conferência são risco. Cadastre os próximos.",
   PUBLICACOES: "Intimações antigas ficam no Astrea.",
 };
 
-/** Passo 2 do backup: para onde vai cada aba (decisão 7). Nesta versão, uma aba vai para os clientes. */
+/** Passo 2 do backup: para onde vai cada aba (decisão 7). Uma aba vai para os clientes; a dos processos
+ * vira casos numa segunda prévia, depois que os clientes entram (decisão da Carol, 22/11). */
 export function PassoAbas({ imp }: { imp: Importacao }) {
   const abas = imp.abasSistema ?? [];
   const [clientes, setClientes] = useState<number | null>(imp.aba);
@@ -391,6 +395,9 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
     if (!a.reconhecida) {
       return <div className="im-sit"><Selo tom="atencao" icone="ajuda">Não reconhecida</Selo><small>Não está no modelo do Astrea. Se for a dos contatos, ligue aos clientes; senão, deixe de fora.</small></div>;
     }
+    if (a.destino === "CASOS" && a.lida) {
+      return <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span><small>Só os processos ativos. Entram numa segunda prévia, depois dos clientes, ligados a eles.</small></div>;
+    }
     if (a.destino === "CLIENTES") {
       return <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span><small>Os contatos do tipo cliente viram clientes; as partes contrárias e os terceiros ficam de fora.</small></div>;
     }
@@ -400,6 +407,20 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
   const linha = (a: AbaSistema) => {
     const vai = clientes === a.indice;
     const id = `is-aba-${a.indice}`;
+    if (a.destino === "CASOS" && a.lida) {
+      return (
+        <tr key={a.indice}>
+          <td>
+            <div className="is-aba">
+              <span className="is-ci" aria-hidden="true"><Icone nome={ICONE_DESTINO[a.destino]} className="ico" /></span>
+              <span><b>{a.nome}</b><small>{plural(a.linhas, "linha", "linhas")}</small></span>
+            </div>
+          </td>
+          <td data-r="Vai para"><b style={{ fontWeight: 500 }}>Casos no Jurídico</b><small style={{ display: "block", color: "var(--texto-2)" }}>depois dos clientes</small></td>
+          <td data-r="Situação">{situacao(a)}</td>
+        </tr>
+      );
+    }
     return (
       <tr key={a.indice} className={!a.reconhecida ? "is-nova" : vai ? "" : "im-ign"}>
         <td>
@@ -411,10 +432,10 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
         <td data-r="Vai para">
           <div className="campo">
             <label className="sr" htmlFor={id}>Aba {a.nome}: vai para</label>
-            <select className="entrada" id={id} value={vai ? "CLIENTES" : ""} disabled={!a.lida}
+            <select className="entrada" id={id} value={vai ? "CLIENTES" : ""} disabled={!a.lida || a.destino === "CASOS"}
               onChange={(e) => setClientes(e.target.value === "CLIENTES" ? a.indice : clientes === a.indice ? null : clientes)}>
               <option value="">Não importar</option>
-              {a.lida ? <option value="CLIENTES">Clientes</option> : null}
+              {a.lida && a.destino !== "CASOS" ? <option value="CLIENTES">Clientes</option> : null}
             </select>
           </div>
         </td>
@@ -483,6 +504,8 @@ export function ImportarAdvbox() {
 }
 
 function PassoAdvbox() {
+  const [oQue, setOQue] = useState<"CLIENTES" | "CASOS">("CLIENTES");
+  const processos = oQue === "CASOS";
   const [lendo, setLendo] = useState<{ nome: string; tamanho: number } | null>(null);
   const [erro, setErro] = useState<Erro>(null);
   const cancelar = useRef<AbortController | null>(null);
@@ -494,7 +517,7 @@ function PassoAdvbox() {
     const ac = new AbortController();
     cancelar.current = ac;
     setLendo({ nome: arquivo.name, tamanho: arquivo.size });
-    const r = await chamarPortal<Importacao>(`${API}?oQue=CLIENTES&origem=ADVBOX_PLANILHA&nome=${encodeURIComponent(arquivo.name.slice(0, 200))}`, { bruto: arquivo, sinal: ac.signal });
+    const r = await chamarPortal<Importacao>(`${API}?oQue=${oQue}&origem=ADVBOX_PLANILHA&nome=${encodeURIComponent(arquivo.name.slice(0, 200))}`, { bruto: arquivo, sinal: ac.signal });
     cancelar.current = null;
     if (ac.signal.aborted) return setLendo(null);
     if (r.ok) return irPara(ROTAS_IMPORTACAO.passo(r.dados.id, "colunas"));
@@ -507,9 +530,20 @@ function PassoAdvbox() {
     <li><span className="disco" aria-hidden="true"><span>{n}</span></span><div><b>{titulo}</b><p>{texto}</p></div></li>
   );
   const exportar = (
-    <Folha id="t-exp" titulo="Exporte do ADVBOX" sub="Sem conexão e sem custo, pelo relatório de clientes em planilha.">
+    <Folha id="t-exp" titulo="Exporte do ADVBOX" sub={`Sem conexão e sem custo, pelo relatório de ${processos ? "processos" : "clientes"} em planilha.`}>
+      <fieldset className="im-decide" style={{ padding: "0 24px 16px" }}>
+        <legend>Qual planilha você vai enviar?</legend>
+        <label className="opcao">
+          <input className="marcar" type="radio" name="is-oque" value="CLIENTES" checked={!processos} disabled={!!lendo} onChange={() => { setOQue("CLIENTES"); setErro(null); }} />
+          <span>A de clientes<small>Primeiro esta. Quem já está no T3jus é juntado, só nos campos vazios.</small></span>
+        </label>
+        <label className="opcao">
+          <input className="marcar" type="radio" name="is-oque" value="CASOS" checked={processos} disabled={!!lendo} onChange={() => { setOQue("CASOS"); setErro(null); }} />
+          <span>A de processos<small>Depois dos clientes. Os ativos viram casos no Jurídico, sem contrato, ligados aos clientes pelo CPF, CNPJ ou nome.</small></span>
+        </label>
+      </fieldset>
       <ol className="is-pp">
-        {passo(1, "No ADVBOX, abra o relatório de clientes e exporte em planilha (Excel).", "Se o relatório deixar escolher colunas, marque todas: as que não servem ficam de fora no passo 2.")}
+        {passo(1, `No ADVBOX, abra o relatório de ${processos ? "processos" : "clientes"} e exporte em planilha (Excel).`, "Se o relatório deixar escolher colunas, marque todas: as que não servem ficam de fora no passo 2.")}
         {passo(2, "Envie a planilha aqui.", "Ela passa pelos mesmos passos da planilha: colunas, prévia e importar.")}
       </ol>
       <p className="is-nota">O ADVBOX não publica as colunas dos relatórios. Reconhecemos os nomes mais comuns; o que não reconhecermos aparece no passo 2 para você ligar.</p>
@@ -520,15 +554,15 @@ function PassoAdvbox() {
       <div className="im-bloco" aria-busy={lendo ? true : undefined}>
         {lendo ? (
           <Lendo nome={lendo.nome} tamanho={lendo.tamanho} aoCancelar={() => cancelar.current?.abort()}
-            texto={<><b>Lendo a planilha.</b> Costuma levar poucos segundos; com 2.000 linhas, até um minuto.</>} />
+            texto={<><b>Lendo a planilha.</b> Costuma levar poucos segundos; com milhares de linhas, até um minuto.</>} />
         ) : (
           <>
             {erro ? <AvisoArquivo erro={erro} backup={false} /> : null}
-            <Soltar id="is-arq" texto="Arraste a planilha para cá ou" botao="Escolher a planilha" regra="Arquivo .xlsx ou .csv, até 5 MB e 2.000 linhas."
+            <Soltar id="is-arq" texto="Arraste a planilha para cá ou" botao="Escolher a planilha" regra="Arquivo .xlsx ou .csv, até 5 MB e 10.000 linhas."
               accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" aoEscolher={(a) => void enviar(a)} />
             <ul className="im-lim" aria-label="Antes de enviar">
               <li><Icone nome="doc" className="ico" /><span><b>.xlsx ou .csv.</b> No Google Planilhas: Arquivo › Fazer download › Microsoft Excel.</span></li>
-              <li><Icone nome="filtro" className="ico" /><span><b>Até 5 MB e 2.000 linhas.</b> Se passar, divida em duas planilhas e importe uma depois da outra.</span></li>
+              <li><Icone nome="filtro" className="ico" /><span><b>Até 5 MB e 10.000 linhas.</b> Se passar, divida em duas planilhas e importe uma depois da outra.</span></li>
               <li><Icone nome="funcoes" className="ico" /><span><b>A primeira linha traz os nomes das colunas.</b> Se houver mais de uma aba, você escolhe no passo 2.</span></li>
             </ul>
           </>
@@ -540,7 +574,7 @@ function PassoAdvbox() {
       </div>
       {lendo ? null : (
         <div className="im-pe">
-          <span className="im-pe-t">Ao escolher o arquivo, a leitura começa sozinha. Nada entra no cadastro neste passo.</span>
+          <span className="im-pe-t">Ao escolher o arquivo, a leitura começa sozinha. Nada entra {processos ? "no Jurídico" : "no cadastro"} neste passo.</span>
           <a className="btn btn-fantasma" href={ROTAS_IMPORTACAO.enviar}><Icone nome="esquerda" className="ico" />Voltar</a>
           <label className="btn btn-pri" htmlFor="is-arq"><Icone nome="dir" className="ico" />Enviar e continuar</label>
         </div>
@@ -551,7 +585,8 @@ function PassoAdvbox() {
     <Folha id="t-muda" titulo="O que muda pela planilha">
       <ul className="is-vem">
         <li><Icone nome="check" className="ico" /><span>Os passos são os da importação de planilha, com as colunas ligadas pelo modelo do ADVBOX.</span></li>
-        <li className="is-nao"><Icone nome="xis" className="ico" /><span>Processos e financeiro ficam de fora nesta versão: entram numa próxima versão do T3jus.</span></li>
+        <li><Icone nome="balanca" className="ico" /><span>Os processos vêm pela planilha de processos, depois da de clientes. Só os ativos entram, como casos sem contrato.</span></li>
+        <li className="is-nao"><Icone nome="xis" className="ico" /><span>O financeiro fica de fora pela planilha.</span></li>
         <li className="is-nao"><Icone nome="pena" className="ico" /><span>Contratos também ficam de fora. Crie cada um na ficha do cliente.</span></li>
       </ul>
     </Folha>
