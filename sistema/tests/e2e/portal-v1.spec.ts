@@ -33,9 +33,14 @@ const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
 
 test.describe("Portal v1: moldura em áreas (PA-01)", () => {
   test("o sócio dono vê as quatro áreas e a Equipe; no celular, a barra embaixo e o Mais", async ({ page }) => {
-    await simular(page, { "/v1/escritorio": { corpo: ESCRITORIO } });
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      "/v1/escritorio/documentos": { corpo: { documentos: [], contagem: { todos: 0, falta: 0, assinados: 0 }, esperandoContrato: [], podeGerar: true } },
+      "/v1/escritorio/documentos/modelos": { corpo: { modelos: [], campos: [], podeEnviar: true } },
+      "/v1/escritorio/pessoas/oab": { corpo: { pessoas: [] } },
+    });
     await page.goto(`${P}/contratos/modelos`);
-    await expect(page.getByRole("heading", { level: 1, name: "O Contratos está sendo preparado" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Procurações e modelos" })).toBeVisible();
     const secoes = page.getByRole("navigation", { name: "Seções do Contratos" });
     await expect(secoes.getByRole("link", { name: "Procurações e modelos" })).toHaveAttribute("aria-current", "page");
     await semViolacoes(page);

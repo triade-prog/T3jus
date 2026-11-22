@@ -45,6 +45,7 @@ export { FichaPropostaPortal } from "./portal/FichaProposta.tsx";
 export { NovaPropostaPortal, EditarPropostaPortal } from "./portal/FormProposta.tsx";
 export { ContratosPortal, HonorariosContratosPortal } from "./portal/Contratos.tsx";
 export { FichaContratoPortal } from "./portal/FichaContrato.tsx";
+export { GerarDocumentosPortal, ModelosDocumentoPortal, ProcuracoesContratosPortal } from "./portal/Procuracoes.tsx";
 export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financeiro.tsx";
 export { PagarFinanceiro } from "./portal/FinanceiroPagar.tsx";
 export { RecorrenteFinanceiro } from "./portal/Recorrentes.tsx";

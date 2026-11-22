@@ -7,7 +7,7 @@
 // ativo pede motivo; encerrar para as cobranças novas e não apaga nada.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { dataBr, hojeBrasilia, reais, type Anexo, type EventoContrato, type FichaContrato, type ListaAnexos, type RecebimentoPrevisto } from "@t3jus/domain";
+import { dataBr, hojeBrasilia, reais, type Anexo, type DocumentosDoContrato, type EventoContrato, type FichaContrato, type ListaAnexos, type RecebimentoPrevisto } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -24,9 +24,10 @@ import { OrigemPlanilha } from "./Importacao.tsx";
 import { abrirAnexo, CampoAnexo, enviarAnexo } from "./Anexos.tsx";
 import { tamanhoLegivel } from "../console/documentos.ts";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
-import { ROTAS_FINANCEIRO } from "./financeiro.ts";
+import { ROTAS_FINANCEIRO, seloParcela } from "./financeiro.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { HistoricoRecebimentos, JanelaFoiPaga, JanelaNaoPaga, textoAtraso } from "./NaoPaga.tsx";
+import { DocumentosDaFicha, feitoDosAssinados, JanelaAssinados, proximoDosDocumentos } from "./Procuracoes.tsx";
 
 type Aba = "contrato" | "recebimentos" | "documentos";
 type Feito = { titulo: string; texto: string };
@@ -59,7 +60,23 @@ function geraNoContrato(f: FichaContrato) {
   };
 }
 
-function Dir({ f, aoAssinar }: { f: FichaContrato; aoAssinar: () => void }) {
+function Dir({ f, aoAssinar, docs, aoAnexarDocs }: { f: FichaContrato; aoAssinar: () => void; docs: ReturnType<typeof proximoDosDocumentos>; aoAnexarDocs: () => void }) {
+  // F3.16, decisão 20: com documentos gerados esperando o assinado, o próximo passo é anexá-los.
+  if (f.situacao === "ELABORACAO" && docs?.contrato) {
+    return (
+      <section className="dir campo-ambar" aria-labelledby="t-px">
+        <p className="sobretitulo" id="t-px">Próximo passo</p>
+        <p className="grande" style={{ fontSize: 30 }}>Assinatura</p>
+        <p className="hn-oque"><b>{docs.texto}</b><br />Anexar o contrato assinado ativa o contrato e manda a programação ao Financeiro.</p>
+        <div className="hn-dir-acoes">
+          <button data-muda className="btn btn-pri" type="button" onClick={aoAnexarDocs}>
+            <Icone nome="enviar" className="ico" />
+            Anexar os assinados
+          </button>
+        </div>
+      </section>
+    );
+  }
   if (f.situacao === "ELABORACAO") {
     return (
       <section className="dir campo-ambar" aria-labelledby="t-px">
@@ -250,6 +267,8 @@ function Recebimentos({ f, hoje, dono, aoNaoPaga, aoFoiPaga }: {
   f: FichaContrato; hoje: string; dono: string | undefined; aoNaoPaga: (r: RecebimentoPrevisto) => void; aoFoiPaga: (r: RecebimentoPrevisto) => void;
 }) {
   const j = janelaProgramacao(f.recebimentos, hoje);
+  // Coluna Situação só para quem tem a área Financeiro (desenho aprovado, decisão 21).
+  const comSituacao = f.financeiro && f.recebimentos.some((r) => r.situacao !== undefined);
   const variaveis = f.condicoes.filter((c) => c.tipo === "EXITO" || c.tipo === "SUCUMBENCIA" || c.tipo === "ATO" || (c.tipo === "RECORRENTE" && c.etapa));
   // A que já voltou para A receber ("Não foi paga", F3.84) sai da folha.
   const pagas = f.recebimentos.filter((r) => r.pagoAntes && !r.corrigida);
@@ -271,21 +290,24 @@ function Recebimentos({ f, hoje, dono, aoNaoPaga, aoFoiPaga }: {
       ) : (
         <>
           <div className="ct-totais">
+            {f.financeiro && f.recebidoAteHoje !== undefined ? (
+              <div><p>Recebido até hoje</p><p className="hn-res-grande num">{reais(f.recebidoAteHoje)}</p></div>
+            ) : null}
             <div>
               <p>Programado{j.ate ? ` até ${dataBr(j.ate)}` : ""}</p>
               <p className="hn-res-grande num">{reais(j.programado)}</p>
               {pagas.length ? <p className="pg-tot">Só o que passa pelo T3jus. Os <a href="#pago-antes">{reais(somaPagas)} pagos antes</a> ficam fora.</p> : null}
             </div>
-            <div><p>Depois dos 3 meses</p><p className="hn-res-grande num">{j.depois}</p></div>
+            {f.financeiro && f.recebidoAteHoje !== undefined ? null : <div><p>Depois dos 3 meses</p><p className="hn-res-grande num">{j.depois}</p></div>}
             <div><p>Depende do caso</p><p className="hn-res-grande">{variaveis.length ? juntarItens(variaveis.map((c) => ({ EXITO: "Êxito", SUCUMBENCIA: "Sucumbência", ATO: "Por ato", RECORRENTE: "Recorrente" } as Record<string, string>)[c.tipo]!)) : "Nada"}</p></div>
           </div>
           {j.mostrar.length ? (
             <table className="hn-tab">
               <caption className="sr">Programação dos recebimentos</caption>
-              <colgroup>{["16%", "40%", "22%", "22%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
-              <thead><tr>{["Vencimento", "O quê", "Condição", "Valor"].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>
+              <colgroup>{(comSituacao ? ["14%", "32%", "18%", "15%", "21%"] : ["16%", "40%", "22%", "22%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+              <thead><tr>{["Vencimento", "O quê", "Condição", "Valor", ...(comSituacao ? ["Situação"] : [])].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>
               <tbody>
-                {j.mostrar.map((r) => <LinhaRecebimento key={r.id} r={r} f={f} hoje={hoje} aoFoiPaga={aoFoiPaga} />)}
+                {j.mostrar.map((r) => <LinhaRecebimento key={r.id} r={r} f={f} hoje={hoje} aoFoiPaga={aoFoiPaga} comSituacao={comSituacao} />)}
               </tbody>
             </table>
           ) : <Estado icone="carteira" titulo="Nada programado">As condições deste contrato dependem do caso. Quando a etapa for marcada, o valor entra aqui.</Estado>}
@@ -430,7 +452,17 @@ function PagoAntes({ f, pagas, soma, hoje, aoNaoPaga }: { f: FichaContrato; paga
   );
 }
 
-function LinhaRecebimento({ r, f, hoje, aoFoiPaga }: { r: RecebimentoPrevisto; f: FichaContrato; hoje: string; aoFoiPaga: (r: RecebimentoPrevisto) => void }) {
+/** A situação da parcela em A receber; a de valor ainda a definir espera a etapa do caso. */
+function SituacaoRecebimento({ r, hoje }: { r: RecebimentoPrevisto; hoje: string }) {
+  if (r.valor === null && !r.cancelado) return <Selo tom="neutro" icone="relogio">Esperando a etapa</Selo>;
+  if (!r.situacao) return null;
+  const s = seloParcela({ situacao: r.situacao, vencimento: r.vencimento, falta: r.falta ?? 0, pagaEm: r.pagaEm ?? null }, hoje);
+  return <Selo tom={s.tom} icone={s.icone}>{s.texto}</Selo>;
+}
+
+function LinhaRecebimento({ r, f, hoje, aoFoiPaga, comSituacao }: {
+  r: RecebimentoPrevisto; f: FichaContrato; hoje: string; aoFoiPaga: (r: RecebimentoPrevisto) => void; comSituacao: boolean;
+}) {
   const c = f.condicoes.find((x) => x.tipo === r.tipo);
   const era = r.eraPagoAntes && !r.cancelado;
   const atraso = era && r.podeVoltar ? textoAtraso(r.vencimento, hoje) : null;
@@ -455,28 +487,10 @@ function LinhaRecebimento({ r, f, hoje, aoFoiPaga }: { r: RecebimentoPrevisto; f
         {r.cancelado ? <><br /><small>Cancelado: {r.cancelado.motivo}</small></> : null}
         {r.base ? <><br /><small>Base de {reais(r.base.valor)}, informada por {r.base.por.nome}</small></> : null}
       </td>
-      <td data-r="Condição">{c ? <SeloTipo c={c} /> : null}</td>
+      <td data-r="Condição">{c ? <SeloTipo c={c} curto /> : null}</td>
       <td data-r="Valor"><span className="num hn-valor-c">{r.valor ? reais(r.valor) : "a definir"}</span></td>
+      {comSituacao ? <td data-r="Situação"><SituacaoRecebimento r={r} hoje={hoje} /></td> : null}
     </tr>
-  );
-}
-
-function Documentos() {
-  return (
-    <section className="folha" aria-labelledby="t-dc">
-      <div className="folha-cab">
-        <div><h2 id="t-dc">Documentos</h2><p className="sub">Contrato, procuração e declaração gerados com os dados do cliente e dos advogados.</p></div>
-      </div>
-      <Estado icone="doc" titulo="Os documentos chegam numa próxima entrega">
-        Gerar o contrato, a procuração e a declaração no timbrado do escritório ainda está sendo preparado. Por enquanto, faça no Word; o assinado se anexa ao registrar a assinatura, na aba Contrato.
-      </Estado>
-      <div className="hn-reserva">
-        <div>
-          <Icone nome="lapis" className="ico" />
-          <span><b>Assinatura eletrônica: em estudo.</b> O lugar fica reservado.</span>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -649,6 +663,8 @@ function JanelaEncerrar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: 
 function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba; escritorio: EscritorioPortal; aoNumero: (n: string) => void }) {
   const [f, setF] = useState<FichaContrato | null | "erro" | "nao">(null);
   const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | "inscricoes" | null>(null);
+  const [janelaDocs, setJanelaDocs] = useState<{ so?: string } | null>(null);
+  const [docs, setDocs] = useState<DocumentosDoContrato | null | "erro">(null);
   const [assinados, setAssinados] = useState<Anexo[] | null>(null);
   const [carne, setCarne] = useState(false);
   const [naoPaga, setNaoPaga] = useState<RecebimentoPrevisto | null>(null);
@@ -662,6 +678,8 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
     if (r.ok) aoNumero(r.dados.numero);
     const a = await chamarPortal<ListaAnexos>(`/v1/escritorio/contratos/${id}/anexos`);
     setAssinados(a.ok ? a.dados.anexos : null);
+    const d = await chamarPortal<DocumentosDoContrato>(`/v1/escritorio/contratos/${id}/documentos`);
+    setDocs(d.ok ? d.dados : "erro");
   }, [id, aoNumero]);
   useEffect(() => {
     void Promise.resolve().then(() => carregar());
@@ -669,10 +687,12 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const t = q.has("criado") ? { titulo: "Contrato criado", texto: "Ele está em elaboração. Colha a assinatura e registre-a: aí a programação vai para o Financeiro." }
-      : q.has("mudado") ? { titulo: "Mudanças salvas", texto: "A versão anterior fica no histórico do contrato." } : null;
+      : q.has("mudado") ? { titulo: "Mudanças salvas", texto: "A versão anterior fica no histórico do contrato." }
+      : q.has("anexado") ? feitoDosAssinados({ n: Number(q.get("anexado")) || 1, ativou: q.get("anexado") === "ativo", numero: "" }) : null;
     if (!t) return;
     q.delete("criado");
     q.delete("mudado");
+    q.delete("anexado");
     window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
     void Promise.resolve().then(() => setFeito(t));
   }, []);
@@ -711,12 +731,12 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             </div>
           </div>
         </div>
-        <Dir f={f} aoAssinar={() => setJanela("assinatura")} />
+        <Dir f={f} aoAssinar={() => setJanela("assinatura")} docs={proximoDosDocumentos(docs)} aoAnexarDocs={() => setJanelaDocs({})} />
       </div>
       <nav className="abas" aria-label="Seções do contrato">
         <a href={ROTAS_CONTRATOS.contrato(f.id)} aria-current={aba === "contrato" ? "page" : undefined}>Contrato</a>
         <a href={ROTAS_CONTRATOS.recebimentos(f.id)} aria-current={aba === "recebimentos" ? "page" : undefined}>Recebimentos<span className="q">{vivos}</span></a>
-        <a href={ROTAS_CONTRATOS.documentos(f.id)} aria-current={aba === "documentos" ? "page" : undefined}>Documentos</a>
+        <a href={ROTAS_CONTRATOS.documentos(f.id)} aria-current={aba === "documentos" ? "page" : undefined}>Documentos{docs && docs !== "erro" && docs.documentos.length ? <span className="q">{docs.documentos.length}</span> : null}</a>
       </nav>
       {aba === "recebimentos" ? (
         <>
@@ -726,7 +746,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
           ) : null}
         </>
       )
-        : aba === "documentos" ? <Documentos />
+        : aba === "documentos" ? <DocumentosDaFicha f={f} dados={docs} aoAnexar={(so) => setJanelaDocs({ so })} aoTentar={() => void carregar()} />
         : (
           <div className="hn-grade">
             <div className="hn-col">
@@ -794,6 +814,10 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             void carregar();
           }} />
       ) : null}
+      {janelaDocs ? (
+        <JanelaAssinados contrato={f.id} so={janelaDocs.so} aoFechar={() => setJanelaDocs(null)}
+          aoFeito={(r) => { setJanelaDocs(null); setFeito(feitoDosAssinados(r)); void carregar(); }} />
+      ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );
@@ -802,7 +826,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
 export function FichaContratoPortal({ id, aba = "contrato" }: { id: string; aba?: Aba }) {
   const [numero, setNumero] = useState("Contrato");
   return (
-    <MolduraArea area="CONTRATOS" secao="contratos" trilha={[{ nome: numero }]} pagina="co-ficha">
+    <MolduraArea area="CONTRATOS" secao="contratos" trilha={[{ nome: numero }]} pagina="co-ficha co-carteira">
       {(e) => <FichaConteudo id={id} aba={aba} escritorio={e} aoNumero={setNumero} />}
     </MolduraArea>
   );

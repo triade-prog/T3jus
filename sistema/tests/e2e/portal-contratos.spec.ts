@@ -338,6 +338,36 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await semViolacoes(page);
   });
 
+  test("Recebimentos com Financeiro: grade com a coluna Situação e o recebido até hoje (0750, desenho aprovado)", async ({ page }) => {
+    const F19F = {
+      ...F19, financeiro: true, recebidoAteHoje: 360000, recebimentos: [
+        recebimento(1, "Mensalidade 1", -70, 180000, { situacao: "PAGA", recebido: 180000, falta: 0, pagaEm: dia(-69) }),
+        recebimento(2, "Mensalidade 2", -40, 180000, { situacao: "PAGA", recebido: 180000, falta: 0, pagaEm: dia(-40) }),
+        recebimento(3, "Mensalidade 3", -10, 180000, { situacao: "VENCIDA", recebido: 0, falta: 180000, pagaEm: null }),
+        recebimento(4, "Mensalidade 4", 10, 180000, { situacao: "A_VENCER", recebido: 0, falta: 180000, pagaEm: null }),
+        recebimento(5, "Êxito da ação", 40, null, { tipo: "EXITO", situacao: "A_VENCER", recebido: 0, falta: 0, pagaEm: null }),
+      ],
+      condicoes: [MENSAL, EXITO],
+    };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/contratos/${ct(19)}`]: { corpo: F19F } });
+    await page.goto(`${P}/contratos/contratos/${ct(19)}?aba=recebimentos`);
+    const tab = page.getByRole("table", { name: "Programação dos recebimentos" });
+    await expect(tab.getByRole("columnheader")).toHaveText(["Vencimento", "O quê", "Condição", "Valor", "Situação"]);
+    await expect(tab.getByRole("row", { name: /Mensalidade 1/ })).toContainText(`Paga em ${br(-69).slice(0, 5)}`);
+    await expect(tab.getByRole("row", { name: /Mensalidade 3/ })).toContainText("Vencida há 10 dias");
+    await expect(tab.getByRole("row", { name: /Mensalidade 4/ })).toContainText("A vencer");
+    await expect(tab.getByRole("row", { name: /Êxito da ação/ })).toContainText("Esperando a etapa");
+    // O selo da condição fica só com o nome: o valor já está na coluna ao lado.
+    await expect(tab.getByRole("row", { name: /Mensalidade 4/ }).locator(".hn-selo")).toHaveText("Mensal");
+    await expect(page.getByText("Recebido até hoje")).toBeVisible();
+    await expect(page.getByText("R$ 3.600,00")).toBeVisible();
+    await expect(page.getByText("Depois dos 3 meses")).toHaveCount(0);
+    // A grade da tabela vem do estilo da página (antes a ficha ficava sem ele).
+    const cab = tab.locator("thead th").first();
+    expect(await cab.evaluate((e) => getComputedStyle(e).textTransform)).toBe("uppercase");
+    await semViolacoes(page);
+  });
+
   test("F3.73: as parcelas pagas antes do T3jus ficam numa folha só de informação, com a origem e o caminho de desfazer", async ({ page }) => {
     await simular(page, comuns());
     await page.goto(`${P}/contratos/contratos/${ct(41)}?aba=recebimentos`);

@@ -107,6 +107,22 @@ test.describe("Clientes do Portal: lista (AP-01, AP-06)", () => {
     await semViolacoes(page);
   });
 
+  test("nome longo quebra em linhas sem cobrir o tipo do cliente", async ({ page }) => {
+    const LONGO = linha(9, "CAROLINA SOARES SANTANA DE ALBUQUERQUE MONTEIRO CAVALCANTI");
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      "GET /v1/escritorio/clientes?situacao=ATIVO": { corpo: { comercial: true, clientes: [LONGO] } },
+      "GET /v1/escritorio/clientes?situacao=INATIVO": { corpo: { comercial: true, clientes: [] } },
+    });
+    await page.goto(`${P}/clientes`);
+    const nome = lista(page).getByRole("link", { name: LONGO.nome });
+    const tipo = lista(page).getByText("Pessoa física", { exact: true });
+    await expect(tipo).toBeVisible();
+    const a = (await nome.boundingBox())!;
+    const b = (await tipo.boundingBox())!;
+    expect(a.y + a.height).toBeLessThanOrEqual(b.y + 1);
+  });
+
   test("filtros: vencidos e inativos; a busca vai ao servidor e realça o termo", async ({ page }) => {
     const pedidos = await simular(page, {
       "/v1/escritorio": { corpo: ESCRITORIO }, ...listas(),
