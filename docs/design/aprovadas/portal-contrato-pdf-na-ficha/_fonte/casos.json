@@ -1,0 +1,27 @@
+[
+ {
+  "nome": "gerado",
+  "url": "ficha-pdf.html?estado=gerado"
+ },
+ {
+  "nome": "assinado",
+  "url": "ficha-pdf.html?estado=assinado"
+ },
+ {
+  "nome": "preparando",
+  "url": "ficha-pdf.html?estado=preparando"
+ },
+ {
+  "nome": "erro",
+  "url": "ficha-pdf.html?estado=erro"
+ },
+ {
+  "nome": "sem-documento",
+  "url": "ficha-pdf.html?estado=sem-documento"
+ },
+ {
+  "nome": "index",
+  "url": "index.html",
+  "semFoto": true
+ }
+]

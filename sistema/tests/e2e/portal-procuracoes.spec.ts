@@ -495,4 +495,97 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     await expect(page.getByRole("group", { name: "Baixar o contrato, sem assinatura" })).toBeVisible();
     await semViolacoes(page);
   });
+  test("D29: o contrato baixa em Word e PDF no cabeçalho da ficha, em todas as abas; assinado, sem documento e a trilha sem repetição", async ({ page }) => {
+    const ASS = "f9000000-0000-4000-8000-000000000052";
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${CT}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/contratos/${CT}/anexos`]: { corpo: { anexos: [] } },
+      [`GET /v1/escritorio/contratos/${CT}/documentos`]: [
+        { corpo: DOCS_CT },
+        { corpo: { ...DOCS_CT, faltam: 1, documentos: [{ ...DOCS_CT.documentos[0], situacao: "ASSINADO",
+          atual: versao(DOC(5), "CONTRATO", "contrato-honorarios-benedito-lima-v2.docx", 2,
+            [{ anexoId: ASS, nome: "contrato-assinado-benedito.pdf", assinadoEm: "2026-11-21", enviadoPor: MARINA, enviadoEm: "2026-11-21T20:20:00Z" }]) }, DOCS_CT.documentos[1]] } },
+      ],
+      [`POST /v1/escritorio/documentos/${DOC(5)}/abrir`]: { corpo: { url: `${P}/arquivo-falso.docx`, validadeSegundos: 60 } },
+      [`POST /v1/escritorio/anexos/${ASS}/abrir`]: { corpo: { url: `${P}/arquivo-falso.pdf`, validadeSegundos: 60 } },
+    });
+    await page.route("**/arquivo-falso.*", (r) => r.fulfill({ status: 200, body: "x", headers: { "content-disposition": "attachment" } }));
+    let soltar: () => void = () => {};
+    const segura = new Promise<void>((r) => { soltar = r; });
+    let vezPdf = 0;
+    await page.route((u) => u.pathname.endsWith(`/documentos/${DOC(5)}/abrir`) && u.searchParams.get("formato") === "pdf", async (rota) => {
+      vezPdf++;
+      if (vezPdf === 1) {
+        await segura;
+        return rota.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ erro: { codigo: "UPSTREAM_UNAVAILABLE", detalhes: { motivo: "PDF_INDISPONIVEL" } } }) });
+      }
+      return rota.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: `${P}/arquivo-falso.pdf`, validadeSegundos: 60, complexo: true }) });
+    });
+
+    // Na aba Contrato (a que abre primeiro), o cabeçalho já tem o contrato em Word e PDF.
+    await page.goto(`${P}/contratos/contratos/${CT}`);
+    await expect(page.getByRole("heading", { name: "Benedito Souza Lima" })).toBeVisible();
+    if (test.info().project.name === "computador") {
+      // A trilha só aparece no computador: "Contratos › C-2026-033", sem o "Contratos" repetido.
+      const trilha = page.getByRole("navigation", { name: "Você está em" });
+      await expect(trilha.getByRole("link")).toHaveCount(1);
+      await expect(trilha.getByRole("link", { name: "Contratos", exact: true })).toHaveAttribute("href", "/contratos/contratos");
+      await expect(trilha).toHaveText(/^\s*Contratos\W*C-2026-033\s*$/);
+    }
+    const grupo = page.getByRole("group", { name: "Baixar o contrato v2 · gerado em 21/11/2026" });
+    await expect(grupo.getByRole("button", { name: "Baixar o contrato em Word (.docx, para editar)" })).toBeVisible();
+    await expect(grupo.getByRole("button", { name: "Baixar o contrato em PDF (para mandar ou imprimir)" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver todos os documentos" })).toHaveAttribute("href", `/contratos/contratos/${CT}?aba=documentos`);
+    await semViolacoes(page);
+
+    await grupo.getByRole("button", { name: /^Baixar o contrato em Word/ }).click();
+    await expect.poll(() => pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/documentos/${DOC(5)}/abrir` && p.busca === "")).toBe(true);
+
+    await grupo.getByRole("button", { name: /^Baixar o contrato em PDF/ }).click();
+    await expect(grupo.getByRole("button", { name: "Preparando o PDF do contrato" })).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByRole("status").filter({ hasText: "Preparando o PDF do contrato." })).toContainText("o arquivo baixa sozinho");
+    await semViolacoes(page);
+    soltar();
+    const erro = page.getByRole("alert").filter({ hasText: "Não deu para preparar o PDF do contrato." });
+    await expect(erro).toContainText("Nada mudou no contrato, e o Word continua para baixar.");
+    await expect(erro.getByRole("button", { name: /^Tentar de novo\s?: PDF do contrato$/ })).toBeFocused();
+    await expect(page.getByText("PDF_INDISPONIVEL")).toBeVisible();
+    await semViolacoes(page);
+    await erro.getByRole("button", { name: /^Tentar de novo/ }).click();
+    await expect(page.getByText("O PDF sai num leiaute simples, no timbrado.")).toBeVisible();
+    expect(vezPdf).toBe(2);
+
+    // Também na aba Recebimentos.
+    await page.goto(`${P}/contratos/contratos/${CT}?aba=recebimentos`);
+    await expect(page.getByRole("navigation", { name: "Seções do contrato" }).getByRole("link", { name: /^Recebimentos/ })).toHaveAttribute("aria-current", "page");
+    await expect(page.locator(".fp").getByText("Contrato assinado", { exact: true })).toBeVisible();
+    // Assinado: só o assinado, com o nome e o dia.
+    await expect(page.getByRole("button", { name: "Baixar o assinado (PDF)", exact: true })).toBeVisible();
+    await expect(page.getByText("contrato-assinado-benedito.pdf · anexado em 21/11/2026")).toBeVisible();
+    await expect(page.getByRole("group", { name: /^Baixar o contrato v/ })).toHaveCount(0);
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Baixar o assinado (PDF)", exact: true }).click();
+    await expect.poll(() => pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/anexos/${ASS}/abrir`)).toBe(true);
+  });
+
+  test("D29: sem contrato gerado, o cabeçalho oferece Gerar o contrato; o assinado da folha Assinatura também baixa", async ({ page }) => {
+    const ANX = "f9000000-0000-4000-8000-000000000053";
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${CT}`]: { corpo: { ...FICHA, situacao: "ATIVO" } },
+      [`GET /v1/escritorio/contratos/${CT}/anexos`]: [
+        { corpo: { anexos: [] } },
+        { corpo: { anexos: [{ id: ANX, categoria: "CONTRATO_ASSINADO", nome: "assinado-papel.jpg", tipo: "IMAGEM", tamanho: 1000, donoId: CT, enviadoPor: MARINA, enviadoEm: "2026-11-20T13:00:00Z" }] } },
+      ],
+      [`GET /v1/escritorio/contratos/${CT}/documentos`]: { corpo: { ...DOCS_CT, documentos: [], faltam: 0, ultima: null } },
+    });
+    await page.goto(`${P}/contratos/contratos/${CT}`);
+    await expect(page.getByText("O contrato ainda não foi gerado no T3jus.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Gerar o contrato" })).toHaveAttribute("href", `/contratos/modelos/gerar?contrato=${CT}`);
+    await semViolacoes(page);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Baixar o assinado (foto)", exact: true })).toBeVisible();
+    await expect(page.getByText("assinado-papel.jpg · anexado em 20/11/2026")).toBeVisible();
+  });
 });

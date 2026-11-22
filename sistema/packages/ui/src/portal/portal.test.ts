@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { agruparEventosPorDia, fraseEquipe, listaAreas, situacaoNaEquipe, type EventoEquipe } from "./equipe.ts";
 import { nomeArquivoExportacao } from "./Escritorio.tsx";
-import { rotaArea } from "./areas.ts";
+import { rotaArea, SECOES_AREA, trilhaDaArea } from "./areas.ts";
 import { papelNoEscritorio } from "./Moldura.tsx";
 
 const agora = new Date("2026-11-18T17:00:00Z"); // 14h00 em Brasília
@@ -61,5 +61,17 @@ describe("Portal v1: exportação (PT-15)", () => {
   it("o nome do arquivo vem do escritório, sem acento, e da data", () => {
     expect(nomeArquivoExportacao("Ribeiro & Matos Advocacia", "2026-11-18T17:22:00Z")).toBe("ribeiro-matos-advocacia-2026-11-18.json");
     expect(nomeArquivoExportacao("Ação São João", "2026-11-18")).toBe("acao-sao-joao-2026-11-18.json");
+  });
+});
+
+describe("A trilha do topo nas áreas (D29)", () => {
+  it("área e seção com o mesmo nome viram um nome só, que leva à lista", () => {
+    const s = SECOES_AREA.CONTRATOS[0]!;
+    expect(trilhaDaArea("CONTRATOS", "Contratos", s, [{ nome: "C-2026-001" }])).toEqual([{ nome: "Contratos", href: "/contratos/contratos" }, { nome: "C-2026-001" }]);
+    expect(trilhaDaArea("CONTRATOS", "Contratos", s)).toEqual([{ nome: "Contratos" }]);
+  });
+  it("nomes diferentes seguem área › seção", () => {
+    const s = SECOES_AREA.CONTRATOS[1]!;
+    expect(trilhaDaArea("CONTRATOS", "Contratos", s)).toEqual([{ nome: "Contratos", href: "/contratos" }, { nome: "Honorários" }]);
   });
 });

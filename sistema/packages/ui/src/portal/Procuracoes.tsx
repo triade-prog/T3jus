@@ -8,7 +8,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
-  CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, PAPEIS_RESPONSAVEL, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
+  type Anexo, CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, PAPEIS_RESPONSAVEL, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
@@ -20,6 +20,7 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, foca
 import { iniciais } from "../console/tempo.ts";
 import { lerDia } from "./agenda.ts";
 import { abrirAnexo, enviarAnexo } from "./Anexos.tsx";
+import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { juntarFotos, ordenarFotos } from "./fotos.ts";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
@@ -29,7 +30,7 @@ import { MolduraArea } from "./MolduraArea.tsx";
 import { CabPeticoes, LegendaPrevia, Papel, SeloDados, useBaixar } from "./Peticoes.tsx";
 import { contar, erroDoArquivo, Quando, quando, tamanhoArquivo } from "./peticoes.ts";
 import {
-  API_DOCUMENTOS, botaoGerar, chaveModelo, chavesAssinadas, ERROS_DOCUMENTO, errosDocumentos, formInicialDocumentos, fraseNoDocumentoOutorgados,
+  API_DOCUMENTOS, baixarNoCabecalho, botaoGerar, chaveModelo, chavesAssinadas, ERROS_DOCUMENTO, errosDocumentos, formInicialDocumentos, fraseNoDocumentoOutorgados,
   fraseVaoSair, juntar, nomeCurto, origemModelo, PODERES_TELA, pedidoDocumentos, problemaDosAssinados, RESUMO_ERRO_DOCUMENTO, ROTAS_DOCUMENTOS,
   rotuloAssinado, seloAba, seloAssinado, tituloFaltas, type FormDocumentos,
 } from "./procuracoes.ts";
@@ -124,6 +125,101 @@ function ErroPdf({ id, curto, bx, pdf }: { id: string; curto: string; bx: Bx; pd
         Nada mudou no documento, e o Word continua para baixar. Tente de novo; se não sair, abra o Word e use Arquivo › Salvar como › PDF.
       </Aviso>
       <p className="codigo">PDF_INDISPONIVEL</p>
+    </div>
+  );
+}
+
+/**
+ * "Baixar o contrato" no cabeçalho vinho da ficha, nas três abas (D29,
+ * docs/design/aprovadas/portal-contrato-pdf-na-ficha): a mesma peça Word | PDF do D23, só para o
+ * contrato de honorários da versão mais recente; com o assinado, só o assinado; sem contrato
+ * gerado, "Gerar o contrato" para quem pode.
+ */
+export function BaixarContratoNoCabecalho({ f, docs, assinados }: { f: FichaContrato; docs: DocumentosDoContrato | null | "erro"; assinados: Anexo[] | null }) {
+  const bx = useBaixar();
+  const pdf = usePdf();
+  const [falha, setFalha] = useState<string | null>(null);
+  const tentar = useRef<HTMLButtonElement>(null);
+  const linha = baixarNoCabecalho(docs, assinados, f.situacao);
+  const id = linha?.tipo === "gerado" ? linha.documentoId : null;
+  const errou = id !== null && pdf.falhou === id;
+  useEffect(() => {
+    if (errou) tentar.current?.focus();
+  }, [errou]);
+  if (!linha) return null;
+  const todos = (
+    <a className="fp-todos" href={ROTAS_CONTRATOS.documentos(f.id)}>Ver todos os documentos<Icone nome="dir" className="ico ico-s" /></a>
+  );
+  const falhaBaixar = falha ?? bx.falha;
+  const msgFalha = falhaBaixar ? <p className="fp-status" role="alert"><Icone nome="alerta" className="ico ico-s" /><span><b>Não deu para baixar.</b> {falhaBaixar}</span></p> : null;
+  if (linha.tipo === "gerar") {
+    return (
+      <div className="fp">
+        <div className="fp-linha">
+          <span className="fp-rot"><Icone nome="doc" className="ico ico-s" />O contrato ainda não foi gerado no T3jus.</span>
+          <a className="btn btn-sec btn-compacto fp-bt" href={ROTAS_DOCUMENTOS.gerar(f.id)}><Icone nome="doc" className="ico ico-s" />Gerar o contrato</a>
+        </div>
+        <div className="fp-linha"><span className="fp-qual">Sai em Word e PDF, com os dados do cliente e do contrato.</span></div>
+      </div>
+    );
+  }
+  if (linha.tipo === "assinado") {
+    return (
+      <div className="fp">
+        <div className="fp-linha">
+          <span className="fp-rot"><Icone nome="pena" className="ico ico-s" />Contrato assinado</span>
+          <button className="btn btn-sec btn-compacto fp-bt" type="button" aria-describedby="fp-qual"
+            onClick={async () => { setFalha(null); setFalha(await abrirAnexo(linha.anexoId)); }}>
+            <Icone nome="baixar" className="ico ico-s" />Baixar o assinado ({linha.formato})
+          </button>
+        </div>
+        <div className="fp-linha"><span className="fp-qual" id="fp-qual">{linha.qual}</span>{todos}</div>
+        {msgFalha}
+      </div>
+    );
+  }
+  const doc = linha.documentoId;
+  const prep = pdf.preparando.has(doc);
+  const word = (vis: boolean) => (
+    <button className="btn btn-sec btn-compacto" type="button" disabled={bx.baixando !== null} onClick={() => void bx.baixar(caminhoWord(doc))}>
+      <Icone nome="baixar" className="ico ico-s" />{vis ? "Baixar o " : <span className="sr">Baixar o contrato em </span>}Word<span className="sr"> (.docx, para editar)</span>
+    </button>
+  );
+  return (
+    <div className="fp">
+      <div className="fp-linha">
+        <span className="fp-rot" id="fp-rot"><Icone nome="doc" className="ico ico-s" />Baixar o contrato</span>
+        <div className="pdf-bx" role="group" aria-labelledby="fp-rot fp-qual">
+          {word(false)}
+          {prep ? (
+            <button className="btn btn-sec btn-compacto" type="button" aria-disabled="true" aria-describedby="fp-st">
+              <span className="pdf-gira" aria-hidden="true" />Preparando o PDF<span className="sr"> do contrato</span>
+            </button>
+          ) : (
+            <button className="btn btn-sec btn-compacto" type="button" onClick={() => void pdf.baixar(doc)}>
+              <Icone nome="baixar" className="ico ico-s" /><span className="sr">Baixar o contrato em </span>PDF<span className="sr"> (para mandar ou imprimir)</span>
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="fp-linha"><span className="fp-qual" id="fp-qual">{linha.qual}</span>{todos}</div>
+      <div id="fp-st" role="status" className="fp-st">
+        {prep ? <p className="fp-status"><Icone nome="relogio" className="ico ico-s" /><span><b>Preparando o PDF do contrato.</b> Leva alguns segundos; o arquivo baixa sozinho. Pode continuar na tela.</span></p> : null}
+      </div>
+      {errou ? (
+        <div className="fp-erro">
+          <Aviso tom="urgencia" titulo="Não deu para preparar o PDF do contrato."
+            acoes={<>
+              <button ref={tentar} className="btn btn-sec btn-compacto" type="button" onClick={() => void pdf.baixar(doc)}><Icone nome="reenviar" className="ico ico-s" />Tentar de novo<span className="sr">: PDF do contrato</span></button>
+              {word(true)}
+            </>}>
+            Nada mudou no contrato, e o Word continua para baixar. Tente de novo; se não sair, abra o Word e use Arquivo › Salvar como › PDF.
+          </Aviso>
+          <p className="codigo">PDF_INDISPONIVEL</p>
+        </div>
+      ) : null}
+      {pdf.simples.has(doc) ? <p className="fp-anot"><Icone nome="alerta" className="ico ico-s" /><span><b>O PDF sai num leiaute simples, no timbrado.</b> O texto é o mesmo do Word, mas a tabela e a imagem do seu modelo ficam só no Word. Para um PDF igual ao Word, salve como PDF pelo Word.</span></p> : null}
+      {msgFalha}
     </div>
   );
 }
