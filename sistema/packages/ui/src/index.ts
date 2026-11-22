@@ -69,4 +69,5 @@ export { ROTAS_FINANCEIRO } from "./portal/financeiro.ts";
 export { NovoContratoPortal, MudarContratoPortal } from "./portal/FormContrato.tsx";
 export { RelatoriosFinanceiro } from "./portal/Relatorios.tsx";
 export { ImportacoesHistorico, ImportarPlanilha, ResultadoImportacao } from "./portal/Importacao.tsx";
+export { ImportarAdvbox, ImportarAstrea, ImportarDados } from "./portal/ImportacaoSistemas.tsx";
 export { ROTAS_IMPORTACAO } from "./portal/importacao.ts";

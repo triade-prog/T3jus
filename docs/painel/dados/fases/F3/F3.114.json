@@ -1,0 +1,10 @@
+{
+  "id": "F3.114",
+  "texto": "Conectar a API do ADVBOX para importar direto, com o token da conta (F3.56), quando um piloto tiver o plano de API",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 955
+}

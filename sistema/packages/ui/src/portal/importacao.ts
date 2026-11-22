@@ -9,9 +9,17 @@ import type { Aba } from "./planilha.ts";
 
 const BASE = "/clientes/importar";
 export const ROTAS_IMPORTACAO = {
+  /** A escolha da origem (para a sócia dona) ou a planilha (para os outros). */
   enviar: BASE,
-  enviarContratos: `${BASE}?contratos=1`,
-  modelo: `${BASE}?modelo=1`,
+  planilha: `${BASE}?origem=planilha`,
+  astrea: `${BASE}/astrea`,
+  advbox: `${BASE}/advbox`,
+  /** Passo 2 do backup: as abas (F3.56). */
+  abas: (id: string) => `${BASE}/${id}?passo=abas`,
+  /** Passo 2 com a aba escolhida nas abas do backup. */
+  colunasDaAba: (id: string, aba: number) => `${BASE}/${id}?passo=colunas&aba=${aba}`,
+  enviarContratos: `${BASE}?origem=planilha&contratos=1`,
+  modelo: `${BASE}?origem=planilha&modelo=1`,
   /** Um passo de uma importação já começada (colunas ou prévia). */
   passo: (id: string, passo: "colunas" | "previa") => `${BASE}/${id}?passo=${passo}`,
   resultado: (id: string) => `/clientes/importacoes/${id}`,

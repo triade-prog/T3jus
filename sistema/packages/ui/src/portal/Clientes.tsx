@@ -430,7 +430,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
           <div className="im-cab-acoes">
             <a className="btn btn-sec" href={ROTAS_IMPORTACAO.enviar}>
               <Icone nome="enviar" className="ico" />
-              Importar planilha
+              Importar dados
             </a>
             <a data-muda className="btn btn-escuro" href={`${ROTAS_PORTAL.clientes}/novo`}>
               <Icone nome="pessoaMais" className="ico" />
@@ -455,7 +455,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                 <>
                   <a className="btn btn-pri" href={ROTAS_IMPORTACAO.enviar}>
                     <Icone nome="enviar" className="ico" />
-                    Importar planilha
+                    Importar dados
                   </a>
                   <a data-muda className="btn btn-sec" href={`${ROTAS_PORTAL.clientes}/novo`}>
                     <Icone nome="pessoaMais" className="ico" />
@@ -463,7 +463,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
                   </a>
                 </>
               }>
-              Se os clientes já estão numa planilha do Excel ou do Google Planilhas, importe todos de uma vez: você confere tudo numa prévia antes de salvar. Ou cadastre um por um.
+              Se os clientes já estão numa planilha ou em outro sistema, traga todos de uma vez: você confere tudo numa prévia antes de salvar. Ou cadastre um por um.
             </Estado>
             <p className="pt-pe-folha">
               <Icone nome="doc" className="ico" />

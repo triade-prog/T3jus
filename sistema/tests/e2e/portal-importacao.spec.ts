@@ -30,7 +30,7 @@ const COLUNAS = [
 ];
 const LIGACAO = Object.fromEntries(COLUNAS.filter((c) => c.campo).map((c) => [String(c.indice), c.campo]));
 const IMP = {
-  id: ID, arquivo: "clientes-e-contratos-2026.xlsx", oQue: "CLIENTES_CONTRATOS", situacao: "PREVIA", versao: 2, criadoEm: "2026-11-20T18:30:00Z",
+  id: ID, arquivo: "clientes-e-contratos-2026.xlsx", oQue: "CLIENTES_CONTRATOS", origem: "PLANILHA", modelo: null, abasSistema: null, foraTipo: null, situacao: "PREVIA", versao: 2, criadoEm: "2026-11-20T18:30:00Z",
   por: MARINA, linhasLidas: null, contratos: true, comercial: true,
   abas: [{ indice: 0, nome: "Clientes e contratos", linhas: 12, colunas: 13 }, { indice: 1, nome: "Resumo", linhas: 3, colunas: 2 }],
   aba: 0, colunas: COLUNAS, ligacao: LIGACAO, pares: {}, temPrevia: false, importadoEm: null, desfazerAte: null, resumo: null, podeDesfazer: false,
@@ -290,6 +290,6 @@ test.describe("F3.55: Importar planilha", () => {
     await expect(t.getByRole("button", { name: "Desfazer" })).toBeVisible();
     await semViolacoes(page);
     await page.goto(`${P}/clientes`);
-    await expect(page.getByRole("link", { name: "Importar planilha" }).first()).toHaveAttribute("href", "/clientes/importar");
+    await expect(page.getByRole("link", { name: "Importar dados" }).first()).toHaveAttribute("href", "/clientes/importar");
   });
 });

@@ -473,7 +473,18 @@ Tela aprovada em `docs/design/aprovadas/portal-importacao` (Carol, 20/11/2026; 3
 - **Passos:** criar (sugere a ligação pelo nome da coluna, sem campos de contrato sem a área Contratos e sem origem sem a Comercial), `POST …/:id/pares` (os valores de responsável, tipo e origem, com a sugestão; traz também as colunas da aba pedida), `PATCH …/:id/colunas` (grava a ligação e monta a prévia; `CAMPO_OBRIGATORIO_SEM_COLUNA` com os campos que faltam), `GET …/:id/linhas` (50 por página), `PATCH …/:id/linhas/:n` (corrigir, decidir ou pular), `POST …/:id/decisoes` (juntar todas), `POST …/:id/importar` (tudo ou nada; `PREVIA_MUDOU` se um cadastro novo virou duplicado).
 - **Depois:** o resultado, `GET …/:id/fora` (a planilha das linhas de fora, montada na tela, até o fim do prazo), `GET`/`POST …/:id/desfazer` (7 dias, quem importou ou o sócio dono; clientes inativos, contratos encerrados, parcelas canceladas, os campos juntados voltam; o que foi mexido depois fica), o histórico em Clientes › Importações e a linha "veio da planilha" nas fichas (`GET …/:id/origem`, com o id do cliente ou do contrato).
 - **Pago antes do T3jus (F3.73, migration 0470):** `portal_contrato` marca `pagoAntes` em cada recebimento e traz `importacao` (planilha, linha, quem importou, até quando desfazer). A aba Recebimentos mostra essas parcelas numa folha à parte, fora da programação e dos totais.
-- **Falta:** importar direto de outros sistemas (F3.56) e o botão "Não foi paga" na folha das pagas antes (F3.84).
+- **Falta:** os processos e o financeiro antigo do Astrea e a conexão com a API do ADVBOX (F3.56, partes 2 e 3) e o botão "Não foi paga" na folha das pagas antes (F3.84).
+
+### Importar do Astrea e do ADVBOX, parte 1: os clientes (F3.56; VA-05)
+
+Tela aprovada em `docs/design/aprovadas/portal-importacao-sistemas` (Carol, 21/11/2026). Migration `0790_importar_sistemas.sql`, teste `110_importar_sistemas_test.sql`, e2e `portal-importacao-sistemas.spec.ts`. Usa a mesma importação da planilha (prévia, importar, desfazer), com a origem gravada em `importacoes.origem` (PLANILHA, ASTREA, ADVBOX_PLANILHA).
+
+- **Só a sócia dona** importa de outro sistema (`SEM_PERMISSAO` para o resto; a equipe continua indo direto à planilha). De outro sistema vêm só clientes nesta versão.
+- **O backup do Astrea é lido no navegador** (até 20 MB e 10.000 linhas por aba), porque passa do limite de 4,5 MB do corpo na Vercel. Ao T3jus vão só as células da aba de contatos e das abas não reconhecidas; processos, lançamentos, tarefas, agenda e publicações vão só com o nome e o tamanho (`montarBackup`). O corpo vai em JSON comprimido (gzip) pelo mesmo `POST /v1/escritorio/importacoes?origem=ASTREA`; a API descomprime até 64 MB e valida (`backupLidoSchema`).
+- **A planilha de clientes do ADVBOX** vai como a planilha comum (`origem=ADVBOX_PLANILHA`), com até 10.000 linhas.
+- **O modelo de cada sistema** fica no código (`packages/domain/src/modelos_sistemas.ts`, versão gravada em `importacoes.modelo`): reconhece as abas pelo nome e liga as colunas (`por_modelo`, que a tela mostra como "Pelo modelo do Astrea"). Os nomes vêm do desenho e precisam ser conferidos com o backup real de um piloto; nome desconhecido não é erro, a pessoa escolhe.
+- **Tipo de contato:** a coluna "Tipo" do Astrea vira `tipo_contato`, com pares (cliente, parte contrária, fica de fora). Só os do tipo cliente entram na prévia; os outros são contados em `importacoes.fora_tipo` e o tipo não vai para o cadastro.
+- **Telas:** `/clientes/importar` (a dona escolhe a origem), `/clientes/importar/astrea`, `/clientes/importar/advbox`, `…/:id?passo=abas` (as abas do backup) e `?origem=planilha` para a planilha.
 
 ### OAB de cada advogado na Equipe (F3.15; EX-12)
 

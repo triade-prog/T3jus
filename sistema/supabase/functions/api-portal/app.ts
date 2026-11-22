@@ -25,7 +25,7 @@ import {
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
   colunasImportacaoSchema, tirarMetaSchema, VALIDADE_LINK_PASTA_S, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema,
-  LIMITE_ARQUIVO_BYTES, lerPlanilha, ligacaoImportacaoSchema, linhaImportacaoSchema, type Importacao, type LinhaPrevia, type LinhasFora,
+  LIMITE_ARQUIVO_BYTES, LIMITE_BACKUP_LINHAS, lerPlanilha, MODELOS, prepararAbas, backupLidoSchema, descomprimirJson, type AbaLida, type AbaParaOBanco, ligacaoImportacaoSchema, linhaImportacaoSchema, type Importacao, type LinhaPrevia, type LinhasFora,
   type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
   type RelatorioResponsaveis, type ResumoRelatorio,
@@ -1180,21 +1180,50 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   // Importar planilha (F3.55, VA-05). O arquivo chega como corpo binário e é lido aqui, na
   // memória: ao banco vão só as células. Nada entra no cadastro antes de importar.
+  // De outro sistema (F3.56): ?origem=ASTREA traz o backup já lido no navegador, em JSON
+  // comprimido (só as abas que podem entrar têm células); ?origem=ADVBOX_PLANILHA é a planilha
+  // exportada do ADVBOX, lida aqui como a planilha comum. Nos dois, a API reconhece as abas e liga
+  // as colunas pelo modelo do sistema; o banco confere que é a sócia dona.
   app.post("/v1/escritorio/importacoes", async (c) => {
-    const q = enviarImportacaoSchema.safeParse({ oQue: c.req.query("oQue"), nome: c.req.query("nome") });
+    const q = enviarImportacaoSchema.safeParse({ oQue: c.req.query("oQue"), nome: c.req.query("nome"), origem: c.req.query("origem") ?? undefined });
     if (!q.success) throw new ErroDominio("VALIDATION_ERROR", { campos: q.error.issues.map((i) => String(i.path[0])) });
+    const { origem } = q.data;
     const tamanho = Number(c.req.header("content-length") ?? 0);
     if (tamanho > LIMITE_ARQUIVO_BYTES) throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_GRANDE" });
     const bytes = new Uint8Array(await c.req.arrayBuffer());
-    let abas;
-    try {
-      abas = await lerPlanilha(bytes, q.data.nome);
-    } catch (e) {
-      if (e instanceof ErroArquivo) throw new ErroDominio("VALIDATION_ERROR", { motivo: e.motivo });
-      throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_FORMATO" });
+    if (bytes.length > LIMITE_ARQUIVO_BYTES) throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_GRANDE" });
+    let abas: AbaLida[];
+    let sistema: AbaParaOBanco[] | undefined;
+    if (origem === "ASTREA") {
+      // O JSON das abas lidas cabe em 64 MB descomprimido (10.000 linhas por aba).
+      const lido = backupLidoSchema.safeParse(await descomprimirJson(bytes, 64 * 1024 * 1024));
+      if (!lido.success) throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_FORMATO" });
+      if (lido.data.abas.some((a) => (a.celulas?.length ?? 0) > LIMITE_BACKUP_LINHAS)) throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_GRANDE" });
+      sistema = prepararAbas("ASTREA", lido.data.abas);
+      if (!sistema.some((a) => a.lida && a.celulas.length > 0)) throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_VAZIO" });
+    } else {
+      try {
+        abas = await lerPlanilha(bytes, q.data.nome);
+      } catch (e) {
+        if (e instanceof ErroArquivo) throw new ErroDominio("VALIDATION_ERROR", { motivo: e.motivo });
+        throw new ErroDominio("VALIDATION_ERROR", { motivo: "ARQUIVO_FORMATO" });
+      }
+      if (origem === "ADVBOX_PLANILHA") {
+        sistema = prepararAbas("ADVBOX_PLANILHA", abas.map((a) => ({ nome: a.nome, linhas: a.linhas.length, colunas: a.colunas, celulas: a.linhas })));
+      }
     }
+    if (sistema) abas = sistema.map((a) => ({ nome: a.nome, colunas: a.colunas, linhas: a.celulas }));
     const r = await deps.banco.rpc<Importacao>("portal_importacao_criar", {
-      ...quem(c), p_dados: { arquivoNome: q.data.nome, oQue: q.data.oQue, abas },
+      ...quem(c),
+      p_dados: {
+        arquivoNome: q.data.nome, oQue: q.data.oQue, abas: abas!, origem,
+        ...(sistema && origem !== "PLANILHA"
+          ? {
+            modelo: MODELOS[origem].versao,
+            sistema: sistema.map((a) => ({ nome: a.nome, linhas: a.linhas, destino: a.destino, reconhecida: a.reconhecida, porModelo: a.porModelo })),
+          }
+          : {}),
+      },
     });
     return c.json(r, 201);
   });
