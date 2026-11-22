@@ -1,0 +1,9 @@
+{
+  "data": "22/11/2026",
+  "inicio": "09:00",
+  "fim": "09:15",
+  "texto": "Painel atualizado com as entregas mescladas até o PR #114: situação reescrita, migrations até 0780 aplicadas (0790 aguarda o ok da Carol) e o que falta no aviso do fim do contrato.",
+  "refs": [
+    "PT-11"
+  ]
+}
