@@ -58,7 +58,7 @@ import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao
 import { lerCorpo } from "../_shared/validar.ts";
 import { ipDaChamada } from "../_shared/repasse.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
-import { avisoAutenticadorTirado, confirmacaoPedidoDemonstracao, emailCobranca, type EnvioCobranca, type Emails } from "../_shared/email.ts";
+import { avisoAutenticadorTirado, avisoFimContrato, confirmacaoPedidoDemonstracao, emailCobranca, type AvisoFimContrato, type EnvioCobranca, type Emails } from "../_shared/email.ts";
 import { pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
 import { registrar } from "../_shared/registro.ts";
 
@@ -214,6 +214,35 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   // o que o banco já decidiu, então não pede sessão (o repasse confere o segredo).
   app.post("/v1/rotina/cobranca-envios", async (c) => c.json(await enviarCobrancas()));
 
+  // Fim do contrato (F0.16, PT-11): manda os avisos à sócia dona que o banco pôs na fila (no dia
+  // do fim e 3 dias antes de o acesso fechar) e registra cada resultado. O e-mail dela vem do
+  // Auth. Sem o segredo do Resend, a fila espera.
+  async function enviarAvisosFim(): Promise<{ enviados: number; falhas: number }> {
+    if (!deps.emails) return { enviados: 0, falhas: 0 };
+    const fila = await rpc<(AvisoFimContrato & { id: string; paraPessoaId: string })[]>(
+      "rotina_contrato_avisos_pendentes", { p_limite: ENVIOS_POR_CHAMADA });
+    let enviados = 0;
+    let falhas = 0;
+    for (const a of fila) {
+      try {
+        const para = await deps.admin.emailDe(a.paraPessoaId);
+        if (!para) throw new Error("Sem e-mail no Auth");
+        await deps.emails.enviar({ para, ...avisoFimContrato(a, deps.urlPortal, CONTATO_T3JUS) });
+        await rpc("rotina_contrato_aviso_registrar", { p_id: a.id, p_enviado: true });
+        enviados++;
+      } catch (erro) {
+        registrar("aviso", { funcao: "api-console", rota: "avisos-fim-contrato", erro });
+        await rpc("rotina_contrato_aviso_registrar", { p_id: a.id, p_enviado: false, p_erro: erro instanceof Error ? erro.message : "Falhou" }).catch(() => undefined);
+        falhas++;
+      }
+    }
+    return { enviados, falhas };
+  }
+
+  // A rotina das 8h do banco chama esta rota quando há aviso na fila. Ela só manda o que o banco
+  // já decidiu, então não pede sessão (o repasse confere o segredo).
+  app.post("/v1/rotina/avisos-fim-contrato", async (c) => c.json(await enviarAvisosFim()));
+
   // Pedido de demonstração do site (F2.2, SC-02). O site (t3jus.pro) repassa com o segredo e o IP
   // de quem pediu; não há sessão. O banco aplica os limites e guarda a autorização; a resposta
   // automática sai daqui, e se não sair o pedido continua registrado (fica no histórico).
@@ -328,10 +357,17 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.post("/v1/clientes/:id/encerrar", async (c) => {
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, encerrarContratoT3jusSchema);
-    return c.json(await rpc("console_encerrar_contrato", {
+    const r = await rpc("console_encerrar_contrato", {
       p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao,
       p_dados: { fimEm: d.fimEm, motivo: d.motivo, nomeConfirmado: d.nomeConfirmado },
-    }));
+    });
+    // F0.16: com o fim hoje, o aviso à sócia dona sai na hora. Se falhar, a rotina das 8h manda.
+    try {
+      if (await rpc<number>("contrato_avisos_do_escritorio", { p_escritorio: id }) > 0) await enviarAvisosFim();
+    } catch (erro) {
+      registrar("aviso", { funcao: "api-console", rota: "avisos-fim-contrato", erro });
+    }
+    return c.json(r);
   });
 
   app.post("/v1/clientes/:id/reabrir", async (c) => {
