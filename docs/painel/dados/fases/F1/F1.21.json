@@ -1,12 +1,12 @@
 {
   "id": "F1.21",
-  "texto": "Meio de pagamento da cobrança dos escritórios: Pix e boleto emitidos com baixa automática, PDF do carnê, da fatura e do recibo (também no Portal), nota fiscal, preços reais e remetente definitivo",
+  "texto": "Meio de pagamento da cobrança dos escritórios: Pix e boleto emitidos pelo Inter com baixa automática, PDF do carnê, da fatura e do recibo (também no Portal), preços reais e remetente definitivo",
   "peca": "C1",
   "refs": [
     "CO-06"
   ],
   "status": "pendente",
   "ordem": 67.3,
-  "nota": "Hoje a fatura guarda Pix copia e cola e linha do boleto vazios, e a baixa é registrada à mão no Console. O e-mail sai pelo Resend com o contato provisório. O e-mail de cobrança na folha do Portal saiu em F1.23. Os PDFs da fatura, do recibo e do carnê estão em desenho para a Carol aprovar.",
-  "proximo": "A Carol aprovar o desenho dos PDFs e escolher o banco ou intermediador (o mesmo de F3.20) e o emissor de nota fiscal"
+  "nota": "A Carol escolheu o Inter Empresas (22/11/2026). A porta do meio de pagamento e a peça do Inter estão prontas e desligadas (migration 0693, _shared/pagamento.ts, rotas /v1/rotina/cobranca-codigos e /v1/pagamento/aviso da api-console): a baixa continua manual até a integração do Inter existir. Os caminhos da API do Inter precisam ser conferidos no sandbox. O boleto registrado pede o endereço do pagador, que a assinatura ainda não guarda. O e-mail de cobrança na folha do Portal saiu em F1.23; a nota fiscal ficou em F1.24. Os PDFs estão em desenho para a Carol aprovar.",
+  "proximo": "Criar a integração no Inter Empresas e pôr os segredos INTER_* nas funções; decidir onde guardar o endereço de cobrança do escritório; aprovar o desenho dos PDFs; os preços reais e o remetente"
 }

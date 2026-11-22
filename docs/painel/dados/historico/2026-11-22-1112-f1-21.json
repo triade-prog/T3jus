@@ -1,0 +1,11 @@
+{
+  "data": "22/11/2026",
+  "inicio": "11:12",
+  "fim": "11:21",
+  "texto": "Porta do meio de pagamento da cobrança dos escritórios e peça do Inter, desligadas e sem credenciais, com baixa automática pela leitura da cobrança (F1.21); nota fiscal separada em F1.24, fora por agora; migration 0693 aguarda o ok.",
+  "refs": [
+    "F1.21",
+    "F1.24",
+    "CO-06"
+  ]
+}

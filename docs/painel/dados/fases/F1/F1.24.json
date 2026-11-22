@@ -1,0 +1,12 @@
+{
+  "id": "F1.24",
+  "texto": "Nota fiscal (NFS-e) das faturas pagas da cobrança dos escritórios, no Console e no Portal",
+  "peca": "C1",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67.36,
+  "nota": "A Carol decidiu não emitir nota pelo sistema por agora (22/11/2026). O lugar da nota segue reservado nas telas (\"Nota: em breve\"). Quando voltar, o emissor fica à parte do Inter (Focus NFe, PlugNotas ou outro).",
+  "proximo": "A Carol decidir quando começar a emitir nota e escolher o emissor"
+}
