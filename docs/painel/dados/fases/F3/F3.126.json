@@ -1,0 +1,11 @@
+{
+  "id": "F3.126",
+  "texto": "Portal mais rápido, no servidor e no CSS: juntar a conferência do acesso e o escritório da sessão numa consulta só, decidir se a conferência do login pode ficar guardada por uns segundos e tirar o CSS do Console do Portal",
+  "peca": "B4",
+  "refs": [
+    "PT-27"
+  ],
+  "status": "pendente",
+  "ordem": 984,
+  "proximo": "Cada chamada da api-portal faz 4 viagens em fila (login, acesso, escritório, dado); juntar exige migration e publicar a api-portal com o ok da Carol, e guardar a conferência mexe na PT-21 (decisão dela)"
+}
