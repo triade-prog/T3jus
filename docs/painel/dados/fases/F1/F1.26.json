@@ -1,0 +1,12 @@
+{
+  "id": "F1.26",
+  "texto": "PDF da fatura e do recibo da cobrança dos escritórios, no Console e no Portal",
+  "peca": "S7",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "feito",
+  "ordem": 67.38,
+  "nota": "Desenho aprovado pela Carol em 22/11/2026 (docs/design/aprovadas/cobranca-pdfs, fatura-a4 e recibo-a4). O PDF sai na hora, com a fatura como está hoje. Os dados do T3jus como emissor ainda faltam: o Console mostra \"A DEFINIR\" no lugar deles e o Portal só oferece o PDF quando eles estiverem completos. O carnê em PDF, a cópia guardada na emissão e a 2ª via seguem em F1.21.",
+  "evidencia": "Migration 0695_cobranca_documentos.sql: configuracoes.cobranca_emissor e cobranca_emissor(); cobranca_documento_json; console_fatura_documento e portal_plano_faturas_documento (o recibo só de fatura paga, o Portal sem as canceladas e só com o emissor completo); portal_plano_faturas diz se os documentos saem. PDF em supabase/functions/_shared/cobranca_pdf.ts (pdf-lib, timbre com a logo, Pix com QR, boleto com código de barras, estados a vencer, sem códigos, sem endereço, atraso, paga, cancelada e parcela de carnê) e rotas GET /v1/clientes/:id/faturas/:fatura/pdf e /recibo (api-console) e /v1/escritorio/faturas/:fatura/pdf e /recibo (api-portal). Botões \"Baixar a fatura (PDF)\" e \"Baixar o recibo (PDF)\" no Console e \"Baixar a fatura\" e \"Recibo\" no Portal, com Preparando e erro com código. Testes: supabase/tests/pgtap/116_cobranca_documentos_test.sql (15), _shared/cobranca_pdf_test.ts (3), api-console/cobranca_test.ts, tests/e2e/console-cobranca.spec.ts e portal-plano-faturas.spec.ts (46 no celular e no computador, com axe)."
+}

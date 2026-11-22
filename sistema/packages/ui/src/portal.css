@@ -5507,3 +5507,6 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
   .rl-assina{grid-template-columns:1fr}
   .rl-faixa .aviso-acoes .btn{flex:1 1 100%}
 }
+
+/* O recibo da lista de faturas (F1.21): o "preparando" e o erro ficam logo abaixo da lista */
+.cb-doc-lista{margin:0 0 4px}

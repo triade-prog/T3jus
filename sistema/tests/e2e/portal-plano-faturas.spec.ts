@@ -192,4 +192,44 @@ test.describe("F1.20: Plano e faturas no Portal", () => {
     await expect(folha).toContainText("O plano combinado é o Escritório, R$ 490,00 por mês, até 8 pessoas.");
     await semViolacoes(page);
   });
+
+  test("F1.21: o PDF da fatura e o recibo só saem com os dados do T3jus completos; o erro fica preso ao botão", async ({ page }) => {
+    const dez = fatura("2026-12-01", "A_VENCER");
+    const nov = paga("2026-11-01", "2026-11-09");
+    const corpo = { hoje: HOJE, assinatura: ASSINATURA, faturas: [dez, nov], carne: null };
+    // Sem os dados do T3jus: os botões continuam desligados, com a nota.
+    await abrir(page, { "/v1/escritorio": { corpo: { ...ESC, cobranca: SEM_COBRANCA } }, "/v1/escritorio/faturas": { corpo } });
+    const folha = page.getByRole("region", { name: "Plano e faturas" });
+    await expect(folha.getByRole("button", { name: "Baixar a fatura" })).toHaveAttribute("aria-disabled", "true");
+    await expect(folha).toContainText("O PDF da fatura, o recibo e o carnê em PDF saem quando o T3jus ligar o meio de pagamento.");
+
+    await page.unrouteAll();
+    const baixados: string[] = [];
+    await page.route("**/baixado/**", async (r) => {
+      baixados.push(new URL(r.request().url()).pathname);
+      await r.fulfill({ status: 200, contentType: "application/pdf", headers: { "content-disposition": "attachment" }, body: "%PDF-1.7" });
+    });
+    const pedidos = await abrir(page, {
+      "/v1/escritorio": { corpo: { ...ESC, cobranca: SEM_COBRANCA } },
+      "/v1/escritorio/faturas": { corpo: { ...corpo, documentos: true } },
+      [`/v1/escritorio/faturas/${dez.id}/pdf`]: { corpo: { url: `${P}/baixado/fatura-2026-0001.pdf`, nome: "fatura-2026-0001.pdf", tamanho: 1 } },
+      [`/v1/escritorio/faturas/${nov.id}/recibo`]: [
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "RECIBO_PDF_INDISPONIVEL" } } } },
+        { corpo: { url: `${P}/baixado/recibo-2026-0002.pdf`, nome: "recibo-2026-0002.pdf", tamanho: 1 } },
+      ],
+    });
+    await expect(folha).toContainText("O carnê em PDF sai quando o T3jus ligar o meio de pagamento.");
+    await folha.getByRole("button", { name: "Baixar a fatura" }).click();
+    await expect.poll(() => baixados).toEqual(["/baixado/fatura-2026-0001.pdf"]);
+
+    await folha.getByRole("button", { name: "Recibo de novembro de 2026" }).locator("visible=true").click();
+    const erro = folha.getByRole("alert");
+    await expect(erro).toContainText("Não deu para preparar o PDF do recibo de novembro de 2026.");
+    await expect(erro).toContainText("Nada mudou na fatura nem no pagamento.");
+    await expect(folha).toContainText("RECIBO_PDF_INDISPONIVEL");
+    await semViolacoes(page);
+    await erro.getByRole("button", { name: "Tentar de novo" }).click();
+    await expect.poll(() => baixados).toEqual(["/baixado/fatura-2026-0001.pdf", "/baixado/recibo-2026-0002.pdf"]);
+    expect(pedidos.filter((x) => x.caminho.endsWith("/recibo")).length).toBe(2);
+  });
 });
