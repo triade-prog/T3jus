@@ -1,0 +1,10 @@
+{
+  "data": "22/11/2026",
+  "inicio": "10:39",
+  "fim": "10:51",
+  "texto": "Entrega da fila do WhatsApp pela Meta (F0.21): o banco escolhe texto livre ou aviso aprovado, a rota manda pela Cloud API, tenta de novo a falha passageira e registra o motivo da definitiva; envio desligado até a Meta (F0.21b).",
+  "refs": [
+    "F0.21",
+    "PT-04"
+  ]
+}
