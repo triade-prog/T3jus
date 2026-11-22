@@ -12,7 +12,7 @@ import { brl, dataBr, enderecoEmLinha, textoEvento, textoPessoas, type Assinatur
 import { formatarCnpj } from "./ficha.ts";
 import { chamarConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
-import { FolhaCarne, hrefFatura, TabelaDoEscritorio } from "./PecasCobranca.tsx";
+import { BotaoBaixarDoc, FolhaCarne, hrefFatura, SituacaoDoc, TabelaDoEscritorio, useBaixarDoc } from "./PecasCobranca.tsx";
 import { hora } from "./tempo.ts";
 
 const MOTIVO_MAX = 300;
@@ -1108,6 +1108,7 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
   const [editando, setEditando] = useState(false);
   const [janela, setJanela] = useState<JanelaAberta>(null);
   const [feito, setFeito] = useState<{ titulo: string; texto: string } | null>(null);
+  const doc = useBaixarDoc((caminho) => chamarConsole<{ url: string }>(caminho));
   const abriuConsulta = useRef(false);
 
   const carregar = useCallback(async () => {
@@ -1387,19 +1388,17 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
               ) : undefined}
               acoes={
                 <>
-                  <button className="btn btn-sec" type="button" aria-disabled="true" aria-describedby={`${ids}-pdf`}>
-                    <Icone nome="baixar" className="ico" />
-                    Baixar o carnê (PDF)
-                  </button>
+                  <BotaoBaixarDoc doc={doc} chave="carne" caminho={`/v1/clientes/${id}/carnes/${carneEmUso.id}/pdf`} rotulo="Baixar o carnê (PDF)" />
                   {podeEditar ? (
                     <button className="btn btn-sec" type="button" onClick={() => { setFeito(null); setJanela("carne"); }}>
                       <Icone nome="reenviar" className="ico" />
                       Gerar novo carnê
                     </button>
                   ) : null}
+                  <SituacaoDoc doc={doc} chave="carne" de={`do carnê ${carneEmUso.numero}`} nadaMudou="Nada mudou no carnê." contato="o suporte" />
                   <p className="permissao" id={`${ids}-pdf`}>
-                    <Icone nome="cadeado" className="ico" />
-                    O PDF do carnê sai quando o meio de pagamento for ligado.
+                    <Icone nome="doc" className="ico" />
+                    O carnê sai como está hoje: parcela paga ou cancelada vem marcada e sem códigos. Até o Banco Inter ser ligado, sai sem os códigos e o escritório não o vê no Portal.
                   </p>
                 </>
               }

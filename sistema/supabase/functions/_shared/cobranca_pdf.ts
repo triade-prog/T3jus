@@ -727,3 +727,349 @@ export async function baixarDocumentoCobranca(arquivos: Arquivos, escritorioId: 
   await arquivos.enviar(caminho, pdf, "application/pdf", true);
   return { url: await arquivos.enderecoDeLeitura(caminho, VALIDADE_LEITURA_S, nome), nome, tamanho: pdf.length };
 }
+
+// ---------------------------------------------------------------------------------------------
+// O carnê da assinatura (desenho carne-a4): 3 faixas destacáveis por folha, de altura fixa, com o
+// canhoto à esquerda e a via à direita; a capa na primeira faixa. Sai como está hoje: a parcela
+// paga ou cancelada sai marcada e sem códigos (decisão 8 do desenho).
+
+/** O que o banco devolve (cobranca_carne_documento_json, 0696). */
+export interface DocumentoCarne {
+  id: string;
+  numero: string;
+  parcelas: number;
+  valorParcelaCentavos: number;
+  diaVencimento: number;
+  primeiraCompetencia: string;
+  ultimaCompetencia: string;
+  geradoEm: string;
+  hoje: string;
+  emissor: Emissor | null;
+  plano: string;
+  pagador: { nome: string; cnpj: string | null; email: string | null };
+  substituto: { numero: string; primeiraCompetencia: string; ultimaCompetencia: string; valorParcelaCentavos: number } | null;
+  itens: {
+    numero: number;
+    competencia: string;
+    vencimento: string;
+    valorCentavos: number;
+    situacao: "A_VENCER" | "PAGA" | "CANCELADA";
+    emAtraso: boolean;
+    pagaEm: string | null;
+    formaPaga: string | null;
+    canceladaEm: string | null;
+    codigos: { pixCopiaCola: string | null; linhaBoleto: string | null; codigoBarras: string | null } | null;
+  }[];
+}
+type Parcela = DocumentoCarne["itens"][number];
+
+const FAIXA = { topo: 10 * MM, alto: (297 - 20) / 3 * MM, xl: 12 * MM, xr: A4.w - 12 * MM, canhoto: 46 * MM };
+const VIA_X = FAIXA.xl + FAIXA.canhoto + 5 * MM;
+const VIA_W = FAIXA.xr - VIA_X;
+const mesCurto = (c: string) => `${["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][Number(c.slice(5, 7)) - 1]}/${c.slice(0, 4)}`;
+/** "C20262027P03": o identificador da parcela, no canhoto e no pedido de pagamento. */
+export const identificadorParcela = (carne: string, n: number) => `C${carne.replace("/", "")}P${String(n).padStart(2, "0")}`;
+const dataCurta = (iso: string) => dataBr(iso).slice(0, 5);
+
+/** O "✂" do corte: dois anéis e duas lâminas, desenhados (a fonte padrão não tem o caractere). */
+function tesoura(pena: Pena, x: number, y: number, cor: Cor = SUAVE) {
+  pena.pg.drawCircle({ x: x + 1.2, y: y + 1.4, size: 1.1, borderColor: cor, borderWidth: 0.5 });
+  pena.pg.drawCircle({ x: x + 1.2, y: y - 1.4, size: 1.1, borderColor: cor, borderWidth: 0.5 });
+  pena.linha(x + 2.1, y + 0.8, x + 6.5, y - 1.6, cor, 0.6);
+  pena.linha(x + 2.1, y - 0.8, x + 6.5, y + 1.6, cor, 0.6);
+}
+
+/** A linha de corte de cima da faixa e a do canhoto (vertical). */
+function corte(pena: Pena, topoF: number, comCanhoto: boolean) {
+  pena.linha(FAIXA.xl, topoF, FAIXA.xr, topoF, SUAVE, 0.5, true);
+  pena.caixa(FAIXA.xl + 4 * MM, topoF + 2.5, 8, 5, { fundo: BRANCO });
+  tesoura(pena, FAIXA.xl + 4 * MM, topoF);
+  if (comCanhoto) {
+    const xc = FAIXA.xl + FAIXA.canhoto;
+    pena.linha(xc, topoF, xc, topoF - FAIXA.alto, SUAVE, 0.5, true);
+    const ym = topoF - FAIXA.alto * 0.48;
+    pena.caixa(xc - 2.5, ym + 4, 5, 8, { fundo: BRANCO });
+    tesoura(pena, xc - 3.3, ym);
+  }
+}
+
+/** A capa: o carnê, as parcelas numa tabela e como pagar. */
+function capa(pena: Pena, logo: PDFImage, topoF: number, d: DocumentoCarne) {
+  const e = d.emissor, y0 = topoF - 5 * MM;
+  // Coluna 1: o logo, o título e os dados.
+  const x1 = FAIXA.xl + 2 * MM, w1 = 54 * MM;
+  pena.pg.drawImage(logo, { x: x1, y: y0 - 11 * MM, width: 11 * MM * LOGO_PROPORCAO, height: 11 * MM });
+  pena.linha(x1, y0 - 14 * MM, x1 + w1, y0 - 14 * MM, VINHO, 0.6);
+  pena.pg.drawRectangle({ x: x1, y: y0 - 14 * MM - 0.7, width: 12 * MM, height: 1.6, color: AMBAR });
+  let b = pena.texto(`Carnê da assinatura ${d.numero}`, x1, y0 - 16 * MM, { t: 15, f: "sb", largura: w1, alto: 1.1 });
+  const dado = (rot: string, val: string, sub?: string) => {
+    b = pena.rotulo(rot, x1, b - 1.2 * MM, { t: 5.6 });
+    b = pena.texto(val, x1, b, { t: 7.8, largura: w1 });
+    if (sub) b = pena.texto(sub, x1, b, { t: 7.8, largura: w1 });
+  };
+  dado("Escritório", d.pagador.nome, d.pagador.cnpj ? `CNPJ ${cnpjLegivel(d.pagador.cnpj)}` : undefined);
+  dado("Plano e dia", `${d.plano} · todo dia ${d.diaVencimento}`);
+  dado("Período", `${mesPorExtenso(d.primeiraCompetencia)} a ${mesPorExtenso(d.ultimaCompetencia)}`);
+  dado("Valor", `${d.parcelas} × ${reais(d.valorParcelaCentavos)}`);
+  pena.corrido([{ s: `Gerado em ${dataBr(diaDe(d.geradoEm))} pelo T3jus · `, cor: SUAVE }, dadoEmissor(e, "razaoSocial", "razão social do T3jus")],
+    x1, b - 1.5 * MM, w1, 6.6);
+
+  // Coluna 2: as parcelas.
+  const x2 = x1 + w1 + 6 * MM, w2 = 70 * MM;
+  const cols = [0, 12.5, 24.5, 40, w2 / MM].map((c) => x2 + c * MM);
+  let y = pena.texto(`As ${d.parcelas} parcelas`, x2, y0, { t: 10.5, f: "sb", cor: VINHO, alto: 1.2 }) - 1;
+  ["Parcela", "Mês", "Vence", "Valor"].forEach((r, i) => pena.rotulo(r, cols[i]!, y, { t: 5.4 }));
+  y = pena.rotulo("Situação", cols[4]!, y, { t: 5.4, dir: true });
+  pena.linha(x2, y - 0.5, x2 + w2, y - 0.5, VINHO, 0.6);
+  const alto = Math.min(4.6 * MM, (y - (topoF - FAIXA.alto + 14 * MM)) / d.itens.length);
+  for (const p of d.itens) {
+    const cancelada = p.situacao === "CANCELADA";
+    const cor = cancelada ? SUAVE : TINTA;
+    const linhaY = y - 0.5;
+    pena.texto(`${p.numero} de ${d.parcelas}`, cols[0]!, linhaY, { t: 6.8, cor, alto: alto / 6.8 });
+    pena.texto(mesCurto(p.competencia), cols[1]!, linhaY, { t: 6.8, cor, alto: alto / 6.8 });
+    pena.texto(dataBr(p.vencimento), cols[2]!, linhaY, { t: 6.8, cor, alto: alto / 6.8 });
+    const valor = reais(p.valorCentavos);
+    pena.texto(valor, cols[3]!, linhaY, { t: 6.8, cor, alto: alto / 6.8 });
+    if (cancelada) {
+      const meio = linhaY - alto / 2;
+      pena.linha(cols[0]!, meio, cols[3]! + pena.largura(valor, 6.8), meio, SUAVE, 0.5);
+    }
+    const sit = p.situacao === "PAGA" ? `paga em ${p.pagaEm ? dataCurta(p.pagaEm) : ""}` : cancelada ? "cancelada" : p.emAtraso ? "em atraso" : "a vencer";
+    pena.texto(sit, cols[4]!, linhaY, { t: 6.2, f: p.situacao === "PAGA" || p.emAtraso ? "b" : "r", cor: p.emAtraso ? URGENTE : cancelada ? SUAVE : TINTA,
+      dir: true, alto: alto / 6.2 });
+    y = linhaY - alto;
+    pena.linha(x2, y, x2 + w2, y, FIO, 0.4);
+  }
+  const total = d.itens.reduce((s, p) => s + p.valorCentavos, 0);
+  const pagas = d.itens.filter((p) => p.situacao === "PAGA").reduce((s, p) => s + p.valorCentavos, 0);
+  pena.texto("Total do carnê", x2, y - 0.8 * MM, { t: 7, f: "b" });
+  y = pena.texto(reais(total), cols[3]!, y - 0.8 * MM, { t: 7, f: "b" });
+  if (pagas) {
+    pena.texto(`Pago até ${dataBr(d.hoje)}`, x2, y, { t: 7, cor: SUAVE });
+    pena.texto(reais(pagas), cols[3]!, y, { t: 7, cor: SUAVE });
+  }
+
+  // Coluna 3: como pagar, a caixa da parcela e as dúvidas.
+  const x3 = x2 + w2 + 6 * MM, w3 = FAIXA.xr - x3 - 1 * MM;
+  let c = pena.texto("Como pagar", x3, y0, { t: 10.5, f: "sb", cor: VINHO, alto: 1.2 }) - 1;
+  const recebedor: Pedaco = e ? { s: e.razaoSocial.toUpperCase(), f: "b" } : { s: "razão social do T3jus", marcador: true };
+  const passos: Pedaco[][] = [
+    [{ s: "Uma parcela por mês, pelo Pix ou pelo boleto do Banco Inter da página dela. Uma vez só." }],
+    [{ s: "Antes de confirmar, veja se aparecem " }, recebedor, { s: " e o valor." }],
+    [{ s: "O recibo chega em " }, { s: d.pagador.email ?? "seu e-mail de cobrança" }, { s: " e fica no Portal." }],
+  ];
+  passos.forEach((p, i) => {
+    const t0 = c - 1 * MM;
+    pena.pg.drawCircle({ x: x3 + 1.7 * MM, y: t0 - 1.9 * MM, size: 1.7 * MM, borderColor: VINHO, borderWidth: 0.6 });
+    pena.texto(String(i + 1), x3 + 1.7 * MM - 1.4, t0 - 0.5 * MM, { t: 6 });
+    c = pena.corrido(p, x3 + 5.2 * MM, t0, w3 - 5.2 * MM, 6.8, { alto: 1.35 });
+  });
+  const canceladas = d.itens.filter((p) => p.situacao === "CANCELADA");
+  const caixa: Pedaco[] = canceladas.length && d.substituto
+    ? [{ s: `Carnê trocado em ${dataBr(diaDe(canceladas[0]!.canceladaEm!))}.`, f: "b" },
+      { s: ` ${faixaParcelas(canceladas)} ${canceladas.length === 1 ? "foi cancelada" : "foram canceladas"}; não pague. O carnê ${d.substituto.numero}, de ${reais(d.substituto.valorParcelaCentavos)} por mês, vale no lugar.` }]
+    : canceladas.length
+      ? [{ s: `${faixaParcelas(canceladas)} ${canceladas.length === 1 ? "foi cancelada" : "foram canceladas"}.`, f: "b" }, { s: " Não pague: os códigos delas não valem mais." }]
+      : [{ s: "Cada parcela é a fatura do mês.", f: "b" },
+        { s: " Uns 20 dias antes do vencimento, ela chega por e-mail com os mesmos códigos desta página. Pode pagar adiantado." }];
+  const hc = medir(pena, caixa, w3 - 6 * MM, 6.8, 1.4) + 4 * MM;
+  pena.caixa(x3, c - 2 * MM, w3, hc, canceladas.length ? { borda: VINHO, esp: 0.7, fundo: BRANCO } : { fundo: SAL });
+  pena.pg.drawRectangle({ x: x3, y: c - 2 * MM - hc, width: 1.2 * MM, height: hc, color: canceladas.length ? VINHO : AMBAR });
+  const fimCaixa = c - 2 * MM - hc;
+  c = Math.min(pena.corrido(caixa, x3 + 3.5 * MM, c - 4 * MM, w3 - 6 * MM, 6.8, { alto: 1.4 }), fimCaixa) - 3 * MM;
+  c = pena.texto("Dúvidas:", x3, c, { t: 6.6, cor: SUAVE });
+  pena.corrido([contato(e)], x3, c, w3, 6.6);
+}
+
+/** "As parcelas 4 a 12" ou "A parcela 4". */
+function faixaParcelas(ps: Parcela[]): string {
+  if (ps.length === 1) return `A parcela ${ps[0]!.numero}`;
+  const ns = ps.map((p) => p.numero), seguidas = ns.every((n, i) => i === 0 || n === ns[i - 1]! + 1);
+  return seguidas ? `As parcelas ${ns[0]} a ${ns.at(-1)}` : `As parcelas ${ns.slice(0, -1).join(", ")} e ${ns.at(-1)}`;
+}
+
+/** Uma faixa de parcela: o canhoto e a via. */
+function faixaParcela(pena: Pena, logo: PDFImage, simbolo: PDFImage, topoF: number, d: DocumentoCarne, p: Parcela) {
+  const e = d.emissor, id = identificadorParcela(d.numero, p.numero), baseF = topoF - FAIXA.alto;
+  const paga = p.situacao === "PAGA", cancelada = p.situacao === "CANCELADA";
+  const pix = p.codigos?.pixCopiaCola ?? null, linha = p.codigos?.linhaBoleto ?? null;
+  const forma = p.formaPaga ? FORMA_PAGA[p.formaPaga] ?? p.formaPaga : "";
+
+  // O canhoto, que fica com o escritório.
+  const xc = FAIXA.xl + 1 * MM, wc = FAIXA.canhoto - 5 * MM;
+  let b = pena.rotulo("Canhoto · fica com o escritório", xc, topoF - 3 * MM, { t: 5.2 });
+  pena.pg.drawImage(logo, { x: xc, y: b - 6.5 * MM, width: 6 * MM * LOGO_PROPORCAO, height: 6 * MM });
+  b = pena.texto(`Parcela ${p.numero} de ${d.parcelas}`, xc, b - 7.5 * MM, { t: 11.5, f: "sb", alto: 1.15 });
+  b = pena.texto(mesPorExtenso(p.competencia), xc, b, { t: 7, cor: SUAVE });
+  const dc = (rot: string, val: string, f: keyof Fontes = "r") => {
+    b = pena.rotulo(rot, xc, b - 0.6 * MM, { t: 5.2 });
+    b = pena.texto(val, xc, b, { t: 7.4, f, largura: wc });
+  };
+  dc("Escritório", d.pagador.nome);
+  dc("Vencimento", dataBr(p.vencimento));
+  dc("Valor", reais(p.valorCentavos));
+  dc("Identificador", id, "mb");
+  const baseC = baseF + 4 * MM;
+  if (paga || cancelada) {
+    const txt = paga ? `Paga em ${p.pagaEm ? dataBr(p.pagaEm) : ""}${forma ? `, ${forma}` : ""}` : `Cancelada em ${dataBr(diaDe(p.canceladaEm!))}. Não pague.`;
+    const linhas = quebrar(txt, pena.f.b, 6.6, wc - 8 * MM), h = linhas.length * 6.6 * 1.3 + 3 * MM;
+    pena.caixa(xc, baseC + h, wc, h, paga ? { fundo: VINHO } : { borda: TINTA, esp: 0.6, fundo: SAL });
+    pena.texto(txt, xc + 5 * MM, baseC + h - 1.5 * MM, { t: 6.6, f: "b", cor: paga ? BRANCO : TINTA, largura: wc - 8 * MM, alto: 1.3 });
+    marca(pena, xc + 2.2 * MM, baseC + h / 2, paga, paga ? BRANCO : TINTA);
+  } else {
+    pena.texto("Pago em", xc, baseC + 9 * MM, { t: 6.4, cor: SUAVE });
+    for (let k = 0; k < 3; k++) {
+      const x = xc + 13 * MM + k * 10.5 * MM;
+      pena.linha(x, baseC + 5.8 * MM, x + 7.5 * MM, baseC + 5.8 * MM, TINTA, 0.5);
+      if (k < 2) pena.texto("/", x + 8.2 * MM, baseC + 9 * MM, { t: 6.4, cor: SUAVE });
+    }
+    pena.texto("Forma", xc, baseC + 3 * MM, { t: 6.4, cor: SUAVE });
+    pena.linha(xc + 13 * MM, baseC - 0.2 * MM, xc + wc, baseC - 0.2 * MM, TINTA, 0.5);
+    pena.linha(xc, baseC + 12.5 * MM, xc + wc, baseC + 12.5 * MM, TINTA, 0.6);
+  }
+
+  // A via.
+  const xv = VIA_X + 2 * MM, wv = VIA_W - 2 * MM, yv = topoF - 4 * MM;
+  pena.pg.drawImage(logo, { x: xv, y: yv - 7 * MM, width: 7 * MM * LOGO_PROPORCAO, height: 7 * MM });
+  const xl = xv + 7 * MM * LOGO_PROPORCAO + 3 * MM;
+  pena.texto(`Carnê ${d.numero}`, xl, yv - 0.5 * MM, { t: 6.8, cor: SUAVE });
+  pena.texto("assinatura do T3jus", xl, yv - 3.4 * MM, { t: 6.8, cor: SUAVE });
+  pena.rotulo("Parcela", xv + wv, yv, { t: 5.4, dir: true });
+  pena.texto(`${p.numero} de ${d.parcelas}`, xv + wv, yv - 3 * MM, { t: 15, f: "sb", dir: true, alto: 1.05 });
+  const fio = yv - 9 * MM;
+  pena.linha(xv, fio, xv + wv, fio, VINHO, 0.8);
+  pena.pg.drawRectangle({ x: xv, y: fio - 0.8, width: 12 * MM, height: 1.8, color: AMBAR });
+
+  // Os dados da parcela, à esquerda.
+  const wd = 50 * MM;
+  let yd = pena.rotulo("Escritório", xv, fio - 1.5 * MM, { t: 5.2 });
+  yd = pena.texto(d.pagador.nome, xv, yd, { t: 8.2, f: "b", largura: wd });
+  yd = pena.texto(`${d.pagador.cnpj ? `CNPJ ${cnpjLegivel(d.pagador.cnpj)} · ` : ""}plano ${d.plano}`, xv, yd, { t: 6.4, cor: SUAVE, largura: wd });
+  const yr = yd - 0.8 * MM;
+  pena.rotulo("Referência", xv, yr, { t: 5.2 });
+  const yr2 = pena.rotulo("Vencimento", xv + 24 * MM, yr, { t: 5.2 });
+  const r1 = pena.texto(mesPorExtenso(p.competencia), xv, yr2, { t: 8.2, f: "b", largura: 22 * MM });
+  const r2 = pena.texto(dataBr(p.vencimento), xv + 24 * MM, yr2, { t: 8.2, f: "b" });
+  yd = pena.rotulo("Valor", xv, Math.min(r1, r2) - 0.8 * MM, { t: 5.2 });
+  pena.texto(reais(p.valorCentavos), xv, yd, { t: 15, f: "sb", alto: 1.1 });
+
+  // À direita: os códigos, ou o que aconteceu com a parcela.
+  const xb = xv + wd + 4 * MM, wb = xv + wv - xb, yb = fio - 2 * MM;
+  if (paga || cancelada) {
+    const titulo = paga ? `Paga em ${p.pagaEm ? dataBr(p.pagaEm) : ""}${forma ? `, por ${forma}` : ""}` : `Cancelada em ${dataBr(diaDe(p.canceladaEm!))}. Não pague esta parcela.`;
+    const texto = paga
+      ? "Esta parcela já está paga. Os códigos dela não valem mais e não aparecem aqui, para ninguém pagar de novo. O recibo foi para o e-mail de cobrança."
+      : d.substituto
+        ? `O carnê ${d.substituto.numero} (${mesPorExtenso(d.substituto.primeiraCompetencia)} a ${mesPorExtenso(d.substituto.ultimaCompetencia)}, ${reais(d.substituto.valorParcelaCentavos)} por mês) vale no lugar desta parcela. Os códigos dela não valem mais.`
+        : "Os códigos desta parcela não valem mais.";
+    caixaMarcada(pena, xb, yb, wb, titulo, [{ s: texto }], paga, paga ? VINHO : TINTA, false);
+  } else if (!pix && !linha) {
+    caixaMarcada(pena, xb, yb, wb, "Os códigos desta parcela ainda não saem no carnê.", [
+      { s: `Uns 20 dias antes do vencimento, a fatura de ${mesPorExtenso(p.competencia)} chega por e-mail. Para pagar, escreva para ` }, contato(e),
+      { s: " com o identificador " }, { s: id, f: "b" }, { s: " e mande o comprovante." }], null, VINHO, true);
+  } else {
+    let yp = yb;
+    if (pix) {
+      const lado = 24 * MM, xt = xb + lado + 4 * MM, wt = xb + wb - 3 * MM - xt;
+      pena.qr(pix, xb + 2 * MM, yb - 2 * MM, lado);
+      let t = pena.texto("Pix · Banco Inter", xt, yb - 2 * MM, { t: 9.5, f: "sb", cor: VINHO, alto: 1.2 });
+      const recebedor: Pedaco = e ? { s: e.razaoSocial.toUpperCase(), f: "b" } : { s: "razão social do T3jus", marcador: true };
+      t = pena.corrido([{ s: "Leia o QR no app do banco ou cole o código. Confira " }, recebedor, { s: " e o valor." }], xt, t, wt, 6.6, { alto: 1.3 });
+      t = pena.texto(pix, xt, t - 0.8 * MM, { t: 5.6, f: "m", largura: wt, alto: 1.25 });
+      yp = Math.min(t, yb - lado - 4 * MM) - 1.5 * MM;
+      pena.caixa(xb, yb, wb, yb - yp, { borda: FIO, esp: 0.7 });
+    }
+    if (linha) {
+      const yl = Math.min(yp, yd - 12 * MM) - 2 * MM, xbb = xv, wbb = wv;
+      pena.texto("Boleto", xbb + 3 * MM, yl - 1.5 * MM, { t: 9.5, f: "sb", cor: VINHO, alto: 1.2 });
+      pena.texto("Banco Inter (077)", xbb + 3 * MM, yl - 6 * MM, { t: 6.4, cor: SUAVE });
+      pena.texto(linha, xbb + 28 * MM, yl - 1.2 * MM, { t: 8.2, f: "mb" });
+      const barras = p.codigos?.codigoBarras;
+      if (barras && /^\d{44}$/.test(barras)) pena.barras(barras, xbb + 28 * MM, yl - 5.2 * MM, 103 * MM, 9 * MM);
+      pena.caixa(xbb, yl, wbb, 17 * MM, { borda: FIO, esp: 0.7 });
+    }
+  }
+
+  // O pé da via.
+  const yPe = baseF + 10 * MM;
+  pena.linha(xv, yPe, xv + wv, yPe, FIO, 0.5);
+  const pePix = paga || cancelada || (!pix && !linha)
+    ? [{ s: "O recibo de cada parcela paga chega no e-mail de cobrança e fica no Portal, em Escritório › Plano e faturas.", cor: SUAVE }]
+    : [{ s: "Boleto com Pix do Banco Inter: uma cobrança só. Pague pelo Pix ", cor: SUAVE }, { s: "ou", f: "b" as const, cor: SUAVE },
+      { s: " pelo boleto. Pix fica pago na hora; boleto, em até 1 dia útil. Uns 20 dias antes, a fatura deste mês chega por e-mail com estes mesmos códigos.", cor: SUAVE }];
+  pena.corrido(pePix, xv, yPe - 1 * MM, wv - 32 * MM, 5.8, { alto: 1.3 });
+  const txt = "T3jus · Sistema jurídico", w = pena.largura(txt, 6);
+  pena.texto(txt, xv + wv, yPe - 4 * MM, { t: 6, cor: SUAVE, dir: true });
+  pena.pg.drawImage(simbolo, { x: xv + wv - w - 8, y: yPe - 4 * MM - 6.4, width: 6, height: 6 });
+}
+
+/** O "✓" da paga, o "×" da cancelada e o relógio de "ainda não saem", desenhados. */
+function marca(pena: Pena, x: number, y: number, tipo: boolean | null, cor: Cor) {
+  if (tipo === true) {
+    pena.linha(x - 2, y, x - 0.4, y - 1.8, cor, 0.9);
+    pena.linha(x - 0.4, y - 1.8, x + 2.6, y + 1.8, cor, 0.9);
+  } else if (tipo === false) {
+    pena.linha(x - 2, y + 2, x + 2, y - 2, cor, 0.9);
+    pena.linha(x - 2, y - 2, x + 2, y + 2, cor, 0.9);
+  } else {
+    pena.pg.drawCircle({ x, y, size: 2.4, borderColor: cor, borderWidth: 0.7 });
+    pena.linha(x, y, x, y + 1.6, cor, 0.7);
+    pena.linha(x, y, x + 1.2, y - 0.6, cor, 0.7);
+  }
+}
+
+/** A caixa da parcela sem códigos: a marca, o título em serifa e o texto. */
+function caixaMarcada(pena: Pena, x: number, y: number, w: number, titulo: string, corpo: Pedaco[], tipo: boolean | null, cor: Cor, tracejada: boolean) {
+  const xt = x + 9 * MM, wt = w - 12 * MM;
+  const hT = quebrar(titulo, pena.f.sb, 9.5, wt).length * 9.5 * 1.15, hC = medir(pena, corpo, wt, 6.8, 1.4);
+  const h = 3 * MM + hT + 1 * MM + hC + 3 * MM;
+  pena.caixa(x, y, w, h, tracejada ? { borda: VINHO, esp: 0.6, tracejada: true } : { borda: cor, esp: 0.8, fundo: tipo === false ? SAL : BRANCO });
+  marca(pena, x + 4.5 * MM, y - 5 * MM, tipo, cor);
+  const b = pena.texto(titulo, xt, y - 3 * MM, { t: 9.5, f: "sb", cor, largura: wt, alto: 1.15 });
+  pena.corrido(corpo, xt, b - 1 * MM, wt, 6.8, { alto: 1.4 });
+}
+
+/** O carnê em PDF: a capa e as parcelas, 3 faixas por folha. */
+export async function pdfDoCarne(d: DocumentoCarne): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  doc.setTitle(limpo(`Carnê ${d.numero} do T3jus, ${d.pagador.nome}`));
+  doc.setAuthor("T3jus");
+  doc.setLanguage("pt-BR");
+  const f = await fontes(doc);
+  const logo = await doc.embedPng(logoCompletoPng()), simbolo = await doc.embedPng(simboloPng());
+  const faixas = [null, ...d.itens];
+  for (let i = 0; i < faixas.length; i += 3) {
+    const pena = new Pena(doc.addPage([A4.w, A4.h]), f);
+    const grupo = faixas.slice(i, i + 3);
+    grupo.forEach((p, k) => {
+      const topoF = A4.h - FAIXA.topo - k * FAIXA.alto;
+      corte(pena, topoF, p !== null);
+      if (p === null) capa(pena, logo, topoF, d);
+      else faixaParcela(pena, logo, simbolo, topoF, d, p);
+    });
+    // O corte de baixo da última faixa da folha.
+    const fim = A4.h - FAIXA.topo - grupo.length * FAIXA.alto;
+    pena.linha(FAIXA.xl, fim, FAIXA.xr, fim, SUAVE, 0.5, true);
+    pena.caixa(FAIXA.xl + 4 * MM, fim + 2.5, 8, 5, { fundo: BRANCO });
+    tesoura(pena, FAIXA.xl + 4 * MM, fim);
+  }
+  return await doc.save();
+}
+
+/** "carne-2026-2027.pdf" */
+export const arquivoCarne = (d: Pick<DocumentoCarne, "numero">) => `carne-${d.numero.replace("/", "-")}.pdf`;
+
+/** Monta o carnê como está hoje, guarda em <escritório>/cobranca/ e devolve o link de leitura. */
+export async function baixarCarneCobranca(arquivos: Arquivos, escritorioId: string, d: DocumentoCarne) {
+  let pdf: Uint8Array;
+  try {
+    pdf = await pdfDoCarne(d);
+  } catch {
+    throw new ErroDominio("VALIDATION_ERROR", { motivo: "CARNE_PDF_INDISPONIVEL" });
+  }
+  const nome = arquivoCarne(d);
+  const caminho = `${escritorioId}/cobranca/${nome}`;
+  await arquivos.enviar(caminho, pdf, "application/pdf", true);
+  return { url: await arquivos.enderecoDeLeitura(caminho, VALIDADE_LEITURA_S, nome), nome, tamanho: pdf.length };
+}
