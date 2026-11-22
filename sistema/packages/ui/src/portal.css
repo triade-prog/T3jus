@@ -4046,7 +4046,7 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .ca-pago span i{flex:1;border-bottom:.25mm solid var(--tinta);height:3.4mm}
 
 /* ---------- via do cliente ---------- */
-.ca-via{display:flex;flex-direction:column;gap:2mm;font-size:8pt;line-height:1.32;min-width:0}
+.ca-via{display:flex;flex-direction:column;gap:1.3mm;font-size:8pt;line-height:1.32;min-width:0}
 .ca-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:4mm}
 .ca-marca{display:grid;gap:.4mm}
 .ca-esc{font-family:var(--serifa);font-size:15pt;font-weight:600;line-height:1;color:var(--vinho)}
@@ -4058,7 +4058,7 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .ca-fio{position:relative;height:.35mm;background:var(--vinho)}
 .ca-fio::before{content:"";position:absolute;left:0;top:-.45mm;width:14mm;height:1.25mm;background:var(--ambar)}
 .ca-corpo{display:grid;grid-template-columns:minmax(0,1fr) 63mm;gap:4mm;align-items:start}
-.ca-dados{display:grid;grid-template-columns:1fr 1fr;gap:1.7mm 3mm}
+.ca-dados{display:grid;grid-template-columns:1fr 1fr;gap:1.2mm 3mm}
 .ca-enc dd{font-size:7pt!important;font-weight:600!important;line-height:1.25;color:var(--vinho-3)}
 .ca-dados div{min-width:0}
 .ca-dados .ca-largo{grid-column:1/-1}
@@ -4081,7 +4081,7 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .ca-cc code{font-family:var(--mono);font-size:6.3pt;line-height:1.3;color:var(--tinta);word-break:break-all}
 .ca-id{display:flex;flex-wrap:wrap;gap:1mm 4mm;align-items:baseline;font-size:7pt}
 .ca-id b{font-family:var(--mono);font-size:8pt;letter-spacing:.04em;font-weight:700}
-.ca-pe{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:4mm;padding-top:1.6mm;border-top:.2mm solid #CDBFC6;font-size:6.6pt;line-height:1.35;color:var(--tinta-2)}
+.ca-pe{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:4mm;padding-top:1.2mm;border-top:.2mm solid #CDBFC6;font-size:6.6pt;line-height:1.35;color:var(--tinta-2)}
 .ca-pe b{color:var(--tinta);font-weight:600}
 .ca-t3{display:inline-flex;align-items:center;gap:.8mm;white-space:nowrap;font-size:5.8pt;color:var(--tinta-2);letter-spacing:.06em}
 .ca-simb{width:2.6mm;height:2.7mm}
@@ -4097,7 +4097,15 @@ section[aria-labelledby="t-parc"] .folha-cab .acoes{display:flex;flex-wrap:wrap;
 .ca-capa dt{font-size:6.2pt;color:var(--tinta-2);text-transform:uppercase;letter-spacing:.1em}
 .ca-capa dd{font-weight:500}
 .ca-capa h3{font-family:var(--serifa);font-size:11pt;font-weight:600;color:var(--vinho);line-height:1.1}
+.ca-capa.ca-f2{height:calc(277mm / 3 * 2)}
+.ca-capa.ca-f3{height:277mm}
+.ca-gerado{font-size:6.8pt;color:var(--tinta-2)}
+.ca-capa-cont{display:flex;flex-direction:column;gap:2.2mm;padding-left:3mm;padding-right:3mm}
+.ca-capa-cont h3 small{font-family:var(--sans);font-size:7pt;font-weight:400;color:var(--tinta-2)}
+.ca-cont-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10mm;align-items:start}
 .ca-tab{width:100%;border-collapse:collapse;font-size:7.6pt}
+.ca-tab td:nth-child(2){white-space:nowrap}
+.ca-tab abbr{text-decoration:none}
 .ca-tab th{padding-right:2mm!important;font-size:6pt;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-2);text-align:left;padding:0 0 1mm;border-bottom:.3mm solid var(--vinho)}
 .ca-tab td{padding:1.15mm 0;border-bottom:.2mm solid #DDD0D6;vertical-align:top}
 .ca-tab td:last-child,.ca-tab th:last-child{text-align:right;white-space:nowrap}

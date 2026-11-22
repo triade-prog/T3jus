@@ -39,6 +39,8 @@ const diaDoInstante = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso
 const horaDoInstante = (em: string) => new Intl.DateTimeFormat("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit" }).format(new Date(em)).replace(":", "h");
 const maiuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const mesRef = (v: string) => `${maiuscula(nomeDoMes(v))} de ${v.slice(0, 4)}`;
+/** "Dez/2026": na lista da capa, para a linha caber numa só (o mês por extenso quebrava a linha). */
+const mesRefCurto = (v: string) => `${maiuscula(nomeDoMes(v).slice(0, 3))}/${v.slice(0, 4)}`;
 const ORDEM_TIPOS = Object.keys(TIPOS_CHAVE_PIX) as TipoChavePix[];
 const nomeTipo = (t: TipoChavePix) => TIPOS_CHAVE_PIX[t];
 
@@ -53,9 +55,48 @@ export function faixaDeParcelas(ps: { ordem: number; total: number }[]): string 
   return `Parcelas ${o.slice(0, -1).map(n).join(", ")} e ${n(o.at(-1)!)}`;
 }
 
-/** Quantas folhas A4: 3 faixas por folha (a capa ocupa uma) ou uma parcela por folha. */
-export function folhasDoCarne(parcelas: number, formato: FormatoCarne, capa: boolean): number {
-  return formato === "UM" ? parcelas : Math.ceil((parcelas + (capa ? 1 : 0)) / 3);
+// A capa (a 1ª faixa) traz a lista "As parcelas deste carnê". Com muitas parcelas a lista não
+// cabe numa faixa: a capa cresce uma faixa por vez até a folha inteira e, passando disso, a lista
+// continua em folhas só dela, em 2 colunas. As medidas são as da folha impressa (mm), com folga;
+// o teste de ponta a ponta confere que nada passa da faixa, de 1 a 120 parcelas.
+const FAIXA_MM = 277 / 3;
+const LINHA_MM = 6.4; // uma linha da lista
+const LINHA_VENCIDA_MM = 9.4; // a linha com "vencida" embaixo da data
+const CAPA_RESTO_MM = 38; // título, cabeçalho, total e "Gerado em", mais os respiros da faixa
+const CONTINUACAO_COLUNA_MM = 277 - 34; // a folha de continuação, tirando o título e o total
+
+/** Um pedaço da capa: as parcelas [de, ate), quantas faixas ocupa e, na continuação, onde cada coluna acaba. */
+export type BlocoDaCapa = { de: number; ate: number; faixas: 1 | 2 | 3; continuacao: boolean; colunas: number[] };
+
+const alturaLinha = (p: { semValor?: boolean }) => (p.semValor ? LINHA_VENCIDA_MM : LINHA_MM);
+
+/** Quantas linhas, a partir de `de`, cabem em `espaco` mm (pelo menos uma). */
+function quantasCabem(ps: { semValor?: boolean }[], de: number, espaco: number): number {
+  let i = de, usado = 0;
+  while (i < ps.length && (i === de || usado + alturaLinha(ps[i]!) <= espaco)) usado += alturaLinha(ps[i++]!);
+  return i;
+}
+
+/** Como a capa se divide: a capa (1 a 3 faixas) e, se a lista for longa, folhas de continuação. */
+export function blocosDaCapa(ps: { semValor?: boolean }[]): BlocoDaCapa[] {
+  const espaco = (k: number) => k * FAIXA_MM - CAPA_RESTO_MM;
+  const k = ([1, 2, 3] as const).find((x) => quantasCabem(ps, 0, espaco(x)) >= ps.length);
+  if (k) return [{ de: 0, ate: ps.length, faixas: k, continuacao: false, colunas: [] }];
+  const blocos: BlocoDaCapa[] = [{ de: 0, ate: quantasCabem(ps, 0, espaco(3)), faixas: 3, continuacao: false, colunas: [] }];
+  while (blocos.at(-1)!.ate < ps.length) {
+    const de = blocos.at(-1)!.ate, colunas: number[] = [];
+    let i = de;
+    while (colunas.length < 2 && i < ps.length) colunas.push((i = quantasCabem(ps, i, CONTINUACAO_COLUNA_MM)));
+    blocos.push({ de, ate: i, faixas: 3, continuacao: true, colunas });
+  }
+  return blocos;
+}
+
+/** Quantas folhas A4: 3 faixas por folha (a capa ocupa de 1 faixa a algumas folhas) ou uma parcela por folha. */
+export function folhasDoCarne(ps: { semValor?: boolean }[], formato: FormatoCarne, capa: boolean): number {
+  if (formato === "UM") return ps.length;
+  const faixasDaCapa = capa ? blocosDaCapa(ps).reduce((s, b) => s + b.faixas, 0) : 0;
+  return Math.ceil((ps.length + faixasDaCapa) / 3);
 }
 
 /** O que mudou depois do carnê, em frases ("a 5/6 passou de 25/12 para 30/12"). */
@@ -223,12 +264,53 @@ function Via({ c, p, grande }: { c: CarneParaImprimir; p: Impressa; grande?: boo
   );
 }
 
-function Capa({ c }: { c: CarneParaImprimir }) {
+function TabelaParcelas({ ps, total }: { ps: Impressa[]; total: number | null }) {
+  return (
+    <table className="ca-tab">
+      <thead><tr><th scope="col">Parcela</th><th scope="col">Referência</th><th scope="col">Vence</th><th scope="col">Valor</th></tr></thead>
+      <tbody>
+        {ps.map((p) => (
+          <tr key={p.txid}>
+            <td>{p.ordem} de {p.total}</td><td><abbr title={mesRef(p.vencimento)}>{mesRefCurto(p.vencimento)}</abbr></td>
+            <td>{dataBr(p.vencimento)}{p.semValor ? <span className="ca-v">vencida</span> : null}</td><td>{reais(p.valor)}</td>
+          </tr>
+        ))}
+      </tbody>
+      {total !== null ? <tfoot><tr><td colSpan={2}>Total deste carnê</td><td colSpan={2}>{reais(total)}</td></tr></tfoot> : null}
+    </table>
+  );
+}
+
+const classeFaixas = (b: BlocoDaCapa) => (b.faixas > 1 ? ` ca-f${b.faixas}` : "");
+
+function Gerado({ c }: { c: CarneParaImprimir }) {
+  return (
+    <p className="ca-gerado">
+      Gerado em {dataBr(diaDoInstante(c.geradoEm))}. As parcelas já pagas não entram.{c.pix ? " Cada parcela tem o seu Pix; pague uma de cada vez." : ""}
+    </p>
+  );
+}
+
+function Capa({ c, b, ultimo }: { c: CarneParaImprimir; b: BlocoDaCapa; ultimo: boolean }) {
   const w = c.escritorio.whatsapp ? telefoneBr(c.escritorio.whatsapp) : null;
   const total = c.parcelas.reduce((s, p) => s + p.valor, 0);
   const local = [c.escritorio.endereco, [c.escritorio.cidade, c.escritorio.uf].filter(Boolean).join("/")].filter(Boolean).join(" · ");
+  if (b.continuacao) {
+    const colunas = b.colunas.map((ate, k) => c.parcelas.slice(k ? b.colunas[k - 1]! : b.de, ate));
+    return (
+      <article className={`ca-faixa ca-capa ca-capa-cont${classeFaixas(b)}`} aria-label="As parcelas deste carnê, continuação">
+        <Tesoura topo />
+        <h3>As parcelas deste carnê <small>(continuação, {b.de + 1} a {b.ate} de {c.parcelas.length})</small></h3>
+        <div className="ca-cont-cols">
+          {colunas.map((ps, k) => <TabelaParcelas key={k} ps={ps} total={ultimo && k === colunas.length - 1 ? total : null} />)}
+        </div>
+        {ultimo ? <Gerado c={c} /> : <p className="ca-gerado">A lista continua na folha seguinte.</p>}
+        <Tesoura />
+      </article>
+    );
+  }
   return (
-    <article className="ca-faixa ca-capa">
+    <article className={`ca-faixa ca-capa${classeFaixas(b)}`}>
       <Tesoura topo />
       <div className="ca-col">
         <MarcaEscritorio c={c} />
@@ -242,21 +324,8 @@ function Capa({ c }: { c: CarneParaImprimir }) {
       </div>
       <div className="ca-col">
         <h3>As parcelas deste carnê</h3>
-        <table className="ca-tab">
-          <thead><tr><th scope="col">Parcela</th><th scope="col">Referência</th><th scope="col">Vence</th><th scope="col">Valor</th></tr></thead>
-          <tbody>
-            {c.parcelas.map((p) => (
-              <tr key={p.txid}>
-                <td>{p.ordem} de {p.total}</td><td>{mesRef(p.vencimento)}</td>
-                <td>{dataBr(p.vencimento)}{p.semValor ? <span className="ca-v">vencida</span> : null}</td><td>{reais(p.valor)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot><tr><td colSpan={3}>Total deste carnê</td><td>{reais(total)}</td></tr></tfoot>
-        </table>
-        <p style={{ fontSize: "6.8pt", color: "var(--tinta-2)" }}>
-          Gerado em {dataBr(diaDoInstante(c.geradoEm))}. As parcelas já pagas não entram.{c.pix ? " Cada parcela tem o seu Pix; pague uma de cada vez." : ""}
-        </p>
+        <TabelaParcelas ps={c.parcelas.slice(b.de, b.ate)} total={ultimo ? total : null} />
+        {ultimo ? <Gerado c={c} /> : <p className="ca-gerado">A lista continua na folha seguinte ({b.ate + 1} a {c.parcelas.length} de {c.parcelas.length}).</p>}
       </div>
       <div className="ca-col">
         {c.pix ? <><h3>Como pagar com Pix</h3><Passos c={c} /></> : <><h3>Como pagar</h3><p>{instrucoesOuPadrao(c)}</p></>}
@@ -300,14 +369,27 @@ export function FolhasCarne({ c, ate }: { c: CarneParaImprimir; ate?: number }) 
       </>
     );
   }
-  const itens: (Impressa | "capa")[] = [...(c.capa ? (["capa"] as const) : []), ...c.parcelas];
-  const folhas: (Impressa | "capa")[][] = [];
-  for (let i = 0; i < itens.length; i += 3) folhas.push(itens.slice(i, i + 3));
+  // Cada folha tem 3 faixas. A capa pode ocupar mais de uma (lista longa), e a parcela vai
+  // para a folha seguinte quando a faixa não cabe mais na folha.
+  const blocos = c.capa ? blocosDaCapa(c.parcelas) : [];
+  const itens: ({ capa: BlocoDaCapa; ultimo: boolean } | Impressa)[] = [
+    ...blocos.map((b, i) => ({ capa: b, ultimo: i === blocos.length - 1 })), ...c.parcelas,
+  ];
+  const folhas: (typeof itens)[] = [];
+  let usadas = 3;
+  for (const x of itens) {
+    const n = "capa" in x ? x.capa.faixas : 1;
+    if (usadas + n > 3) { folhas.push([]); usadas = 0; }
+    folhas.at(-1)!.push(x);
+    usadas += n;
+  }
   return (
     <>
       {folhas.slice(0, ate).map((f, j) => (
         <div key={j} className="ca-folha" role="region" aria-label={`Folha ${j + 1} de ${folhas.length}`}>
-          {f.map((x, k) => (x === "capa" ? <Capa key="capa" c={c} /> : <Faixa key={x.txid} c={c} p={x} topo={k === 0} />))}
+          {f.map((x, k) => ("capa" in x
+            ? <Capa key={`capa-${x.capa.de}`} c={c} b={x.capa} ultimo={x.ultimo} />
+            : <Faixa key={x.txid} c={c} p={x} topo={k === 0} />))}
         </div>
       ))}
     </>
@@ -347,7 +429,7 @@ export function CarneImprimir({ id, area }: { id: string; area: AreaCarne }) {
     );
   }
   const voltar = area === "CONTRATOS" ? ROTAS_CONTRATOS.recebimentos(c.contrato.id) : ROTAS_FINANCEIRO.contrato(c.contrato.id);
-  const folhas = folhasDoCarne(c.parcelas.length, c.formato, c.capa);
+  const folhas = folhasDoCarne(c.parcelas, c.formato, c.capa);
   return (
     <div className="ca-pagina">
       <header className="ca-barra">
@@ -512,7 +594,7 @@ function LinhaEnvios({ envios }: { envios: EnvioCarne[] }) {
 function ItemCarne({ k, area, ultimo, substituidoEm, aoGerar, aoMandar }: {
   k: CarneGerado; area: AreaCarne; ultimo: boolean; substituidoEm: string | null; aoGerar?: () => void; aoMandar?: () => void;
 }) {
-  const folhas = folhasDoCarne(k.parcelas.length, k.formato, k.capa);
+  const folhas = folhasDoCarne(k.parcelas, k.formato, k.capa);
   const desat = k.mudancas.length > 0;
   const [baixando, setBaixando] = useState(false);
   const [falhaPdf, setFalhaPdf] = useState<string | null>(null);
@@ -661,7 +743,7 @@ function JanelaCarne({ o, area, escritorio, aoFechar, aoFeito }: {
 
   const escolhidas = modo === "A_VENCER" ? aVencer : possiveis.filter((p) => marcadas.has(p.id));
   const total = escolhidas.reduce((s, p) => s + p.valor, 0);
-  const folhas = folhasDoCarne(escolhidas.length, formato, capa);
+  const folhas = folhasDoCarne(escolhidas.map((p) => ({ semValor: p.vencimento < hoje })), formato, capa);
   const r = o.recebimento;
   const comPix = !!(r.pixTipo && r.pixChave);
   const dona = o.socioDono?.nome ?? "a sócia dona";
