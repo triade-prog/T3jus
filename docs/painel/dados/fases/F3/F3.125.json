@@ -5,7 +5,7 @@
   "refs": [
     "CH-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 990,
-  "proximo": "Programar a parte 1 do D30 (assinatura com o caso em todas as portas)"
+  "evidencia": "Toda porta da assinatura passa pela pergunta do caso: a rota /contratos/:id/assinatura da api-portal agora exige o caso (app_test.ts), e a janela Anexar os assinados (Procuracoes.tsx) usa a mesma pergunta pelo hook usePerguntaDoCaso, com \"Ver o caso\" no aviso. Migration 0850: \"Abrir o caso\" de contrato assinado aceita \"não tem caso\" e abrir tira a marca; portal_contratos_sem_caso lista os ativos sem caso para Contratos e Jurídico (quem não tem Jurídico vê sem o botão e sabe quem abre). Telas: filtro \"Assinados sem caso\" em Contratos (?mostrar=sem-caso) e aviso no alto de Jurídico › Casos e processos (SemCaso.tsx). Testes: pgTAP 118 (18), tests/e2e/portal-jornada-caso.spec.ts (6 cenários, celular e computador, com axe) e portal-procuracoes.spec.ts ajustado."
 }

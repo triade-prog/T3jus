@@ -32,7 +32,7 @@ import { HistoricoRecebimentos, JanelaFoiPaga, JanelaNaoPaga, textoAtraso } from
 import { BaixarContratoNoCabecalho, DocumentosDaFicha, feitoDosAssinados, JanelaAssinados, proximoDosDocumentos } from "./Procuracoes.tsx";
 
 type Aba = "contrato" | "recebimentos" | "documentos";
-type Feito = { titulo: string; texto: string };
+type Feito = { titulo: string; texto: string; acoes?: React.ReactNode };
 
 const fuso = { timeZone: "America/Sao_Paulo" } as const;
 const diaDoInstante = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));

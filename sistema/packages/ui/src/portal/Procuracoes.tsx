@@ -12,7 +12,7 @@ import {
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
-  type VersaoDocumento, type DadoQueConta,
+  type VersaoDocumento, type DadoQueConta, type AssinaturaComCaso,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -23,7 +23,9 @@ import { abrirAnexo, enviarAnexo } from "./Anexos.tsx";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { juntarFotos, ordenarFotos } from "./fotos.ts";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
-import { Toast } from "./FichaCliente.tsx";
+import { Toast, type Feito } from "./FichaCliente.tsx";
+import { usePerguntaDoCaso } from "./CasoDaAssinatura.tsx";
+import { ROTAS_JURIDICO } from "./juridico.ts";
 import { chamarPortal, irPara, ROTAS_PORTAL } from "./Moldura.tsx";
 import { rotaPessoaEquipe } from "./EquipeOab.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
@@ -35,7 +37,6 @@ import {
   rotuloAssinado, seloAba, seloAssinado, tituloFaltas, type FormDocumentos,
 } from "./procuracoes.ts";
 
-type Feito = { titulo: string; texto: string };
 const SOBRE = "Procurações e modelos";
 const primeiro = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
 const diaBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
@@ -1288,9 +1289,24 @@ export function GerarDocumentosPortal({ contrato }: { contrato: string | null })
 
 // ------------------------------------------------------------------------- 4. anexar os assinados (decisão 17)
 
-export interface ResultadoAssinados { n: number; ativou: boolean; numero: string }
+export interface ResultadoAssinados {
+  n: number; ativou: boolean; numero: string;
+  /** CH-11: o caso que abriu ou em que o contrato entrou junto com a assinatura. */
+  casoId?: string | null; podeVerCaso?: boolean; semCaso?: boolean; responsavel?: string | null;
+}
 
 export function feitoDosAssinados(r: ResultadoAssinados): Feito {
+  // Decisão 3: quem anexa continua na página, e o aviso traz "Ver o caso".
+  if (r.ativou && r.casoId) {
+    return {
+      titulo: "Contrato assinado anexado e caso em Jurídico.",
+      texto: `O contrato${r.numero ? ` ${r.numero}` : ""} está ativo e a programação dos recebimentos foi ao Financeiro. O caso está em Jurídico${r.responsavel ? `, com ${r.responsavel}` : ""}.`,
+      acoes: r.podeVerCaso ? <a className="btn btn-sec" href={ROTAS_JURIDICO.caso(r.casoId)}><Icone nome="balanca" className="ico" />Ver o caso</a> : undefined,
+    };
+  }
+  if (r.ativou && r.semCaso) {
+    return { titulo: "Contrato assinado anexado.", texto: `O contrato${r.numero ? ` ${r.numero}` : ""} está ativo, sem caso, e a programação dos recebimentos foi ao Financeiro.` };
+  }
   return r.ativou
     ? { titulo: "Contrato assinado anexado.", texto: `O contrato${r.numero ? ` ${r.numero}` : ""} está ativo e a programação dos recebimentos foi ao Financeiro.${r.n > 1 ? ` ${r.n} arquivos ficaram guardados.` : ""}` }
     : { titulo: r.n === 1 ? "Assinado anexado." : `${r.n} assinados anexados.`, texto: `${r.n === 1 ? "Ficou guardado" : "Ficaram guardados"} no contrato${r.numero ? ` ${r.numero}` : ""}, aba Documentos.` };
@@ -1350,6 +1366,9 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
   })() : [];
   const bloco = (k: string): Bloco => blocos[k] ?? { arquivos: [], data: `${hoje.slice(8, 10)}/${hoje.slice(5, 7)}/${hoje.slice(0, 4)}` };
   const ativa = !!pronto && pronto.contrato.estado === "ELABORACAO" && docs.some((x) => x.tipo === "CONTRATO" && !feitos.includes(x.chave) && bloco(x.chave).arquivos.length);
+  // CH-11 (decisões 1 a 6): anexar o contrato assinado é assinar, e passa pela mesma pergunta do caso.
+  const comContrato = !!pronto && pronto.contrato.estado === "ELABORACAO" && docs.some((x) => x.tipo === "CONTRATO" && !feitos.includes(x.chave));
+  const caso = usePerguntaDoCaso(comContrato, contrato);
 
   async function enviar() {
     if (!pronto) return;
@@ -1365,6 +1384,7 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
       else if (dia > hoje) e[`${x.chave}:data`] = "A data da assinatura é depois de hoje. Escreva o dia em que o papel foi assinado.";
     }
     if (!escolhidos.length && docs[0]) e[`${docs[0].chave}:arq`] = "Escolha o arquivo de ao menos um documento assinado.";
+    if (ativa && !caso.validar()) e.caso = "Confira o caso em Jurídico.";
     setErros(e);
     if (Object.keys(e).length) return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
     // Várias fotos viram um PDF só antes de enviar qualquer coisa (F3.99): o assinado continua
@@ -1385,6 +1405,7 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
     }
     const ok: string[] = [...feitos];
     let ativou = false;
+    let resultado: Partial<ResultadoAssinados> = {};
     for (const x of escolhidos) {
       const b = bloco(x.chave);
       setEnviando(x.chave);
@@ -1402,19 +1423,26 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
       ok.push(x.chave);
       // Anexar o contrato assinado é registrar a assinatura (decisão 17): a mesma rota da aba Contrato.
       if (x.tipo === "CONTRATO" && pronto.contrato.estado === "ELABORACAO") {
-        const r = await chamarPortal<{ recebimentos: number }>(`/v1/escritorio/contratos/${contrato}/assinatura`, { metodo: "POST", corpo: { versao: pronto.contrato.versao, assinadoEm: dia } });
+        const r = await chamarPortal<AssinaturaComCaso>(`/v1/escritorio/contratos/${contrato}/assinatura`, {
+          metodo: "POST", corpo: { versao: pronto.contrato.versao, assinadoEm: dia, caso: caso.corpo() },
+        });
         if (!r.ok) {
           setEnviando(null);
           setFeitos(ok);
+          if (r.erro.codigo === "VALIDATION_ERROR" && caso.doServidor(r.erro.detalhes?.campos)) {
+            requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+            return setFalha("O arquivo do contrato ficou guardado, mas a assinatura não foi registrada e o caso não foi aberto: os dois andam juntos. O contrato continua em elaboração, e o que você escolheu continua aqui.");
+          }
           return setFalha(r.erro.codigo === "VERSION_CONFLICT"
             ? "O arquivo do contrato ficou guardado, mas alguém mudou o contrato agora há pouco e a assinatura não foi registrada. Feche, recarregue a página e registre na aba Contrato."
-            : `O arquivo do contrato ficou guardado, mas a assinatura não foi registrada. ${textoDoErro(r.erro)} O contrato continua em elaboração.`);
+            : `O arquivo do contrato ficou guardado, mas a assinatura não foi registrada e o caso não foi aberto. ${textoDoErro(r.erro)} O contrato continua em elaboração.`);
         }
         ativou = true;
+        resultado = { casoId: r.dados.casoId, podeVerCaso: r.dados.podeVerCaso, semCaso: caso.modo === "SEM", responsavel: caso.responsavel() };
       }
     }
     setEnviando(null);
-    aoFeito({ n: ok.length, ativou, numero: pronto.contrato.numero });
+    aoFeito({ n: ok.length, ativou, numero: pronto.contrato.numero, ...resultado });
   }
 
   return (
@@ -1424,7 +1452,9 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
           <button className="btn btn-pri" type="submit" disabled={!pronto || enviando !== null} aria-busy={enviando !== null || undefined}>
-            <Icone nome="check" className="ico" />{enviando ? "Anexando…" : ativa ? "Anexar e ativar o contrato" : "Anexar"}
+            <Icone nome="check" className="ico" />{enviando ? "Anexando…" : !ativa ? "Anexar"
+              : caso.modo === "JUNTAR" ? "Anexar, ativar e juntar ao caso"
+              : caso.modo === "NOVO" && caso.escolhe && !caso.ja ? "Anexar, ativar e abrir o caso" : "Anexar e ativar o contrato"}
           </button>
         </>
       }>
@@ -1462,13 +1492,22 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
                 </div>
               </div>
               {contratoBloco && pronto?.contrato.estado === "ELABORACAO" ? (
-                <p className="pe-sai"><Icone nome="pena" className="ico" /><span><b>Anexar o contrato assinado registra a assinatura.</b> O contrato {pronto.contrato.numero} fica ativo e a programação dos recebimentos vai ao Financeiro. É o mesmo que “Registrar assinatura”, na aba Contrato.</span></p>
+                <p className="pe-sai"><Icone nome="pena" className="ico" /><span><b>Anexar o contrato assinado registra a assinatura.</b> O contrato {pronto.contrato.numero} fica ativo, a programação dos recebimentos vai ao Financeiro e o caso abre em Jurídico, como você escolher logo abaixo. É o mesmo que “Registrar assinatura”, com a mesma pergunta do caso.</span></p>
               ) : (
                 <p className="ajuda">Fica guardad{contratoBloco ? "o" : "a"} no contrato. Não muda a situação do contrato.{x.situacao === "ASSINADO" ? " Já há um assinado: o novo passa a valer, e o anterior continua guardado." : ""}</p>
               )}
             </fieldset>
           );
         })}
+        {comContrato && pronto ? (
+          <div className="jf-anx-caso">{caso.secao(pronto.contrato.cliente.nome)}</div>
+        ) : null}
+        {comContrato && pronto && caso.pronta ? (
+          <p className="fl-depois">
+            <Icone nome="seta" className="ico" />
+            <span>Ao anexar o contrato assinado, ele fica ativo, os recebimentos vão para o Financeiro e {caso.modo === "SEM" ? "nenhum caso é aberto" : caso.ja ? "ele continua no caso que já existe" : caso.modo === "JUNTAR" ? "ele entra no caso escolhido" : "o caso abre em Jurídico"}. <b>Você continua nesta página</b>{caso.modo === "SEM" ? "." : ", com o link para o caso no aviso."}</span>
+          </p>
+        ) : null}
       </div>
     </Janela>
   );

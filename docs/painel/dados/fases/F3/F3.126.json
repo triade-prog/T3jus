@@ -5,6 +5,7 @@
   "refs": [
     "CH-12"
   ],
-  "status": "pendente",
-  "ordem": 1000
+  "status": "feito",
+  "ordem": 1000,
+  "evidencia": "Migration 0850: portal_contrato_caso_opcoes traz casosDoCliente (casos em andamento em que o cliente está sem contrato) e modoSugerido JUNTAR para quem escolhe; juntar só liga o contrato à linha que já existe. Na janela da assinatura e na janela curta, \"Juntar a este caso\" vem primeiro e marcado, com \"Abrir um caso novo\" depois (CasoDaAssinatura.tsx, escolhaInicial). Testes: pgTAP 118 (sugestão, sem Jurídico continua NOVO, juntar não duplica) e cenário CH-12 em tests/e2e/portal-jornada-caso.spec.ts."
 }

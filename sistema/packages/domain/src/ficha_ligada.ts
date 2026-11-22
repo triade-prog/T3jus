@@ -79,10 +79,11 @@ export const casoDoContratoSchema = z.object({
 });
 export type CasoDoContrato = z.input<typeof casoDoContratoSchema>;
 
+// Toda assinatura passa pela pergunta do caso (CH-11, F3.125): sem o caso, a rota recusa.
 export const assinaturaComCasoSchema = z.object({
   versao: z.number().int().min(1),
   assinadoEm: z.string().max(20).nullish(),
-  caso: casoDoContratoSchema.nullish(),
+  caso: casoDoContratoSchema,
 });
 export const abrirCasoDoContratoSchema = z.object({ caso: casoDoContratoSchema });
 
@@ -90,7 +91,7 @@ export interface CasoLigado { id?: string; nome?: string; responsavel: PessoaRef
 
 export interface OpcoesCasoContrato {
   contrato: { id: string; numero: string; objeto: string; situacao: string; versao: number; criadoEm: string; area: AreaDireito | null;
-              cliente: { id: string; nome: string } };
+              semCaso?: boolean; cliente: { id: string; nome: string } };
   casoLigado: CasoLigado | null;
   sugestao: { nome: string; area: AreaDireito; responsavelId: string | null; papel: PapelCaso };
   responsavelSugerido: PessoaRef | null;
@@ -98,6 +99,21 @@ export interface OpcoesCasoContrato {
   escolhe: boolean;
   responsaveis: PessoaRef[] | null;
   casos: { id: string; nome: string; clientes: number }[] | null;
+  /** CH-12: "JUNTAR" quando o cliente está num caso em andamento sem contrato. */
+  modoSugerido?: "NOVO" | "JUNTAR";
+  /** Os casos em andamento em que o cliente está sem contrato (só para quem escolhe). */
+  casosDoCliente?: CasoDoClienteSemContrato[] | null;
 }
+
+export interface CasoDoClienteSemContrato {
+  id: string; nome: string; papel: PapelCaso; etapa: string | null; responsavel: PessoaRef | null; abertoPor: PessoaRef | null; abertoEm: string;
+}
+
+/** Os contratos assinados que ficaram sem caso (CH-11, F3.125). */
+export interface ContratoSemCaso {
+  id: string; numero: string; objeto: string; assinadoEm: string | null; area: AreaDireito | null;
+  responsavel: PessoaRef | null; cliente: { id: string; nome: string };
+}
+export interface ContratosSemCaso { podeAbrir: boolean; quemAbre: string[] | null; contratos: ContratoSemCaso[] }
 
 export interface AssinaturaComCaso { id: string; versao: number; recebimentos: number; casoId: string | null; podeVerCaso: boolean }
