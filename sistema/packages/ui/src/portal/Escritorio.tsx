@@ -3,6 +3,7 @@
 // docs/design/aprovadas/portal-v1/escritorio.html: os dados do escritório só para leitura
 // (quem muda é a equipe T3jus nesta versão), "Seus escritórios" para quem está em mais de um
 // e a exportação completa dos dados, só do sócio dono. Quem não é o dono vê "Quem cuida".
+// No alto, "Plano e faturas", só do sócio dono (F1.20, CO-06).
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CONTATO_T3JUS } from "@t3jus/domain";
@@ -13,6 +14,7 @@ import { formatarCnpj, formatarTelefone } from "../console/ficha.ts";
 import { dataLonga, hora, iniciais } from "../console/tempo.ts";
 import { listaAreas, primeiroNome } from "./equipe.ts";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
+import { PlanoEFaturas } from "./PlanoFaturas.tsx";
 import { BarraEscritorio } from "./WhatsApp.tsx";
 
 const LEVA = [
@@ -118,6 +120,17 @@ function Dados({ e }: { e: EscritorioPortal }) {
           <p>
             Só consulta até {diaBr(e.encerramento.consultaAte)}. Os dados do escritório não mudam mais. Dúvidas? <a href={`mailto:${CONTATO_T3JUS}`}>Fale com o T3jus</a>.
           </p>
+        </div>
+      ) : e.cobranca?.soConsultaDesde ? (
+        <div className="pt-muda">
+          <Icone nome="cadeado" className="ico" />
+          {e.dono ? (
+            <p>
+              Só consulta até o pagamento das faturas em atraso. A exportação dos dados continua liberada. Dúvidas? <a href={`mailto:${CONTATO_T3JUS}`}>Fale com o T3jus</a>.
+            </p>
+          ) : (
+            <p>O Portal está só para consulta. Para voltar ao normal, fale com {e.cobranca.socioDono ? `${e.cobranca.socioDono}, quem cuida do escritório` : "o sócio dono"}.</p>
+          )}
         </div>
       ) : (
         <div className="pt-muda">
@@ -497,6 +510,11 @@ export function EscritorioDoPortal() {
           {e.encerramento ? (
             <div style={{ gridColumn: "1 / -1" }}>
               <AvisoFim e={e} aoBaixar={() => abrirExportar.current?.()} />
+            </div>
+          ) : null}
+          {e.dono && e.cobranca?.veFaturas ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <PlanoEFaturas />
             </div>
           ) : null}
           <div className="pt-col">

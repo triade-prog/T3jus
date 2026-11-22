@@ -1,6 +1,6 @@
 {
   "id": "F1.21",
-  "texto": "Meio de pagamento da cobrança dos escritórios: Pix e boleto emitidos com baixa automática, PDF do carnê, nota fiscal, preços reais e remetente definitivo",
+  "texto": "Meio de pagamento da cobrança dos escritórios: Pix e boleto emitidos com baixa automática, PDF do carnê, da fatura e do recibo (também no Portal), nota fiscal, preços reais, remetente definitivo e o e-mail de cobrança na folha do Portal",
   "peca": "C1",
   "refs": [
     "CO-06"
