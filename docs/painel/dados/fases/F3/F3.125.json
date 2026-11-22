@@ -1,0 +1,10 @@
+{
+  "id": "F3.125",
+  "texto": "Passo de fechamento na ficha do cliente depois da etapa final (êxito, repasse, financeiro, contrato)",
+  "peca": "S5",
+  "refs": [
+    "EX-16"
+  ],
+  "status": "pendente",
+  "ordem": 1010
+}

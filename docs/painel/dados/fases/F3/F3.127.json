@@ -1,0 +1,10 @@
+{
+  "id": "F3.127",
+  "texto": "Contrato ativo sem caso aparece como contrato ativo no próximo passo e pode ganhar um caso pela ficha do contrato",
+  "peca": "S3",
+  "refs": [
+    "CH-13"
+  ],
+  "status": "pendente",
+  "ordem": 1030
+}

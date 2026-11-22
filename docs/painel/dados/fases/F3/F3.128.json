@@ -1,0 +1,11 @@
+{
+  "id": "F3.128",
+  "texto": "Cadastrar como cliente pela conversa com nome e telefone, ligando a conversa; primeira reunião com o contato; botão do próximo passo só no quadro âmbar da ficha",
+  "peca": "S2",
+  "refs": [
+    "AP-07",
+    "AP-02"
+  ],
+  "status": "pendente",
+  "ordem": 1040
+}

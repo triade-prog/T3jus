@@ -1,0 +1,10 @@
+{
+  "id": "F3.124",
+  "texto": "Na janela da assinatura, o caso em andamento sem contrato do mesmo cliente vem como sugestão para juntar",
+  "peca": "S3",
+  "refs": [
+    "CH-12"
+  ],
+  "status": "pendente",
+  "ordem": 1000
+}
