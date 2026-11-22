@@ -1,0 +1,12 @@
+{
+  "id": "F3.120",
+  "texto": "Arrumar a ficha do cliente: os botões do Histórico de atendimento juntos numa linha, e as tabelas das abas Propostas, Contratos e Casos com o estilo aprovado",
+  "peca": "S2",
+  "refs": [
+    "AP-01",
+    "AP-05"
+  ],
+  "status": "feito",
+  "ordem": 961,
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-historico-botoes; portal.css (.cl-hist, base de table.fl-tab, .fl-cod e cartões em folha estreita), FichaCliente.tsx e FichaLigada.tsx; e2e tests/e2e/portal-ficha-ligada.spec.ts e portal-clientes.spec.ts passam"
+}

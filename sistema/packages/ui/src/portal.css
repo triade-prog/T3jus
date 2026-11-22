@@ -5199,6 +5199,28 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .fl-tab tr.fl-vivo td:first-child{box-shadow:inset 3px 0 0 var(--ambar)}
 .fl-tab tr.fl-off td{color:var(--texto-2)}
 .fl-tab tr.fl-off .fl-num a{color:var(--vinho-2)}
+/* Tabelas das abas da ficha do cliente (Propostas, Contratos, Casos): a base que a lista de
+   Clientes recebe de .co-carteira e que a ficha não tem. Mesmas regras, presas a .fl-tab. */
+.co table.fl-tab{width:100%;border-collapse:collapse;table-layout:fixed}
+.co table.fl-tab thead th{white-space:nowrap;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-2);text-align:left;padding:12px 16px;background:var(--rebaixado);border-top:1px solid var(--divisor);border-bottom:1px solid var(--divisor)}
+.co table.fl-tab th:first-child,.co table.fl-tab td:first-child{padding-left:24px}
+.co table.fl-tab tbody td{padding:15px 16px;border-bottom:1px solid var(--divisor);vertical-align:middle}
+.co table.fl-tab tbody tr:last-child td{border-bottom:0}
+.co table.fl-tab tbody tr:hover td{background:#FCF8F5}
+/* Nada sai da célula: o link do recebimento e o botão da coluna Caso podem quebrar linha. */
+.co table.fl-tab .fl-ir{white-space:normal}
+.co table.fl-tab td .btn{white-space:normal;text-align:left;padding:6px 14px}
+/* O número da proposta não quebra no meio ("veio da P-2026-001"). */
+.fl-cod{white-space:nowrap}
+/* Folha estreita (menos de 880 px: computador de 1024 a ~1190 px e tablet): as cinco colunas não cabem, então
+   aparecem os cartões do celular no lugar da tabela. O celular fica como está. */
+.co .folha:has(>table.fl-tab){container-type:inline-size}
+@media (min-width:761px){
+  @container (max-width:879px){
+    .co .folha table.fl-tab.so-pc{display:none!important}
+    .co .folha .fl-cards.so-cel{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));padding:0 24px 20px}
+  }
+}
 .fl-pe{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 24px;border-top:1px solid var(--divisor);font-size:13px;color:var(--texto-2)}
 .fl-pe b{color:var(--texto);font-weight:500}
 .fl-cards .cartao .c-nome{font-size:18px}
@@ -5254,6 +5276,13 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .fl-caso-t{margin:0;font-family:var(--serifa);font-size:19px;font-weight:600;color:var(--vinho)}
 .cl-passo-cel{padding-top:10px}
 .cl-passo-cel .fl-passo-l .btn{width:100%;justify-content:center}
+/* Histórico de atendimento: os botões ficam juntos, numa linha e com a mesma altura. Ao lado
+   do título quando o texto ainda tem 400 px; se não, o grupo inteiro desce para baixo do texto. */
+.cl .cl-hist>.folha-cab{flex-wrap:wrap;align-items:flex-start;gap:16px 24px}
+.cl .cl-hist>.folha-cab>div:first-child{flex:1 1 400px;min-width:0}
+@media (max-width:760px){
+  .cl .cl-hist>.folha-cab>.acoes{flex:1 1 100%}
+}
 
 
 @media (max-width:760px){

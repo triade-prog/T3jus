@@ -1,0 +1,7 @@
+/* Histórico de atendimento: os botões ficam juntos, numa linha e com a mesma altura. Ao lado
+   do título quando o texto ainda tem 400 px; se não, o grupo inteiro desce para baixo do texto. */
+.cl .cl-hist>.folha-cab{flex-wrap:wrap;align-items:flex-start;gap:16px 24px}
+.cl .cl-hist>.folha-cab>div:first-child{flex:1 1 400px;min-width:0}
+@media (max-width:760px){
+  .cl .cl-hist>.folha-cab>.acoes{flex:1 1 100%}
+}
