@@ -1,0 +1,77 @@
+[
+ {
+  "nome": "novo-menor",
+  "url": "index.html?estado=novo-menor",
+  "rotulo": "Novo cliente menor (até 15 anos)"
+ },
+ {
+  "nome": "novo-assistido",
+  "url": "index.html?estado=novo-assistido",
+  "rotulo": "Novo cliente de 16 anos (assistido)"
+ },
+ {
+  "nome": "novo-curatela",
+  "url": "index.html?estado=novo-curatela",
+  "rotulo": "Novo cliente sob curatela"
+ },
+ {
+  "nome": "novo-erros",
+  "url": "index.html?estado=novo-erros",
+  "rotulo": "Erros: falta a data, falta quem assina, CPF inválido"
+ },
+ {
+  "nome": "editar",
+  "url": "index.html?estado=editar",
+  "rotulo": "Editar: vindo de Gerar documentos"
+ },
+ {
+  "nome": "ficha-menor",
+  "url": "index.html?estado=ficha-menor",
+  "rotulo": "Ficha: Pedro, representado pela mãe"
+ },
+ {
+  "nome": "ficha-curatela",
+  "url": "index.html?estado=ficha-curatela",
+  "rotulo": "Ficha: Sebastião, sob curatela"
+ },
+ {
+  "nome": "ficha-fez-18",
+  "url": "index.html?estado=ficha-fez-18",
+  "rotulo": "Ficha: Rafaela fez 18 anos"
+ },
+ {
+  "nome": "fez-18-janela",
+  "url": "index.html?estado=fez-18-janela",
+  "rotulo": "Janela: Rafaela agora assina por si"
+ },
+ {
+  "nome": "gerar-representado",
+  "url": "index.html?estado=gerar-representado",
+  "rotulo": "Gerar: representado (Pedro, 12)"
+ },
+ {
+  "nome": "gerar-assistido",
+  "url": "index.html?estado=gerar-assistido",
+  "rotulo": "Gerar: assistido (Lucas, 16)"
+ },
+ {
+  "nome": "gerar-curatela",
+  "url": "index.html?estado=gerar-curatela",
+  "rotulo": "Gerar: curatela (Sebastião)"
+ },
+ {
+  "nome": "gerar-falta",
+  "url": "index.html?estado=gerar-falta",
+  "rotulo": "Gerar: faltam o CPF e o RG de Joana"
+ },
+ {
+  "nome": "gerar-fez-18",
+  "url": "index.html?estado=gerar-fez-18",
+  "rotulo": "Gerar: Rafaela fez 18 anos"
+ },
+ {
+  "nome": "textos",
+  "url": "index.html?estado=textos",
+  "rotulo": "O texto nos três casos (referência)"
+ }
+]

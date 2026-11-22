@@ -3,9 +3,10 @@
   "texto": "Quem assina pelo cliente menor ou incapaz na procuração e no contrato: campos novos no cadastro do cliente e o texto do representante nos documentos",
   "peca": "S2",
   "refs": [
+    "AP-01",
     "CH-08"
   ],
   "status": "pendente",
   "ordem": 793,
-  "proximo": "Desenhar os campos do responsável legal na ficha do cliente (hoje só a empresa tem quem assina) e levar a qualificação dele aos documentos"
+  "proximo": "Programar o desenho aprovado em docs/design/aprovadas/portal-responsavel-legal (D25): migration 0820, formulário e ficha, aviso dos 18 anos e documentos.ts"
 }
