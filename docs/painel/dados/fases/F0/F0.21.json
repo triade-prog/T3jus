@@ -5,7 +5,7 @@
   "refs": [
     "PT-04"
   ],
-  "status": "pendente",
-  "ordem": 210,
-  "proximo": "Depende da ligação do WhatsApp com a Meta (PA-04): hoje nada sai da fila"
+  "status": "feito",
+  "evidencia": "migration 0840_whatsapp_entrega (whatsapp_envios, rotina_whatsapp_pendentes, rotina_whatsapp_registrar, whatsapp_envio_situacao, whatsapp_envios_rotina no pg_cron a cada minuto); api-portal POST /v1/rotina/whatsapp-envios (envio_whatsapp.ts) e _shared/whatsapp.ts (Cloud API); pgTAP 113_whatsapp_entrega_test.sql, _shared/whatsapp_test.ts e api-portal/envio_whatsapp_test.ts com a Meta simulada",
+  "ordem": 210
 }

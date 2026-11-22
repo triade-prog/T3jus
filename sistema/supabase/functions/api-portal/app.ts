@@ -36,6 +36,7 @@ import {
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
+import { entregarWhatsapp, type EntregaWhatsapp } from "./envio_whatsapp.ts";
 import { criarApp } from "../_shared/app.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
@@ -82,6 +83,8 @@ export interface DepsPortal extends DepsSessao {
   ia?: Cerebro | null;
   /** E-mails do sistema pelo Resend (F3.50: a exportação ao contador); sem a chave, o envio falha e fica registrado. */
   emails?: Emails;
+  /** Entrega da fila do WhatsApp pela Meta (F0.21); sem ela (WHATSAPP_ENVIO desligado), a fila espera. */
+  whatsapp?: EntregaWhatsapp | null;
 }
 
 interface LinhaHistoricoEquipe {
@@ -114,6 +117,14 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-portal" }));
   sessao.rotas(app);
+
+  // F0.21: a rotina do banco (a cada minuto) chama esta rota quando há mensagem do WhatsApp
+  // pronta para sair por um número da Meta. Ela só manda o que o banco já decidiu (a fila),
+  // então não pede sessão (o repasse confere o segredo). Desligada, nada sai e nada muda.
+  app.post("/v1/rotina/whatsapp-envios", async (c) => {
+    if (!deps.whatsapp) return c.json({ ligado: false, enviadas: 0, novamente: 0, falhas: 0 });
+    return c.json({ ligado: true, ...(await entregarWhatsapp(deps.banco, deps.arquivos, deps.whatsapp)) });
+  });
 
   for (const rota of ["/v1/sessao", "/v1/sessao/*", "/v1/escritorio", "/v1/escritorio/*"]) app.use(rota, sessao.exigirSessao);
 

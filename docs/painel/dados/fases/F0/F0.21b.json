@@ -1,0 +1,11 @@
+{
+  "id": "F0.21b",
+  "texto": "A entrega pelo WhatsApp ligada de verdade: o token da Meta nos segredos da api-portal, WHATSAPP_ENVIO=ligado e a primeira mensagem conferida num número real (texto na janela, aviso aprovado fora dela, PDF no cabeçalho, erro da Meta virando o motivo certo)",
+  "peca": "B3",
+  "refs": [
+    "PT-04"
+  ],
+  "status": "pendente",
+  "ordem": 211,
+  "proximo": "Depende da ligação com a Meta (F3.58): o T3jus registrado como parceiro de tecnologia, um número de teste ligado e os avisos enviados à Meta com os nomes t3jus_<chave> (F3.61). Aí pôr WHATSAPP_TOKEN e WHATSAPP_ENVIO=ligado nos segredos e mandar a primeira mensagem"
+}
