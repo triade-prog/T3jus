@@ -18,11 +18,12 @@ export const ACEITOS = "application/pdf,image/jpeg,image/png";
 
 /** Envia um arquivo ao contrato, à conta ou ao recebimento. Devolve o erro ou null. */
 export async function enviarAnexo(dono: DonoAnexo, donoId: string, arquivo: File, categoria: CategoriaAnexo | null,
-                                  aoProgredir: (p: number) => void = () => {}): Promise<string | null> {
+                                  aoProgredir: (p: number) => void = () => {},
+                                  assinado?: { documentoId: string; assinadoEm: string }): Promise<string | null> {
   const tipo = tipoDoArquivo(arquivo.name, arquivo.type);
   if (!tipo) return "Tipo não aceito. Envie PDF, JPG ou PNG.";
   const ini = await chamarPortal<{ id: string; enderecoDeEnvio: string }>("/v1/escritorio/anexos", {
-    metodo: "POST", corpo: { dono, donoId, categoria, nome: arquivo.name, tipo, tamanho: arquivo.size },
+    metodo: "POST", corpo: { dono, donoId, categoria, nome: arquivo.name, tipo, tamanho: arquivo.size, ...(assinado ?? {}) },
   });
   if (!ini.ok) return textoDoErro(ini.erro);
   const foi = await enviarArquivo(ini.dados.enderecoDeEnvio, arquivo, tipo, aoProgredir);

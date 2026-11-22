@@ -7,7 +7,7 @@
 // ativo pede motivo; encerrar para as cobranças novas e não apaga nada.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { dataBr, hojeBrasilia, reais, type Anexo, type EventoContrato, type FichaContrato, type ListaAnexos, type RecebimentoPrevisto } from "@t3jus/domain";
+import { dataBr, hojeBrasilia, reais, type Anexo, type DocumentosDoContrato, type EventoContrato, type FichaContrato, type ListaAnexos, type RecebimentoPrevisto } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -27,6 +27,7 @@ import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { HistoricoRecebimentos, JanelaFoiPaga, JanelaNaoPaga, textoAtraso } from "./NaoPaga.tsx";
+import { DocumentosDaFicha, feitoDosAssinados, JanelaAssinados, proximoDosDocumentos } from "./Procuracoes.tsx";
 
 type Aba = "contrato" | "recebimentos" | "documentos";
 type Feito = { titulo: string; texto: string };
@@ -59,7 +60,23 @@ function geraNoContrato(f: FichaContrato) {
   };
 }
 
-function Dir({ f, aoAssinar }: { f: FichaContrato; aoAssinar: () => void }) {
+function Dir({ f, aoAssinar, docs, aoAnexarDocs }: { f: FichaContrato; aoAssinar: () => void; docs: ReturnType<typeof proximoDosDocumentos>; aoAnexarDocs: () => void }) {
+  // F3.16, decisão 20: com documentos gerados esperando o assinado, o próximo passo é anexá-los.
+  if (f.situacao === "ELABORACAO" && docs?.contrato) {
+    return (
+      <section className="dir campo-ambar" aria-labelledby="t-px">
+        <p className="sobretitulo" id="t-px">Próximo passo</p>
+        <p className="grande" style={{ fontSize: 30 }}>Assinatura</p>
+        <p className="hn-oque"><b>{docs.texto}</b><br />Anexar o contrato assinado ativa o contrato e manda a programação ao Financeiro.</p>
+        <div className="hn-dir-acoes">
+          <button data-muda className="btn btn-pri" type="button" onClick={aoAnexarDocs}>
+            <Icone nome="enviar" className="ico" />
+            Anexar os assinados
+          </button>
+        </div>
+      </section>
+    );
+  }
   if (f.situacao === "ELABORACAO") {
     return (
       <section className="dir campo-ambar" aria-labelledby="t-px">
@@ -461,25 +478,6 @@ function LinhaRecebimento({ r, f, hoje, aoFoiPaga }: { r: RecebimentoPrevisto; f
   );
 }
 
-function Documentos() {
-  return (
-    <section className="folha" aria-labelledby="t-dc">
-      <div className="folha-cab">
-        <div><h2 id="t-dc">Documentos</h2><p className="sub">Contrato, procuração e declaração gerados com os dados do cliente e dos advogados.</p></div>
-      </div>
-      <Estado icone="doc" titulo="Os documentos chegam numa próxima entrega">
-        Gerar o contrato, a procuração e a declaração no timbrado do escritório ainda está sendo preparado. Por enquanto, faça no Word; o assinado se anexa ao registrar a assinatura, na aba Contrato.
-      </Estado>
-      <div className="hn-reserva">
-        <div>
-          <Icone nome="lapis" className="ico" />
-          <span><b>Assinatura eletrônica: em estudo.</b> O lugar fica reservado.</span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function JanelaAssinatura({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: FichaContrato; aoFechar: () => void; aoFeito: (n: number) => void }) {
   const hoje = hojeBrasilia();
   const [em, setEm] = useState(dataBr(hoje));
@@ -649,6 +647,8 @@ function JanelaEncerrar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: 
 function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba; escritorio: EscritorioPortal; aoNumero: (n: string) => void }) {
   const [f, setF] = useState<FichaContrato | null | "erro" | "nao">(null);
   const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | "inscricoes" | null>(null);
+  const [janelaDocs, setJanelaDocs] = useState<{ so?: string } | null>(null);
+  const [docs, setDocs] = useState<DocumentosDoContrato | null | "erro">(null);
   const [assinados, setAssinados] = useState<Anexo[] | null>(null);
   const [carne, setCarne] = useState(false);
   const [naoPaga, setNaoPaga] = useState<RecebimentoPrevisto | null>(null);
@@ -662,6 +662,8 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
     if (r.ok) aoNumero(r.dados.numero);
     const a = await chamarPortal<ListaAnexos>(`/v1/escritorio/contratos/${id}/anexos`);
     setAssinados(a.ok ? a.dados.anexos : null);
+    const d = await chamarPortal<DocumentosDoContrato>(`/v1/escritorio/contratos/${id}/documentos`);
+    setDocs(d.ok ? d.dados : "erro");
   }, [id, aoNumero]);
   useEffect(() => {
     void Promise.resolve().then(() => carregar());
@@ -669,10 +671,12 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const t = q.has("criado") ? { titulo: "Contrato criado", texto: "Ele está em elaboração. Colha a assinatura e registre-a: aí a programação vai para o Financeiro." }
-      : q.has("mudado") ? { titulo: "Mudanças salvas", texto: "A versão anterior fica no histórico do contrato." } : null;
+      : q.has("mudado") ? { titulo: "Mudanças salvas", texto: "A versão anterior fica no histórico do contrato." }
+      : q.has("anexado") ? feitoDosAssinados({ n: Number(q.get("anexado")) || 1, ativou: q.get("anexado") === "ativo", numero: "" }) : null;
     if (!t) return;
     q.delete("criado");
     q.delete("mudado");
+    q.delete("anexado");
     window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
     void Promise.resolve().then(() => setFeito(t));
   }, []);
@@ -711,12 +715,12 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             </div>
           </div>
         </div>
-        <Dir f={f} aoAssinar={() => setJanela("assinatura")} />
+        <Dir f={f} aoAssinar={() => setJanela("assinatura")} docs={proximoDosDocumentos(docs)} aoAnexarDocs={() => setJanelaDocs({})} />
       </div>
       <nav className="abas" aria-label="Seções do contrato">
         <a href={ROTAS_CONTRATOS.contrato(f.id)} aria-current={aba === "contrato" ? "page" : undefined}>Contrato</a>
         <a href={ROTAS_CONTRATOS.recebimentos(f.id)} aria-current={aba === "recebimentos" ? "page" : undefined}>Recebimentos<span className="q">{vivos}</span></a>
-        <a href={ROTAS_CONTRATOS.documentos(f.id)} aria-current={aba === "documentos" ? "page" : undefined}>Documentos</a>
+        <a href={ROTAS_CONTRATOS.documentos(f.id)} aria-current={aba === "documentos" ? "page" : undefined}>Documentos{docs && docs !== "erro" && docs.documentos.length ? <span className="q">{docs.documentos.length}</span> : null}</a>
       </nav>
       {aba === "recebimentos" ? (
         <>
@@ -726,7 +730,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
           ) : null}
         </>
       )
-        : aba === "documentos" ? <Documentos />
+        : aba === "documentos" ? <DocumentosDaFicha f={f} dados={docs} aoAnexar={(so) => setJanelaDocs({ so })} aoTentar={() => void carregar()} />
         : (
           <div className="hn-grade">
             <div className="hn-col">
@@ -793,6 +797,10 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             setFeito({ titulo: `A ${r.descricao.toLowerCase()} voltou para “Pago antes do T3jus”.`, texto: "Saiu de A receber e dos totais. As duas mudanças ficam no histórico." });
             void carregar();
           }} />
+      ) : null}
+      {janelaDocs ? (
+        <JanelaAssinados contrato={f.id} so={janelaDocs.so} aoFechar={() => setJanelaDocs(null)}
+          aoFeito={(r) => { setJanelaDocs(null); setFeito(feitoDosAssinados(r)); void carregar(); }} />
       ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>

@@ -4810,3 +4810,99 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
   .ex-pe{flex-direction:column-reverse;align-items:stretch}
   .ex-pe-dir{margin-left:0;justify-content:flex-end}
 }
+
+/* >>> Contratos › Procurações e modelos (CH-08, F3.16), desenho aprovado em docs/design/aprovadas/portal-procuracoes */
+/* ==========================================================================
+   Prefixo pr-. Reaproveita as peças das petições (pe-): prévia em papel,
+   advogados e inscrições, conferência do modelo e resultado. Só pares do
+   contraste.md; o filete âmbar das linhas que esperam é só decorativo.
+   ========================================================================== */
+.pr-conta{padding:0 24px 10px;font-size:13px;color:var(--texto-2)}
+.pr-conta b{color:var(--texto);font-weight:500}
+.pr-tab td{vertical-align:middle}
+.pr-tab tr.pr-falta td:first-child{box-shadow:inset 4px 0 0 var(--ambar)}
+.pr-tab tr.pr-falta td{background:#FCF8F5}
+.pr-tab .pe-doc .selo{margin-top:6px}
+.pr-v{display:inline-block;margin-left:4px;padding:0 6px;border-radius:999px;background:var(--sal-2);color:var(--vinho);font-size:11px;font-weight:600;vertical-align:middle}
+.pr-sub{display:block;font-size:12px;color:var(--texto-2);margin-top:2px}
+.pr-acoes{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center}
+.pr-apoio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start;margin-top:20px}
+.pr-mini{list-style:none;margin:0;padding:0 24px 8px}
+.pr-mini li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--divisor)}
+.pr-mini li:first-child{border-top:0}
+.pr-mini .pe-ci{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.pr-mini b{display:block;font-weight:500;font-size:14px}
+.pr-mini small{display:block;font-size:12px;color:var(--texto-2)}
+.pr-ant{margin-top:8px;font-size:13px}
+.pr-ant summary{display:inline-flex;align-items:center;gap:6px;min-height:44px;cursor:pointer;color:var(--vinho);font-weight:500}
+.pr-ant ul{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px}
+.pr-ant li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--raio);background:var(--sal-2);font-size:12px}
+.pr-ant li small{display:block;color:var(--texto-2)}
+.pr-outro{margin:4px 24px 16px;padding:14px 16px;border:1.5px dashed var(--vinho-4);border-radius:var(--raio);display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px;color:var(--texto-2);line-height:1.5}
+.pr-outro .ico{color:var(--vinho-4)}
+.pr-outro b{color:var(--texto);font-weight:500}
+.pr-resumo-erro{outline:none;margin-bottom:16px}
+.pr-resumo-erro ul{margin:6px 0 0;padding-left:18px}
+.pr-resumo-erro a{display:inline-flex;align-items:center;min-height:32px;color:var(--vinho);font-weight:500}
+.hn>.aviso{margin-bottom:16px}
+.pr-contrato{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--borda-folha);border-radius:var(--raio);background:#FCF8F5}
+.pr-contrato b{display:block;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho)}
+.pr-contrato small{display:block;font-size:12px;color:var(--texto-2)}
+.pr-pj{margin-top:6px;padding:8px 10px;border-radius:var(--raio);background:var(--ambar-3);color:var(--tinta)!important}
+.pr-poderes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px}
+.pr-poderes .opcao{margin:0;padding:8px 4px;align-items:flex-start}
+.pr-poderes .opcao small{display:block;font-size:12px;color:var(--texto-2)}
+.pr-gerar .pr-previa{position:sticky;top:16px}
+.pr-abas{display:flex;flex-wrap:wrap;gap:4px;padding:0 24px;margin-bottom:12px;border-bottom:1px solid var(--divisor)}
+.pr-abas [role="tab"]{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border:0;background:none;font:inherit;font-size:14px;color:var(--texto-2);cursor:pointer;box-shadow:inset 0 -2px 0 transparent}
+.pr-abas [role="tab"][aria-selected="true"]{color:var(--vinho);font-weight:500;box-shadow:inset 0 -3px 0 var(--vinho)}
+.pr-abas [role="tab"]:focus-visible{outline:2px solid var(--vinho);outline-offset:-2px;border-radius:6px}
+.pr-falta-n{display:inline-block;padding:0 6px;border-radius:999px;background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--vinho-3);color:var(--tinta);font-size:11px;font-weight:600}
+.pr-papel{max-height:640px;overflow:auto}
+.pr-papel:focus-visible{outline:2px solid var(--vinho);outline-offset:-2px}
+.pr-faixa{margin-top:20px;padding:18px 24px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+.pr-faixa>div:first-child{flex:1 1 360px;display:grid;gap:6px;font-size:14px}
+.pr-faixa b{font-weight:600}
+.pr-faixa .sub{font-size:13px;color:var(--texto-2)}
+.pr-faixa-bt{display:flex;gap:10px;flex-wrap:wrap}
+.pr-usado{margin:0;padding:0 24px 12px;display:grid}
+.pr-usado>div{display:grid;grid-template-columns:minmax(90px,34%) minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px}
+.pr-usado>div:first-child{border-top:0}
+.pr-usado dt{color:var(--texto-2)}
+.pr-usado dd{margin:0;text-align:right;font-weight:500;display:grid;gap:2px}
+.pr-bloco{border:1px solid var(--borda-folha);border-radius:var(--raio-g);padding:4px 16px 14px;margin:0;min-width:0;display:grid;gap:10px}
+.pr-bloco>legend{padding:0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.pr-bloco>legend span{font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho)}
+.pr-bloco>legend small{font-size:12px;color:var(--texto-2);overflow-wrap:anywhere}
+.pr-bloco-contrato{border:2px solid var(--vinho);box-shadow:inset 4px 0 0 var(--vinho)}
+.pr-bloco-g{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px 16px;align-items:start}
+.pr-docs{list-style:none;margin:0;padding:0 24px 8px}
+.pr-docs>li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:start;padding:16px 0;border-top:1px solid var(--divisor)}
+.pr-docs>li:first-child{border-top:0}
+.pr-docs .pe-ci{width:44px;height:44px;border-radius:var(--raio);display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.pr-docs b{display:block;font-weight:500;font-size:15px}
+.pr-docs>li>div>small{display:block;font-size:12px;color:var(--texto-2);margin:2px 0 6px;overflow-wrap:anywhere}
+
+@media (max-width:1100px){
+  .pr-apoio{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .pr-acoes{justify-content:stretch;width:100%}
+  .pr-acoes .btn{flex:1 1 auto}
+  .pr-contrato{grid-template-columns:40px minmax(0,1fr)}
+  .pr-contrato .btn{grid-column:1/-1}
+  .pr-poderes{grid-template-columns:1fr}
+  .pr-gerar .pr-previa{position:static}
+  .pr-abas{padding:0 16px}
+  .pr-faixa{padding:16px}
+  .pr-faixa-bt{width:100%;flex-direction:column-reverse}
+  .pr-faixa-bt .btn{width:100%}
+  .pr-outro{grid-template-columns:22px minmax(0,1fr);margin:4px 16px 16px}
+  .pr-outro .btn{grid-column:1/-1}
+  .pr-bloco-g{grid-template-columns:1fr}
+  .pr-docs{padding:0 16px 8px}
+  .pr-docs>li{grid-template-columns:44px minmax(0,1fr)}
+  .pr-docs>li>.pr-acoes{grid-column:1/-1}
+  .pr-usado{padding:0 16px 12px}
+  .pr-conta{padding:0 16px 10px}
+}
