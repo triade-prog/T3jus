@@ -34,7 +34,7 @@ function fatura(competencia: string, situacao: string, extra: Record<string, unk
 const paga = (c: string, em: string, forma = "PIX", extra = {}) => fatura(c, "PAGA", { pagaEm: `${em}T15:00:00Z`, formaPaga: forma, baixa: "MANUAL", ...extra });
 const ASSINATURA = {
   plano: "Escritório", precoCentavos: V, pessoasIncluidas: 8, pessoasAtivas: 7, pessoaAMaisCentavos: 3900, diaVencimento: 10, forma: "PIX",
-  inicioCobranca: "2026-09-01", soConsultaDesde: null, atrasoDias: null,
+  emailCobranca: "marina@ribeiromatos.exemplo.com.br", inicioCobranca: "2026-09-01", soConsultaDesde: null, atrasoDias: null,
 };
 const HOJE = "2026-11-20";
 
@@ -54,7 +54,7 @@ test.describe("F1.20: Plano e faturas no Portal", () => {
     const folha = page.getByRole("region", { name: "Plano e faturas" });
     await expect(folha).toContainText("Só o sócio dono vê esta parte.");
     await expect(folha).toContainText("Até 8 pessoas, com todas as áreas. Hoje são 7. Cada pessoa a mais custa R$ 39,00 por mês.");
-    await expect(folha).toContainText("Vence todo dia 10 · Pix ou boleto.");
+    await expect(folha).toContainText("Vence todo dia 10 · Pix ou boleto · a fatura chega em marina@ribeiromatos.exemplo.com.br.");
     await expect(folha).toContainText("Próxima fatura");
     await expect(folha).toContainText("Dezembro de 2026 · vence em 10/12/2026.");
     await expect(folha.getByText("paga em 08/10, boleto").locator("visible=true")).toBeVisible();

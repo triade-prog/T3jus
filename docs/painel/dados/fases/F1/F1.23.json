@@ -1,0 +1,12 @@
+{
+  "id": "F1.23",
+  "texto": "E-mail de cobrança na folha Plano e faturas do Portal: a sócia dona vê para onde a fatura vai",
+  "peca": "S7",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "feito",
+  "ordem": 67.35,
+  "nota": "Desenho aprovado em docs/design/aprovadas/console-cobranca (estados 44 e 46). O resto do meio de pagamento segue em F1.21.",
+  "evidencia": "Migration 0692_portal_email_cobranca.sql: portal_plano_faturas devolve emailCobranca da assinatura (só o sócio dono chega à função, portal.faturas.ver). Folha Plano e faturas (packages/ui/src/portal/PlanoFaturas.tsx): \"Vence todo dia 10 · Pix ou boleto · a fatura chega em ...\". Testes: supabase/tests/pgtap/092_cobranca_escritorios_test.sql (83) e tests/e2e/portal-plano-faturas.spec.ts (12 no celular e no computador, com axe)."
+}

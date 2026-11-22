@@ -49,6 +49,8 @@ export interface PlanoFaturasPortal {
     pessoaAMaisCentavos: number;
     diaVencimento: number;
     forma: "PIX" | "BOLETO" | "CARNE";
+    /** Para onde a fatura vai (F1.21); só o sócio dono recebe a assinatura. */
+    emailCobranca?: string | null;
     inicioCobranca: string | null;
     soConsultaDesde: string | null;
     atrasoDias: number | null;
@@ -436,7 +438,13 @@ export function PlanoEFaturas() {
             {brl(a.pessoaAMaisCentavos)} por mês.
           </p>
           <p>
-            Vence todo dia <b>{a.diaVencimento}</b> · {a.forma === "CARNE" ? `carnê de ${carnes[0]?.parcelas ?? 12} parcelas, cada uma com Pix e boleto` : "Pix ou boleto"}.
+            Vence todo dia <b>{a.diaVencimento}</b> · {a.forma === "CARNE" ? `carnê de ${carnes[0]?.parcelas ?? 12} parcelas, cada uma com Pix e boleto` : "Pix ou boleto"}
+            {a.emailCobranca ? (
+              <>
+                {" "}· a fatura chega em <span style={{ overflowWrap: "anywhere" }}>{a.emailCobranca}</span>
+              </>
+            ) : null}
+            .
           </p>
           <p>
             Para mudar de plano ou de dia, <a href={`mailto:${CONTATO_T3JUS}`}>fale com o T3jus</a>.

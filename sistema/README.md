@@ -89,7 +89,7 @@ A migration `0690_cobranca_escritorios.sql` cobra os escritórios que assinam o 
 - **Régua.** E-mails em -20, -3, 0, 3, 7 e 15 dias, pela fila `fatura_envios`; a `api-console` manda pelo Resend, com o sócio dono em cópia (`/v1/rotina/cobranca-envios`). Aos 7 dias o Portal mostra o aviso; aos 30 a administração decide se passa o escritório a só consulta.
 - **Pagamento manual.** Sem banco ligado, quem é da administração ou do financeiro registra o pagamento com motivo, na fatura ou na parcela do carnê. O pagamento que zera o atraso de 30 dias devolve o Portal ao normal.
 - **Só consulta.** Com `portal_so_consulta_desde` marcado, quem é do escritório lê tudo e não grava nada (`PORTAL_SO_CONSULTA`); mensagens que chegam e rotinas seguem. As tabelas da cobrança gravam com a marca `t3jus.cobrando`, inclusive depois do fim do contrato.
-- **Portal.** `GET /v1/escritorio` traz a situação da cobrança; `GET /v1/escritorio/faturas` traz o plano e as faturas, só para o sócio dono (`portal.faturas.ver`).
+- **Portal.** `GET /v1/escritorio` traz a situação da cobrança; `GET /v1/escritorio/faturas` traz o plano e as faturas, só para o sócio dono (`portal.faturas.ver`). Desde a 0692, a assinatura traz também o e-mail de cobrança, que a folha mostra.
 - **Ainda não.** Pix e boleto emitidos com baixa automática, PDF do carnê e nota fiscal (F1.21). As telas estão em F1.19 e F1.20.
 
 ## Rodar
