@@ -8,6 +8,8 @@ import { criarEscritorioSchema, ESTAGIOS, UFS } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import {
+  atrasoDe,
+  comAtraso,
   contarCarteira,
   etapasDoCliente,
   filtrarCarteira,
@@ -22,7 +24,8 @@ import {
   type Filtro,
   type Ordem,
 } from "./carteira.ts";
-import { CARTEIRA, chamarConsole, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
+import { seloFatura } from "./cobranca.ts";
+import { CARTEIRA, chamarConsole, COBRANCA, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
 import { dataBr } from "./FimContrato.tsx";
 import { haQuanto, iniciais } from "./tempo.ts";
@@ -111,8 +114,21 @@ function Estagio({ c }: { c: ClienteCarteira }) {
   );
 }
 
+/** "Fatura em atraso · N dias": atenção até 29 dias, urgência a partir de 30 (CO-06). */
+function SeloAtraso({ dias }: { dias: number }) {
+  const s = seloFatura("EM_ATRASO", dias, "Fatura em atraso");
+  return (
+    <span className={s.classe}>
+      <Icone nome={s.icone} className="ico" />
+      {s.texto}
+    </span>
+  );
+}
+
 function Pendencias({ c }: { c: ClienteCarteira }) {
   const lista = pendencias(c);
+  const atraso = atrasoDe(c);
+  if (lista.length === 0 && atraso > 0) return <SeloAtraso dias={atraso} />;
   if (lista.length === 0) {
     return (
       <span className="selo selo-ok">
@@ -128,6 +144,7 @@ function Pendencias({ c }: { c: ClienteCarteira }) {
           {TEXTOS_PENDENCIA[p]}
         </span>
       ))}
+      {atraso > 0 ? <SeloAtraso dias={atraso} /> : null}
     </div>
   );
 }
@@ -238,6 +255,7 @@ export function Carteira() {
   const [filtro, setFiltro] = useState<Filtro>("TODOS");
   const [termo, setTermo] = useState("");
   const [ordem, setOrdem] = useState<Ordem>("PENDENCIAS");
+  const [soAtraso, setSoAtraso] = useState(false);
   const verEncerrados = filtro === "ENCERRADOS";
   const [pagina, setPagina] = useState(1);
   const [agora, setAgora] = useState(() => new Date());
@@ -258,7 +276,10 @@ export function Carteira() {
 
   const contagem = useMemo(() => contarCarteira(lista ?? []), [lista]);
   const tarefas = useMemo(() => tarefasDaCarteira(lista ?? [], agora), [lista, agora]);
-  const visiveis = useMemo(() => filtrarCarteira(lista ?? [], { filtro, termo, ordem }), [lista, filtro, termo, ordem]);
+  const filtrados = useMemo(() => filtrarCarteira(lista ?? [], { filtro, termo, ordem }), [lista, filtro, termo, ordem]);
+  const emAtraso = useMemo(() => comAtraso(lista ?? []).filter((c) => !encerrado(c)).length, [lista]);
+  const visiveis = useMemo(() => (soAtraso ? comAtraso(filtrados) : filtrados), [soAtraso, filtrados]);
+  const verCobranca = sessao?.acoes.includes("console.cobranca.ver") ?? false;
   const paginas = Math.max(1, Math.ceil(visiveis.length / POR_PAGINA));
   const atual = Math.min(pagina, paginas);
   const daPagina = visiveis.slice((atual - 1) * POR_PAGINA, atual * POR_PAGINA);
@@ -360,6 +381,14 @@ export function Carteira() {
               </option>
             ))}
           </select>
+          {emAtraso > 0 || soAtraso ? (
+            <div className="chips" role="group" aria-label="Situação">
+              <button type="button" aria-pressed={soAtraso} onClick={() => { setSoAtraso(!soAtraso); setPagina(1); }}>
+                <Icone nome="fatura" className="ico" />
+                Fatura em atraso ({emAtraso})
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {lista === null ? (
@@ -487,12 +516,17 @@ export function Carteira() {
                       ) : (
                         <span className="selo selo-implant">{ESTAGIOS.IMPLANTACAO}</span>
                       )}
-                      {encerrado(c) ? null : lista.length ? (
-                        lista.map((p) => (
-                          <span key={p} className="selo selo-atencao">
-                            {TEXTOS_PENDENCIA[p]}
-                          </span>
-                        ))
+                      {encerrado(c) ? (
+                        atrasoDe(c) > 0 ? <SeloAtraso dias={atrasoDe(c)} /> : null
+                      ) : lista.length || atrasoDe(c) > 0 ? (
+                        <>
+                          {lista.map((p) => (
+                            <span key={p} className="selo selo-atencao">
+                              {TEXTOS_PENDENCIA[p]}
+                            </span>
+                          ))}
+                          {atrasoDe(c) > 0 ? <SeloAtraso dias={atrasoDe(c)} /> : null}
+                        </>
                       ) : (
                         <span className="selo selo-ok">
                           <Icone nome="check" className="ico" />
@@ -551,12 +585,28 @@ export function Carteira() {
             </span>
           </p>
         ) : null}
+        {lista && soAtraso && visiveis.length > 0 ? (
+          <p className="fc-nota-lista">
+            <Icone nome="ajuda" className="ico" />
+            <span>
+              “Fatura em atraso” não entra em “Com pendência”, que conta só o que falta na implantação. Os valores e as faturas ficam em Cobrança, para a
+              Administração e o Financeiro.
+            </span>
+          </p>
+        ) : null}
         {lista && visiveis.length > 0 ? (
           <div className="rodape-tab">
             <span aria-live="polite">
-              Mostrando {daPagina.length} de {visiveis.length} {visiveis.length === 1 ? "escritório" : "escritórios"}
-              {verEncerrados ? (visiveis.length === 1 ? " encerrado" : " encerrados") : ""}
+              {soAtraso
+                ? `Mostrando ${visiveis.length} ${visiveis.length === 1 ? "escritório" : "escritórios"} com fatura em atraso, do atraso maior para o menor`
+                : `Mostrando ${daPagina.length} de ${visiveis.length} ${visiveis.length === 1 ? "escritório" : "escritórios"}${verEncerrados ? (visiveis.length === 1 ? " encerrado" : " encerrados") : ""}`}
             </span>
+            {soAtraso && verCobranca ? (
+              <a className="ver" href={`${COBRANCA}?situacao=EM_ATRASO`}>
+                Ver as faturas em Cobrança
+                <Icone nome="dir" className="ico" />
+              </a>
+            ) : null}
             {paginas > 1 ? (
               <nav className="pag" aria-label="Páginas">
                 {Array.from({ length: paginas }, (_, i) => i + 1).map((n) => (

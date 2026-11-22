@@ -187,6 +187,21 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   CIDADE_DATA_LONGA: "A cidade e a data passam de 120 letras.",
   DATA_FUTURA: "A data da assinatura não pode ser depois de hoje.",
   DATA_INVALIDA: "Confira a data da assinatura.",
+  // Cobrança dos escritórios (CO-06).
+  FATURA_JA_PAGA: "Esta fatura já está paga. Recarregue a página para ver o pagamento.",
+  FATURA_CANCELADA: "Esta fatura foi cancelada e não vale mais.",
+  FATURA_FECHADA: "Esta fatura já foi paga ou cancelada. Recarregue a página para ver como está.",
+  VALOR_DIFERENTE_DA_FATURA: "O valor recebido precisa ser igual ao da fatura.",
+  PLANO_ARQUIVADO: "Este plano está arquivado e não aceita assinatura nova. Escolha outro.",
+  PLANO_NAO_ARQUIVADO: "Este plano não está arquivado.",
+  PRECO_INVALIDO: "Escreva o preço com os centavos, por exemplo 290,00.",
+  MESMO_PLANO: "O escritório já está neste plano.",
+  CARNE_SEM_PARCELA_A_TROCAR: "Não há parcela do carnê a trocar: todas já têm fatura ou foram pagas.",
+  PARCELA_FECHADA: "Esta parcela já foi paga ou cancelada. Recarregue a página para ver como está.",
+  JA_SO_CONSULTA: "O Portal deste escritório já está só para consulta.",
+  SEM_ATRASO_30: "Só dá para passar o Portal para só consulta com uma fatura em atraso há 30 dias ou mais.",
+  NAO_ESTA_SO_CONSULTA: "O Portal deste escritório não está só para consulta.",
+  PORTAL_SO_CONSULTA: "O Portal está só para consulta por uma pendência com o T3jus. Você continua vendo tudo, mas não cria nem muda nada.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

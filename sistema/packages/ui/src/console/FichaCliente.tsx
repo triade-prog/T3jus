@@ -4,6 +4,8 @@
 // (as outras abas): a abertura com a implantação, as abas e a área de baixo de cada uma.
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { AbaAssinatura, FaixaSoConsulta } from "./AbaAssinatura.tsx";
+import type { AssinaturaResposta } from "./cobranca.ts";
 import {
   convidarPessoaSchema,
   ESTAGIOS,
@@ -470,7 +472,7 @@ function Lateral({ f, nota }: { f: FichaDoCliente; nota: Nota | null }) {
   );
 }
 
-export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
+export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta }: {
   id: string;
   aba: AbaFicha;
   /** Abrir a aba Ficha já editando (atalho de "Sem contato"). */
@@ -479,6 +481,8 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
   mudar?: boolean;
   /** Escritório recém-cadastrado: mostra o aviso uma vez. */
   cadastrado?: boolean;
+  /** Abrir a aba Assinatura já na janela de só consulta (atalho da fatura em atraso). */
+  consulta?: boolean;
 }) {
   const sessao = useSessaoConsole();
   const [f, setF] = useState<FichaDoCliente | null>(null);
@@ -486,6 +490,14 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [agora, setAgora] = useState(() => new Date());
   const carregado = useRef(false);
+  const [soConsulta, setSoConsulta] = useState<{ desde: string; por: string | null } | null>(null);
+
+  // O Portal só para consulta por atraso aparece numa faixa em todas as abas (CO-06).
+  const carregarAcesso = useCallback(async () => {
+    const a = await chamarConsole<AssinaturaResposta>(`/v1/clientes/${id}/assinatura`);
+    const s = a.ok ? a.dados.assinatura : null;
+    setSoConsulta(s?.soConsultaDesde ? { desde: s.soConsultaDesde, por: s.soConsulta?.por ?? null } : null);
+  }, [id]);
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -496,11 +508,12 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
       return;
     }
     setF(fichaParaTela(r.dados));
+    void carregarAcesso();
     if (r.dados.permissoes.includes("console.notas.ver") && aba !== "notas") {
       const n = await chamarConsole<{ notas: Nota[] }>(`/v1/clientes/${id}/notas`);
       if (n.ok) setNotas(n.dados.notas);
     }
-  }, [id, aba]);
+  }, [id, aba, carregarAcesso]);
 
   useEffect(() => {
     if (carregado.current) return;
@@ -568,6 +581,7 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
         <>
           <Cabecalho f={f} />
           <FaixaContrato f={f} />
+          {soConsulta && aba !== "assinatura" ? <FaixaSoConsulta id={id} desde={soConsulta.desde} por={soConsulta.por} /> : null}
           <Abas id={id} aba={aba} f={f} notas={notas ? notas.length : null} />
           {cadastrado ? (
             <AvisoD2 tom="sucesso" className="toast" titulo="Escritório cadastrado.">
@@ -596,6 +610,8 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado }: {
             <AbaContrato f={f} recarregar={recarregar} mudarAoEntrar={mudar} />
           ) : aba === "equipe" ? (
             <AbaEquipe f={f} eu={sessao?.pessoaId ?? null} recarregar={recarregar} />
+          ) : aba === "assinatura" ? (
+            <AbaAssinatura id={id} nome={f.escritorio.nome} socio={f.socios[0]?.nome ?? null} consultaAoAbrir={consulta} aoMudarAcesso={() => void carregarAcesso()} />
           ) : aba === "notas" ? (
             <AbaNotas f={f} aoCarregar={setNotas} />
           ) : f.permissoes.includes("console.historico.ver") ? (

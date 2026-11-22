@@ -20,6 +20,8 @@ export interface SessaoConsole {
   acoes: string[];
   /** Interessados que pedem atenção (F2.3), no contador de Comercial. */
   interessadosAtencao?: number;
+  /** Faturas em atraso que pedem ação (CO-06), no contador de Cobrança. */
+  faturasAtraso?: number;
 }
 
 const TELA_ENTRAR = "/entrar";
@@ -56,7 +58,7 @@ export function useSessaoConsole(): SessaoConsole | null {
   return sessao;
 }
 
-type Area = "inicio" | "clientes" | "equipe" | "suporte" | "comercial";
+type Area = "inicio" | "clientes" | "cobranca" | "equipe" | "suporte" | "comercial";
 
 /** Página da Equipe T3jus (só Administração). */
 export const EQUIPE = "/equipe";
@@ -69,6 +71,9 @@ const AREAS: { nome: string; icone: NomeIcone }[] = [{ nome: "Financeiro", icone
 
 /** Comercial › Interessados (F2.3): Administração e Implantação. */
 export const INTERESSADOS = "/interessados";
+
+/** Cobrança dos escritórios (CO-06): só Administração e Financeiro. */
+export const COBRANCA = "/cobranca";
 
 /** Suporte de acesso (F1.3): só aparece para quem tem Suporte ou Administração. */
 const SUPORTE_HREF = "/suporte";
@@ -186,6 +191,17 @@ export function MolduraConsole({
                 <ItemApagado key={i.nome} nome={i.nome} icone={i.icone} />
               ),
             )}
+            {sessao?.acoes.includes("console.cobranca.ver") ? (
+              <a className="item" href={COBRANCA} aria-current={atual === "cobranca" ? "page" : undefined}>
+                <Icone nome="fatura" className="ico" />
+                Cobrança
+                {sessao.faturasAtraso ? (
+                  <span className="cont" aria-label={`${sessao.faturasAtraso} ${sessao.faturasAtraso === 1 ? "fatura" : "faturas"} em atraso`}>
+                    {sessao.faturasAtraso}
+                  </span>
+                ) : null}
+              </a>
+            ) : null}
             <p className="grupo">Áreas</p>
             {sessao?.acoes.includes("console.interessados.ver") ? (
               <a className="item" href={INTERESSADOS} aria-current={atual === "comercial" ? "page" : undefined}>
