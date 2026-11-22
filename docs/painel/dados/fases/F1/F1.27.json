@@ -1,0 +1,12 @@
+{
+  "id": "F1.27",
+  "texto": "Carnê da assinatura em PDF, no Console e no Portal",
+  "peca": "S7",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "feito",
+  "ordem": 67.39,
+  "nota": "Desenho aprovado pela Carol em 22/11/2026 (docs/design/aprovadas/cobranca-pdfs, carne-a4). O carnê sai como está hoje (decisão 8): parcela paga ou cancelada vem marcada e sem códigos, com o carnê que vale no lugar. O Console baixa sempre, para conferir; o Portal só oferece com o meio de pagamento ligado e os dados do T3jus completos (decisão 3). A cópia guardada do dia da geração segue em F1.21.",
+  "evidencia": "Migration 0696_cobranca_carne_pdf.sql: cobranca_carne_documento_json, console_carne_documento, portal_plano_faturas_carne_documento e cobranca_carne_pdf_disponivel; portal_plano_faturas diz se o carnê sai (carnePdf). PDF em supabase/functions/_shared/cobranca_pdf.ts (pdfDoCarne: capa e parcelas, 3 faixas destacáveis por folha, canhoto e via, Pix com QR, boleto com código de barras, parcela paga, cancelada e sem códigos). Rotas GET /v1/clientes/:id/carnes/:carne/pdf (api-console) e /v1/escritorio/assinatura/carnes/:carne/pdf (api-portal). Botões \"Baixar o carnê (PDF)\" na aba Assinatura do Console e \"Baixar o carnê\" no Portal, com Preparando e erro com código. Testes: supabase/tests/pgtap/117_cobranca_carne_pdf_test.sql (13), _shared/cobranca_pdf_test.ts, api-console/cobranca_test.ts, tests/e2e/console-cobranca.spec.ts e portal-plano-faturas.spec.ts (48 no celular e no computador, com axe)."
+}

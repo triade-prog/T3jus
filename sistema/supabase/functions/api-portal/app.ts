@@ -39,7 +39,7 @@ import type { AdminAuth } from "../_shared/auth.ts";
 import { entregarWhatsapp, type EntregaWhatsapp } from "./envio_whatsapp.ts";
 import { criarApp } from "../_shared/app.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
-import { baixarDocumentoCobranca, type DocumentoCobranca } from "../_shared/cobranca_pdf.ts";
+import { baixarCarneCobranca, baixarDocumentoCobranca, type DocumentoCarne, type DocumentoCobranca } from "../_shared/cobranca_pdf.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { rotasPeticoes } from "./peticoes.ts";
@@ -189,6 +189,13 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
       return c.json(await baixarDocumentoCobranca(deps.arquivos, c.get("escritorioId"), d, recibo));
     });
   }
+  // O carnê da assinatura do T3jus em PDF (F1.21; o carnê dos clientes do escritório é outro): só o sócio dono, com o meio de pagamento ligado e os dados do T3jus.
+  app.get("/v1/escritorio/assinatura/carnes/:carne/pdf", async (c) => {
+    const d = await deps.banco.rpc<DocumentoCarne>("portal_plano_faturas_carne_documento", {
+      p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId"), p_carne: idDaRota(c, "carne"),
+    });
+    return c.json(await baixarCarneCobranca(deps.arquivos, c.get("escritorioId"), d));
+  });
 
   // Equipe do escritório (PA-02): só o sócio dono. O banco confere em cada chamada.
   const quem = (c: Context<VarsPortal>) => ({ p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") });

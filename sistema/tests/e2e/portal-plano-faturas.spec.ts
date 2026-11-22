@@ -102,6 +102,26 @@ test.describe("F1.20: Plano e faturas no Portal", () => {
     await expect(folha.getByText("parcela 4 de 12 · paga em 18/11, Pix").locator("visible=true")).toBeVisible();
     await expect(folha.getByRole("button", { name: "Baixar o carnê (PDF)" })).toHaveAttribute("aria-disabled", "true");
     await semViolacoes(page);
+
+    // F1.21: com o meio de pagamento ligado e os dados do T3jus, o carnê baixa em PDF.
+    await page.unrouteAll();
+    const baixados: string[] = [];
+    await page.route("**/baixado/**", async (r) => {
+      baixados.push(new URL(r.request().url()).pathname);
+      await r.fulfill({ status: 200, contentType: "application/pdf", headers: { "content-disposition": "attachment" }, body: "%PDF-1.7" });
+    });
+    await abrir(page, {
+      "/v1/escritorio": { corpo: { ...ESC, cobranca: SEM_COBRANCA } },
+      "/v1/escritorio/faturas": { corpo: { hoje: HOJE, assinatura: { ...ASSINATURA, forma: "CARNE" }, carne: [carne], documentos: true, carnePdf: true,
+        faturas: [fatura("2026-12-01", "A_VENCER", parc(3))] } },
+      [`/v1/escritorio/assinatura/carnes/${carne.id}/pdf`]: { corpo: { url: `${P}/baixado/carne-2026-2027.pdf`, nome: "carne-2026-2027.pdf", tamanho: 1 } },
+    });
+    await expect(folha).not.toContainText("carnê em PDF sai quando");
+    await folha.getByRole("button", { name: "Baixar o carnê", exact: true }).click();
+    await expect.poll(() => baixados).toEqual(["/baixado/carne-2026-2027.pdf"]);
+    await folha.getByRole("button", { name: "Baixar o carnê (PDF)" }).click();
+    await expect.poll(() => baixados.length).toBe(2);
+    await semViolacoes(page);
   });
 
   test("atraso de 10 dias: a faixa só para o dono em todas as páginas e a fatura em destaque", async ({ page }) => {

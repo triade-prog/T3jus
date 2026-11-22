@@ -53,7 +53,7 @@ import {
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
-import { baixarDocumentoCobranca, type DocumentoCobranca } from "../_shared/cobranca_pdf.ts";
+import { baixarCarneCobranca, baixarDocumentoCobranca, type DocumentoCarne, type DocumentoCobranca } from "../_shared/cobranca_pdf.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
@@ -806,6 +806,12 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
       return c.json(await baixarDocumentoCobranca(deps.arquivos, id, d, recibo));
     });
   }
+  // O carnê em PDF (F1.21), como está hoje: o Console baixa sempre, para conferir.
+  app.get("/v1/clientes/:id/carnes/:carne/pdf", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await rpc<DocumentoCarne>("console_carne_documento", { p_pessoa: pessoa(c), p_escritorio: id, p_carne: idDaRota(c, "carne") });
+    return c.json(await baixarCarneCobranca(deps.arquivos, id, d));
+  });
   app.post("/v1/clientes/:id/faturas/:fatura/pagamento-manual", async (c) => {
     const id = idDaRota(c, "id");
     const fatura = idDaRota(c, "fatura");

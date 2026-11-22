@@ -61,6 +61,8 @@ export interface PlanoFaturasPortal {
   carne?: CarneCb[] | null;
   /** O PDF da fatura e o recibo já saem (F1.21): os dados do T3jus na fatura estão completos. */
   documentos?: boolean;
+  /** O carnê em PDF já sai: o meio de pagamento está ligado e os dados do T3jus, completos. */
+  carnePdf?: boolean;
 }
 
 /** Quem baixa o PDF da fatura e o recibo; null enquanto eles ainda não saem. */
@@ -312,6 +314,7 @@ function LadoDaFatura({ d, abertas, aoPagar, nota }: { d: PlanoFaturasPortal; ab
       </div>
     );
   }
+  const carneDaProxima = (d.carne ?? []).find((c) => c.itens.length) ?? null;
   const proxima = [...abertas].sort((x, y) => x.vencimento.localeCompare(y.vencimento))[0];
   return (
     <div>
@@ -343,6 +346,8 @@ function LadoDaFatura({ d, abertas, aoPagar, nota }: { d: PlanoFaturasPortal; ab
             </button>
             {doc && !carne ? (
               <BotaoBaixarDoc doc={doc} chave="lado-fatura" caminho={`/v1/escritorio/faturas/${proxima.id}/pdf`} rotulo="Baixar a fatura" />
+            ) : doc && carne && d.carnePdf && carneDaProxima ? (
+              <BotaoBaixarDoc doc={doc} chave="lado-carne" caminho={`/v1/escritorio/assinatura/carnes/${carneDaProxima.id}/pdf`} rotulo="Baixar o carnê" />
             ) : (
               <button className="btn btn-sec" type="button" aria-disabled="true" aria-describedby={nota}>
                 <Icone nome="baixar" className="ico" />
@@ -352,6 +357,8 @@ function LadoDaFatura({ d, abertas, aoPagar, nota }: { d: PlanoFaturasPortal; ab
           </p>
           {doc && !carne ? (
             <SituacaoDoc doc={doc} chave="lado-fatura" de={`da fatura de ${mesPorExtenso(proxima.competencia)}`} nadaMudou={NADA_MUDOU} contato={CONTATO_T3JUS} />
+          ) : doc && carne && d.carnePdf && carneDaProxima ? (
+            <SituacaoDoc doc={doc} chave="lado-carne" de={`do carnê ${carneDaProxima.numero}`} nadaMudou="Nada mudou no carnê." contato={CONTATO_T3JUS} />
           ) : null}
         </>
       ) : (
@@ -483,12 +490,17 @@ export function PlanoEFaturas() {
       </div>
       {carnes.map((c) => (
         <FolhaCarne key={c.id} carne={c} classe="cb-carne-pt" nivel={3} titulo={`Seu carnê ${c.numero}`}
-          acoes={
+          acoes={doc && d.carnePdf ? (
+            <>
+              <BotaoBaixarDoc doc={doc} chave={`carne-${c.id}`} caminho={`/v1/escritorio/assinatura/carnes/${c.id}/pdf`} rotulo="Baixar o carnê (PDF)" />
+              <SituacaoDoc doc={doc} chave={`carne-${c.id}`} de={`do carnê ${c.numero}`} nadaMudou="Nada mudou no carnê." contato={CONTATO_T3JUS} />
+            </>
+          ) : (
             <button className="btn btn-sec" type="button" aria-disabled="true" aria-describedby={nota}>
               <Icone nome="baixar" className="ico" />
               Baixar o carnê (PDF)
             </button>
-          }
+          )}
           rodape="Cada parcela tem o próprio Pix e boleto. A fatura de cada mês sai 20 dias antes do vencimento, com os mesmos códigos da parcela." />
       ))}
       <h3 className="sr">Faturas</h3>
@@ -501,9 +513,11 @@ export function PlanoEFaturas() {
       <p className="docs-pe" id={nota}>
         <Icone nome="doc" className="ico" />
         <span>
-          {doc
-            ? "O carnê em PDF sai quando o T3jus ligar o meio de pagamento. "
-            : "O PDF da fatura, o recibo e o carnê em PDF saem quando o T3jus ligar o meio de pagamento. "}
+          {doc && d.carnePdf
+            ? ""
+            : doc
+              ? "O carnê em PDF sai quando o T3jus ligar o meio de pagamento. "
+              : "O PDF da fatura, o recibo e o carnê em PDF saem quando o T3jus ligar o meio de pagamento. "}
           A nota fiscal de cada fatura paga vai aparecer aqui quando o T3jus começar a emitir pelo sistema.
         </span>
       </p>
