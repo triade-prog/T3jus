@@ -1,6 +1,7 @@
 // Portal do advogado: áreas e equipe do escritório (PA-01, PA-02).
 // Os mesmos valores estão no banco (0140_portal_equipe.sql); os testes conferem os dois.
 
+import type { DadosDocumentoPessoa, EnderecoEscritorio } from "./dados_advogado.ts";
 import type { SaidaPessoa } from "./contrato.ts";
 import { z } from "zod";
 
@@ -131,6 +132,9 @@ export interface PessoaEquipePortal {
 export interface FichaPessoaEquipe extends PessoaEquipePortal {
   frase: string | null;
   contratos: ContratoDoAdvogado[];
+  /** Os dados para os documentos (EX-15), com as últimas mudanças. */
+  dados: DadosDocumentoPessoa;
+  escritorio: EnderecoEscritorio;
 }
 
 /** Sua conta (decisão 7 da OAB): só a pessoa da sessão, só para ler. */
@@ -145,6 +149,9 @@ export interface ContaPortal {
   frase: string | null;
   contratos: ContratoDoAdvogado[];
   socios: string[];
+  /** Os dados para os documentos (EX-15). */
+  dados: DadosDocumentoPessoa;
+  escritorio: EnderecoEscritorio;
 }
 
 /** Quem foi retirado da equipe (F0.14): GET /v1/escritorio/equipe/retiradas. */

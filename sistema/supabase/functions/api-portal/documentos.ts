@@ -198,7 +198,9 @@ export function rotasDocumentos(app: Hono<VarsPortal>, deps: DepsPortal) {
   // ------------------------------------------------------------------- gerar
 
   app.get("/v1/escritorio/contratos/:id/documentos-dados", async (c) => {
-    return c.json(await deps.banco.rpc<DadosDocumentos>("portal_documento_dados", { ...quem(c), p_contrato: idDaRota(c, "id") }));
+    const dados = await deps.banco.rpc<DadosDocumentos>("portal_documento_dados", { ...quem(c), p_contrato: idDaRota(c, "id") });
+    // Quem está gerando: o link "Completar" leva a Sua conta quando os dados são da própria pessoa (EX-15).
+    return c.json({ ...dados, eu: c.get("sessao").pessoaId });
   });
 
   app.get("/v1/escritorio/contratos/:id/documentos", async (c) => {
