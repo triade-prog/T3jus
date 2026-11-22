@@ -165,6 +165,8 @@ export interface AssinaturaCb {
   precoDoPlanoHojeCentavos?: number;
   emailCobranca?: string;
   cnpjNota?: string | null;
+  /** Endereço de cobrança (F1.21): vai no boleto como endereço do pagador. */
+  enderecoCobranca?: EnderecoCobranca | null;
   parcelasPorCarne?: number | null;
   desconto?: { pct: number; ate: string; motivo: string; por: string | null } | null;
   soConsulta?: { desde: string; motivo: string; por: string | null } | null;
@@ -173,6 +175,22 @@ export interface AssinaturaCb {
   carne?: { emUso: CarneCb[]; substituidos: { id: string; numero: string; substituidoEm: string; motivo: string }[]; valorHojeCentavos: number | null } | null;
   faturas?: FaturaCb[];
   mudancas?: EventoCb[];
+}
+
+export interface EnderecoCobranca {
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string | null;
+  bairro: string;
+  cidade: string;
+  uf: string;
+}
+
+/** "Rua da Aurora, 295, sala 1102 · Boa Vista · Recife, PE · CEP 50050-000" */
+export function enderecoEmLinha(e: EnderecoCobranca): string {
+  const cep = e.cep.replace(/\D/g, "");
+  return `${e.logradouro}, ${e.numero}${e.complemento ? `, ${e.complemento}` : ""} · ${e.bairro} · ${e.cidade}, ${e.uf} · CEP ${cep.slice(0, 5)}-${cep.slice(5)}`;
 }
 
 /** GET /v1/clientes/:id/assinatura. */
@@ -185,6 +203,9 @@ export interface AssinaturaResposta {
   pessoasAtivas: number;
   emailSugerido: string | null;
   cnpjSugerido: string | null;
+  /** Só para quem vê os valores: o que a ficha tem de endereço, para começar o de cobrança. */
+  enderecoSugerido?: Partial<EnderecoCobranca>;
+  fichaTemEndereco?: boolean;
   planos: { id: string; nome: string; precoCentavos: number; pessoasIncluidas: number; previa: PreviaPlano | null }[] | null;
   pessoaAMaisCentavos: number | null;
   assinatura: AssinaturaCb | null;
@@ -409,7 +430,8 @@ function mudancasAssinatura(d: Record<string, unknown>): string {
   const forma = de("forma");
   if (forma) partes.push(`forma ${FORMAS_TEXTO[String(forma.de)] ?? ""} → ${FORMAS_TEXTO[String(forma.para)] ?? ""}`);
   if (d.emailCobranca) partes.push("e-mail de cobrança");
-  if (d.cnpjNota) partes.push("CNPJ da nota");
+  if (d.cnpjNota) partes.push("CNPJ de cobrança");
+  if (d.enderecoCobranca) partes.push("endereço de cobrança");
   const desc = d.desconto as { pct?: number | null } | undefined;
   if (desc) partes.push(desc.pct ? `desconto de ${desc.pct}%` : "sem desconto");
   const parc = de("parcelasPorCarne");

@@ -5,10 +5,10 @@
 // Implantação e Suporte veem o plano e a situação, sem valores nem faturas (o banco já esconde).
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { FORMAS_ASSINATURA, mesPorExtenso, type FormaAssinatura } from "@t3jus/domain";
+import { FORMAS_ASSINATURA, mesPorExtenso, UFS_BRASIL, type FormaAssinatura } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { brl, dataBr, textoEvento, textoPessoas, type AssinaturaCb, type AssinaturaResposta, type FaturaCb } from "./cobranca.ts";
+import { brl, dataBr, enderecoEmLinha, textoEvento, textoPessoas, type AssinaturaCb, type AssinaturaResposta, type FaturaCb } from "./cobranca.ts";
 import { formatarCnpj } from "./ficha.ts";
 import { chamarConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
@@ -438,6 +438,21 @@ interface Formulario {
   ate: string;
   motivo: string;
   parcelas: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+}
+
+const UFS = Object.keys(UFS_BRASIL).sort();
+const CAMPOS_ENDERECO = ["cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf"] as const;
+
+function cepComHifen(cep: string): string {
+  const n = cep.replace(/\D/g, "");
+  return n.length === 8 ? `${n.slice(0, 5)}-${n.slice(5)}` : cep;
 }
 
 function formularioDe(r: AssinaturaResposta): Formulario {
@@ -453,10 +468,27 @@ function formularioDe(r: AssinaturaResposta): Formulario {
     ate: a?.desconto?.ate ?? mesesDesde(proxima, 3)[2]!,
     motivo: a?.desconto?.motivo ?? "",
     parcelas: String(a?.parcelasPorCarne ?? 12),
+    // O endereço de cobrança nasce da ficha (decisão 10 do desenho cobranca-pdfs); a ficha não tem o CEP.
+    ...enderecoDe(a ? a.enderecoCobranca ?? null : null, a?.enderecoCobranca ? {} : r.enderecoSugerido ?? {}),
   };
 }
 
-function corpoDe(v: Formulario, criar: boolean) {
+function enderecoDe(e: AssinaturaCb["enderecoCobranca"], sugerido: Record<string, string | null | undefined>) {
+  const x = (e ?? sugerido) as Record<string, string | null | undefined>;
+  const t = (k: string) => x[k] ?? "";
+  return { cep: cepComHifen(t("cep")), logradouro: t("logradouro"), numero: t("numero"), complemento: t("complemento"), bairro: t("bairro"), cidade: t("cidade"), uf: t("uf") };
+}
+
+/**
+ * O endereço veio só da sugestão da ficha (sem CEP) e ninguém mexeu: não trava o salvar do resto
+ * da assinatura; segue sem endereço, e a folha continua avisando que falta.
+ */
+function enderecoIntocado(v: Formulario, inicial: Formulario, temSalvo: boolean): boolean {
+  return !temSalvo && !v.cep.trim() && CAMPOS_ENDERECO.every((k) => v[k] === inicial[k]);
+}
+
+/** `endereco`: "enviar" o que está nos campos, "vazio" (sem endereço) ou "omitir" (fica o salvo). */
+function corpoDe(v: Formulario, criar: boolean, endereco: "enviar" | "vazio" | "omitir" = "enviar") {
   const pct = Number(v.pct.trim() || "0");
   return {
     ...(criar ? { planoId: v.planoId } : {}),
@@ -466,6 +498,7 @@ function corpoDe(v: Formulario, criar: boolean) {
     cnpjNota: v.cnpj.replace(/\D/g, "") || null,
     desconto: v.pct.trim() && pct !== 0 ? { pct: Number.isInteger(pct) ? pct : -1, ate: v.ate, motivo: v.motivo.trim() } : null,
     parcelasPorCarne: v.forma === "CARNE" ? Number(v.parcelas) : null,
+    ...(endereco === "omitir" ? {} : { endereco: endereco === "vazio" ? null : Object.fromEntries(CAMPOS_ENDERECO.map((k) => [k, v[k].trim()])) }),
   };
 }
 
@@ -473,7 +506,14 @@ const NOMES_CAMPOS: [keyof Formulario, string][] = [
   ["dia", "Dia de vencimento"],
   ["forma", "Forma de pagamento"],
   ["email", "E-mail de cobrança"],
-  ["cnpj", "CNPJ da nota"],
+  ["cnpj", "CNPJ de cobrança"],
+  ["cep", "CEP"],
+  ["logradouro", "Rua, avenida ou travessa"],
+  ["numero", "Número"],
+  ["complemento", "Complemento"],
+  ["bairro", "Bairro"],
+  ["cidade", "Cidade"],
+  ["uf", "UF"],
   ["pct", "Desconto"],
   ["ate", "Desconto até"],
   ["motivo", "Motivo do desconto"],
@@ -492,6 +532,8 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
   const a = r.assinatura;
   const criar = !a;
   const [v, setV] = useState<Formulario>(() => formularioDe(r));
+  const [inicial] = useState<Formulario>(() => formularioDe(r));
+  const intocado = enderecoIntocado(v, inicial, !!a?.enderecoCobranca);
   const [versao, setVersao] = useState(a?.versao ?? null);
   const [erros, setErros] = useState<Set<string>>(new Set());
   const [falha, setFalha] = useState<{ tipo: "erro"; erro: ErroApi } | null>(null);
@@ -511,6 +553,15 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email.trim())) e.add("emailCobranca");
     const cnpj = v.cnpj.replace(/\D/g, "");
     if (cnpj && cnpj.length !== 14) e.add("cnpjNota");
+    // Endereço de cobrança: vazio vale (a fatura sai só com o Pix); começou, precisa estar inteiro.
+    if (r.valores && !intocado && CAMPOS_ENDERECO.some((k) => v[k].trim())) {
+      if (!/^\d{5}-?\d{3}$/.test(v.cep.trim())) e.add("cepCobranca");
+      if (v.logradouro.trim().length < 2) e.add("logradouroCobranca");
+      if (!v.numero.trim()) e.add("numeroCobranca");
+      if (v.bairro.trim().length < 2) e.add("bairroCobranca");
+      if (v.cidade.trim().length < 2) e.add("cidadeCobranca");
+      if (!v.uf) e.add("ufCobranca");
+    }
     if (v.pct.trim() && v.pct.trim() !== "0") {
       const n = Number(v.pct.trim());
       if (!Number.isInteger(n) || n < 1 || n > 100) e.add("descontoPct");
@@ -527,7 +578,7 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
     if (!confirmado && carneEmUso && (Number(v.dia) !== a!.diaVencimento || v.forma !== a!.forma)) return setConfirmarCarne(true);
     setConfirmarCarne(false);
     setEnviando(true);
-    const res = await chamarConsole(`/v1/clientes/${id}/assinatura`, { metodo: "PUT", corpo: { ...(versaoUsada ? { versao: versaoUsada } : {}), ...corpoDe(v, criar) } });
+    const res = await chamarConsole(`/v1/clientes/${id}/assinatura`, { metodo: "PUT", corpo: { ...(versaoUsada ? { versao: versaoUsada } : {}), ...corpoDe(v, criar, !r.valores ? "omitir" : intocado ? "vazio" : "enviar") } });
     setEnviando(false);
     if (!res.ok) {
       const campos = res.erro.detalhes?.campos;
@@ -553,6 +604,39 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
   const erro = (campo: string, texto: string) =>
     erros.has(campo) ? <ErroCampo id={`${ids}-${campo}-e`}>{texto}</ErroCampo> : null;
   const inv = (campo: string) => erros.has(campo) || undefined;
+  const digitosCep = v.cep.replace(/\D/g, "").length;
+  const campoEnd = (k: (typeof CAMPOS_ENDERECO)[number], rotulo: string, classe: string, auto: string, texto: string | null, ajuda?: string) => {
+    const c = `${k}Cobranca`;
+    const desc = descritoPor(erros.has(c) && `${ids}-${c}-e`, ajuda ? `${ids}-${k}-a` : false);
+    return (
+      <div className={`campo ${classe}`}>
+        <label htmlFor={`${ids}-${k}`}>
+          {rotulo}
+          {k === "complemento" ? <span className="opcional"> (opcional)</span> : null}
+          {conflito && conflito.salvo[k] !== v[k] ? <span className="mudou">Mudou</span> : null}
+        </label>
+        {k === "uf" ? (
+          <select className="entrada" id={`${ids}-${k}`} autoComplete={auto} value={v.uf} onChange={(e) => muda("uf")(e.target.value)} aria-invalid={inv(c)} aria-describedby={desc}>
+            <option value="">Escolha</option>
+            {UFS.map((u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input className="entrada" id={`${ids}-${k}`} type="text" autoComplete={auto} inputMode={k === "cep" ? "numeric" : undefined} value={v[k]}
+            onChange={(e) => muda(k)(e.target.value)} aria-invalid={inv(c)} aria-describedby={desc} />
+        )}
+        {texto ? erro(c, texto) : null}
+        {ajuda ? (
+          <p className="ajuda" id={`${ids}-${k}-a`}>
+            {ajuda}
+          </p>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <section className="folha" aria-labelledby={`${ids}-t`} style={{ overflow: "hidden" }}>
@@ -717,15 +801,35 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
           </div>
           <div className="campo c3">
             <label htmlFor={`${ids}-cnpj`}>
-              CNPJ da nota <span className="opcional">(opcional)</span>
+              CNPJ de cobrança <span className="opcional">(opcional)</span>
             </label>
             <input className="entrada" id={`${ids}-cnpj`} inputMode="numeric" autoComplete="off" value={v.cnpj} onChange={(e) => muda("cnpj")(e.target.value)}
               aria-invalid={inv("cnpjNota")} aria-describedby={descritoPor(erros.has("cnpjNota") && `${ids}-cnpjNota-e`, `${ids}-cnpj-a`)} />
             {erro("cnpjNota", "O CNPJ tem 14 dígitos. Confira o número no cartão do CNPJ.")}
             <p className="ajuda" id={`${ids}-cnpj-a`}>
-              O mesmo da ficha. Mude só se a nota sai em outro CNPJ.
+              O mesmo da ficha. Mude só se a cobrança sai em outro CNPJ.
             </p>
           </div>
+          {r.valores ? (
+            <fieldset className="end-grupo" aria-describedby={`${ids}-end-a`}>
+              <legend>Endereço de cobrança</legend>
+              <p className="ajuda" id={`${ids}-end-a`}>
+                Vai no boleto como endereço do pagador; sem ele, o Banco Inter não registra o boleto e a fatura sai só com o Pix. Veio da ficha do escritório: mude só se a cobrança é em
+                outro endereço.
+              </p>
+              <div className="end-grade">
+                {campoEnd("cep", "CEP", "e2", "postal-code",
+                  digitosCep && digitosCep !== 8 ? `O CEP tem 8 números; aqui há ${digitosCep}. Confira, como em 50050-000.` : "Escreva o CEP, com 8 números, como em 50050-000.",
+                  "Só números ou com hífen.")}
+                {campoEnd("logradouro", "Rua, avenida ou travessa", "e4", "address-line1", "Escreva a rua, avenida ou travessa.")}
+                {campoEnd("numero", "Número", "e2", "off", "Escreva o número. Se não houver, escreva S/N.")}
+                {campoEnd("complemento", "Complemento", "e2", "address-line2", "O complemento cabe em até 60 letras.")}
+                {campoEnd("bairro", "Bairro", "e2", "address-level3", "Escreva o bairro.")}
+                {campoEnd("cidade", "Cidade", "e4", "address-level2", "Escreva a cidade.")}
+                {campoEnd("uf", "UF", "e2", "address-level1", "Escolha a UF.")}
+              </div>
+            </fieldset>
+          ) : null}
           <div className="campo c2">
             <label htmlFor={`${ids}-pct`}>
               Desconto na mensalidade (%) <span className="opcional">(opcional)</span>
@@ -848,8 +952,9 @@ function MiniHistorico({ r }: { r: AssinaturaResposta }) {
   );
 }
 
-function Dados({ r, socio }: { r: AssinaturaResposta; socio: string | null }) {
+function Dados({ r, socio, aoPreencher }: { r: AssinaturaResposta; socio: string | null; aoPreencher?: () => void }) {
   const a = r.assinatura!;
+  const semEndereco = r.valores && !a.enderecoCobranca;
   const p = textoPessoas(r.pessoasAtivas, a.pessoasIncluidas);
   const carne = a.carne?.emUso[0];
   return (
@@ -892,12 +997,20 @@ function Dados({ r, socio }: { r: AssinaturaResposta; socio: string | null }) {
         <div>
           <dt>Forma de pagamento</dt>
           <dd>
+            {semEndereco && a.forma === "PIX" ? (
+              <>
+                Só Pix por enquanto <span className="cb-peq">o boleto volta quando o endereço estiver preenchido</span>
+              </>
+            ) : (
+              <>
             {FORMAS_ASSINATURA[a.forma]}
             <span className="cb-peq">
               {a.forma === "CARNE" && carne
                 ? `${carne.parcelas} parcelas, de ${mesPorExtenso(carne.primeiraCompetencia)} a ${mesPorExtenso(carne.ultimaCompetencia)}`
                 : AJUDA_FORMA[a.forma].replace(/^O /, "o ")}
             </span>
+              </>
+            )}
           </dd>
         </div>
       ) : null}
@@ -922,8 +1035,30 @@ function Dados({ r, socio }: { r: AssinaturaResposta; socio: string | null }) {
               {socio ? <span className="cb-peq">com cópia para {socio}, sócio dono</span> : null}
             </dd>
           </div>
+          <div className="inteira">
+            <dt>Endereço de cobrança</dt>
+            {a.enderecoCobranca ? (
+              <dd>
+                {enderecoEmLinha(a.enderecoCobranca)} <span className="cb-peq">vai no boleto como endereço do pagador</span>
+              </dd>
+            ) : (
+              <dd className="end-falta">
+                <span className="selo selo-atencao">
+                  <Icone nome="alerta" className="ico ico-s" />
+                  Falta o endereço
+                </span>
+                {aoPreencher ? (
+                  <button className="end-link" type="button" onClick={aoPreencher}>
+                    Preencher o endereço
+                    <Icone nome="dir" className="ico ico-s" />
+                  </button>
+                ) : null}
+                <span className="cb-peq">Sem ele o boleto não sai, só o Pix.{r.fichaTemEndereco ? " A ficha tem a rua, mas não tem o CEP." : ""}</span>
+              </dd>
+            )}
+          </div>
           <div>
-            <dt>CNPJ da nota</dt>
+            <dt>CNPJ de cobrança</dt>
             <dd>
               <span className="num">{a.cnpjNota ? formatarCnpj(a.cnpjNota) : "Não informado"}</span>
             </dd>
@@ -1215,7 +1350,21 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
                 </div>
               ) : null}
             </div>
-            <Dados r={r} socio={socio} />
+            {podeEditar && r.valores && !s.enderecoCobranca && !encerrado ? (
+              <div style={{ padding: "0 24px 16px" }}>
+                <Aviso tom="atencao" icone="alerta" titulo="Falta o endereço: sem ele o boleto não sai, só o Pix."
+                  acoes={
+                    <button className="btn btn-sec btn-compacto" type="button" onClick={() => { setFeito(null); setEditando(true); }}>
+                      <Icone nome="lapis" className="ico ico-s" />
+                      Preencher o endereço
+                    </button>
+                  }>
+                  O Banco Inter só registra o boleto com o endereço do pagador. Até preencher, a fatura
+                  {s.proxima?.competencia ? ` de ${mesPorExtenso(s.proxima.competencia, true).toLowerCase()}` : ""} vai só com o Pix.
+                </Aviso>
+              </div>
+            ) : null}
+            <Dados r={r} socio={socio} aoPreencher={podeEditar && !encerrado ? () => { setFeito(null); setEditando(true); } : undefined} />
             {!r.valores ? (
               <p className="cb-so-ver">
                 <Icone nome="olho" className="ico" />
