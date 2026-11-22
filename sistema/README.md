@@ -577,7 +577,7 @@ Tela aprovada em `docs/design/aprovadas/portal-procuracoes` (Carol, 21/11/2026; 
 
 ### Quem assina pelo cliente menor ou sob curatela (F3.98; AP-01, CH-08, PT-11)
 
-Tela aprovada em `docs/design/aprovadas/portal-responsavel-legal` (Carol, 22/11/2026, com as 8 recomendações do NOTAS.md). Migration `0820_cliente_responsavel_legal.sql`, teste `112_cliente_responsavel_legal_test.sql`.
+Tela aprovada em `docs/design/aprovadas/portal-responsavel-legal` (Carol, 22/11/2026, com as 8 recomendações do NOTAS.md). Migration `0830_cliente_responsavel_legal.sql`, teste `112_cliente_responsavel_legal_test.sql`.
 
 - **Ficha:** `clientes_escritorio` ganha `capacidade` (PLENA, MENOR ou CURATELA), `nascimento` (só do menor, LGPD), quem assina (`rl_papel`, `rl_nome`, `rl_documento`, RG, nacionalidade, estado civil, profissão, `rl_mora_junto` e o endereço quando não mora junto) e, na curatela, `cur_modo` (REPRESENTA, o padrão, ou ASSISTE), `cur_processo` e `cur_vara`. Uma pessoa só assina pelo cliente. Para salvar, bastam a data (do menor) e o nome de quem assina.
 - **A conta é pela data:** `cliente_assina(c, dia)` diz PROPRIO, REPRESENTADO (até 15 anos), ASSISTIDO (16 e 17), CURATELA ou FEZ_18, com as datas dos 16 e dos 18. A ficha manda `assina`; os documentos fazem a mesma conta no dia de gerar (`quemAssina` em `responsavel_legal.ts`). A qualificação e o que falta (`qualificacao_itens`, `qualificacao_total`) mudam com a situação: do menor de 16 não se pedem estado civil, profissão nem RG; de quem assina, CPF, RG, qualificação e endereço.
