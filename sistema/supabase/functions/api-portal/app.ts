@@ -3,7 +3,7 @@
 
 import type { MiddlewareHandler } from "hono";
 import {
-  areasSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
+  areasSchema, dadosDocumentoSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL, encerrarFunilSchema, type SaidaFunil, type ClienteFunil,
@@ -232,6 +232,19 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.get("/v1/escritorio/conta", async (c) => {
     const conta = await deps.banco.rpc<Omit<ContaPortal, "email">>("portal_conta", quem(c));
     return c.json({ ...conta, email: await deps.admin.emailDe(conta.pessoaId) });
+  });
+
+  // Os dados para os documentos (EX-15): a própria pessoa, sem pessoa na rota; a sócia dona, na Equipe.
+  app.get("/v1/escritorio/conta/dados", async (c) => c.json(await deps.banco.rpc("portal_conta_dados", quem(c))));
+  app.put("/v1/escritorio/conta/dados", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, dadosDocumentoSchema);
+    return c.json(await deps.banco.rpc("portal_conta_dados_salvar", { ...quem(c), p_versao: versao, p_dados: d }));
+  });
+  app.get("/v1/escritorio/equipe/pessoas/:pessoa/dados", async (c) =>
+    c.json(await deps.banco.rpc("portal_equipe_pessoa_dados", { ...quem(c), p_alvo: idDaRota(c, "pessoa") })));
+  app.put("/v1/escritorio/equipe/pessoas/:pessoa/dados", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, dadosDocumentoSchema);
+    return c.json(await deps.banco.rpc("portal_equipe_pessoa_dados_salvar", { ...quem(c), p_alvo: idDaRota(c, "pessoa"), p_versao: versao, p_dados: d }));
   });
 
   // Quem foi retirado e quando a entrada some (F0.14, filtro "Retiradas" da Equipe).

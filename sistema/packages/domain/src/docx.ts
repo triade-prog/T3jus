@@ -409,3 +409,138 @@ export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?:
   if (comLogo) entradas.push({ nome: "word/media/logo.png", dados: logo!.png });
   return await escreverZip(entradas);
 }
+
+// ------------------------------------------------------------------------------- ler para o PDF
+
+/** Um pedaço de texto com o mesmo jeito (negrito e itálico). */
+export interface PedacoLido { texto: string; negrito: boolean; italico: boolean }
+export type AlinhamentoLido = "esquerda" | "centro" | "direita" | "justificado";
+/** Um parágrafo como o PDF precisa: os pedaços, o alinhamento, o recuo da primeira linha e o espaço. */
+export interface ParagrafoLido {
+  pedacos: PedacoLido[];
+  alinhamento: AlinhamentoLido;
+  /** Recuo da primeira linha, em milímetros. */
+  recuo: number;
+  /** Espaço antes e depois, em pontos. */
+  antes: number;
+  depois: number;
+  /** Tamanho da letra, em pontos (o do parágrafo, ou o primeiro que aparece nele). */
+  tamanho: number | null;
+}
+/** O .docx lido para montar o PDF em leiaute simples (D23). */
+export interface DocxLido {
+  cabecalho: ParagrafoLido[];
+  corpo: ParagrafoLido[];
+  /** A primeira imagem PNG ou JPEG do cabeçalho (o logo do timbrado), se houver. */
+  imagemCabecalho: { bytes: Uint8Array; tipo: "png" | "jpg" } | null;
+  /** O modelo tem o que o leiaute simples não reproduz: tabela, imagem no corpo, caixa de texto ou colunas. */
+  complexo: boolean;
+}
+
+const VERDADE = (tag: string | undefined) => !!tag && !/w:val="(0|false|none)"/.test(tag);
+const TWIP_MM = 25.4 / 1440;
+
+function lerParagrafo(xml: string, padraoTamanho: number | null): ParagrafoLido {
+  const pPr = /<w:pPr>([\s\S]*?)<\/w:pPr>/.exec(xml)?.[1] ?? "";
+  const jc = /<w:jc w:val="([^"]+)"/.exec(pPr)?.[1];
+  const alinhamento: AlinhamentoLido = jc === "center" ? "centro" : jc === "right" || jc === "end" ? "direita" : jc === "both" || jc === "distribute" ? "justificado" : "esquerda";
+  const primeira = /<w:ind\s[^>]*w:firstLine="(\d+)"/.exec(pPr)?.[1];
+  const espaco = /<w:spacing\s[^>]*>/.exec(pPr)?.[0] ?? "";
+  const antes = Number(/w:before="(\d+)"/.exec(espaco)?.[1] ?? 0) / 20;
+  const depois = Number(/w:after="(\d+)"/.exec(espaco)?.[1] ?? 0) / 20;
+  const pedacos: PedacoLido[] = [];
+  let tamanho: number | null = null;
+  // Cada "run" com o texto e o jeito; o que estiver fora de run (raro) fica de fora.
+  for (const r of xml.matchAll(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/g)) {
+    const corpo = r[1]!;
+    const rPr = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(corpo)?.[1] ?? "";
+    const negrito = VERDADE(/<w:b(?:\s[^>]*)?\/>/.exec(rPr)?.[0]);
+    const italico = VERDADE(/<w:i(?:\s[^>]*)?\/>/.exec(rPr)?.[0]);
+    const sz = /<w:sz w:val="(\d+)"/.exec(rPr)?.[1];
+    if (sz && tamanho === null) tamanho = Number(sz) / 2;
+    let texto = "";
+    for (const m of corpo.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\/>|<w:br(?:\s[^>]*)?\/>|<w:cr\/>/g)) {
+      if (m[0].startsWith("<w:tab")) texto += "\t";
+      else if (m[0].startsWith("<w:br") || m[0] === "<w:cr/>") texto += "\n";
+      else texto += semEntidades(m[1] ?? "");
+    }
+    if (!texto) continue;
+    const ultimo = pedacos[pedacos.length - 1];
+    if (ultimo && ultimo.negrito === negrito && ultimo.italico === italico) ultimo.texto += texto;
+    else pedacos.push({ texto, negrito, italico });
+  }
+  return {
+    pedacos, alinhamento, recuo: primeira ? Number(primeira) * TWIP_MM : 0, antes, depois,
+    tamanho: tamanho ?? padraoTamanho,
+  };
+}
+
+/** Os parágrafos de um XML do Word, em ordem; os de dentro de tabela e caixa de texto entram como parágrafos soltos. */
+function paragrafosLidos(xml: string, padraoTamanho: number | null): ParagrafoLido[] {
+  // Tira a caixa de texto de dentro do parágrafo de fora (ela vira parágrafos próprios, antes dele).
+  const caixas: string[] = [];
+  const semCaixa = xml.replace(/<w:txbxContent>([\s\S]*?)<\/w:txbxContent>/g, (_t, dentro: string) => { caixas.push(dentro); return ""; });
+  const fora = [...semCaixa.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>|<w:p(?:\s[^>]*)?\/>/g)].map((m) => lerParagrafo(m[0], padraoTamanho));
+  const dentro = caixas.flatMap((c) => [...c.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map((m) => lerParagrafo(m[0], padraoTamanho)));
+  return [...dentro, ...fora];
+}
+
+function alvosDasRels(rels: string, base: string): Map<string, string> {
+  const alvos = new Map<string, string>();
+  for (const m of rels.matchAll(/<Relationship\s[^>]*>/g)) {
+    const id = /\sId="([^"]+)"/.exec(m[0])?.[1];
+    const alvo = /\sTarget="([^"]+)"/.exec(m[0])?.[1];
+    if (id && alvo && !/TargetMode="External"/.test(m[0])) {
+      alvos.set(id, alvo.startsWith("/") ? alvo.slice(1) : `${base}${alvo}`.replace(/[^/]+\/\.\.\//g, ""));
+    }
+  }
+  return alvos;
+}
+
+/**
+ * Lê o .docx para montar o PDF em leiaute simples (D23, CH-08): o texto de cada parágrafo com
+ * negrito, itálico, alinhamento e recuo, o cabeçalho (o timbrado) com o logo, e se o modelo tem
+ * o que o leiaute simples não reproduz (tabela, imagem no corpo, caixa de texto, colunas).
+ */
+export async function lerDocxParaPdf(b: Uint8Array): Promise<DocxLido> {
+  const d = await abrirDocx(b);
+  const doc = await texto(d, "word/document.xml");
+  const estilos = d.mapa.has("word/styles.xml") ? await texto(d, "word/styles.xml") : "";
+  const szPadrao = /<w:rPrDefault>[\s\S]*?<w:sz w:val="(\d+)"/.exec(estilos)?.[1];
+  const padrao = szPadrao ? Number(szPadrao) / 2 : null;
+  const corpoXml = /<w:body>([\s\S]*)<\/w:body>/.exec(doc)?.[1] ?? doc;
+  const complexo = /<w:tbl[\s>/]/.test(corpoXml) || /<w:drawing[\s>/]|<w:pict[\s>/]|<v:shape[\s>/]/.test(corpoXml) || /<w:txbxContent>/.test(corpoXml) ||
+    /<w:cols\s[^>]*w:num="([2-9]|\d{2,})"/.test(corpoXml);
+
+  // O cabeçalho padrão da primeira seção (ou o primeiro que houver).
+  const rels = d.mapa.has("word/_rels/document.xml.rels") ? alvosDasRels(await texto(d, "word/_rels/document.xml.rels"), "word/") : new Map<string, string>();
+  const refs = [...doc.matchAll(/<w:headerReference\s[^>]*\/>/g)].map((m) => ({
+    tipo: /w:type="([^"]+)"/.exec(m[0])?.[1] ?? "default", id: /r:id="([^"]+)"/.exec(m[0])?.[1] ?? "",
+  }));
+  const ref = refs.find((r) => r.tipo === "default") ?? refs[0];
+  const parte = ref ? rels.get(ref.id) : undefined;
+  let cabecalho: ParagrafoLido[] = [];
+  let imagemCabecalho: DocxLido["imagemCabecalho"] = null;
+  if (parte && d.mapa.has(parte)) {
+    const hdr = await texto(d, parte);
+    cabecalho = paragrafosLidos(hdr, padrao).filter((p) => p.pedacos.some((x) => x.texto.trim()));
+    const relsHdr = parte.replace(/^(.*\/)([^/]+)$/, "$1_rels/$2.rels");
+    const imagem = /<a:blip\s[^>]*r:embed="([^"]+)"|<v:imagedata\s[^>]*r:id="([^"]+)"/.exec(hdr);
+    if (imagem && d.mapa.has(relsHdr)) {
+      const alvo = alvosDasRels(await texto(d, relsHdr), parte.replace(/[^/]+$/, "")).get(imagem[1] ?? imagem[2]!);
+      const e = alvo ? d.mapa.get(alvo) : undefined;
+      if (e) {
+        const bytes = await abrirEntrada(d.bytes, e);
+        const tipo = comeca(bytes, 0x89, 0x50, 0x4e, 0x47) ? "png" : comeca(bytes, 0xff, 0xd8, 0xff) ? "jpg" : null;
+        if (tipo) imagemCabecalho = { bytes, tipo };
+      }
+    }
+  }
+  const corpo = paragrafosLidos(corpoXml.replace(/<w:sectPr[\s\S]*?<\/w:sectPr>/g, ""), padrao);
+  return { cabecalho, corpo, imagemCabecalho, complexo };
+}
+
+/** O nome do PDF: o mesmo do .docx, com a outra extensão. */
+export function nomeDoPdf(nomeDocx: string): string {
+  return nomeDocx.replace(/\.docx$/i, "") + ".pdf";
+}

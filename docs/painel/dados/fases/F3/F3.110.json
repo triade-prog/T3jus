@@ -1,0 +1,13 @@
+{
+  "id": "F3.110",
+  "texto": "Programar a ficha do cliente ligada: o próximo passo no âmbar e ao lado do Histórico, as abas Propostas, Contratos e Casos, \"No escritório\" na aba Ficha e a coluna Próximo passo com Gerar proposta na lista",
+  "peca": "S2",
+  "refs": [
+    "AP-01",
+    "AP-05",
+    "IN-01"
+  ],
+  "status": "pendente",
+  "ordem": 951,
+  "proximo": "Programar a ficha do cliente ligada (desenho aprovado em docs/design/aprovadas/portal-ficha-cliente-ligada), migrations 0740-0749"
+}

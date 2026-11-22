@@ -8,11 +8,11 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
-  CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasNoDocumento, hojeBrasilia, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
+  CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, hojeBrasilia, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
-  type VersaoDocumento,
+  type VersaoDocumento, type DadoQueConta,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -23,7 +23,8 @@ import { abrirAnexo, enviarAnexo } from "./Anexos.tsx";
 import { juntarFotos, ordenarFotos } from "./fotos.ts";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
-import { chamarPortal, irPara } from "./Moldura.tsx";
+import { chamarPortal, irPara, ROTAS_PORTAL } from "./Moldura.tsx";
+import { rotaPessoaEquipe } from "./EquipeOab.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { CabPeticoes, LegendaPrevia, Papel, SeloDados, useBaixar } from "./Peticoes.tsx";
 import { contar, erroDoArquivo, Quando, quando, tamanhoArquivo } from "./peticoes.ts";
@@ -37,6 +38,105 @@ type Feito = { titulo: string; texto: string };
 const SOBRE = "Procurações e modelos";
 const primeiro = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
 const diaBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+
+// ------------------------------------------------------------- Word e PDF (D23, docs/design/aprovadas/portal-contrato-pdf)
+
+type Bx = ReturnType<typeof useBaixar>;
+const caminhoWord = (id: string) => `${API_DOCUMENTOS}/${id}/abrir`;
+/** O nome do arquivo sem a extensão: ele sai em dois formatos (D23, item 3). */
+const semExtensao = (arquivo: string) => arquivo.replace(/\.docx$/i, "");
+/** "o contrato", "a procuração", "a declaração". */
+function oDocumento(tipo: TipoDocumentoContrato, nome?: string): string {
+  if (tipo === "CONTRATO") return "o contrato";
+  if (tipo === "OUTRO") return `o documento ${nome ?? ""}`.trim();
+  return `a ${nomeCurto(tipo, nome).toLowerCase()}`;
+}
+
+/**
+ * O PDF de cada documento: feito no servidor na primeira vez (alguns segundos), com o estado
+ * "Preparando" preso ao documento; o Word e os outros documentos seguem livres (D23, decisão 3).
+ */
+export function usePdf() {
+  const [preparando, setPreparando] = useState<ReadonlySet<string>>(new Set());
+  const [falhou, setFalhou] = useState<string | null>(null);
+  const [simples, setSimples] = useState<ReadonlySet<string>>(new Set());
+  async function baixar(id: string) {
+    if (preparando.has(id)) return;
+    setFalhou(null);
+    setPreparando((p) => new Set(p).add(id));
+    const r = await chamarPortal<{ url: string; complexo?: boolean }>(`${API_DOCUMENTOS}/${id}/abrir?formato=pdf`, { metodo: "POST", corpo: {} });
+    setPreparando((p) => { const n = new Set(p); n.delete(id); return n; });
+    if (!r.ok) return setFalhou(id);
+    if (r.dados.complexo) setSimples((x) => new Set(x).add(id));
+    window.location.assign(r.dados.url);
+  }
+  return { baixar, preparando, falhou, simples };
+}
+type Pdf = ReturnType<typeof usePdf>;
+
+/** "Baixar" com os dois botões colados, Word e PDF, do mesmo peso (D23, decisões 1 e 2). */
+function BaixarWordPdf({ id, curto, v = "", bx, pdf }: { id: string; curto: string; v?: string; bx: Bx; pdf: Pdf }) {
+  const prep = pdf.preparando.has(id);
+  return (
+    <div className="pdf-bx-w">
+      <span className="pdf-bx-rot" aria-hidden="true">Baixar</span>
+      <div className="pdf-bx" role="group" aria-label={`Baixar ${curto}${v}`}>
+        <button className="btn btn-sec btn-compacto" type="button" disabled={bx.baixando !== null} onClick={() => void bx.baixar(caminhoWord(id))}>
+          <Icone nome="baixar" className="ico ico-s" /><span className="sr">Baixar em </span>Word<span className="sr"> (.docx, para editar){v}: {curto}</span>
+        </button>
+        {prep ? (
+          <button className="btn btn-sec btn-compacto" type="button" aria-disabled="true" aria-describedby={`pdf-st-${id}`}>
+            <span className="pdf-gira" aria-hidden="true" />Preparando o PDF<span className="sr">: {curto}</span>
+          </button>
+        ) : (
+          <button className="btn btn-sec btn-compacto" type="button" onClick={() => void pdf.baixar(id)}>
+            <Icone nome="baixar" className="ico ico-s" /><span className="sr">Baixar em </span>PDF
+            <span className="sr"> (para mandar ou imprimir{pdf.simples.has(id) ? ", leiaute simples" : ""}){v}: {curto}</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A linha de situação do PDF sendo preparado (`role="status"`, apontada pelo botão). */
+function StatusPdf({ id, curto, pdf }: { id: string; curto: string; pdf: Pdf }) {
+  return (
+    <div id={`pdf-st-${id}`} role="status">
+      {pdf.preparando.has(id) ? (
+        <p className="pdf-status"><Icone nome="relogio" className="ico ico-s" /><span><b>Preparando o PDF {curto.replace(/^(o|a) /, (m) => (m === "o " ? "do " : "da "))}.</b> Leva alguns segundos; o arquivo baixa sozinho. Pode continuar na tela.</span></p>
+      ) : null}
+    </div>
+  );
+}
+
+/** O erro do PDF, preso ao documento: nada mudou e o Word continua (D23, decisão 4). */
+function ErroPdf({ id, curto, bx, pdf }: { id: string; curto: string; bx: Bx; pdf: Pdf }) {
+  if (pdf.falhou !== id) return null;
+  const de = curto.replace(/^(o|a) /, (m) => (m === "o " ? "do " : "da "));
+  return (
+    <div className="pdf-erro">
+      <Aviso tom="urgencia" titulo={`Não deu para preparar o PDF ${de}.`}
+        acoes={<>
+          <button className="btn btn-sec btn-compacto" type="button" onClick={() => void pdf.baixar(id)}><Icone nome="reenviar" className="ico ico-s" />Tentar de novo<span className="sr">: PDF {de}</span></button>
+          <button className="btn btn-sec btn-compacto" type="button" disabled={bx.baixando !== null} onClick={() => void bx.baixar(caminhoWord(id))}><Icone nome="baixar" className="ico ico-s" />Baixar o Word<span className="sr"> (.docx, para editar): {curto}</span></button>
+        </>}>
+        Nada mudou no documento, e o Word continua para baixar. Tente de novo; se não sair, abra o Word e use Arquivo › Salvar como › PDF.
+      </Aviso>
+      <p className="codigo">PDF_INDISPONIVEL</p>
+    </div>
+  );
+}
+
+/** O aviso do leiaute simples, quando o modelo tem tabela, imagem, caixa de texto ou colunas (pergunta 1). */
+function NotaSimples() {
+  return (
+    <p className="pdf-nota"><Icone nome="alerta" className="ico ico-s" /><span><b>O PDF sai num leiaute simples, no timbrado.</b> O texto é o mesmo do Word, mas a tabela e a imagem do seu modelo ficam só no Word. Para um PDF igual ao Word, salve como PDF pelo Word.</span></p>
+  );
+}
+
+/** "Baixar o assinado (PDF)" ou "(foto)": o arquivo como foi anexado (pergunta 3). */
+const formatoAssinado = (nome: string) => (/\.pdf$/i.test(nome) ? "PDF" : "foto");
 
 function Reserva({ longa = false }: { longa?: boolean }) {
   return (
@@ -75,6 +175,7 @@ function ListaConteudo() {
   if (q) f.set("q", q);
   const { dados, recarregar } = useCarga<ListaDocumentos>(`${API_DOCUMENTOS}?${f}`);
   const bx = useBaixar();
+  const pdf = usePdf();
   const acoes = (
     <>
       <a className="btn btn-sec" href={ROTAS_DOCUMENTOS.modelos}><Icone nome="doc" className="ico" />Modelos de documento</a>
@@ -136,6 +237,9 @@ function ListaConteudo() {
             </div>
           ) : null}
           {bx.falha ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso></div> : null}
+          {dados.documentos.filter((d) => d.id === pdf.falhou).map((d) => (
+            <div key={d.id} style={{ padding: "0 24px 12px" }}><ErroPdf id={d.id} curto={`${oDocumento(d.tipo, d.nome)} de ${primeiro(d.cliente.nome)}`} bx={bx} pdf={pdf} /></div>
+          ))}
           <p className="pr-conta" role="status"><b>{contar(dados.documentos.length, "documento", "documentos")}</b> de {contar(contratos, "contrato", "contratos")}</p>
           {dados.documentos.length ? (
             <table className="hn-tab pe-tab pr-tab">
@@ -144,8 +248,7 @@ function ListaConteudo() {
               <thead><tr>{["Documento", "Cliente e contrato", "Assinatura"].map((x) => <th key={x} scope="col">{x}</th>)}<th scope="col"><span className="sr">Ações</span></th></tr></thead>
               <tbody>
                 {dados.documentos.map((d) => (
-                  <LinhaDoc key={d.id} d={d} baixando={bx.baixando?.includes(d.id) ?? false}
-                    aoBaixar={() => void bx.baixar(`${API_DOCUMENTOS}/${d.id}/abrir`)} aoAnexar={() => setJanela({ contrato: d.contrato.id, so: d.chave })} />
+                  <LinhaDoc key={d.id} d={d} bx={bx} pdf={pdf} aoAnexar={() => setJanela({ contrato: d.contrato.id, so: d.chave })} />
                 ))}
               </tbody>
             </table>
@@ -175,9 +278,9 @@ function ListaConteudo() {
   );
 }
 
-function LinhaDoc({ d, aoBaixar, aoAnexar, baixando }: { d: LinhaDocumento; aoBaixar: () => void; aoAnexar: () => void; baixando: boolean }) {
+function LinhaDoc({ d, bx, pdf, aoAnexar }: { d: LinhaDocumento; bx: Bx; pdf: Pdf; aoAnexar: () => void }) {
   const falta = d.situacao === "FALTA";
-  const de = `${nomeCurto(d.tipo, d.nome).toLowerCase() === "contrato" ? "o contrato" : `a ${nomeCurto(d.tipo, d.nome).toLowerCase()}`} de ${primeiro(d.cliente.nome)}`;
+  const de = `${oDocumento(d.tipo, d.nome)} de ${primeiro(d.cliente.nome)}`;
   return (
     <tr className={falta ? "pr-falta" : undefined}>
       <td>
@@ -185,7 +288,7 @@ function LinhaDoc({ d, aoBaixar, aoAnexar, baixando }: { d: LinhaDocumento; aoBa
           <span className="pe-ci" aria-hidden="true"><Icone nome="doc" className="ico" /></span>
           <div>
             <b>{d.nome} <span className="pr-v">v{d.numero}</span></b>
-            <small>{d.arquivo}</small>
+            <small>{semExtensao(d.arquivo)}</small>
             <small>Gerado por {d.geradoPor.nome}, {quando(d.geradoEm)}</small>
             {d.marcados ? <SeloDados n={d.marcados} /> : null}
           </div>
@@ -206,10 +309,10 @@ function LinhaDoc({ d, aoBaixar, aoAnexar, baixando }: { d: LinhaDocumento; aoBa
               <Icone nome="enviar" className="ico ico-s" />Anexar o assinado<span className="sr">: {de}</span>
             </button>
           ) : null}
-          <button className="btn btn-sec btn-compacto" type="button" onClick={aoBaixar} disabled={baixando}>
-            <Icone nome="baixar" className="ico ico-s" />Baixar<span className="sr"> {de}</span>
-          </button>
+          <BaixarWordPdf id={d.id} curto={de} bx={bx} pdf={pdf} />
         </div>
+        <StatusPdf id={d.id} curto={de} pdf={pdf} />
+        {pdf.simples.has(d.id) ? <NotaSimples /> : null}
       </td>
     </tr>
   );
@@ -594,6 +697,41 @@ function EscolherContrato() {
 }
 
 /** Os erros que voltam do servidor: { campo: código }. */
+const ARTIGO_FALTA: Record<DadoQueConta, string> = {
+  NOME_COMPLETO: "o nome completo", TRATAMENTO: "o tratamento", NACIONALIDADE: "a nacionalidade", ESTADO_CIVIL: "o estado civil",
+  CPF: "o CPF", RG: "o RG", ENDERECO: "o endereço profissional", OAB: "a OAB",
+};
+/** "o estado civil e o CPF". */
+function listaFaltasArtigo(f: DadoQueConta[]): string {
+  const r = f.map((k) => ARTIGO_FALTA[k]);
+  return r.length <= 1 ? (r[0] ?? "") : `${r.slice(0, -1).join(", ")} e ${r.at(-1)}`;
+}
+
+/** No cartão do advogado: "Faltam 2" com o link para completar, ou "completos" (decisão 20). */
+function DadosDoAdvogado({ a, escritorio, eu }: { a: DadosDocumentos["advogados"][number]; escritorio: DadosDocumentos["escritorio"]; eu?: string }) {
+  if (!a.dados) return null;
+  const f = faltasDoAdvogado(a.dados, a.inscricoes, escritorio).filter((x) => x !== "OAB");
+  if (!f.length) {
+    return (
+      <p className="cd-adv-dados ok">
+        <Icone nome="check" className="ico" />
+        <span>Dados para os documentos completos.</span>
+      </p>
+    );
+  }
+  const txt = listaFaltasArtigo(f);
+  return (
+    <p className="cd-adv-dados">
+      <span className="selo selo-atencao">{f.length === 1 ? "Falta 1" : `Faltam ${f.length}`}</span>
+      <span>{txt.charAt(0).toUpperCase() + txt.slice(1)} de {primeiro(a.nome)} {f.length === 1 ? "sai marcado" : "saem marcados"}.</span>
+      <a href={a.pessoaId === eu ? ROTAS_PORTAL.conta : rotaPessoaEquipe(a.pessoaId)} target="_blank" rel="noopener">
+        {a.pessoaId === eu ? "Completar em Sua conta" : "Completar na Equipe"}
+        <span className="sr"> (abre numa aba nova)</span>
+      </a>
+    </p>
+  );
+}
+
 function motivosDe(e: { detalhes?: Record<string, unknown> }): Record<string, string> | null {
   const m = e.detalhes?.motivos;
   return m && typeof m === "object" ? (m as Record<string, string>) : null;
@@ -644,6 +782,10 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   const msg = (k: string) => ERROS_DOCUMENTO[erros[k] ?? ""] ?? "Confira este campo.";
   const cli = dados.cliente;
   const faltas = faltasNoDocumento(cli);
+  const faltasAdv = dados.advogados
+    .filter((a) => form_.outorgados[a.pessoaId]?.length)
+    .map((a) => ({ a, f: a.dados ? faltasDoAdvogado(a.dados, a.inscricoes, dados.escritorio).filter((x) => x !== "OAB") : [] }))
+    .filter((x) => x.f.length);
   const assinadas = chavesAssinadas(dados);
   const semOab = dados.semOab.map((p) => p.nome);
   const docsPedido = dados.modelos.filter((m) => form_.docs.includes(chaveModelo(m)));
@@ -731,6 +873,15 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                 </div>
                 <p className="ajuda">Veio da ficha do contrato. As condições, os advogados e as inscrições já estão lá.</p>
               </div>
+              {faltasAdv.map(({ a, f }) => (
+                <div className="c6" key={a.pessoaId}>
+                  <Aviso tom="atencao" icone="pena"
+                    titulo={`${f.length === 1 ? "Falta 1 dado" : `Faltam ${f.length} dados`} de ${a.nome}, ${a.dados?.tratamento === "ADVOGADA" ? "advogada" : "advogado"}: ${listaFaltasArtigo(f)}.`}
+                    acoes={<a className="btn btn-sec" href={a.pessoaId === dados.eu ? ROTAS_PORTAL.conta : rotaPessoaEquipe(a.pessoaId)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />{a.pessoaId === dados.eu ? "Completar os seus dados" : `Completar os dados de ${primeiro(a.nome)}`}<span className="sr"> (abre numa aba nova)</span></a>}>
+                    Dá para gerar assim: a qualificação de {primeiro(a.nome)} sai com {f.length === 1 ? "o dado marcado" : "os dados marcados"}, como [CPF: falta], para preencher à mão ou no Word.
+                  </Aviso>
+                </div>
+              ))}
               {faltas.length ? (
                 <div className="c6">
                   <Aviso tom="atencao" icone="pena" titulo={tituloFaltas(faltas, cli.nome)}
@@ -775,8 +926,8 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                 </div>
               </fieldset>
 
-              <fieldset className="pe-fs c6" id="pr-g-outorgados" tabIndex={-1} aria-describedby={descritoPor(tem("outorgados") && "pr-adv-er", "pr-adv-aj")}>
-                <legend>Advogados outorgados<small>a OAB vem da Equipe</small></legend>
+              <fieldset className="pe-fs pe-adv-fs c6" id="pr-g-outorgados" tabIndex={-1} aria-describedby={descritoPor(tem("outorgados") && "pr-adv-er", "pr-adv-aj")}>
+                <legend>Advogados outorgados<small>dados da Equipe e de Sua conta</small></legend>
                 {tem("outorgados") ? <ErroCampo id="pr-adv-er">{msg("outorgados")}</ErroCampo> : null}
                 {dados.advogados.length ? (
                   <div className="pe-adv">
@@ -799,6 +950,7 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                               ))}
                             </fieldset>
                           ) : a.inscricoes[0] ? <p className="pe-insc-uma">{a.inscricoes[0].documento}<small>única inscrição</small></p> : null}
+                          <DadosDoAdvogado a={a} escritorio={dados.escritorio} eu={dados.eu} />
                         </div>
                       );
                     })}
@@ -908,6 +1060,7 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
 
 function Resultado({ r, d, aoAnexar }: { r: ResultadoDocumentos; d: DadosDocumentos; aoAnexar: () => void }) {
   const bx = useBaixar();
+  const pdf = usePdf();
   const zip = useRef<HTMLButtonElement>(null);
   useEffect(() => { zip.current?.focus(); }, []);
   const marcados = [...new Set(r.documentos.flatMap((x) => x.marcados))];
@@ -926,19 +1079,22 @@ function Resultado({ r, d, aoAnexar }: { r: ResultadoDocumentos; d: DadosDocumen
                 <p className="sub">{d.contrato.numero} · {d.cliente.nome} · versão {versao} · gerados agora por {u.por.nome}</p>
               </div>
               <button ref={zip} className="btn btn-pri" type="button" disabled={bx.baixando !== null} onClick={() => void bx.baixar(`${API_DOCUMENTOS}/geracoes/${r.geracaoId}/zip`)}>
-                <Icone nome="baixar" className="ico" />Baixar todos (.zip)
+                <Icone nome="baixar" className="ico" />Baixar todos (.zip)<span className="sr">, em Word e PDF</span>
               </button>
             </div>
             <div className="pe-pronto">
               {bx.falha ? <Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso> : null}
               {r.documentos.map((x) => (
-                <div className="pe-arq" key={x.id}>
-                  <span className="pe-ci" aria-hidden="true"><Icone nome="doc" className="ico" /></span>
-                  <div><b>{x.nome}</b><small>{x.arquivo} · Word</small></div>
-                  <button className="btn btn-sec btn-compacto" type="button" disabled={bx.baixando !== null} onClick={() => void bx.baixar(`${API_DOCUMENTOS}/${x.id}/abrir`)}>
-                    <Icone nome="baixar" className="ico ico-s" />Baixar<span className="sr"> {x.nome}</span>
-                  </button>
-                </div>
+                <Fragment key={x.id}>
+                  <div className="pe-arq">
+                    <span className="pe-ci" aria-hidden="true"><Icone nome="doc" className="ico" /></span>
+                    <div><b>{x.nome}</b><small>{semExtensao(x.arquivo)} · Word e PDF</small></div>
+                    <BaixarWordPdf id={x.id} curto={oDocumento(x.tipo, x.nome)} bx={bx} pdf={pdf} />
+                  </div>
+                  <StatusPdf id={x.id} curto={oDocumento(x.tipo, x.nome)} pdf={pdf} />
+                  <ErroPdf id={x.id} curto={oDocumento(x.tipo, x.nome)} bx={bx} pdf={pdf} />
+                  {pdf.simples.has(x.id) ? <NotaSimples /> : null}
+                </Fragment>
               ))}
               {marcados.length ? (
                 <Aviso tom="atencao" icone="pena" titulo={`Saiu marcado: ${juntar(marcados)}.`}
@@ -1204,17 +1360,17 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
 
 // ------------------------------------------------------------------------- 5. aba Documentos da ficha (decisões 18 a 20)
 
-function LinhaVersao({ v, tipo, aoBaixar, baixando, anterior = false }: { v: VersaoDocumento; tipo: TipoDocumentoContrato; aoBaixar: (c: string) => void; baixando: boolean; anterior?: boolean }) {
+function LinhaVersao({ v, tipo, curto, bx, pdf, anterior = false }: { v: VersaoDocumento; tipo: TipoDocumentoContrato; curto: string; bx: Bx; pdf: Pdf; anterior?: boolean }) {
   const ass = v.assinados[0];
   return (
     <li>
       <span>
-        <b>v{v.numero}</b> · {v.arquivo} · {quando(v.geradoEm)} · {v.geradoPor.nome}
+        <b>v{v.numero}</b> · {semExtensao(v.arquivo)} · {quando(v.geradoEm)} · {v.geradoPor.nome}
         <small>{v.modelo.padrao ? "Padrão T3jus" : `Modelo do escritório, v${v.modelo.numero ?? 1}`}{v.marcados.length ? ` · saiu marcado: ${juntar(v.marcados)}` : ""}{ass ? ` · ${seloAssinado(tipo, ass.assinadoEm).toLowerCase()}` : anterior ? " · sem assinado" : ""}</small>
       </span>
       <span className="pr-acoes">
         {ass ? <button className="btn btn-sec btn-compacto" type="button" onClick={() => void abrirAnexo(ass.anexoId)}><Icone nome="olho" className="ico ico-s" />O assinado<span className="sr"> da versão {v.numero}</span></button> : null}
-        <button className="btn btn-sec btn-compacto" type="button" disabled={baixando} onClick={() => aoBaixar(`${API_DOCUMENTOS}/${v.id}/abrir`)}><Icone nome="baixar" className="ico ico-s" />O .docx<span className="sr"> da versão {v.numero}</span></button>
+        <BaixarWordPdf id={v.id} curto={curto} v={`, versão ${v.numero}`} bx={bx} pdf={pdf} />
       </span>
     </li>
   );
@@ -1224,6 +1380,7 @@ export function DocumentosDaFicha({ f, dados, aoAnexar, aoTentar }: {
   f: FichaContrato; dados: DocumentosDoContrato | null | "erro"; aoAnexar: (so?: string) => void; aoTentar: () => void;
 }) {
   const bx = useBaixar();
+  const pdf = usePdf();
   const gerar = dados && dados !== "erro" && dados.podeGerar ? (
     <a data-muda className="btn btn-sec" href={ROTAS_DOCUMENTOS.gerar(f.id)}>
       <Icone nome={dados.documentos.length ? "reenviar" : "pena"} className="ico" />{dados.documentos.length ? "Gerar de novo" : "Gerar documentos"}
@@ -1251,30 +1408,50 @@ export function DocumentosDaFicha({ f, dados, aoAnexar, aoTentar }: {
               {dados.documentos.map((x) => {
                 const falta = x.situacao === "FALTA";
                 const ass = x.atual.assinados[0];
+                const curto = oDocumento(x.tipo, x.nome);
+                const ids = [x.atual.id, ...x.anteriores.map((v) => v.id)];
                 return (
-                  <li key={x.chave}>
+                  <li key={x.chave} className="pdf-doc">
                     <span className="pe-ci" aria-hidden="true"><Icone nome="doc" className="ico" /></span>
                     <div>
                       <b>{x.nome} <span className="pr-v">v{x.atual.numero}</span></b>
-                      <small>{x.atual.arquivo} · {quando(x.atual.geradoEm)} · {x.atual.geradoPor.nome}</small>
-                      <SeloSituacaoDoc tipo={x.tipo} falta={falta} dia={ass?.assinadoEm ?? null} />
-                      {x.atual.marcados.length ? <> <SeloDados n={x.atual.marcados.length} /></> : null}
+                      {ass ? (
+                        <small>{ass.nome} · {formatoAssinado(ass.nome) === "PDF" ? "PDF" : "foto"} · anexado {quando(ass.enviadoEm)} por {ass.enviadoPor.nome}</small>
+                      ) : (
+                        <small>{semExtensao(x.atual.arquivo)} · {quando(x.atual.geradoEm)} · {x.atual.geradoPor.nome} · {x.atual.modelo.padrao ? "Padrão T3jus" : `Modelo do escritório, v${x.atual.modelo.numero ?? 1}`}</small>
+                      )}
+                      {x.atual.marcados.length ? <SeloDados n={x.atual.marcados.length} /> : null}
+                    </div>
+                    <div className="pdf-sit"><SeloSituacaoDoc tipo={x.tipo} falta={falta} dia={ass?.assinadoEm ?? null} /></div>
+                    <div className="pdf-bts">
+                      {falta && f.situacao !== "ENCERRADO" ? (
+                        <button className="btn btn-pri btn-compacto" type="button" onClick={() => aoAnexar(x.chave)}><Icone nome="enviar" className="ico ico-s" />Anexar o assinado<span className="sr">: {curto}</span></button>
+                      ) : null}
+                      {ass ? (
+                        <button className="btn btn-sec btn-compacto" type="button" onClick={() => void abrirAnexo(ass.anexoId)}><Icone nome="baixar" className="ico ico-s" />Baixar o assinado ({formatoAssinado(ass.nome)})<span className="sr">: {curto}</span></button>
+                      ) : (
+                        <BaixarWordPdf id={x.atual.id} curto={curto} bx={bx} pdf={pdf} />
+                      )}
+                    </div>
+                    <div className="pdf-mais">
+                      <StatusPdf id={x.atual.id} curto={curto} pdf={pdf} />
+                      {ids.includes(pdf.falhou ?? "") ? <ErroPdf id={pdf.falhou!} curto={curto} bx={bx} pdf={pdf} /> : null}
+                      {ids.some((i) => pdf.simples.has(i)) ? <NotaSimples /> : null}
+                      {ass ? (
+                        <details className="pdf-sem">
+                          <summary><Icone nome="doc" className="ico ico-s" />Sem assinatura (v{x.atual.numero}): Word e PDF</summary>
+                          <div className="pdf-sem-c">
+                            <p>O que vale é o assinado. Use o Word só se for gerar uma versão nova.</p>
+                            <div className="pdf-sem-l"><b>v{x.atual.numero}</b><span>{semExtensao(x.atual.arquivo)} · {quando(x.atual.geradoEm)}</span><BaixarWordPdf id={x.atual.id} curto={curto} v=", sem assinatura" bx={bx} pdf={pdf} /></div>
+                          </div>
+                        </details>
+                      ) : null}
                       {x.anteriores.length ? (
                         <details className="pr-ant">
                           <summary><Icone nome="historico" className="ico ico-s" />{x.anteriores.length === 1 ? "Versão anterior (1)" : `Versões anteriores (${x.anteriores.length})`}</summary>
-                          <ul>{x.anteriores.map((v) => <LinhaVersao key={v.id} v={v} tipo={x.tipo} anterior baixando={bx.baixando !== null} aoBaixar={(c) => void bx.baixar(c)} />)}</ul>
+                          <ul>{x.anteriores.map((v) => <LinhaVersao key={v.id} v={v} tipo={x.tipo} curto={curto} anterior bx={bx} pdf={pdf} />)}</ul>
                         </details>
                       ) : null}
-                    </div>
-                    <div className="pr-acoes">
-                      {falta && f.situacao !== "ENCERRADO" ? (
-                        <button className="btn btn-pri btn-compacto" type="button" onClick={() => aoAnexar(x.chave)}><Icone nome="enviar" className="ico ico-s" />Anexar o assinado<span className="sr">: {x.nome}</span></button>
-                      ) : ass ? (
-                        <button className="btn btn-sec btn-compacto" type="button" onClick={() => void abrirAnexo(ass.anexoId)}><Icone nome="olho" className="ico ico-s" />Baixar o assinado<span className="sr">: {x.nome}</span></button>
-                      ) : null}
-                      <button className="btn btn-sec btn-compacto" type="button" disabled={bx.baixando !== null} onClick={() => void bx.baixar(`${API_DOCUMENTOS}/${x.atual.id}/abrir`)}>
-                        <Icone nome="baixar" className="ico ico-s" />{ass ? "Baixar o .docx" : "Baixar"}<span className="sr">: {x.nome}</span>
-                      </button>
                     </div>
                   </li>
                 );
@@ -1286,7 +1463,13 @@ export function DocumentosDaFicha({ f, dados, aoAnexar, aoTentar }: {
               O contrato de honorários, a procuração e a declaração saem no timbrado do escritório, com os dados de {primeiro(f.cliente.nome)} e dos advogados deste contrato.
             </Estado>
           )}
-          <p className="hn-pe"><Icone nome="historico" className="ico" /><span>Gerar de novo guarda a versão anterior. O assinado anexado continua valendo mesmo depois de uma versão nova.</span></p>
+          <div className="hn-pe pdf-ajuda"><Icone nome="ajuda" className="ico" />
+            <ul>
+              <li><b>Word</b> é para editar antes de imprimir. <b>PDF</b> é para mandar ao cliente ou imprimir como está.</li>
+              <li>O PDF sai do documento gerado. Se você mudou algo no Word, salve o PDF pelo próprio Word.</li>
+              <li>Gerar de novo guarda a versão anterior. O assinado anexado continua valendo mesmo depois de uma versão nova.</li>
+            </ul>
+          </div>
         </section>
       </div>
       <aside className="hn-col" aria-label="Assinatura e advogados">

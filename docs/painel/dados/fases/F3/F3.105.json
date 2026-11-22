@@ -5,7 +5,8 @@
   "refs": [
     "EX-15"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 798,
-  "proximo": "Programar Sua conta com os dados para os documentos (desenho em docs/design/aprovadas/portal-conta-dados)"
+  "evidencia": "Migration 0760 (tabela pessoa_dados_documento com escritorio_id e proteger_tabela_escritorio; portal_conta_dados_salvar e portal_equipe_pessoa_dados_salvar com erros presos aos campos, versão lida e histórico só com os nomes dos campos; documento_advogados traz os dados), pgTAP 104 e 008, Vitest packages/domain/src/dados_advogado.test.ts (qualificação com concordância, endereço do escritório como padrão, faltas marcadas sem bloquear, nome completo na OAB e na assinatura), Deno app_test.ts (rotas /v1/escritorio/conta/dados e /v1/escritorio/equipe/pessoas/:pessoa/dados), e2e tests/e2e/portal-equipe-oab.spec.ts (Sua conta: completar, CPF errado preso ao campo, salvar; ficha da Equipe com a qualificação). Contrato e procuração padrão usam [ADVOGADOS_QUALIFICACAO]; Gerar documentos avisa o que falta de cada outorgado. Desenho aprovado em docs/design/aprovadas/portal-conta-dados.",
+  "nota": "Conserta o cabeçalho quebrado de Sua conta (usava as classes da ficha do Console). A OAB continua editável só na Equipe (decisão 4)."
 }

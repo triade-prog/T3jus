@@ -1,0 +1,112 @@
+[
+ {
+  "nome": "lista",
+  "url": "index.html?estado=lista",
+  "rotulo": "Lista: “Gerar proposta” na linha"
+ },
+ {
+  "nome": "lista-sem-comercial",
+  "url": "index.html?estado=lista-sem-comercial",
+  "rotulo": "Lista sem Comercial (Larissa)"
+ },
+ {
+  "nome": "sem-proposta",
+  "url": "index.html?estado=sem-proposta",
+  "rotulo": "Sem proposta: Gerar proposta"
+ },
+ {
+  "nome": "propostas-vazio",
+  "url": "index.html?estado=propostas-vazio",
+  "rotulo": "Aba Propostas vazia"
+ },
+ {
+  "nome": "proposta-enviada",
+  "url": "index.html?estado=proposta-enviada",
+  "rotulo": "Proposta enviada: Registrar resposta"
+ },
+ {
+  "nome": "proposta-aceita",
+  "url": "index.html?estado=proposta-aceita",
+  "rotulo": "Proposta aceita: Gerar contrato (aba Contratos vazia)"
+ },
+ {
+  "nome": "contrato-elaboracao",
+  "url": "index.html?estado=contrato-elaboracao",
+  "rotulo": "Contrato em elaboração: Registrar assinatura"
+ },
+ {
+  "nome": "contrato-aba",
+  "url": "index.html?estado=contrato-aba",
+  "rotulo": "Aba Contratos com o contrato"
+ },
+ {
+  "nome": "assinar",
+  "url": "index.html?estado=assinar",
+  "rotulo": "Janela: assinar e abrir o caso"
+ },
+ {
+  "nome": "assinar-erro",
+  "url": "index.html?estado=assinar-erro",
+  "rotulo": "Janela: não registrou"
+ },
+ {
+  "nome": "assinar-com-caso",
+  "url": "index.html?estado=assinar-com-caso",
+  "rotulo": "Janela: contrato já tem caso"
+ },
+ {
+  "nome": "caso-aberto",
+  "url": "index.html?estado=caso-aberto",
+  "rotulo": "Depois de assinar: a ficha do caso novo"
+ },
+ {
+  "nome": "com-caso",
+  "url": "index.html?estado=com-caso",
+  "rotulo": "Tudo pronto: Ver o caso (aba Casos)"
+ },
+ {
+  "nome": "ficha-ligada",
+  "url": "index.html?estado=ficha-ligada",
+  "rotulo": "Aba Ficha: “No escritório” no lugar do quadro reservado"
+ },
+ {
+  "nome": "assinado-sem-caso",
+  "url": "index.html?estado=assinado-sem-caso",
+  "rotulo": "Contrato assinado sem caso: Abrir o caso"
+ },
+ {
+  "nome": "abrir-caso",
+  "url": "index.html?estado=abrir-caso",
+  "rotulo": "Janela: abrir o caso"
+ },
+ {
+  "nome": "assinar-sem-juridico",
+  "url": "index.html?estado=assinar-sem-juridico",
+  "rotulo": "Bianca (sem Jurídico): a janela"
+ },
+ {
+  "nome": "assinado-sem-juridico",
+  "url": "index.html?estado=assinado-sem-juridico",
+  "rotulo": "Bianca: depois de assinar"
+ },
+ {
+  "nome": "ficha-juridico",
+  "url": "index.html?estado=ficha-juridico",
+  "rotulo": "Larissa (só Jurídico): abas Ficha e Casos"
+ },
+ {
+  "nome": "ficha-comercial",
+  "url": "index.html?estado=ficha-comercial",
+  "rotulo": "Diego (sem Contratos): o passo não é dele"
+ },
+ {
+  "nome": "aba-carregando",
+  "url": "index.html?estado=aba-carregando",
+  "rotulo": "Aba carregando"
+ },
+ {
+  "nome": "aba-erro",
+  "url": "index.html?estado=aba-erro",
+  "rotulo": "Aba com erro"
+ }
+]
