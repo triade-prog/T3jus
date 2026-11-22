@@ -3,7 +3,7 @@
 // docs/design/aprovadas/console-cobranca: selo da fatura, listas, "Como pagar", histórico e a
 // folha do carnê. O Pix e o boleto são um lugar reservado até o meio de pagamento ser escolhido.
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { FORMAS_ASSINATURA, mesPorExtenso } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
 import {
@@ -226,11 +226,69 @@ function Copiar({ texto, rotulo }: { texto: string; rotulo: string }) {
   );
 }
 
+export type PagamentoCb = { pixCopiaCola: string | null; linhaBoleto: string | null; disponivel: boolean };
+
+/** O QR, o Pix copia e cola e o boleto, ou o lugar reservado (sem a folha em volta: serve na janela de pagar do Portal). */
+export function CodigosPagamento({ pagamento, ids: idsDe, estilo }: { pagamento: PagamentoCb; ids?: string; estilo?: CSSProperties }) {
+  const proprio = useId();
+  const ids = idsDe ?? proprio;
+  return pagamento.disponivel ? (
+    <div className="cb-pagar" style={estilo}>
+      <div className="cb-qr" role="img" aria-label="QR do Pix">
+        <Icone nome="qr" className="ico" />
+      </div>
+      {pagamento.pixCopiaCola ? (
+        <div className="cb-meio">
+          <h3 id={`${ids}-pix`}>
+            <Icone nome="qr" className="ico" />
+            Pix copia e cola
+          </h3>
+          <div className="cb-codigo">
+            <code aria-describedby={`${ids}-pix`}>{pagamento.pixCopiaCola}</code>
+            <Copiar texto={pagamento.pixCopiaCola} rotulo="Copiar o código Pix" />
+          </div>
+          <p className="cb-peq">Vale até o vencimento. Pago por Pix, a fatura fica paga na hora.</p>
+        </div>
+      ) : null}
+      {pagamento.linhaBoleto ? (
+        <>
+          <div className="cb-sep-meio" aria-hidden="true" />
+          <div className="cb-meio cb-meio-boleto">
+            <h3 id={`${ids}-bol`}>
+              <Icone nome="barras" className="ico" />
+              Boleto
+            </h3>
+            <div className="cb-codigo">
+              <code aria-describedby={`${ids}-bol`}>{pagamento.linhaBoleto}</code>
+              <Copiar texto={pagamento.linhaBoleto} rotulo="Copiar a linha do boleto" />
+            </div>
+            <p className="cb-peq">Pago por boleto, a baixa leva até 1 dia útil.</p>
+          </div>
+        </>
+      ) : null}
+    </div>
+  ) : (
+    <div className="cb-pagar" style={estilo}>
+      <div className="cb-qr" role="img" aria-label="Lugar reservado do QR do Pix">
+        <Icone nome="qr" className="ico" />
+        <span>QR do Pix</span>
+      </div>
+      <div className="cb-reserva">
+        <Icone nome="cadeado" className="ico" />
+        <span>
+          <b>Pix e boleto: lugar reservado.</b> Quando o T3jus escolher o meio de pagamento, o QR, o Pix copia e cola e a linha do boleto aparecem aqui,
+          no e-mail e no Portal, e a fatura fica paga sozinha. Até lá, quem pagar por fora tem o pagamento registrado à mão.
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /**
  * "Como pagar": o QR, o Pix copia e cola e o boleto. Enquanto o meio de pagamento não é
  * escolhido (F1.21), a folha mostra o lugar reservado e diz por quê.
  */
-export function ComoPagar({ pagamento, carne }: { pagamento: { pixCopiaCola: string | null; linhaBoleto: string | null; disponivel: boolean }; carne?: number }) {
+export function ComoPagar({ pagamento, carne }: { pagamento: PagamentoCb; carne?: number }) {
   const ids = useId();
   return (
     <section className="folha" aria-labelledby={`${ids}-t`} style={{ overflow: "hidden" }}>
@@ -243,56 +301,7 @@ export function ComoPagar({ pagamento, carne }: { pagamento: { pixCopiaCola: str
           </p>
         </div>
       </div>
-      {pagamento.disponivel ? (
-        <div className="cb-pagar">
-          <div className="cb-qr" role="img" aria-label="QR do Pix">
-            <Icone nome="qr" className="ico" />
-          </div>
-          {pagamento.pixCopiaCola ? (
-            <div className="cb-meio">
-              <h3 id={`${ids}-pix`}>
-                <Icone nome="qr" className="ico" />
-                Pix copia e cola
-              </h3>
-              <div className="cb-codigo">
-                <code aria-describedby={`${ids}-pix`}>{pagamento.pixCopiaCola}</code>
-                <Copiar texto={pagamento.pixCopiaCola} rotulo="Copiar o código Pix" />
-              </div>
-              <p className="cb-peq">Vale até o vencimento. Pago por Pix, a fatura fica paga na hora.</p>
-            </div>
-          ) : null}
-          {pagamento.linhaBoleto ? (
-            <>
-              <div className="cb-sep-meio" aria-hidden="true" />
-              <div className="cb-meio cb-meio-boleto">
-                <h3 id={`${ids}-bol`}>
-                  <Icone nome="barras" className="ico" />
-                  Boleto
-                </h3>
-                <div className="cb-codigo">
-                  <code aria-describedby={`${ids}-bol`}>{pagamento.linhaBoleto}</code>
-                  <Copiar texto={pagamento.linhaBoleto} rotulo="Copiar a linha do boleto" />
-                </div>
-                <p className="cb-peq">Pago por boleto, a baixa leva até 1 dia útil.</p>
-              </div>
-            </>
-          ) : null}
-        </div>
-      ) : (
-        <div className="cb-pagar">
-          <div className="cb-qr" role="img" aria-label="Lugar reservado do QR do Pix">
-            <Icone nome="qr" className="ico" />
-            <span>QR do Pix</span>
-          </div>
-          <div className="cb-reserva">
-            <Icone nome="cadeado" className="ico" />
-            <span>
-              <b>Pix e boleto: lugar reservado.</b> Quando o T3jus escolher o meio de pagamento, o QR, o Pix copia e cola e a linha do boleto aparecem aqui,
-              no e-mail e no Portal, e a fatura fica paga sozinha. Até lá, quem pagar por fora tem o pagamento registrado à mão.
-            </span>
-          </div>
-        </div>
-      )}
+      <CodigosPagamento pagamento={pagamento} ids={ids} />
     </section>
   );
 }
@@ -369,14 +378,19 @@ const SIT_PARCELA = {
 } as const;
 
 /** A folha do carnê: o resumo, as parcelas como canhotos e as ações (desenho, decisão 17). */
-export function FolhaCarne({ carne, aviso, acoes, rodape, classe = "folha" }: {
+export function FolhaCarne({ carne, aviso, acoes, rodape, classe = "folha", titulo, nivel = 2 }: {
   carne: CarneCb;
+  /** "Seu carnê 2026/2027" no Portal; no Console, "Carnê 2026/2027". */
+  titulo?: string;
+  /** No Portal, a folha do carnê fica dentro de "Plano e faturas" e o título é h3. */
+  nivel?: 2 | 3;
   aviso?: ReactNode;
   acoes?: ReactNode;
   rodape: string;
   classe?: string;
 }) {
   const ids = useId();
+  const T = `h${nivel}` as const;
   const validas = carne.itens.filter((p) => p.situacao !== "CANCELADA");
   const pagas = validas.filter((p) => p.situacao === "PAGA");
   const falta = validas.length - pagas.length;
@@ -387,10 +401,10 @@ export function FolhaCarne({ carne, aviso, acoes, rodape, classe = "folha" }: {
     <section className={`${classe} cb-carne`} aria-labelledby={`${ids}-t`}>
       <div className="folha-cab">
         <div>
-          <h2 id={`${ids}-t`}>
+          <T id={`${ids}-t`} className={nivel === 3 ? "cb-h3-carne" : undefined}>
             <Icone nome="carne" className="ico" />
-            Carnê {carne.numero}
-          </h2>
+            {titulo ?? `Carnê ${carne.numero}`}
+          </T>
           <p className="sub">
             {carne.parcelas} parcelas de {brl(carne.valorParcelaCentavos)} · {mesPorExtenso(carne.primeiraCompetencia)} a {mesPorExtenso(carne.ultimaCompetencia)} · todo
             dia {carne.diaVencimento} · gerado em {dataBr(carne.geradoEm)}

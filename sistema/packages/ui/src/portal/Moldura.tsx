@@ -6,12 +6,13 @@
 // o Mais abre uma folha com o resto (Carol, 18/11/2026).
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AREAS_PORTAL, type AreaPortal, type DatasContrato } from "@t3jus/domain";
+import { AREAS_PORTAL, mesPorExtenso, type AreaPortal, type DatasContrato } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { LogoCompacto } from "../Marca.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { ICONE_AREA, ORDEM_AREAS, rotaArea, SECOES_AREA } from "./areas.ts";
+import type { CobrancaPortal } from "./PlanoFaturas.tsx";
 import { BotaoSino, PainelSino, useSino } from "./Sino.tsx";
 
 /** O escritório da sessão, como GET /v1/escritorio devolve. */
@@ -36,12 +37,17 @@ export interface EscritorioPortal {
   whatsappLigado?: boolean;
   /** Contrato encerrado, nos 30 dias só para consulta (F0.14); fora disso, null. */
   encerramento?: DatasContrato | null;
+  /** A cobrança do T3jus: só consulta por atraso e o aviso de fatura vencida (F1.20, CO-06). */
+  cobranca?: CobrancaPortal | null;
   /** Conversas que esperam alguém da equipe (o número no trilho e na barra do celular). */
   conversasEsperando?: number;
 }
 
-/** Só consulta: o contrato terminou e ninguém cria nem muda nada (o banco recusa também). */
-export const soConsulta = (e: Pick<EscritorioPortal, "encerramento"> | null) => !!e?.encerramento;
+/**
+ * Só consulta: o contrato terminou, ou a equipe T3jus deixou o Portal só para consulta por
+ * fatura em atraso (CO-06). Ninguém cria nem muda nada (o banco recusa também).
+ */
+export const soConsulta = (e: Pick<EscritorioPortal, "encerramento" | "cobranca"> | null) => !!e?.encerramento || !!e?.cobranca?.soConsultaDesde;
 
 const diaBr = (iso: string, curta = false) => {
   const [a, m, d] = iso.slice(0, 10).split("-");
@@ -61,6 +67,54 @@ function TiraSoConsulta({ e }: { e: EscritorioPortal }) {
       <a href={ROTAS_PORTAL.escritorio}>{e.dono ? "Baixar os dados" : "Ver o aviso"}</a>
     </div>
   );
+}
+
+/**
+ * As faixas da cobrança, no alto de todas as páginas (desenho, 25 e 26): o sócio dono vê o
+ * atraso (de 7 dias em diante) e o só consulta, com "Ver e pagar"; a equipe vê só o só
+ * consulta, sem valores, e com quem falar.
+ */
+function TiraCobranca({ e }: { e: EscritorioPortal }) {
+  const c = e.cobranca;
+  if (!c) return null;
+  const pagar = `${ROTAS_PORTAL.escritorio}#plano`;
+  if (c.soConsultaDesde) {
+    if (c.veFaturas) {
+      return (
+        <div className="fc-tira" role="note" aria-label="Situação do Portal">
+          <Icone nome="cadeado" className="ico" />
+          <span>
+            <b>Portal só para consulta desde {diaBr(c.soConsultaDesde)}.</b> Há faturas em atraso. Ao pagar, tudo volta ao normal na hora; nenhum dado foi apagado.
+          </span>
+          <a href={pagar}>Ver e pagar</a>
+        </div>
+      );
+    }
+    return (
+      <div className="fc-tira" role="note" aria-label="Situação do Portal">
+        <Icone nome="cadeado" className="ico" />
+        <span>
+          <b>Portal só para consulta.</b> O escritório tem uma pendência com o T3jus. Você continua vendo tudo, mas não cria nem muda nada. Para voltar ao normal,
+          fale com {c.socioDono ? `${c.socioDono}, quem cuida do escritório` : "o sócio dono"}.
+        </span>
+      </div>
+    );
+  }
+  if (c.atraso && c.veFaturas) {
+    return (
+      <div className="cb-tira-atraso" role="note" aria-label="Fatura em atraso">
+        <Icone nome="relogio" className="ico" />
+        <span>
+          <b>
+            A fatura de {mesPorExtenso(c.atraso.competencia, true)} venceu em {diaBr(c.atraso.vencimento)}.
+          </b>{" "}
+          Só o sócio dono vê este aviso.
+        </span>
+        <a href={pagar}>Ver e pagar</a>
+      </div>
+    );
+  }
+  return null;
 }
 
 export const ROTAS_PORTAL = {
@@ -277,7 +331,7 @@ export function MolduraPortal({
         </aside>
 
         <div className="palco">
-          {escritorio && soConsulta(escritorio) && atual !== "escritorio" ? <TiraSoConsulta e={escritorio} /> : null}
+          {escritorio?.encerramento ? (atual !== "escritorio" ? <TiraSoConsulta e={escritorio} /> : null) : escritorio ? <TiraCobranca e={escritorio} /> : null}
           <header className="topo">
             <nav className="trilha" aria-label="Você está em">
               {trilha.map((t, i) => (

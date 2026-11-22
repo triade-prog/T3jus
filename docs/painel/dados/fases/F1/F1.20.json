@@ -5,8 +5,8 @@
   "refs": [
     "CO-06"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 67.2,
-  "nota": "O servidor está pronto (F1.18): GET /v1/escritorio traz a cobrança e GET /v1/escritorio/faturas a página.",
-  "proximo": "Programar Plano e faturas e as faixas do Portal seguindo docs/design/aprovadas/console-cobranca"
+  "nota": "Desenho aprovado em docs/design/aprovadas/console-cobranca (estados 44 a 51). O PDF da fatura, o recibo, o PDF do carnê e a nota fiscal aparecem como lugar reservado até F1.21; o e-mail de cobrança na folha do plano também fica para F1.21, porque o servidor ainda não o manda ao Portal.",
+  "evidencia": "Página Escritório (/meu-escritorio) com a folha 'Plano e faturas' só para o sócio dono (packages/ui/src/portal/PlanoFaturas.tsx): plano, preço, pessoas incluídas e ativas, dia e forma, próxima fatura ou parcela do carnê com Pagar, o carnê com as parcelas, a lista das faturas (tabela no computador, cartões no celular) com Pagar e Recibo, a janela de pagar com os itens e o Pix e o boleto reservados, o atraso em destaque e o só consulta com 'Pagar outubro' e 'Falar com o T3jus', vazio e erro com Tentar de novo. Na moldura (Moldura.tsx), a faixa de atraso de 7 dias em diante só para o dono e a de só consulta em todas as páginas (com 'Ver e pagar' para o dono e quem procurar para a equipe); no só consulta somem os botões de criar e mudar. Testes: tests/e2e/portal-plano-faturas.spec.ts (12 no celular e no computador, com axe)."
 }
