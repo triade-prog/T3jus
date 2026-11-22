@@ -13,8 +13,9 @@ import { Icone } from "../Icone.tsx";
 import { descritoPor, ErroCampo, Janela } from "../console/pecas.tsx";
 import { ICONE_TIPO, lerCondicao, mensagemCampo, ordenar, rascunhoCondicao, temDado, type RascunhoCondicao } from "./honorarios.ts";
 
-export function SeloTipo({ c }: { c: Condicao }) {
-  const extra = seloCondicao(c);
+/** O selo da condição; "curto" mostra só o nome (na tabela de recebimentos o valor já está ao lado). */
+export function SeloTipo({ c, curto = false }: { c: Condicao; curto?: boolean }) {
+  const extra = curto ? null : seloCondicao(c);
   return (
     <span className="hn-selo">
       <Icone nome={ICONE_TIPO[c.tipo]} className="ico ico-s" />

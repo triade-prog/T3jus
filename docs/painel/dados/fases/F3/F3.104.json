@@ -1,0 +1,11 @@
+{
+  "id": "F3.104",
+  "texto": "Baixar o contrato gerado também em PDF, além do .docx da aba Documentos",
+  "peca": "S6",
+  "refs": [
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 797,
+  "proximo": "Desenhar o botão Baixar PDF na aba Documentos da ficha do contrato e levar à aprovação da Carol, depois das telas de F3.16"
+}

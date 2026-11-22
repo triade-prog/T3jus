@@ -7,6 +7,7 @@ import { condicaoSchema } from "./comercial.ts";
 import type { Condicao, TipoHonorario } from "./honorarios.ts";
 import type { PessoaRef } from "./clientes.ts";
 import type { InscricaoOab } from "./portal.ts";
+import type { SituacaoParcela } from "./financeiro.ts";
 
 export const SITUACOES_CONTRATO = { ELABORACAO: "Em elaboração", ATIVO: "Ativo", ENCERRADO: "Encerrado" } as const;
 export type SituacaoContrato = keyof typeof SITUACOES_CONTRATO;
@@ -86,6 +87,11 @@ export interface RecebimentoPrevisto {
   /** Dá para "Foi paga, sim": nada foi feito nela em A receber. */
   podeVoltar?: boolean;
   base: { valor: number; fonte: FonteBase; por: PessoaRef; em: string } | null;
+  /** Só para quem tem a área Financeiro (0750): a situação em A receber. */
+  situacao?: SituacaoParcela;
+  recebido?: number;
+  falta?: number;
+  pagaEm?: string | null;
 }
 export interface EventoContrato { em: string; acao: string; autor: string | null; dados: Record<string, unknown> }
 export interface FichaContrato extends ContratoLinha {
@@ -100,6 +106,8 @@ export interface FichaContrato extends ContratoLinha {
   /** A OAB de cada advogado neste contrato (EX-12, decisões 16, 18 e 20). */
   inscricoes?: AdvogadoNoContrato[];
   financeiro: boolean;
+  /** Soma do que já entrou neste contrato; só para quem tem a área Financeiro (0750). */
+  recebidoAteHoje?: number;
   recebimentos: RecebimentoPrevisto[];
   historico: EventoContrato[];
   /** A importação de planilha de onde o contrato veio (F3.73), ou nulo. */
