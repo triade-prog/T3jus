@@ -89,6 +89,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | EX-12 | Ficha de cada advogado da equipe com OAB e UF, usada nos documentos gerados | [V1] |
 | EX-13 | Agenda sincronizada com Google Agenda ou Outlook | [VAL] |
 | EX-14 | Aviso ao cliente pelo WhatsApp quando o caso muda de etapa, explicado em linguagem simples | [V1] |
+| EX-15 | Qualificação completa de cada advogado (nome completo, nacionalidade, estado civil, CPF, RG, endereço profissional e contatos), como a do cliente, preenchida em Sua conta e usada em todos os documentos gerados | [V1] |
 
 ## 6. Indicadores
 
@@ -195,11 +196,11 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 2. Atendimento e propostas | 6 |
 | 3. Contratos e honorários | 9 |
 | 4. Financeiro e repasses | 23 |
-| 5. Execução jurídica | 14 |
+| 5. Execução jurídica | 15 |
 | 6. Indicadores | 15 |
 | 7. A validar com os pilotos | 8 |
 | 8. Princípios técnicos e de qualidade | 26 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 6 |
 | 11. Portal do advogado | 6 |
-| **Total** | **126** |
+| **Total** | **127** |

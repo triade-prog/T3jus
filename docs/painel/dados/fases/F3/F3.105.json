@@ -1,0 +1,11 @@
+{
+  "id": "F3.105",
+  "texto": "Programar a qualificação do advogado: tabela pessoa_dados_documento (0760), Sua conta editável, ficha na Equipe, campo ADVOGADOS_QUALIFICACAO nos documentos e o aviso de dados faltando em Gerar documentos",
+  "peca": "S7",
+  "refs": [
+    "EX-15"
+  ],
+  "status": "pendente",
+  "ordem": 798,
+  "proximo": "Programar Sua conta com os dados para os documentos (desenho em docs/design/aprovadas/portal-conta-dados)"
+}
