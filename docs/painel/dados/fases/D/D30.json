@@ -1,6 +1,6 @@
 {
   "id": "D30",
-  "texto": "Desenho do fechamento das lacunas da jornada do cliente: assinatura com a pergunta do caso em todas as portas, assinados sem caso, juntar ao caso que já existe, passo de fechamento, encerrar em cadeia, contrato sem caso, cadastro pela conversa e o botão do passo uma vez só",
+  "texto": "Desenho do fechamento das lacunas da jornada do cliente: assinatura com a pergunta do caso em todas as portas, assinados sem caso, juntar ao caso que já existe, passo de fechamento, encerrar em cadeia, contrato sem caso, cadastro pela conversa e o botão do passo uma vez só e os documentos para dar início ao processo",
   "peca": "S5",
   "refs": [
     "AP-07",
@@ -8,7 +8,9 @@
     "CH-12",
     "CH-13",
     "EX-16",
-    "EX-17"
+    "EX-17",
+    "AP-08",
+    "EX-18"
   ],
   "status": "andamento",
   "ordem": 80,

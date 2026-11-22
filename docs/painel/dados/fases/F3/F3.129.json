@@ -1,0 +1,11 @@
+{
+  "id": "F3.129",
+  "texto": "Documentos pessoais na ficha do cliente e lista de documentos por área que vira pedido ao abrir o caso, aproveitando o que já está na ficha",
+  "peca": "S6",
+  "refs": [
+    "AP-08",
+    "EX-18"
+  ],
+  "status": "pendente",
+  "ordem": 1050
+}
