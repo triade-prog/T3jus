@@ -363,6 +363,8 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     await j.locator('input[type="file"]').first().setInputFiles({ name: "contrato-assinado.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(1200, 1) });
     await j.getByLabel("Assinado em").first().fill("21/11/2026");
     await j.locator('input[type="file"]').nth(1).setInputFiles({ name: "procuracao.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(800, 1) });
+    // A data fixa: o padrão é hoje, e o teste não pode depender do dia em que roda.
+    await j.getByLabel("Assinado em").nth(1).fill("21/11/2026");
     await j.getByRole("button", { name: "Anexar e ativar o contrato" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Contrato assinado anexado." })).toContainText("está ativo");
     const anexos = pedidos.filter((p) => p.caminho === "/v1/escritorio/anexos").map((p) => p.corpo);
@@ -372,5 +374,52 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     ]);
     expect(pedidos.find((p) => p.caminho === `/v1/escritorio/contratos/${CT}/assinatura`)?.corpo).toEqual({ versao: 1, assinadoEm: "2026-11-21" });
     expect(envios).toHaveLength(2);
+  });
+
+  test("Anexar os assinados: várias fotos viram um PDF só, até 10 por documento (F3.99)", async ({ page }) => {
+    const ANEXO = "f9000000-0000-4000-8000-000000000041";
+    const corpos: Buffer[] = [];
+    await page.route("**/arquivos-falsos/**", async (rota) => {
+      corpos.push(rota.request().postDataBuffer() ?? Buffer.alloc(0));
+      await rota.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${CT}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/contratos/${CT}/anexos`]: { corpo: { anexos: [] } },
+      [`GET /v1/escritorio/contratos/${CT}/documentos`]: { corpo: DOCS_CT },
+      "POST /v1/escritorio/anexos": { status: 201, corpo: { id: ANEXO, enderecoDeEnvio: `${P}/arquivos-falsos/${ESC}/${ANEXO}?token=x` } },
+      [`POST /v1/escritorio/anexos/${ANEXO}/concluir`]: { corpo: {} },
+    });
+    const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAAGCAIAAABrW6giAAAAEElEQVR4nGNoUHCAIwZKOQA5exUBQmxPsAAAAABJRU5ErkJggg==", "base64");
+    const foto = (nome: string) => ({ name: nome, mimeType: "image/png", buffer: PNG });
+    await page.goto(`${P}/contratos/contratos/${CT}?aba=documentos`);
+    await page.locator(".dir").getByRole("button", { name: "Anexar os assinados" }).click();
+    const j = page.getByRole("dialog", { name: "Anexar os assinados" });
+    await expect(j.getByText("Várias páginas: um PDF só ou até 10 fotos.").first()).toBeVisible();
+    const proc = j.locator('input[type="file"]').nth(1);
+
+    // Mais de 10 fotos é barrado antes de enviar.
+    await proc.setInputFiles(Array.from({ length: 11 }, (_, i) => foto(`pagina-${i + 1}.png`)));
+    await j.getByRole("button", { name: "Anexar", exact: true }).click();
+    await expect(j.getByText("Nada foi anexado.")).toBeVisible();
+    await expect(j.getByText(/São 11 fotos, e o limite é 10 por documento/)).toBeVisible();
+    expect(pedidos.some((p) => p.caminho === "/v1/escritorio/anexos")).toBe(false);
+
+    // Três fotos: a ordem é a do nome, e viram um PDF só.
+    await proc.setInputFiles([foto("pagina-3.png"), foto("pagina-1.png"), foto("pagina-2.png")]);
+    await expect(j.getByText("3 fotos: pagina-1.png, pagina-2.png, pagina-3.png")).toBeVisible();
+    await expect(j.getByText(/Viram um PDF só, uma foto por página, na ordem do nome/)).toBeVisible();
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Anexar", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Assinado anexado." })).toBeVisible();
+    const anexos = pedidos.filter((p) => p.caminho === "/v1/escritorio/anexos").map((p) => p.corpo as Record<string, unknown>);
+    expect(anexos).toHaveLength(1);
+    expect(anexos[0]).toMatchObject({ dono: "CONTRATO", donoId: CT, nome: "pagina-1-3-fotos.pdf", tipo: "application/pdf", documentoId: DOC(2) });
+    expect(corpos).toHaveLength(1);
+    const pdf = corpos[0]!.toString("latin1");
+    expect(pdf.startsWith("%PDF-1.4")).toBe(true);
+    expect(pdf).toContain("/Count 3");
+    expect(anexos[0]!.tamanho).toBe(corpos[0]!.length);
   });
 });
