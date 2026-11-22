@@ -6,7 +6,8 @@
     "PT-11"
   ],
   "status": "feito",
-  "proximo": "Aplicar a migration 0780 e publicar a api-console (com o ok da Carol). O contato citado é o provisório CONTATO_T3JUS (atendimento@exemplo.com.br): trocar a constante em packages/domain/src/contrato.ts quando o e-mail real vier",
+  "proximo": "Trocar o contato provisório CONTATO_T3JUS (atendimento@exemplo.com.br) em packages/domain/src/contrato.ts quando o e-mail real vier",
   "ordem": 160,
-  "evidencia": "Migration 0780_avisos_fim_contrato (fila contrato_avisos, rotina das 8h pelo pg_cron t3jus-avisos-fim), rota /v1/rotina/avisos-fim-contrato e envio na hora ao encerrar com fim hoje na api-console, e-mail avisoFimContrato em _shared/email.ts, frase \"Só equipe\" no histórico da ficha; testes 104_avisos_fim_contrato_test.sql, api-console/avisos_fim_test.ts e console/historico.test.ts. Textos dos dois e-mails aprovados pela Carol em 22/11/2026 8h33 (Bahia)"
+  "evidencia": "Migration 0780_avisos_fim_contrato (fila contrato_avisos, rotina das 8h pelo pg_cron t3jus-avisos-fim), rota /v1/rotina/avisos-fim-contrato e envio na hora ao encerrar com fim hoje na api-console, e-mail avisoFimContrato em _shared/email.ts, frase \"Só equipe\" no histórico da ficha; testes 104_avisos_fim_contrato_test.sql, api-console/avisos_fim_test.ts e console/historico.test.ts. Textos dos dois e-mails aprovados pela Carol em 22/11/2026 8h33 (Bahia)",
+  "nota": "Migration 0780 aplicada no Supabase e api-console v13 publicada (main com #111) em 22/11/2026."
 }
