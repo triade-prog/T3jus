@@ -1,19 +1,21 @@
 "use client";
 // Área Escritório do Portal (F1.7, PT-15), tela aprovada em
-// docs/design/aprovadas/portal-v1/escritorio.html: os dados do escritório só para leitura
-// (quem muda é a equipe T3jus nesta versão), "Seus escritórios" para quem está em mais de um
+// docs/design/aprovadas/portal-v1/escritorio.html, com os dados para os documentos (PA-07) de
+// docs/design/aprovadas/escritorio-dados-documentos: a sócia dona muda os dados aqui e a equipe
+// T3jus, no Console (EscritorioDados.tsx). "Seus escritórios" para quem está em mais de um
 // e a exportação completa dos dados, só do sócio dono. Quem não é o dono vê "Quem cuida".
 // No alto, "Plano e faturas", só do sócio dono (F1.20, CO-06).
 
 import { useEffect, useId, useRef, useState } from "react";
-import { CONTATO_T3JUS } from "@t3jus/domain";
+import { CONTATO_T3JUS, type DadosEscritorioDocumentos } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, ErroAoCarregar, Janela } from "../console/pecas.tsx";
-import { formatarCnpj, formatarTelefone } from "../console/ficha.ts";
 import { dataLonga, hora, iniciais } from "../console/tempo.ts";
 import { listaAreas, primeiroNome } from "./equipe.ts";
-import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
+import { chamarPortal, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
+import { Toast, type Feito } from "./Equipe.tsx";
+import { CabecalhoEscritorio, FolhaContatos, FolhaDadosEscritorio, FormEscritorioDados, ResumoAdvogados, UsosEscritorio } from "./EscritorioDados.tsx";
 import { PlanoEFaturas } from "./PlanoFaturas.tsx";
 import { BarraEscritorio } from "./WhatsApp.tsx";
 
@@ -51,98 +53,36 @@ export function nomeArquivoExportacao(escritorio: string, iso: string): string {
   return `${base || "escritorio"}-${iso.slice(0, 10)}.json`;
 }
 
-function Dados({ e }: { e: EscritorioPortal }) {
-  return (
-    <section className="folha" aria-labelledby="t-dados" style={{ overflow: "hidden" }}>
-      <div className="folha-cab">
-        <div>
-          <h2 id="t-dados">
-            <Icone nome="coluna" className="ico" />
-            Dados do escritório
-          </h2>
-          <p className="sub">Cadastrados pela equipe T3jus na implantação</p>
-        </div>
+/** O pé da folha de dados quando o Portal está só para consulta (F0.14, CO-06). */
+function RodapeConsulta({ e }: { e: EscritorioPortal }) {
+  if (e.encerramento) {
+    return (
+      <div className="pt-muda">
+        <Icone nome="cadeado" className="ico" />
+        <p>
+          Só consulta até {diaBr(e.encerramento.consultaAte)}. Os dados do escritório não mudam mais. Dúvidas? <a href={`mailto:${CONTATO_T3JUS}`}>Fale com o T3jus</a>.
+        </p>
       </div>
-      <dl className="dados-ficha">
-        <div className="inteira">
-          <dt>Nome</dt>
-          <dd>{e.nome}</dd>
-        </div>
-        <div>
-          <dt>CNPJ</dt>
-          <dd className="num">{e.cnpj ? formatarCnpj(e.cnpj) : "Não informado"}</dd>
-        </div>
-        {e.oabSociedade ? (
-          <div>
-            <dt>Registro da sociedade na OAB</dt>
-            <dd className="num">{e.oabSociedade}</dd>
-          </div>
-        ) : null}
-        <div>
-          <dt>Cidade e UF</dt>
-          <dd>{e.cidade ? `${e.cidade}${e.uf ? `, ${e.uf}` : ""}` : "Não informado"}</dd>
-        </div>
-        <div className="inteira">
-          <dt>Endereço</dt>
-          <dd>{e.endereco || "Não informado"}</dd>
-        </div>
-      </dl>
-      {e.contatos.length ? (
-        <>
-          <h3 className="sr">Contatos</h3>
-          <ul className="lista" aria-label="Contatos do escritório">
-            {e.contatos.map((c, i) => (
-              <li key={`${c.nome}-${i}`} className="contato">
-                <div>
-                  <strong>{c.nome}</strong>
-                  {c.papel ? <small>{c.papel}</small> : null}
-                </div>
-                {c.telefone ? (
-                  <a href={`tel:${c.telefone}`}>
-                    <Icone nome="telefone" className="ico" />
-                    {formatarTelefone(c.telefone)}
-                  </a>
-                ) : null}
-                {c.email ? (
-                  <a href={`mailto:${c.email}`}>
-                    <Icone nome="envelope" className="ico" />
-                    {c.email}
-                  </a>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-      {e.encerramento ? (
-        <div className="pt-muda">
-          <Icone nome="cadeado" className="ico" />
-          <p>
-            Só consulta até {diaBr(e.encerramento.consultaAte)}. Os dados do escritório não mudam mais. Dúvidas? <a href={`mailto:${CONTATO_T3JUS}`}>Fale com o T3jus</a>.
-          </p>
-        </div>
-      ) : e.cobranca?.soConsultaDesde ? (
-        <div className="pt-muda">
-          <Icone nome="cadeado" className="ico" />
-          {e.dono ? (
-            <p>
-              Só consulta até o pagamento das faturas em atraso. A exportação dos dados continua liberada. Dúvidas? <a href={`mailto:${CONTATO_T3JUS}`}>Fale com o T3jus</a>.
-            </p>
-          ) : (
-            <p>O Portal está só para consulta. Para voltar ao normal, fale com {e.cobranca.socioDono ? `${e.cobranca.socioDono}, quem cuida do escritório` : "o sócio dono"}.</p>
-          )}
-        </div>
+    );
+  }
+  if (!e.cobranca?.soConsultaDesde) return null;
+  return (
+    <div className="pt-muda">
+      <Icone nome="cadeado" className="ico" />
+      {e.dono ? (
+        <p>
+          Só consulta até o pagamento das faturas em atraso. A exportação dos dados continua liberada. Dúvidas? <a href={`mailto:${CONTATO_T3JUS}`}>Fale com o T3jus</a>.
+        </p>
       ) : (
-        <div className="pt-muda">
-          <Icone nome="ajuda" className="ico" />
-          <p>
-            Nesta versão, quem muda estes dados é a equipe T3jus. Precisa corrigir algo? <a href={ROTAS_PORTAL.ajuda}>Fale com a equipe T3jus</a> pela Ajuda, e a
-            mudança aparece aqui.
-          </p>
-        </div>
+        <p>O Portal está só para consulta. Para voltar ao normal, fale com {e.cobranca.socioDono ? `${e.cobranca.socioDono}, quem cuida do escritório` : "o sócio dono"}.</p>
       )}
-    </section>
+    </div>
   );
+}
+
+/** Sem os dados novos (servidor antigo), o que a ficha já tinha. */
+function documentosDe(e: EscritorioPortal): DadosEscritorioDocumentos {
+  return e.documentos ?? { nome: e.nome, cnpj: e.cnpj, oab: e.oabSociedade ?? null, cidade: e.cidade, uf: e.uf, endereco: e.endereco };
 }
 
 interface OutroEscritorio {
@@ -489,43 +429,55 @@ function QuemCuida({ e }: { e: EscritorioPortal }) {
 export function EscritorioDoPortal() {
   const { escritorio: e, erro, recarregar } = useEscritorioPortal();
   const abrirExportar = useRef<(() => void) | null>(null);
-  const trilha = [{ nome: "Escritório" }];
+  const [modo, setModo] = useState<"ver" | "editar">("ver");
+  const [feito, setFeito] = useState<Feito | null>(null);
+  const trilha = modo === "editar" ? [{ nome: "Escritório", href: ROTAS_PORTAL.escritorio }, { nome: "Dados do escritório" }, { nome: "Editar" }] : [{ nome: "Escritório" }];
+  const d = e ? documentosDe(e) : null;
+  const pode = !!e?.dono && !soConsulta(e);
+  const nomeDona = d?.dona?.nome ?? e?.socios[0] ?? "a sócia dona";
+  const editar = () => {
+    setFeito(null);
+    setModo("editar");
+    window.scrollTo({ top: 0 });
+  };
   return (
     <MolduraPortal atual="escritorio" trilha={trilha} escritorio={e} pagina="co-equipe" barra={<BarraEscritorio secao="dados" financeiro={!!e?.areas.includes("FINANCEIRO")} />}>
-      <div className="cabeca-ambar campo-ambar cabeca-equipe">
-        <div>
-          <p className="sobretitulo">Escritório</p>
-          <h1>{e?.nome ?? "Escritório"}</h1>
-          <span className="fio" aria-hidden="true" />
-          <p className="lede">Os dados que aparecem nos contratos, nas procurações e no Portal.</p>
-        </div>
-      </div>
       {erro ? (
         <ErroAoCarregar oque="os dados do escritório" aoTentar={recarregar}
           texto="O servidor não respondeu. Nada do que estava guardado se perdeu. Tente de novo em instantes." />
-      ) : !e ? (
+      ) : !e || !d ? (
         <Carregando rotulo="Carregando os dados do escritório…" linhas={4} />
+      ) : modo === "editar" && pode ? (
+        <div className="cd">
+          <CabecalhoEscritorio d={d} dona nomeDona={nomeDona} editando />
+          <FormEscritorioDados e={e} d={d} aoCancelar={() => setModo("ver")}
+            aoSalvo={() => {
+              setModo("ver");
+              setFeito({ titulo: "Dados do escritório salvos.", texto: "Valem para os próximos documentos; os já gerados não mudam." });
+              recarregar();
+              window.scrollTo({ top: 0 });
+            }} />
+        </div>
       ) : (
-        <div className="pt-grade">
-          {e.encerramento ? (
-            <div style={{ gridColumn: "1 / -1" }}>
-              <AvisoFim e={e} aoBaixar={() => abrirExportar.current?.()} />
+        <div className="cd">
+          {e.encerramento ? <AvisoFim e={e} aoBaixar={() => abrirExportar.current?.()} /> : null}
+          <CabecalhoEscritorio d={d} dona={pode} nomeDona={nomeDona} aoCompletar={pode ? editar : undefined} />
+          {e.dono && e.cobranca?.veFaturas ? <PlanoEFaturas /> : null}
+          <div className="hn-grade">
+            <div className="hn-col">
+              <FolhaDadosEscritorio e={e} d={d} aoEditar={pode ? editar : undefined} rodape={soConsulta(e) ? <RodapeConsulta e={e} /> : undefined} />
+              <FolhaContatos e={e} />
+              {e.outrosEscritorios > 0 ? <SeusEscritorios e={e} /> : null}
+              {e.dono ? <Exportar e={e} aoExportar={recarregar} abrirRef={abrirExportar} /> : <QuemCuida e={e} />}
             </div>
-          ) : null}
-          {e.dono && e.cobranca?.veFaturas ? (
-            <div style={{ gridColumn: "1 / -1" }}>
-              <PlanoEFaturas />
-            </div>
-          ) : null}
-          <div className="pt-col">
-            <Dados e={e} />
-          </div>
-          <div className="pt-col">
-            {e.outrosEscritorios > 0 ? <SeusEscritorios e={e} /> : null}
-            {e.dono ? <Exportar e={e} aoExportar={recarregar} abrirRef={abrirExportar} /> : <QuemCuida e={e} />}
+            <aside className="hn-col" aria-label="Onde os dados entram e os advogados">
+              <UsosEscritorio />
+              <ResumoAdvogados />
+            </aside>
           </div>
         </div>
       )}
+      {feito ? <Toast titulo={feito.titulo} texto={feito.texto} aoFechar={() => setFeito(null)} /> : null}
     </MolduraPortal>
   );
 }

@@ -31,6 +31,7 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
       funcoes: ["ADMINISTRACAO"], situacoes: ["SEM_SOCIO"], criado_em: "2026-10-16T10:00:00Z",
     }],
     console_editar_ficha: (a) => Number(a.p_versao) + 1,
+    console_ficha_salvar: (a) => Number(a.p_versao) + 1,
     console_equipe: () => [],
     console_cadastrar_membro: () => null,
     dados_convite: () => ({ nome: "Inês" }),
@@ -100,6 +101,21 @@ Deno.test("CO-02: a ficha vai com o CNPJ só em dígitos e o telefone no formato
   assertEquals(args.p_cnpj, "11222333000181");
   assertEquals(args.p_contatos, [{ nome: "Ana", papel: "Sócia", telefone: "+5561988880000" }]);
   assertEquals(args.p_endereco, null);
+});
+
+Deno.test("PA-07: a ficha nova manda os dados para os documentos junto, numa chamada só", async () => {
+  const m = montar();
+  const r = await m.pedir(`/v1/clientes/${IPE}/ficha`, {
+    metodo: "PUT",
+    cookie: await entrar(m),
+    corpo: { versao: 3, nome: "Ipê Advocacia", cidade: "Brasília", uf: "DF", cnpj: "11.222.333/0001-81", contatos: [],
+             documentos: { tipo: "SOCIEDADE", razaoSocial: "Ipê Sociedade de Advogados", cep: "70000-000", logradouro: "SCS", numero: "10" } },
+  });
+  assertEquals(await r.json(), { versao: 4 });
+  assertEquals(m.chamadas.some((c) => c.funcao === "console_editar_ficha"), false);
+  const args = m.chamadas.find((c) => c.funcao === "console_ficha_salvar")!.args;
+  const d = args.p_dados as Record<string, unknown>;
+  assertEquals([d.razaoSocial, d.cnpj, d.cidade, d.numero], ["Ipê Sociedade de Advogados", "11222333000181", "Brasília", "10"]);
 });
 
 Deno.test("PT-19 e CO-02: conflito e CNPJ repetido chegam com os detalhes do banco", async () => {

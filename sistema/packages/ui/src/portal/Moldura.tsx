@@ -6,7 +6,7 @@
 // o Mais abre uma folha com o resto (Carol, 18/11/2026).
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AREAS_PORTAL, mesPorExtenso, type AreaPortal, type DatasContrato } from "@t3jus/domain";
+import { AREAS_PORTAL, mesPorExtenso, type AreaPortal, type DadosEscritorioDocumentos, type DatasContrato } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { LogoCompacto } from "../Marca.tsx";
@@ -41,6 +41,12 @@ export interface EscritorioPortal {
   cobranca?: CobrancaPortal | null;
   /** Conversas que esperam alguém da equipe (o número no trilho e na barra do celular). */
   conversasEsperando?: number;
+  /** A versão do escritório, para salvar os dados (PA-07). */
+  versao?: number;
+  /** Os dados do escritório para os documentos (PA-07, 0860). */
+  documentos?: DadosEscritorioDocumentos;
+  /** A última mudança dos dados do escritório: quando, quem e onde (Portal ou Console). */
+  dadosMudados?: { em: string; por: string | null; onde: "PORTAL" | "CONSOLE" | null } | null;
 }
 
 /**
@@ -320,7 +326,7 @@ export function MolduraPortal({
                 <span>
                   <strong>{escritorio?.pessoa ?? " "}</strong>
                   <small>{papel}</small>
-                  <span className="sr">, sua conta e seus dados</span>
+                  <span className="sr">, sua conta</span>
                 </span>
               </a>
               <button className="sair" type="button" onClick={sair} disabled={saindo} aria-label="Sair do Portal">
@@ -436,8 +442,8 @@ export function MolduraPortal({
           <ul className="pt-ml">
             <li>
               <a className="pt-mi" href={ROTAS_PORTAL.conta} aria-current={atualDe("conta", atual, false)}>
-                <Icone nome="balanca" className="ico" />
-                Seus dados para os documentos
+                <Icone nome="cracha" className="ico" />
+                Sua conta
                 <Icone nome="dir" className="ico ico-s pt-ir" />
               </a>
             </li>

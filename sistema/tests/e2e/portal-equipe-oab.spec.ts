@@ -68,6 +68,8 @@ test.describe("Equipe com a OAB (EX-12)", () => {
     const sai = page.getByRole("region", { name: "Como Felipe sai no contrato e na procuração" });
     await expect(sai.getByText(/inscrito\(a\) na OAB\/SP sob o nº 287\.104 e na OAB\/RJ sob o nº 245\.880-S/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Completar os dados de Felipe" })).toBeVisible();
+    // PA-07: os dados para os documentos se mudam em Escritório › Advogados nos documentos.
+    await expect(page.getByRole("link", { name: "Advogados nos documentos" }).last()).toHaveAttribute("href", `/meu-escritorio/advogados?editar=${pid(2)}`);
     await expect(page.getByRole("link", { name: "C-2026-019 · Farmácia Bom Jesus Ltda." })).toBeVisible();
     await semViolacoes(page);
 
@@ -147,36 +149,57 @@ test.describe("Equipe com a OAB (EX-12)", () => {
     expect((pedidos.find((p) => p.metodo === "POST")!.corpo as { oab: unknown }).oab).toEqual({ uf: "RJ", numero: "498310", letra: null });
   });
 
-  test("Sua conta: a pessoa completa os dados para os documentos e confere a OAB (EX-15)", async ({ page }) => {
-    const pedidos = await simular(page, {
+  test("Sua conta fica só com o que é do sistema e leva aos dados no Escritório (PA-07)", async ({ page }) => {
+    await simular(page, {
       "/v1/escritorio": { corpo: FELIPE_ESC },
       "/v1/escritorio/conta": {
         corpo: {
           pessoaId: pid(2), nome: "Felipe Matos", email: "felipe@ribeiromatos.adv.br", dono: false, desde: h(4000), areas: ["CONTRATOS", "JURIDICO"],
-          oab: [SP, RJ], frase: FICHA_FELIPE.frase, socios: ["Marina Ribeiro"], dados: DADOS_FELIPE, escritorio: ESC_END,
-          contratos: [{ ...FICHA_FELIPE.contratos[0], inscricoes: "OAB/SP nº 287.104 e OAB/RJ nº 245.880-S" }],
+          oab: [SP, RJ], frase: FICHA_FELIPE.frase, socios: ["Marina Ribeiro"], dados: DADOS_FELIPE, escritorio: ESC_END, contratos: [],
         },
       },
+    });
+    await page.goto(`${P}/conta`);
+    await expect(page.getByRole("heading", { level: 1, name: "Felipe Matos" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sua conta no T3jus" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Seus dados para os documentos" })).toHaveCount(0);
+    await expect(page.getByLabel("CPF")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Ir para Advogados nos documentos" })).toHaveAttribute("href", "/meu-escritorio/advogados");
+    await semViolacoes(page);
+    if (ehCelular(page)) {
+      await page.getByRole("button", { name: "Mais" }).click();
+      await expect(page.getByRole("dialog", { name: "Mais" }).getByRole("link", { name: "Sua conta" })).toHaveAttribute("aria-current", "page");
+      await page.keyboard.press("Escape");
+    } else {
+      await expect(page.locator("#trilho").getByRole("link", { name: /sua conta/ })).toHaveAttribute("aria-current", "page");
+    }
+  });
+
+  test("Advogados nos documentos: cada um completa os próprios dados (PA-07)", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: FELIPE_ESC },
+      "/v1/escritorio/advogados": [{
+        corpo: {
+          dono: false, eu: pid(2), socios: ["Marina Ribeiro"], escritorio: ESC_END, semOab: [{ pessoaId: pid(3), nome: "Gustavo Lima" }],
+          advogados: [
+            { pessoaId: pid(2), nome: "Felipe Matos", socioDono: false, inscricoes: [SP, RJ], frase: FICHA_FELIPE.frase, faltas: [], dados: DADOS_FELIPE },
+            { pessoaId: pid(1), nome: "Marina Ribeiro", socioDono: true, inscricoes: [insc(3, "SP", "214538", null, "PRINCIPAL")], frase: "OAB/SP nº 214.538", faltas: ["CPF"], dados: null },
+          ],
+        },
+      }],
       "PUT /v1/escritorio/conta/dados": {
         corpo: { ...DADOS_FELIPE, nomeCompleto: "Felipe Augusto Matos", tratamento: "ADVOGADO", nacionalidade: "brasileiro", estadoCivil: "SOLTEIRO",
           cpf: "52998224725", rg: "12.345.678-9", rgOrgao: "SSP/SP", versao: 1 },
       },
     });
-    await page.goto(`${P}/conta`);
-    await expect(page.getByRole("heading", { level: 1, name: "Felipe Matos" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Seus dados para os documentos" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Remover/ })).toHaveCount(0);
-    await expect(page.getByText(/Fale com Marina Ribeiro, sócia dona:/)).toBeVisible();
+    await page.goto(`${P}/meu-escritorio/advogados`);
+    await expect(page.getByRole("heading", { level: 1, name: "Quem assina pelo escritório" })).toBeVisible();
+    await expect(page.getByText(/só aparece para Marina e para Marina Ribeiro, sócia dona/)).toBeVisible();
+    await expect(page.getByText(/Gustavo Lima não assina documentos/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /de Marina Ribeiro/ })).toHaveCount(0);
     await semViolacoes(page);
-    if (ehCelular(page)) {
-      await page.getByRole("button", { name: "Mais" }).click();
-      await expect(page.getByRole("dialog", { name: "Mais" }).getByRole("link", { name: "Seus dados para os documentos" })).toHaveAttribute("aria-current", "page");
-      await page.keyboard.press("Escape");
-    } else {
-      await expect(page.locator("#trilho").getByRole("link", { name: /sua conta e seus dados/ })).toHaveAttribute("aria-current", "page");
-    }
 
-    await page.getByRole("button", { name: "Completar agora" }).click();
+    await page.getByRole("button", { name: /Completar os dados de Felipe Matos/ }).click();
     await page.getByLabel("Nome completo").fill("Felipe Augusto Matos");
     await page.getByLabel("CPF").fill("111.111.111-11");
     await page.getByRole("button", { name: "Salvar dados" }).click();

@@ -20,6 +20,7 @@ import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "
 
 export const ROTAS_ESCRITORIO = {
   dados: ROTAS_PORTAL.escritorio,
+  advogados: `${ROTAS_PORTAL.escritorio}/advogados`,
   whatsapp: `${ROTAS_PORTAL.escritorio}/whatsapp`,
   recebimento: `${ROTAS_PORTAL.escritorio}/recebimento`,
   financeiro: `${ROTAS_PORTAL.escritorio}/financeiro`,
@@ -35,6 +36,7 @@ export function BarraEscritorio({ secao, financeiro = false }: { secao: keyof ty
       </p>
       <nav className="pt-secoes" aria-label="Seções do Escritório">
         <a href={ROTAS_ESCRITORIO.dados} aria-current={secao === "dados" ? "page" : undefined}>Dados do escritório</a>
+        <a href={ROTAS_ESCRITORIO.advogados} aria-current={secao === "advogados" ? "page" : undefined}>Advogados nos documentos</a>
         <a href={ROTAS_ESCRITORIO.whatsapp} aria-current={secao === "whatsapp" ? "page" : undefined}>WhatsApp e IA</a>
         <a href={ROTAS_ESCRITORIO.recebimento} aria-current={secao === "recebimento" ? "page" : undefined}>Recebimento</a>
         {financeiro ? <a href={ROTAS_ESCRITORIO.financeiro} aria-current={secao === "financeiro" ? "page" : undefined}>Ajustes do financeiro</a> : null}

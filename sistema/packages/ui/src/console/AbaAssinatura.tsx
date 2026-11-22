@@ -8,7 +8,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { FORMAS_ASSINATURA, mesPorExtenso, UFS_BRASIL, type FormaAssinatura } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { brl, dataBr, enderecoEmLinha, textoEvento, textoPessoas, type AssinaturaCb, type AssinaturaResposta, type FaturaCb } from "./cobranca.ts";
+import { brl, dataBr, enderecoEmLinha, sedeParaCobranca, textoEvento, textoPessoas, type AssinaturaCb, type AssinaturaResposta, type FaturaCb } from "./cobranca.ts";
 import { formatarCnpj } from "./ficha.ts";
 import { chamarConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
@@ -469,7 +469,8 @@ function formularioDe(r: AssinaturaResposta): Formulario {
     motivo: a?.desconto?.motivo ?? "",
     parcelas: String(a?.parcelasPorCarne ?? 12),
     // O endereço de cobrança nasce da ficha (decisão 10 do desenho cobranca-pdfs); a ficha não tem o CEP.
-    ...enderecoDe(a ? a.enderecoCobranca ?? null : null, a?.enderecoCobranca ? {} : r.enderecoSugerido ?? {}),
+    ...enderecoDe(a && !a.mesmoDaSede ? a.enderecoCobranca ?? null : null,
+      a?.enderecoCobranca && !a.mesmoDaSede ? {} : { ...(r.enderecoSugerido ?? {}), ...Object.fromEntries(Object.entries(r.sede ?? {}).filter(([k, x]) => x && k !== "confira" && !r.sede?.confira)) }),
   };
 }
 
@@ -487,8 +488,11 @@ function enderecoIntocado(v: Formulario, inicial: Formulario, temSalvo: boolean)
   return !temSalvo && !v.cep.trim() && CAMPOS_ENDERECO.every((k) => v[k] === inicial[k]);
 }
 
-/** `endereco`: "enviar" o que está nos campos, "vazio" (sem endereço) ou "omitir" (fica o salvo). */
-function corpoDe(v: Formulario, criar: boolean, endereco: "enviar" | "vazio" | "omitir" = "enviar") {
+/**
+ * `endereco`: "enviar" o que está nos campos, "vazio" (sem endereço), "omitir" (fica o salvo) ou
+ * "sede" ("O mesmo endereço da sede", PA-07: nada se guarda e o pagador usa a sede do dia).
+ */
+function corpoDe(v: Formulario, criar: boolean, endereco: "enviar" | "vazio" | "omitir" | "sede" = "enviar") {
   const pct = Number(v.pct.trim() || "0");
   return {
     ...(criar ? { planoId: v.planoId } : {}),
@@ -498,7 +502,8 @@ function corpoDe(v: Formulario, criar: boolean, endereco: "enviar" | "vazio" | "
     cnpjNota: v.cnpj.replace(/\D/g, "") || null,
     desconto: v.pct.trim() && pct !== 0 ? { pct: Number.isInteger(pct) ? pct : -1, ate: v.ate, motivo: v.motivo.trim() } : null,
     parcelasPorCarne: v.forma === "CARNE" ? Number(v.parcelas) : null,
-    ...(endereco === "omitir" ? {} : { endereco: endereco === "vazio" ? null : Object.fromEntries(CAMPOS_ENDERECO.map((k) => [k, v[k].trim()])) }),
+    ...(endereco === "omitir" ? {} : endereco === "sede" ? { mesmoDaSede: true }
+      : { endereco: endereco === "vazio" ? null : Object.fromEntries(CAMPOS_ENDERECO.map((k) => [k, v[k].trim()])), ...(endereco === "enviar" ? { mesmoDaSede: false } : {}) }),
   };
 }
 
@@ -533,7 +538,11 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
   const criar = !a;
   const [v, setV] = useState<Formulario>(() => formularioDe(r));
   const [inicial] = useState<Formulario>(() => formularioDe(r));
-  const intocado = enderecoIntocado(v, inicial, !!a?.enderecoCobranca);
+  // PA-07: "O mesmo endereço da sede" vem marcado, salvo quando já se guardou outro endereço.
+  const comSede = r.sede !== undefined;
+  const [mesmo, setMesmo] = useState(() => comSede && (a ? a.mesmoDaSede !== false : true));
+  const sede = sedeParaCobranca(r.sede);
+  const intocado = enderecoIntocado(v, inicial, !!a?.enderecoCobranca && !a.mesmoDaSede);
   const [versao, setVersao] = useState(a?.versao ?? null);
   const [erros, setErros] = useState<Set<string>>(new Set());
   const [falha, setFalha] = useState<{ tipo: "erro"; erro: ErroApi } | null>(null);
@@ -554,7 +563,7 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
     const cnpj = v.cnpj.replace(/\D/g, "");
     if (cnpj && cnpj.length !== 14) e.add("cnpjNota");
     // Endereço de cobrança: vazio vale (a fatura sai só com o Pix); começou, precisa estar inteiro.
-    if (r.valores && !intocado && CAMPOS_ENDERECO.some((k) => v[k].trim())) {
+    if (r.valores && !mesmo && !intocado && CAMPOS_ENDERECO.some((k) => v[k].trim())) {
       if (!/^\d{5}-?\d{3}$/.test(v.cep.trim())) e.add("cepCobranca");
       if (v.logradouro.trim().length < 2) e.add("logradouroCobranca");
       if (!v.numero.trim()) e.add("numeroCobranca");
@@ -578,7 +587,7 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
     if (!confirmado && carneEmUso && (Number(v.dia) !== a!.diaVencimento || v.forma !== a!.forma)) return setConfirmarCarne(true);
     setConfirmarCarne(false);
     setEnviando(true);
-    const res = await chamarConsole(`/v1/clientes/${id}/assinatura`, { metodo: "PUT", corpo: { ...(versaoUsada ? { versao: versaoUsada } : {}), ...corpoDe(v, criar, !r.valores ? "omitir" : intocado ? "vazio" : "enviar") } });
+    const res = await chamarConsole(`/v1/clientes/${id}/assinatura`, { metodo: "PUT", corpo: { ...(versaoUsada ? { versao: versaoUsada } : {}), ...corpoDe(v, criar, !r.valores ? "omitir" : mesmo ? "sede" : intocado ? (comSede ? "enviar" : "vazio") : "enviar") } });
     setEnviando(false);
     if (!res.ok) {
       const campos = res.erro.detalhes?.campos;
@@ -817,6 +826,31 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
                 Vai no boleto como endereço do pagador; sem ele, o Banco Inter não registra o boleto e a fatura sai só com o Pix. Veio da ficha do escritório: mude só se a cobrança é em
                 outro endereço.
               </p>
+              {comSede ? (
+                <div className="dd-mesmo">
+                  <label className="opcao">
+                    <input className="marcar" type="checkbox" checked={mesmo} onChange={(e) => setMesmo(e.target.checked)} aria-describedby={mesmo ? `${ids}-mesmo-t` : undefined} />
+                    <span>
+                      O mesmo endereço da sede
+                      <small>Muda junto se a sede mudar, na ficha ou no Portal.</small>
+                    </span>
+                  </label>
+                  {mesmo ? (
+                    <p className="dd-mesmo-txt" id={`${ids}-mesmo-t`}>
+                      {sede ? (
+                        <>
+                          <b>{enderecoEmLinha(sede)}</b> · da ficha do escritório
+                        </>
+                      ) : (
+                        <>
+                          <b>A sede ainda não está completa na ficha.</b> Até completar o CEP, a rua, o número e o bairro, o boleto não registra e a fatura sai só com o Pix.
+                        </>
+                      )}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              {mesmo ? null : (
               <div className="end-grade">
                 {campoEnd("cep", "CEP", "e2", "postal-code",
                   digitosCep && digitosCep !== 8 ? `O CEP tem 8 números; aqui há ${digitosCep}. Confira, como em 50050-000.` : "Escreva o CEP, com 8 números, como em 50050-000.",
@@ -828,6 +862,7 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
                 {campoEnd("cidade", "Cidade", "e4", "address-level2", "Escreva a cidade.")}
                 {campoEnd("uf", "UF", "e2", "address-level1", "Escolha a UF.")}
               </div>
+              )}
             </fieldset>
           ) : null}
           <div className="campo c2">
@@ -1039,7 +1074,7 @@ function Dados({ r, socio, aoPreencher }: { r: AssinaturaResposta; socio: string
             <dt>Endereço de cobrança</dt>
             {a.enderecoCobranca ? (
               <dd>
-                {enderecoEmLinha(a.enderecoCobranca)} <span className="cb-peq">vai no boleto como endereço do pagador</span>
+                {enderecoEmLinha(a.enderecoCobranca)} <span className="cb-peq">{a.mesmoDaSede ? "o mesmo da sede, " : ""}vai no boleto como endereço do pagador</span>
               </dd>
             ) : (
               <dd className="end-falta">

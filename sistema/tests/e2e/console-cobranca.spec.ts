@@ -347,6 +347,42 @@ test.describe("Console: cobrança dos escritórios", () => {
     expect(put.endereco).toEqual({ ...END, cep: "50050-000", numero: "S/N" });
   });
 
+  test("PA-07: o endereço de cobrança é o mesmo da sede por padrão; desmarcado, os campos vêm com a sede", async ({ page }) => {
+    const SEDE = { cep: "45240000", logradouro: "Rua Coronel Zeca Leite", numero: "118", complemento: "sala 2", bairro: "Centro", cidade: "Presidente Jânio Quadros", uf: "BA", confira: false };
+    const { confira: _c, ...END } = SEDE;
+    void _c;
+    const pedidos = await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${AROEIRA.id}`]: { corpo: ficha(AROEIRA, PERMISSOES) },
+      [`/v1/clientes/${AROEIRA.id}/notas`]: { corpo: { notas: [] } },
+      [`/v1/clientes/${AROEIRA.id}/assinatura`]: { corpo: { ...assinatura({ enderecoCobranca: END, mesmoDaSede: true }), sede: SEDE } },
+      [`PUT /v1/clientes/${AROEIRA.id}/assinatura`]: [{ corpo: { id: "x", versao: 4 } }, { corpo: { id: "x", versao: 5 } }],
+    });
+    await page.goto(`${C}/clientes/${AROEIRA.id}/assinatura`);
+    await expect(page.getByText(/o mesmo da sede, vai no boleto/)).toBeVisible();
+    await page.getByRole("button", { name: "Editar" }).click();
+    const grupo = page.getByRole("group", { name: "Endereço de cobrança" });
+    await expect(grupo.getByRole("checkbox", { name: /O mesmo endereço da sede/ })).toBeChecked();
+    await expect(grupo.getByText("Rua Coronel Zeca Leite, 118, sala 2 · Centro · Presidente Jânio Quadros, BA · CEP 45240-000")).toBeVisible();
+    await expect(grupo.getByLabel("CEP")).toHaveCount(0);
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Salvar a assinatura" }).click();
+    await expect(page.getByText("Assinatura salva.")).toBeVisible();
+    const put = pedidos.find((p) => p.metodo === "PUT")?.corpo as Record<string, unknown>;
+    expect(put.mesmoDaSede).toBe(true);
+    expect(put).not.toHaveProperty("endereco");
+
+    await page.getByRole("button", { name: "Editar" }).click();
+    await grupo.getByRole("checkbox", { name: /O mesmo endereço da sede/ }).uncheck();
+    await expect(grupo.getByLabel("CEP")).toHaveValue("45240-000");
+    await grupo.getByLabel("Número").fill("120");
+    await page.getByRole("button", { name: "Salvar a assinatura" }).click();
+    await expect(page.getByText("Assinatura salva.")).toBeVisible();
+    const put2 = pedidos.filter((p) => p.metodo === "PUT")[1]?.corpo as Record<string, unknown>;
+    expect(put2.mesmoDaSede).toBe(false);
+    expect(put2.endereco).toEqual({ ...END, cep: "45240-000", numero: "120" });
+  });
+
   test("sem endereço de cobrança: o aviso, a sugestão da ficha e o salvar que não trava", async ({ page }) => {
     const pedidos = await simular(page, {
       "/v1/sessao": { corpo: ADM },

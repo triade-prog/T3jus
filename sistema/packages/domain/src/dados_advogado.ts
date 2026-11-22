@@ -81,6 +81,8 @@ export interface EnderecoEscritorio {
   endereco: string | null;
   cidade: string | null;
   uf: string | null;
+  /** O CEP da sede (PA-07, 0860); sem ele, a linha sai como antes. */
+  cep?: string | null;
 }
 
 /** Os 8 dados que contam (decisão 6). E-mail e telefone são opcionais e não contam. */
@@ -179,7 +181,8 @@ export function enderecoDoAdvogado(d: DadosDocumentoPessoa, esc: EnderecoEscrito
   if (d.enderecoDoEscritorio) {
     if (!cheio(esc.endereco)) return null;
     const lugar = [esc.cidade?.trim(), esc.uf?.trim()].filter(Boolean).join("/");
-    return [esc.endereco!.trim(), lugar].filter(Boolean).join(", ");
+    const cepEsc = so(esc.cep);
+    return `${[esc.endereco!.trim(), lugar].filter(Boolean).join(", ")}${cepEsc ? `, CEP ${cepFmt(cepEsc)}` : ""}`;
   }
   if (!cheio(d.cidade) || !cheio(d.uf)) return null;
   const partes = [d.endereco?.trim(), d.bairro?.trim(), `${d.cidade!.trim()}/${d.uf!.trim()}`].filter(Boolean);

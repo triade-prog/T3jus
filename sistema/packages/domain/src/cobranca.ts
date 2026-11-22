@@ -96,6 +96,8 @@ export const assinaturaSalvarSchema = z.object({
     cep: z.string().max(20), logradouro: z.string().max(200), numero: z.string().max(40), complemento: z.string().max(120),
     bairro: z.string().max(120), cidade: z.string().max(120), uf: z.string().max(4),
   }).partial().nullable().optional(),
+  /** PA-07 (0860): "O mesmo endereço da sede". Com true, o endereço acima é ignorado. */
+  mesmoDaSede: z.boolean().optional(),
 });
 
 export const mudarPlanoSchema = z.object({ versao, planoId: z.string().uuid(), motivo });

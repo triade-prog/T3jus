@@ -8,7 +8,7 @@
     "CH-08",
     "CO-02"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 962,
-  "proximo": "Programar os dados do escritório (desenho aprovado em docs/design/aprovadas/escritorio-dados-documentos) e pedir o ok da Carol para aplicar a migration"
+  "evidencia": "Migration 0860_escritorio_dados_documentos.sql: tipo (sociedade individual, sociedade ou sem sociedade), razão social, OAB da sociedade, sede em partes (CEP, rua, número, complemento, bairro), telefone, e-mail e site em escritorios; o endereço antigo de texto único vai para a rua com 'confira'; quem muda é a sócia dona (Portal) ou a equipe T3jus (Console), com versão e histórico; cobrança 'o mesmo da sede' por padrão; pgTAP 118. Regras em packages/domain/src/escritorio_dados.ts (com testes vitest) e nos documentos (docx, procurações, petições, proposta): sem sociedade, a sócia dona é a CONTRATADA, sem CNPJ. api-portal: PUT /v1/escritorio/dados e GET /v1/escritorio/advogados; api-console: ficha com 'documentos' e assinatura com 'mesmoDaSede' (testes deno). Telas do desenho aprovado: Escritório com a frase de como sai no contrato, o que falta, edição com prévia; página nova Advogados nos documentos; Sua conta só com o que é do sistema; OAB só leitura em Marca e timbrado e na Equipe; Console com a ficha em seções e 'o mesmo endereço da sede'. E2E novo tests/e2e/portal-escritorio-dados.spec.ts e cenários novos em portal-equipe-oab, console-v1 e console-cobranca (celular e computador, com axe)."
 }
