@@ -1,0 +1,15 @@
+{
+  "id": "D23",
+  "texto": "Desenho da ficha do cliente ligada: abas Propostas, Contratos e Casos, o botão do próximo passo, Gerar proposta na lista e a assinatura que abre o caso no Jurídico",
+  "peca": "S2",
+  "refs": [
+    "AP-01",
+    "AP-05",
+    "CH-01",
+    "CH-10",
+    "IN-01"
+  ],
+  "status": "feito",
+  "ordem": 73,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-ficha-cliente-ligada/ (22 estados, computador e celular, axe sem violação), aprovado pela Carol em 22/11/2026 às 8h02 (Bahia) com as 7 recomendações do NOTAS.md"
+}

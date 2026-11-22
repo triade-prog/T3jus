@@ -1,0 +1,11 @@
+{
+  "id": "F3.111",
+  "texto": "Programar a assinatura que abre o caso: a janela Registrar assinatura com O caso em Jurídico (abrir novo, juntar ou não tem caso), Abrir o caso de contrato já assinado, a área do direito no contrato e o aviso no sino da responsável",
+  "peca": "S3",
+  "refs": [
+    "CH-10",
+    "EX-01"
+  ],
+  "status": "pendente",
+  "ordem": 952
+}
