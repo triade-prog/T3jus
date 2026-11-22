@@ -365,10 +365,18 @@ export interface DocumentoFaltando {
   descricao: string;
   pedidoEm: string;
   repedidoEm: string | null;
-  cliente: { id: string; nome: string; telefone: string | null };
+  /** contato: o nome do contato principal, que recebe a mensagem; celular: dá para mandar pelo WhatsApp. */
+  cliente: { id: string; nome: string; telefone: string | null; contato?: string | null; celular?: boolean };
   pedidoPor: PessoaRef;
+  /** O último "Pedir de novo" que foi pela fila do WhatsApp (F3.42). */
+  repedido?: MensagemAviso | null;
   /** O lembrete automático do documento pendente (PA-06), quando há automação ligada. */
   lembrete?: { automacao: { id: string; nome: string }; enviadoEm: string; ate: string | null; passaPara: PessoaRef | null } | null;
+}
+
+/** Uma mensagem de aviso posta na fila do WhatsApp: a situação e para quem. */
+export interface MensagemAviso {
+  id: string; envio: EnvioMensagem; em: string; envioEm: string | null; motivo: string | null; para: string | null; telefone: string | null;
 }
 
 export interface DocumentoDoCaso {
@@ -383,9 +391,8 @@ export interface DocumentoDoCaso {
   pedido: string | null;
 }
 
-/** O texto pronto de "Pedir de novo", do jeito que o cliente vai receber. */
-export function textoPedirDocumento(cliente: string, escritorio: string, parteContraria: string | null, descricao: string): string {
+/** O texto de "Pedir de novo", do jeito que o cliente vai receber (o aviso "Pedido de documento"). */
+export function textoPedirDocumento(cliente: string, escritorio: string, caso: string, descricao: string): string {
   const primeiro = cliente.trim().split(/\s+/)[0] ?? "";
-  const contra = parteContraria?.trim() ? ` contra ${parteContraria.trim()}` : "";
-  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Para o seu processo${contra} andar, ainda precisamos de: ${descricao.trim()}. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.`;
+  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Para o caso ${caso.trim()} andar, ainda precisamos de: ${descricao.trim()}. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.`;
 }

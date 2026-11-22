@@ -17,6 +17,7 @@ import { formatarTelefone } from "../console/ficha.ts";
 import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { ROTAS_PETICOES } from "./peticoes.ts";
 import { diaDe } from "./agenda.ts";
+import { situacaoPrestacao } from "./financeiro.ts";
 import { chamarPortal } from "./Moldura.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -89,6 +90,9 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
                 <div>
                   <span className="doc-nome">{d.descricao}</span>
                   <p className="doc-meta"><span className="selo selo-atencao">Falta</span><span>{textoFalta(d)}</span></p>
+                  {d.repedido ? (
+                    <p className="gn-ju-auto"><Icone nome="whats" className="ico" /><span>Pedido de novo pelo WhatsApp: {situacaoPrestacao(d.repedido)}.</span></p>
+                  ) : null}
                   {d.lembrete ? (
                     <p className="gn-ju-auto"><Icone nome="raio" className="ico" /><span><b>Lembrete automático enviado em {ddmm(diaDe(d.lembrete.enviadoEm))}.</b>
                       {d.lembrete.ate && d.lembrete.passaPara ? <> Se não chegar até {ddmm(diaDe(d.lembrete.ate))}, passa para {d.lembrete.passaPara.nome}.</> : null}
@@ -217,11 +221,14 @@ export function JanelaPedirDocumento({ f, aoFechar, aoFeito }: { f: FichaCaso; a
 }
 
 export function JanelaPedirDeNovo({ f, d, aoFechar, aoFeito }: { f: FichaCaso; d: DocumentoFaltando; aoFechar: () => void; aoFeito: (feito: Feito) => void }) {
-  const texto = textoPedirDocumento(d.cliente.nome, f.escritorio, f.parteContraria, d.descricao);
+  const quem = d.cliente.contato?.trim() || d.cliente.nome;
+  const texto = textoPedirDocumento(quem, f.escritorio, f.nome, d.descricao);
   const [copiado, setCopiado] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const fone = d.cliente.telefone?.replace(/\D/g, "") ?? "";
+  // F3.42: com o WhatsApp do escritório ligado e celular na ficha, a mensagem sai pela fila.
+  const pelaFila = !!f.avisoEtapa?.whatsappLigado && d.cliente.celular !== false && !!fone;
 
   async function copiar() {
     try {
@@ -235,9 +242,13 @@ export function JanelaPedirDeNovo({ f, d, aoFechar, aoFeito }: { f: FichaCaso; d
   async function marcar() {
     setFalha(null);
     setEnviando(true);
-    const r = await chamarPortal<DocumentoFaltando>(`/v1/escritorio/juridico/pedidos/${d.id}/de-novo`, { metodo: "POST", corpo: {} });
+    const r = await chamarPortal<DocumentoFaltando>(`/v1/escritorio/juridico/pedidos/${d.id}/de-novo${pelaFila ? "/whatsapp" : ""}`, { metodo: "POST", corpo: {} });
     setEnviando(false);
-    if (r.ok) return aoFeito({ titulo: "Pedido de novo", texto: `${d.descricao}: a data do novo pedido ficou no caso.` });
+    if (r.ok) {
+      return aoFeito(pelaFila
+        ? { titulo: "Pedido de novo", texto: `${d.descricao}: a mensagem para ${primeiroNome(quem)} está na fila do WhatsApp do escritório.` }
+        : { titulo: "Pedido de novo", texto: `${d.descricao}: a data do novo pedido ficou no caso.` });
+    }
     setFalha(textoDoErro(r.erro));
   }
 
@@ -246,9 +257,9 @@ export function JanelaPedirDeNovo({ f, d, aoFechar, aoFeito }: { f: FichaCaso; d
       pe={
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
-          <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
-            <Icone nome="check" className="ico" />
-            Marcar como pedido hoje
+          <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined} data-foco={pelaFila || undefined}>
+            <Icone nome={pelaFila ? "whats" : "check"} className="ico" />
+            {pelaFila ? "Mandar pelo WhatsApp" : "Marcar como pedido hoje"}
           </button>
         </>
       }>
@@ -256,23 +267,31 @@ export function JanelaPedirDeNovo({ f, d, aoFechar, aoFeito }: { f: FichaCaso; d
         <p id="j-denovo-d"><b>{d.descricao}</b> · {textoFalta(d)}.</p>
         {falha ? <Aviso tom="urgencia" titulo="Nada mudou.">{falha}</Aviso> : null}
         <div className="campo">
-          <p className="jr-rot">Texto para {primeiroNome(d.cliente.nome)}{d.cliente.telefone ? ` · ${formatarTelefone(d.cliente.telefone)}` : ""}</p>
+          <p className="jr-rot">Texto para {primeiroNome(quem)}{d.cliente.telefone ? ` · ${formatarTelefone(d.cliente.telefone)}` : ""}</p>
           <p className="jr-previa">{texto}</p>
         </div>
-        <div className="jr-denovo-acoes">
-          <button className="btn btn-sec" type="button" onClick={() => void copiar()} data-foco>
-            <Icone nome="copiar" className="ico" />{copiado ? "Texto copiado" : "Copiar texto"}
-          </button>
-          {fone ? (
-            <a className="btn btn-sec" href={`https://wa.me/${fone}?text=${encodeURIComponent(texto)}`} target="_blank" rel="noopener noreferrer">
-              <Icone nome="whats" className="ico" />Abrir no WhatsApp
-            </a>
-          ) : null}
-        </div>
-        <span className="sr" role="status">{copiado ? "Texto copiado." : ""}</span>
-        <Aviso tom="info" titulo="O WhatsApp do escritório ainda não está ligado ao T3jus.">
-          Por enquanto, envie pelo aparelho e marque aqui. Quando Conversas estiver pronta, este botão abre a conversa do cliente com o texto.
-        </Aviso>
+        {pelaFila ? (
+          <Aviso tom="info" titulo="Sai pelo WhatsApp do escritório.">
+            A mensagem entra na conversa de {primeiroNome(quem)} e a data do novo pedido fica no caso.
+          </Aviso>
+        ) : (
+          <>
+            <div className="jr-denovo-acoes">
+              <button className="btn btn-sec" type="button" onClick={() => void copiar()} data-foco>
+                <Icone nome="copiar" className="ico" />{copiado ? "Texto copiado" : "Copiar texto"}
+              </button>
+              {fone ? (
+                <a className="btn btn-sec" href={`https://wa.me/${fone}?text=${encodeURIComponent(texto)}`} target="_blank" rel="noopener noreferrer">
+                  <Icone nome="whats" className="ico" />Abrir no WhatsApp
+                </a>
+              ) : null}
+            </div>
+            <span className="sr" role="status">{copiado ? "Texto copiado." : ""}</span>
+            <Aviso tom="info" titulo={f.avisoEtapa?.whatsappLigado ? "O contato principal não tem celular na ficha." : "O WhatsApp do escritório ainda não está ligado ao T3jus."}>
+              {f.avisoEtapa?.whatsappLigado ? "Envie como achar melhor e marque aqui." : "Por enquanto, envie pelo aparelho e marque aqui."}
+            </Aviso>
+          </>
+        )}
       </div>
     </Janela>
   );

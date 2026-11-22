@@ -113,7 +113,7 @@ function CabReceber({ aoRegistrar }: { aoRegistrar?: () => void }) {
 
 const MESES_TITULO = (hoje: string) => nomeDoMes(hoje);
 
-function ReceberConteudo() {
+function ReceberConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
   const hoje = hojeBrasilia();
   const [mostrar, setMostrar] = useState<MostrarReceber>("ABERTO");
   const [busca, setBusca] = useState("");
@@ -298,7 +298,7 @@ function ReceberConteudo() {
         </p>
       </section>
       {registrar ? (
-        <JanelaRegistrar parcela={registrar === "escolher" ? null : registrar} aoFechar={() => setRegistrar(null)}
+        <JanelaRegistrar parcela={registrar === "escolher" ? null : registrar} whatsapp={!!escritorio.whatsappLigado} aoFechar={() => setRegistrar(null)}
           aoFeito={(f) => { setRegistrar(null); setFeito(f); recarregar(); }} />
       ) : null}
       {janelasExito}
@@ -308,7 +308,7 @@ function ReceberConteudo() {
 }
 
 export function ReceberFinanceiro() {
-  return <MolduraArea area="FINANCEIRO" secao="a-receber">{() => <ReceberConteudo />}</MolduraArea>;
+  return <MolduraArea area="FINANCEIRO" secao="a-receber">{(e) => <ReceberConteudo escritorio={e} />}</MolduraArea>;
 }
 
 // ------------------------------------------------------------------------- Registrar recebimento
@@ -335,7 +335,9 @@ export function LinkRecibo({ pagamento, numero, botao, area = "financeiro", chil
   );
 }
 
-function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha | null; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+function JanelaRegistrar({ parcela, whatsapp, aoFechar, aoFeito }: {
+  parcela: ParcelaLinha | null; whatsapp: boolean; aoFechar: () => void; aoFeito: (f: Feito) => void;
+}) {
   const hoje = hojeBrasilia();
   const [escolhida, setEscolhida] = useState<ParcelaLinha | null>(parcela);
   const [abertas, setAbertas] = useState<ParcelaLinha[] | null>(parcela ? [] : null);
@@ -344,6 +346,8 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
   const [forma, setForma] = useState<FormaPagamento>(parcela?.forma ?? "PIX");
   const [multa, setMulta] = useState("");
   const [recibo, setRecibo] = useState(true);
+  // F3.19: com o WhatsApp do escritório ligado, o recibo vai pelo WhatsApp, marcado por padrão.
+  const [mandar, setMandar] = useState(true);
   const [pagou, setPagou] = useState<"CLIENTE" | "CONTATO" | "OUTRO">("CLIENTE");
   const [pagNome, setPagNome] = useState("");
   const [pagDoc, setPagDoc] = useState("");
@@ -421,6 +425,11 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
         const erro = await enviarAnexo("RECEBIMENTO", r.dados.id, arquivo, "COMPROVANTE", setProgresso);
         setProgresso(null);
         t.texto += erro ? " O comprovante não foi guardado; anexe de novo nas parcelas do contrato." : " Comprovante anexado.";
+      }
+      if (whatsapp && recibo && mandar && r.dados.recibo) {
+        const w = await chamarPortal<{ mensagem: { envio: string } }>(`/v1/escritorio/recibos/${r.dados.id}/envio`, { metodo: "POST", corpo: {} });
+        t.texto += w.ok ? " O recibo está na fila do WhatsApp do escritório."
+          : ` O recibo não foi pelo WhatsApp: ${textoDoErro(w.erro)} Baixe o PDF no recibo e mande pelo aparelho.`;
       }
       setEnviando(false);
       return aoFeito(t);
@@ -637,9 +646,18 @@ function JanelaRegistrar({ parcela, aoFechar, aoFeito }: { parcela: ParcelaLinha
           <input className="marcar" type="checkbox" checked={recibo} onChange={(e) => setRecibo(e.target.checked)} />
           <span>
             Gerar o recibo
-            <small>O recibo ganha o número seguinte do escritório. O envio pelo WhatsApp chega quando o número do escritório estiver ligado.</small>
+            <small>O recibo ganha o número seguinte do escritório.{whatsapp ? "" : " O envio pelo WhatsApp chega quando o número do escritório estiver ligado."}</small>
           </span>
         </label>
+        {whatsapp && recibo ? (
+          <label className="opcao">
+            <input className="marcar" type="checkbox" checked={mandar} onChange={(e) => setMandar(e.target.checked)} />
+            <span>
+              Mandar o recibo pelo WhatsApp
+              <small>Vai em PDF para o contato principal do cliente, pelo número do escritório.</small>
+            </span>
+          </label>
+        ) : null}
       </div>
     </Janela>
   );
@@ -1073,7 +1091,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
         </aside>
       </div>
       {registrar ? (
-        <JanelaRegistrar parcela={registrar} aoFechar={() => setRegistrar(null)}
+        <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} aoFechar={() => setRegistrar(null)}
           aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); }} />
       ) : null}
       {comprovante ? (

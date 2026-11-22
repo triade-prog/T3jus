@@ -5,8 +5,7 @@
   "refs": [
     "FI-14"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 190,
-  "proximo": "Mandar o PDF ao cliente pelo WhatsApp. Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79)",
-  "evidencia": "Página /recibos/:id do Portal com o recibo em A4 no timbrado do escritório e \"Baixar PDF ou imprimir\" (o PDF sai do navegador); \"Quem pagou\" em Registrar recebimento (cliente, contato principal ou outra pessoa, com CPF ou CNPJ conferido); cópia do que foi no papel guardada junto do número; \"Ver o recibo\" no aviso e \"Recibo 0187\" na tabela abrem o recibo em outra aba (migration 0533, pgTAP 056, Deno app_test e recibo.test, e2e portal-financeiro F3.19). Logo do escritório e registro da sociedade na OAB no timbrado do recibo (migration 0601, e2e portal-nao-paga-logo)."
+  "evidencia": "Página /recibos/:id do Portal com o recibo em A4 no timbrado do escritório e \"Baixar PDF ou imprimir\" (o PDF sai do navegador); \"Quem pagou\" em Registrar recebimento (cliente, contato principal ou outra pessoa, com CPF ou CNPJ conferido); cópia do que foi no papel guardada junto do número; \"Ver o recibo\" no aviso e \"Recibo 0187\" na tabela abrem o recibo em outra aba (migration 0533, pgTAP 056, Deno app_test e recibo.test, e2e portal-financeiro F3.19). Logo do escritório e registro da sociedade na OAB no timbrado do recibo (migration 0601, e2e portal-nao-paga-logo). Mandar pelo WhatsApp: com o número do escritório ligado, \"Mandar o recibo pelo WhatsApp\" vem marcado em Registrar recebimento; o PDF gerado no servidor vai anexo ao aviso \"Recibo de pagamento\" (texto aprovado pela Carol em 21/11), na fila da conversa do contato principal, uma vez só, e a automação \"Pagamento recebido\" não manda outra para o mesmo pagamento (migration 0721, pgTAP 101, Deno app_test F3.19, e2e portal-financeiro F3.19)."
 }

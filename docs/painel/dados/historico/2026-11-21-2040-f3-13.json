@@ -1,0 +1,11 @@
+{
+  "data": "21/11/2026",
+  "inicio": "20:40",
+  "fim": "20:45",
+  "texto": "Pedido da base do mês ao cliente pela fila do WhatsApp do escritório, no dia do lembrete a partir das 8h, com o aviso novo \"Pedido da base do mês\" aprovado pela Carol (migration 0722); falta só a entrega pela Meta (F3.13b).",
+  "refs": [
+    "F3.13",
+    "F3.13b",
+    "CH-06"
+  ]
+}

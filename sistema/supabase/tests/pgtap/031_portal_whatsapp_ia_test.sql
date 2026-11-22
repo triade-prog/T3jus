@@ -51,7 +51,7 @@ select lives_ok($$ select whatsapp_meta_ligou(rm, socia, '{"telefone":"+55119740
 select is((select portal_whatsapp(paula, rm) -> 'numero' ->> 'situacao' from ids), 'EM_ANALISE', 'esperando a Meta conferir o nome');
 select ok((select whatsapp_ligado(rm) from ids), 'mas já recebe e responde');
 select is((select jsonb_agg(a ->> 'situacao') from ids, jsonb_array_elements(portal_whatsapp(socia, rm) -> 'avisos') a),
-  '["EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE"]'::jsonb, 'os 7 avisos (com o de cancelamento, F3.3) vão para a análise da Meta');
+  '["EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE","EM_ANALISE"]'::jsonb, 'os 10 avisos (com o pedido de documento, o recibo e a base do mês) vão para a análise da Meta');
 select is((select portal_whatsapp(socia, rm) -> 'rascunho' ->> 'passo' from ids), '5', 'o assistente fica no passo Pronto');
 select ok((select not (portal_whatsapp(socia, rm)::text ~ '(whatsapp/rm|tokenRef|789)') from ids), 'a página não devolve token nem ids da Meta');
 select is((teste.erro($$ select whatsapp_meta_ligou(rm, socia, '{"telefone":"+5511974052210"}') from ids $$)) -> 'detalhe' ->> 'motivo',

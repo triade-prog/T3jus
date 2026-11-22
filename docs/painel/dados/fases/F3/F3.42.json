@@ -5,7 +5,7 @@
   "refs": [
     "EX-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 420,
-  "proximo": "Depende só da ligação real do WhatsApp com a Meta (F3.58): Conversas já existe; falta pôr a mensagem na fila, como o carnê (F3.79); até lá a janela mostra o texto para copiar ou abrir no WhatsApp do aparelho"
+  "evidencia": "Com o WhatsApp do escritório ligado, \"Pedir de novo\" mostra \"Mandar pelo WhatsApp\": o aviso \"Pedido de documento\" (texto aprovado pela Carol em 21/11) entra na fila da conversa do contato principal, com os campos do aviso da Meta, guarda a data do novo pedido e a lista de \"Faltam\" mostra a situação da mensagem; sem WhatsApp ou sem celular, fica o texto para copiar ou abrir no aparelho (migration 0721, pgTAP 101, Deno app_test F3.42, e2e portal-juridico-documentos F3.42)."
 }

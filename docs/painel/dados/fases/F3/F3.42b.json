@@ -1,0 +1,11 @@
+{
+  "id": "F3.42b",
+  "texto": "O \"Pedir de novo\" sai de fato pelo WhatsApp do escritório: a ligação com a Meta tira a mensagem da fila e marca entregue e lida",
+  "peca": "S6",
+  "refs": [
+    "EX-05"
+  ],
+  "status": "pendente",
+  "ordem": 421,
+  "proximo": "Depende só da ligação do WhatsApp com a Meta (F3.58) e do aviso \"Pedido de documento\" aprovado pela Meta. A mensagem já fica na fila, com os campos do aviso em dados.campos"
+}

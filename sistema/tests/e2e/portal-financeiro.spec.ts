@@ -169,6 +169,38 @@ test.describe("Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17)", (
     await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." }).getByRole("link", { name: /Ver o recibo/ })).toHaveAttribute("href", "/recibos/p9");
   });
 
+  test("F3.19: com o WhatsApp do escritório ligado, o recibo vai pelo WhatsApp, marcado por padrão", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns({ ...ESCRITORIO, whatsappLigado: true }),
+      [`POST /v1/escritorio/financeiro/parcelas/${pc(22)}/recebimentos`]: { status: 201, corpo: { id: "p9", paga: true, falta: 0, recibo: { ano: 2026, numero: 187 } } },
+      "POST /v1/escritorio/recibos/p9/envio": { status: 201, corpo: { mensagem: { id: "m1", envio: "NA_FILA" } } },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Registrar recebimento de Hélio/ }).click();
+    const j = page.getByRole("dialog", { name: "Registrar recebimento" });
+    await expect(j.getByLabel(/Mandar o recibo pelo WhatsApp/)).toBeChecked();
+    await expect(j).not.toContainText("O envio pelo WhatsApp chega quando o número do escritório estiver ligado.");
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Registrar recebimento" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." })).toContainText("O recibo está na fila do WhatsApp do escritório.");
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/recibos/p9/envio")).toBe(true);
+  });
+
+  test("F3.19: sem o recibo, a opção do WhatsApp some e nada vai", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns({ ...ESCRITORIO, whatsappLigado: true }),
+      [`POST /v1/escritorio/financeiro/parcelas/${pc(22)}/recebimentos`]: { status: 201, corpo: { id: "p9", paga: true, falta: 0, recibo: null } },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Registrar recebimento de Hélio/ }).click();
+    const j = page.getByRole("dialog", { name: "Registrar recebimento" });
+    await j.getByText("Gerar o recibo").click();
+    await expect(j.getByLabel(/Mandar o recibo pelo WhatsApp/)).toHaveCount(0);
+    await j.getByRole("button", { name: "Registrar recebimento" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Recebimento registrado." })).toBeVisible();
+    expect(pedidos.some((p) => p.caminho.endsWith("/envio"))).toBe(false);
+  });
+
   test("Registrar recebimento do alto: escolhe a parcela primeiro", async ({ page }) => {
     const pedidos = await simular(page, {
       ...comuns(),

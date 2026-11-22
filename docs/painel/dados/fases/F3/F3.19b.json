@@ -1,0 +1,11 @@
+{
+  "id": "F3.19b",
+  "texto": "O recibo em PDF sai de fato pelo WhatsApp do escritório: a ligação com a Meta tira a mensagem da fila com o anexo e marca entregue e lida",
+  "peca": "S3",
+  "refs": [
+    "FI-14"
+  ],
+  "status": "pendente",
+  "ordem": 191,
+  "proximo": "Depende só da ligação do WhatsApp com a Meta (F3.58) e do aviso \"Recibo de pagamento\" aprovado pela Meta. A mensagem já fica na fila, com o PDF anexo e os campos do aviso em dados.campos"
+}
