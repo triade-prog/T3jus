@@ -293,8 +293,11 @@ export async function lerPlanilha(b: Uint8Array, nome: string, limites: LimitesL
 
 // ------------------------------------------------------------------------------------- tipos da API
 
-/** CASOS: os processos de outro sistema, como casos no Jurídico (F3.56, parte 2). */
-export type OQueImportar = "CLIENTES" | "CLIENTES_CONTRATOS" | "CASOS";
+/**
+ * CASOS: os processos de outro sistema, como casos no Jurídico (F3.56, parte 2). FINANCEIRO: os
+ * lançamentos do backup do Astrea, só como informação na ficha do cliente (parte 3).
+ */
+export type OQueImportar = "CLIENTES" | "CLIENTES_CONTRATOS" | "CASOS" | "FINANCEIRO";
 /** De onde vêm os dados (F3.56): a planilha de sempre, o backup do Astrea ou a planilha do ADVBOX. */
 export type OrigemDados = "PLANILHA" | "ASTREA" | "ADVBOX_PLANILHA";
 export const NOMES_ORIGEM_IMPORTACAO: Record<OrigemDados, string> = {
@@ -317,9 +320,13 @@ export const CAMPOS_CASO_IMPORTACAO = [
   "cliente", "cliente_documento", "numero", "caso_nome", "area", "parte_contraria", "tribunal", "vara", "valor_causa", "distribuido_em",
   "etapa", "situacao_processo", "papel", "responsavel",
 ] as const;
+/** Os campos de um lançamento do financeiro antigo (F3.56, parte 3). */
+export const CAMPOS_LANCAMENTO_IMPORTACAO = [
+  "cliente", "cliente_documento", "numero", "lanc_descricao", "lanc_data", "lanc_valor", "lanc_situacao", "lanc_tipo",
+] as const;
 export type CampoImportacao =
   | (typeof CAMPOS_CLIENTE_IMPORTACAO)[number] | (typeof CAMPOS_CONTRATO_IMPORTACAO)[number] | typeof CAMPO_TIPO_CONTATO
-  | (typeof CAMPOS_CASO_IMPORTACAO)[number];
+  | (typeof CAMPOS_CASO_IMPORTACAO)[number] | (typeof CAMPOS_LANCAMENTO_IMPORTACAO)[number];
 /** O que o tipo de contato vira: cliente, parte contrária nos casos ou fica de fora. */
 export type TipoContato = "CLIENTE" | "PARTE_CONTRARIA" | "FORA";
 
@@ -334,6 +341,7 @@ export const NOMES_CAMPO_IMPORTACAO: Record<CampoImportacao, string> = {
   cliente: "Cliente", cliente_documento: "CPF ou CNPJ do cliente", numero: "Número do processo", caso_nome: "Nome do caso",
   area: "Área do direito", parte_contraria: "Parte contrária", tribunal: "Tribunal", vara: "Vara", valor_causa: "Valor da causa",
   distribuido_em: "Distribuído em", etapa: "Fase ou etapa", situacao_processo: "Situação do processo", papel: "Papel do cliente",
+  lanc_descricao: "Descrição", lanc_data: "Data", lanc_valor: "Valor", lanc_situacao: "Pago ou em aberto", lanc_tipo: "Receita ou despesa",
 };
 /** O nome do responsável no caso (o mesmo campo, outro texto). */
 export const NOME_RESPONSAVEL_CASO = "Responsável pelo caso";
@@ -371,7 +379,7 @@ export interface Importacao {
   modelo: string | null;
   abasSistema: AbaSistema[] | null;
   /** Contatos do backup que não viraram clientes, por tipo. */
-  foraTipo: { PARTE_CONTRARIA: number; FORA: number } | { ARQUIVADOS: number } | null;
+  foraTipo: { PARTE_CONTRARIA: number; FORA: number } | { ARQUIVADOS: number } | { DESPESAS: number } | null;
   situacao: SituacaoImportacao;
   versao: number;
   criadoEm: string;
@@ -386,6 +394,7 @@ export interface Importacao {
   pares: {
     responsavel?: Record<string, string>; tipo?: Record<string, string>; origem?: Record<string, string>; tipoContato?: Record<string, string>;
     area?: Record<string, string>; etapa?: Record<string, string>; situacaoProcesso?: Record<string, string>;
+    lancSituacao?: Record<string, string>; lancTipo?: Record<string, string>;
   };
   temPrevia: boolean;
   importadoEm: string | null;
@@ -398,6 +407,8 @@ export interface Importacao {
   pai?: string | null;
   /** A importação dos processos que nasceu desta, ao importar os clientes do backup. */
   filha?: { id: string; situacao: SituacaoImportacao; linhas: number | null; criadoEm: string } | null;
+  /** A importação do financeiro antigo que nasceu desta (F3.56, parte 3). */
+  filhaFinanceiro?: { id: string; situacao: SituacaoImportacao; linhas: number | null; criadoEm: string } | null;
 }
 
 export interface ResultadoImportacao {
@@ -405,6 +416,8 @@ export interface ResultadoImportacao {
   vencidas: number; exitos: number; valorPagoAntes: number; linhas: number; fora: number;
   /** Nos processos: os casos novos e os que já existiam e ganharam um cliente. */
   casos?: number; juntadosCasos?: number;
+  /** No financeiro antigo: o que foi recebido, o que está em aberto e os lembretes de contrato. */
+  recebidos?: number; valorRecebido?: number; emAberto?: number; valorEmAberto?: number; lembretes?: number;
 }
 
 export interface ParValor { chave: string; valor: string; n: number; sugestao: string | null }
@@ -412,6 +425,8 @@ export interface ParesImportacao {
   responsavel: ParValor[]; tipo: ParValor[]; origem: ParValor[]; tipoContato: ParValor[]; equipe: PessoaRef[]; colunas: ColunaImportacao[];
   /** Nos processos: a área, a fase e a situação, e as etapas do escritório. */
   area?: ParValor[]; etapa?: ParValor[]; situacaoProcesso?: ParValor[]; etapas?: { id: string; nome: string }[];
+  /** No financeiro antigo: pago ou em aberto, receita ou despesa. */
+  lancSituacao?: ParValor[]; lancTipo?: ParValor[];
 }
 
 export interface ContagensPrevia { lidas: number; prontas: number; aviso: number; erro: number; puladas: number; corrigidas: number; decididas: number }
@@ -423,6 +438,11 @@ export interface ResumoPrevia {
   meses: { mes: string; valor: number }[];
   /** Só nos processos. */
   casos?: { novos: number; juntados: number; clientes: number };
+  /** Só no financeiro antigo. */
+  financeiroAntigo?: FinanceiroAntigoResumo;
+}
+export interface FinanceiroAntigoResumo {
+  recebidos: number; valorRecebido: number; emAberto: number; valorEmAberto: number; lembretes: number; clientes: number;
 }
 
 export type CodigoProblema =
@@ -461,7 +481,14 @@ export interface LinhaPrevia {
   caso?: CasoDaLinha;
   clienteId?: string | null;
   casoExistente?: { id: string; nome: string; numero: string | null; situacao: string; clientes: string[]; jaNoCaso: boolean } | null;
+  /** Só no financeiro antigo: o lançamento, que fica na ficha do cliente. */
+  lancamento?: LancamentoDaLinha;
 }
+
+export interface LancamentoDaLinha {
+  descricao: string; data: string | null; valor: number | null; situacao: SituacaoLancamentoAntigo; caso: { id: string; nome: string } | null;
+}
+export type SituacaoLancamentoAntigo = "PAGO" | "EM_ABERTO";
 
 export interface CasoDaLinha {
   nome: string; area: string; parteContraria: string | null; numero: string | null; tribunal: string | null; vara: string | null;
@@ -479,7 +506,9 @@ export interface PlanoDesfazer {
   clientes: number; juntados: number; contratos: number; parcelas: number;
   /** Nos processos: os casos que vão para Encerrados e os clientes ligados a casos que já existiam. */
   casos?: number; ligacoes?: number;
-  mexidos: { tipo: "CLIENTE" | "CONTRATO" | "CASO"; id: string; nome: string }[];
+  /** No financeiro antigo: os lançamentos e os lembretes que saem das fichas. */
+  lancamentos?: number; lembretes?: number;
+  mexidos: { tipo: "CLIENTE" | "CONTRATO" | "CASO" | "LEMBRETE"; id: string; nome: string }[];
 }
 
 export interface LinhasFora {
@@ -488,7 +517,8 @@ export interface LinhasFora {
   linhas: { numero: number; valores: Partial<Record<CampoImportacao, string>>; situacao: SituacaoLinha; problemas: ProblemaLinha[] }[];
 }
 
-const campo = z.enum([...new Set([...CAMPOS_CLIENTE_IMPORTACAO, ...CAMPOS_CONTRATO_IMPORTACAO, CAMPO_TIPO_CONTATO, ...CAMPOS_CASO_IMPORTACAO])] as [CampoImportacao, ...CampoImportacao[]]);
+const campo = z.enum([...new Set([...CAMPOS_CLIENTE_IMPORTACAO, ...CAMPOS_CONTRATO_IMPORTACAO, CAMPO_TIPO_CONTATO, ...CAMPOS_CASO_IMPORTACAO,
+  ...CAMPOS_LANCAMENTO_IMPORTACAO])] as [CampoImportacao, ...CampoImportacao[]]);
 export const enviarImportacaoSchema = z.object({
   oQue: z.enum(["CLIENTES", "CLIENTES_CONTRATOS", "CASOS"]),
   nome: z.string().trim().min(1).max(200),
@@ -508,6 +538,8 @@ export const colunasImportacaoSchema = ligacaoImportacaoSchema.extend({
     area: z.record(z.string().max(200), z.string().max(40)).optional(),
     etapa: z.record(z.string().max(200), z.string().max(40)).optional(),
     situacaoProcesso: z.record(z.string().max(200), z.string().max(40)).optional(),
+    lancSituacao: z.record(z.string().max(200), z.string().max(40)).optional(),
+    lancTipo: z.record(z.string().max(200), z.string().max(40)).optional(),
   }).optional(),
 });
 export const linhaImportacaoSchema = z.object({
@@ -527,3 +559,15 @@ export const filtroLinhasSchema = z.object({
 });
 
 export interface OrigemImportacao { id: string; arquivo: string; em: string; por: PessoaRef }
+
+/** Na ficha do cliente: o que veio do sistema antigo, só como informação (F3.56, parte 3). */
+export interface FinanceiroAnterior {
+  origem: OrigemDados;
+  importacao: { id: string; arquivo: string; em: string } | null;
+  /** O que ficou em aberto lá: lembrar de criar o contrato, porque no T3jus a cobrança nasce dele. */
+  lembretes: { id: string; valor: number; lancamentos: number; caso: { id: string; nome: string } | null }[];
+  /** O total pago antes do T3jus. */
+  pago: number;
+  lancamentos: { data: string | null; descricao: string; valor: number; situacao: SituacaoLancamentoAntigo; caso: string | null }[];
+  total: number;
+}

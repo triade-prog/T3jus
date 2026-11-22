@@ -5,6 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
-  "ordem": 954
+  "status": "feito",
+  "ordem": 954,
+  "evidencia": "O financeiro do backup do Astrea vira mais uma prévia depois dos clientes (importação filha): colunas pelo modelo e pares (pago ou em aberto, receita ou despesa; despesas ficam de fora e são contadas), prévia com o lançamento, o cliente e o caso, importar tudo ou nada para o histórico da ficha (pago antes do T3jus, fora do Caixa e sem recibo) e lembretes de contrato pelo que está em aberto, que somem quando o contrato é criado; a folha \"Do Astrea\" na ficha (só Financeiro ou Contratos) e o desfazer (o lembrete que virou contrato fica). Migration 0820_importar_financeiro.sql, testes 112_importar_financeiro_test.sql, 008_inventario_exportacao_test.sql, modelos_sistemas.test.ts, app_test.ts (F3.56 parte 3) e e2e portal-importacao-sistemas.spec.ts (parte 3) e portal-ficha-ligada.spec.ts."
 }

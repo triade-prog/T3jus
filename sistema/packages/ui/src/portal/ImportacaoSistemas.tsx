@@ -52,8 +52,9 @@ function QuemIs() {
 }
 
 /**
- * O que vem de cada sistema. Nesta versão entram os clientes e os processos ativos (casos, numa
- * segunda prévia); o financeiro antigo, aprovado no desenho, vem na próxima entrega, e a tela diz isso.
+ * O que vem de cada sistema: os clientes, os processos ativos (casos, numa segunda prévia) e, do
+ * backup do Astrea, o financeiro antigo só como informação (mais uma prévia). Pela planilha do
+ * ADVBOX, o financeiro fica de fora (decisão 17).
  */
 function VemDe({ sistema }: { sistema: "Astrea" | "ADVBOX" }) {
   const item = (ok: boolean, t: string, s: string) => (
@@ -69,7 +70,9 @@ function VemDe({ sistema }: { sistema: "Astrea" | "ADVBOX" }) {
         {item(true, "Processos ativos, como casos", sistema === "Astrea"
           ? "No Jurídico, sem contrato, numa segunda prévia depois dos clientes. Os arquivados ficam de fora."
           : "Pela planilha de processos, depois da de clientes. Cada processo se liga a um cliente já cadastrado.")}
-        {item(false, "Financeiro, ainda não", "O histórico financeiro, só como informação, entra numa próxima versão do T3jus.")}
+        {sistema === "Astrea"
+          ? item(true, "Financeiro, só como informação", "O recebido fica na ficha como “pago antes do T3jus”; o que está em aberto vira lembrete para criar o contrato. Nada vai para o Caixa.")
+          : item(false, "Financeiro", "Pela planilha, o financeiro fica de fora. A cobrança nasce do contrato no T3jus.")}
         {item(false, "Contratos de honorários", "Crie na ficha do cliente ou importe pela planilha.")}
         {item(false, "Prazos, agenda e tarefas", "Prazo trazido sem conferência é risco. Cadastre os próximos no caso.")}
         {item(false, "Andamentos, publicações e documentos", "Ficam no sistema antigo. Os documentos que o caso pede, você envia no caso.")}
@@ -195,9 +198,9 @@ function EscolherOrigem() {
           {cartao("planilha", "Planilha", "Excel ou Google Planilhas", "A importação de sempre. Você liga as colunas da sua planilha aos campos do T3jus.",
             [[true, "Clientes"], [true, "Contratos e parcelas"]], "Pronto em minutos. Clientes, todos da equipe; contratos, quem tem a área.")}
           {cartao("astrea", "Astrea", "Pelo backup do escritório", "O Astrea manda um arquivo com tudo do escritório. Você pede o backup lá e envia aqui.",
-            [[true, "Clientes"], [false, "Processos e financeiro, numa próxima versão"], [false, "Contratos de honorários"]], "O backup chega por e-mail em até 24 horas.")}
+            [[true, "Clientes"], [true, "Processos ativos e o financeiro, como informação"], [false, "Contratos de honorários"]], "O backup chega por e-mail em até 24 horas.")}
           {cartao("advbox", "ADVBOX", "Pela planilha exportada", "Você exporta o relatório de clientes do ADVBOX em planilha e envia aqui.",
-            [[true, "Clientes"], [false, "Processos e financeiro, numa próxima versão"], [false, "Contratos de honorários"]], "Funciona em qualquer plano do ADVBOX.")}
+            [[true, "Clientes"], [true, "Processos ativos"], [false, "Financeiro e contratos"]], "Funciona em qualquer plano do ADVBOX.")}
         </div>
       </fieldset>
       <p className="is-outro"><Icone nome="ajuda" className="ico" /><span><b>Usa outro sistema?</b> Quase todos exportam os clientes em planilha. Escolha Planilha: o passo das colunas serve para qualquer uma.</span></p>
@@ -376,7 +379,7 @@ const ICONE_DESTINO: Record<DestinoAba, NomeIcone> = {
 };
 const POR_QUE_FORA: Partial<Record<DestinoAba, string>> = {
   CASOS: "Não foi lida: o backup não trouxe as colunas dos processos.",
-  FINANCEIRO: "O histórico financeiro, só como informação, entra numa próxima versão do T3jus.",
+  FINANCEIRO: "Não foi lida: o backup não trouxe as colunas dos lançamentos.",
   TAREFAS: "As tarefas se criam no caso, com responsável e data conferidos.",
   AGENDA: "Prazo e audiência trazidos sem conferência são risco. Cadastre os próximos.",
   PUBLICACOES: "Intimações antigas ficam no Astrea.",
@@ -395,6 +398,9 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
     if (!a.reconhecida) {
       return <div className="im-sit"><Selo tom="atencao" icone="ajuda">Não reconhecida</Selo><small>Não está no modelo do Astrea. Se for a dos contatos, ligue aos clientes; senão, deixe de fora.</small></div>;
     }
+    if (a.destino === "FINANCEIRO" && a.lida) {
+      return <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span><small>Só como informação na ficha. Entra numa prévia própria, depois dos clientes. As despesas do escritório ficam de fora.</small></div>;
+    }
     if (a.destino === "CASOS" && a.lida) {
       return <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span><small>Só os processos ativos. Entram numa segunda prévia, depois dos clientes, ligados a eles.</small></div>;
     }
@@ -407,7 +413,7 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
   const linha = (a: AbaSistema) => {
     const vai = clientes === a.indice;
     const id = `is-aba-${a.indice}`;
-    if (a.destino === "CASOS" && a.lida) {
+    if ((a.destino === "CASOS" || a.destino === "FINANCEIRO") && a.lida) {
       return (
         <tr key={a.indice}>
           <td>
@@ -416,7 +422,7 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
               <span><b>{a.nome}</b><small>{plural(a.linhas, "linha", "linhas")}</small></span>
             </div>
           </td>
-          <td data-r="Vai para"><b style={{ fontWeight: 500 }}>Casos no Jurídico</b><small style={{ display: "block", color: "var(--texto-2)" }}>depois dos clientes</small></td>
+          <td data-r="Vai para"><b style={{ fontWeight: 500 }}>{a.destino === "CASOS" ? "Casos no Jurídico" : "Histórico na ficha"}</b><small style={{ display: "block", color: "var(--texto-2)" }}>depois dos clientes</small></td>
           <td data-r="Situação">{situacao(a)}</td>
         </tr>
       );
@@ -432,10 +438,10 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
         <td data-r="Vai para">
           <div className="campo">
             <label className="sr" htmlFor={id}>Aba {a.nome}: vai para</label>
-            <select className="entrada" id={id} value={vai ? "CLIENTES" : ""} disabled={!a.lida || a.destino === "CASOS"}
+            <select className="entrada" id={id} value={vai ? "CLIENTES" : ""} disabled={!a.lida || a.destino === "CASOS" || a.destino === "FINANCEIRO"}
               onChange={(e) => setClientes(e.target.value === "CLIENTES" ? a.indice : clientes === a.indice ? null : clientes)}>
               <option value="">Não importar</option>
-              {a.lida && a.destino !== "CASOS" ? <option value="CLIENTES">Clientes</option> : null}
+              {a.lida && a.destino !== "CASOS" && a.destino !== "FINANCEIRO" ? <option value="CLIENTES">Clientes</option> : null}
             </select>
           </div>
         </td>
