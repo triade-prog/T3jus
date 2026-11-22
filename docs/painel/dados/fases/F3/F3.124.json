@@ -1,0 +1,9 @@
+{
+  "id": "F3.124",
+  "texto": "Dar às tabelas .hn-tab do Portal uma base própria (ou tirar co-carteira do MolduraArea): hoje herdam do Console table-layout:auto, cabeçalho sem quebra e 1ª coluna com 250 px, e podem cortar a última coluna com nomes ou valores longos",
+  "peca": "S2",
+  "refs": [],
+  "status": "pendente",
+  "ordem": 982,
+  "proximo": "Varrer as telas do Portal com .hn-tab em várias larguras e propor a correção ampla, passando pela especialista de frontend e pela Carol"
+}

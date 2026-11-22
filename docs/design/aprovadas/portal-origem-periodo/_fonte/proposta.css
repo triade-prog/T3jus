@@ -1,0 +1,44 @@
+/* Período do Funil e da Origem ("30 dias", "90 dias", "12 meses"): um controle segmentado.
+   Os três ficam sempre juntos, numa linha. Ao lado do título quando o texto ainda tem 400 px;
+   se não, o grupo inteiro desce para baixo do subtítulo, alinhado à esquerda com o título. */
+.hn .cm-cab-per{flex-wrap:wrap;align-items:flex-start;gap:16px 24px}
+.hn .cm-cab-per>div:first-child{flex:1 1 400px;min-width:0}
+.hn .cm-cab-per>.acoes{flex:none}
+.co .chips.cm-periodo{display:inline-flex;flex-wrap:nowrap;gap:0;margin-left:0;padding:0;border:1px solid var(--borda-folha);border-radius:23px;background:var(--rebaixado)}
+.co .chips.cm-periodo button{position:relative;min-height:44px;min-width:44px;padding:0 16px;border:0;border-radius:22px;background:transparent;white-space:nowrap;justify-content:center;font-size:13px;color:var(--texto-2)}
+.co .chips.cm-periodo button:hover{color:var(--vinho)}
+.co .chips.cm-periodo button[aria-pressed="true"]{background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--ambar-2);color:var(--vinho);font-weight:500}
+.co .chips.cm-periodo button:focus-visible{z-index:1;outline:3px solid var(--foco);outline-offset:1px;border-radius:22px}
+
+/* Tabela da Origem: o Portal herda de .co-carteira (Console, lista de clientes) a tabela em
+   layout automático, a 1ª coluna com no mínimo 250 px (210 px de 1024 a 1400) e o cabeçalho
+   sem quebra. Somadas, a tabela fica mais larga que a folha e a folha (overflow:hidden) corta a
+   última coluna. Aqui: sem o mínimo da 1ª coluna, cabeçalho que quebra entre palavras e 12 px de
+   respiro nas colunas de número. */
+.co-carteira .hn-tab.cm-org-tab tbody td:first-child{min-width:0}
+.co-carteira .hn-tab.cm-org-tab thead th{white-space:normal;vertical-align:bottom;line-height:1.35}
+.co-carteira .hn-tab.cm-org-tab th:not(:first-child),.co-carteira .hn-tab.cm-org-tab td:not(:first-child){padding-left:12px;padding-right:12px}
+.co-carteira .hn-tab.cm-org-tab th:last-child,.co-carteira .hn-tab.cm-org-tab td:last-child{padding-right:24px}
+/* Folha estreita (menos de 760 px no computador: telas de 1024 a ~1500 px): as seis colunas não
+   cabem sem apertar (o selo e o cabeçalho em 3 linhas), então a tabela vira os cartões aprovados
+   do celular. O celular fica como está. */
+.hn .folha:has(>.cm-org-tab){container-type:inline-size}
+@media (min-width:761px){
+  @container (max-width:759px){
+    .co-carteira .hn-tab.cm-org-tab,.co-carteira .hn-tab.cm-org-tab tbody{display:block}
+    .co-carteira .hn-tab.cm-org-tab colgroup{display:none}
+    .co-carteira .hn-tab.cm-org-tab thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+    .co-carteira .hn-tab.cm-org-tab tbody{padding:0 24px 20px;display:grid;gap:12px}
+    .co-carteira .hn-tab.cm-org-tab tbody tr{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;border:1px solid var(--borda-folha);border-radius:var(--raio-g);padding:14px 16px;background:var(--papel)}
+    .co-carteira .hn-tab.cm-org-tab tbody tr:hover{background:var(--papel)}
+    .co-carteira .hn-tab.cm-org-tab tbody td{display:flex;grid-column:1/-1;grid-row:auto;justify-content:space-between;align-items:flex-start;gap:12px;padding:0!important;border:0!important;text-align:right;font-size:13px;min-width:0}
+    .co-carteira .hn-tab.cm-org-tab tbody td:first-child{display:block;text-align:left;padding-bottom:8px!important;border-bottom:1px solid var(--divisor)!important}
+    .co-carteira .hn-tab.cm-org-tab tbody td::before{content:attr(data-r);color:var(--texto-2);text-align:left;flex:none;max-width:45%;font-size:13px;letter-spacing:0;text-transform:none;margin:0}
+    .co-carteira .hn-tab.cm-org-tab tbody td:first-child::before{display:none}
+  }
+}
+@media (max-width:760px){
+  .hn .cm-cab-per>.acoes{flex:1 1 100%}
+  .co .chips.cm-periodo{display:flex;width:100%}
+  .co .chips.cm-periodo button{flex:1 1 0;padding:0 8px}
+}
