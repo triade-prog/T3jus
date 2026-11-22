@@ -1,0 +1,58 @@
+[
+ {
+  "nome": "escritorio-completo",
+  "url": "escritorio.html?estado=escritorio-completo"
+ },
+ {
+  "nome": "escritorio-faltando",
+  "url": "escritorio.html?estado=escritorio-faltando"
+ },
+ {
+  "nome": "escritorio-editar",
+  "url": "escritorio.html?estado=escritorio-editar"
+ },
+ {
+  "nome": "escritorio-erros",
+  "url": "escritorio.html?estado=escritorio-erros"
+ },
+ {
+  "nome": "escritorio-salvo",
+  "url": "escritorio.html?estado=escritorio-salvo"
+ },
+ {
+  "nome": "escritorio-sem-sociedade",
+  "url": "escritorio.html?estado=escritorio-sem-sociedade"
+ },
+ {
+  "nome": "escritorio-endereco-antigo",
+  "url": "escritorio.html?estado=escritorio-endereco-antigo"
+ },
+ {
+  "nome": "escritorio-leitura",
+  "url": "escritorio.html?estado=escritorio-leitura"
+ },
+ {
+  "nome": "escritorio-advogados",
+  "url": "escritorio.html?estado=escritorio-advogados"
+ },
+ {
+  "nome": "escritorio-advogado-editar",
+  "url": "escritorio.html?estado=escritorio-advogado-editar"
+ },
+ {
+  "nome": "conta-so-sistema",
+  "url": "conta.html?estado=conta-so-sistema"
+ },
+ {
+  "nome": "console-ficha-editar",
+  "url": "console-ficha.html?aba=ficha&estado=dd-editar"
+ },
+ {
+  "nome": "console-cobranca-mesmo-endereco",
+  "url": "console-ficha.html?aba=assinatura&estado=dd-mesmo"
+ },
+ {
+  "nome": "marca-oab-leitura",
+  "url": "marca.html?estado=oab-leitura"
+ }
+]

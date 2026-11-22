@@ -1,0 +1,11 @@
+{
+  "id": "D28",
+  "texto": "Desenho dos dados do escritório para os documentos: tipo, razão social, CNPJ, OAB da sociedade, sede em partes e contatos do escritório em Escritório, a qualificação dos advogados em Escritório › Advogados nos documentos e Sua conta só com o que é do sistema",
+  "peca": "S7",
+  "refs": [
+    "PA-07"
+  ],
+  "status": "feito",
+  "ordem": 78,
+  "evidencia": "Desenho em docs/design/aprovadas/escritorio-dados-documentos/ (14 estados, computador e celular, axe sem violação), aprovado pela Carol em 22/11/2026 às 19h26 (Bahia) com as 5 recomendações do NOTAS.md"
+}
