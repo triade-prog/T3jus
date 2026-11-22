@@ -62,7 +62,7 @@ export function SeloRetorno({ r, hoje, prefixo = "", semData = "—" }: { r: { e
   return <span className={prefixo ? "hn-sem" : "num"}>{prefixo ? `${prefixo}em ${diaCurto(r.em)}` : q === diaCurto(r.em) ? q : `${diaCurto(r.em)} · ${q}`}</span>;
 }
 
-export function Chips({ rotulo, opcoes, atual, aoEscolher, classe }: { rotulo: string; opcoes: { v: string; t: string }[]; atual: string; aoEscolher: (v: string) => void; classe?: string }) {
+export function Chips({ rotulo, opcoes, atual, aoEscolher, classe }: { rotulo: string; opcoes: { v: string; t: ReactNode }[]; atual: string; aoEscolher: (v: string) => void; classe?: string }) {
   return (
     <div className={classe ? `chips ${classe}` : "chips"} role="group" aria-label={rotulo}>
       {opcoes.map((o) => (

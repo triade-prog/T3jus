@@ -339,7 +339,15 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
       ],
       [`POST /v1/escritorio/anexos/${ANEXO(1)}/concluir`]: { corpo: {} },
       [`POST /v1/escritorio/anexos/${ANEXO(2)}/concluir`]: { corpo: {} },
-      [`POST /v1/escritorio/contratos/${CT}/assinatura`]: { corpo: { id: CT, versao: 2, recebimentos: 3 } },
+      // CH-11: anexar o contrato assinado faz a mesma pergunta do caso da assinatura. Aqui, quem
+      // anexa não escolhe (o caso abre com os dados do contrato); a escolha está em portal-jornada-caso.
+      [`GET /v1/escritorio/contratos/${CT}/caso`]: { corpo: {
+        contrato: { id: CT, numero: "C-2026-033", objeto: "Aposentadoria por idade", situacao: "ELABORACAO", versao: 1, criadoEm: "2026-11-20T10:00:00-03:00",
+                    area: "PREVIDENCIARIO", semCaso: false, cliente: { id: "c1", nome: "Benedito Souza Lima" } },
+        casoLigado: null, sugestao: { nome: "Benedito Souza Lima · Aposentadoria por idade", area: "PREVIDENCIARIO", responsavelId: null, papel: "AUTOR" },
+        responsavelSugerido: null, escolhe: false, responsaveis: null, casos: null, modoSugerido: "NOVO", casosDoCliente: null,
+      } },
+      [`POST /v1/escritorio/contratos/${CT}/assinatura`]: { corpo: { id: CT, versao: 2, recebimentos: 3, casoId: "ca000000-0000-4000-8000-000000000033", podeVerCaso: false } },
     });
     await page.goto(`${P}/contratos/contratos/${CT}?aba=documentos`);
     await expect(page.getByRole("heading", { name: "Documentos deste contrato" })).toBeVisible();
@@ -367,13 +375,13 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     // A data fixa: o padrão é hoje, e o teste não pode depender do dia em que roda.
     await j.getByLabel("Assinado em").nth(1).fill("21/11/2026");
     await j.getByRole("button", { name: "Anexar e ativar o contrato" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Contrato assinado anexado." })).toContainText("está ativo");
+    await expect(page.getByRole("status").filter({ hasText: "Contrato assinado anexado e caso em Jurídico." })).toContainText("está ativo");
     const anexos = pedidos.filter((p) => p.caminho === "/v1/escritorio/anexos").map((p) => p.corpo);
     expect(anexos).toEqual([
       { dono: "CONTRATO", donoId: CT, categoria: null, nome: "contrato-assinado.pdf", tipo: "application/pdf", tamanho: 1200, documentoId: DOC(5), assinadoEm: "2026-11-21" },
       { dono: "CONTRATO", donoId: CT, categoria: null, nome: "procuracao.jpg", tipo: "image/jpeg", tamanho: 800, documentoId: DOC(2), assinadoEm: "2026-11-21" },
     ]);
-    expect(pedidos.find((p) => p.caminho === `/v1/escritorio/contratos/${CT}/assinatura`)?.corpo).toEqual({ versao: 1, assinadoEm: "2026-11-21" });
+    expect(pedidos.find((p) => p.caminho === `/v1/escritorio/contratos/${CT}/assinatura`)?.corpo).toEqual({ versao: 1, assinadoEm: "2026-11-21", caso: { modo: "NOVO" } });
     expect(envios).toHaveLength(2);
   });
 

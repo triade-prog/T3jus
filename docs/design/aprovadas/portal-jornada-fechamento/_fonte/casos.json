@@ -1,0 +1,202 @@
+[
+ {
+  "nome": "anexar-caso",
+  "url": "index.html?estado=anexar-caso",
+  "rotulo": "Anexar os assinados: a pergunta do caso"
+ },
+ {
+  "nome": "anexar-erro",
+  "url": "index.html?estado=anexar-erro",
+  "rotulo": "Anexar: não registrou nem abriu o caso"
+ },
+ {
+  "nome": "anexar-sem-juridico",
+  "url": "index.html?estado=anexar-sem-juridico",
+  "rotulo": "Bianca (sem Jurídico) anexa: o caso abre sozinho"
+ },
+ {
+  "nome": "anexado-caso",
+  "url": "index.html?estado=anexado-caso",
+  "rotulo": "Depois de anexar: aviso com o link do caso"
+ },
+ {
+  "nome": "contratos-sem-caso",
+  "url": "index.html?estado=contratos-sem-caso",
+  "rotulo": "Contratos: filtro “Assinados sem caso”"
+ },
+ {
+  "nome": "contratos-sem-caso-abrir",
+  "url": "index.html?estado=contratos-sem-caso-abrir",
+  "rotulo": "Janela do caso aberta da lista (com “não tem caso”)"
+ },
+ {
+  "nome": "contratos-sem-caso-vazio",
+  "url": "index.html?estado=contratos-sem-caso-vazio",
+  "rotulo": "Filtro vazio: nenhum assinado sem caso"
+ },
+ {
+  "nome": "casos-sem-caso",
+  "url": "index.html?estado=casos-sem-caso",
+  "rotulo": "Jurídico: aviso dos assinados sem caso"
+ },
+ {
+  "nome": "assinar-juntar",
+  "url": "index.html?estado=assinar-juntar",
+  "rotulo": "Assinatura: “Juntar a este caso” já marcado"
+ },
+ {
+  "nome": "fecha-exito",
+  "url": "index.html?estado=fecha-exito",
+  "rotulo": "Fechamento 1: conferir o êxito"
+ },
+ {
+  "nome": "fecha-repasse",
+  "url": "index.html?estado=fecha-repasse",
+  "rotulo": "Fechamento 2: repassar a Antônia"
+ },
+ {
+  "nome": "fecha-financeiro",
+  "url": "index.html?estado=fecha-financeiro",
+  "rotulo": "Fechamento 3: encerrar no financeiro"
+ },
+ {
+  "nome": "fecha-contrato",
+  "url": "index.html?estado=fecha-contrato",
+  "rotulo": "Fechamento 4: encerrar o contrato"
+ },
+ {
+  "nome": "fecha-larissa",
+  "url": "index.html?estado=fecha-larissa",
+  "rotulo": "Larissa (sem Financeiro): só o texto de quem faz"
+ },
+ {
+  "nome": "atendido",
+  "url": "index.html?estado=atendido",
+  "rotulo": "Cliente atendido: “Gerar proposta” como secundário"
+ },
+ {
+  "nome": "passo-uma-vez",
+  "url": "index.html?estado=passo-uma-vez",
+  "rotulo": "O passo só no âmbar; no Histórico, só “Registrar atendimento”"
+ },
+ {
+  "nome": "caso-acerto",
+  "url": "index.html?estado=caso-acerto",
+  "rotulo": "Caso “Encerrado · acerto pendente”: Ver o acerto"
+ },
+ {
+  "nome": "caso-acerto-larissa",
+  "url": "index.html?estado=caso-acerto-larissa",
+  "rotulo": "Larissa (sem Financeiro): o acerto sem valores e sem link"
+ },
+ {
+  "nome": "acerto",
+  "url": "index.html?estado=acerto",
+  "rotulo": "Financeiro: o acerto do caso (ainda com pendência)"
+ },
+ {
+  "nome": "encerrar-cadeia",
+  "url": "index.html?estado=encerrar-cadeia",
+  "rotulo": "Encerrar no financeiro com os contratos ligados"
+ },
+ {
+  "nome": "encerrar-cadeia-erro",
+  "url": "index.html?estado=encerrar-cadeia-erro",
+  "rotulo": "Encerrar: nada foi encerrado"
+ },
+ {
+  "nome": "encerrado-cadeia",
+  "url": "index.html?estado=encerrado-cadeia",
+  "rotulo": "Confirmação: caso e contrato encerrados"
+ },
+ {
+  "nome": "contrato-ativo",
+  "url": "index.html?estado=contrato-ativo",
+  "rotulo": "Contrato sem caso: o âmbar diz “Contrato ativo”"
+ },
+ {
+  "nome": "contrato-sem-caso",
+  "url": "index.html?estado=contrato-sem-caso",
+  "rotulo": "Ficha do contrato: “Abrir um caso para este contrato”"
+ },
+ {
+  "nome": "contrato-abrir-caso",
+  "url": "index.html?estado=contrato-abrir-caso",
+  "rotulo": "Janela: abrir o caso e tirar a marca"
+ },
+ {
+  "nome": "conversa-nova",
+  "url": "index.html?estado=conversa-nova",
+  "rotulo": "Conversas: número novo (os dois botões)"
+ },
+ {
+  "nome": "cadastro-conversa",
+  "url": "index.html?estado=cadastro-conversa",
+  "rotulo": "Cadastro aberto com o nome e o telefone"
+ },
+ {
+  "nome": "conversa-ligada",
+  "url": "index.html?estado=conversa-ligada",
+  "rotulo": "De volta à conversa, ligada à cliente"
+ },
+ {
+  "nome": "reuniao-conversa",
+  "url": "index.html?estado=reuniao-conversa",
+  "rotulo": "Primeira reunião já com o contato"
+ },
+ {
+  "nome": "lista-passos",
+  "url": "index.html?estado=lista-passos",
+  "rotulo": "Lista de Clientes: “Fechar o caso”, “Cliente atendido” e “Contrato ativo”"
+ },
+ {
+  "nome": "docs-ficha",
+  "url": "index.html?estado=docs-ficha",
+  "rotulo": "Ficha: documentos pessoais e “Juntar os documentos, 3 de 6”"
+ },
+ {
+  "nome": "docs-anexar",
+  "url": "index.html?estado=docs-anexar",
+  "rotulo": "Anexar documento: 2 fotos viram um PDF"
+ },
+ {
+  "nome": "docs-anexar-erro",
+  "url": "index.html?estado=docs-anexar-erro",
+  "rotulo": "Anexar: 11 fotos e data depois de hoje"
+ },
+ {
+  "nome": "docs-completo",
+  "url": "index.html?estado=docs-completo",
+  "rotulo": "Tudo chegou: o passo volta a “Caso em andamento”"
+ },
+ {
+  "nome": "docs-ficha-vazio",
+  "url": "index.html?estado=docs-ficha-vazio",
+  "rotulo": "Ficha sem documentos: o que quase todo caso pede"
+ },
+ {
+  "nome": "docs-lista",
+  "url": "index.html?estado=docs-lista",
+  "rotulo": "Jurídico: a lista de previdenciário, editando um item"
+ },
+ {
+  "nome": "docs-lista-vazia",
+  "url": "index.html?estado=docs-lista-vazia",
+  "rotulo": "Área sem lista: “Usar a sugestão do T3jus”"
+ },
+ {
+  "nome": "docs-abrir-caso",
+  "url": "index.html?estado=docs-abrir-caso",
+  "rotulo": "Abrir o caso: a lista vem pronta, com “já temos”"
+ },
+ {
+  "nome": "docs-abrir-sem-lista",
+  "url": "index.html?estado=docs-abrir-sem-lista",
+  "rotulo": "Abrir o caso de uma área sem lista"
+ },
+ {
+  "nome": "docs-caso",
+  "url": "index.html?estado=docs-caso",
+  "rotulo": "Ficha do caso: “Antes de seguir”, o que falta e o que já temos"
+ }
+]

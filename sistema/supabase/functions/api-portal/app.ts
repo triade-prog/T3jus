@@ -32,7 +32,7 @@ import {
   deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio, type AudienciasInicio,
   arquivarLgpdSchema, contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
-  abrirCasoDoContratoSchema, assinaturaComCasoSchema, type AssinaturaComCaso, type OpcoesCasoContrato,
+  abrirCasoDoContratoSchema, assinaturaComCasoSchema, type AssinaturaComCaso, type ContratosSemCaso, type OpcoesCasoContrato,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -831,6 +831,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<PedidoContrato[]>("portal_contratos_pedidos", quem(c)));
   });
 
+  // CH-11, F3.125: os contratos assinados que ficaram sem caso (Contratos e Jurídico).
+  app.get("/v1/escritorio/contratos/sem-caso", async (c) => {
+    return c.json(await deps.banco.rpc<ContratosSemCaso>("portal_contratos_sem_caso", quem(c)));
+  });
+
   app.post("/v1/escritorio/contratos", async (c) => {
     const d = await lerCorpo(c, dadosContratoSchema);
     // Com a escolha das inscrições de cada advogado (EX-12, 0530).
@@ -853,16 +858,12 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   });
 
   // Registrar a assinatura ativa o contrato e cria a programação dos recebimentos.
-  // Com "caso", a assinatura abre o caso, junta a um caso ou diz que não tem caso, tudo junto (CH-10, F3.111).
+  // A assinatura abre o caso, junta a um caso ou diz que não tem caso, tudo junto (CH-10, F3.111).
+  // Toda porta pergunta pelo caso (CH-11, F3.125): sem ele, a rota recusa.
   app.post("/v1/escritorio/contratos/:id/assinatura", async (c) => {
     const d = await lerCorpo(c, assinaturaComCasoSchema);
-    if (d.caso) {
-      return c.json(await deps.banco.rpc<AssinaturaComCaso>("portal_contrato_assinatura_caso", {
-        ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: d.versao, p_assinado_em: d.assinadoEm ?? null, p_caso: d.caso,
-      }));
-    }
-    return c.json(await deps.banco.rpc<{ id: string; versao: number; recebimentos: number }>("portal_contrato_assinatura", {
-      ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: d.versao, p_assinado_em: d.assinadoEm ?? null,
+    return c.json(await deps.banco.rpc<AssinaturaComCaso>("portal_contrato_assinatura_caso", {
+      ...quem(c), p_contrato: idDaRota(c, "id"), p_versao: d.versao, p_assinado_em: d.assinadoEm ?? null, p_caso: d.caso,
     }));
   });
 

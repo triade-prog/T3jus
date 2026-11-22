@@ -28,6 +28,7 @@ import { DocumentosDoCaso, JanelaEnviarDocumento, JanelaJaChegou, JanelaPedirDeN
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { PeticoesDoCaso } from "./Peticoes.tsx";
+import { AvisoSemCasoJuridico } from "./SemCaso.tsx";
 
 type Pessoa = { id: string; nome: string };
 type Feito = { titulo: string; texto: string };
@@ -101,6 +102,7 @@ function CasosConteudo() {
         <CabCasos souDono={dados.souDono} />
         <section className="folha" aria-labelledby="t-jc" style={{ overflow: "hidden" }}>
           <h2 id="t-jc" className="sr">Lista de casos</h2>
+          <AvisoSemCasoJuridico />
           <Estado icone="balanca" titulo="Nenhum caso ainda"
             acoes={
               <>
@@ -141,6 +143,7 @@ function CasosConteudo() {
           <Chips rotulo="Mostrar" atual={situacao} aoEscolher={(v) => setSituacao(v as SituacaoCaso)}
             opcoes={[{ v: "ANDAMENTO", t: `Em andamento (${t.andamento})` }, { v: "ENCERRADO", t: `Encerrados (${t.encerrados})` }]} />
         </Busca>
+        {situacao === "ANDAMENTO" ? <AvisoSemCasoJuridico /> : null}
         {situacao === "ANDAMENTO" ? (
           <div className="jr-onde">
             <h3 className="sobretitulo">Onde estão os {contar(t.andamento, "caso", "casos")} em andamento</h3>

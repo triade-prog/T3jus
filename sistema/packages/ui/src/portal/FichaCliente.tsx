@@ -1210,7 +1210,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
       ) : null}
       {ligada && ligada.tipo === "caso" ? (
         <JanelaAbrirCaso key={`ac-${abertura}`} aberta contrato={ligada.contrato} modoInicial={ligada.modo} aoFechar={() => setLigada(null)}
-          aoFeito={(r) => irPara(`${ROTAS_JURIDICO.caso(r.casoId)}?aberto=1`)} />
+          aoFeito={(r) => (r.casoId ? irPara(`${ROTAS_JURIDICO.caso(r.casoId)}?aberto=1`) : void carregar())} />
       ) : null}
       {f.podeInativar ? (
         <JanelaSituacao key={`s-${abertura}`} modo={janela === "inativar" || janela === "reativar" ? janela : null} f={f} escritorio={nomeEsc}
