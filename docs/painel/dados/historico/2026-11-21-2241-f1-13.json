@@ -1,0 +1,10 @@
+{
+  "data": "21/11/2026",
+  "inicio": "22:41",
+  "fim": "22:47",
+  "texto": "Lista de Clientes: nome longo quebra em linhas sem cobrir o tipo do cliente.",
+  "refs": [
+    "F1.13",
+    "AP-01"
+  ]
+}
