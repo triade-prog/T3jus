@@ -1,0 +1,11 @@
+{
+  "id": "D23",
+  "texto": "Desenho do Baixar em Word e em PDF na aba Documentos da ficha do contrato: dois botões por documento, PDF preparando, erro com saída, aviso do modelo próprio e o assinado anexado",
+  "peca": "S6",
+  "refs": [
+    "CH-08"
+  ],
+  "status": "feito",
+  "ordem": 73,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-contrato-pdf/ (5 estados, computador e celular, axe sem violação), aprovado pela Carol em 22/11/2026 às 7h59 (Bahia) com as 4 recomendações do NOTAS.md"
+}
