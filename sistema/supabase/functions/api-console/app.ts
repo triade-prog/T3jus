@@ -58,6 +58,7 @@ import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao
 import { lerCorpo } from "../_shared/validar.ts";
 import { ipDaChamada } from "../_shared/repasse.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
+import type { MeioPagamento, PedidoCobranca } from "../_shared/pagamento.ts";
 import { avisoAutenticadorTirado, avisoFimContrato, confirmacaoPedidoDemonstracao, emailCobranca, type AvisoFimContrato, type EnvioCobranca, type Emails } from "../_shared/email.ts";
 import { pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
 import { registrar } from "../_shared/registro.ts";
@@ -74,7 +75,12 @@ export interface DepsConsole extends DepsSessao {
   emails?: Emails;
   /** Apagar as pastas do Storage no fim da guarda (F0.15). */
   limpeza?: LimpezaArquivos;
+  /** O meio de pagamento da cobrança (F1.21). Sem ele, a baixa continua manual. */
+  pagamento?: MeioPagamento;
 }
+
+/** Quantos itens do meio de pagamento cada chamada trata, para caber no tempo do repasse. */
+const CODIGOS_POR_CHAMADA = 15;
 
 /** Quantos e-mails da cobrança cada chamada manda, para caber no tempo do repasse. */
 const ENVIOS_POR_CHAMADA = 20;
@@ -142,7 +148,9 @@ function historico(l: LinhaHistorico) {
 }
 
 export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) {
-  const app = criarApp<VarsSessao>("api-console", segredo);
+  // O aviso do meio de pagamento chega direto do banco (sem o segredo do repasse): a rota confere
+  // a chave do aviso e lê cada cobrança de novo no meio de pagamento antes de dar baixa.
+  const app = criarApp<VarsSessao>("api-console", segredo, [/^\/v1\/pagamento\/aviso$/]);
   const sessao = criarSessao(
     { sistema: "console", cookie: COOKIES_CONSOLE.sessao, cookieLink: COOKIES_CONSOLE.link, autenticadorObrigatorio: true, funcaoAcesso: "acesso_console", urlApp: deps.urlApp },
     deps,
@@ -209,6 +217,57 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
       registrar("aviso", { funcao: "api-console", rota: "cobranca-envios", erro });
     }
   }
+
+  // Meio de pagamento (F1.21): o pg_cron chama de hora em hora quando há fatura ou parcela sem
+  // código, ou cobrança cancelada no T3jus que ainda vale lá. Só faz o que o banco listou.
+  app.post("/v1/rotina/cobranca-codigos", async (c) => {
+    const meio = deps.pagamento;
+    if (!meio) return c.json({ emitidas: 0, canceladas: 0, falhas: 0 });
+    const fila = await rpc<(PedidoCobranca | { acao: "CANCELAR_FATURA" | "CANCELAR_PARCELA"; id: string; pagamentoId: string; provedor: string })[]>(
+      "rotina_cobranca_codigos_pendentes", { p_limite: CODIGOS_POR_CHAMADA });
+    let emitidas = 0;
+    let canceladas = 0;
+    let falhas = 0;
+    for (const item of fila) {
+      try {
+        if (item.acao === "CANCELAR_FATURA" || item.acao === "CANCELAR_PARCELA") {
+          await meio.cancelar(item.pagamentoId, "Cancelada no T3jus");
+          await rpc("rotina_cobranca_codigos_gravar", { p_acao: item.acao, p_id: item.id, p_provedor: meio.nome, p_dados: {} });
+          canceladas++;
+        } else {
+          const r = await meio.emitir(item as PedidoCobranca);
+          await rpc("rotina_cobranca_codigos_gravar", { p_acao: item.acao, p_id: item.id, p_provedor: meio.nome, p_dados: r });
+          emitidas++;
+        }
+      } catch (erro) {
+        registrar("aviso", { funcao: "api-console", rota: "cobranca-codigos", acao: item.acao, erro });
+        falhas++;
+      }
+    }
+    return c.json({ emitidas, canceladas, falhas });
+  });
+
+  // O aviso de pagamento do meio de pagamento. O corpo só diz quais cobranças mudaram: a situação
+  // de cada uma é lida de novo lá, e só a leitura dá baixa (no banco, com a regra da baixa manual).
+  app.post("/v1/pagamento/aviso", async (c) => {
+    const meio = deps.pagamento;
+    if (!meio) throw new ErroDominio("NOT_FOUND");
+    const corpo = await c.req.json().catch(() => null);
+    const codigos = meio.codigosDoAviso(c.req.raw, corpo);
+    if (codigos === null) throw new ErroDominio("FORBIDDEN");
+    let pagas = 0;
+    for (const codigo of codigos) {
+      const s = await meio.consultar(codigo);
+      if (s.situacao !== "PAGA" || !s.pagoEm || s.valorPagoCentavos === undefined || !s.forma) continue;
+      const r = await rpc<{ resultado: string }>("cobranca_baixa_automatica", {
+        p_provedor: meio.nome, p_pagamento_id: codigo, p_pago_em: s.pagoEm, p_valor_centavos: s.valorPagoCentavos, p_forma: s.forma,
+      });
+      if (r.resultado === "PAGA") pagas++;
+      else if (r.resultado !== "JA_PAGA") registrar("aviso", { funcao: "api-console", rota: "pagamento-aviso", resultado: r.resultado });
+    }
+    if (pagas) await enviarSemEsperar();
+    return c.json({ recebidos: codigos.length, pagas });
+  });
 
   // A rotina da manhã do banco chama esta rota quando há e-mail da cobrança na fila. Ela só manda
   // o que o banco já decidiu, então não pede sessão (o repasse confere o segredo).
