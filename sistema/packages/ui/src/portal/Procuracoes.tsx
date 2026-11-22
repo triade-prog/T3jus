@@ -8,11 +8,11 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
-  CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasNoDocumento, hojeBrasilia, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
+  CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, hojeBrasilia, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
-  type VersaoDocumento,
+  type VersaoDocumento, type DadoQueConta,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -22,7 +22,8 @@ import { lerDia } from "./agenda.ts";
 import { abrirAnexo, enviarAnexo } from "./Anexos.tsx";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
-import { chamarPortal, irPara } from "./Moldura.tsx";
+import { chamarPortal, irPara, ROTAS_PORTAL } from "./Moldura.tsx";
+import { rotaPessoaEquipe } from "./EquipeOab.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { CabPeticoes, LegendaPrevia, Papel, SeloDados, useBaixar } from "./Peticoes.tsx";
 import { contar, erroDoArquivo, Quando, quando, tamanhoArquivo } from "./peticoes.ts";
@@ -695,6 +696,41 @@ function EscolherContrato() {
 }
 
 /** Os erros que voltam do servidor: { campo: código }. */
+const ARTIGO_FALTA: Record<DadoQueConta, string> = {
+  NOME_COMPLETO: "o nome completo", TRATAMENTO: "o tratamento", NACIONALIDADE: "a nacionalidade", ESTADO_CIVIL: "o estado civil",
+  CPF: "o CPF", RG: "o RG", ENDERECO: "o endereço profissional", OAB: "a OAB",
+};
+/** "o estado civil e o CPF". */
+function listaFaltasArtigo(f: DadoQueConta[]): string {
+  const r = f.map((k) => ARTIGO_FALTA[k]);
+  return r.length <= 1 ? (r[0] ?? "") : `${r.slice(0, -1).join(", ")} e ${r.at(-1)}`;
+}
+
+/** No cartão do advogado: "Faltam 2" com o link para completar, ou "completos" (decisão 20). */
+function DadosDoAdvogado({ a, escritorio, eu }: { a: DadosDocumentos["advogados"][number]; escritorio: DadosDocumentos["escritorio"]; eu?: string }) {
+  if (!a.dados) return null;
+  const f = faltasDoAdvogado(a.dados, a.inscricoes, escritorio).filter((x) => x !== "OAB");
+  if (!f.length) {
+    return (
+      <p className="cd-adv-dados ok">
+        <Icone nome="check" className="ico" />
+        <span>Dados para os documentos completos.</span>
+      </p>
+    );
+  }
+  const txt = listaFaltasArtigo(f);
+  return (
+    <p className="cd-adv-dados">
+      <span className="selo selo-atencao">{f.length === 1 ? "Falta 1" : `Faltam ${f.length}`}</span>
+      <span>{txt.charAt(0).toUpperCase() + txt.slice(1)} de {primeiro(a.nome)} {f.length === 1 ? "sai marcado" : "saem marcados"}.</span>
+      <a href={a.pessoaId === eu ? ROTAS_PORTAL.conta : rotaPessoaEquipe(a.pessoaId)} target="_blank" rel="noopener">
+        {a.pessoaId === eu ? "Completar em Sua conta" : "Completar na Equipe"}
+        <span className="sr"> (abre numa aba nova)</span>
+      </a>
+    </p>
+  );
+}
+
 function motivosDe(e: { detalhes?: Record<string, unknown> }): Record<string, string> | null {
   const m = e.detalhes?.motivos;
   return m && typeof m === "object" ? (m as Record<string, string>) : null;
@@ -745,6 +781,10 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   const msg = (k: string) => ERROS_DOCUMENTO[erros[k] ?? ""] ?? "Confira este campo.";
   const cli = dados.cliente;
   const faltas = faltasNoDocumento(cli);
+  const faltasAdv = dados.advogados
+    .filter((a) => form_.outorgados[a.pessoaId]?.length)
+    .map((a) => ({ a, f: a.dados ? faltasDoAdvogado(a.dados, a.inscricoes, dados.escritorio).filter((x) => x !== "OAB") : [] }))
+    .filter((x) => x.f.length);
   const assinadas = chavesAssinadas(dados);
   const semOab = dados.semOab.map((p) => p.nome);
   const docsPedido = dados.modelos.filter((m) => form_.docs.includes(chaveModelo(m)));
@@ -832,6 +872,15 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                 </div>
                 <p className="ajuda">Veio da ficha do contrato. As condições, os advogados e as inscrições já estão lá.</p>
               </div>
+              {faltasAdv.map(({ a, f }) => (
+                <div className="c6" key={a.pessoaId}>
+                  <Aviso tom="atencao" icone="pena"
+                    titulo={`${f.length === 1 ? "Falta 1 dado" : `Faltam ${f.length} dados`} de ${a.nome}, ${a.dados?.tratamento === "ADVOGADA" ? "advogada" : "advogado"}: ${listaFaltasArtigo(f)}.`}
+                    acoes={<a className="btn btn-sec" href={a.pessoaId === dados.eu ? ROTAS_PORTAL.conta : rotaPessoaEquipe(a.pessoaId)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />{a.pessoaId === dados.eu ? "Completar os seus dados" : `Completar os dados de ${primeiro(a.nome)}`}<span className="sr"> (abre numa aba nova)</span></a>}>
+                    Dá para gerar assim: a qualificação de {primeiro(a.nome)} sai com {f.length === 1 ? "o dado marcado" : "os dados marcados"}, como [CPF: falta], para preencher à mão ou no Word.
+                  </Aviso>
+                </div>
+              ))}
               {faltas.length ? (
                 <div className="c6">
                   <Aviso tom="atencao" icone="pena" titulo={tituloFaltas(faltas, cli.nome)}
@@ -876,8 +925,8 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                 </div>
               </fieldset>
 
-              <fieldset className="pe-fs c6" id="pr-g-outorgados" tabIndex={-1} aria-describedby={descritoPor(tem("outorgados") && "pr-adv-er", "pr-adv-aj")}>
-                <legend>Advogados outorgados<small>a OAB vem da Equipe</small></legend>
+              <fieldset className="pe-fs pe-adv-fs c6" id="pr-g-outorgados" tabIndex={-1} aria-describedby={descritoPor(tem("outorgados") && "pr-adv-er", "pr-adv-aj")}>
+                <legend>Advogados outorgados<small>dados da Equipe e de Sua conta</small></legend>
                 {tem("outorgados") ? <ErroCampo id="pr-adv-er">{msg("outorgados")}</ErroCampo> : null}
                 {dados.advogados.length ? (
                   <div className="pe-adv">
@@ -900,6 +949,7 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                               ))}
                             </fieldset>
                           ) : a.inscricoes[0] ? <p className="pe-insc-uma">{a.inscricoes[0].documento}<small>única inscrição</small></p> : null}
+                          <DadosDoAdvogado a={a} escritorio={dados.escritorio} eu={dados.eu} />
                         </div>
                       );
                     })}

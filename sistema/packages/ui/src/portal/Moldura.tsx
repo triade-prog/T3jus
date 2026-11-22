@@ -320,7 +320,7 @@ export function MolduraPortal({
                 <span>
                   <strong>{escritorio?.pessoa ?? " "}</strong>
                   <small>{papel}</small>
-                  <span className="sr">, sua conta e sua OAB</span>
+                  <span className="sr">, sua conta e seus dados</span>
                 </span>
               </a>
               <button className="sair" type="button" onClick={sair} disabled={saindo} aria-label="Sair do Portal">
@@ -437,7 +437,7 @@ export function MolduraPortal({
             <li>
               <a className="pt-mi" href={ROTAS_PORTAL.conta} aria-current={atualDe("conta", atual, false)}>
                 <Icone nome="balanca" className="ico" />
-                Seus dados e sua OAB
+                Seus dados para os documentos
                 <Icone nome="dir" className="ico ico-s pt-ir" />
               </a>
             </li>

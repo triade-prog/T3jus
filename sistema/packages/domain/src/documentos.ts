@@ -18,6 +18,7 @@ import { dataBr, dividirParcelas, percentual, reais, resumoParcelas, somarMeses,
 import { formatarCnj } from "./juridico.ts";
 import { cidadeDataPadrao, enderecoDoCliente, NOMES_CAMPOS, rgDoCliente, valorPorExtenso, type ParagrafoPrevia, montarPrevia } from "./peticoes.ts";
 import { fraseOab, type InscricaoOab } from "./portal.ts";
+import { faltasDoAdvogado, qualificacaoDoAdvogado, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
 import type { MarcaNoDocumento } from "./logo.ts";
 
 // ------------------------------------------------------------------------------- tipos
@@ -73,6 +74,7 @@ export const CAMPOS_DOCUMENTO: readonly CampoDocumento[] = [
   { campo: "CONTRATO_CASOS", grupo: "Contrato e honorários", descricao: "Os casos ligados ao contrato, com o número do processo quando houver", origem: "cadastro" },
   { campo: "HONORARIOS_CONDICOES", grupo: "Contrato e honorários", descricao: "Cada condição de honorário numa alínea, com o valor em reais e por extenso", origem: "cadastro" },
   { campo: "ADVOGADOS_OAB", grupo: "Advogados e poderes", descricao: "Nome e inscrições dos outorgados: “MARINA RIBEIRO, OAB/SP nº 214.538, e …”", origem: "cadastro" },
+  { campo: "ADVOGADOS_QUALIFICACAO", grupo: "Advogados e poderes", descricao: "Cada outorgado com a qualificação completa: nome, nacionalidade, estado civil, OAB, RG, CPF e endereço profissional (EX-15)", origem: "cadastro" },
   { campo: "ADVOGADOS_ASSINATURA", grupo: "Advogados e poderes", descricao: "O bloco de assinatura, uma linha por advogado outorgado", origem: "cadastro" },
   { campo: "PODERES_ESPECIAIS", grupo: "Advogados e poderes", descricao: "“, com os poderes especiais para …”; sem poder marcado, sai vazio", origem: "formulario" },
   { campo: "ESCRITORIO_NOME", grupo: "Escritório e data", descricao: "Nome do escritório, de Escritório no Portal", origem: "cadastro" },
@@ -99,6 +101,7 @@ export function sugestaoCampoDocumento(campo: string): string | null {
   const regras: [RegExp, string][] = [
     [/REPRESENTANTE.*QUALIF|QUALIF.*REPRESENTANTE/, "REPRESENTANTE_QUALIFICACAO"],
     [/REPRESENTANTE|SOCIO_ADMIN|ADMINISTRADOR/, "REPRESENTANTE_NOME"],
+    [/QUALIFICA.*ADVOG|ADVOG.*QUALIFICA|QUALIFICA.*OUTORGADO/, "ADVOGADOS_QUALIFICACAO"],
     [/QUALIFICA/, "CLIENTE_QUALIFICACAO"],
     [/PODER/, "PODERES_ESPECIAIS"],
     [/HONORARIO|CONDICO|PAGAMENTO|VALOR|PARCELA/, "HONORARIOS_CONDICOES"],
@@ -195,12 +198,12 @@ const ASSINA_CLIENTE: ParagrafoDocx = { texto: "[CLIENTE_ASSINATURA]", estilo: "
 
 export const MODELOS_PADRAO_DOCUMENTO: readonly ModeloPadraoDocumento[] = [
   {
-    codigo: "CONTRATO", tipo: "CONTRATO", nome: "Contrato de honorários", atualizadoEm: "2026-11-21", emRevisao: true,
+    codigo: "CONTRATO", tipo: "CONTRATO", nome: "Contrato de honorários", atualizadoEm: "2026-11-22", emRevisao: true,
     paragrafos: [
       { texto: "CONTRATO DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS E DE HONORÁRIOS", estilo: "titulo" },
       { texto: "Contrato nº [CONTRATO_NUMERO]", estilo: "direita" },
       { texto: "CONTRATANTE: [CLIENTE_NOME], [CLIENTE_QUALIFICACAO]." },
-      { texto: "CONTRATADA: [ESCRITORIO_NOME], inscrita no CNPJ sob o nº [ESCRITORIO_CNPJ] e registrada na [ESCRITORIO_OAB], com sede em [ESCRITORIO_ENDERECO], por seus advogados, [ADVOGADOS_OAB]." },
+      { texto: "CONTRATADA: [ESCRITORIO_NOME], inscrita no CNPJ sob o nº [ESCRITORIO_CNPJ] e registrada na [ESCRITORIO_OAB], com sede em [ESCRITORIO_ENDERECO], por seus advogados, [ADVOGADOS_QUALIFICACAO]." },
       { texto: "As partes acima têm entre si justo e contratado o seguinte." },
       { texto: "CLÁUSULA 1ª · DO OBJETO", estilo: "titulo" },
       { texto: "A CONTRATADA prestará ao CONTRATANTE os serviços de advocacia para: [CONTRATO_OBJETO]. Casos ligados a este contrato: [CONTRATO_CASOS]." },
@@ -223,11 +226,11 @@ export const MODELOS_PADRAO_DOCUMENTO: readonly ModeloPadraoDocumento[] = [
     ],
   },
   {
-    codigo: "PROCURACAO", tipo: "PROCURACAO", nome: "Procuração", atualizadoEm: "2026-11-21", emRevisao: true,
+    codigo: "PROCURACAO", tipo: "PROCURACAO", nome: "Procuração", atualizadoEm: "2026-11-22", emRevisao: true,
     paragrafos: [
       { texto: "PROCURAÇÃO AD JUDICIA ET EXTRA", estilo: "titulo" },
       { texto: "OUTORGANTE: [CLIENTE_NOME], [CLIENTE_QUALIFICACAO]." },
-      { texto: "OUTORGADOS: [ADVOGADOS_OAB], com escritório em [ESCRITORIO_ENDERECO], onde recebem intimações." },
+      { texto: "OUTORGADOS: [ADVOGADOS_QUALIFICACAO], onde recebem intimações." },
       { texto: "PODERES: pelo presente instrumento, o(a) outorgante nomeia e constitui seus procuradores os outorgados, a quem confere os poderes da cláusula ad judicia et extra para o foro em geral, para propor as ações cabíveis e defendê-lo(a) nas contrárias, em qualquer juízo, instância ou tribunal, até a decisão final, usando os recursos legais e acompanhando-os[PODERES_ESPECIAIS]. Os outorgados podem agir em conjunto ou separadamente." },
       { texto: "FINALIDADE: [CONTRATO_OBJETO]." },
       { texto: "[CIDADE_DATA].", estilo: "direita" },
@@ -302,6 +305,8 @@ export interface AdvogadoDoDocumento {
   inscricoes: InscricaoOab[];
   /** As que o contrato guarda (contrato_advogado_oab); para quem não está no contrato, todas. */
   escolhidas: string[];
+  /** Os dados para os documentos (EX-15); sem eles, só o nome e a OAB. */
+  dados?: DadosDocumentoPessoa | null;
 }
 
 export interface EscritorioDoDocumento {
@@ -376,6 +381,8 @@ export interface DadosDocumentos {
   mudancas: MudancaDesde[];
   /** A marcação inicial dos poderes: a da última geração do escritório (decisão 11). */
   poderesIniciais: PoderEspecial[];
+  /** A pessoa da sessão, para o link de completar os dados (EX-15). */
+  eu?: string;
 }
 
 // ------------------------------------------------------------------------------- valores
@@ -501,6 +508,24 @@ export interface ValoresDocumento {
   origem: Record<string, "cadastro" | "formulario">;
   /** O que saiu marcado: "RG de Benedito Souza Lima". */
   marcados: string[];
+  /** Dos marcados, os dos advogados ("CPF de Rafael Menezes"): só contam se o modelo usa a qualificação. */
+  marcadosAdvogados?: string[];
+}
+
+/** O nome que vai no documento: o completo (EX-15) ou, sem ele, o da Equipe. */
+export function nomeDoAdvogado(a: Pick<AdvogadoDoDocumento, "nome" | "dados">): string {
+  return a.dados?.nomeCompleto?.trim() || a.nome;
+}
+
+const ROTULO_FALTA_ADVOGADO: Record<DadoQueConta, string> = {
+  NOME_COMPLETO: "Nome completo", TRATAMENTO: "Tratamento (advogada ou advogado)", NACIONALIDADE: "Nacionalidade",
+  ESTADO_CIVIL: "Estado civil", CPF: "CPF", RG: "RG", ENDERECO: "Endereço profissional", OAB: "OAB",
+};
+
+/** O que falta de cada advogado (sem a OAB, que o outorgado sempre tem), para o aviso e os marcados. */
+export function faltasDoOutorgado(a: AdvogadoDoDocumento & { marcadas: InscricaoOab[] }, esc: EscritorioDoDocumento): DadoQueConta[] {
+  if (!a.dados) return [];
+  return faltasDoAdvogado(a.dados, a.marcadas, esc).filter((f) => f !== "OAB");
 }
 
 function inicialMaiuscula(s: string): string {
@@ -522,8 +547,15 @@ export function outorgadosEscolhidos(d: DadosDocumentos, e: Pick<EscolhasDocumen
 /** A frase dos outorgados como vai sair (a faixa "No documento:", decisão 10). */
 export function fraseOutorgados(lista: ReturnType<typeof outorgadosEscolhidos>): string {
   if (!lista.length) return "";
-  return lista.map((a) => `${a.nome.toUpperCase()}, ${fraseOab(a.marcadas)}`)
+  return lista.map((a) => `${nomeDoAdvogado(a).toUpperCase()}, ${fraseOab(a.marcadas)}`)
     .reduce((s, x, i, l) => (i === 0 ? x : `${s}${i === l.length - 1 ? ", e " : ", "}${x}`), "");
+}
+
+/** A qualificação de cada outorgado, unidas por ", e " (EX-15). Sem os dados, o nome e a OAB. */
+export function qualificacoesOutorgados(lista: ReturnType<typeof outorgadosEscolhidos>, esc: EscritorioDoDocumento): string {
+  const qs = lista.map((a) => (a.dados ? qualificacaoDoAdvogado(a.dados, a.marcadas, esc) : `${a.nome.toUpperCase()}, ${fraseOab(a.marcadas)}`));
+  if (qs.length <= 1) return qs[0] ?? "";
+  return `${qs.slice(0, -1).join(", ")}, e ${qs.at(-1)}`;
 }
 
 /** Os valores de cada campo, com a origem e o que saiu marcado (decisões 12 a 14). */
@@ -534,6 +566,8 @@ export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos
   if (!d.escritorio.cnpj) marcados.push("CNPJ do escritório");
   if (!d.escritorio.endereco?.trim()) marcados.push("Endereço do escritório");
   if (!d.escritorio.oab?.trim()) marcados.push("Registro do escritório na OAB");
+  const marcadosAdvogados = outorgados.flatMap((a) => faltasDoOutorgado(a, d.escritorio).map((f) => `${ROTULO_FALTA_ADVOGADO[f]} de ${a.nome}`));
+  marcados.push(...marcadosAdvogados);
 
   const nomeCliente = c.nome.toUpperCase();
   const repNome = c.tipo === "PJ" ? (c.repNome?.trim() ? c.repNome.trim().toUpperCase() : falta("REPRESENTANTE")) : "";
@@ -557,8 +591,9 @@ export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos
     HONORARIOS_CONDICOES: condicoesNoDocumento(d.condicoes),
     ADVOGADOS_OAB: outorgados.length ? fraseOutorgados(outorgados) : falta("ADVOGADOS"),
     ADVOGADOS_ASSINATURA: outorgados.length
-      ? outorgados.map((a) => `_______________________________________\n${a.nome.toUpperCase()}\n${fraseOab(a.marcadas)}`).join("\n\n")
+      ? outorgados.map((a) => `_______________________________________\n${nomeDoAdvogado(a).toUpperCase()}\n${fraseOab(a.marcadas)}`).join("\n\n")
       : falta("ASSINATURA"),
+    ADVOGADOS_QUALIFICACAO: outorgados.length ? qualificacoesOutorgados(outorgados, d.escritorio) : falta("ADVOGADOS"),
     PODERES_ESPECIAIS: trechoPoderes(e.poderes, e.outroPoder),
     ESCRITORIO_NOME: esc.nome.toUpperCase(),
     ESCRITORIO_CNPJ: esc.cnpj ? formatarDocumento(esc.cnpj) : falta("CNPJ DO ESCRITÓRIO"),
@@ -570,14 +605,16 @@ export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos
   };
   const origem: Record<string, "cadastro" | "formulario"> = {};
   for (const x of CAMPOS_DOCUMENTO) origem[x.campo] = x.origem;
-  return { valores, origem, marcados };
+  return { valores, origem, marcados, marcadosAdvogados };
 }
 
 /** Os marcados que o modelo de fato usa (o que falta, mas o modelo não pede, não conta). */
 export function marcadosDoModeloDocumento(v: ValoresDocumento, campos: readonly string[]): string[] {
   const usa = (x: string) => campos.includes(x);
   const deCliente = ["CLIENTE_QUALIFICACAO", "CLIENTE_CPF", "CLIENTE_RG", "CLIENTE_ENDERECO", "CLIENTE_ASSINATURA", "REPRESENTANTE_NOME", "REPRESENTANTE_QUALIFICACAO"].some(usa);
+  const deAdvogado = new Set(v.marcadosAdvogados ?? []);
   return v.marcados.filter((m) => {
+    if (deAdvogado.has(m)) return usa("ADVOGADOS_QUALIFICACAO");
     if (m === "CNPJ do escritório") return usa("ESCRITORIO_CNPJ");
     if (m === "Endereço do escritório") return usa("ESCRITORIO_ENDERECO");
     if (m === "Registro do escritório na OAB") return usa("ESCRITORIO_OAB");

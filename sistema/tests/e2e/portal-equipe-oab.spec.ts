@@ -32,11 +32,17 @@ const EQUIPE = [
   pessoa(2, "Felipe Matos", ["CONTRATOS", "JURIDICO"], [SP, RJ]),
   pessoa(3, "Gustavo Lima", ["JURIDICO"], []),
 ];
+const ESC_END = { endereco: "Av. Paulista, 1.000, sala 52, Bela Vista", cidade: "São Paulo", uf: "SP" };
+const DADOS_FELIPE = {
+  nomeCompleto: "Felipe Matos", tratamento: null, nacionalidade: null, estadoCivil: null, cpf: null, rg: null, rgOrgao: null,
+  enderecoDoEscritorio: true, cep: null, endereco: null, bairro: null, cidade: null, uf: null, emailProfissional: null, telefoneProfissional: null,
+  atualizadoEm: null, atualizadoPor: null, versao: 0, mudancas: [],
+};
 const FICHA_FELIPE = {
-  ...EQUIPE[1], frase: "OAB/SP nº 287.104 e OAB/RJ nº 245.880-S",
+  ...EQUIPE[1], dados: DADOS_FELIPE, escritorio: ESC_END, frase: "OAB/SP nº 287.104 e OAB/RJ nº 245.880-S",
   contratos: [{ id: "d0000000-0000-4000-8000-000000000201", numero: "C-2026-019", estado: "ATIVO", responsavel: true, cliente: "Farmácia Bom Jesus Ltda." }],
 };
-const FICHA_GUSTAVO = { ...EQUIPE[2], frase: null, contratos: [] };
+const FICHA_GUSTAVO = { ...EQUIPE[2], frase: null, contratos: [], dados: { ...DADOS_FELIPE, nomeCompleto: "Gustavo Lima" }, escritorio: ESC_END };
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
 
 test.describe("Equipe com a OAB (EX-12)", () => {
@@ -59,7 +65,9 @@ test.describe("Equipe com a OAB (EX-12)", () => {
     });
     await page.goto(`${P}/equipe/pessoas/${pid(2)}`);
     await expect(page.getByRole("heading", { level: 1, name: "Felipe Matos" })).toBeVisible();
-    await expect(page.getByText("Felipe Matos, OAB/SP nº 287.104 e OAB/RJ nº 245.880-S")).toBeVisible();
+    const sai = page.getByRole("region", { name: "Como Felipe sai no contrato e na procuração" });
+    await expect(sai.getByText(/inscrito\(a\) na OAB\/SP sob o nº 287\.104 e na OAB\/RJ sob o nº 245\.880-S/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Completar os dados de Felipe" })).toBeVisible();
     await expect(page.getByRole("link", { name: "C-2026-019 · Farmácia Bom Jesus Ltda." })).toBeVisible();
     await semViolacoes(page);
 
@@ -139,28 +147,53 @@ test.describe("Equipe com a OAB (EX-12)", () => {
     expect((pedidos.find((p) => p.metodo === "POST")!.corpo as { oab: unknown }).oab).toEqual({ uf: "RJ", numero: "498310", letra: null });
   });
 
-  test("Sua conta: cada pessoa confere a própria OAB, só para ler", async ({ page }) => {
-    await simular(page, {
+  test("Sua conta: a pessoa completa os dados para os documentos e confere a OAB (EX-15)", async ({ page }) => {
+    const pedidos = await simular(page, {
       "/v1/escritorio": { corpo: FELIPE_ESC },
       "/v1/escritorio/conta": {
         corpo: {
           pessoaId: pid(2), nome: "Felipe Matos", email: "felipe@ribeiromatos.adv.br", dono: false, desde: h(4000), areas: ["CONTRATOS", "JURIDICO"],
-          oab: [SP, RJ], frase: FICHA_FELIPE.frase, socios: ["Marina Ribeiro"],
+          oab: [SP, RJ], frase: FICHA_FELIPE.frase, socios: ["Marina Ribeiro"], dados: DADOS_FELIPE, escritorio: ESC_END,
           contratos: [{ ...FICHA_FELIPE.contratos[0], inscricoes: "OAB/SP nº 287.104 e OAB/RJ nº 245.880-S" }],
         },
+      },
+      "PUT /v1/escritorio/conta/dados": {
+        corpo: { ...DADOS_FELIPE, nomeCompleto: "Felipe Augusto Matos", tratamento: "ADVOGADO", nacionalidade: "brasileiro", estadoCivil: "SOLTEIRO",
+          cpf: "52998224725", rg: "12.345.678-9", rgOrgao: "SSP/SP", versao: 1 },
       },
     });
     await page.goto(`${P}/conta`);
     await expect(page.getByRole("heading", { level: 1, name: "Felipe Matos" })).toBeVisible();
-    await expect(page.getByText("Felipe Matos, OAB/SP nº 287.104 e OAB/RJ nº 245.880-S")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Editar|Remover/ })).toHaveCount(0);
-    await expect(page.getByText("Fale com Marina Ribeiro, sócia dona:")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Seus dados para os documentos" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Remover/ })).toHaveCount(0);
+    await expect(page.getByText(/Fale com Marina Ribeiro, sócia dona:/)).toBeVisible();
     await semViolacoes(page);
     if (ehCelular(page)) {
       await page.getByRole("button", { name: "Mais" }).click();
-      await expect(page.getByRole("dialog", { name: "Mais" }).getByRole("link", { name: "Seus dados e sua OAB" })).toHaveAttribute("aria-current", "page");
+      await expect(page.getByRole("dialog", { name: "Mais" }).getByRole("link", { name: "Seus dados para os documentos" })).toHaveAttribute("aria-current", "page");
+      await page.keyboard.press("Escape");
     } else {
-      await expect(page.locator("#trilho").getByRole("link", { name: /sua conta e sua OAB/ })).toHaveAttribute("aria-current", "page");
+      await expect(page.locator("#trilho").getByRole("link", { name: /sua conta e seus dados/ })).toHaveAttribute("aria-current", "page");
     }
+
+    await page.getByRole("button", { name: "Completar agora" }).click();
+    await page.getByLabel("Nome completo").fill("Felipe Augusto Matos");
+    await page.getByLabel("CPF").fill("111.111.111-11");
+    await page.getByRole("button", { name: "Salvar dados" }).click();
+    await expect(page.getByLabel("CPF")).toHaveAttribute("aria-invalid", "true");
+    expect(pedidos.filter((p) => p.metodo === "PUT")).toHaveLength(0);
+    await semViolacoes(page);
+
+    await page.getByLabel("CPF").fill("529.982.247-25");
+    await page.getByRole("radio", { name: /Advogado/ }).check();
+    await page.getByLabel("Nacionalidade").fill("brasileiro");
+    await page.getByLabel("Estado civil").selectOption("SOLTEIRO");
+    await page.getByLabel("RG", { exact: true }).fill("12.345.678-9");
+    await page.getByLabel("Órgão emissor e UF").fill("SSP/SP");
+    await page.getByRole("button", { name: "Salvar dados" }).click();
+    await expect(page.getByText("Seus dados foram salvos.")).toBeVisible();
+    const corpo = pedidos.find((p) => p.metodo === "PUT")!.corpo as { versao: number; nomeCompleto: string; cpf: string; enderecoDoEscritorio: boolean };
+    expect(corpo).toMatchObject({ versao: 0, nomeCompleto: "Felipe Augusto Matos", enderecoDoEscritorio: true });
+    expect(corpo.cpf.replace(/\D/g, "")).toBe("52998224725");
   });
 });

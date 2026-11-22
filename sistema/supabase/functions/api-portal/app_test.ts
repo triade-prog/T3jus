@@ -160,6 +160,10 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_oab_mudar: (a) => ({ id: a.p_inscricao, versao: Number(a.p_versao) + 1 }),
     portal_oab_remover: () => ({ frase: null }),
     portal_conta: (a) => ({ pessoaId: a.p_pessoa, nome: "Ana", oab: [], frase: null, contratos: [], socios: ["Ana"] }),
+    portal_conta_dados: () => ({ nomeCompleto: "Ana Paula Souza", versao: 0 }),
+    portal_conta_dados_salvar: (a) => ({ ...(a.p_dados as object), versao: Number(a.p_versao) + 1 }),
+    portal_equipe_pessoa_dados: (a) => ({ nomeCompleto: "Lara", alvo: a.p_alvo, versao: 2, mudancas: [] }),
+    portal_equipe_pessoa_dados_salvar: (a) => ({ alvo: a.p_alvo, versao: Number(a.p_versao) + 1, mudancas: [] }),
     portal_mudar_areas: (a) => a.p_areas,
     portal_reenviar_convite: () => LARA,
     portal_retirar: (a) => {
@@ -731,6 +735,28 @@ Deno.test("EX-12: o convite leva a OAB principal; a ficha e Sua conta trazem o e
   const conta = await m.pedir("/v1/escritorio/conta", { cookie });
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_conta")!.args, { p_pessoa: ANA, p_escritorio: AURORA });
   assertEquals((await conta.json()).nome, "Ana");
+});
+
+Deno.test("EX-15: os dados para os documentos; a pessoa vem da sessão em Sua conta e da rota só na Equipe", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { versao: 0, nomeCompleto: "Ana Paula Souza", tratamento: "ADVOGADA", cpf: "529.982.247-25", enderecoDoEscritorio: true };
+  const ver = await m.pedir("/v1/escritorio/conta/dados", { cookie });
+  assertEquals((await ver.json()).nomeCompleto, "Ana Paula Souza");
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_conta_dados")!.args, { p_pessoa: ANA, p_escritorio: AURORA });
+  const salvo = await m.pedir("/v1/escritorio/conta/dados", { metodo: "PUT", corpo: { ...corpo, pessoaId: LARA }, cookie });
+  assertEquals((await salvo.json()).versao, 1);
+  const args = m.chamadas.find((c) => c.funcao === "portal_conta_dados_salvar")!.args;
+  assertEquals(args.p_pessoa, ANA);
+  assertEquals(args.p_versao, 0);
+  assertEquals((args.p_dados as Record<string, unknown>).pessoaId, undefined);
+  const sem = await m.pedir("/v1/escritorio/conta/dados", { metodo: "PUT", corpo: { nomeCompleto: "Ana" }, cookie });
+  assertEquals(sem.status, 400);
+  const eq = await m.pedir(`/v1/escritorio/equipe/pessoas/${LARA}/dados`, { metodo: "PUT", corpo: { ...corpo, versao: 2 }, cookie });
+  assertEquals((await eq.json()).versao, 3);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_equipe_pessoa_dados_salvar")!.args.p_alvo, LARA);
+  const lida = await m.pedir(`/v1/escritorio/equipe/pessoas/${LARA}/dados`, { cookie });
+  assertEquals((await lida.json()).alvo, LARA);
 });
 
 Deno.test("EX-12: incluir, mudar (com a versão) e remover a inscrição", async () => {
@@ -1749,7 +1775,7 @@ Deno.test("F3.16: gerar faz um .docx por documento, no timbrado, e só então gr
   const g = m.chamadas.find((c) => c.funcao === "portal_documento_gravar")!.args;
   assertEquals([g.p_escritorio, g.p_contrato], [AURORA, CLIENTE]);
   const res = g.p_resultado as { geracaoId: string; padraoDe: string; documentos: { id: string; chave: string; arquivo: string; marcados: string[] }[] };
-  assertEquals(res.padraoDe, "2026-11-21");
+  assertEquals(res.padraoDe, "2026-11-22");
   assertEquals(res.documentos.map((d) => [d.chave, d.arquivo]), [
     ["CONTRATO", "contrato-c-2026-033-benedito-souza-lima.docx"], ["PROCURACAO", "procuracao-c-2026-033-benedito-souza-lima-v2.docx"]]);
   assertEquals(res.documentos[1]!.marcados, ["RG de Benedito Souza Lima"]);
@@ -1784,7 +1810,7 @@ Deno.test("F3.16: a lista de modelos põe o padrão só onde o escritório não 
   assertEquals(r.modelos.map((x: { id: string }) => x.id), ["CONTRATO", MODELO_DOC, "HIPOSSUFICIENCIA_PF"]);
   const declaracao = r.modelos[2];
   assertEquals([declaracao.usos, declaracao.emRevisao, declaracao.codigos.length], [3, true, 2]);
-  assertEquals(r.campos.length, 20);
+  assertEquals(r.campos.length, 21);
 });
 
 Deno.test("F3.16: enviar modelo confere o arquivo e avisa o campo esperado que falta; PDF é recusado", async () => {

@@ -1,0 +1,12 @@
+{
+  "id": "F3.106",
+  "texto": "Petições com o nome completo e a qualificação do advogado: os modelos de petição ainda usam o nome do T3jus em [ADVOGADOS_OAB] e não oferecem [ADVOGADOS_QUALIFICACAO]",
+  "peca": "S7",
+  "refs": [
+    "EX-15",
+    "EX-09"
+  ],
+  "status": "pendente",
+  "ordem": 799,
+  "proximo": "Levar os dados de pessoa_dados_documento para o gerador de petições (packages/domain/src/peticoes.ts) e oferecer o campo ADVOGADOS_QUALIFICACAO nos modelos de petição"
+}
