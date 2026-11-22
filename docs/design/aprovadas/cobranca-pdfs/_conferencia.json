@@ -1,0 +1,539 @@
+{
+ "pdfs": [
+  {
+   "pdf": "fatura-exemplo.pdf",
+   "folhas_no_html": 1,
+   "paginas": 1,
+   "tamanho": "594.96 x 841.92 pts (A4)",
+   "paginas_em_branco": [],
+   "qr_esperados": 1,
+   "qr_lidos": 1,
+   "qr_iguais_ao_copia_e_cola": 1
+  },
+  {
+   "pdf": "recibo-exemplo.pdf",
+   "folhas_no_html": 1,
+   "paginas": 1,
+   "tamanho": "594.96 x 841.92 pts (A4)",
+   "paginas_em_branco": [],
+   "qr_esperados": 0,
+   "qr_lidos": 0,
+   "qr_iguais_ao_copia_e_cola": 0
+  },
+  {
+   "pdf": "carne-exemplo.pdf",
+   "folhas_no_html": 5,
+   "paginas": 5,
+   "tamanho": "594.96 x 841.92 pts (A4)",
+   "paginas_em_branco": [],
+   "qr_esperados": 12,
+   "qr_lidos": 12,
+   "qr_iguais_ao_copia_e_cola": 12
+  }
+ ],
+ "capturas": [
+  {
+   "nome": "fatura-padrao",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-padrao",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-sem-codigos",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-sem-codigos",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-sem-endereco",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-sem-endereco",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-atraso",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-atraso",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-paga",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-paga",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-cancelada",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-cancelada",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-carne",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-carne",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-pb",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-pb",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-padrao",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-padrao",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-carne",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-carne",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-manual",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-manual",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-pb",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "recibo-pb",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-padrao",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-padrao",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-hoje",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-hoje",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-trocado",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-trocado",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-sem-codigos",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-sem-codigos",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-pb",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-pb",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-fatura",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-fatura",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-paga",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-paga",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-carne",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-carne",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-carne-preparando",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-console-carne-preparando",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-plano",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-plano",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-preparando",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-preparando",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-erro",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-erro",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-carne",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "nasce-portal-carne",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-ver",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-ver",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-falta",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-falta",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-editar",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-editar",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-erros",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-erros",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-suporte",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "endereco-suporte",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "index",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "index",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  }
+ ],
+ "resumo": {
+  "capturas": 62,
+  "violacoes_axe": 0,
+  "rolagem_lateral": 0,
+  "erros_de_script": 0,
+  "alvos_pequenos": 0
+ }
+}

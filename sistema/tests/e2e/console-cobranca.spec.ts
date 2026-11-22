@@ -219,6 +219,72 @@ test.describe("Console: cobrança dos escritórios", () => {
     expect(put.desconto).toMatchObject({ pct: 20, motivo: "Desconto de implantação." });
   });
 
+  test("endereço de cobrança: a folha mostra o endereço e o editar o manda junto", async ({ page }) => {
+    const END = { cep: "50050000", logradouro: "Rua da Aurora", numero: "295", complemento: "sala 1102", bairro: "Boa Vista", cidade: "Recife", uf: "PE" };
+    const pedidos = await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${AROEIRA.id}`]: { corpo: ficha(AROEIRA, PERMISSOES) },
+      [`/v1/clientes/${AROEIRA.id}/notas`]: { corpo: { notas: [] } },
+      [`/v1/clientes/${AROEIRA.id}/assinatura`]: { corpo: assinatura({ enderecoCobranca: END }) },
+      [`PUT /v1/clientes/${AROEIRA.id}/assinatura`]: { corpo: { id: "x", versao: 4 } },
+    });
+    await page.goto(`${C}/clientes/${AROEIRA.id}/assinatura`);
+    await expect(page.getByText("Rua da Aurora, 295, sala 1102 · Boa Vista · Recife, PE · CEP 50050-000")).toBeVisible();
+    await expect(page.getByText("Falta o endereço")).toHaveCount(0);
+    await expect(page.getByText("CNPJ de cobrança")).toBeVisible();
+    await semViolacoes(page);
+
+    await page.getByRole("button", { name: "Editar" }).click();
+    const grupo = page.getByRole("group", { name: "Endereço de cobrança" });
+    await expect(grupo.getByLabel("CEP")).toHaveValue("50050-000");
+    await expect(grupo.getByLabel("UF")).toHaveValue("PE");
+    await grupo.getByLabel("CEP").fill("50050-00");
+    await grupo.getByLabel("Número").fill("");
+    await page.getByRole("button", { name: "Salvar a assinatura" }).click();
+    await expect(page.getByText("Falta acertar 2 pontos, marcados abaixo.")).toBeVisible();
+    await expect(page.getByText("O CEP tem 8 números; aqui há 7. Confira, como em 50050-000.")).toBeVisible();
+    await expect(page.getByText("Escreva o número. Se não houver, escreva S/N.")).toBeVisible();
+    await expect(grupo.getByLabel("CEP")).toBeFocused();
+    await semViolacoes(page);
+    expect(pedidos.filter((p) => p.metodo === "PUT")).toHaveLength(0);
+
+    await grupo.getByLabel("CEP").fill("50050-000");
+    await grupo.getByLabel("Número").fill("S/N");
+    await page.getByRole("button", { name: "Salvar a assinatura" }).click();
+    await expect(page.getByText("Assinatura salva.")).toBeVisible();
+    const put = pedidos.find((p) => p.metodo === "PUT")?.corpo as Record<string, unknown>;
+    expect(put.endereco).toEqual({ ...END, cep: "50050-000", numero: "S/N" });
+  });
+
+  test("sem endereço de cobrança: o aviso, a sugestão da ficha e o salvar que não trava", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${AROEIRA.id}`]: { corpo: ficha(AROEIRA, PERMISSOES) },
+      [`/v1/clientes/${AROEIRA.id}/notas`]: { corpo: { notas: [] } },
+      [`/v1/clientes/${AROEIRA.id}/assinatura`]: {
+        corpo: { ...assinatura({ enderecoCobranca: null }), enderecoSugerido: { logradouro: "Av. Conselheiro Aguiar, 1200", cidade: "Recife", uf: "PE" }, fichaTemEndereco: true },
+      },
+      [`PUT /v1/clientes/${AROEIRA.id}/assinatura`]: { corpo: { id: "x", versao: 4 } },
+    });
+    await page.goto(`${C}/clientes/${AROEIRA.id}/assinatura`);
+    await expect(page.getByText("Falta o endereço: sem ele o boleto não sai, só o Pix.")).toBeVisible();
+    await expect(page.getByText("Só Pix por enquanto")).toBeVisible();
+    await expect(page.getByText(/A ficha tem a rua, mas não tem o CEP\./)).toBeVisible();
+    await semViolacoes(page);
+
+    await page.getByRole("button", { name: "Preencher o endereço" }).first().click();
+    const grupo = page.getByRole("group", { name: "Endereço de cobrança" });
+    await expect(grupo.getByLabel("Rua, avenida ou travessa")).toHaveValue("Av. Conselheiro Aguiar, 1200");
+    await expect(grupo.getByLabel("CEP")).toHaveValue("");
+    // Sem mexer no endereço sugerido, o resto da assinatura salva normalmente.
+    await page.getByLabel("E-mail de cobrança").fill("cobranca@aroeira.exemplo.com.br");
+    await page.getByRole("button", { name: "Salvar a assinatura" }).click();
+    await expect(page.getByText("Assinatura salva.")).toBeVisible();
+    const put = pedidos.find((p) => p.metodo === "PUT")?.corpo as Record<string, unknown>;
+    expect(put.endereco).toBeNull();
+    expect(put.emailCobranca).toBe("cobranca@aroeira.exemplo.com.br");
+  });
+
   test("atraso de 41 dias: só consulta com motivo, e a faixa nas outras abas", async ({ page }) => {
     const atraso = assinatura({ situacao: "EM_ATRASO", atrasoDias: 41, avisoPortal: true, proporConsulta: true, abertas: { faturas: 1, totalCentavos: 19000 } });
     const consulta = assinatura({ situacao: "SO_CONSULTA", atrasoDias: 41, soConsultaDesde: `${hoje}T15:00:00Z`, abertas: { faturas: 1, totalCentavos: 19000 }, soConsulta: { desde: `${hoje}T15:00:00Z`, motivo: "x", por: CA.nome } });

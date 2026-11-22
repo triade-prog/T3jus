@@ -1,0 +1,12 @@
+{
+  "id": "F1.25",
+  "texto": "Endereço de cobrança do escritório na aba Assinatura do Console, para o boleto registrado do Inter",
+  "peca": "S7",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "feito",
+  "ordem": 67.37,
+  "nota": "Desenho aprovado pela Carol em 22/11/2026 em docs/design/aprovadas/cobranca-pdfs (estados 26 a 30). Opcional: sem ele, a fatura sai só com o Pix. Nasce da ficha (que não tem CEP) e a equipe completa. O resto do meio de pagamento segue em F1.21.",
+  "evidencia": "Migration 0694_cobranca_endereco.sql: assinaturas ganha end_cep, end_logradouro, end_numero, end_complemento, end_bairro, end_cidade e end_uf; console_assinatura devolve o endereço e a sugestão da ficha só a quem vê os valores; console_assinatura_salvar confere o endereço com erros por campo junto dos da assinatura e guarda no histórico só que mudou; rotina_cobranca_codigos_pendentes manda o endereço no pagador. Aba Assinatura (packages/ui/src/console/AbaAssinatura.tsx): linha na folha, aviso \"Falta o endereço\", grupo de campos no editar e \"CNPJ de cobrança\". Testes: supabase/tests/pgtap/115_cobranca_endereco_test.sql (13) e tests/e2e/console-cobranca.spec.ts (28 no celular e no computador, com axe)."
+}

@@ -7,6 +7,6 @@
   ],
   "status": "pendente",
   "ordem": 67.3,
-  "nota": "A Carol escolheu o Inter Empresas (22/11/2026). A porta do meio de pagamento e a peça do Inter estão prontas e desligadas (migration 0693, _shared/pagamento.ts, rotas /v1/rotina/cobranca-codigos e /v1/pagamento/aviso da api-console): a baixa continua manual até a integração do Inter existir. Os caminhos da API do Inter precisam ser conferidos no sandbox. O boleto registrado pede o endereço do pagador, que a assinatura ainda não guarda. O e-mail de cobrança na folha do Portal saiu em F1.23; a nota fiscal ficou em F1.24. Os PDFs estão em desenho para a Carol aprovar.",
-  "proximo": "Criar a integração no Inter Empresas e pôr os segredos INTER_* nas funções; decidir onde guardar o endereço de cobrança do escritório; aprovar o desenho dos PDFs; os preços reais e o remetente"
+  "nota": "A Carol escolheu o Inter Empresas (22/11/2026). A porta do meio de pagamento e a peça do Inter estão prontas e desligadas (migration 0693, _shared/pagamento.ts, rotas /v1/rotina/cobranca-codigos e /v1/pagamento/aviso da api-console): a baixa continua manual até a integração do Inter existir. Os caminhos da API do Inter precisam ser conferidos no sandbox. O endereço de cobrança, que o boleto registrado pede, saiu em F1.25 e já vai na fila do Inter. O e-mail de cobrança na folha do Portal saiu em F1.23; a nota fiscal ficou em F1.24. O desenho dos PDFs da fatura, do recibo e do carnê foi aprovado em 22/11/2026 (docs/design/aprovadas/cobranca-pdfs) e falta programá-los.",
+  "proximo": "Programar os PDFs da fatura, do recibo e do carnê (desenho aprovado); criar a integração no Inter Empresas e pôr os segredos INTER_* nas funções; os dados do T3jus como emissor, os preços reais e o remetente"
 }
