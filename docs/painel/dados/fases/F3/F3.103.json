@@ -1,0 +1,11 @@
+{
+  "id": "F3.103",
+  "texto": "Aba Recebimentos da ficha do contrato igual ao desenho aprovado: tabela com grade, coluna Situação (paga, vencida, a vencer, esperando a etapa) e Recebido até hoje para quem tem o Financeiro",
+  "peca": "S3",
+  "refs": [
+    "CH-04"
+  ],
+  "status": "feito",
+  "ordem": 796,
+  "evidencia": "Migration 0750_contrato_recebimentos_situacao, pgTAP 103 (8 testes) (embrulha portal_contrato e soma a situação de A receber só para quem tem Financeiro); ficha do contrato com a classe co-carteira (a tabela estava sem estilo) e selo da condição só com o nome; e2e 'Recebimentos com Financeiro' em tests/e2e/portal-contratos.spec.ts (celular e computador, com axe). Desenho aprovado em docs/design/aprovadas/portal-comercial-contratos (decisão 21)."
+}
