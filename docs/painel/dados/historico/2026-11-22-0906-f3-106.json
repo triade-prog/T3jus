@@ -1,0 +1,11 @@
+{
+  "data": "22/11/2026",
+  "inicio": "09:06",
+  "fim": "09:20",
+  "texto": "Petições com o nome completo e a qualificação do advogado: o gerador lê os dados de Sua conta, [ADVOGADOS_OAB] e a assinatura saem com o nome completo e os modelos aceitam [ADVOGADOS_QUALIFICACAO], com o que falta marcado sem bloquear (migration 0800).",
+  "refs": [
+    "F3.106",
+    "EX-15",
+    "EX-09"
+  ]
+}

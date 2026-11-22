@@ -95,6 +95,12 @@ export const DADOS_QUE_CONTAM = {
   OAB: "OAB",
 } as const;
 export type DadoQueConta = keyof typeof DADOS_QUE_CONTAM;
+
+/** Como o que falta aparece nos marcados dos documentos e das petições: "CPF de Rafael Menezes". */
+export const ROTULO_FALTA_ADVOGADO: Record<DadoQueConta, string> = {
+  NOME_COMPLETO: "Nome completo", TRATAMENTO: "Tratamento (advogada ou advogado)", NACIONALIDADE: "Nacionalidade",
+  ESTADO_CIVIL: "Estado civil", CPF: "CPF", RG: "RG", ENDERECO: "Endereço profissional", OAB: "OAB",
+};
 export const TOTAL_DADOS_DOCUMENTO = Object.keys(DADOS_QUE_CONTAM).length;
 
 /** O pedido do PUT: o servidor normaliza e devolve o erro de cada campo (o esquema só limita o tamanho). */

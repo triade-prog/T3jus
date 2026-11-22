@@ -3,7 +3,7 @@
 // revisa, o que bloqueia, o que sai marcado) estão no servidor; aqui só o que a tela mostra.
 
 import {
-  fraseOab, grupoDaArea, SITUACOES_PETICAO, TIPOS_PECA,
+  fraseOab, grupoDaArea, nomeDoAdvogadoNaPeticao, SITUACOES_PETICAO, TIPOS_PECA,
   type AdvogadoDaPeticao, type AreaDireito, type AreaModelo, type ModeloPeticao, type SituacaoPeticao, type TipoPeca,
 } from "@t3jus/domain";
 import type { NomeIcone } from "../Icone.tsx";
@@ -117,7 +117,7 @@ export const nomeTipo = (t: TipoPeca) => TIPOS_PECA[t];
 export function fraseNoDocumento(advogados: AdvogadoDaPeticao[], escolhidos: Record<string, string[]>): string {
   const partes = advogados
     .filter((a) => escolhidos[a.pessoaId]?.length)
-    .map((a) => `${a.nome.toUpperCase()}, ${fraseOab(a.inscricoes.filter((i) => escolhidos[a.pessoaId]!.includes(i.id)))}`);
+    .map((a) => `${nomeDoAdvogadoNaPeticao(a).toUpperCase()}, ${fraseOab(a.inscricoes.filter((i) => escolhidos[a.pessoaId]!.includes(i.id)))}`);
   if (!partes.length) return "ninguém assina ainda.";
   return `${partes.reduce((s, x, i, l) => (i === 0 ? x : `${s}${i === l.length - 1 ? ", e " : ", "}${x}`), "")}.`;
 }

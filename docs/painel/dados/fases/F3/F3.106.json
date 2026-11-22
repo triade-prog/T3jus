@@ -6,7 +6,8 @@
     "EX-15",
     "EX-09"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 799,
-  "proximo": "Levar os dados de pessoa_dados_documento para o gerador de petições (packages/domain/src/peticoes.ts) e oferecer o campo ADVOGADOS_QUALIFICACAO nos modelos de petição"
+  "evidencia": "Migration 0800 (peticao_dados traz de cada advogado os dados de Sua conta, pessoa_dados_json da 0760, e quem está na sessão), pgTAP 044 (nome do convite sem Sua conta, nome completo no formulário, a geração lê os mesmos dados no servidor), Vitest packages/domain/src/dados_advogado.test.ts (campo [ADVOGADOS_QUALIFICACAO] aceito e sugerido, OAB e assinatura com o nome completo, qualificação com o que falta marcado sem bloquear, marcado do advogado só conta se o modelo usa o campo, quem não tem os dados sai com o nome da Equipe e a OAB), e2e tests/e2e/portal-peticoes.spec.ts (\"No documento\" com o nome completo, o que falta de cada advogado no passo 3 e o link para completar na prévia).",
+  "nota": "Os 8 modelos padrão seguem com [ADVOGADOS_OAB]; o escritório que quiser a qualificação inteira usa [ADVOGADOS_QUALIFICACAO] no modelo dele."
 }

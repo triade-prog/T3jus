@@ -18,7 +18,7 @@ import { dataBr, dividirParcelas, percentual, reais, resumoParcelas, somarMeses,
 import { formatarCnj } from "./juridico.ts";
 import { cidadeDataPadrao, enderecoDoCliente, NOMES_CAMPOS, rgDoCliente, valorPorExtenso, type ParagrafoPrevia, montarPrevia } from "./peticoes.ts";
 import { fraseOab, type InscricaoOab } from "./portal.ts";
-import { faltasDoAdvogado, qualificacaoDoAdvogado, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
+import { faltasDoAdvogado, qualificacaoDoAdvogado, ROTULO_FALTA_ADVOGADO, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
 import type { MarcaNoDocumento } from "./logo.ts";
 
 // ------------------------------------------------------------------------------- tipos
@@ -516,11 +516,6 @@ export interface ValoresDocumento {
 export function nomeDoAdvogado(a: Pick<AdvogadoDoDocumento, "nome" | "dados">): string {
   return a.dados?.nomeCompleto?.trim() || a.nome;
 }
-
-const ROTULO_FALTA_ADVOGADO: Record<DadoQueConta, string> = {
-  NOME_COMPLETO: "Nome completo", TRATAMENTO: "Tratamento (advogada ou advogado)", NACIONALIDADE: "Nacionalidade",
-  ESTADO_CIVIL: "Estado civil", CPF: "CPF", RG: "RG", ENDERECO: "Endereço profissional", OAB: "OAB",
-};
 
 /** O que falta de cada advogado (sem a OAB, que o outorgado sempre tem), para o aviso e os marcados. */
 export function faltasDoOutorgado(a: AdvogadoDoDocumento & { marcadas: InscricaoOab[] }, esc: EscritorioDoDocumento): DadoQueConta[] {
