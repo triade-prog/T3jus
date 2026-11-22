@@ -2,11 +2,12 @@
 import Base from "../layouts/Base.astro";
 import Topo from "../components/Topo.astro";
 import Rodape from "../components/Rodape.astro";
+import "../styles/paginas.css";
 ---
 <Base titulo="Como funciona · T3jus" descricao="Atendimento pelo WhatsApp do escritório, proposta e contrato, parcelas e carnê com Pix, casos e prazos, repasses e caixa: o caminho do honorário no T3jus, etapa por etapa." rota="/como-funciona">
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<Topo atual="/como-funciona" />
 <div class="abertura interna"><div class="lado" aria-hidden="true"></div><svg class="ico estatua" aria-hidden="true"><use href="#i-coluna"/></svg>
-  <Topo atual="/como-funciona" />
   <div class="miolo"><div id="conteudo" class="cab-int sobre-vinho"><nav class="trilha-int" aria-label="Você está em"><a href="/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Como funciona</span></nav>
   <span class="sobretitulo">Como funciona</span><h1>Um caminho só, do primeiro contato ao <i>dinheiro no lugar certo.</i></h1><span class="fio" aria-hidden="true"></span><p class="lede">O T3jus segue o caminho que o honorário faz no escritório. O que uma etapa registra, a próxima já usa: ninguém digita duas vezes.</p></div></div>
 </div><main><div class="secao clara" style="padding:0"><div class="miolo"><section class="passo" aria-labelledby="t-p1">
@@ -76,5 +77,5 @@ import Rodape from "../components/Rodape.astro";
   <div><span class="sobretitulo">Vamos conversar</span><h2 id="t-chamada">Veja o T3jus com a rotina do seu escritório.</h2><p class="lede">Conte rapidinho como o escritório funciona hoje. A nossa equipe responde para marcar um horário.</p></div>
   <div class="cartao-c"><a class="btn btn-pri" href="/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a><p class="ou"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg><span>Prefere e-mail? <a href="mailto:contato@t3jus.pro">contato@t3jus.pro</a></span></p></div>
 </div></section></main>
-<Rodape />
+<Rodape atual="/como-funciona" />
 </Base>

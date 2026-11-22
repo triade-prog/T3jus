@@ -1,6 +1,9 @@
 ---
 // Moldura de toda página do site: cabeça (título, descrição, endereço canônico,
 // prévia de compartilhamento e dados estruturados), ícones e o pulo para o conteúdo.
+// No <head>, antes da primeira pintura: "js" (há script) e "sd" (o navegador anima pela rolagem,
+// animation-timeline, e a pessoa não pediu menos movimento). Sem script, nada depende dessas classes.
+// O slot "cabeca" recebe o que for só de uma página (o Início usa para o pré-carregamento e o modo das abas).
 import "../styles/site.css";
 import Icones from "../components/Icones.astro";
 import { SITE } from "../config";
@@ -39,6 +42,8 @@ const og = `${SITE}/marca/og.png`;
 <link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
 <link rel="preload" href="/fontes/alegreya-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fontes/poppins-400.woff2" as="font" type="font/woff2" crossorigin>
+<script is:inline>(function(d){d.classList.add("js");try{if(matchMedia("(prefers-reduced-motion: no-preference)").matches&&window.CSS&&CSS.supports&&CSS.supports("animation-timeline: view()"))d.classList.add("sd")}catch(e){}})(document.documentElement);</script>
+<slot name="cabeca" />
 {dadosEstruturados && <script type="application/ld+json" set:html={JSON.stringify(dadosEstruturados)} />}
 <script is:inline defer src="/_vercel/insights/script.js"></script>
 </head>

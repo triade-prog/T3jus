@@ -1,0 +1,13 @@
+{
+  "id": "F2.7",
+  "texto": "Início do site refeito (D27): telas reais do Portal na abertura, destaques, áreas do Portal pela rolagem, o que já existe primeiro, fotos e movimento",
+  "peca": "W1",
+  "refs": [
+    "SC-01",
+    "SC-03",
+    "SC-06"
+  ],
+  "status": "feito",
+  "ordem": 70,
+  "evidencia": "sistema/apps/site: index.astro do desenho aprovado D27 (docs/design/aprovadas/site-abertura-v3), estilos em inicio.css e paginas.css, movimento em src/scripts/movimento.ts e topo.ts sem biblioteca (para com prefers-reduced-motion; nada some sem JS), capturas do Portal com dados fictícios em public/telas e fotos fornecidas pela Carol em public/fotos (1,77 MB, só a da abertura carrega na hora). Selos conferidos com o painel (F3.16 e F3.19 prontos, F3.56 a caminho, F3.58 em preparação). scripts/conferir-site.mjs (agora lê dist/client do adaptador da Vercel): axe WCAG 2.2 AA sem violação nas 4 páginas, no computador e no celular, sem rolagem lateral nem erro; astro check e eslint sem erro; comparação com o aprovado sem diferença visível."
+}

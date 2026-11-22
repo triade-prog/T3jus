@@ -2,17 +2,20 @@
 // em cada página no computador (1440) e no celular (390), procura rolagem lateral
 // e erros no console. Uso: pnpm --filter @t3jus/site build && node scripts/conferir-site.mjs [pasta-das-capturas]
 import { createServer } from "node:http";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { chromium } from "@playwright/test";
 import { AxeBuilder } from "@axe-core/playwright";
 
-const DIST = new URL("../apps/site/dist/", import.meta.url).pathname;
-const TIPOS = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".xml": "application/xml", ".txt": "text/plain" };
+// Com o adaptador da Vercel, o build põe as páginas em dist/client/<rota>/index.html.
+const RAIZ = new URL("../apps/site/dist/", import.meta.url).pathname;
+const DIST = existsSync(join(RAIZ, "client")) ? join(RAIZ, "client") : RAIZ;
+const TIPOS = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".woff2": "font/woff2", ".xml": "application/xml", ".txt": "text/plain" };
 const servidor = createServer(async (req, res) => {
   let caminho = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (caminho === "/") caminho = "/index.html";
-  else if (!extname(caminho)) caminho += ".html";
+  else if (!extname(caminho)) caminho = existsSync(join(DIST, caminho, "index.html")) ? join(caminho, "index.html") : caminho + ".html";
   try {
     const corpo = await readFile(join(DIST, caminho));
     res.writeHead(200, { "content-type": TIPOS[extname(caminho)] ?? "application/octet-stream" });

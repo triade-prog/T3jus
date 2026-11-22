@@ -1,0 +1,211 @@
+{
+ "quando": "2026-11-22T21:22:17.703Z",
+ "axe": "4.14.1",
+ "regras": "wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa",
+ "resultados": [
+  {
+   "estado": "página inicial, aba Comercial (com movimento)",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "rolagem: destaque Repasses com o realce",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "rolagem: retrato",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "rolagem: abas guiadas, 60% do trecho (a-juridico)",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "rolagem: o que existe",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "rolagem: chamada final",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "página inicial, aba Comercial (menos movimento)",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "aba contratos",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "aba juridico",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "aba financeiro",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 27,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "página inicial, aba Comercial (com movimento)",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "rolagem: destaque Repasses com o realce",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "rolagem: retrato",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "página inicial, aba Comercial (menos movimento)",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "aba contratos",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "aba juridico",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "aba financeiro",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "menu do celular aberto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "pequenos": [],
+   "passaram": 29,
+   "incompletas": [
+    "color-contrast"
+   ]
+  }
+ ],
+ "erros": [],
+ "teclado": [
+  "computador com movimento: rolagem até 60% do trecho -> a-juridico; clique em Contratos -> a-contratos trecho=0.27 #a-contratos",
+  "computador: seta à direita -> a-contratos selecionada=a-contratos painel visível=true imagem=aba-contratos.webp; End -> a-financeiro #a-financeiro; Home -> a-comercial; Tab sai das abas para -> p-comercial",
+  "celular: seta à direita -> a-contratos selecionada=a-contratos painel visível=true imagem=aba-contratos-celular.webp; End -> a-financeiro #a-financeiro; Home -> a-comercial; Tab sai das abas para -> p-comercial"
+ ]
+}

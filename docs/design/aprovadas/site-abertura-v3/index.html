@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Início do site, v3</title>
+<link rel="icon" href="marca/icone-app.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:Alegreya;font-weight:500;src:url(fontes/alegreya-500.woff2) format('woff2')}
+@font-face{font-family:Alegreya;font-style:italic;font-weight:500;src:url(fontes/alegreya-500-italico.woff2) format('woff2')}
+@font-face{font-family:Poppins;font-weight:400;src:url(fontes/poppins-400.woff2) format('woff2')}
+@font-face{font-family:Poppins;font-weight:600;src:url(fontes/poppins-600.woff2) format('woff2')}
+:root{--vinho:#692746;--vinho-2:#87335B;--vinho-escuro:#4F1D35;--ambar:#DD9760;--ambar-2:#E9AE90;--ambar-3:#F2CDB3;--sal:#F1E6DF;--sal-2:#F2ECE8;--tinta:#2A1A22;--tinta-2:#6E5562}
+*{box-sizing:border-box}
+body{margin:0;background:var(--sal);color:var(--tinta);font:16px/1.6 Poppins,system-ui,sans-serif}
+h1,h2,h3{font-family:Alegreya,Georgia,serif;font-weight:500;margin:0;line-height:1.1;color:var(--vinho-escuro)}
+a{color:var(--vinho)}
+:focus-visible{outline:3px solid #AC3F6B;outline-offset:3px;border-radius:6px}
+.topo{background:var(--vinho-escuro);color:var(--sal);padding:56px 16px 64px}
+.topo :focus-visible{outline-color:var(--ambar-3)}
+.m{max-width:1200px;margin:0 auto;padding:0 16px}
+.topo h1{color:#fff;font-size:clamp(36px,5vw,60px);margin-top:14px}
+.topo h1 em{color:var(--ambar-3)}
+.sob{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ambar-2)}
+.topo p{max-width:760px;margin:18px 0 0;font-size:18px}
+.btn{display:inline-flex;align-items:center;min-height:52px;padding:0 24px;margin-top:28px;border-radius:12px;background:var(--ambar-3);color:var(--vinho-escuro);font-weight:600;text-decoration:none}
+.btn:hover{background:#fff}
+section{padding:64px 0}
+h2{font-size:clamp(28px,3.4vw,42px)}
+.lede{margin-top:12px;color:var(--tinta-2);max-width:760px}
+figure{margin:28px 0 0}
+figure img,figure video{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 24px 50px -28px rgba(42,26,34,.5)}
+.duas.iguais{grid-template-columns:1fr 1fr}
+figcaption{margin-top:10px;font-size:14px;color:var(--tinta-2)}
+.duas{display:grid;grid-template-columns:2.2fr 1fr;gap:28px;align-items:start}
+.inteiras{display:grid;grid-template-columns:2.4fr 1fr;gap:28px;align-items:start}
+.inteiras figure{max-height:1400px;overflow:auto;border-radius:14px}
+ol.dec{margin:24px 0 0;padding-left:22px;display:grid;gap:12px;max-width:900px}
+ol.dec b{color:var(--vinho-escuro)}
+.perg{display:grid;gap:16px;margin-top:24px;padding:0;list-style:none;counter-reset:p}
+.perg li{background:#fff;border-radius:16px;padding:22px 24px;box-shadow:0 0 0 1px #E6D8D0;counter-increment:p}
+.perg b{display:block;font-family:Alegreya,serif;font-size:21px;font-weight:500;color:var(--vinho-escuro)}
+.perg b::before{content:counter(p) ". "}
+.perg span{display:block;margin-top:6px;color:var(--tinta-2)}
+.perg em{font-style:normal;font-weight:600;color:var(--vinho)}
+.conf{background:#fff;border-radius:16px;padding:24px;margin-top:20px;box-shadow:0 0 0 1px #E6D8D0}
+.conf li{margin:6px 0}
+@media (max-width:760px){.duas,.duas.iguais,.inteiras{grid-template-columns:1fr}section{padding:44px 0}}
+</style>
+</head>
+<body>
+<header class="topo"><div class="m">
+  <span class="sob">Site comercial · Início · versão 3 · para aprovar</span>
+  <h1>Uma tela real, grande e legível, <em>logo na abertura.</em></h1>
+  <p>A v2 mostrava o Portal em quantidade e pequeno. A v3 mostra menos telas, em tamanho quase real, troca o título e dá a cada seção um fundo e uma escala diferentes. Nada mudou no site no ar.</p>
+  <a class="btn" href="inicio.html">Abrir a página nova</a>
+</div></header>
+<main>
+<section><div class="m">
+  <h2>Antes e depois da abertura</h2>
+  <p class="lede">Site no ar, a v2 recusada e a v3, em 1440 px.</p>
+  <figure><img src="antes-depois-abertura-computador.webp" width="3048" height="830" alt="Três aberturas lado a lado: o site no ar, com um cartão desenhado; a v2, com notebook, celular e três recortes pequenos; e a v3, com o título centrado e o Início do Portal grande, numa janela de navegador."></figure>
+</div></section>
+
+<section style="padding-top:0"><div class="m">
+  <h2>A abertura nova</h2>
+  <div class="duas">
+    <figure><img src="site-abertura-computador.webp" width="2880" height="1800" alt="Abertura da v3 no computador: título “O dia do escritório inteiro, numa tela só.”, dois botões e o Início do Portal numa janela inclinada, com duas anotações."><figcaption>Computador, ao abrir: a janela começa inclinada.</figcaption></figure>
+    <figure><img src="site-abertura-celular.webp" width="780" height="1688" alt="Abertura da v3 no celular: título, botões e o Início do Portal num aparelho."><figcaption>Celular, 390 px.</figcaption></figure>
+  </div>
+  <figure><img src="site-abertura-rolada-computador.webp" width="2880" height="1800" alt="A abertura depois de rolar um pouco: a janela do Portal já reta, em quase tamanho real."><figcaption>Depois de rolar um pouco: a janela assenta e fica em 92% do tamanho real.</figcaption></figure>
+</div></section>
+
+<section style="padding-top:0"><div class="m">
+  <h2>As abas trocam a tela</h2>
+  <p class="lede">Quatro áreas, na ordem do caminho. Cada aba troca uma tela inteira do Portal.</p>
+  <div class="duas">
+    <figure><img src="site-abas-financeiro-computador.webp" width="2880" height="3684" alt="Seção clara Por dentro do Portal com a aba 4, Financeiro, escolhida e o Resumo do Financeiro grande."><figcaption>Aba Financeiro, no computador.</figcaption></figure>
+    <figure><img src="site-abas-financeiro-celular.webp" width="780" height="4344" alt="A mesma seção no celular, com as abas em duas linhas e o Resumo num aparelho."><figcaption>No celular.</figcaption></figure>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="m">
+  <h2>O movimento</h2>
+  <p class="lede">A rolagem conduz a leitura, e cada movimento aponta uma parte do produto. O vídeo mostra a página rolando em 1440 px.</p>
+  <figure><video src="rolagem-computador.webm" width="1440" height="900" controls muted playsinline preload="metadata" aria-label="Vídeo sem som de 35 segundos: a página rolando em 1440 px, da abertura à chamada final"></video><figcaption>35 segundos, sem som. A tela da abertura assenta, os destaques entram dos lados com o realce, o retrato desliza, as quatro abas passam com a rolagem e o selo gira na chamada.</figcaption></figure>
+  <div class="duas iguais" style="margin-top:28px">
+    <figure><img src="site-rolagem-destaque-computador.webp" width="2880" height="1800" loading="lazy" alt="Destaque Repasses no meio da rolagem: realce âmbar desenhado em volta das partes do RPV com prazo e a etiqueta Cada parte com o seu prazo."><figcaption>Destaque com o realce desenhado.</figcaption></figure>
+    <figure><img src="site-rolagem-abas-computador.webp" width="2880" height="1800" loading="lazy" alt="Por dentro do Portal parado durante a rolagem, com a aba 3, Jurídico, ativa, o fio âmbar enchendo sob as abas e a ficha do caso à direita."><figcaption>As abas passam com a rolagem: aqui, Jurídico.</figcaption></figure>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="m">
+  <h2>As fotos da Carol</h2>
+  <p class="lede">Imagens fornecidas pela Carol em 22/11/2026. Elas aparecem duas vezes, como pausa, e o produto continua sendo o centro. Não têm legenda e nada fica sobre os rostos.</p>
+  <div class="duas">
+    <figure><img src="fotos/advogada-leitura.webp" width="1448" height="621" loading="lazy" alt="Advogada de blazer vinho e óculos lê com atenção uma folha à mesa do escritório."><figcaption>Retrato largo entre os destaques e o Portal. O texto fica sobre o véu vinho, à esquerda, e no celular vai para baixo da foto.</figcaption></figure>
+    <figure><img src="fotos/consulta-juridica.webp" width="1200" height="900" loading="lazy" alt="Advogada de blazer vinho, sorrindo, conversa com um homem de costas numa mesa de mármore."><figcaption>Chamada final: a foto fica acima do cartão “Na demonstração, você vê”, e o cartão cobre só a mesa.</figcaption></figure>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="m">
+  <h2>A página inteira</h2>
+  <div class="inteiras">
+    <figure tabindex="0" aria-label="Página inteira no computador, rolável"><img src="site-inicio-computador.webp" width="1440" height="9462" loading="lazy" alt="O Início v3 inteiro no computador."></figure>
+    <figure tabindex="0" aria-label="Página inteira no celular, rolável"><img src="site-inicio-celular.webp" width="390" height="13033" loading="lazy" alt="O Início v3 inteiro no celular."></figure>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="m">
+  <h2>Por que a v2 não funcionou</h2>
+  <ol class="dec">
+    <li><b>O produto em quantidade, não em tamanho.</b> Notebook, celular, três recortes e selo em 700 px; o texto do Portal ficava com 5 ou 6 px.</li>
+    <li><b>A mesma abertura de antes.</b> O mesmo corte, o mesmo título e a mesma composição: parecia o site de sempre com uma figura nova.</li>
+    <li><b>A página cresceu em vez de mudar.</b> Eram 9.000 px, e o mesmo produto aparecia em três seções, cada vez menor.</li>
+    <li><b>Cartão branco e texto miúdo continuavam a base.</b></li>
+    <li><b>Ritmo plano.</b> Quase tudo em sal e com o mesmo cabeçalho; faltava um momento de produto na largura toda.</li>
+  </ol>
+  <h2 style="margin-top:48px">O que a v3 decide</h2>
+  <ol class="dec">
+    <li><b>Uma tela só na abertura, grande:</b> o Início real a 92% do tamanho, com duas anotações e a coluna do logo, grande e em tom sobre tom, ao fundo.</li>
+    <li><b>Três destaques em painéis de cor inteira</b> (âmbar, vinho, branco), com o trecho da tela quase em tamanho real. As dores do site viraram o título deles.</li>
+    <li><b>Uma seção branca com quatro abas numeradas.</b> A tela fica num palco sal, e o vinho marca os títulos e a aba ativa. O caminho em 5 passos virou a própria navegação, e cada aba troca uma tela inteira.</li>
+    <li><b>Pedido de demonstração logo depois das telas</b>, no ponto em que a pessoa acabou de ver o sistema.</li>
+    <li><b>Primeiro o que existe.</b> “A caminho” e “Planejado” vêm depois e menores, cada um com o que falta escrito.</li>
+    <li><b>Fundos alternados, sem escuro além do vinho:</b> vinho, sal, branco, sal, vinho, âmbar. O selo da chamada final aparece inteiro. Saíram a faixa de fatos, os cartões das dores e a seção de valor separada. O conteúdo foi para outras seções.</li>
+    <li><b>Pessoas em dois momentos:</b> as fotos da Carol entram num retrato largo depois dos destaques e na chamada final. Nada fica sobre os rostos, e as fotos não têm legenda de cliente.</li>
+    <li><b>Movimento guiado pela rolagem:</b> a tela da abertura assenta com profundidade e os números contam. Os destaques entram dos lados e desenham um realce no dado que importa. “Por dentro do Portal” fica parado enquanto a rolagem passa pelas 4 abas, e o selo dá uma volta. Tudo para com “menos movimento”, e o celular tem uma versão mais leve.</li>
+    <li><b>Datas certas:</b> todas as capturas foram refeitas no mesmo dia, quarta-feira, 18/11, às 10h15.</li>
+  </ol>
+</div></section>
+
+<section style="padding-top:0"><div class="m">
+  <h2>Perguntas</h2>
+  <ul class="perg">
+    <li><b>O título novo pode substituir “Do primeiro atendimento ao honorário recebido.”?</b><span><em>Recomendo</em> sim: ele descreve a tela que aparece logo abaixo. A frase antiga continua como título da seção do Portal.</span></li>
+    <li><b>A seção das abas parada durante a rolagem: mantém?</b><span><em>Recomendo</em> manter. Ela conta o caminho na ordem. O custo é que a tela fica menor nesse modo (cerca de 740 px de largura), e quem preferir pode clicar direto na aba.</span></li>
+    <li><b>Saem do Início a faixa de fatos, os cartões das dores, o caminho em 5 passos e a seção de valor separada. Pode?</b><span><em>Recomendo</em> sim: o conteúdo continua nos destaques, nas abas, em “Seus dados” e na chamada final, e segue completo em Como funciona e Para quem é.</span></li>
+    <li><b>Vídeo: vale fazer?</b><span><em>Recomendo</em> uma gravação de tela do Portal com dados fictícios, feita pelo gerador. As fotos já estão resolvidas com as imagens da Carol.</span></li>
+  </ul>
+  <div class="conf">
+    <h3>Conferência</h3>
+    <ul>
+      <li>axe-core 4.14.1 (WCAG 2.2 AA) em 11 estados, em 1440 e 390 px: nenhuma violação.</li>
+      <li>Nenhuma rolagem lateral e nenhum alvo menor que 40 px. Abas pelo teclado (setas, Home, End). Foco visível. Movimento reduzido respeitado.</li>
+      <li>Detalhes, a origem de cada imagem e a proposta escrita das prioridades 3 a 6 estão no <a href="NOTAS.md">NOTAS.md</a>.</li>
+    </ul>
+  </div>
+</div></section>
+</main>
+</body>
+</html>
