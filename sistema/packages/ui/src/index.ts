@@ -62,6 +62,7 @@ export { abasContador, arquivoContador, crc32, csvContador, planilhaXlsx, zipar 
 export { CasosJuridicoPortal, FichaCasoPortal, NovoCasoPortal } from "./portal/Juridico.tsx";
 export { PrazosJuridicoPortal, TarefasJuridicoPortal } from "./portal/JuridicoPrazos.tsx";
 export { EtapasJuridicoPortal } from "./portal/JuridicoEtapas.tsx";
+export { DocumentosInicioJuridicoPortal } from "./portal/JuridicoDocumentosInicio.tsx";
 export { ModelosPeticaoPortal, NovaPeticaoPortal, PeticoesJuridicoPortal } from "./portal/Peticoes.tsx";
 export { PeticaoPortal, VersaoPeticaoPortal } from "./portal/PeticaoPagina.tsx";
 export { ROTAS_JURIDICO } from "./portal/juridico.ts";

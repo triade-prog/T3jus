@@ -6,6 +6,8 @@
     "AP-08",
     "EX-18"
   ],
-  "status": "pendente",
-  "ordem": 1050
+  "status": "andamento",
+  "ordem": 1050,
+  "evidencia": "Parte 4a (migration 0853): documentos pessoais na ficha do cliente (cliente_documentos, com proteger_tabela_escritorio): tipos fixos, data do papel, comprovante que vence pelo prazo do escritório (padrão 90 dias), anexar um novo guarda o anterior e nada se apaga; o anexo da ficha fecha o pedido do caso do mesmo documento. A lista por área (documentos_inicio): só a sócia dona edita, a equipe vê, com a sugestão do T3jus por área. Telas: a folha \"Documentos pessoais\" (atenção, em dia e o vazio com \"Pedir pelo WhatsApp\" sem registrar pedido), a janela \"Anexar documento\" com fotos que viram um PDF (DocumentosPessoais.tsx) e Jurídico › Casos e processos › \"Documentos para começar\" (JuridicoDocumentosInicio.tsx). Rotas em api-portal/documentos_pessoais.ts. Testes: pgTAP 121 (24), app_test.ts (AP-08 e EX-18) e tests/e2e/portal-documentos-pessoais.spec.ts (7 cenários, celular e computador, com axe).",
+  "proximo": "Parte 4b: a seção \"Documentos para começar\" nas quatro portas do caso (pedidos na abertura, \"já temos\" da ficha e aviso pelo WhatsApp), o passo \"Juntar os documentos\" na ficha do cliente e a folha na ficha do caso."
 }

@@ -23,6 +23,7 @@ import {
 } from "./clientes.ts";
 import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
+import { FolhaDocumentosPessoais } from "./DocumentosPessoais.tsx";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
@@ -1154,6 +1155,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           ) : (
             <>
               <Dados f={f} aoEditar={editar} />
+              {!arquivado ? <FolhaDocumentosPessoais f={f} escritorio={escritorio.nome} aoFeito={(x) => setFeito(x)} /> : null}
               {f.tipo === "PF" ? (
                 <>
                   <FolhaQuemAssina f={f} aoEditar={editar} />

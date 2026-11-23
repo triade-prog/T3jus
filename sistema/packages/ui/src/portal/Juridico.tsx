@@ -63,6 +63,10 @@ function CabCasos({ souDono = false }: { souDono?: boolean }) {
       lede="Cada caso com os clientes, a etapa, os prazos e o que falta. A lista mostra o número, o cliente e a etapa sem precisar abrir."
       acao={
         <div className="jr-cab-acoes">
+          <a className="btn btn-sec" href={ROTAS_JURIDICO.documentos}>
+            <Icone nome="doc" className="ico" />
+            Documentos para começar
+          </a>
           {souDono ? (
             <a className="btn btn-sec" href={ROTAS_JURIDICO.etapas}>
               <Icone nome="ajustes" className="ico" />

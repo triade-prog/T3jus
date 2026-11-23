@@ -314,6 +314,16 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_juridico_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 1200 }],
     portal_juridico_documento_concluir: (a) => ({ id: a.p_documento, nome: "peticao.pdf" }),
     portal_juridico_documento_abrir: () => "peticao.pdf",
+    portal_cliente_documentos: () => ({ hoje: "2026-11-18", validadeDias: 90, podeAnexar: true, documentos: [], pedidos: [] }),
+    portal_cliente_documento_iniciar: () => PETICAO,
+    portal_cliente_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 2400 }],
+    portal_cliente_documento_concluir: (a) => ({ id: a.p_documento, tipo: "RG_CPF", nome: "rg.pdf" }),
+    portal_cliente_documento_abrir: () => "rg.pdf",
+    portal_juridico_documentos_inicio: () => ({ podeEditar: true, validadeDias: 90, areas: [] }),
+    portal_juridico_documento_inicio_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, ...(a.p_dados as object) }),
+    portal_juridico_documento_inicio_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
+    portal_juridico_documento_inicio_tirar: (a) => [{ id: a.p_id, versao: a.p_versao }],
+    portal_juridico_documentos_inicio_sugestao: (a) => [{ area: a.p_area }],
     portal_anexo_iniciar: () => PETICAO,
     portal_anexo_para_concluir: () => [{ tipo: "application/pdf", tamanho: 84000 }],
     portal_anexo_concluir: (a) => ({ id: a.p_anexo, categoria: "CONTRATO_ASSINADO", nome: "contrato-assinado.pdf" }),
@@ -1680,6 +1690,34 @@ Deno.test("EX-07, EX-09: etapas do escritório (adicionar, editar com versão, m
   assertEquals((await m.pedir("/v1/escritorio/juridico/peticoes", { corpo: { resposta: "TALVEZ" }, cookie })).status, 400);
   const salvar = m.chamadas.filter((c) => c.funcao === "portal_juridico_etapa_salvar");
   assertEquals(salvar.map((c) => c.args.p_escritorio), [AURORA, AURORA]);
+});
+
+Deno.test("AP-08 e EX-18: documentos pessoais em duas etapas e a lista por área, no escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${ANA}/documentos`, { cookie })).json()).validadeDias, 90);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/documentos`, { corpo: { tipo: "PASSAPORTE", nome: "p.pdf", arquivoTipo: "application/pdf", tamanho: 10 }, cookie }))).detalhes?.campos, ["tipo"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/documentos`, { corpo: { tipo: "RG_CPF", nome: "rg.pdf", arquivoTipo: "application/pdf", tamanho: 10, fotos: 11 }, cookie }))).detalhes?.campos, ["fotos"]);
+  const ini = await m.pedir(`/v1/escritorio/clientes/${ANA}/documentos`, { corpo: { tipo: "RG_CPF", nome: "rg.pdf", arquivoTipo: "application/pdf", tamanho: 2400, fotos: 2 }, cookie });
+  assertEquals(ini.status, 201);
+  assertEquals(m.storage.pedidosDeEnvio, [`${AURORA}/${PETICAO}`]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/documentos/${PETICAO}/concluir`, { corpo: {}, cookie }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.storage.guardados.set(`${AURORA}/${PETICAO}`, { tamanho: 2400, tipo: "application/pdf" });
+  assertEquals((await (await m.pedir(`/v1/escritorio/clientes/documentos/${PETICAO}/concluir`, { corpo: {}, cookie })).json()).nome, "rg.pdf");
+  const abrir = await (await m.pedir(`/v1/escritorio/clientes/documentos/${PETICAO}/abrir`, { corpo: {}, cookie })).json();
+  assertMatch(abrir.url, /^https:\/\/storage\.exemplo\/ler\//);
+
+  assertEquals((await (await m.pedir("/v1/escritorio/juridico/documentos-inicio", { cookie })).json()).podeEditar, true);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/documentos-inicio", { corpo: { nome: "CNIS", seHouver: false }, cookie }))).detalhes?.campos, ["area"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio", { corpo: { area: "PREVIDENCIARIO", nome: "Extrato do CNIS", seHouver: false }, cookie })).status, 201);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/documentos-inicio/${CLIENTE}`, { metodo: "PATCH", corpo: { nome: "Extrato do CNIS", seHouver: false }, cookie }))).detalhes?.campos, ["versao"]);
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/documentos-inicio/${CLIENTE}`, { metodo: "PATCH", corpo: { nome: "Extrato do CNIS", seHouver: true, versao: 2 }, cookie })).json()).versao, 3);
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/documentos-inicio/${CLIENTE}/mover`, { corpo: { direcao: "SOBE" }, cookie })).status, 200);
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/documentos-inicio/${CLIENTE}/tirar`, { corpo: { versao: 3 }, cookie })).status, 200);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/sugestao", { corpo: { area: "OUTRA" }, cookie })).status, 400);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/sugestao", { corpo: { area: "FAMILIA" }, cookie })).status, 200);
+  const chamadas = m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_documento") || c.funcao.startsWith("portal_juridico_documento_inicio") || c.funcao.startsWith("portal_juridico_documentos_inicio"));
+  assert(chamadas.length >= 8 && chamadas.every((c) => c.args.p_escritorio === AURORA));
 });
 
 Deno.test("EX-05: documentos do caso (pedir, pedir de novo, já chegou, enviar em duas etapas e abrir) no caminho do escritório da sessão", async () => {
