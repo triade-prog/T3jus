@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AREAS_DIREITO, CAMPOS_CASO_IMPORTACAO, dataBr, formatarDocumento, NOME_RESPONSAVEL_CASO, NOMES_CAMPO_IMPORTACAO, PAPEIS_CASO, reais,
-  type CampoImportacao, type ColunaImportacao, type DecisaoLinha, type Importacao, type LinhaPrevia, type ParesImportacao,
+  type ArquivadosImportacao, type CampoImportacao, type ColunaImportacao, type DecisaoLinha, type Importacao, type LinhaPrevia, type ParesImportacao,
   type ProblemaLinha, type ResumoPrevia,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -25,7 +25,10 @@ export const nomeCampoCaso = (c: CampoImportacao) => (c === "responsavel" ? NOME
 
 type EscolhasCasos = { responsavel: Record<string, string>; area: Record<string, string>; etapa: Record<string, string>; situacaoProcesso: Record<string, string> };
 const GRUPOS_CASO = ["responsavel", "area", "etapa", "situacaoProcesso"] as const;
-const SITUACOES_PROCESSO = [{ v: "ATIVO", t: "Ativo: entra como caso" }, { v: "FORA", t: "Arquivado: não importar" }];
+/** A situação do processo; o arquivado entra encerrado se for a escolha (F3.116). */
+const situacoesProcesso = (encerrados: boolean) => [
+  { v: "ATIVO", t: "Ativo: entra como caso" }, { v: "FORA", t: encerrados ? "Arquivado: entra encerrado" : "Arquivado: não importar" },
+];
 type ObrigatorioCaso = "cliente" | "responsavel";
 const NOMES_OBRIGATORIO_CASO: Record<ObrigatorioCaso, string> = { cliente: "Cliente (nome ou CPF)", responsavel: NOME_RESPONSAVEL_CASO };
 
@@ -52,6 +55,9 @@ export function PassoColunasCasos({ imp }: { imp: Importacao }) {
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<{ campos: ObrigatorioCaso[]; texto?: string } | null>(null);
   const [versao, setVersao] = useState(imp.versao);
+  // F3.116: no ADVBOX a escolha dos arquivados é aqui (estado advbox-valores); no Astrea, veio do passo das abas.
+  const [escolhaArq, setEscolhaArq] = useState<ArquivadosImportacao>(imp.arquivados ?? "FORA");
+  const encerrados = escolhaArq === "ENCERRADOS";
   const topo = useRef<HTMLDivElement>(null);
   const letras = colunas.map((c) => c.letra);
 
@@ -104,7 +110,7 @@ export function PassoColunasCasos({ imp }: { imp: Importacao }) {
     setEnviando(true);
     const lig = Object.fromEntries(Object.entries(ligacao).filter(([, v]) => v));
     const r = await chamarPortal<ResumoPrevia & { versao: number }>(`${API}/${imp.id}/colunas`, {
-      metodo: "PATCH", corpo: { versao, aba: imp.aba, ligacao: lig, pares: escolhas },
+      metodo: "PATCH", corpo: { versao, aba: imp.aba, ligacao: lig, pares: escolhas, ...(imp.origem === "ADVBOX_PLANILHA" ? { arquivados: escolhaArq } : {}) },
     });
     if (r.ok) return irPara(ROTAS_IMPORTACAO.passo(imp.id, "previa"));
     setEnviando(false);
@@ -176,8 +182,9 @@ export function PassoColunasCasos({ imp }: { imp: Importacao }) {
       <div style={{ paddingBottom: 12 }}>
         {(pares.situacaoProcesso ?? []).length ? (
           <GrupoPares titulo={`Coluna “${nomeColuna("situacao_processo")}”`} itens={pares.situacaoProcesso ?? []} escolhido={escolhas.situacaoProcesso} prefixo="s"
-            opcoes={SITUACOES_PROCESSO} vazio="Ativo: entra como caso"
-            ajuda={(p) => ((escolhas.situacaoProcesso[p.chave] || p.sugestao) === "FORA" ? "Ficam de fora da prévia. Só os processos ativos entram." : "")}
+            opcoes={situacoesProcesso(encerrados)} vazio="Ativo: entra como caso"
+            ajuda={(p) => ((escolhas.situacaoProcesso[p.chave] || p.sugestao) === "FORA"
+              ? (encerrados ? "Entram em Encerrados, sem resultado nem acerto." : "Ficam de fora da prévia. Só os processos ativos entram.") : "")}
             rotuloDe={(p) => (p.chave === "" ? "Sem a situação" : `“${p.valor}”`)}
             aoEscolher={(k, v) => setEscolhas((e) => ({ ...e, situacaoProcesso: { ...e.situacaoProcesso, [k]: v } }))} />
         ) : null}
@@ -259,15 +266,39 @@ export function PassoColunasCasos({ imp }: { imp: Importacao }) {
       <li key={o}><Icone nome="check" className="ico" /><span>{NOMES_OBRIGATORIO_CASO[o]}<small>{o === "cliente" ? `Pelo ${onde}` : onde}</small></span></li>
     );
   };
+  const escolhaArquivados = imp.origem === "ADVBOX_PLANILHA" && arquivados > 0 ? (
+    <Folha id="t-arqv" titulo="Processos arquivados" sub={`${arquivados.toLocaleString("pt-BR")} no ADVBOX`}>
+      <fieldset className="is-escolha" style={{ borderTop: 0, paddingTop: 0 }}>
+        <legend className="sr">Processos arquivados</legend>
+        <div className="im-ops" style={{ gridTemplateColumns: "1fr" }}>
+          {([
+            ["FORA", "Deixar de fora", "Recomendado. A lista de casos começa só com o que está em andamento."],
+            ["ENCERRADOS", "Importar como encerrados", "Entram em Encerrados, sem resultado nem acerto."],
+          ] as [ArquivadosImportacao, string, string][]).map(([v, t, sub]) => (
+            <label key={v} className="opcao">
+              <input className="marcar" type="radio" name="is-arqv" value={v} checked={escolhaArq === v} onChange={() => setEscolhaArq(v)} />
+              <span>{t}<small>{sub}</small></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    </Folha>
+  ) : null;
   const lateral = (
     <>
+      {escolhaArquivados}
       <Folha id="t-obr" titulo="O que é obrigatório" sub={falta.length ? `Falta ligar ${falta.length}.` : "Tudo ligado."}>
         <ul className="im-ok">{(["cliente", "responsavel"] as const).map(item)}</ul>
         <p className="hn-pe"><Icone nome="ajuda" className="ico" /><span>Sem a coluna do nome do caso, ele vira “Cliente x Parte contrária”. Sem a etapa, o caso entra na primeira etapa do escritório.</span></p>
       </Folha>
-      <Folha id="t-so-ativos" titulo="Só os processos ativos">
+      <Folha id="t-so-ativos" titulo={encerrados ? "Os ativos e os arquivados" : "Só os processos ativos"}>
         <div style={{ padding: "0 24px 20px", display: "grid", gap: 10 }}>
-          <p style={{ margin: 0 }}>{arquivados ? `${plural(arquivados, "processo arquivado fica", "processos arquivados ficam")} de fora da prévia.` : "Os arquivados ficam de fora da prévia."} Todo caso entra <b>sem contrato</b>, até a área Contratos ligar um.</p>
+          <p style={{ margin: 0 }}>
+            {encerrados
+              ? (arquivados ? `${plural(arquivados, "processo arquivado entra como encerrado", "processos arquivados entram como encerrados")}, sem resultado nem acerto.` : "Os arquivados entram como encerrados, sem resultado nem acerto.")
+              : (arquivados ? `${plural(arquivados, "processo arquivado fica", "processos arquivados ficam")} de fora da prévia.` : "Os arquivados ficam de fora da prévia.")}
+            {" "}Todo caso entra <b>sem contrato</b>, até a área Contratos ligar um.
+          </p>
           <Lgpd icone="xis"><b>Não vêm do {sistema}:</b> prazos, audiências, tarefas, andamentos e documentos. Cadastre o próximo prazo de cada caso depois de importar.</Lgpd>
         </div>
       </Folha>
@@ -324,12 +355,15 @@ export function LinhaDoCaso({ l, aberta, ocupado, aoAbrir, aoMudar, origem }: {
     );
   } else if (l.situacao === "AVISO" && principalP) {
     cls = "im-l-aviso";
+    const mesmoNumero = principalP.codigo === "CAMPO_INVALIDO" && principalP.campo === "situacao_processo";
     const acoes = aberta ? null : principalP.codigo === "CASO_DUPLICADO"
       ? botoes(btn("Decidir", "dir", () => aoAbrir("decidir"), "d"))
+      : mesmoNumero
+      ? botoes(btn(`Seguir como a linha ${l.mesmaDe ?? ""}`.trim(), "check", () => void aoMudar({ decisao: "SEGUIR" }), "s"), btn("Pular", "xis", () => void aoMudar({ decisao: "PULAR" }), "p"))
       : botoes(btn("Corrigir", "lapis", () => aoAbrir("corrigir"), "c"), btn("Deixar vazio", "check", () => void aoMudar({ decisao: "SEGUIR" }), "s"));
     sit = (
       <div className="im-prob">
-        <Selo tom="atencao" icone={principalP.codigo === "CASO_DUPLICADO" ? "pessoas" : "relogio"}>{SELO_PROBLEMA[principalP.codigo]}</Selo>
+        <Selo tom="atencao" icone={principalP.codigo === "CASO_DUPLICADO" ? "pessoas" : "relogio"}>{mesmoNumero ? "Mesmo número, situação diferente" : SELO_PROBLEMA[principalP.codigo]}</Selo>
         <p>{aberta === "decidir" ? "Decidindo abaixo." : aberta === "corrigir" ? "Corrigindo abaixo." : explicaProblema(principalP, l)}</p>
         {acoes}
       </div>
@@ -341,7 +375,7 @@ export function LinhaDoCaso({ l, aberta, ocupado, aoAbrir, aoMudar, origem }: {
         <Selo tom="ok" icone="check">Pronta</Selo>
         {corrigida ? <p style={{ fontSize: 12, color: "var(--texto-2)" }}>Corrigida por você: {nomeCampoCaso(corrigida.campo).toLowerCase()} era “{corrigida.antes ?? "vazio"}”.</p> : null}
         {l.decisao === "JUNTAR" && l.casoExistente ? <p style={{ fontSize: 12, color: "var(--texto-2)" }}>Liga o cliente ao caso {l.casoExistente.nome}, que já existe.</p> : null}
-        {l.decisao === "SEGUIR" ? <p style={{ fontSize: 12, color: "var(--texto-2)" }}>O campo que não deu para ler fica vazio.</p> : null}
+        {l.decisao === "SEGUIR" ? <p style={{ fontSize: 12, color: "var(--texto-2)" }}>{l.mesmaDe ? `Entra no caso da linha ${l.mesmaDe}.` : "O campo que não deu para ler fica vazio."}</p> : null}
         {verCaso || (l.decisao && aberta !== "gera") ? botoes(verCaso, l.decisao && aberta !== "gera" ? btn("Mudar a decisão", "lapis", () => void aoMudar({ decisao: null }), "m") : null) : null}
       </div>
     );
@@ -351,6 +385,7 @@ export function LinhaDoCaso({ l, aberta, ocupado, aoAbrir, aoMudar, origem }: {
   const sub = [
     numeroErrado ? null : k?.numero ?? "sem número",
     k ? AREAS_DIREITO[k.area as keyof typeof AREAS_DIREITO] ?? k.area : null,
+    k?.encerrado ? "encerrado" : null,
   ].filter(Boolean).join(" · ");
   const doc = l.cliente.documento ? `${l.cliente.documento.length > 11 ? "CNPJ" : "CPF"} ${formatarDocumento(l.cliente.documento)}` : "";
 
@@ -455,6 +490,7 @@ export function ResumoCasos({ resumo, final, origem }: { resumo: ResumoPrevia; f
         <p className="hn-res-grande">{(k.novos + k.juntados).toLocaleString("pt-BR")}</p>
         <ul>
           <li><b>{k.novos}</b> {k.novos === 1 ? "caso novo" : "casos novos"}, todos <b>sem contrato</b>, até a área Contratos ligar um</li>
+          {k.encerrados ? <li>dos novos, <b>{k.encerrados}</b> {k.encerrados === 1 ? "entra encerrado" : "entram encerrados"}, sem resultado nem acerto</li> : null}
           {k.juntados ? <li><b>{k.juntados}</b> {k.juntados === 1 ? "já existia e ganha" : "já existiam e ganham"} o cliente</li> : null}
           <li>de <b>{plural(k.clientes, "cliente", "clientes")}</b> já cadastrados</li>
           {!final && c.aviso ? <li>mais o que você decidir {c.aviso === 1 ? "no" : "nos"} <b>{c.aviso}</b> {c.aviso === 1 ? "aviso" : "avisos"}</li> : null}
@@ -529,7 +565,7 @@ export function EntrouCasos({ imp }: { imp: Importacao }) {
     <ul className="im-entrou">
       <li>
         <span className="im-ci"><Icone nome="balanca" className="ico" /></span>
-        <span><strong>{plural(novos, "caso novo", "casos novos")}</strong><small>No Jurídico, todos sem contrato. A ficha de cada caso diz de onde ele veio. Cadastre o próximo prazo de cada um.</small></span>
+        <span><strong>{plural(novos, "caso novo", "casos novos")}</strong><small>No Jurídico, todos sem contrato.{r.encerrados ? ` ${plural(r.encerrados, "entrou encerrado", "entraram encerrados")}, em Encerrados, sem resultado nem acerto.` : ""} A ficha de cada caso diz de onde ele veio. Cadastre o próximo prazo de cada um.</small></span>
         <a className="btn btn-sec" href={ROTAS_JURIDICO.casos}>Ver casos</a>
       </li>
       {juntados ? (

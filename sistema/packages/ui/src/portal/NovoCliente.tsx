@@ -12,6 +12,7 @@ import { formatarTelefone } from "../console/ficha.ts";
 import { rascunhoVazio, type RascunhoCliente } from "./clientes.ts";
 import { FormularioCliente, type CadastroDaConversa } from "./FormCliente.tsx";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
+import { codigoDoErroDoTermo } from "./termoCuratela.ts";
 
 export function NovoClientePortal() {
   const ids = useId();
@@ -57,7 +58,11 @@ export function NovoClientePortal() {
             <div className="cl-col">
               {/* A origem é da área Comercial; o servidor ignora o campo de quem não a tem. */}
               <FormularioCliente modo="novo" inicial={inicial} comercial={escritorio.areas.includes("COMERCIAL")} daConversa={conversa}
-                aoSalvo={(r) => irPara(conversa ? `${voltar}&cadastrado=1` : `${ROTAS_PORTAL.clientes}/${r.id}?cadastrado=1`)}
+                aoSalvo={(r) => irPara(r.termo && r.termo !== "ENVIADO"
+                  // O cliente já existe: com o termo que não subiu, vai para a ficha (mesmo vindo da conversa),
+                  // para o próximo clique não cadastrar de novo. O código do erro vai junto.
+                  ? `${ROTAS_PORTAL.clientes}/${r.id}?cadastrado=1&termo=${codigoDoErroDoTermo(r.termo.erro)}`
+                  : conversa ? `${voltar}&cadastrado=1` : `${ROTAS_PORTAL.clientes}/${r.id}?cadastrado=1`)}
                 aoCancelar={() => irPara(voltar)} />
             </div>
             <aside className="cl-col" aria-label="Como funciona o cadastro">

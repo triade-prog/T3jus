@@ -1,7 +1,9 @@
 // Quem assina pelo cliente menor ou sob curatela (F3.98; tela aprovada em
 // docs/design/aprovadas/portal-responsavel-legal): o cadastro do menor com a data de nascimento,
 // a ficha com "Quem assina por…" e a linha do tempo, a faixa e a janela dos 18 anos, e o quadro
-// em Gerar documentos. A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
+// em Gerar documentos, e o termo de curatela (F3.118): o arquivo opcional no cadastro e na edição,
+// "Baixar o termo" na ficha e Gerar documentos da curatela como no estado gerar-curatela. A API é
+// simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
 import { h, semViolacoes } from "./console-dados.ts";
 
@@ -31,6 +33,10 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
     const x = lista[Math.min(vez, lista.length - 1)]!;
     await rota.fulfill({ status: x.status ?? 200, contentType: "application/json", body: JSON.stringify(x.corpo) });
   });
+  await page.route("**/envio-falso/**", (rota) => rota.fulfill({ status: 200, body: "{}" }));
+  await page.route("**/leitura-falsa/**", (rota) => rota.fulfill({
+    status: 200, contentType: "application/pdf", headers: { "content-disposition": 'attachment; filename="termo.pdf"' }, body: "%PDF-1.4",
+  }));
   return pedidos;
 }
 
@@ -150,6 +156,8 @@ test.describe("Quem assina pelo cliente (F3.98)", () => {
     await expect(folha.getByText("1012345-67.2024.8.26.0100")).toBeVisible();
     await expect(folha.getByText("Ao gerar, lembre de juntar o termo de curatela à procuração.")).toBeVisible();
     await expect(page.getByRole("list", { name: /por idade/ })).toHaveCount(0);
+    // Curatela sem termo na ficha: nada a mais na folha (F3.118).
+    await expect(folha.getByRole("button", { name: "Baixar o termo" })).toHaveCount(0);
     await semViolacoes(page);
   });
 
@@ -176,6 +184,195 @@ test.describe("Quem assina pelo cliente (F3.98)", () => {
     await expect(page.getByText("Joana Alves Souza")).toBeVisible();
     await expect(page.getByText("Mãe · CPF 377.640.215-63")).toBeVisible();
     await expect(page.getByText(/Pedro tem 16 ou 17 anos: os documentos saem com “neste ato assistido\(a\) por…”/)).toBeVisible();
+    await semViolacoes(page);
+  });
+});
+
+// ------------------------------------------------------------------------------- F3.118
+
+const TERMO = "d1180000-0000-4000-8000-000000000001";
+const TERMO2 = "d1180000-0000-4000-8000-000000000002";
+const PDF = { name: "termo-curatela.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 termo de curatela") };
+const CURATELA = {
+  ...BASE, nome: "Sebastião Ramos Filho", capacidade: "CURATELA", nascimento: null, rlPapel: "CURADORA", rlNome: "Helena Ramos Castro",
+  rlDocumento: "12750839432", curModo: "REPRESENTA", curProcesso: "1004587-22.2025.8.26.0100", curVara: "2ª Vara da Família de São Paulo",
+  assina: { situacao: "CURATELA", idade: null, faz16: null, faz18: null, modo: "REPRESENTA" }, termoCuratela: null,
+  contatos: [{ id: "c2000000-0000-4000-8000-000000000001", nome: "Helena Ramos Castro", papel: "Filha e curadora", telefone: "+5511991827364", email: null, principal: true }],
+};
+const termoNaFicha = (id = TERMO, nome = "termo-curatela-sebastiao.pdf") => ({
+  id, tipo: "TERMO_CURATELA", nome, arquivoTipo: "application/pdf", tamanho: 389120, fotos: null,
+  enviadoPor: { id: "a0000000-0000-4000-8000-000000000102", nome: "Paula Nunes" }, enviadoEm: "2026-11-05T15:00:00Z", anteriores: 0,
+});
+const envioDoTermo = (id = TERMO) => ({
+  [`POST /v1/escritorio/clientes/${CLI}/termo-curatela`]: { status: 201, corpo: { id, enderecoDeEnvio: `${P}/envio-falso/${id}` } },
+  [`POST /v1/escritorio/clientes/documentos/${id}/concluir`]: { corpo: termoNaFicha(id, PDF.name) },
+});
+const ordem = (pedidos: Pedido[]) => pedidos.filter((p) => p.metodo !== "GET").map((p) => `${p.metodo} ${p.caminho}`);
+
+async function cadastrarCuratela(page: Page) {
+  await page.goto(`${P}/clientes/novo`);
+  await page.getByLabel(/^Nome completo/).first().fill("Sebastião Ramos Filho");
+  await page.getByLabel(/^Telefone ou WhatsApp/).fill("(11) 98877-6601");
+  await page.getByRole("radio", { name: /Não: está sob curatela/ }).check();
+  const painel = page.getByRole("group", { name: /Sob curatela: quem assina e o termo/ });
+  await painel.getByLabel(/^É/).selectOption("CURADORA");
+  await painel.getByLabel(/^Nome completo/).fill("Helena Ramos Castro");
+  return painel;
+}
+async function escolher(page: Page, botao: string, arquivo: { name: string; mimeType: string; buffer: Buffer }) {
+  const [seletor] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: botao }).click()]);
+  await seletor.setFiles(arquivo);
+}
+
+test.describe("Termo de curatela (F3.118)", () => {
+  test("cadastro: curatela com o termo, salva a ficha e depois envia", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns({ ...CURATELA, termoCuratela: termoNaFicha(TERMO, PDF.name) }),
+      "GET /v1/escritorio/clientes/duplicados": { corpo: { duplicados: [] } },
+      "POST /v1/escritorio/clientes": { status: 201, corpo: { id: CLI, versao: 1 } },
+      ...envioDoTermo(),
+    });
+    const painel = await cadastrarCuratela(page);
+    await expect(painel.getByText("PDF ou foto, até 10 MB. Fica guardado na ficha, só para o escritório.")).toBeVisible();
+    await escolher(page, "Escolher arquivo: termo de curatela", PDF);
+    const arq = painel.getByRole("group", { name: PDF.name });
+    await expect(arq.getByText(/^PDF · \d+ KB$/)).toBeVisible();
+    await expect(arq.getByRole("button", { name: "Trocar arquivo: termo de curatela" })).toBeVisible();
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Cadastrar cliente" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Sebastião Ramos Filho cadastrado." })).toBeVisible();
+    expect(ordem(pedidos)).toEqual([
+      "POST /v1/escritorio/clientes", `POST /v1/escritorio/clientes/${CLI}/termo-curatela`, `POST /v1/escritorio/clientes/documentos/${TERMO}/concluir`,
+    ]);
+    expect(pedidos.find((p) => p.caminho.endsWith("/termo-curatela"))?.corpo).toEqual({ nome: PDF.name, arquivoTipo: "application/pdf", tamanho: PDF.buffer.length });
+    await expect(page.getByRole("region", { name: "Quem assina por Sebastião" }).getByText("Termo de curatela", { exact: true })).toBeVisible();
+  });
+
+  test("cadastro: o envio do termo cai depois de salvar e vai para a ficha com o erro", async ({ page }) => {
+    await simular(page, {
+      ...comuns(CURATELA),
+      "GET /v1/escritorio/clientes/duplicados": { corpo: { duplicados: [] } },
+      "POST /v1/escritorio/clientes": { status: 201, corpo: { id: CLI, versao: 1 } },
+      ...envioDoTermo(),
+      [`POST /v1/escritorio/clientes/documentos/${TERMO}/concluir`]: { status: 400, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["arquivo"], motivo: "ARQUIVO_NAO_CHEGOU" } } } },
+    });
+    await cadastrarCuratela(page);
+    await escolher(page, "Escolher arquivo: termo de curatela", PDF);
+    await page.getByRole("button", { name: "Cadastrar cliente" }).click();
+    const aviso = page.getByRole("status").filter({ hasText: "Sebastião Ramos Filho cadastrado." });
+    await expect(aviso).toContainText("O arquivo não chegou inteiro. Envie de novo.");
+    await expect(page).toHaveURL(new RegExp(`/clientes/${CLI}$`));
+    await semViolacoes(page);
+  });
+
+  test("cadastro: arquivo de tipo errado não sai", async ({ page }) => {
+    const pedidos = await simular(page, comuns(CURATELA));
+    const painel = await cadastrarCuratela(page);
+    await escolher(page, "Escolher arquivo: termo de curatela", { name: "termo.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", buffer: Buffer.from("x") });
+    await expect(painel.getByText("Tipo não aceito. Envie PDF, JPG ou PNG.")).toBeVisible();
+    await expect(painel.getByRole("button", { name: "Escolher arquivo: termo de curatela" })).toBeVisible();
+    await semViolacoes(page);
+    expect(pedidos.some((p) => p.caminho.endsWith("/termo-curatela"))).toBe(false);
+  });
+
+  test("ficha: o termo para baixar, fora de Documentos pessoais", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns({ ...CURATELA, termoCuratela: termoNaFicha() }),
+      [`GET /v1/escritorio/clientes/${CLI}/documentos`]: { corpo: { hoje, validadeDias: 90, podeAnexar: true, documentos: [], pedidos: [] } },
+      [`POST /v1/escritorio/clientes/documentos/${TERMO}/abrir`]: { corpo: { url: `${P}/leitura-falsa/${TERMO}?download=termo.pdf`, validadeSegundos: 60 } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const folha = page.getByRole("region", { name: "Quem assina por Sebastião" });
+    const termo = folha.getByRole("group", { name: "Termo de curatela" });
+    await expect(termo.getByText("termo-curatela-sebastiao.pdf · enviado por Paula Nunes em 05/11")).toBeVisible();
+    await expect(folha.getByText("Ao gerar, lembre de juntar o termo de curatela à procuração.")).toBeVisible();
+    await semViolacoes(page);
+    const [baixado] = await Promise.all([page.waitForEvent("download"), termo.getByRole("button", { name: "Baixar o termo" }).click()]);
+    expect(baixado.suggestedFilename()).toBe("termo.pdf");
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/clientes/documentos/${TERMO}/abrir`)).toBe(true);
+    await expect(page.getByRole("region", { name: /Documentos pessoais/ })).not.toContainText("termo");
+  });
+
+  test("editar: trocar o termo e salvar só com ele", async ({ page }) => {
+    const depois = { ...CURATELA, versao: 5, termoCuratela: termoNaFicha(TERMO2, PDF.name) };
+    const pedidos = await simular(page, {
+      ...comuns({ ...CURATELA, termoCuratela: termoNaFicha() }),
+      [`GET /v1/escritorio/clientes/${CLI}`]: [{ corpo: { ...CURATELA, termoCuratela: termoNaFicha() } }, { corpo: depois }],
+      [`PUT /v1/escritorio/clientes/${CLI}`]: { corpo: { id: CLI, versao: 5 } },
+      ...envioDoTermo(TERMO2),
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Mudar quem assina por Sebastião" }).click();
+    const painel = page.getByRole("group", { name: /Sob curatela: quem assina e o termo/ });
+    await expect(painel.getByRole("group", { name: "termo-curatela-sebastiao.pdf" })).toBeVisible();
+    await escolher(page, "Trocar arquivo: termo de curatela", PDF);
+    await expect(painel.getByRole("group", { name: PDF.name })).toBeVisible();
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Salvar ficha" }).click();
+    const aviso = page.getByRole("status").filter({ hasText: "Ficha salva." });
+    await expect(aviso).toContainText("O termo de curatela ficou guardado na ficha.");
+    await expect(aviso).not.toContainText("A mudança ficou no histórico");
+    expect(ordem(pedidos)).toEqual([
+      `PUT /v1/escritorio/clientes/${CLI}`, `POST /v1/escritorio/clientes/${CLI}/termo-curatela`, `POST /v1/escritorio/clientes/documentos/${TERMO2}/concluir`,
+    ]);
+  });
+
+  test("editar: sem arquivo novo, ou passando a assinar por si, o termo não sobe", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(CURATELA),
+      [`PUT /v1/escritorio/clientes/${CLI}`]: { corpo: { id: CLI, versao: 5 } },
+      ...envioDoTermo(),
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Mudar quem assina por Sebastião" }).click();
+    await escolher(page, "Escolher arquivo: termo de curatela", PDF);
+    await page.getByRole("radio", { name: /Sim, assina por si/ }).check();
+    await page.getByRole("button", { name: "Salvar ficha" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Ficha salva." })).toContainText("A mudança ficou no histórico");
+    expect(ordem(pedidos)).toEqual([`PUT /v1/escritorio/clientes/${CLI}`]);
+  });
+
+  const dadosGerar = (termo: unknown) => ({
+    contrato: { id: CT, numero: "C-2026-037", objeto: "Revisão da aposentadoria", estado: "ELABORACAO", assinadoEm: null, versao: 1 },
+    cliente: CURATELA, condicoes: [], casos: [],
+    advogados: [{ pessoaId: MARINA.id, nome: MARINA.nome, noContrato: true, responsavel: true, inscricoes: [OAB_M], escolhidas: [OAB_M.id] }],
+    semOab: [], escritorio: { nome: "Ribeiro & Matos", cnpj: "41207338000105", endereco: "Rua Tabapuã, 1.123", cidade: "São Paulo", uf: "SP", oab: null },
+    marca: null, hoje,
+    modelos: [{ tipo: "PROCURACAO", modeloId: null, nome: "Procuração", numero: null, padrao: "PROCURACAO", emRevisao: true }],
+    atuais: [], ultima: null, mudancas: [], poderesIniciais: [], termoCuratela: termo,
+  });
+  const OAB_M = { id: "0ab00000-0000-4000-8000-000000000001", uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" };
+  const rotasGerar = (termo: unknown) => ({
+    "/v1/escritorio": { corpo: ESCRITORIO },
+    "GET /v1/escritorio/avisos": { corpo: { novos: 0, total: 0, itens: [] } },
+    "GET /v1/escritorio/pessoas/oab": { corpo: { pessoas: [{ ...MARINA, oab: [OAB_M] }] } },
+    [`GET /v1/escritorio/contratos/${CT}/documentos-dados`]: { corpo: dadosGerar(termo) },
+    [`POST /v1/escritorio/contratos/${CT}/documentos/previa`]: { corpo: { documentos: [], frase: "" } },
+    [`POST /v1/escritorio/clientes/documentos/${TERMO}/abrir`]: { corpo: { url: `${P}/leitura-falsa/${TERMO}?download=termo.pdf`, validadeSegundos: 60 } },
+  });
+
+  test("Gerar documentos da curatela: o aviso com Baixar o termo e a faixa", async ({ page }) => {
+    const pedidos = await simular(page, rotasGerar(termoNaFicha()));
+    await page.goto(`${P}/contratos/modelos/gerar?contrato=${CT}`);
+    await expect(page.getByText("Termo de curatela na ficha · processo 1004587-22.2025.8.26.0100")).toBeVisible();
+    const aviso = page.getByRole("status").filter({ hasText: "Sebastião está sob curatela: Helena assina por Sebastião." });
+    await expect(aviso).toContainText("Ela assina sozinha o documento, como diz o termo. A qualificação cita o processo da curatela.");
+    await expect(aviso).toContainText("Junte uma cópia do termo à procuração: ele está na ficha, para baixar.");
+    await expect(page.getByRole("region", { name: "Gerar", exact: true })).toContainText("Em todos, Helena assina por Sebastião. Junte o termo de curatela à procuração.");
+    await semViolacoes(page);
+    const [baixado] = await Promise.all([page.waitForEvent("download"), aviso.getByRole("button", { name: "Baixar o termo" }).click()]);
+    expect(baixado.suggestedFilename()).toBe("termo.pdf");
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/clientes/documentos/${TERMO}/abrir`)).toBe(true);
+  });
+
+  test("Gerar documentos da curatela sem termo na ficha: o aviso sem o botão", async ({ page }) => {
+    await simular(page, rotasGerar(null));
+    await page.goto(`${P}/contratos/modelos/gerar?contrato=${CT}`);
+    const aviso = page.getByRole("status").filter({ hasText: "Sebastião está sob curatela" });
+    await expect(aviso).toContainText("Junte uma cópia do termo à procuração.");
+    await expect(aviso).not.toContainText("para baixar");
+    await expect(page.getByRole("button", { name: "Baixar o termo" })).toHaveCount(0);
+    await expect(page.getByText(/Termo de curatela na ficha/)).toHaveCount(0);
     await semViolacoes(page);
   });
 });

@@ -4,11 +4,11 @@
 // arquivo é lido na API, na memória, e só as células chegam ao banco; nada entra no cadastro
 // antes de a pessoa conferir a prévia. Depois: o resultado, o histórico e o desfazer (7 dias).
 
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  dataBr, formatarDocumento, LIMITE_ARQUIVO_BYTES, NOMES_CAMPO_IMPORTACAO, ORIGENS, reais,
+  dataBr, formatarDocumento, grupoDoLancamento, GRUPOS_LANCAMENTO, LIMITE_ARQUIVO_BYTES, NOMES_CAMPO_IMPORTACAO, NOMES_GRUPO_LANCAMENTO, ORIGENS, reais,
   NOMES_ORIGEM_IMPORTACAO, telefoneBr,
-  type CampoImportacao, type OrigemDados, type TipoContato, type ColunaImportacao, type DecisaoLinha, type Importacao, type LinhaPrevia, type LinhasFora, type OQueImportar,
+  type CampoImportacao, type GrupoLancamento, type OrigemDados, type TipoContato, type ColunaImportacao, type DecisaoLinha, type Importacao, type LinhaPrevia, type LinhasFora, type OQueImportar,
   type ParesImportacao, type ParValor, type PlanoDesfazer, type PreviaImportacao, type ProblemaLinha, type ResumoPrevia,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -27,7 +27,7 @@ import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal,
 import { planilhaXlsx } from "./planilha.ts";
 import { PassoAbas } from "./ImportacaoSistemas.tsx";
 import {
-  AvisoDespesas, EntrouFinanceiro, FinanceiroEspera, LinhaDoLancamento, PassoColunasFinanceiro, ResumoFinanceiro, SemLinhasFinanceiro,
+  EntrouFinanceiro, FinanceiroEspera, LinhaDoLancamento, PassoColunasFinanceiro, ResumoFinanceiro, SemLinhasFinanceiro,
 } from "./ImportacaoFinanceiro.tsx";
 import { AvisoArquivados, EntrouCasos, LinhaDoCaso, PassoColunasCasos, ProcessosEsperam, ResumoCasos, SemLinhasCasos } from "./ImportacaoCasos.tsx";
 
@@ -922,7 +922,10 @@ export function GrupoPares({ titulo, itens, escolhido, opcoes, vazio, prefixo, a
 
 // ------------------------------------------------------------------------------- passo 3: a prévia
 
-type Filtro = "todas" | "ERRO" | "AVISO" | "PRONTA" | "PULADA";
+/** No financeiro, os chips também escolhem o grupo (estado previa-financeiro, F3.117). */
+type Filtro = "todas" | "ERRO" | "AVISO" | "PRONTA" | "PULADA" | GrupoLancamento;
+const ehGrupo = (f: Filtro): f is GrupoLancamento => (GRUPOS_LANCAMENTO as string[]).includes(f);
+const ICONE_GRUPO: Record<GrupoLancamento, NomeIcone> = { RECEBIDOS: "check", EM_ABERTO: "relogio", DESPESAS: "xis" };
 export type Aberta = { numero: number; modo: "corrigir" | "decidir" | "gera" } | null;
 
 const CAMPOS_ERRO_EXTRA: Partial<Record<string, CampoImportacao[]>> = {
@@ -981,12 +984,14 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
 
   const consulta = useCallback((desde = 0) => {
     const p = new URLSearchParams();
-    if (filtro !== "todas") p.set("situacao", filtro);
+    // O financeiro vem agrupado (Recebidos, Em aberto, Despesas) e pagina pelo que já veio.
+    if (fin && ehGrupo(filtro)) p.set("grupo", filtro);
+    else if (filtro !== "todas") p.set("situacao", filtro);
     if (q) p.set("q", q.slice(0, 120));
-    if (desde) p.set("desde", String(desde));
+    if (desde) p.set(fin ? "pular" : "desde", String(desde));
     const s = p.toString();
-    return `${API}/${imp.id}/linhas${s ? `?${s}` : ""}`;
-  }, [filtro, q, imp.id]);
+    return `${API}/${imp.id}/${fin ? "lancamentos" : "linhas"}${s ? `?${s}` : ""}`;
+  }, [filtro, q, imp.id, fin]);
 
   useEffect(() => {
     let vivo = true;
@@ -1005,7 +1010,7 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
   }, [consulta, vez]);
 
   async function mais() {
-    const ultima = linhas?.at(-1)?.numero ?? 0;
+    const ultima = fin ? linhas?.length ?? 0 : linhas?.at(-1)?.numero ?? 0;
     const r = await chamarPortal<PreviaImportacao>(consulta(ultima));
     if (r.ok) setLinhas((ls) => [...(ls ?? []), ...r.dados.linhas]);
   }
@@ -1103,8 +1108,19 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
   const c = resumo.contagens;
   const final = c.erro === 0 && c.aviso === 0;
   const fora = c.erro + c.aviso + c.puladas;
-  const lidas = casos ? { r: "processos lidos", sub: "só os ativos" } : fin ? { r: "lançamentos lidos", sub: "aba Lançamentos, sem as despesas" } : { r: "linhas lidas", sub: "da planilha" };
-  const nums: { n: number; dc: string; r: string; sub: string; f: Filtro }[] = final
+  const lidas = casos
+    ? { r: "processos lidos", sub: imp.arquivados === "ENCERRADOS" ? "ativos e arquivados" : "só os ativos" }
+    : fin ? { r: "lançamentos lidos", sub: "aba Lançamentos" } : { r: "linhas lidas", sub: "da planilha" };
+  const g = resumo.financeiroAntigo?.grupos ?? { recebidos: { linhas: 0, valor: 0 }, emAberto: { linhas: 0, valor: 0 }, despesas: { linhas: 0, valor: 0 } };
+  const doGrupo: Record<GrupoLancamento, { linhas: number; valor: number }> = { RECEBIDOS: g.recebidos, EM_ABERTO: g.emAberto, DESPESAS: g.despesas };
+  const nums: { n: number; dc: string; r: string; sub: string; f: Filtro }[] = fin
+    ? [
+        { n: c.lidas, dc: "", r: lidas.r, sub: lidas.sub, f: "todas" },
+        { n: g.recebidos.linhas, dc: "hn-d-vinho", r: "recebidos", sub: "informação na ficha", f: "RECEBIDOS" },
+        { n: g.emAberto.linhas, dc: "hn-d-hoje", r: "em aberto", sub: "lembrete de contrato", f: "EM_ABERTO" },
+        { n: g.despesas.linhas, dc: "", r: "despesas", sub: "ficam de fora", f: "DESPESAS" },
+      ]
+    : final
     ? [
         { n: c.lidas, dc: "", r: lidas.r, sub: lidas.sub, f: "todas" },
         { n: c.prontas, dc: "hn-d-vinho", r: "vão entrar", sub: `${c.prontas - c.corrigidas - c.decididas} prontas, ${c.corrigidas} corrigidas e ${c.decididas} decididas`, f: "PRONTA" },
@@ -1124,7 +1140,23 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
     AVISO: `${plural(total, "linha com aviso", "linhas com aviso")}. Elas podem entrar como estão; o aviso pede que você confira antes.`,
     PRONTA: `${plural(total, "linha pronta", "linhas prontas")}: entram como estão.`,
     PULADA: `${plural(total, "linha pulada", "linhas puladas")}: ficam de fora e vão para a planilha de linhas que não entraram.`,
+    RECEBIDOS: `${plural(total, "lançamento recebido", "lançamentos recebidos")}: ficam no histórico da ficha, só como informação.`,
+    EM_ABERTO: `${plural(total, "lançamento em aberto", "lançamentos em aberto")}: viram lembrete de contrato na ficha.`,
+    DESPESAS: `${plural(total, "despesa do escritório", "despesas do escritório")}: ficam de fora, porque o Caixa começa no T3jus.`,
   };
+  if (fin) contTexto.todas = `${plural(total, "lançamento", "lançamentos")}, agrupados em recebidos, em aberto e despesas · a linha 1 tem os nomes das colunas`;
+  // A lista do financeiro em grupos, cada um com o título e a conta (estado previa-financeiro).
+  const gruposFin: { grupo: GrupoLancamento; linhas: LinhaPrevia[] }[] = [];
+  if (fin) for (const l of linhas) {
+    const gr = grupoDoLancamento(l);
+    if (gruposFin.at(-1)?.grupo === gr) gruposFin.at(-1)!.linhas.push(l);
+    else gruposFin.push({ grupo: gr, linhas: [l] });
+  }
+  const tituloGrupo = (gr: GrupoLancamento) => [NOMES_GRUPO_LANCAMENTO[gr], gr === "DESPESAS" ? "" : reais(doGrupo[gr].valor), doGrupo[gr].linhas.toLocaleString("pt-BR")].filter(Boolean).join(" · ");
+  const linhaFin = (l: LinhaPrevia) => (
+    <LinhaDoLancamento key={l.numero} l={l} aberta={aberta?.numero === l.numero && aberta.modo === "corrigir" ? "corrigir" : null} ocupado={ocupado === l.numero}
+      aoAbrir={(modo) => setAberta(modo ? { numero: l.numero, modo } : null)} aoMudar={(d) => mudarLinha(l.numero, d)} />
+  );
 
   const principal = (
     <>
@@ -1139,12 +1171,17 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
         <h2 id="t-prev" className="sr">Linhas da planilha</h2>
         <form className="im-ferr" role="search" onSubmit={(e) => e.preventDefault()}>
           <div className="campo-busca">
-            <label className="sr" htmlFor={`${ids}-b`}>{casos ? "Buscar na prévia por caso, número ou cliente" : fin ? "Buscar na prévia por cliente ou descrição" : "Buscar na prévia por nome, CPF ou número da linha"}</label>
+            <label className="sr" htmlFor={`${ids}-b`}>{casos ? "Buscar na prévia por caso, número ou cliente" : fin ? "Buscar na prévia por cliente, caso ou valor" : "Buscar na prévia por nome, CPF ou número da linha"}</label>
             <Icone nome="busca" className="ico" />
-            <input className="entrada" id={`${ids}-b`} type="search" placeholder={casos ? "Caso, número ou cliente" : fin ? "Cliente ou descrição" : "Nome, CPF ou número da linha"} autoComplete="off" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <input className="entrada" id={`${ids}-b`} type="search" placeholder={casos ? "Caso, número ou cliente" : fin ? "Cliente, caso ou valor" : "Nome, CPF ou número da linha"} autoComplete="off" value={busca} onChange={(e) => setBusca(e.target.value)} />
           </div>
           <Chips rotulo="Mostrar" atual={filtro} aoEscolher={(v) => { setFiltro(v as Filtro); setAberta(null); }}
-            opcoes={[
+            opcoes={fin ? [
+              { v: "todas", t: `Todos (${c.lidas.toLocaleString("pt-BR")})` },
+              ...GRUPOS_LANCAMENTO.map((gr) => ({ v: gr, t: `${gr === "DESPESAS" ? "Despesas" : NOMES_GRUPO_LANCAMENTO[gr]} (${doGrupo[gr].linhas.toLocaleString("pt-BR")})` })),
+              ...(c.erro ? [{ v: "ERRO", t: `Com erro (${c.erro})` }] : []),
+              ...(c.aviso ? [{ v: "AVISO", t: `Com aviso (${c.aviso})` }] : []),
+            ] : [
               { v: "todas", t: `Todas (${c.lidas})` },
               { v: "ERRO", t: `Com erro (${c.erro})` },
               { v: "AVISO", t: `Com aviso (${c.aviso})` },
@@ -1153,6 +1190,12 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
             ]} />
         </form>
         <p className="im-cont" role="status">{q ? `${plural(total, "linha encontrada", "linhas encontradas")} para “${q}”` : contTexto[filtro]}</p>
+        {fin ? (
+          <p className="im-massa">
+            <Icone nome="carteira" className="ico" />
+            <span><b>O financeiro do {sistema} entra só como informação.</b> No T3jus, a cobrança nasce do contrato e o Caixa só mostra o que passou por ele. Assim o contador não recebe pagamento repetido.</span>
+          </p>
+        ) : null}
         {duplicadas > 1 && casos ? (
           <p className="im-massa">
             <Icone nome="balanca" className="ico" />
@@ -1166,14 +1209,17 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
             <button className="btn btn-sec" type="button" disabled={ocupado === -1} onClick={() => void juntarTodas()}><Icone nome="check" className="ico" />Juntar as {duplicadas}</button>
           </p>
         ) : null}
-        {linhas.length ? (
+        {fin && linhas.length ? gruposFin.map(({ grupo: gr, linhas: ls }) => (
+          <Fragment key={gr}>
+            <p className="is-fin-g"><Icone nome={ICONE_GRUPO[gr]} className="ico" />{tituloGrupo(gr)}</p>
+            <div className="im-cab-l" aria-hidden="true"><span>Linha</span><span>Lançamento</span><span>Cliente e caso</span><span>Situação</span></div>
+            <ul className="im-linhas" aria-label={NOMES_GRUPO_LANCAMENTO[gr]}>{ls.map(linhaFin)}</ul>
+          </Fragment>
+        )) : linhas.length ? (
           <>
             <div className="im-cab-l" aria-hidden="true"><span>Linha</span><span>{casos ? "Caso" : fin ? "Lançamento" : "Cliente"}</span><span>{casos ? "Cliente e responsável" : fin ? "Cliente e caso" : imp.contratos ? "Contrato e o que gera no Financeiro" : "Contatos"}</span><span>Situação</span></div>
             <ul className="im-linhas" aria-label={casos ? "Processos" : fin ? "Lançamentos" : "Linhas da planilha"}>
-              {linhas.map((l) => fin ? (
-                <LinhaDoLancamento key={l.numero} l={l} aberta={aberta?.numero === l.numero && aberta.modo === "corrigir" ? "corrigir" : null} ocupado={ocupado === l.numero}
-                  aoAbrir={(modo) => setAberta(modo ? { numero: l.numero, modo } : null)} aoMudar={(d) => mudarLinha(l.numero, d)} />
-              ) : casos ? (
+              {linhas.map((l) => casos ? (
                 <LinhaDoCaso key={l.numero} l={l} origem={sistema} aberta={aberta?.numero === l.numero ? aberta.modo : null} ocupado={ocupado === l.numero}
                   aoAbrir={(modo) => setAberta(modo ? { numero: l.numero, modo } : null)} aoMudar={(d) => mudarLinha(l.numero, d)} />
               ) : (
@@ -1204,7 +1250,7 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
           <p className="sub">Conta feita no servidor, em centavos exatos. Nada foi salvo.</p>
         </div>
       </div>
-      {fin ? <ResumoFinanceiro resumo={resumo} final={final} despesas={imp.foraTipo && "DESPESAS" in imp.foraTipo ? imp.foraTipo.DESPESAS : 0} />
+      {fin ? <ResumoFinanceiro resumo={resumo} final={final} despesas={resumo.financeiroAntigo?.despesas ?? (imp.foraTipo && "DESPESAS" in imp.foraTipo ? imp.foraTipo.DESPESAS : 0)} />
         : casos ? <ResumoCasos resumo={resumo} final={final} origem={sistema} /> : (
       <div className="hn-res-bloco">
         <h3>Clientes</h3>
@@ -1293,7 +1339,8 @@ function PassoPrevia({ imp: inicial }: { imp: Importacao }) {
 function ForaDoTipo({ imp }: { imp: Importacao }) {
   const t = imp.foraTipo;
   if (t && "ARQUIVADOS" in t) return <AvisoArquivados n={t.ARQUIVADOS} />;
-  if (imp.oQue === "FINANCEIRO") return <AvisoDespesas n={t && "DESPESAS" in t ? t.DESPESAS : 0} />;
+  // No financeiro, a regra fica na lista agrupada e as despesas aparecem nela (F3.117).
+  if (imp.oQue === "FINANCEIRO") return null;
   if (t && "DESPESAS" in t) return null;
   const f = t;
   if (!f || f.PARTE_CONTRARIA + f.FORA === 0) return null;
@@ -1596,7 +1643,7 @@ function JanelaConfirmar({ aberta, imp, resumo, aoFechar, aoImportar }: {
       <p id="janela-confirmar-d">{imp.oQue === "CASOS" ? "Os processos" : imp.oQue === "FINANCEIRO" ? "Os lançamentos" : "Da planilha"} {imp.arquivo}, com as correções e decisões que você fez na prévia.</p>
       <ul className="im-desf">
         {imp.oQue === "CASOS" ? (
-          <li><Icone nome="balanca" className="ico" /><span><b>{plural((resumo.casos?.novos ?? 0) + (resumo.casos?.juntados ?? 0), "caso", "casos")} no Jurídico:</b> {resumo.casos?.novos ?? 0} {(resumo.casos?.novos ?? 0) === 1 ? "novo, sem contrato" : "novos, sem contrato"}{resumo.casos?.juntados ? ` e ${resumo.casos.juntados} que já existiam ganham o cliente` : ""}. Nenhuma mensagem vai ao cliente.</span></li>
+          <li><Icone nome="balanca" className="ico" /><span><b>{plural((resumo.casos?.novos ?? 0) + (resumo.casos?.juntados ?? 0), "caso", "casos")} no Jurídico:</b> {resumo.casos?.novos ?? 0} {(resumo.casos?.novos ?? 0) === 1 ? "novo, sem contrato" : "novos, sem contrato"}{resumo.casos?.juntados ? ` e ${resumo.casos.juntados} que já existiam ganham o cliente` : ""}{resumo.casos?.encerrados ? `; dos novos, ${plural(resumo.casos.encerrados, "entra encerrado", "entram encerrados")}, sem resultado nem acerto` : ""}. Nenhuma mensagem vai ao cliente.</span></li>
         ) : imp.oQue === "FINANCEIRO" ? (
           <>
             <li><Icone nome="carteira" className="ico" /><span><b>{plural(resumo.financeiroAntigo?.recebidos ?? 0, "recebido", "recebidos")}, {reais(resumo.financeiroAntigo?.valorRecebido ?? 0)}:</b> no histórico de cada ficha, como “pago antes do T3jus”. Fora do Caixa e sem recibo.</span></li>
@@ -1683,7 +1730,7 @@ export function ResultadoImportacao({ id }: { id: string }) {
                 <div className="im-fim-num">
                   <div>
                     <span className="disco hn-d-vinho" aria-hidden="true"><span>{r.linhas}</span></span>
-                    <span><b>{r.linhas === 1 ? "linha entrou" : "linhas entraram"}</b><small>{casos ? `${plural(r.casos ?? 0, "caso novo", "casos novos")} no Jurídico` : fin ? `${plural(r.lembretes ?? 0, "lembrete de contrato", "lembretes de contrato")} nas fichas` : `${plural(r.clientes, "cliente", "clientes")}${imp.contratos ? ` e ${plural(r.contratos, "contrato", "contratos")}` : ""}`}</small></span>
+                    <span><b>{r.linhas === 1 ? "linha entrou" : "linhas entraram"}</b><small>{casos ? `${plural(r.casos ?? 0, "caso novo", "casos novos")} no Jurídico${r.encerrados ? `, ${plural(r.encerrados, "encerrado", "encerrados")}` : ""}` : fin ? `${plural(r.lembretes ?? 0, "lembrete de contrato", "lembretes de contrato")} nas fichas` : `${plural(r.clientes, "cliente", "clientes")}${imp.contratos ? ` e ${plural(r.contratos, "contrato", "contratos")}` : ""}`}</small></span>
                   </div>
                   <div>
                     <span className="disco" aria-hidden="true"><span>{r.fora}</span></span>
@@ -1850,7 +1897,7 @@ export function ImportacoesHistorico() {
             </section>
           )}
           <JanelaDesfazer imp={desfazer} aoFechar={() => setDesfazer(null)}
-            aoFeito={(f) => { setDesfazer(null); setFeito(f.lancamentos !== undefined ? `${plural(f.lancamentos, "lançamento saiu", "lançamentos saíram")} das fichas${f.lembretes ? `, com ${plural(f.lembretes, "lembrete de contrato", "lembretes de contrato")}` : ""}. Tudo com o motivo e no histórico.` : f.casos !== undefined ? `${plural(f.casos, "caso foi", "casos foram")} para Encerrados${f.ligacoes ? `, e ${plural(f.ligacoes, "caso que já existia perdeu", "casos que já existiam perderam")} o cliente ligado` : ""}. Tudo com o motivo e no histórico.` : `${plural(f.clientes, "cliente ficou inativo", "clientes ficaram inativos")}${f.contratos ? `, ${plural(f.contratos, "contrato encerrado", "contratos encerrados")}` : ""}. Tudo com o motivo e no histórico.`); setVez((v) => v + 1); }} />
+            aoFeito={(f) => { setDesfazer(null); setFeito(f.lancamentos !== undefined ? `${plural(f.lancamentos, "lançamento saiu", "lançamentos saíram")} das fichas${f.lembretes ? `, com ${plural(f.lembretes, "lembrete de contrato", "lembretes de contrato")}` : ""}. Tudo com o motivo e no histórico.` : f.casos !== undefined ? `${plural(f.casos + (f.encerrados ?? 0), "caso foi", "casos foram")} para Encerrados${f.ligacoes ? `, e ${plural(f.ligacoes, "caso que já existia perdeu", "casos que já existiam perderam")} o cliente ligado` : ""}. Tudo com o motivo e no histórico.` : `${plural(f.clientes, "cliente ficou inativo", "clientes ficaram inativos")}${f.contratos ? `, ${plural(f.contratos, "contrato encerrado", "contratos encerrados")}` : ""}. Tudo com o motivo e no histórico.`); setVez((v) => v + 1); }} />
         </div>
       )}
     </Pagina>
@@ -1861,7 +1908,7 @@ function LinhaHistorico({ i, aoDesfazer }: { i: Importacao; aoDesfazer: () => vo
   const [erro, setErro] = useState("");
   const r = i.resumo;
   const oQue = r && i.oQue === "FINANCEIRO" ? [plural((r.recebidos ?? 0) + (r.emAberto ?? 0), "lançamento", "lançamentos"), r.lembretes ? plural(r.lembretes, "lembrete", "lembretes") : ""].filter(Boolean).join(", ")
-    : r && i.oQue === "CASOS" ? [plural(r.casos ?? 0, "caso", "casos"), r.juntadosCasos ? `${r.juntadosCasos} ${r.juntadosCasos === 1 ? "juntado" : "juntados"}` : ""].filter(Boolean).join(", ")
+    : r && i.oQue === "CASOS" ? [plural(r.casos ?? 0, "caso", "casos"), r.encerrados ? `${r.encerrados} ${r.encerrados === 1 ? "encerrado" : "encerrados"}` : "", r.juntadosCasos ? `${r.juntadosCasos} ${r.juntadosCasos === 1 ? "juntado" : "juntados"}` : ""].filter(Boolean).join(", ")
     : r ? [plural(r.clientes, "cliente", "clientes"), i.contratos ? plural(r.contratos, "contrato", "contratos") : "", i.contratos && r.parcelas ? plural(r.parcelas, "parcela", "parcelas") : ""].filter(Boolean).join(", ") : "—";
   const prazoAberto = !!i.desfazerAte && new Date(i.desfazerAte) > new Date();
   return (
@@ -1957,6 +2004,7 @@ function JanelaDesfazer({ imp, aoFechar, aoFeito }: { imp: Importacao | null; ao
             ) : p.casos !== undefined ? (
               <>
                 <li><Icone nome="balanca" className="ico" /><span><b>{plural(p.casos, "caso vai", "casos vão")} para Encerrados</b>, marcados “importação desfeita”, sem resultado. Saem da lista do dia a dia.</span></li>
+                {p.encerrados ? <li><Icone nome="balanca" className="ico" /><span><b>{plural(p.encerrados, "caso que veio encerrado fica", "casos que vieram encerrados ficam")}</b> em Encerrados, marcados “importação desfeita”, com a data em que entraram.</span></li> : null}
                 {p.ligacoes ? <li><Icone nome="trocar" className="ico" /><span><b>{plural(p.ligacoes, "caso que já existia perde", "casos que já existiam perdem")}</b> só o cliente que a importação ligou.</span></li> : null}
                 <li><Icone nome="pessoas" className="ico" /><span><b>Os clientes ficam como estão.</b> Eles vieram de outra importação, que tem o seu próprio desfazer.</span></li>
               </>

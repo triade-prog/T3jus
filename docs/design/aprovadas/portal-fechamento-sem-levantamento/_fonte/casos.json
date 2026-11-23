@@ -1,0 +1,82 @@
+[
+ {
+  "nome": "fecha-financeiro",
+  "url": "index.html?estado=fecha-financeiro",
+  "rotulo": "Ficha de Noemi: “Encerrar no financeiro” leva ao contrato"
+ },
+ {
+  "nome": "fecha-larissa",
+  "url": "index.html?estado=fecha-larissa",
+  "rotulo": "Larissa (sem Financeiro): quem faz, sem valores"
+ },
+ {
+  "nome": "caso-acerto",
+  "url": "index.html?estado=caso-acerto",
+  "rotulo": "Ficha do caso: “Ver o acerto” leva ao contrato"
+ },
+ {
+  "nome": "caso-acerto-larissa",
+  "url": "index.html?estado=caso-acerto-larissa",
+  "rotulo": "Larissa (sem Financeiro): o acerto sem valores"
+ },
+ {
+  "nome": "contrato-pendente",
+  "url": "index.html?estado=contrato-pendente",
+  "rotulo": "Contrato de Noemi: a folha “Fechamento do caso” com o que falta"
+ },
+ {
+  "nome": "fechar-bloqueado",
+  "url": "index.html?estado=fechar-bloqueado",
+  "rotulo": "“Ainda não dá para encerrar”, com o atalho da parcela"
+ },
+ {
+  "nome": "contrato-pronto",
+  "url": "index.html?estado=contrato-pronto",
+  "rotulo": "Tudo recebido: “Encerrar” sobe para o âmbar"
+ },
+ {
+  "nome": "encerrar",
+  "url": "index.html?estado=encerrar",
+  "rotulo": "Encerrar o caso e o contrato de Noemi"
+ },
+ {
+  "nome": "encerrar-sem-contratos",
+  "url": "index.html?estado=encerrar-sem-contratos",
+  "rotulo": "Diego (sem Contratos): encerra só o caso"
+ },
+ {
+  "nome": "encerrar-erro",
+  "url": "index.html?estado=encerrar-erro",
+  "rotulo": "Encerrar: nada foi encerrado"
+ },
+ {
+  "nome": "encerrado",
+  "url": "index.html?estado=encerrado",
+  "rotulo": "Encerrado: a folha volta para a lateral"
+ },
+ {
+  "nome": "contrato-claudio",
+  "url": "index.html?estado=contrato-claudio",
+  "rotulo": "Contrato de Cláudio (EX-01): o caso inteiro, com o link para Noemi"
+ },
+ {
+  "nome": "contrato-so-exito",
+  "url": "index.html?estado=contrato-so-exito",
+  "rotulo": "O vazio: contrato só de êxito, caso perdido"
+ },
+ {
+  "nome": "contrato-com-levantamento",
+  "url": "index.html?estado=contrato-com-levantamento",
+  "rotulo": "Caso com RPV: a folha só aponta para a ficha do repasse"
+ },
+ {
+  "nome": "fecha-a-vencer",
+  "url": "index.html?estado=fecha-a-vencer",
+  "rotulo": "Ficha de Joana: o fechamento espera o êxito, sem atraso"
+ },
+ {
+  "nome": "contrato-acordo",
+  "url": "index.html?estado=contrato-acordo",
+  "rotulo": "Contrato de Joana: o acordo com êxito, a vencer"
+ }
+]

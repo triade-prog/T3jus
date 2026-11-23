@@ -180,7 +180,7 @@ export function PassoColunasFinanceiro({ imp }: { imp: Importacao }) {
         {(pares.lancTipo ?? []).length ? (
           <GrupoPares titulo={`Coluna “${nomeColuna("lanc_tipo")}”`} itens={pares.lancTipo ?? []} escolhido={escolhas.lancTipo} prefixo="t"
             opcoes={TIPOS_LANC} vazio="Receita: entra como informação"
-            ajuda={(p) => ((escolhas.lancTipo[p.chave] || p.sugestao) === "DESPESA" ? "Ficam de fora da prévia: o Caixa começa no T3jus." : "")}
+            ajuda={(p) => ((escolhas.lancTipo[p.chave] || p.sugestao) === "DESPESA" ? "Aparecem na prévia e ficam de fora: o Caixa começa no T3jus." : "")}
             rotuloDe={(p) => (p.chave === "" ? "Sem o tipo" : `“${p.valor}”`)}
             aoEscolher={(k, v) => setEscolhas((e) => ({ ...e, lancTipo: { ...e.lancTipo, [k]: v } }))} />
         ) : null}
@@ -245,7 +245,7 @@ export function PassoColunasFinanceiro({ imp }: { imp: Importacao }) {
       <Folha id="t-so-info" titulo="Só como informação">
         <div style={{ padding: "0 24px 20px", display: "grid", gap: 10 }}>
           <p style={{ margin: 0 }}>O que foi recebido fica no histórico da ficha como <b>“pago antes do T3jus”</b>. O que está em aberto <b>não vira cobrança</b>: vira um lembrete na ficha para criar o contrato.</p>
-          {despesas ? <p style={{ margin: 0 }}>{plural(despesas, "despesa do escritório fica", "despesas do escritório ficam")} de fora da prévia.</p> : null}
+          {despesas ? <p style={{ margin: 0 }}>{plural(despesas, "despesa do escritório aparece", "despesas do escritório aparecem")} na prévia e {despesas === 1 ? "fica" : "ficam"} de fora.</p> : null}
           <Lgpd icone="carteira"><b>Nada entra no Caixa</b> nem em A receber, e nenhum recibo é gerado. Assim o contador não recebe pagamento repetido.</Lgpd>
         </div>
       </Folha>
@@ -284,7 +284,17 @@ export function LinhaDoLancamento({ l, aberta, ocupado, aoAbrir, aoMudar }: {
 
   let sit: ReactNode;
   let cls = "";
-  if (l.situacao === "PULADA") {
+  const despesa = l.situacao === "FORA_REGRA";
+  if (despesa) {
+    // F3.117 (estado previa-financeiro): a despesa do escritório aparece e nunca entra; não há o que decidir.
+    cls = "im-l-pulada";
+    sit = (
+      <div className="im-prob">
+        <Selo tom="neutro" icone="xis">Fica de fora</Selo>
+        <p>Despesa do escritório: o Caixa começa no T3jus.</p>
+      </div>
+    );
+  } else if (l.situacao === "PULADA") {
     sit = (
       <div className="im-prob">
         <Selo tom="neutro" icone="xis">Pulada</Selo>
@@ -329,7 +339,7 @@ export function LinhaDoLancamento({ l, aberta, ocupado, aoAbrir, aoMudar }: {
     );
   }
 
-  const quando = x?.data ? `${aberto ? (x.data < hojeIso() ? "venceu em" : "vence em") : "recebido em"} ${dataBr(x.data)}` : aberto ? "sem a data" : "sem a data do pagamento";
+  const quando = x?.data ? `${aberto ? (x.data < hojeIso() ? "venceu em" : "vence em") : despesa ? "pago em" : "recebido em"} ${dataBr(x.data)}` : aberto ? "sem a data" : "sem a data do pagamento";
   return (
     <li className={cls || undefined}>
       <div className="im-c im-c-n"><span className="im-r">Linha</span><span className="im-nl">L{l.numero}</span></div>
@@ -340,8 +350,8 @@ export function LinhaDoLancamento({ l, aberta, ocupado, aoAbrir, aoMudar }: {
       </div>
       <div className="im-c">
         <span className="im-r">Cliente e caso</span>
-        <span className="im-ctr">{semCliente ? "Cliente não encontrado" : l.cliente.nome || "Sem o cliente"}</span>
-        <small>{semCliente ? l.valores.cliente || l.valores.cliente_documento || "" : x?.caso?.nome ?? (l.valores.numero ? `Processo ${l.valores.numero}, não está no Jurídico` : "Sem caso")}</small>
+        <span className="im-ctr">{despesa ? (l.cliente.nome || "Sem cliente") : semCliente ? "Cliente não encontrado" : l.cliente.nome || "Sem o cliente"}</span>
+        <small>{despesa ? "Despesa do escritório" : semCliente ? l.valores.cliente || l.valores.cliente_documento || "" : x?.caso?.nome ?? (l.valores.numero ? `Processo ${l.valores.numero}, não está no Jurídico` : "Sem caso")}</small>
       </div>
       <div className="im-c"><span className="im-r">Situação</span>{sit}</div>
       {aberta === "corrigir" ? <Corrigir l={l} ocupado={ocupado} aoFechar={() => aoAbrir(null)} aoMudar={aoMudar} /> : null}
@@ -354,7 +364,7 @@ function hojeIso(): string {
 }
 
 export function SemLinhasFinanceiro({ q }: { q: string }) {
-  return <Estado icone="busca" titulo="Nenhum lançamento aqui">{q ? "Nenhum lançamento com esse cliente ou descrição." : "Nenhum lançamento nesta situação."}</Estado>;
+  return <Estado icone="busca" titulo="Nenhum lançamento aqui">{q ? "Nenhum lançamento com esse cliente, caso ou valor." : "Nenhum lançamento nesta situação."}</Estado>;
 }
 
 // ------------------------------------------------------------------------------- passo 3: o resumo ao lado
@@ -370,7 +380,7 @@ export function ResumoFinanceiro({ resumo, final, despesas }: { resumo: ResumoPr
         <ul>
           <li><b>{f.recebidos.toLocaleString("pt-BR")}</b> {f.recebidos === 1 ? "recebido" : "recebidos"}, {reais(f.valorRecebido)}, só como informação</li>
           <li><b>{f.emAberto.toLocaleString("pt-BR")}</b> em aberto, {reais(f.valorEmAberto)}: {plural(f.lembretes, "vira lembrete", "viram lembretes")} para criar o contrato</li>
-          {despesas ? <li><b>{despesas.toLocaleString("pt-BR")}</b> {despesas === 1 ? "despesa do escritório fica" : "despesas do escritório ficam"} de fora</li> : null}
+          {despesas ? <li><b>{despesas.toLocaleString("pt-BR")}</b> {despesas === 1 ? "despesa do escritório aparece" : "despesas do escritório aparecem"} na prévia e {despesas === 1 ? "fica" : "ficam"} de fora</li> : null}
           <li>de <b>{plural(f.clientes, "cliente", "clientes")}</b> já cadastrados</li>
           {!final && c.aviso ? <li>mais o que você decidir {c.aviso === 1 ? "no" : "nos"} <b>{c.aviso}</b> {c.aviso === 1 ? "aviso" : "avisos"}</li> : null}
         </ul>
@@ -384,16 +394,6 @@ export function ResumoFinanceiro({ resumo, final, despesas }: { resumo: ResumoPr
         </ul>
       </div>
     </>
-  );
-}
-
-/** As despesas do escritório que ficaram de fora da prévia (decisão 23). */
-export function AvisoDespesas({ n }: { n: number }) {
-  return (
-    <Aviso tom="info" icone="carteira" titulo="O financeiro do Astrea entra só como informação.">
-      No T3jus, a cobrança nasce do contrato e o Caixa só mostra o que passou por ele. Assim o contador não recebe pagamento repetido.
-      {n ? ` ${n === 1 ? "1 despesa do escritório ficou" : `${n} despesas do escritório ficaram`} de fora da prévia: o Caixa começa no T3jus.` : ""}
-    </Aviso>
   );
 }
 

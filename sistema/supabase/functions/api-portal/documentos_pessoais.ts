@@ -7,10 +7,13 @@
 // - A lista por área: todos com Jurídico veem; só a sócia dona muda (o banco confere).
 // - O prazo do comprovante (F3.134, 0910): só a sócia dona muda, de 30 a 365 dias; a prévia
 //   conta o efeito antes de salvar. O escritório é sempre o da sessão.
+// - O termo de curatela (F3.118, 0930_termo_curatela.sql): guardado como documento do cliente, fora
+//   da lista de Documentos pessoais, só de pessoa física sob curatela. Só iniciar tem rota própria;
+//   concluir e abrir são as de Documentos pessoais, pelo id.
 
 import type { Context, Hono } from "hono";
 import {
-  documentoInicioSchema, ErroDominio, moverDocumentoInicioSchema, iniciarDocumentoPessoalSchema, prazoComprovanteSchema, sugestaoDocumentosInicioSchema, tirarDocumentoInicioSchema,
+  documentoInicioSchema, ErroDominio, moverDocumentoInicioSchema, iniciarDocumentoPessoalSchema, iniciarTermoCuratelaSchema, prazoComprovanteSchema, sugestaoDocumentosInicioSchema, tirarDocumentoInicioSchema,
   AREAS_DIREITO, type DocumentoInicio, type DocumentoPessoal, type DocumentosInicio, type DocumentosPessoais, type PrazoComprovanteSalvo,
   type PreviaDocumentosInicio, type PreviaPrazoComprovante,
 } from "@t3jus/domain";
@@ -38,6 +41,14 @@ export function rotasDocumentosPessoais(app: Hono<VarsPortal>, deps: DepsPortal)
   app.post("/v1/escritorio/clientes/:id/documentos", async (c) => {
     const d = await lerCorpo(c, iniciarDocumentoPessoalSchema);
     const doc = await deps.banco.rpc<string>("portal_cliente_documento_iniciar", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d });
+    return c.json({ id: doc, enderecoDeEnvio: await deps.arquivos.enderecoDeEnvio(`${c.get("escritorioId")}/${doc}`) }, 201);
+  });
+
+  // O termo de curatela: registra o envio e devolve o endereço de uso único. O caminho no Storage é
+  // <escritório da sessão>/<id>, montado aqui.
+  app.post("/v1/escritorio/clientes/:id/termo-curatela", async (c) => {
+    const d = await lerCorpo(c, iniciarTermoCuratelaSchema);
+    const doc = await deps.banco.rpc<string>("portal_cliente_termo_iniciar", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d });
     return c.json({ id: doc, enderecoDeEnvio: await deps.arquivos.enderecoDeEnvio(`${c.get("escritorioId")}/${doc}`) }, 201);
   });
 

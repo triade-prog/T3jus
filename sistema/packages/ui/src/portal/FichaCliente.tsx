@@ -25,6 +25,7 @@ import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 import { FolhaDocumentosPessoais } from "./DocumentosPessoais.tsx";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
+import { erroDoCodigoDoTermo } from "./termoCuratela.ts";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { FolhaSistemaAntigo } from "./ImportacaoFinanceiro.tsx";
@@ -709,7 +710,11 @@ const ExplicaEditar = () => {
 
 // ------------------------------------------------------------------------- a página
 
-export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado = false }: { id: string; aba: AbaCliente; editarAoAbrir?: boolean; cadastrado?: boolean }) {
+export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado = false, termo = null }: {
+  id: string; aba: AbaCliente; editarAoAbrir?: boolean; cadastrado?: boolean;
+  /** O código do erro do termo de curatela que não subiu depois do cadastro (F3.118). */
+  termo?: string | null;
+}) {
   const { escritorio, erro: erroEscritorio, recarregar: recarregarEscritorio } = useEscritorioPortal();
   const [f, setF] = useState<FichaCliente | null>(null);
   const [erro, setErro] = useState<"NOT_FOUND" | "OUTRO" | null>(null);
@@ -719,6 +724,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const [editando, setEditando] = useState(editarAoAbrir);
   const [conflito, setConflito] = useState<Conflito | null>(null);
   const [meu, setMeu] = useState<RascunhoCliente | null>(null);
+  const [meuTermo, setMeuTermo] = useState<File | null>(null);
   const [janela, setJanela] = useState<"registrar" | "inativar" | "reativar" | "pedir" | "excluir" | "recusar" | "por-si" | null>(null);
   const [abertura, setAbertura] = useState(0);
   const [feito, setFeito] = useState<Feito | null>(null);
@@ -771,14 +777,18 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   }, [comercial, aba, carregarAtendimentos]);
   useEffect(() => {
     if (!cadastrado || !f) return;
+    const erroTermo = erroDoCodigoDoTermo(termo);
     void Promise.resolve().then(() => setFeito({
       titulo: `${f.nome} cadastrado.`,
-      texto: "A ficha está pronta para usar. A qualificação pode ficar para quando for preparar a procuração.",
+      // TODO(F3.118): o aviso do termo que não subiu espera o ok da Carol
+      // (docs/design/propostas/portal-termo-curatela/NOTAS.md, item 1); até lá, o texto do erro.
+      texto: erroTermo ? textoDoErro(erroTermo) : "A ficha está pronta para usar. A qualificação pode ficar para quando for preparar a procuração.",
     }));
     const u = new URL(window.location.href);
     u.searchParams.delete("cadastrado");
+    u.searchParams.delete("termo");
     window.history.replaceState(null, "", u);
-  }, [cadastrado, f]);
+  }, [cadastrado, termo, f]);
 
   const abrir = (j: typeof janela) => {
     setFeito(null);
@@ -812,10 +822,11 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     if (depois) await depois();
   }
 
-  async function aoConflitoEditar(rascunho: RascunhoCliente) {
+  async function aoConflitoEditar(rascunho: RascunhoCliente, arquivo: File | null) {
     const novo = await carregar();
     if (!novo) return;
     setMeu(rascunho);
+    setMeuTermo(arquivo);
     const quem = novo.alterado?.por && novo.alterado.em ? `${novo.alterado.por} salvou esta ficha às ${hora(novo.alterado.em)}, enquanto você editava.` : "Outra pessoa salvou esta ficha enquanto você editava.";
     setConflito({ titulo: quem, diferencas: diferencasCliente(rascunhoDaFicha(novo), rascunho) });
   }
@@ -1097,16 +1108,26 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
       <Grade
         principal={
           <FormularioCliente key={conflito ? `c-${f.versao}` : "e"} modo="editar" inicial={meu ?? rascunhoDaFicha(f)} comercial={comercial} versao={f.versao}
-            idCliente={f.id} conflito={conflito}
-            aoSalvo={() => {
+            idCliente={f.id} conflito={conflito} termoAtual={f.termoCuratela ?? null} termoInicial={meuTermo}
+            aoSalvo={(r) => {
+              // Mesmo com o termo que não subiu, sai do formulário: a versão mudou com o PUT.
               setEditando(false);
               setConflito(null);
               setMeu(null);
-              void concluir({ titulo: "Ficha salva.", texto: "A mudança ficou no histórico, com seu nome e os campos alterados." });
+              setMeuTermo(null);
+              const historico = "A mudança ficou no histórico, com seu nome e os campos alterados.";
+              const guardado = "O termo de curatela ficou guardado na ficha.";
+              void concluir({
+                titulo: "Ficha salva.",
+                // TODO(F3.118): o aviso do termo que não subiu espera o ok da Carol
+                // (docs/design/propostas/portal-termo-curatela/NOTAS.md, item 1); até lá, o texto do erro.
+                texto: r.termo && r.termo !== "ENVIADO" ? textoDoErro(r.termo.erro)
+                  : r.termo === "ENVIADO" ? (r.fichaMudou ? `${historico} ${guardado}` : guardado) : historico,
+              });
             }}
-            aoCancelar={() => { setEditando(false); setConflito(null); setMeu(null); }}
-            aoConflito={(x) => void aoConflitoEditar(x)}
-            aoFicarComSalva={() => { setEditando(false); setConflito(null); setMeu(null); }} />
+            aoCancelar={() => { setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }}
+            aoConflito={(x, t) => void aoConflitoEditar(x, t)}
+            aoFicarComSalva={() => { setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }} />
         }
         lateral={<ExplicaEditar />}
       />

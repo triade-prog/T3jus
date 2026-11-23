@@ -4,9 +4,10 @@
   "peca": "S4",
   "refs": [
     "EX-16",
-    "EX-17"
+    "EX-17",
+    "FI-08"
   ],
   "status": "pendente",
   "ordem": 1060,
-  "proximo": "Desenhar a folha Fechamento do caso na ficha do contrato (pergunta 5 do D30, aprovada sem desenho)"
+  "proximo": "PR B: migrations 0900 e 0901, a rota do contrato com fechamentos, a folha \"Fechamento do caso\" e \"De onde veio\" na ficha do contrato e os textos sem levantamento nas fichas do cliente e do caso (plano em project-files t3jus/telas/portal-fechamento-sem-levantamento/PLANO-CODIGO.md); a janela de encerrar comum às duas fichas já entrou"
 }

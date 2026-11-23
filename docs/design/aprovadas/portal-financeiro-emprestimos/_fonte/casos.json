@@ -1,0 +1,86 @@
+[
+ {
+  "nome": "em-caixa",
+  "url": "emprestimos.html?estado=em-caixa"
+ },
+ {
+  "nome": "em-vazio",
+  "url": "emprestimos.html?estado=em-vazio"
+ },
+ {
+  "nome": "em-registrar",
+  "url": "emprestimos.html?estado=em-registrar"
+ },
+ {
+  "nome": "em-registrar-parcelas",
+  "url": "emprestimos.html?estado=em-registrar-parcelas"
+ },
+ {
+  "nome": "em-registrar-antigo",
+  "url": "emprestimos.html?estado=em-registrar-antigo"
+ },
+ {
+  "nome": "em-registrar-livre",
+  "url": "emprestimos.html?estado=em-registrar-livre"
+ },
+ {
+  "nome": "em-registrar-erros",
+  "url": "emprestimos.html?estado=em-registrar-erros"
+ },
+ {
+  "nome": "em-registrar-falha",
+  "url": "emprestimos.html?estado=em-registrar-falha"
+ },
+ {
+  "nome": "em-registrado",
+  "url": "emprestimos.html?estado=em-registrado"
+ },
+ {
+  "nome": "em-ficha",
+  "url": "emprestimos.html?estado=em-ficha"
+ },
+ {
+  "nome": "em-ficha-livre",
+  "url": "emprestimos.html?estado=em-ficha-livre"
+ },
+ {
+  "nome": "em-devolucao",
+  "url": "emprestimos.html?estado=em-devolucao"
+ },
+ {
+  "nome": "em-devolucao-erros",
+  "url": "emprestimos.html?estado=em-devolucao-erros"
+ },
+ {
+  "nome": "em-devolucao-falha",
+  "url": "emprestimos.html?estado=em-devolucao-falha"
+ },
+ {
+  "nome": "em-encerrar",
+  "url": "emprestimos.html?estado=em-encerrar"
+ },
+ {
+  "nome": "em-encerrado",
+  "url": "emprestimos.html?estado=em-encerrado"
+ },
+ {
+  "nome": "em-cancelar",
+  "url": "emprestimos.html?estado=em-cancelar"
+ },
+ {
+  "nome": "em-cancelado",
+  "url": "emprestimos.html?estado=em-cancelado"
+ },
+ {
+  "nome": "em-pagar",
+  "url": "emprestimos.html?estado=em-pagar"
+ },
+ {
+  "nome": "em-nova-conta",
+  "url": "emprestimos.html?estado=em-nova-conta"
+ },
+ {
+  "nome": "em-exportar",
+  "url": "emprestimos.html?estado=em-exportar"
+ }
+]

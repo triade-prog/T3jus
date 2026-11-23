@@ -129,7 +129,7 @@ select is((select m.motivo from caso_etapa_mudancas m join casos c on c.id = m.c
 insert into caso_etapa_mudancas (escritorio_id, caso_id, para_etapa_id, motivo, por)
 select c.escritorio_id, c.id, c.etapa_id, 'Conferido com o tribunal.', c.criado_por from casos c, f where c.id = (select caso_id from importacao_linhas where importacao_id = f.id and numero = 8);
 select is((select portal_importacao_plano_desfazer(socia, rm, f.id) - 'mexidos' - 'clientes' - 'juntados' - 'contratos' - 'parcelas' from ids, f),
-  '{"casos": 2, "ligacoes": 1}'::jsonb, 'o plano do desfazer: os casos não mexidos e o cliente ligado ao caso antigo');
+  '{"casos": 2, "ligacoes": 1, "encerrados": 0}'::jsonb, 'o plano do desfazer: os casos não mexidos e o cliente ligado ao caso antigo');
 select portal_importacao_desfazer(socia, rm, f.id, 'Importei o backup errado') from ids, f;
 select is((select jsonb_agg(jsonb_build_array(situacao, encerrado_por, resultado) order by situacao desc) from casos c, f where c.importacao_id = f.id),
   '[["ENCERRADO", "IMPORTACAO_DESFEITA", null], ["ENCERRADO", "IMPORTACAO_DESFEITA", null], ["ANDAMENTO", null, null]]'::jsonb,

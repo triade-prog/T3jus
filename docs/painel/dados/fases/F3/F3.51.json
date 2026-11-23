@@ -1,11 +1,12 @@
 {
   "id": "F3.51",
-  "texto": "Categoria Empréstimos nas entradas e saídas",
+  "texto": "Categoria Empréstimos nas entradas e saídas: registrar o empréstimo recebido, as parcelas em A pagar, o saldo do Caixa sem contar como receita e a aba própria ao contador",
   "peca": "S3",
   "refs": [
     "FI-20"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 510,
-  "proximo": "Acrescentar Empréstimos às categorias (banco, domínio e exportação) e perguntar à Carol se entra como receita ou à parte, como terceiros"
+  "proximo": "Telas dos empréstimos",
+  "nota": "Decisão da Carol (22/11): à parte, como terceiros; entra no saldo, não é receita. Plano revisado e desenho aprovados em 22/11 (docs/design/aprovadas/portal-financeiro-emprestimos). Servidor pronto (23/11): migrations 0940 e 0941 (empréstimo, parcelas em A pagar, devolução livre, encerrar e lançado errado, Caixa e arquivo do contador com a aba Empréstimos), rotas da api-portal, domínio e planilha; testes pgTAP 126, Deno e Vitest. Faltam as telas (PR 3) e a publicação (P6)."
 }

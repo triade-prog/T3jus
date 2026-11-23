@@ -14,6 +14,8 @@ import {
   propostaRepasseSchema, textoPrestacaoContas, type Levantamento, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, enviarContadorSchema, salvarAjustesSchema, corrigirAberturaSchema, definirMetaSchema,
+  registrarEmprestimoSchema, devolucaoEmprestimoSchema, motivoEmprestimoSchema,
+  type Emprestimo, type EmprestimoRegistrado, type FichaEmprestimo, type DevolucaoRegistrada,
   type AjustesFinanceiro, type EnvioContador, type MetasReceita, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
@@ -24,7 +26,7 @@ import {
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
-  colunasImportacaoSchema, tirarMetaSchema, VALIDADE_LINK_PASTA_S, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema,
+  colunasImportacaoSchema, tirarMetaSchema, VALIDADE_LINK_PASTA_S, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema, arquivadosImportacaoSchema, filtroLancamentosSchema,
   LIMITE_ARQUIVO_BYTES, LIMITE_BACKUP_LINHAS, lerPlanilha, MODELOS, prepararAbas, backupLidoSchema, descomprimirJson, type AbaLida, type AbaParaOBanco, ligacaoImportacaoSchema, linhaImportacaoSchema, type Importacao, type LinhaPrevia, type LinhasFora,
   type FinanceiroAnterior, type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
@@ -1062,6 +1064,41 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     }));
   });
 
+  // ------------------------------------------------------------------ Empréstimos (F3.51; FI-20)
+  // À parte, como terceiros: entram no saldo do Caixa, mas não são receita. A lista vem em
+  // GET /financeiro/caixa; as parcelas nascem em A pagar e se pagam por /contas/:id/paga.
+  app.post("/v1/escritorio/financeiro/emprestimos", async (c) => {
+    const d = await lerCorpo(c, registrarEmprestimoSchema);
+    return c.json(await deps.banco.rpc<EmprestimoRegistrado>("portal_financeiro_emprestimo_registrar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/financeiro/emprestimos/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaEmprestimo>("portal_financeiro_emprestimo", { ...quem(c), p_emprestimo: idDaRota(c, "id") }));
+  });
+
+  // Sem parcelas fixas: cada devolução nasce já paga.
+  app.post("/v1/escritorio/financeiro/emprestimos/:id/devolucoes", async (c) => {
+    const d = await lerCorpo(c, devolucaoEmprestimoSchema);
+    return c.json(await deps.banco.rpc<DevolucaoRegistrada>("portal_financeiro_emprestimo_devolucao", {
+      ...quem(c), p_emprestimo: idDaRota(c, "id"), p_dados: d,
+    }), 201);
+  });
+
+  // Encerrar as parcelas que faltam e "Lançado errado": sempre com motivo; nada se apaga.
+  app.post("/v1/escritorio/financeiro/emprestimos/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, motivoEmprestimoSchema);
+    return c.json(await deps.banco.rpc<Emprestimo>("portal_financeiro_emprestimo_encerrar", {
+      ...quem(c), p_emprestimo: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/financeiro/emprestimos/:id/cancelar", async (c) => {
+    const d = await lerCorpo(c, motivoEmprestimoSchema);
+    return c.json(await deps.banco.rpc<Emprestimo>("portal_financeiro_emprestimo_cancelar", {
+      ...quem(c), p_emprestimo: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
   // ------------------------------------------------------------------ Contas que repetem (FI-13, F3.24)
   // Mudar o valor ou o dia a partir de um mês e encerrar com motivo. A conta do mês já lançada
   // muda só se a pessoa escolher o mês dela; conta paga nunca muda (0534).
@@ -1321,7 +1358,26 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.patch("/v1/escritorio/importacoes/:id/colunas", async (c) => {
     const d = await lerCorpo(c, colunasImportacaoSchema);
     return c.json(await deps.banco.rpc<ResumoPrevia & { versao: number }>("portal_importacao_colunas", {
-      ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao, p_dados: { aba: d.aba, ligacao: d.ligacao, pares: d.pares ?? {} },
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao, p_dados: { aba: d.aba, ligacao: d.ligacao, pares: d.pares ?? {}, arquivados: d.arquivados },
+    }));
+  });
+  // F3.116: a escolha dos arquivados no passo das abas do backup do Astrea.
+  app.patch("/v1/escritorio/importacoes/:id/arquivados", async (c) => {
+    const d = await lerCorpo(c, arquivadosImportacaoSchema);
+    return c.json(await deps.banco.rpc<Importacao>("portal_importacao_arquivados", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao, p_dados: { arquivados: d.arquivados },
+    }));
+  });
+  // F3.117: a prévia do financeiro agrupada (Recebidos, Em aberto, Despesas), 50 por vez.
+  app.get("/v1/escritorio/importacoes/:id/lancamentos", async (c) => {
+    const r = filtroLancamentosSchema.safeParse({
+      grupo: c.req.query("grupo") || undefined, situacao: c.req.query("situacao") || undefined,
+      q: c.req.query("q") || undefined, pular: c.req.query("pular") || undefined,
+    });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: r.error.issues.map((i) => String(i.path[0])) });
+    return c.json(await deps.banco.rpc<PreviaImportacao>("portal_importacao_lancamentos", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_grupo: r.data.grupo ?? null, p_situacao: r.data.situacao ?? null,
+      p_q: r.data.q ?? null, p_pular: r.data.pular ?? 0,
     }));
   });
   app.get("/v1/escritorio/importacoes/:id/linhas", async (c) => {
@@ -1333,7 +1389,8 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   });
   app.patch("/v1/escritorio/importacoes/:id/linhas/:n", async (c) => {
     const n = Number(c.req.param("n"));
-    if (!Number.isInteger(n) || n < 2 || n > 2001) throw new ErroDominio("NOT_FOUND");
+    // A linha 1 é o cabeçalho; o backup traz até 10.000 linhas (a última é a 10.001).
+    if (!Number.isInteger(n) || n < 2 || n > 10001) throw new ErroDominio("NOT_FOUND");
     const d = await lerCorpo(c, linhaImportacaoSchema);
     return c.json(await deps.banco.rpc<ResumoPrevia & { linha: LinhaPrevia; versao: number }>("portal_importacao_linha", {
       ...quem(c), p_importacao: idDaRota(c, "id"), p_numero: n, p_dados: d,

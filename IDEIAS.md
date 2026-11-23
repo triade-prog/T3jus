@@ -76,6 +76,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | FI-21 | Exportação mensal para o contador (recebimentos, despesas, notas e comprovantes) | [V1] |
 | FI-22 | DRE no formato do CPC 51/IFRS 18 (grupos Operacional, Investimento, Financiamento e Tributos, com os dois subtotais obrigatórios), por competência a partir do mês de referência de cada parcela, como relatório no Caixa ou junto da exportação ao contador. Conferir o mapeamento das categorias com o contador de um piloto antes de desenhar | [VAL] |
 | FI-23 | Carnê de pagamento dos honorários parcelados, num modelo do T3jus: o escritório gera no Portal, a partir das parcelas do contrato, um PDF em A4 com várias parcelas destacáveis (canhoto do escritório e via do cliente), com o Pix do próprio escritório, para imprimir ou mandar ao cliente pelo WhatsApp, sem depender de boleto registrado nem de provedor de pagamento | [V1] |
+| FI-24 | Baixa de parcela vencida sem receber, com motivo (perdoada, inadimplência ou renegociada), só para quem tem `financeiro.editar`: a parcela sai de "Em atraso", fica no histórico e deixa de segurar o fechamento do caso, que passa a valer com tudo recebido ou baixado com motivo (Carol aprovou em 22/11/2026) | [V1] |
 
 ## 5. Execução jurídica
 
@@ -206,7 +207,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 1. Painel do dia | 7 |
 | 2. Atendimento e propostas | 8 |
 | 3. Contratos e honorários | 13 |
-| 4. Financeiro e repasses | 23 |
+| 4. Financeiro e repasses | 24 |
 | 5. Execução jurídica | 18 |
 | 6. Indicadores | 15 |
 | 7. A validar com os pilotos | 8 |
@@ -214,4 +215,4 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 6 |
 | 11. Portal do advogado | 7 |
-| **Total** | **138** |
+| **Total** | **139** |

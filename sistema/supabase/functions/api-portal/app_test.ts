@@ -16,6 +16,7 @@ const ANEXO_NOTA = "1a2b3c4d-0000-4000-8000-00000000a001";
 const ANEXO_SUMIU = "1a2b3c4d-0000-4000-8000-00000000a002";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
 const PETICAO = "8d5e1b8a-3f9c-4e0d-9a6b-9c0d1e2f3a4b";
+const TERMO = "a1180000-0000-4000-8000-000000000001";
 const VERSAO_PET = "9e6f2c9b-4a0d-4f1e-8b7c-0d1e2f3a4b5c";
 const OAB_ANA = "0f7a3d0c-5b1e-4a2f-9c8d-1e2f3a4b5c6d";
 const DADOS_PETICAO: DadosPeticao = {
@@ -193,6 +194,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_importacao_criar: (a) => ({ id: CLIENTE, ...(a.p_dados as object) }),
     portal_importacao_linha: (a) => ({ linha: { numero: a.p_numero }, dados: a.p_dados }),
+    portal_importacao_arquivados: (a) => ({ id: a.p_importacao, versao: Number(a.p_versao) + 1, ...(a.p_dados as object) }),
+    portal_importacao_lancamentos: (a) => ({ linhas: [], total: 0, grupo: a.p_grupo }),
+    portal_importacao_colunas: (a) => ({ versao: Number(a.p_versao) + 1, dados: a.p_dados }),
     portal_relatorio_cliente: (a) => ({ cliente: { id: a.p_cliente } }),
     portal_relatorio_exportar: (a) => ({ formato: (a.p_dados as { formato: string }).formato }),
     portal_inicio_resumo: () => ({ areas: ["JURIDICO"], dono: false, pedem: { JURIDICO: 2 }, total: 2, compromissos: 0, proximoCompromisso: null }),
@@ -274,6 +278,21 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_financeiro_pagar: (a) => ({ algum: true, contas: [], mostrar: a.p_mostrar }),
     portal_financeiro_conta_lancar: () => ({ id: CLIENTE, recorrenteId: null }),
+    portal_financeiro_emprestimo_registrar: (a) => {
+      const d = a.p_dados as { credorNome?: string | null; valor?: number | null; parcelasTotal?: number | null };
+      const campos = [!d.credorNome ? "credorNome" : null, !d.valor ? "valor" : null].filter(Boolean);
+      if (campos.length) erroBanco("TC422", { campos });
+      return { id: CLIENTE, parcelasCriadas: d.parcelasTotal ?? 0 };
+    },
+    portal_financeiro_emprestimo: (a) => ({ id: a.p_emprestimo, parcelas: [], devolucoes: [], historico: [] }),
+    portal_financeiro_emprestimo_devolucao: () => ({ id: CLIENTE, acimaDoQueFalta: 0, emprestimo: { id: CLIENTE } }),
+    portal_financeiro_emprestimo_encerrar: (a) => ({ id: a.p_emprestimo, situacao: { situacao: "ENCERRADO" } }),
+    portal_financeiro_emprestimo_cancelar: (a) => {
+      const motivo = String((a.p_dados as { motivo?: string | null }).motivo ?? "");
+      if (motivo.length < 5) erroBanco("TC422", { campos: ["motivo"] });
+      if (a.p_emprestimo === ANEXO_NOTA) erroBanco("TC422", { motivo: "EMPRESTIMO_COM_PAGAMENTO" });
+      return { id: a.p_emprestimo, situacao: { situacao: "CANCELADO" } };
+    },
     portal_financeiro_conta_paga: (a) => {
       const d = a.p_dados as { pagaEm?: string };
       if ((d.pagaEm ?? "") > "2026-11-18") erroBanco("TC422", { motivo: "DATA_NO_FUTURO", campos: ["pagaEm"] });
@@ -333,6 +352,8 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if (Number(a.p_dias) < 30 || Number(a.p_dias) > 365) erroBanco("TC422", { campos: ["validadeDias"] });
       return { dias: a.p_dias, atual: 90, totalComComprovante: 41, vencidosAgora: 3, vencidosCom: 7, passamAQtd: 4, passamA: [], voltamAEmDiaQtd: 0, voltamAEmDia: [], listasComFrase: 4, itensComFrase: 4 };
     },
+    portal_cliente_termo_iniciar: () => TERMO,
+    portal_documento_dados: (a) => ({ contrato: { id: a.p_contrato }, termoCuratela: { id: TERMO, tipo: "TERMO_CURATELA", nome: "termo-curatela.pdf", anteriores: 0 } }),
     portal_cliente_documentos_previa: (a) => ({ area: a.p_area, itens: [], cliente: null, contato: null, whatsappLigado: false, modelo: null, escritorio: "Aurora", podeConferir: true }),
     portal_juridico_documento_inicio_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, ...(a.p_dados as object) }),
     portal_juridico_documento_inicio_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
@@ -1369,6 +1390,29 @@ Deno.test("CH-01, CH-04, IN-01: criar o contrato da proposta, registrar a assina
   assertEquals((await m.pedir("/v1/escritorio/contratos/nao-e-id", { cookie })).status, 404);
 });
 
+Deno.test("F3.116, F3.117: a escolha dos arquivados, a prévia agrupada do financeiro e a linha até 10.001; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const base = `/v1/escritorio/importacoes/${CLIENTE}`;
+  const r = await (await m.pedir(`${base}/arquivados`, { metodo: "PATCH", corpo: { versao: 3, arquivados: "ENCERRADOS" }, cookie })).json();
+  assertEquals([r.versao, r.arquivados], [4, "ENCERRADOS"]);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_importacao_arquivados")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_versao, ch.args.p_dados], [AURORA, 3, { arquivados: "ENCERRADOS" }]);
+  assertEquals((await erro(await m.pedir(`${base}/arquivados`, { metodo: "PATCH", corpo: { versao: 3, arquivados: "TODOS" }, cookie }))).detalhes?.campos, ["arquivados"]);
+  // ADVBOX: a escolha vem com as colunas.
+  await m.pedir(`${base}/colunas`, { metodo: "PATCH", corpo: { versao: 2, ligacao: { "0": "numero" }, arquivados: "FORA" }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_importacao_colunas")!.args.p_dados as { arquivados: string }).arquivados, "FORA");
+  // A prévia agrupada.
+  await m.pedir(`${base}/lancamentos?grupo=DESPESAS&q=aluguel&pular=50`, { cookie });
+  const l = m.chamadas.find((c) => c.funcao === "portal_importacao_lancamentos")!;
+  assertEquals([l.args.p_escritorio, l.args.p_grupo, l.args.p_situacao, l.args.p_q, l.args.p_pular], [AURORA, "DESPESAS", null, "aluguel", 50]);
+  assertEquals((await erro(await m.pedir(`${base}/lancamentos?grupo=OUTRO`, { cookie }))).detalhes?.campos, ["grupo"]);
+  assertEquals((await m.pedir("/v1/escritorio/importacoes/nao-e-id/lancamentos", { cookie })).status, 404);
+  // O backup traz até 10.000 linhas: a última é a 10.001.
+  assertEquals((await (await m.pedir(`${base}/linhas/10001`, { metodo: "PATCH", corpo: { decisao: "PULAR" }, cookie })).json()).linha.numero, 10001);
+  assertEquals((await m.pedir(`${base}/linhas/10002`, { metodo: "PATCH", corpo: { decisao: "PULAR" }, cookie })).status, 404);
+});
+
 Deno.test("F3.56 parte 3: o financeiro do sistema antigo na ficha do cliente; o escritório vem da sessão", async () => {
   const m = montar();
   const cookie = await noEscritorio(m);
@@ -1749,11 +1793,49 @@ Deno.test("IN-10: os grupos de honorário cobrem todos os tipos do banco, e o al
 });
 
 Deno.test("FI-20, FI-07: categorias de saída e formas de reembolso do domínio são as mesmas do banco", async () => {
-  const { CATEGORIAS_SAIDA, REEMBOLSO_COMO } = await import("@t3jus/domain");
+  const { CATEGORIAS_SAIDA, CATEGORIAS_LANCAR, REEMBOLSO_COMO, CREDORES_EMPRESTIMO, DEVOLUCAO_EMPRESTIMO } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0230_portal_financeiro_pagar.sql", import.meta.url));
-  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
-  assertEquals(lista(/categoria_saida_valida\(p text\)[\s\S]*?select p in \(([^)]+)\)/), Object.keys(CATEGORIAS_SAIDA));
+  // A categoria Empréstimos entrou no fim da lista na 0940 (F3.51): a definição que vale é a dela, na ordem.
+  const sql0940 = await Deno.readTextFile(new URL("../../migrations/0940_emprestimos.sql", import.meta.url));
+  const lista = (re: RegExp, texto = sql) => re.exec(texto)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/categoria_saida_valida\(p text\)[\s\S]*?select p in \(([^)]+)\)/, sql0940), Object.keys(CATEGORIAS_SAIDA));
+  assertEquals(Object.keys(CATEGORIAS_LANCAR), Object.keys(CATEGORIAS_SAIDA).filter((k) => k !== "EMPRESTIMOS"));
   assertEquals(lista(/reembolso_como\s+text check \(reembolso_como in \(([^)]+)\)/), Object.keys(REEMBOLSO_COMO));
+  assertEquals(lista(/credor_tipo\s+text not null check \(credor_tipo in \(([^)]+)\)/, sql0940), Object.keys(CREDORES_EMPRESTIMO));
+  assertEquals(lista(/devolucao\s+text not null check \(devolucao in \(([^)]+)\)/, sql0940), Object.keys(DEVOLUCAO_EMPRESTIMO));
+});
+
+Deno.test("FI-20 (F3.51): empréstimos, registrar, ficha, devolução, encerrar e lançado errado; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/financeiro/emprestimos", {
+    corpo: { credorTipo: "BANCO", credorNome: "Sicoob", valor: 3000000, recebidoEm: "2026-10-05", devolucao: "PARCELAS", parcelasTotal: 24,
+      parcelaValor: 145000, proximoVencimento: "2026-10-20", parcelas: [{ n: 1, valor: 150000 }] }, cookie });
+  assertEquals([r.status, (await r.json()).parcelasCriadas], [201, 24]);
+  const reg = m.chamadas.find((x) => x.funcao === "portal_financeiro_emprestimo_registrar")!;
+  assertEquals([reg.args.p_escritorio, (reg.args.p_dados as { credorNome: string }).credorNome], [AURORA, "Sicoob"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/emprestimos", { corpo: { valor: "muito" }, cookie }))).detalhes?.campos, ["valor"]);
+  const sem = await erro(await m.pedir("/v1/escritorio/financeiro/emprestimos", { corpo: { credorTipo: "BANCO" }, cookie }));
+  assertEquals(sem.detalhes?.campos, ["credorNome", "valor"]);
+
+  assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}`, { cookie })).json()).id, CLIENTE);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/emprestimos/nao-e-id", { cookie })).status, 404);
+  const ficha = m.chamadas.find((x) => x.funcao === "portal_financeiro_emprestimo")!;
+  assertEquals([ficha.args.p_escritorio, ficha.args.p_emprestimo], [AURORA, CLIENTE]);
+
+  const d = await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}/devolucoes`, { corpo: { valor: 250000, pagaEm: "2026-11-10", forma: "PIX" }, cookie });
+  assertEquals([d.status, (await d.json()).acimaDoQueFalta], [201, 0]);
+  const enc = await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}/encerrar`, { corpo: { motivo: "Quitado com o banco" }, cookie });
+  assertEquals([enc.status, (await enc.json()).situacao.situacao], [200, "ENCERRADO"]);
+  const curto = await erro(await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}/cancelar`, { corpo: { motivo: "erro" }, cookie }));
+  assertEquals(curto.detalhes?.campos, ["motivo"]);
+  const pago = await erro(await m.pedir(`/v1/escritorio/financeiro/emprestimos/${ANEXO_NOTA}/cancelar`, { corpo: { motivo: "Lançado errado" }, cookie }));
+  assertEquals(pago.detalhes?.motivo, "EMPRESTIMO_COM_PAGAMENTO");
+  for (const f of ["portal_financeiro_emprestimo_devolucao", "portal_financeiro_emprestimo_encerrar", "portal_financeiro_emprestimo_cancelar"]) {
+    assert(m.chamadas.filter((x) => x.funcao === f).every((x) => x.args.p_escritorio === AURORA), f);
+  }
+  // Sem a sessão, não chega ao banco.
+  assertEquals((await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}`)).status, 401);
 });
 
 Deno.test("EX-01, EX-03: Jurídico, lista, cadastrar com o número só em dígitos, ficha e mudar etapa; o escritório vem da sessão", async () => {
@@ -1914,6 +1996,32 @@ Deno.test("AP-08 (F3.134): o prazo do comprovante no domínio é o mesmo do banc
   assert(OPCOES_PRAZO_COMPROVANTE.every((o) => o.dias >= PRAZO_COMPROVANTE.min && o.dias <= PRAZO_COMPROVANTE.max));
   const nova = await Deno.readTextFile(new URL("../../migrations/0910_prazo_comprovante.sql", import.meta.url));
   assertMatch(nova, new RegExp(`p_dias not between ${PRAZO_COMPROVANTE.min} and ${PRAZO_COMPROVANTE.max}`));
+});
+
+Deno.test("F3.118 / AP-01: termo de curatela em duas etapas, no escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { nome: "termo-curatela.pdf", arquivoTipo: "application/pdf", tamanho: 2400 };
+  // O escritório e o tipo vindos do navegador são descartados (M3): vale o da sessão.
+  const ini = await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-curatela`, { corpo: { ...corpo, escritorioId: BELA_VISTA, tipo: "RG_CPF" }, cookie });
+  assertEquals(ini.status, 201);
+  assertEquals((await ini.json()).id, TERMO);
+  assertEquals(m.storage.pedidosDeEnvio, [`${AURORA}/${TERMO}`]);
+  const chamada = m.chamadas.find((c) => c.funcao === "portal_cliente_termo_iniciar")!;
+  assertEquals([chamada.args.p_escritorio, chamada.args.p_cliente, chamada.args.p_dados], [AURORA, ANA, corpo]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-curatela`, { corpo: { ...corpo, tamanho: 10485761 }, cookie }))).detalhes?.campos, ["tamanho"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-curatela`, { corpo: { ...corpo, arquivoTipo: "application/msword" }, cookie }))).detalhes?.campos, ["arquivoTipo"]);
+  assertEquals((await m.pedir("/v1/escritorio/clientes/nao-e-id/termo-curatela", { corpo, cookie })).status, 404);
+  // Concluir e abrir são as rotas de Documentos pessoais, pelo id.
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/concluir`, { corpo: {}, cookie }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.storage.guardados.set(`${AURORA}/${TERMO}`, { tamanho: 2400, tipo: "application/pdf" });
+  assertEquals((await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/concluir`, { corpo: {}, cookie })).status, 200);
+  const abrir = await (await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/abrir`, { corpo: {}, cookie })).json();
+  assertMatch(abrir.url, /^https:\/\/storage\.exemplo\/ler\//);
+  // Gerar documentos recebe o termo como veio do banco.
+  const dados = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos-dados`, { cookie })).json();
+  assertEquals(dados.termoCuratela.id, TERMO);
+  assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_") || c.funcao === "portal_documento_dados").every((c) => c.args.p_escritorio === AURORA));
 });
 
 Deno.test("EX-05: documentos do caso (pedir, pedir de novo, já chegou, enviar em duas etapas e abrir) no caminho do escritório da sessão", async () => {
