@@ -5,10 +5,12 @@
 // fichas no alto; cada documento tem nome, "Como pedir ao cliente", "Onde fica" (pessoal, na ficha,
 // ou do caso) e "Só se houver". Só a sócia dona edita; a equipe vê. Área sem lista não pede nada
 // sozinha e oferece a sugestão do T3jus. Mudar a lista vale do próximo caso em diante.
+// O prazo do comprovante (F3.134, desenho portal-prazo-comprovante) fica na folha "Prazo do
+// comprovante", no alto da coluna do lado; o item do comprovante leva até ela.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  AREAS_DIREITO, TIPOS_DOCUMENTO_PESSOAL,
+  AREAS_DIREITO, quemMuda, TIPOS_DOCUMENTO_PESSOAL,
   type AreaComLista, type DocumentoInicio, type DocumentosInicio, type SugestaoDocumentoInicio, type TipoDocumentoPessoal,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -21,6 +23,8 @@ import { TIPOS_NO_SELETOR } from "./clientes.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { FolhaPrazoComprovante, type PrazoSalvo } from "./PrazoComprovante.tsx";
+import { textoMudado, textoSalvo } from "./prazoComprovante.ts";
 
 type Feito = { titulo: string; texto: string };
 const TIPOS = TIPOS_NO_SELETOR;
@@ -163,24 +167,42 @@ function Conteudo() {
   const [feito, setFeito] = useState<Feito | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
-  const cab = (dono: boolean) => (
+  const [editandoPrazo, setEditandoPrazo] = useState(false);
+  const [prazoSalvo, setPrazoSalvo] = useState<PrazoSalvo | null>(null);
+  const rolouParaPrazo = useRef(false);
+  const carregou = !!dados && dados !== "erro";
+  // Quem chega pelo "Mudar o prazo" da ficha do cliente (#prazo) vê a folha do prazo.
+  useEffect(() => {
+    if (!carregou || rolouParaPrazo.current) return;
+    rolouParaPrazo.current = true;
+    if (window.location.hash === "#prazo") document.getElementById("prazo")?.scrollIntoView({ block: "start" });
+  }, [carregou]);
+  const cab = (dono: boolean | null) => (
     <div className="pt-cab">
       <div>
         <a className="voltar jr-voltar" href={ROTAS_JURIDICO.casos}><Icone nome="esquerda" className="ico ico-s" />Casos e processos</a>
-        <p className="sobretitulo">Jurídico{dono ? " · só a sócia dona edita" : ""}</p>
+        <p className="sobretitulo">Jurídico{dono === null ? "" : dono ? " · só a sócia dona edita" : " · você vê; quem edita é a sócia dona"}</p>
         <h1>Documentos para começar</h1>
         <span className="fio" aria-hidden="true" />
         <p className="lede">O que cada área pede ao cliente para o processo começar. Fica ao lado de Etapas do escritório.</p>
       </div>
     </div>
   );
-  if (dados === "erro") return <>{cab(false)}<ErroAoCarregar oque="os documentos para começar" aoTentar={recarregar} /></>;
-  if (!dados) return <>{cab(false)}<Carregando rotulo="Carregando as listas…" linhas={4} /></>;
+  if (dados === "erro") return <>{cab(null)}<ErroAoCarregar oque="os documentos para começar" aoTentar={recarregar} /></>;
+  if (!dados) return <>{cab(null)}<Carregando rotulo="Carregando as listas…" linhas={4} /></>;
   const ed = dados.podeEditar;
   const atual = dados.areas.find((a) => a.area === area) ?? dados.areas[0]!;
   const lista = atual.itens;
   const nomeArea = AREAS_DIREITO[atual.area].toLowerCase();
   const pessoais = lista.filter((x) => x.pessoal).length;
+  const donos = dados.sociosDonos ?? [];
+
+  function abrirPrazo() {
+    setEditando(null);
+    setFalha(null);
+    setPrazoSalvo(null);
+    setEditandoPrazo(true);
+  }
 
   async function chamar(caminho: string, corpo: unknown, f: Feito) {
     setFalha(null);
@@ -211,6 +233,14 @@ function Conteudo() {
         <div className="jr-et-oque">
           <h3><span className="sr">Documento {i + 1}: </span>{x.nome}<Selos d={x} validade={dados.validadeDias} /></h3>
           {x.comoPedir ? <p className="jr-et-txt">“{x.comoPedir}”</p> : null}
+          {x.pessoal === "COMPROVANTE_RESIDENCIA" ? (
+            <p className="pzc-liga">
+              O prazo vale para todas as áreas.{" "}
+              {dados.podeMudarPrazo
+                ? <a href="#prazo" onClick={(e) => { e.preventDefault(); abrirPrazo(); }}>Mudar o prazo</a>
+                : quemMuda(donos)}
+            </p>
+          ) : null}
         </div>
         {ed ? (
           <div className="jr-et-acoes">
@@ -222,7 +252,7 @@ function Conteudo() {
               onClick={() => void chamar(`/v1/escritorio/juridico/documentos-inicio/${x.id}/mover`, { direcao: "DESCE" }, { titulo: `${x.nome} desceu`, texto: "A nova ordem vale do próximo caso em diante." })}>
               <Icone nome="baixo" className="ico" />
             </button>
-            <button className="btn btn-sec btn-compacto" type="button" onClick={() => { setFalha(null); setEditando(x.id); }} aria-label={`Editar ${x.nome}`}>
+            <button className="btn btn-sec btn-compacto" type="button" onClick={() => { setFalha(null); setEditandoPrazo(false); setEditando(x.id); }} aria-label={`Editar ${x.nome}`}>
               <Icone nome="lapis" className="ico" />Editar
             </button>
           </div>
@@ -241,7 +271,7 @@ function Conteudo() {
 
   return (
     <div className="hn">
-      {cab(ed)}
+      {cab(ed || dados.podeMudarPrazo)}
       <div className="hn-grade">
         <section className="folha" aria-labelledby="t-dl" style={{ overflow: "hidden" }}>
           <div className="folha-cab jr-ets-cab">
@@ -295,17 +325,25 @@ function Conteudo() {
             <Icone nome="historico" className="ico" />
             <span>{ed
               ? "Cada mudança fica no histórico do escritório, com seu nome e a hora. Mudar a lista não muda os casos que já abriram: vale do próximo caso em diante."
-              : "Só a sócia dona muda estas listas. A equipe vê e pode pedir mais um documento em cada caso."}</span>
+              : `${quemMuda(donos, "as listas e o prazo")} Mudar a lista não muda os casos que já abriram: vale do próximo caso em diante.`}</span>
           </p>
         </section>
-        <aside className="hn-col" aria-label="Como funcionam os documentos para começar">
+        <aside className="hn-col" aria-label="Prazo do comprovante e como funcionam os documentos para começar">
+          <FolhaPrazoComprovante dados={dados} editando={editandoPrazo} salvo={prazoSalvo} aoAbrir={abrirPrazo}
+            aoCancelar={() => setEditandoPrazo(false)}
+            aoSalvo={(r, trocar) => {
+              setEditando(null);
+              setEditandoPrazo(false);
+              setPrazoSalvo({ r, ...textoSalvo(r, trocar, dados.listasComFrase > 0), mudado: textoMudado(r.de, r.validadeDias, new Date()) });
+              recarregar();
+            }} />
           <section className="explica campo-ambar" aria-labelledby="t-exd">
             <p className="sobretitulo">Como funciona</p>
             <h2 id="t-exd">O caso já abre pedindo.</h2>
             <ul>
               <li><Icone nome="balanca" className="ico" /><span>Quando um caso abre (na assinatura, em “Abrir o caso” ou em Novo caso), a lista da área vem pronta para quem abre conferir.</span></li>
               <li><Icone nome="pessoas" className="ico" /><span>Os pessoais (RG, comprovante, certidões) ficam na ficha do cliente. O que já está lá vem como “já temos” e não é pedido de novo.</span></li>
-              <li><Icone nome="relogio" className="ico" /><span>O comprovante de residência com mais de {dados.validadeDias} dias é pedido de novo.</span></li>
+              <li><Icone nome="relogio" className="ico" /><span>O comprovante de residência com mais de {dados.validadeDias} dias é pedido de novo. O prazo fica no quadro “Prazo do comprovante”, acima.</span></li>
               <li><Icone nome="whats" className="ico" /><span>O cliente recebe a lista pelo WhatsApp, e a automação “Documento pendente” lembra o que faltar.</span></li>
               <li><Icone nome="cadeado" className="ico" /><span>Só a sócia dona muda estas listas. A equipe vê e pode pedir mais um documento em cada caso.</span></li>
             </ul>

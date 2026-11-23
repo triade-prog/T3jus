@@ -38,7 +38,7 @@ const doc = (x: Record<string, unknown>) => ({
   tamanho: 380000, fotos: 2, enviadoPor: PAULA, enviadoEm: `${dia(-12)}T15:00:00Z`, dias: null, vencido: false, anteriores: 0, ...x,
 });
 const DOCS = {
-  hoje: dia(0), validadeDias: 90, podeAnexar: true,
+  hoje: dia(0), validadeDias: 90, podeAnexar: true, podeMudarPrazo: true, sociosDonos: ["Marina Ribeiro"],
   documentos: [
     doc({}),
     doc({ id: "f1000000-0000-4000-8000-000000000002", tipo: "CERTIDAO_OBITO", descricao: "Certidão de óbito de Sebastião Prado", fotos: null, dataDocumento: "2026-09-21" }),
@@ -176,7 +176,7 @@ const SUG_FAM = [
   { nome: "Lista dos bens e dívidas", comoPedir: null, pessoal: null, seHouver: true },
 ];
 const LISTAS = (dono = true) => ({
-  podeEditar: dono, validadeDias: 90,
+  podeEditar: dono, podeMudarPrazo: dono, sociosDonos: ["Marina Ribeiro"], validadeDias: 90, comprovantesTotal: 41, comprovantesVencidos: 3, listasComFrase: 1,
   areas: [
     { area: "PREVIDENCIARIO", itens: PREV, sugestao: [] },
     { area: "TRABALHISTA", itens: [], sugestao: [] },

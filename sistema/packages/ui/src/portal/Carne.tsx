@@ -13,7 +13,7 @@ import qrcode from "qrcode-generator";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   brCodePix, chavePixParaLer, dataBr, hojeBrasilia, LIMITE_CIDADE, LIMITE_INSTRUCOES, LIMITE_RECEBEDOR, normalizarChavePix, pixDaParcela,
-  fraseOabSociedade, reais, telefoneBr, textoPix, TIPOS_CHAVE_PIX, txidParcela,
+  camposDoEscritorioNaCapa, fraseOabSociedade, identificacaoDoCarne, razaoLonga, reais, subMarcaAdvocacia, telefoneBr, textoPix, TIPOS_CHAVE_PIX, timbradoDoEscritorio, txidParcela,
   type AreaCarne, type CarneGerado, type CarneParaImprimir, type FormatoCarne, type MudancaCarne, type OpcoesCarne, type ParcelaParaCarne, type PdfDoCarne, type PedidoChavePix, type PreviaEnvioCarne, type EnvioCarne,
   type RecebimentoEscritorio, type RecebimentoSalvo, type TipoChavePix,
 } from "@t3jus/domain";
@@ -27,6 +27,7 @@ import { Toast, type Feito } from "./FichaCliente.tsx";
 import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { chamarPortal, MolduraPortal, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { BarraEscritorio, ROTAS_ESCRITORIO } from "./WhatsApp.tsx";
+import { Pedacos } from "./Recibo.tsx";
 import { JanelaRemoverLogo, LogoNoDocumento, MarcaParaLer, MarcaTimbrado, type DadosTimbrado, type EstadoMarca } from "./MarcaTimbrado.tsx";
 
 /** A página do carnê para imprimir. `imprimir` abre a impressão assim que a folha carrega. */
@@ -141,9 +142,32 @@ function Tesoura({ topo }: { topo?: boolean }) {
 
 type Impressa = CarneParaImprimir["parcelas"][number];
 
-/** O alto da via e da capa: o logo do dia do carnê (F3.81) ou o nome em letra; o CNPJ e a OAB embaixo. */
-function MarcaEscritorio({ c }: { c: CarneParaImprimir }) {
+/** O carnê gerado com o timbrado do dia (F3.133, 0890). Sem ele (carnê antigo), o desenho de antes. */
+const comTimbrado = (c: CarneParaImprimir) => !!c.escritorio.comTimbrado;
+/** Razão social com mais de 90 letras: a linha da identificação e o logo um pouco menores (decisão 13). */
+const identLonga = (c: CarneParaImprimir) => comTimbrado(c) && razaoLonga(timbradoDoEscritorio(c.escritorio).nome);
+
+/** O alto da via e da capa: o logo do dia do carnê (F3.81) ou o nome em letra. Com o timbrado, embaixo
+ *  a linha da identificação (decisão 8: **razão social** · CNPJ · OAB), e na capa só a marca (decisão 10);
+ *  sem ele, o CNPJ e a OAB, como antes. */
+function MarcaEscritorio({ c, identificacao = true }: { c: CarneParaImprimir; identificacao?: boolean }) {
   const m = c.marca;
+  if (comTimbrado(c)) {
+    const id = identificacao ? identificacaoDoCarne(c.escritorio) : null;
+    const sub = subMarcaAdvocacia(c.escritorio.nome);
+    return (
+      <div className="ca-marca">
+        {m?.tipo === "LOGO" && m.logoId
+          ? <LogoNoDocumento marca={m} nome={c.escritorio.nome} classe="ca-logo" />
+          : <><span className="ca-esc">{c.escritorio.nome}</span>{sub ? <span className="ca-esc-sub">{sub}</span> : null}</>}
+        {id ? (
+          <p className="ca-ident">
+            {id.nome ? <b>{id.nome}</b> : null}{id.nome && id.documento.length ? " · " : null}<Pedacos l={id.documento} classe="ca-nw" />
+          </p>
+        ) : null}
+      </div>
+    );
+  }
   const cnpj = c.escritorio.cnpj ? `CNPJ ${c.escritorio.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}` : null;
   const oab = m?.oab ?? c.escritorio.oab ?? null;
   return (
@@ -202,7 +226,7 @@ function Via({ c, p, grande }: { c: CarneParaImprimir; p: Impressa; grande?: boo
   const comPix = !!(c.pix && p.pix);
   const w = c.escritorio.whatsapp ? telefoneBr(c.escritorio.whatsapp) : null;
   return (
-    <section className="ca-via" aria-label={`Via do cliente, parcela ${p.ordem} de ${p.total}`}>
+    <section className={identLonga(c) ? "ca-via ca-longo" : "ca-via"} aria-label={`Via do cliente, parcela ${p.ordem} de ${p.total}`}>
       <header className="ca-cab">
         <MarcaEscritorio c={c} />
         <div className="ca-num">
@@ -291,6 +315,19 @@ function Gerado({ c }: { c: CarneParaImprimir }) {
   );
 }
 
+/** O campo "Escritório" da capa com o timbrado (decisões 10 e 11): o nome, "CNPJ · OAB", a sede com CEP,
+ *  telefone e e-mail (sem o site). */
+function CampoEscritorio({ c }: { c: CarneParaImprimir }) {
+  const t = camposDoEscritorioNaCapa(c.escritorio);
+  if (!t.nome && !t.linhas.length) return null;
+  return (
+    <div className="ca-tim-esc">
+      <dt>Escritório</dt>
+      <dd>{t.nome ? <b>{t.nome}</b> : null}{t.linhas.map((l, i) => <span key={i}><Pedacos l={l} classe="ca-nw" /></span>)}</dd>
+    </div>
+  );
+}
+
 function Capa({ c, b, ultimo }: { c: CarneParaImprimir; b: BlocoDaCapa; ultimo: boolean }) {
   const w = c.escritorio.whatsapp ? telefoneBr(c.escritorio.whatsapp) : null;
   const total = c.parcelas.reduce((s, p) => s + p.valor, 0);
@@ -313,13 +350,13 @@ function Capa({ c, b, ultimo }: { c: CarneParaImprimir; b: BlocoDaCapa; ultimo: 
     <article className={`ca-faixa ca-capa${classeFaixas(b)}`}>
       <Tesoura topo />
       <div className="ca-col">
-        <MarcaEscritorio c={c} />
+        <MarcaEscritorio c={c} identificacao={!comTimbrado(c)} />
         <div className="ca-fio" />
         <h2>Carnê de honorários</h2>
         <dl>
           <div><dt>Cliente</dt><dd>{c.cliente.nome}{c.cliente.documento ? ` · ${c.cliente.tipo === "PJ" ? "CNPJ" : "CPF"} ${c.cliente.documento}` : ""}</dd></div>
           <div><dt>Contrato</dt><dd>{c.contrato.numero} · {c.contrato.objeto}</dd></div>
-          {local ? <div><dt>Escritório</dt><dd style={{ fontWeight: 400 }}>{local}</dd></div> : null}
+          {comTimbrado(c) ? <CampoEscritorio c={c} /> : local ? <div><dt>Escritório</dt><dd style={{ fontWeight: 400 }}>{local}</dd></div> : null}
         </dl>
       </div>
       <div className="ca-col">
@@ -360,7 +397,7 @@ export function FolhasCarne({ c, ate }: { c: CarneParaImprimir; ate?: number }) 
     return (
       <>
         {c.parcelas.slice(0, ate).map((p, j) => (
-          <div key={p.txid} className="ca-folha ca-uma" role="region" aria-label={`Folha ${j + 1} de ${tot}`}>
+          <div key={p.txid} className={`ca-folha ca-uma${comTimbrado(c) ? " ca-tim" : ""}`} role="region" aria-label={`Folha ${j + 1} de ${tot}`}>
             <Via c={c} p={p} grande />
             <div className="ca-corte-h"><Tesoura /></div>
             <Canhoto c={c} p={p} />
@@ -386,7 +423,7 @@ export function FolhasCarne({ c, ate }: { c: CarneParaImprimir; ate?: number }) 
   return (
     <>
       {folhas.slice(0, ate).map((f, j) => (
-        <div key={j} className="ca-folha" role="region" aria-label={`Folha ${j + 1} de ${folhas.length}`}>
+        <div key={j} className={comTimbrado(c) ? "ca-folha ca-tim" : "ca-folha"} role="region" aria-label={`Folha ${j + 1} de ${folhas.length}`}>
           {f.map((x, k) => ("capa" in x
             ? <Capa key={`capa-${x.capa.de}`} c={c} b={x.capa} ultimo={x.ultimo} />
             : <Faixa key={x.txid} c={c} p={x} topo={k === 0} />))}
@@ -712,7 +749,8 @@ function previaDoCarne(o: OpcoesCarne, escritorio: EscritorioPortal, ps: Parcela
   const pix = r.pixTipo && r.pixChave && r.recebedor && r.cidade ? { tipo: r.pixTipo, chave: r.pixChave, recebedor: r.recebedor, cidade: r.cidade } : null;
   return {
     id: "previa", formato, capa: formato === "TRES" && capa, geradoEm: new Date().toISOString(),
-    escritorio: { nome: escritorio.nome, cnpj: escritorio.cnpj, endereco: escritorio.endereco, cidade: escritorio.cidade, uf: escritorio.uf, whatsapp: null },
+    // Com a 0890, o timbrado de hoje (com o WhatsApp que vai sair); antes dela, o nome e a sede da sessão.
+    escritorio: o.timbrado ?? { nome: escritorio.nome, cnpj: escritorio.cnpj, endereco: escritorio.endereco, cidade: escritorio.cidade, uf: escritorio.uf, whatsapp: null },
     cliente: { nome: o.cliente.nome, documento: null, tipo: "PF" },
     contrato: { id: o.contrato.id, numero: o.contrato.numero, objeto: o.contrato.objeto },
     pix, instrucoes: r.instrucoes,

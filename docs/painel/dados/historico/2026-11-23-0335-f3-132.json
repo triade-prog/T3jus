@@ -2,10 +2,10 @@
   "data": "23/11/2026",
   "inicio": "03:35",
   "fim": "04:30",
-  "texto": "Fechamento do caso sem levantamento (F3.132, PR B): migrations 0900 e 0901, a folha \"Fechamento do caso\" e \"De onde veio\" na ficha do contrato, \"Ver o acerto\" das fichas do cliente e do caso levando a ela e os textos sem levantamento; o aviso no sino fica na F3.146.",
+  "texto": "Fechamento do caso sem levantamento (F3.132, PR B): migrations 0900 e 0901, a folha \"Fechamento do caso\" e \"De onde veio\" na ficha do contrato, \"Ver o acerto\" das fichas do cliente e do caso levando a ela e os textos sem levantamento; o aviso no sino fica na F3.147.",
   "refs": [
     "F3.132",
-    "F3.146",
+    "F3.147",
     "EX-16",
     "EX-17",
     "FI-08"

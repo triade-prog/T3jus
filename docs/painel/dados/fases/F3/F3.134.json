@@ -1,11 +1,11 @@
 {
   "id": "F3.134",
-  "texto": "Mudar o prazo do comprovante de residência (padrão 90 dias) em Ajustes do escritório",
+  "texto": "Mudar o prazo do comprovante de residência (padrão 90 dias) em Jurídico › Documentos para começar",
   "peca": "S6",
   "refs": [
     "AP-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1070,
-  "proximo": "O banco já guarda o prazo (escritorios.comprovante_validade_dias, 0853); falta a tela de Ajustes do escritório, que ainda não existe e precisa de desenho."
+  "evidencia": "Migration 0910 (não aplicada): portal_escritorio_prazo_comprovante (só a sócia dona, TC401 SO_SOCIO_DONO; de 30 a 365; trava escritorios, histórico juridico.prazo_comprovante; com a caixa, troca \"últimos N dias\" no \"Como pedir\" do comprovante das listas, cada item com versão nova e histórico; não cria nem fecha pedido) e a prévia portal_escritorio_prazo_comprovante_previa (passam a vencer, voltam a em dia, pedidos abertos; só clientes ativos). Documentos para começar devolve podeMudarPrazo, sociosDonos, comprovantesTotal, comprovantesVencidos e listasComFrase; a ficha devolve podeMudarPrazo e sociosDonos; a sugestão do T3jus escreve o prazo do escritório. Rotas PUT /v1/escritorio/juridico/documentos-inicio/prazo-comprovante e GET .../prazo-comprovante/previa. Telas pelo desenho docs/design/aprovadas/portal-prazo-comprovante: folha \"Prazo do comprovante\" (PrazoComprovante.tsx, prazoComprovante.ts), \"Mudar o prazo\" no item do comprovante e na ficha do cliente (DocumentosPessoais.tsx). Testes: pgTAP 125 (45), app_test.ts (3 de F3.134), Vitest documentos_pessoais.test.ts e prazoComprovante.test.ts, e2e portal-prazo-comprovante.spec.ts (7 cenários, celular e computador, com axe)."
 }

@@ -41,7 +41,7 @@ as $$
            -- Decisão (a), a confirmar com a Carol: o êxito fica sempre com o caso que o gerou. O
            -- êxito deste caso segura o fechamento mesmo com o contrato seguindo em outro caso, e o
            -- êxito de outro caso nunca segura este. Se ela disser não, sai este "when" (e os testes
-           -- 34 e 36 do pgTAP 128).
+           -- 34 e 36 do pgTAP 130).
            when r.exito_id is not null then exists (select 1 from exitos_conferir x where x.id = r.exito_id and x.caso_id = p_caso)
            -- Pergunta 3: o contrato com outro caso em andamento fica com ele.
            else not ct.segue

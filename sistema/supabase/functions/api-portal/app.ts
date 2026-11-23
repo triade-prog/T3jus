@@ -14,6 +14,8 @@ import {
   propostaRepasseSchema, textoPrestacaoContas, type Levantamento, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, enviarContadorSchema, salvarAjustesSchema, corrigirAberturaSchema, definirMetaSchema,
+  registrarEmprestimoSchema, devolucaoEmprestimoSchema, motivoEmprestimoSchema,
+  type Emprestimo, type EmprestimoRegistrado, type FichaEmprestimo, type DevolucaoRegistrada,
   type AjustesFinanceiro, type EnvioContador, type MetasReceita, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
   type ListaReceber, type ParcelasContrato, type FechamentoNoContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
@@ -1064,6 +1066,41 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const d = await lerCorpo(c, contaReembolsadaSchema);
     return c.json(await deps.banco.rpc<{ id: string; reembolsadoEm: string }>("portal_financeiro_conta_reembolsada", {
       ...quem(c), p_conta: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  // ------------------------------------------------------------------ Empréstimos (F3.51; FI-20)
+  // À parte, como terceiros: entram no saldo do Caixa, mas não são receita. A lista vem em
+  // GET /financeiro/caixa; as parcelas nascem em A pagar e se pagam por /contas/:id/paga.
+  app.post("/v1/escritorio/financeiro/emprestimos", async (c) => {
+    const d = await lerCorpo(c, registrarEmprestimoSchema);
+    return c.json(await deps.banco.rpc<EmprestimoRegistrado>("portal_financeiro_emprestimo_registrar", { ...quem(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/escritorio/financeiro/emprestimos/:id", async (c) => {
+    return c.json(await deps.banco.rpc<FichaEmprestimo>("portal_financeiro_emprestimo", { ...quem(c), p_emprestimo: idDaRota(c, "id") }));
+  });
+
+  // Sem parcelas fixas: cada devolução nasce já paga.
+  app.post("/v1/escritorio/financeiro/emprestimos/:id/devolucoes", async (c) => {
+    const d = await lerCorpo(c, devolucaoEmprestimoSchema);
+    return c.json(await deps.banco.rpc<DevolucaoRegistrada>("portal_financeiro_emprestimo_devolucao", {
+      ...quem(c), p_emprestimo: idDaRota(c, "id"), p_dados: d,
+    }), 201);
+  });
+
+  // Encerrar as parcelas que faltam e "Lançado errado": sempre com motivo; nada se apaga.
+  app.post("/v1/escritorio/financeiro/emprestimos/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, motivoEmprestimoSchema);
+    return c.json(await deps.banco.rpc<Emprestimo>("portal_financeiro_emprestimo_encerrar", {
+      ...quem(c), p_emprestimo: idDaRota(c, "id"), p_dados: d,
+    }));
+  });
+
+  app.post("/v1/escritorio/financeiro/emprestimos/:id/cancelar", async (c) => {
+    const d = await lerCorpo(c, motivoEmprestimoSchema);
+    return c.json(await deps.banco.rpc<Emprestimo>("portal_financeiro_emprestimo_cancelar", {
+      ...quem(c), p_emprestimo: idDaRota(c, "id"), p_dados: d,
     }));
   });
 

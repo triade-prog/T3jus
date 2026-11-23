@@ -1,0 +1,12 @@
+{
+  "id": "F3.147",
+  "texto": "Aviso no sino para o Financeiro quando o caso sem levantamento fica pronto para encerrar no financeiro (tudo recebido, ou a última parcela a vencer chegou)",
+  "peca": "S4",
+  "refs": [
+    "EX-16",
+    "EX-17"
+  ],
+  "status": "pendente",
+  "ordem": 1065,
+  "proximo": "Desenhar e programar o aviso no sino do Financeiro para o caso sem levantamento pronto para encerrar, que ficou de fora da F3.132 (o fechamento hoje só aparece na ficha do cliente, na do caso e na do contrato)"
+}

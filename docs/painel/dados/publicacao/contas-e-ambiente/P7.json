@@ -1,0 +1,10 @@
+{
+  "id": "P7",
+  "texto": "Aplicar no Supabase a migration 0910 e publicar a api-portal da main (prazo do comprovante, F3.134)",
+  "refs": [
+    "AP-08"
+  ],
+  "status": "pendente",
+  "ordem": 70,
+  "nota": "A 0870 e a jornada (0850 a 0854) já foram aplicadas em 22/11/2026 por volta das 23h05 (Brasília), segundo a thread da jornada; conferir com list_migrations antes de aplicar a 0910."
+}

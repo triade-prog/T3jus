@@ -131,20 +131,20 @@ create temp table cx as select portal_financeiro_caixa(diego, rm) c from ids;
 select is((select c ->> 'saldo' from cx), '190000', 'FI-09: o saldo do escritório é o que entrou menos o que foi pago');
 select is((select c ->> 'fechaMes' from cx), '320000', 'e fecha o mês com o que falta entrar e sair nele');
 select is((select c -> 'terceiros' ->> 'saldo' from cx), '70000', 'FI-06: o de terceiros nunca entra no saldo do escritório');
-select is((select c -> 'meses' -> 0 from cx),
+select is((select (c -> 'meses' -> 0) - 'emprestimos' from cx),
   '{"mes": "2026-09-01", "saldo": 130000, "aCaminho": 0, "saidasPrevistas": 150000, "saidasRealizadas": 150000, "entradasPrevistas": 280000, "entradasRealizadas": 280000}'::jsonb,
   'mês passado: previsto, realizado e o saldo no fim');
-select is((select c -> 'meses' -> 2 from cx),
+select is((select (c -> 'meses' -> 2) - 'emprestimos' from cx),
   '{"mes": "2026-11-01", "saldo": 190000, "aCaminho": 0, "saidasPrevistas": 150000, "saidasRealizadas": 0, "entradasPrevistas": 310000, "entradasRealizadas": 30000}'::jsonb,
   'o mês corrente, até hoje');
-select is((select c -> 'meses' -> 3 from cx),
+select is((select (c -> 'meses' -> 3) - 'emprestimos' from cx),
   '{"mes": "2026-12-01", "saldo": 350000, "aCaminho": 0, "saidasPrevistas": 150000, "saidasRealizadas": null, "entradasPrevistas": 180000, "entradasRealizadas": null}'::jsonb,
   'FI-13: o mês seguinte prevê a conta recorrente que ainda vai nascer');
 select is((select c -> 'meses' -> 5 ->> 'saldo' from cx), '410000', 'a previsão segue até fevereiro');
 select is((select c -> 'mesesExportar' from cx), '["2026-11-01", "2026-10-01", "2026-09-01"]'::jsonb, 'os meses que se podem exportar');
 
 -- Exportação para o contador.
-select is((select (portal_financeiro_exportacao_previa(diego, rm, '2026-10-01')) - 'mes' from ids),
+select is((select (portal_financeiro_exportacao_previa(diego, rm, '2026-10-01')) - 'mes' - 'emprestimos' from ids),
   '{"aberto": false, "despesas": {"n": 1, "valor": 150000}, "recibos": 0, "terceiros": {"entrou": 0, "repassado": 0},
     "recebimentos": {"n": 1, "valor": 180000}, "honorariosTransferidos": {"n": 0, "valor": 0}}'::jsonb,
   'FI-21: a janela diz o que vai no arquivo de outubro');

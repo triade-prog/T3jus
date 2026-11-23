@@ -6,8 +6,9 @@
 
 import { useEffect, useState } from "react";
 import {
-  dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasTimbrado, localEData, mesDeReferencia, numeroDoRecibo, parcelaDoRecibo, reais,
-  textoDoRecibo, tituloDoRecibo, totalDoRecibo, type ReciboParaImprimir,
+  assinaturaDoRecibo, dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasDoTimbreRecibo, linhasTimbrado, localEData,
+  mesDeReferencia, numeroDoRecibo, parcelaDoRecibo, razaoLonga, reais, subMarcaAdvocacia, textoDoRecibo, tituloDoRecibo, totalDoRecibo,
+  type LinhaDoPapel, type ReciboParaImprimir,
 } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
 import { Simbolo } from "../Marca.tsx";
@@ -21,25 +22,64 @@ const fuso = { timeZone: "America/Sao_Paulo" } as const;
 const horaDe = (em: string) => new Intl.DateTimeFormat("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit" }).format(new Date(em)).replace(":", "h");
 const diaDe = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
 
+/** Os pedaços de uma linha do timbrado; CNPJ, OAB, CEP e telefones não quebram no meio. */
+export function Pedacos({ l, classe }: { l: LinhaDoPapel; classe: string }) {
+  return <>{l.map((p, i) => (p.inteiro ? <span key={i} className={classe}>{p.texto}</span> : p.texto))}</>;
+}
+
+/** A marca à esquerda: o logo do dia (F3.81, decisão 24), na caixa de até 92 × 20 mm; sem ele, o nome em letra. */
+function MarcaRecibo({ r, sub }: { r: ReciboParaImprimir; sub: string | null }) {
+  if (r.marca?.tipo === "LOGO" && r.marca.logoId) return <div className="rb-marca"><LogoNoDocumento marca={r.marca} nome={r.escritorio.nome} classe="rb-logo" /></div>;
+  return <div className="rb-marca"><span className="rb-esc">{r.escritorio.nome}</span>{sub ? <span className="rb-esc-sub">{sub}</span> : null}</div>;
+}
+
+/** O alto do recibo. Com o timbrado do dia (F3.133, 0890): as 4 linhas aprovadas, a 1ª em destaque,
+ *  e o WhatsApp por último. Sem ele (recibo emitido antes), como saiu. */
+function TimbreRecibo({ r }: { r: ReciboParaImprimir }) {
+  if (r.escritorio.comTimbrado) {
+    const t = linhasDoTimbreRecibo(r.escritorio);
+    return (
+      <header className="rb-timbre">
+        <MarcaRecibo r={r} sub={subMarcaAdvocacia(r.escritorio.nome)} />
+        <p className="rb-ender rb-ender-tim">
+          {t.destaque ? <span className="rb-r1">{t.destaque}</span> : null}
+          {t.linhas.map((l, i) => <span key={i}><Pedacos l={l} classe="rb-nw" /></span>)}
+        </p>
+      </header>
+    );
+  }
+  const linhas = linhasTimbrado({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined });
+  return (
+    <header className="rb-timbre">
+      <MarcaRecibo r={r} sub="Advocacia" />
+      <p className="rb-ender">
+        {linhas.slice(1).map((l, i) => <span key={i}>{i ? <br /> : null}{l}</span>)}
+        {r.escritorio.whatsapp ? <><br />WhatsApp {r.escritorio.whatsapp}</> : null}
+      </p>
+    </header>
+  );
+}
+
+/** Quem assina: com o timbrado, a razão social com "CNPJ · OAB" (decisão 6); antes, o nome e o CNPJ. */
+function AssinaturaRecibo({ r }: { r: ReciboParaImprimir }) {
+  if (r.escritorio.comTimbrado) {
+    const a = assinaturaDoRecibo(r.escritorio);
+    return <><b>{a.nome}</b>{a.documento ? <span><Pedacos l={a.documento} classe="rb-nw" /></span> : null}</>;
+  }
+  return <><b>{r.escritorio.nome}</b>{r.escritorio.cnpj ? <span>{documentoComNome(r.escritorio.cnpj)}</span> : null}</>;
+}
+
 /** A folha A4 do recibo. */
 export function FolhaRecibo({ r }: { r: ReciboParaImprimir }) {
   const total = totalDoRecibo(r);
   const n = numeroDoRecibo(r);
-  const linhas = linhasTimbrado({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined });
   const docCli = documentoComNome(r.cliente.documento);
   const venc = dataBr(r.parcela.vencimento);
+  // Razão social com mais de 90 letras: a 1ª linha e a assinatura em letra um pouco menor (decisão 13).
+  const longo = r.escritorio.comTimbrado && razaoLonga(assinaturaDoRecibo(r.escritorio).nome);
   return (
-    <article className="rb-folha" aria-label={`Recibo nº ${n}`}>
-      <header className="rb-timbre">
-        {/* O logo do dia do recibo (F3.81, decisão 24), na caixa de até 92 × 20 mm; sem ele, o nome em letra. */}
-        {r.marca?.tipo === "LOGO" && r.marca.logoId
-          ? <div className="rb-marca"><LogoNoDocumento marca={r.marca} nome={r.escritorio.nome} classe="rb-logo" /></div>
-          : <div className="rb-marca"><span className="rb-esc">{r.escritorio.nome}</span><span className="rb-esc-sub">Advocacia</span></div>}
-        <p className="rb-ender">
-          {linhas.slice(1).map((l, i) => <span key={i}>{i ? <br /> : null}{l}</span>)}
-          {r.escritorio.whatsapp ? <><br />WhatsApp {r.escritorio.whatsapp}</> : null}
-        </p>
-      </header>
+    <article className={longo ? "rb-folha rb-longo" : "rb-folha"} aria-label={`Recibo nº ${n}`}>
+      <TimbreRecibo r={r} />
       <div className="rb-fio" />
       <div className="rb-topo">
         <div className="rb-titulo"><p className="rb-rot">Recibo de honorários</p><h2>Recibo</h2><p>Nº <b>{n}</b></p></div>
@@ -82,8 +122,7 @@ export function FolhaRecibo({ r }: { r: ReciboParaImprimir }) {
         </div>
         <div className="rb-ass">
           <div className="rb-linha" />
-          <b>{r.escritorio.nome}</b>
-          {r.escritorio.cnpj ? <span>{documentoComNome(r.escritorio.cnpj)}</span> : null}
+          <AssinaturaRecibo r={r} />
           <p className="rb-reg">
             Recebimento registrado por <b>{r.registradoPor.nome}</b>{r.registradoPor.oab ? `, ${r.registradoPor.oab}` : ""}, em {dataBr(diaDe(r.registradoEm))}, às {horaDe(r.registradoEm)}.
           </p>

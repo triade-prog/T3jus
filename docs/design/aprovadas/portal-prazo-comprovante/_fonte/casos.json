@@ -1,0 +1,54 @@
+[
+ {
+  "nome": "pz-ver",
+  "url": "prazo.html?estado=pz-ver"
+ },
+ {
+  "nome": "pz-editar",
+  "url": "prazo.html?estado=pz-editar"
+ },
+ {
+  "nome": "pz-editar-180",
+  "url": "prazo.html?estado=pz-editar-180"
+ },
+ {
+  "nome": "pz-erro",
+  "url": "prazo.html?estado=pz-erro"
+ },
+ {
+  "nome": "pz-falha",
+  "url": "prazo.html?estado=pz-falha"
+ },
+ {
+  "nome": "pz-salvo",
+  "url": "prazo.html?estado=pz-salvo"
+ },
+ {
+  "nome": "pz-equipe",
+  "url": "prazo.html?estado=pz-equipe"
+ },
+ {
+  "nome": "pz-equipe-dois",
+  "url": "prazo.html?estado=pz-equipe-dois"
+ },
+ {
+  "nome": "pz-zero",
+  "url": "prazo.html?estado=pz-zero"
+ },
+ {
+  "nome": "pz-zero-editar",
+  "url": "prazo.html?estado=pz-zero-editar"
+ },
+ {
+  "nome": "pz-sem-frase",
+  "url": "prazo.html?estado=pz-sem-frase"
+ },
+ {
+  "nome": "pz-ficha",
+  "url": "prazo.html?estado=pz-ficha"
+ },
+ {
+  "nome": "pz-ficha-equipe",
+  "url": "prazo.html?estado=pz-ficha-equipe"
+ }
+]

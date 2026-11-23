@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  CATEGORIAS_SAIDA, dataBr, formatarCnj, FORMAS_PAGAMENTO, hojeBrasilia, reais, REEMBOLSO_COMO,
+  CATEGORIAS_LANCAR, CATEGORIAS_SAIDA, dataBr, formatarCnj, FORMAS_PAGAMENTO, hojeBrasilia, reais, REEMBOLSO_COMO,
   textoAnexado, type Anexo, type CategoriaAnexo,
   type CategoriaSaida, type ContaPagar, type FormaPagamento, type ListaClientes, type ListaPagar, type ParaAdiantar, type ParcelaDoReembolso, type MostrarPagar, type ReembolsoComo,
 } from "@t3jus/domain";
@@ -28,7 +28,8 @@ import { ListaRecorrentes } from "./Recorrentes.tsx";
 
 type Feito = { titulo: string; texto: string };
 
-const ORDEM_CATEGORIAS = Object.keys(CATEGORIAS_SAIDA) as CategoriaSaida[];
+// Lançar conta não oferece Empréstimos: a parcela nasce do empréstimo, no Caixa (F3.51). As telas dos empréstimos vêm depois.
+const ORDEM_CATEGORIAS = Object.keys(CATEGORIAS_LANCAR) as CategoriaSaida[];
 const ORDEM_FORMAS = Object.keys(FORMAS_PAGAMENTO) as FormaPagamento[];
 const ORDEM_COMO = Object.keys(REEMBOLSO_COMO) as ReembolsoComo[];
 const paraCampo = (c: number) => reais(c).replace(/^R\$\s?/, "");

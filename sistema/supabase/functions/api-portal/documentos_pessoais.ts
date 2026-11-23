@@ -5,14 +5,17 @@
 //   com o envio em duas etapas de Documentos do caso. O caminho é <escritório>/<documento>, montado
 //   aqui, nunca vindo do navegador. As várias fotos viram um PDF no navegador (F3.99).
 // - A lista por área: todos com Jurídico veem; só a sócia dona muda (o banco confere).
+// - O prazo do comprovante (F3.134, 0910): só a sócia dona muda, de 30 a 365 dias; a prévia
+//   conta o efeito antes de salvar. O escritório é sempre o da sessão.
 // - O termo de curatela (F3.118, 0930_termo_curatela.sql): guardado como documento do cliente, fora
 //   da lista de Documentos pessoais, só de pessoa física sob curatela. Só iniciar tem rota própria;
 //   concluir e abrir são as de Documentos pessoais, pelo id.
 
 import type { Context, Hono } from "hono";
 import {
-  documentoInicioSchema, ErroDominio, moverDocumentoInicioSchema, iniciarDocumentoPessoalSchema, iniciarTermoCuratelaSchema, sugestaoDocumentosInicioSchema, tirarDocumentoInicioSchema,
-  AREAS_DIREITO, type DocumentoInicio, type DocumentoPessoal, type DocumentosInicio, type DocumentosPessoais, type PreviaDocumentosInicio,
+  documentoInicioSchema, ErroDominio, moverDocumentoInicioSchema, iniciarDocumentoPessoalSchema, iniciarTermoCuratelaSchema, prazoComprovanteSchema, sugestaoDocumentosInicioSchema, tirarDocumentoInicioSchema,
+  AREAS_DIREITO, type DocumentoInicio, type DocumentoPessoal, type DocumentosInicio, type DocumentosPessoais, type PrazoComprovanteSalvo,
+  type PreviaDocumentosInicio, type PreviaPrazoComprovante,
 } from "@t3jus/domain";
 
 const AREAS_DIREITO_LISTA = Object.keys(AREAS_DIREITO);
@@ -73,6 +76,20 @@ export function rotasDocumentosPessoais(app: Hono<VarsPortal>, deps: DepsPortal)
     if (cliente && !UUID.test(cliente)) throw new ErroDominio("NOT_FOUND");
     return c.json(await deps.banco.rpc<PreviaDocumentosInicio>("portal_cliente_documentos_previa", {
       ...quem(c), p_area: area, p_cliente: cliente?.toLowerCase() ?? null,
+    }));
+  });
+
+  // O prazo do comprovante (F3.134): a prévia do efeito e salvar.
+  app.get("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante/previa", async (c) => {
+    const dias = c.req.query("dias") ?? "";
+    if (!/^\d{1,3}$/.test(dias)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["validadeDias"] });
+    return c.json(await deps.banco.rpc<PreviaPrazoComprovante>("portal_escritorio_prazo_comprovante_previa", { ...quem(c), p_dias: Number(dias) }));
+  });
+
+  app.put("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante", async (c) => {
+    const d = await lerCorpo(c, prazoComprovanteSchema);
+    return c.json(await deps.banco.rpc<PrazoComprovanteSalvo>("portal_escritorio_prazo_comprovante", {
+      ...quem(c), p_dias: d.validadeDias ?? null, p_trocar_texto: d.trocarTexto,
     }));
   });
 
