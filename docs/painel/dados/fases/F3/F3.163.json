@@ -1,0 +1,11 @@
+{
+  "id": "F3.163",
+  "texto": "A conferência da divisão do levantamento (destinacoes_fecham, 0280) roda no commit com o papel da API no Postgres 17 e não enxerga as tabelas: confirmar num banco 17 com o service_role e, se confirmar, torná-la security definer, com teste do commit como service_role",
+  "peca": "S4",
+  "refs": [
+    "FI-05"
+  ],
+  "status": "pendente",
+  "ordem": 1065.7,
+  "proximo": "Reproduzir num Postgres 17 a gravação de uma divisão de levantamento pela função da API com set role service_role; se falhar no commit, passar destinacoes_fecham a security definer numa migration nova, com o teste do mesmo jeito do teste 22 do pgTAP 135 do F3.147"
+}

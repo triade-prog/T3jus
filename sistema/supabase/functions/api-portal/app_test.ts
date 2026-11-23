@@ -442,7 +442,10 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     }),
     portal_cliente_sem_avisos: (a) => ({ dados: a.p_dados }),
     portal_cliente_avisos: (a) => ({ cliente: a.p_cliente }),
-    portal_avisos: () => ({ novos: 1, total: 1, itens: [] }),
+    // F3.147: o aviso de caso pronto vem com o "agora" calculado no banco, e a rota só repassa.
+    portal_avisos: () => ({ novos: 1, total: 1, itens: [{ id: "a1", tipo: "CASO_PRONTO_FECHAR", origem: "casos", origemId: "c1", em: "2026-11-17T14:05:00+00:00",
+      lido: false, dados: { caso: "Carvalho x Construtora Lume", contrato: "C-2026-012", parcelas: 7, motivo: "PAGAMENTO" },
+      agora: { encerrado: { em: "2026-11-18T13:05:00+00:00", por: { id: "m", nome: "Marina Ribeiro" } } } }] }),
     portal_aviso_lido: (a) => ({ id: a.p_id }),
     portal_avisos_lidos: (a) => ({ ate: a.p_ate }),
     portal_ia_salvar: (a) => {
@@ -1783,7 +1786,10 @@ Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sa
   assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { cookie })).json()).cliente, CLIENTE);
   assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "TODOS", origem: "FICHA", canal: "FAX" }, cookie }))).detalhes?.campos, ["canal"]);
   assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "TODOS", origem: "FICHA", pedidoEm: "03/11/2026" }, cookie }))).detalhes?.campos, ["pedidoEm"]);
-  assertEquals((await (await m.pedir("/v1/escritorio/avisos", { cookie })).json()).novos, 1);
+  const avisos = await (await m.pedir("/v1/escritorio/avisos", { cookie })).json();
+  assertEquals(avisos.novos, 1);
+  assertEquals(avisos.itens[0].tipo, "CASO_PRONTO_FECHAR");
+  assertEquals(avisos.itens[0].agora, { encerrado: { em: "2026-11-18T13:05:00+00:00", por: { id: "m", nome: "Marina Ribeiro" } } });
   assertEquals((await (await m.pedir(`/v1/escritorio/avisos/${CLIENTE}/lido`, { corpo: {}, cookie })).json()).id, CLIENTE);
   assertEquals((await (await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "2026-11-18T10:04:00.123456+00:00" }, cookie })).json()).ate, "2026-11-18T10:04:00.123456+00:00");
   assertEquals((await erro(await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "ontem" }, cookie }))).detalhes?.campos, ["ate"]);

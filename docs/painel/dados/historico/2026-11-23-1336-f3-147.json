@@ -1,0 +1,13 @@
+{
+  "data": "23/11/2026",
+  "inicio": "13:36",
+  "fim": "14:13",
+  "texto": "Aviso no sino para o Financeiro quando o caso sem levantamento fica pronto para encerrar (F3.147): migration 0990, o tipo CASO_PRONTO_FECHAR no sino com o Agora, pgTAP 135, teste de concorrência, vitest e e2e. Pendente novo F3.163: a destinacoes_fecham no commit pela API.",
+  "refs": [
+    "F3.147",
+    "F3.163",
+    "EX-16",
+    "EX-17",
+    "FI-05"
+  ]
+}
