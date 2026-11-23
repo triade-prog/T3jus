@@ -4,7 +4,9 @@
   "refs": [
     "PA-07"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 80,
-  "nota": "A ordem importa: primeiro o Portal e a api-portal, depois a 0890, com intervalo curto. O PDF do carnê e do recibo é gerado no primeiro pedido e guardado; com a 0890 aplicada e a api-portal antiga no ar, o papel desse intervalo ficaria guardado sem o timbrado. Na ordem certa, até a 0890 nada tem comTimbrado e tudo sai como hoje. A 0890 depende só da 0860 (já aplicada); para o histórico seguir a ordem dos números, aplicar antes a 0850 (P5), a 0870 e a 0880, se ainda não estiverem (conferir com list_migrations), e a 0950 (F0.23) só depois da 0890. Depois: contar os carnês com timbrado nulo (os antigos, que ficam ao vivo) e testar um carnê e um recibo no escritório de demonstração."
+  "nota": "A ordem importa: primeiro o Portal e a api-portal, depois a 0890, com intervalo curto. O PDF do carnê e do recibo é gerado no primeiro pedido e guardado; com a 0890 aplicada e a api-portal antiga no ar, o papel desse intervalo ficaria guardado sem o timbrado. Na ordem certa, até a 0890 nada tem comTimbrado e tudo sai como hoje. A 0890 depende só da 0860 (já aplicada); para o histórico seguir a ordem dos números, aplicar antes a 0850 (P5), a 0870 e a 0880, se ainda não estiverem (conferir com list_migrations), e a 0950 (F0.23) só depois da 0890. Depois: contar os carnês com timbrado nulo (os antigos, que ficam ao vivo) e testar um carnê e um recibo no escritório de demonstração.",
+  "evidencia": "api-portal v37 publicada no 3a72e9e (main com o #146) em 23/11/2026, 8h21 (Bahia), pela publicação conjunta da thread do termo de curatela; saude 200. Migration 0890 aplicada no Supabase em 23/11/2026, 8h42 (Bahia), com o ok da Carol (cartão de decisão: aplicar já, sem esperar a Vercel, porque os PDFs saem da api-portal nova); gatilhos carnes_timbrado_do_dia e recibo_copias_timbrado_do_dia no ar, carnes como dado pessoal no inventário; 1 carnê antigo segue sem cópia (ao vivo).",
+  "proximo": "Publicar o Portal na Vercel com a main (produção parada no ecbd550, PR #145, pelo limite diário de 100 publicações); até lá a tela do carnê e do recibo no navegador mostra o desenho antigo, e os PDFs já saem com o timbrado. Depois, testar um carnê e um recibo no escritório de demonstração."
 }
