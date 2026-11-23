@@ -1,0 +1,66 @@
+[
+ {
+  "nome": "antes-depois",
+  "url": "antes-depois.html"
+ },
+ {
+  "nome": "rb-completa",
+  "url": "recibo-a4.html?estado=completa"
+ },
+ {
+  "nome": "rb-sem-sociedade",
+  "url": "recibo-a4.html?estado=sem-sociedade"
+ },
+ {
+  "nome": "rb-logo",
+  "url": "recibo-a4.html?estado=logo"
+ },
+ {
+  "nome": "rb-razao-vazia",
+  "url": "recibo-a4.html?estado=razao-vazia"
+ },
+ {
+  "nome": "rb-sem-advocacia",
+  "url": "recibo-a4.html?estado=sem-advocacia"
+ },
+ {
+  "nome": "rb-razao-longa",
+  "url": "recibo-a4.html?estado=razao-longa"
+ },
+ {
+  "nome": "rb-razao-longa-logo",
+  "url": "recibo-a4.html?estado=razao-longa-logo"
+ },
+ {
+  "nome": "cn-completa",
+  "url": "carne-a4.html?estado=completa"
+ },
+ {
+  "nome": "cn-uma",
+  "url": "carne-a4.html?estado=uma"
+ },
+ {
+  "nome": "cn-sem-sociedade",
+  "url": "carne-a4.html?estado=sem-sociedade"
+ },
+ {
+  "nome": "cn-logo",
+  "url": "carne-a4.html?estado=logo"
+ },
+ {
+  "nome": "cn-razao-vazia",
+  "url": "carne-a4.html?estado=razao-vazia"
+ },
+ {
+  "nome": "cn-sem-advocacia",
+  "url": "carne-a4.html?estado=sem-advocacia"
+ },
+ {
+  "nome": "cn-razao-longa",
+  "url": "carne-a4.html?estado=razao-longa"
+ },
+ {
+  "nome": "cn-razao-longa-logo",
+  "url": "carne-a4.html?estado=razao-longa-logo"
+ }
+]

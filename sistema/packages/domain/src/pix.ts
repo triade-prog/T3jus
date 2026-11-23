@@ -9,6 +9,7 @@ import { z } from "zod";
 import { cpfValido } from "./clientes.ts";
 import { cnpjValido } from "./console.ts";
 import type { PessoaRef } from "./clientes.ts";
+import type { EscritorioNoPapel } from "./timbrado.ts";
 
 export const TIPOS_CHAVE_PIX = {
   CNPJ: "CNPJ",
@@ -316,6 +317,8 @@ export interface OpcoesCarne {
   carnes: CarneGerado[];
   /** F3.80: você já pediu a chave Pix e a sócia dona ainda não leu o aviso. */
   chavePedida?: boolean;
+  /** F3.133 (0890): o timbrado de hoje, para a prévia sair como o carnê vai sair. */
+  timbrado?: EscritorioNoPapel;
 }
 
 /** Uma parcela no carnê para imprimir, já com o Pix copia e cola montado. */
@@ -337,7 +340,8 @@ export interface CarneParaImprimir {
   geradoEm: string;
   /** A marca guardada no dia do carnê (F3.81); sem ela, o nome em letra. */
   marca?: MarcaNoDocumento | null;
-  escritorio: { nome: string; cnpj: string | null; endereco: string | null; cidade: string | null; uf: string | null; whatsapp: string | null; oab?: string | null };
+  /** Com `comTimbrado` (0890), a cópia do timbrado do dia; sem, o escritório de hoje (carnê antigo). */
+  escritorio: EscritorioNoPapel;
   cliente: { nome: string; documento: string | null; tipo: "PF" | "PJ" };
   contrato: { id: string; numero: string; objeto: string };
   pix: { tipo: TipoChavePix; chave: string; recebedor: string; cidade: string } | null;

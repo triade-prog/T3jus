@@ -4379,6 +4379,38 @@ img.lg-uma-cor{filter:brightness(0)}
 .rb-logo.lg-lado{display:flex;align-items:center;gap:3mm}
 .rb-logo.lg-lado img{height:20mm;width:20mm;object-fit:contain}
 .rb-logo.lg-lado .lg-letra{font-size:22pt}
+/* Timbrado aprovado no carnê e no recibo (F3.133, docs/design/aprovadas/carne-recibo-razao-social).
+   Só o papel gerado com a cópia do dia (comTimbrado) ganha estas classes; o antigo fica como era. */
+.ca-tim .ca-cab .ca-marca{min-width:0;flex:1 1 auto}
+.ca-tim .ca-num{flex:none}
+.ca-tim .ca-marca{justify-items:start;min-width:0}
+.ca-tim .ca-ident{margin:.4mm 0 0;font-size:6.6pt;line-height:1.3;color:var(--tinta-2);overflow-wrap:anywhere}
+.ca-tim .ca-ident b{font-weight:600;color:var(--tinta)}
+.ca-tim .ca-longo .ca-ident{font-size:6pt;line-height:1.22}
+.ca-tim .ca-nw{white-space:nowrap}
+/* decisão 9: a caixa do logo passa a 56 × 10 mm na via de 3 por folha e na capa (9 mm com mais de 90 letras); 12 mm em 1 por folha */
+.ca-tim .ca-logo,.ca-tim .ca-logo.lg-lado{height:10mm}
+.ca-tim .ca-logo img{max-height:10mm}
+.ca-tim .ca-logo.lg-lado img{height:10mm;width:10mm}
+.ca-tim .ca-longo .ca-logo,.ca-tim .ca-longo .ca-logo.lg-lado{height:9mm}
+.ca-tim .ca-longo .ca-logo img{max-height:9mm}
+.ca-tim .ca-longo .ca-logo.lg-lado img{height:9mm;width:9mm}
+.ca-tim .ca-capa .ca-logo img{max-width:54mm}
+.ca-tim.ca-uma .ca-logo,.ca-tim.ca-uma .ca-longo .ca-logo,.ca-tim.ca-uma .ca-logo.lg-lado{height:12mm}
+.ca-tim.ca-uma .ca-logo img,.ca-tim.ca-uma .ca-longo .ca-logo img{max-height:12mm}
+.ca-tim.ca-uma .ca-logo.lg-lado img{height:12mm;width:12mm}
+.ca-tim.ca-uma .ca-ident{font-size:8.6pt;line-height:1.3}
+/* capa: o campo "Escritório" com as linhas do timbrado (decisão 10) */
+.ca-tim .ca-tim-esc dd{font-weight:400;font-size:6.8pt;line-height:1.3}
+.ca-tim .ca-tim-esc dd>span{display:block}
+.ca-tim .ca-tim-esc dd>b{display:block;font-weight:600}
+/* recibo: as 4 linhas, a razão social em destaque na 1ª (decisão 5) */
+.rb-ender-tim{display:grid;gap:.3mm;justify-items:end}
+.rb-ender-tim>span{display:block}
+.rb-ender-tim .rb-r1{font-size:9pt;font-weight:600;color:var(--tinta);line-height:1.3;margin-bottom:.6mm}
+.rb-ender-tim .rb-nw,.rb-folha .rb-ass .rb-nw{white-space:nowrap}
+.rb-longo .rb-ender-tim .rb-r1{font-size:8.2pt}
+.rb-longo .rb-ass b{font-size:8.4pt;line-height:1.3}
 @media (max-width:760px){
   .lg-arq{grid-template-columns:1fr}
   .lg-prev{grid-template-columns:1fr}

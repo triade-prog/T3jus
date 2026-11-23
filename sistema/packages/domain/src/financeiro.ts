@@ -10,6 +10,7 @@ import type { PessoaRef } from "./clientes.ts";
 import type { Condicao, TipoHonorario } from "./honorarios.ts";
 import type { SituacaoContrato } from "./contratos.ts";
 import type { Anexo } from "./anexos.ts";
+import type { EscritorioNoPapel } from "./timbrado.ts";
 
 /** As formas de pagamento do FI-17. */
 export const FORMAS_PAGAMENTO = {
@@ -218,8 +219,8 @@ export interface ReciboParaImprimir {
   numero: { ano: number; numero: number };
   /** A marca do dia (F3.81): sem ela, o recibo sai com o nome em letra, como saiu. */
   marca?: MarcaNoDocumento | null;
-  escritorio: { nome: string; cnpj: string | null; endereco: string | null; cidade: string | null; uf: string | null; oab?: string | null;
-    contatos?: { telefone?: string | null; email?: string | null }[] | null; whatsapp: string | null };
+  /** Com `comTimbrado` (0890), o timbrado do dia do recibo; sem, a cópia antiga ou os dados de hoje. */
+  escritorio: EscritorioNoPapel;
   cliente: { id: string; nome: string; tipo: "PF" | "PJ"; documento: string | null };
   pagador: { tipo: "CONTATO" | "OUTRO"; nome: string; documento: string | null; papel: string | null } | null;
   contrato: { id: string; numero: string; objeto: string };

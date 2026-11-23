@@ -16,11 +16,17 @@ export interface EscritorioDoTimbrado {
   uf: string | null;
   /** O registro da sociedade na OAB, "OAB/SP 31.874" (F3.19). */
   oab?: string | null;
-  contatos?: { telefone?: string | null; email?: string | null }[];
+  contatos?: { telefone?: string | null; email?: string | null }[] | null;
   /** PA-07 (0860): a razão social, a sede em partes e o contato do próprio escritório. */
   razaoSocial?: string | null;
   tipo?: "SOCIEDADE" | "SOCIEDADE_INDIVIDUAL" | "SEM_SOCIEDADE" | null;
   cep?: string | null;
+  /** A sede em partes (0860), para a linha da sede do timbrado (timbrado.ts). */
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  enderecoConfira?: boolean | null;
   telefone?: string | null;
   email?: string | null;
   site?: string | null;
@@ -28,10 +34,12 @@ export interface EscritorioDoTimbrado {
   dona?: { nome: string; dados?: { nomeCompleto?: string | null } | null; inscricoes?: { texto: string; tipo?: string }[] | null } | null;
 }
 
-const cnpjFmt = (d: string) =>
+/** "47318552000106" → "47.318.552/0001-06". */
+export const cnpjFmt = (d: string) =>
   /^\d{14}$/.test(d) ? `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}` : d;
 
-function telefoneFmt(t: string): string {
+/** "7133524180" ou "+5571991874402" → "(71) 3352-4180" ou "(71) 99187-4402". */
+export function telefoneFmt(t: string): string {
   const d = t.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;

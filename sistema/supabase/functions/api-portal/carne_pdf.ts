@@ -7,7 +7,10 @@
 
 import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 import qrcode from "qrcode-generator";
-import { chavePixParaLer, dataBr, reais, telefoneBr, TIPOS_CHAVE_PIX, type CarneParaImprimir } from "@t3jus/domain";
+import {
+  camposDoEscritorioNaCapa, chavePixParaLer, dataBr, identificacaoDoCarne, razaoLonga, reais, subMarcaAdvocacia, telefoneBr, timbradoDoEscritorio,
+  TIPOS_CHAVE_PIX, type CarneParaImprimir, type Pedaco,
+} from "@t3jus/domain";
 
 type Impressa = CarneParaImprimir["parcelas"][number];
 
@@ -33,8 +36,69 @@ const diaBrasilia = (em: string) => new Intl.DateTimeFormat("en-CA", { timeZone:
 
 export interface Fontes { r: PDFFont; b: PDFFont; s: PDFFont; m: PDFFont }
 
+/** Um pedaço do texto corrido do timbrado (F3.133): em negrito ou não; `inteiro` não quebra no meio. */
+export type PedacoPdf = Pedaco & { forte?: boolean };
+type Palavra = { s: string; f: PDFFont; x: number; forte?: boolean };
+
+/** Quebra o texto corrido em linhas, por palavra; o pedaço `inteiro` (CNPJ, OAB, CEP, telefone) vai
+ *  inteiro para a linha. Devolve cada linha com as palavras já posicionadas e a largura. */
+export function linhasCorridas(ps: PedacoPdf[], fr: PDFFont, fb: PDFFont, t: number, largura: number): { palavras: Palavra[]; w: number }[] {
+  const fichas: { s: string; f: PDFFont; antes: boolean; forte?: boolean }[] = [];
+  let espaco = false;
+  for (const p of ps) {
+    const f = p.forte ? fb : fr;
+    if (p.inteiro) {
+      const s = limpo(p.texto).trim();
+      if (s) fichas.push({ s, f, antes: espaco && fichas.length > 0, forte: p.forte });
+      espaco = false;
+      continue;
+    }
+    for (const parte of p.texto.split(/(\s+)/)) {
+      if (!parte) continue;
+      if (/^\s+$/.test(parte)) { espaco = true; continue; }
+      const s = limpo(parte);
+      if (s) fichas.push({ s, f, antes: espaco && fichas.length > 0, forte: p.forte });
+      espaco = false;
+    }
+  }
+  const esp = fr.widthOfTextAtSize(" ", t);
+  const out: { palavras: Palavra[]; w: number }[] = [];
+  let linha: Palavra[] = [];
+  let cx = 0;
+  for (const k of fichas) {
+    const w = k.f.widthOfTextAtSize(k.s, t);
+    // Só quebra onde havia espaço: a vírgula e o ponto ficam presos à palavra de antes.
+    if (linha.length && k.antes && cx + esp + w > largura) { out.push({ palavras: linha, w: cx }); linha = []; cx = 0; }
+    const sep = linha.length && k.antes ? esp : 0;
+    linha.push({ s: k.s, f: k.f, x: cx + sep, forte: k.forte });
+    cx += sep + w;
+  }
+  if (linha.length) out.push({ palavras: linha, w: cx });
+  return out;
+}
+
+/** Desenha as linhas corridas do topo (y é a linha de cima). Devolve o y de baixo. */
+export function desenharCorridas(pg: PDFPage, linhas: { palavras: Palavra[]; w: number }[], x: number, y: number,
+  o: { t: number; cor?: ReturnType<typeof rgb>; corForte?: ReturnType<typeof rgb>; alto?: number; dir?: boolean; centro?: boolean }): number {
+  const alto = o.t * (o.alto ?? 1.25);
+  let yy = y;
+  for (const l of linhas) {
+    yy -= alto;
+    const x0 = o.dir ? x - l.w : o.centro ? x - l.w / 2 : x;
+    for (const w of l.palavras) {
+      pg.drawText(w.s, { x: x0 + w.x, y: yy + (alto - o.t) / 2 + o.t * 0.2, size: o.t, font: w.f, color: (w.forte ? o.corForte : null) ?? o.cor ?? TINTA });
+    }
+  }
+  return yy;
+}
+
 export class Pena {
   constructor(private p: PDFPage, readonly f: Fontes) {}
+  /** O texto corrido em pedaços (negrito no meio, pedaço inteiro que não quebra). Devolve o y de baixo. */
+  corrido(ps: PedacoPdf[], x: number, y: number, o: { t: number; largura: number; cor?: ReturnType<typeof rgb> }): number {
+    // O negrito (a razão social) sai na tinta; o resto, na cor pedida (decisão 8).
+    return desenharCorridas(this.p, linhasCorridas(ps, this.f.r, this.f.b, o.t, o.largura), x, y, { t: o.t, cor: o.cor, corForte: TINTA });
+  }
   /** Escreve a partir do topo (y é a linha de cima), quebrando em `largura`. Devolve o y de baixo. */
   texto(s: string, x: number, y: number, o: { t?: number; f?: keyof Fontes; cor?: ReturnType<typeof rgb>; largura?: number; linhas?: number; dir?: boolean } = {}): number {
     const t = o.t ?? 7, f = this.f[o.f ?? "r"], cor = o.cor ?? TINTA, alto = t * 1.25;
@@ -90,7 +154,24 @@ export function quebrar(s: string, f: PDFFont, t: number, largura: number): stri
 const instrucoes = (c: CarneParaImprimir) => c.instrucoes ?? "Combine com o escritório a forma de pagamento.";
 const whats = (c: CarneParaImprimir) => (c.escritorio.whatsapp ? telefoneBr(c.escritorio.whatsapp) : null);
 
-function marca(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: number, t = 10): number {
+/** O carnê gerado com o timbrado do dia (F3.133, 0890); sem ele, o desenho de antes. */
+const comTimbrado = (c: CarneParaImprimir) => !!c.escritorio.comTimbrado;
+
+/** A marca: o nome em letra. Com o timbrado, o "ADVOCACIA" embaixo só quando o nome não diz isso
+ *  (decisão 4) e, na via, a linha da identificação (decisão 8: **razão social** · CNPJ · OAB). */
+function marca(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: number, t = 10, comId = true): number {
+  if (comTimbrado(c)) {
+    let yy = pe.texto(c.escritorio.nome, x, y, { t, f: "b", cor: VINHO, largura, linhas: 2 });
+    if (subMarcaAdvocacia(c.escritorio.nome)) yy = pe.texto("A D V O C A C I A", x, yy, { t: t * 0.5, f: "b", cor: SUAVE });
+    const id = comId ? identificacaoDoCarne(c.escritorio) : null;
+    if (id) {
+      const ps: PedacoPdf[] = [...(id.nome ? [{ texto: id.nome, forte: true }] : []), ...(id.nome && id.documento.length ? [{ texto: " · " }] : []), ...id.documento];
+      const ti = t > 10 ? 8.6 : razaoLonga(id.nome ?? "") ? 6 : 6.6;
+      yy = pe.corrido(ps, x, yy - 0.5 * MM, { t: ti, largura, cor: SUAVE });
+    }
+    pe.linha(x, yy - 2, x + 24 * MM, yy - 2, { cor: AMBAR, esp: 1.2 });
+    return yy - 5;
+  }
   let yy = pe.texto(c.escritorio.nome, x, y, { t, f: "b", cor: VINHO, largura, linhas: 2 });
   if (c.escritorio.cnpj) yy = pe.texto(`CNPJ ${cnpjLegivel(c.escritorio.cnpj)}`, x, yy, { t: 6, cor: SUAVE });
   pe.linha(x, yy - 2, x + 24 * MM, yy - 2, { cor: AMBAR, esp: 1.2 });
@@ -104,7 +185,7 @@ function rodape(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: n
   pe.texto("Modelo T3jus", x + largura, y, { t: 5.6, cor: VINHO, dir: true });
 }
 
-function canhoto(pe: Pena, c: CarneParaImprimir, p: Impressa, x: number, y: number, largura: number) {
+function canhoto(pe: Pena, c: CarneParaImprimir, p: Impressa, x: number, y: number, largura: number): number {
   let yy = pe.texto("CANHOTO · FICA COM O ESCRITÓRIO", x, y, { t: 5.2, cor: SUAVE });
   yy = pe.texto(c.escritorio.nome, x, yy - 1, { t: 7, f: "b", cor: VINHO, largura, linhas: 2 });
   yy = pe.texto(`Parcela ${p.ordem} de ${p.total}`, x, yy - 2, { t: 9, f: "b" });
@@ -120,6 +201,7 @@ function canhoto(pe: Pena, c: CarneParaImprimir, p: Impressa, x: number, y: numb
   dado("Identificador", p.txid, true);
   yy -= 6;
   for (const r of ["Pago em ____/____/______", "Forma ______________", "Visto ______________"]) yy = pe.texto(r, x, yy - 1, { t: 6, cor: SUAVE });
+  return yy;
 }
 
 /** A via do cliente. Devolve o y de baixo do que escreveu (para a via grande continuar). */
@@ -127,14 +209,15 @@ function via(pe: Pena, c: CarneParaImprimir, p: Impressa, x: number, y: number, 
   const esc = grande ? 1.25 : 1;
   const comPix = !!(c.pix && p.pix);
   // Cabeçalho: o escritório à esquerda, a parcela à direita.
-  marca(pe, c, x, y, largura - 38 * MM, 10 * esc);
+  const ym = marca(pe, c, x, y, largura - 38 * MM, 10 * esc);
   pe.texto("VIA DO CLIENTE · PARCELA", x + largura, y, { t: 5.2 * esc, cor: SUAVE, dir: true });
   pe.texto(`${p.ordem} de ${p.total}`, x + largura, y - 7 * esc, { t: 13 * esc, f: "b", cor: VINHO, dir: true });
   if (p.semValor) {
     const n = pe.f.b.widthOfTextAtSize(limpo(`${p.ordem} de ${p.total}`), 13 * esc);
     pe.texto(`Vencida em ${diaCurto(p.vencimento)}`, x + largura - n - 3 * MM, y - 10 * esc, { t: 6.5 * esc, f: "b", dir: true });
   }
-  let yy = y - 24 * esc;
+  // Com o timbrado, a linha da identificação pode descer a marca: o corpo começa embaixo dela.
+  let yy = comTimbrado(c) ? Math.min(y - 24 * esc, ym + 2) : y - 24 * esc;
   // Dados à esquerda, Pix à direita.
   const colDados = comPix ? largura * 0.52 : largura * 0.55;
   const doc = c.cliente.documento ? ` · ${c.cliente.tipo === "PJ" ? "CNPJ" : "CPF"} ${c.cliente.documento}` : "";
@@ -188,10 +271,11 @@ function via(pe: Pena, c: CarneParaImprimir, p: Impressa, x: number, y: number, 
   return yy;
 }
 
-function capa(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: number) {
+/** A capa. Devolve o y mais baixo das três colunas. */
+function capa(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: number): number {
   const col = (largura - 8 * MM) / 3;
-  // 1ª coluna: o escritório, o título e o cliente.
-  let a = marca(pe, c, x, y, col);
+  // 1ª coluna: o escritório, o título e o cliente. Com o timbrado, a marca fica sozinha (decisão 10).
+  let a = marca(pe, c, x, y, col, 10, !comTimbrado(c));
   a = pe.texto("Carnê de honorários", x, a - 2, { t: 13, f: "b", cor: VINHO, largura: col, linhas: 2 });
   const local = [c.escritorio.endereco, [c.escritorio.cidade, c.escritorio.uf].filter(Boolean).join("/")].filter(Boolean).join(" · ");
   const dado = (rot: string, val: string, f: keyof Fontes = "b") => {
@@ -200,10 +284,19 @@ function capa(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: num
   };
   dado("Cliente", `${c.cliente.nome}${c.cliente.documento ? ` · ${c.cliente.tipo === "PJ" ? "CNPJ" : "CPF"} ${c.cliente.documento}` : ""}`);
   dado("Contrato", `${c.contrato.numero} · ${c.contrato.objeto}`);
-  if (local) dado("Escritório", local, "r");
+  if (comTimbrado(c)) {
+    // O campo "Escritório" com o timbrado: o nome em negrito, "CNPJ · OAB", a sede com CEP, telefone e e-mail (sem o site).
+    const t = camposDoEscritorioNaCapa(c.escritorio);
+    if (t.nome || t.linhas.length) {
+      a = pe.texto("Escritório", x, a - 2, { t: 5.2, cor: SUAVE });
+      if (t.nome) a = pe.texto(t.nome, x, a, { t: 6.8, f: "b", largura: col });
+      for (const l of t.linhas) a = pe.corrido(l, x, a, { t: 6.8, largura: col });
+    }
+  } else if (local) dado("Escritório", local, "r");
   // 2ª coluna: as parcelas e o total.
   const x2 = x + col + 4 * MM;
   let b = pe.texto("As parcelas deste carnê", x2, y, { t: 8, f: "b", cor: VINHO });
+  let fundo = a;
   const ws = [col * 0.17, col * 0.33, col * 0.27, col * 0.23];
   const linha = (vals: string[], f: keyof Fontes, t: number) => {
     let xx = x2;
@@ -219,8 +312,8 @@ function capa(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: num
   if (ps.length < c.parcelas.length) linha([`+ ${c.parcelas.length - ps.length} parcelas`, "", "", ""], "s", 6.4);
   pe.linha(x2, b + 2, x2 + col, b + 2);
   linha(["Total deste carnê", "", "", reais(c.parcelas.reduce((s, p) => s + p.valor, 0))], "b", 6.8);
-  pe.texto(`Gerado em ${dataBr(diaBrasilia(c.geradoEm))}. As parcelas já pagas não entram.${c.pix ? " Cada parcela tem o seu Pix; pague uma de cada vez." : ""}`,
-    x2, b - 2, { t: 5.8, cor: SUAVE, largura: col, linhas: 3 });
+  fundo = Math.min(fundo, pe.texto(`Gerado em ${dataBr(diaBrasilia(c.geradoEm))}. As parcelas já pagas não entram.${c.pix ? " Cada parcela tem o seu Pix; pague uma de cada vez." : ""}`,
+    x2, b - 2, { t: 5.8, cor: SUAVE, largura: col, linhas: 3 }));
   // 3ª coluna: como pagar e o recibo.
   const x3 = x2 + col + 4 * MM;
   let d = pe.texto(c.pix ? "Como pagar com Pix" : "Como pagar", x3, y, { t: 8, f: "b", cor: VINHO });
@@ -235,34 +328,40 @@ function capa(pe: Pena, c: CarneParaImprimir, x: number, y: number, largura: num
   const hCaixa = linhasRecibo * 8 + 4 * MM;
   pe.caixa(x3, d - 3, col, hCaixa, rgb(0xf6 / 255, 0xe6 / 255, 0xd8 / 255), true);
   d = pe.texto(recibo, x3 + 2 * MM, d - 3 - 2 * MM, { t: 6.4, f: "b", largura: col - 4 * MM }) - 2 * MM;
-  pe.texto("Pagando depois do vencimento, multa e juros seguem o contrato. Fale antes com o escritório.", x3, d - 2, { t: 5.8, cor: SUAVE, largura: col, linhas: 3 });
+  return Math.min(fundo, pe.texto("Pagando depois do vencimento, multa e juros seguem o contrato. Fale antes com o escritório.", x3, d - 2, { t: 5.8, cor: SUAVE, largura: col, linhas: 3 }));
 }
 
-/** As folhas do carnê num PDF (A4). */
-export async function pdfDoCarne(c: CarneParaImprimir): Promise<Uint8Array> {
+/** A folga (mm) de cada peça até onde ela termina: a via até o pé, o canhoto e a capa até o corte. */
+export interface FolgaDoCarne { onde: string; mm: number }
+
+async function desenhar(c: CarneParaImprimir): Promise<{ doc: PDFDocument; folgas: FolgaDoCarne[] }> {
   const doc = await PDFDocument.create();
   doc.setTitle(limpo(`Carnê de ${c.cliente.nome} · ${c.contrato.numero}`));
-  doc.setAuthor(limpo(c.escritorio.nome));
+  // Com o timbrado, o autor é a 1ª linha (a razão social, ou o nome completo da sócia dona sem sociedade).
+  doc.setAuthor(limpo(comTimbrado(c) ? timbradoDoEscritorio(c.escritorio).nome : c.escritorio.nome));
   doc.setProducer("T3jus");
   doc.setCreator("T3jus");
   const f: Fontes = {
     r: await doc.embedFont(StandardFonts.Helvetica), b: await doc.embedFont(StandardFonts.HelveticaBold),
     s: await doc.embedFont(StandardFonts.HelveticaOblique), m: await doc.embedFont(StandardFonts.Courier),
   };
+  const folgas: FolgaDoCarne[] = [];
+  const folga = (onde: string, y: number, limite: number) => folgas.push({ onde, mm: (y - limite) / MM });
   const largura = A4.w - 2 * MARGEM;
   if (c.formato === "UM") {
     for (const p of c.parcelas) {
       const pg = doc.addPage([A4.w, A4.h]);
       const pe = new Pena(pg, f);
       const topo = A4.h - MARGEM;
-      via(pe, c, p, MARGEM + 4 * MM, topo - 4 * MM, largura - 8 * MM, true);
+      const yv = via(pe, c, p, MARGEM + 4 * MM, topo - 4 * MM, largura - 8 * MM, true);
       rodape(pe, c, MARGEM + 4 * MM, MARGEM + 78 * MM, largura - 8 * MM);
+      folga(`via ${p.ordem}`, yv, MARGEM + 78 * MM);
       const yc = MARGEM + 68 * MM;
       pe.linha(MARGEM, yc, MARGEM + largura, yc, { tracejada: true });
       pe.texto("corte aqui", MARGEM + largura, yc + 8, { t: 5, cor: CORTE, dir: true });
-      canhoto(pe, c, p, MARGEM + 4 * MM, yc - 4 * MM, 80 * MM);
+      folga(`canhoto ${p.ordem}`, canhoto(pe, c, p, MARGEM + 4 * MM, yc - 4 * MM, 80 * MM), MARGEM);
     }
-    return await doc.save();
+    return { doc, folgas };
   }
   const itens: (Impressa | "capa")[] = [...(c.capa ? (["capa"] as const) : []), ...c.parcelas];
   for (let i = 0; i < itens.length; i += 3) {
@@ -273,17 +372,27 @@ export async function pdfDoCarne(c: CarneParaImprimir): Promise<Uint8Array> {
       if (k === 0) pe.linha(MARGEM, topo, MARGEM + largura, topo, { tracejada: true });
       pe.linha(MARGEM, topo - FAIXA, MARGEM + largura, topo - FAIXA, { tracejada: true });
       if (x === "capa") {
-        capa(pe, c, MARGEM + 3 * MM, topo - 4 * MM, largura - 6 * MM);
+        folga("capa", capa(pe, c, MARGEM + 3 * MM, topo - 4 * MM, largura - 6 * MM), topo - FAIXA);
         return;
       }
-      canhoto(pe, c, x, MARGEM + 3 * MM, topo - 4 * MM, CANHOTO - 6 * MM);
+      folga(`canhoto ${x.ordem}`, canhoto(pe, c, x, MARGEM + 3 * MM, topo - 4 * MM, CANHOTO - 6 * MM), topo - FAIXA);
       pe.linha(MARGEM + CANHOTO, topo - 2 * MM, MARGEM + CANHOTO, topo - FAIXA + 2 * MM, { tracejada: true });
       const xv = MARGEM + CANHOTO + 4 * MM, wv = largura - CANHOTO - 7 * MM;
-      via(pe, c, x, xv, topo - 4 * MM, wv, false);
+      folga(`via ${x.ordem}`, via(pe, c, x, xv, topo - 4 * MM, wv, false), topo - FAIXA + 9 * MM);
       rodape(pe, c, xv, topo - FAIXA + 9 * MM, wv);
     });
   }
-  return await doc.save();
+  return { doc, folgas };
+}
+
+/** As folhas do carnê num PDF (A4). */
+export async function pdfDoCarne(c: CarneParaImprimir): Promise<Uint8Array> {
+  return await (await desenhar(c)).doc.save();
+}
+
+/** Para o teste: a folga de cada via, canhoto e capa (nada pode passar da faixa, decisão 14). */
+export async function folgasDoCarne(c: CarneParaImprimir): Promise<FolgaDoCarne[]> {
+  return (await desenhar(c)).folgas;
 }
 
 /** O nome do arquivo: carne-helio-correa-C-2026-014.pdf. */
