@@ -4,8 +4,10 @@
 // (0680_documentos_contrato.sql); aqui só o que a tela mostra.
 
 import {
-  cidadeDataDocumento, CODIGOS_PODERES, DOCUMENTOS_CONTRATO, fraseOutorgados, outorgadosEscolhidos,
-  type Anexo, type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ModeloEmUso, type PoderEspecial, type TipoDocumentoContrato,
+  aniversario, cidadeDataDocumento, CODIGOS_PODERES, dataBr, DOCUMENTOS_CONTRATO, faltasDoResponsavel, faltasNoDocumento, fraseOutorgados, idadeEm,
+  outorgadosEscolhidos, PAPEIS_RESPONSAVEL, papelFeminino, situacaoNoDia,
+  type Anexo, type ClienteDoDocumento, type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ModeloEmUso, type PoderEspecial,
+  type PreviaDocumentos, type TipoDocumentoContrato,
 } from "@t3jus/domain";
 
 export const ROTAS_DOCUMENTOS = {
@@ -212,6 +214,157 @@ export function rotuloAssinado(tipo: TipoDocumentoContrato): string {
   if (tipo === "PROCURACAO") return "Procuração assinada";
   if (tipo === "HIPOSSUFICIENCIA") return "Declaração assinada";
   return "Documento assinado";
+}
+
+// ------------------------------------------------------------- Gerar documentos do menor (F3.142)
+// Estados gerar-representado, gerar-assistido, gerar-falta e gerar-fez-18 do desenho aprovado em
+// docs/design/aprovadas/portal-responsavel-legal (D25). A conta é a do domínio, com o "hoje" do
+// servidor (Brasília), para a tela e o documento dizerem o mesmo. O T3jus não guarda o gênero do
+// cliente: onde o desenho diz "ele", vai o primeiro nome, e o particípio leva "(a)" (pergunta 7).
+
+const primeiroNome = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
+
+/** "o documento", "os dois documentos", "os três documentos"; nenhum marcado: "os documentos". */
+export function quantosDocumentos(n: number): string {
+  return ["os documentos", "o documento", "os dois documentos", "os três documentos"][n] ?? `os ${n} documentos`;
+}
+
+export type CasoDoMenor = "REPRESENTADO" | "ASSISTIDO" | "FEZ_18";
+
+/**
+ * Em que caso do menor a página está, no dia. Fora do menor (PJ, quem assina por si, curatela),
+ * null. Sem data de nascimento ou sem quem assina também null: o banco não deixa gravar menor
+ * assim (0830), e sem a data não há conta a fazer.
+ */
+export function casoDoMenor(c: ClienteDoDocumento, hoje: string): CasoDoMenor | null {
+  if (c.tipo !== "PF" || c.capacidade !== "MENOR" || !c.nascimento || !c.rlNome?.trim()) return null;
+  const s = situacaoNoDia("MENOR", c.nascimento, hoje).situacao;
+  return s === "REPRESENTADO" || s === "ASSISTIDO" || s === "FEZ_18" ? s : null;
+}
+
+/** Cada falta de quem assina (o texto de faltasDoResponsavel), curta e com a marca que sai no .docx. */
+export const FALTA_DE_QUEM_ASSINA: Record<string, { curta: string; marca: string | null }> = {
+  "o CPF de quem assina": { curta: "o CPF", marca: "[CPF DE QUEM ASSINA: falta]" },
+  "o RG de quem assina": { curta: "o RG", marca: "[RG DE QUEM ASSINA: falta]" },
+  // A qualificação de quem assina não deixa marca no .docx: só fica de fora (item pendente no painel).
+  "a qualificação de quem assina": { curta: "a qualificação", marca: null },
+  "o endereço de quem assina": { curta: "o endereço", marca: "[ENDEREÇO DE QUEM ASSINA: falta]" },
+};
+
+/** As faltas de quem assina, na ordem do domínio, para "o CPF e o RG de Joana". */
+export function faltasDeQuemAssina(c: ClienteDoDocumento): { curta: string; marca: string | null }[] {
+  return faltasDoResponsavel(c).flatMap((f) => (FALTA_DE_QUEM_ASSINA[f] ? [FALTA_DE_QUEM_ASSINA[f]] : []));
+}
+
+/** As faltas do próprio cliente: as do documento menos as de quem assina. */
+export function faltasDoProprioCliente(c: ClienteDoDocumento, hoje: string): string[] {
+  const rl = new Set(faltasDoResponsavel(c));
+  return faltasNoDocumento(c, hoje).filter((f) => !rl.has(f));
+}
+
+/** "a mãe", "o pai", "a tutora", "o tutor". */
+function papelComArtigo(c: ClienteDoDocumento): string {
+  const p = c.rlPapel ?? "MAE";
+  return `${papelFeminino(p) ? "a" : "o"} ${PAPEIS_RESPONSAVEL[p].toLowerCase()}`;
+}
+
+/** O aviso do representado e do assistido, sem falta de quem assina (gerar-representado, gerar-assistido). */
+export function avisoDoMenor(c: ClienteDoDocumento, hoje: string, docs: number): { titulo: string; texto: string } | null {
+  const caso = casoDoMenor(c, hoje);
+  if (caso !== "REPRESENTADO" && caso !== "ASSISTIDO") return null;
+  const p = primeiroNome(c.nome);
+  const r = primeiroNome(c.rlNome!);
+  const idade = idadeEm(c.nascimento!, hoje);
+  if (caso === "REPRESENTADO") {
+    return {
+      titulo: `${p} tem ${idade} anos hoje: é representado(a).`,
+      texto: `Só ${r} assina, em nome de ${p}, ${quantosDocumentos(docs)}. Em ${dataBr(aniversario(c.nascimento!, 16))}, aos 16 anos, ${p} passa a ser assistido(a), e os dois assinam. O T3jus faz a conta pela data de nascimento, no dia de gerar.`,
+    };
+  }
+  return {
+    titulo: `${p} tem ${idade} anos hoje: é assistido(a).`,
+    texto: `Os dois assinam ${quantosDocumentos(docs)}: ${p} e ${papelComArtigo(c)}, ${r}, que o(a) assiste. Em ${dataBr(aniversario(c.nascimento!, 18))}, aos 18 anos, ${p} passa a assinar sozinho(a).`,
+  };
+}
+
+/** O aviso quando falta dado de quem assina (gerar-falta). Sem a parte das marcas quando nenhuma sai no .docx. */
+export function avisoFaltaQuemAssina(c: ClienteDoDocumento, docs: number): { titulo: string; texto: string } | null {
+  const f = faltasDeQuemAssina(c);
+  if (!f.length) return null;
+  const p = primeiroNome(c.nome);
+  const r = c.rlNome?.trim() ? primeiroNome(c.rlNome) : "quem assina";
+  const lista = `${juntar(f.map((x) => x.curta))} de ${r}`;
+  const marcas = f.map((x) => x.marca).filter((x): x is string => !!x);
+  const sai = `${quantosDocumentos(docs)} ${docs === 1 ? "sai" : "saem"}`;
+  return {
+    titulo: f.length === 1 ? `Falta 1 dado de quem assina por ${p}: ${lista}.` : `Faltam ${f.length} dados de quem assina por ${p}: ${lista}.`,
+    texto: marcas.length
+      ? `Dá para gerar assim: ${sai} com ${juntar(marcas)}, para preencher à mão ou no Word. Ou complete a ficha antes.`
+      : "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes.",
+  };
+}
+
+/** A linha a mais no quadro "Quem assina por…" quando falta dado: "Faltam o CPF e o RG dela". */
+export function linhaFaltaNoQuadro(c: ClienteDoDocumento): string | null {
+  const f = faltasDeQuemAssina(c);
+  if (!f.length) return null;
+  const dela = papelFeminino(c.rlPapel) ? "dela" : "dele";
+  return `${f.length === 1 ? "Falta" : "Faltam"} ${juntar(f.map((x) => x.curta))} ${dela}`;
+}
+
+/** O que o menor não pedia e passa a ir no documento aos 18 anos. */
+const ANTES_NAO_IAM = new Set(["o estado civil", "a profissão", "o RG"]);
+
+/** O aviso de quem fez 18 anos e ainda está como menor na ficha (gerar-fez-18). */
+export function avisoFez18(c: ClienteDoDocumento, hoje: string): { titulo: string; texto: string; temFalta: boolean } | null {
+  if (casoDoMenor(c, hoje) !== "FEZ_18") return null;
+  const p = primeiroNome(c.nome);
+  const papel = papelComArtigo(c);
+  const antes = `${papel.charAt(0).toUpperCase()}${papel.slice(1)}, ${primeiroNome(c.rlNome!)}, que assinava com ${p}, não entra mais.`;
+  const faltas = faltasNoDocumento(c, hoje);
+  const titulo = `${p} fez 18 anos em ${dataBr(aniversario(c.nascimento!, 18))}: agora assina por si.`;
+  if (!faltas.length) return { titulo, texto: antes, temFalta: false };
+  const quais = faltas.every((f) => ANTES_NAO_IAM.has(f))
+    ? faltas.length === 1 ? `Falta 1 dado de ${p}, que antes não ia no documento: ${faltas[0]}.` : `Faltam ${faltas.length} dados de ${p}, que antes não iam no documento: ${juntar(faltas)}.`
+    : tituloFaltas(faltas, c.nome);
+  return {
+    titulo,
+    texto: `${antes} ${quais} Dá para gerar assim: ${faltas.length === 1 ? "sai marcado" : "saem marcados"}, para completar no Word. Ou complete a ficha antes.`,
+    temFalta: true,
+  };
+}
+
+/** O marcado do cliente como o domínio o monta ("CPF de quem assina de Pedro Alves Souza"). */
+const marcadoDoCliente = (f: string, nome: string) => {
+  const t = f.replace(/^(o|a|os|as) /, "");
+  return `${t.charAt(0).toUpperCase()}${t.slice(1)} de ${nome}`;
+};
+
+/**
+ * A frase da faixa do botão (decisão 26): a do servidor (ou a de reserva, sem prévia) e, no menor,
+ * a lista do que sai marcado e "Em todos, Joana assina por Pedro." A lista só sai quando cada
+ * documento da prévia não tem marcado ou tem exatamente os do cliente, e nunca com a qualificação
+ * de quem assina, que não deixa marca no .docx.
+ */
+export function fraseDaFaixaGerar(c: ClienteDoDocumento, hoje: string, prev: PreviaDocumentos | null): string {
+  const faltas = faltasNoDocumento(c, hoje);
+  const base = prev ? prev.frase : faltas.length ? "Algum dado sai marcado, para completar." : "Nenhum dado sai marcado.";
+  const caso = casoDoMenor(c, hoje);
+  if (!caso) return base;
+  const rl = caso === "FEZ_18" ? [] : faltasDeQuemAssina(c);
+  let frase = base;
+  const esperados = faltas.map((f) => marcadoDoCliente(f, c.nome));
+  const bate = !!prev && /\.$/.test(prev.frase) && esperados.length > 0
+    && prev.documentos.some((d) => d.marcados.length)
+    && prev.documentos.every((d) => !d.marcados.length || (d.marcados.length === esperados.length && esperados.every((m) => d.marcados.includes(m))));
+  if (bate) {
+    if (caso === "FEZ_18") frase = `${base.slice(0, -1)}: ${juntar(faltas)} de ${primeiroNome(c.nome)}.`;
+    else if (rl.length === faltas.length && rl.every((x) => x.marca)) frase = `${base.slice(0, -1)}: ${juntar(rl.map((x) => x.curta))} de ${primeiroNome(c.rlNome!)}.`;
+  }
+  if (caso === "FEZ_18" || rl.length) return frase;
+  const p = primeiroNome(c.nome);
+  const r = primeiroNome(c.rlNome!);
+  return `${frase} ${caso === "REPRESENTADO" ? `Em todos, ${r} assina por ${p}.` : `Em todos, ${p} e ${r} assinam.`}`;
 }
 
 // ------------------------------------------------------------- Baixar o contrato no cabeçalho (D29)
