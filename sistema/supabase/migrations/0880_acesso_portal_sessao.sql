@@ -1,4 +1,4 @@
--- 0880 · Portal mais rápido no servidor (F3.136, PT-27). Plano revisado em 23/11/2026
+-- 0880 · Portal mais rápido no servidor (F3.136, PT-27). Plano revisado em 22/11/2026
 -- (project-files t3jus/desempenho/plano-f3-136.md).
 --
 -- Toda chamada da api-portal conferia o acesso (acesso_portal) e depois buscava o escritório
