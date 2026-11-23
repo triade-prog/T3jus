@@ -42,6 +42,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   JA_NO_FUNIL: "Este cliente já voltou ao funil. Recarregue a página para ver.",
   JA_RECEBEU_PROPOSTA: "Este cliente já recebeu proposta. O motivo fica na resposta da proposta.",
   CLIENTE_NAO_ATIVO: "Só cliente ativo sai do funil.",
+  CLIENTE_NAO_CURATELA: "O termo de curatela só fica na ficha de quem está sob curatela. Confira “O cliente assina por si?”.",
   PERIODO_INVALIDO: "Confira as datas do período.",
   PERIODO_LONGO: "O relatório mostra até 2 anos por vez.",
   ARQUIVO_FORMATO: "Este arquivo não é uma planilha. Envie em .xlsx ou .csv. No Google Planilhas: Arquivo › Fazer download › Microsoft Excel (.xlsx).",
