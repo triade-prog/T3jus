@@ -321,7 +321,18 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_cliente_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 2400 }],
     portal_cliente_documento_concluir: (a) => ({ id: a.p_documento, tipo: "RG_CPF", nome: "rg.pdf" }),
     portal_cliente_documento_abrir: () => "rg.pdf",
-    portal_juridico_documentos_inicio: () => ({ podeEditar: true, validadeDias: 90, areas: [] }),
+    portal_juridico_documentos_inicio: () => ({ podeEditar: true, podeMudarPrazo: !opcoes.naoDono, sociosDonos: ["Marina Ribeiro"], validadeDias: 90,
+      comprovantesTotal: 41, comprovantesVencidos: 3, listasComFrase: 4, areas: [] }),
+    portal_escritorio_prazo_comprovante: (a) => {
+      if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
+      if (a.p_dias === null || Number(a.p_dias) < 30 || Number(a.p_dias) > 365) erroBanco("TC422", { campos: ["validadeDias"] });
+      return { validadeDias: a.p_dias, de: 90, mudou: true, passaramA: 4, voltaramAEmDia: 0, textosTrocados: a.p_trocar_texto ? 4 : 0, listasTrocadas: a.p_trocar_texto ? 4 : 0, naoCouberam: 0 };
+    },
+    portal_escritorio_prazo_comprovante_previa: (a) => {
+      if (opcoes.naoDono) erroBanco("TC401", { motivo: "SO_SOCIO_DONO" });
+      if (Number(a.p_dias) < 30 || Number(a.p_dias) > 365) erroBanco("TC422", { campos: ["validadeDias"] });
+      return { dias: a.p_dias, atual: 90, totalComComprovante: 41, vencidosAgora: 3, vencidosCom: 7, passamAQtd: 4, passamA: [], voltamAEmDiaQtd: 0, voltamAEmDia: [], listasComFrase: 4, itensComFrase: 4 };
+    },
     portal_cliente_documentos_previa: (a) => ({ area: a.p_area, itens: [], cliente: null, contato: null, whatsappLigado: false, modelo: null, escritorio: "Aurora", podeConferir: true }),
     portal_juridico_documento_inicio_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, ...(a.p_dados as object) }),
     portal_juridico_documento_inicio_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
@@ -1760,6 +1771,49 @@ Deno.test("AP-08 e EX-18: documentos pessoais em duas etapas e a lista por área
   assertEquals((await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/caso`, { corpo: { caso: { modo: "NOVO", documentos: { pedir: ["nao-e-id"] } } }, cookie })).status, 400);
   const chamadas = m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_documento") || c.funcao.startsWith("portal_juridico_documento_inicio") || c.funcao.startsWith("portal_juridico_documentos_inicio"));
   assert(chamadas.length >= 8 && chamadas.every((c) => c.args.p_escritorio === AURORA));
+});
+
+Deno.test("AP-08 (F3.134): o prazo do comprovante muda pela sócia dona, no escritório da sessão, com a prévia antes", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante", {
+    metodo: "PUT", corpo: { validadeDias: 60, trocarTexto: true, escritorioId: "00000000-0000-4000-8000-000000000000" }, cookie,
+  });
+  assertEquals(r.status, 200);
+  assertEquals((await r.json()).textosTrocados, 4);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_escritorio_prazo_comprovante")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_dias, ch.args.p_trocar_texto], [AURORA, 60, true]);
+  // Fora de 30 a 365, sem prazo ou sem a caixa: recusado, com o campo para a tela.
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante", { metodo: "PUT", corpo: { validadeDias: 400, trocarTexto: false }, cookie }))).detalhes?.campos, ["validadeDias"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante", { metodo: "PUT", corpo: { validadeDias: null, trocarTexto: false }, cookie }))).detalhes?.campos, ["validadeDias"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante", { metodo: "PUT", corpo: { validadeDias: 60.5, trocarTexto: false }, cookie })).status, 400);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante", { metodo: "PUT", corpo: { validadeDias: 60 }, cookie })).status, 400);
+  // A prévia: o número vai como número; o que não é número nem chega ao banco.
+  assertEquals((await (await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante/previa?dias=60", { cookie })).json()).vencidosCom, 7);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_escritorio_prazo_comprovante_previa")!.args.p_dias, 60);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante/previa?dias=abc", { cookie }))).detalhes?.campos, ["validadeDias"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante/previa?dias=1000", { cookie })).status, 400);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_escritorio_prazo_comprovante_previa").length, 1);
+  assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_escritorio_prazo_comprovante")).every((c) => c.args.p_escritorio === AURORA));
+});
+
+Deno.test("AP-08 (F3.134): quem não é sócia dona não muda o prazo nem vê a prévia", async () => {
+  const m = montar({ naoDono: true });
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante", { metodo: "PUT", corpo: { validadeDias: 60, trocarTexto: true }, cookie });
+  assertEquals(r.status, 403);
+  assertEquals((await erro(r)).detalhes?.motivo, "SO_SOCIO_DONO");
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/prazo-comprovante/previa?dias=60", { cookie })).status, 403);
+});
+
+Deno.test("AP-08 (F3.134): o prazo do comprovante no domínio é o mesmo do banco", async () => {
+  const { PRAZO_COMPROVANTE, OPCOES_PRAZO_COMPROVANTE } = await import("@t3jus/domain");
+  const sql = await Deno.readTextFile(new URL("../../migrations/0853_documentos_pessoais_lista.sql", import.meta.url));
+  const m = /comprovante_validade_dias integer not null default (\d+)\s+check \(comprovante_validade_dias between (\d+) and (\d+)\)/.exec(sql);
+  assertEquals([m?.[1], m?.[2], m?.[3]], [String(PRAZO_COMPROVANTE.padrao), String(PRAZO_COMPROVANTE.min), String(PRAZO_COMPROVANTE.max)]);
+  assert(OPCOES_PRAZO_COMPROVANTE.every((o) => o.dias >= PRAZO_COMPROVANTE.min && o.dias <= PRAZO_COMPROVANTE.max));
+  const nova = await Deno.readTextFile(new URL("../../migrations/0910_prazo_comprovante.sql", import.meta.url));
+  assertMatch(nova, new RegExp(`p_dias not between ${PRAZO_COMPROVANTE.min} and ${PRAZO_COMPROVANTE.max}`));
 });
 
 Deno.test("EX-05: documentos do caso (pedir, pedir de novo, já chegou, enviar em duas etapas e abrir) no caminho do escritório da sessão", async () => {

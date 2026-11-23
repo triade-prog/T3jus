@@ -8,10 +8,12 @@
 //   Com um pedido aberto do mesmo documento num caso, "Marcar como chegou" vem marcado.
 // - "Pedir pelo WhatsApp" / "Pedir de novo" só abre a conversa com o texto pronto, sem registrar
 //   pedido (pergunta 9): o pedido com lembrete começa quando o caso abre.
+// - A linha do comprovante diz o prazo do escritório e leva até ele (F3.134, desenho
+//   portal-prazo-comprovante): "Mudar o prazo" só para a sócia dona; a equipe lê quem muda.
 
 import { useRef, useState } from "react";
 import {
-  MAX_FOTOS_ASSINADO, nomeDoDocumentoPessoal, textoPedirDocumentosPessoais, TIPOS_DOCUMENTO_PESSOAL,
+  MAX_FOTOS_ASSINADO, nomeDoDocumentoPessoal, quemMuda, textoPedirDocumentosPessoais, TIPOS_DOCUMENTO_PESSOAL,
   type DocumentoPessoal, type DocumentosPessoais, type FichaCliente, type PedidoPessoalAberto, type TipoDocumentoPessoal,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -22,6 +24,7 @@ import { Aviso, descritoPor, ErroAoCarregar, ErroCampo, Estado, Janela } from ".
 import { lerDia } from "./agenda.ts";
 import { useCarga } from "./Comercial.tsx";
 import { juntarFotos, ordenarFotos } from "./fotos.ts";
+import { ROTAS_JURIDICO } from "./juridico.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { tamanhoArquivo } from "./peticoes.ts";
 import { problemaDosAssinados } from "./procuracoes.ts";
@@ -32,8 +35,18 @@ const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const primeiro = (n: string) => n.trim().split(/\s+/)[0] ?? n;
 const diaDoEnvio = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
 
-/** Os que quase todo caso pede (decisão 40). */
-const COMUNS = ["RG e CPF, ou CNH", "Comprovante de residência de até 90 dias", "Certidão de casamento ou de nascimento"];
+/** Os que quase todo caso pede (decisão 40), com o prazo do comprovante do escritório. */
+export const comuns = (dias: number) => ["RG e CPF, ou CNH", `Comprovante de residência de até ${dias} dias`, "Certidão de casamento ou de nascimento"];
+
+/** O fim da linha do comprovante: o prazo e quem muda (F3.134). */
+function PrazoNaLinha({ dados }: { dados: DocumentosPessoais }) {
+  const n = dados.validadeDias;
+  if (dados.podeMudarPrazo) {
+    return <span className="pzc-ficha"> O escritório aceita até {n} dias. <a href={`${ROTAS_JURIDICO.documentos}#prazo`}>Mudar o prazo</a></span>;
+  }
+  const q = quemMuda(dados.sociosDonos ?? [], "o prazo");
+  return <span className="pzc-ficha"> O escritório aceita até {n} dias; {q.charAt(0).toLowerCase() + q.slice(1)}</span>;
+}
 
 function contato(f: FichaCliente) {
   const c = f.contatos.find((x) => x.principal) ?? f.contatos[0];
@@ -147,12 +160,12 @@ export function FolhaDocumentosPessoais({ f, escritorio, aoFeito }: { f: FichaCl
             acoes={pode ? (
               <>
                 <button className="btn btn-pri" type="button" onClick={() => setAnexar({})}><Icone nome="mais" className="ico" />Anexar documento</button>
-                <button className="btn btn-sec" type="button" onClick={() => setPedir(COMUNS)}><Icone nome="whats" className="ico" />Pedir pelo WhatsApp</button>
+                <button className="btn btn-sec" type="button" onClick={() => setPedir(comuns(dados.validadeDias))}><Icone nome="whats" className="ico" />Pedir pelo WhatsApp</button>
               </>
             ) : undefined}>
             Os documentos pessoais ficam aqui e servem a todos os casos {f.tipo === "PJ" ? "do cliente" : `de ${primeiro(f.nome)}`}. Os que quase todo caso pede:
           </Estado>
-          <ul className="jf-dcomuns">{COMUNS.map((x) => <li key={x}>{x}</li>)}</ul>
+          <ul className="jf-dcomuns">{comuns(dados.validadeDias).map((x) => <li key={x}>{x}</li>)}</ul>
         </div>
         <p className="jf-dpe">
           <Icone nome="whats" className="ico" />
@@ -174,7 +187,7 @@ export function FolhaDocumentosPessoais({ f, escritorio, aoFeito }: { f: FichaCl
             <div className="jr-sub"><h3 className="sobretitulo">Precisa de atenção · {atencao}</h3></div>
             <ul className="lista docs jr-falta">
               {vencidos.map((d) => (
-                <Linha key={d.id} icone="doc" nome={nome(d)} meta={metaDocumento(d, pedidoDe(d.tipo), dados.hoje)}
+                <Linha key={d.id} icone="doc" nome={nome(d)} meta={<>{metaDocumento(d, pedidoDe(d.tipo), dados.hoje)}{d.tipo === "COMPROVANTE_RESIDENCIA" ? <PrazoNaLinha dados={dados} /> : null}</>}
                   selo={<span className="selo selo-atencao"><Icone nome="relogio" className="ico" />Mais de {dados.validadeDias} dias</span>}
                   acoes={<>{bNovo(d, true)}{bAbrir(d, " antigo")}</>} />
               ))}
@@ -200,7 +213,8 @@ export function FolhaDocumentosPessoais({ f, escritorio, aoFeito }: { f: FichaCl
             <div className="jr-sub"><h3 className="sobretitulo">{atencao ? `Em dia · ${emDia.length}` : `Guardados · ${emDia.length}`}</h3></div>
             <ul className="lista docs">
               {emDia.map((d) => (
-                <Linha key={d.id} icone="doc" nome={nome(d)} selo={okSelo(d)} meta={metaDocumento(d, undefined, dados.hoje)} acoes={<>{bAbrir(d)}{bNovo(d)}</>} />
+                <Linha key={d.id} icone="doc" nome={nome(d)} selo={okSelo(d)} acoes={<>{bAbrir(d)}{bNovo(d)}</>}
+                  meta={<>{metaDocumento(d, undefined, dados.hoje)}{d.tipo === "COMPROVANTE_RESIDENCIA" ? <>{"."}<PrazoNaLinha dados={dados} /></> : null}</>} />
               ))}
             </ul>
           </>

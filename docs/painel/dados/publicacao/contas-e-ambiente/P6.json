@@ -1,0 +1,9 @@
+{
+  "id": "P6",
+  "texto": "Aplicar no Supabase as migrations 0870 e 0910 (depois da 0850 do P5) e publicar a api-portal da main (prazo do comprovante, F3.134)",
+  "refs": [
+    "AP-08"
+  ],
+  "status": "pendente",
+  "ordem": 60
+}
