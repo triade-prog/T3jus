@@ -17,6 +17,15 @@ export interface EscritorioDoTimbrado {
   /** O registro da sociedade na OAB, "OAB/SP 31.874" (F3.19). */
   oab?: string | null;
   contatos?: { telefone?: string | null; email?: string | null }[];
+  /** PA-07 (0860): a razão social, a sede em partes e o contato do próprio escritório. */
+  razaoSocial?: string | null;
+  tipo?: "SOCIEDADE" | "SOCIEDADE_INDIVIDUAL" | "SEM_SOCIEDADE" | null;
+  cep?: string | null;
+  telefone?: string | null;
+  email?: string | null;
+  site?: string | null;
+  /** Sem sociedade, o timbrado leva a sócia dona: o nome completo e a OAB principal. */
+  dona?: { nome: string; dados?: { nomeCompleto?: string | null } | null; inscricoes?: { texto: string; tipo?: string }[] | null } | null;
 }
 
 const cnpjFmt = (d: string) =>
@@ -31,11 +40,17 @@ function telefoneFmt(t: string): string {
 
 /** As linhas do timbrado: o nome; CNPJ e endereço; telefone e e-mail. Só o que existe. */
 export function linhasTimbrado(e: EscritorioDoTimbrado): string[] {
-  const lugar = [e.endereco?.trim(), [e.cidade?.trim(), e.uf].filter(Boolean).join("/")].filter(Boolean).join(" · ");
-  const doc = [e.cnpj ? `CNPJ ${cnpjFmt(e.cnpj)}` : "", e.oab ?? "", lugar].filter(Boolean).join(" · ");
-  const c = e.contatos?.find((x) => x.telefone || x.email);
-  const contato = c ? [c.telefone ? telefoneFmt(c.telefone) : "", c.email ?? ""].filter(Boolean).join(" · ") : "";
-  return [e.nome, doc, contato].filter(Boolean);
+  const cep = (e.cep ?? "").replace(/\D/g, "");
+  const lugar = [e.endereco?.trim(), [e.cidade?.trim(), e.uf].filter(Boolean).join("/"), cep.length === 8 ? `CEP ${cep.slice(0, 5)}-${cep.slice(5)}` : ""]
+    .filter(Boolean).join(" · ");
+  const sem = e.tipo === "SEM_SOCIEDADE";
+  const oabDona = sem ? (e.dona?.inscricoes?.find((i) => i.tipo === "PRINCIPAL") ?? e.dona?.inscricoes?.[0])?.texto ?? "" : "";
+  const doc = (sem ? [oabDona, lugar] : [e.cnpj ? `CNPJ ${cnpjFmt(e.cnpj)}` : "", e.oab ?? "", lugar]).filter(Boolean).join(" · ");
+  // O telefone e o e-mail do escritório; sem eles, o primeiro contato, como antes (decisão 9).
+  const c = e.telefone || e.email ? { telefone: e.telefone, email: e.email } : e.contatos?.find((x) => x.telefone || x.email);
+  const contato = [c?.telefone ? telefoneFmt(c.telefone) : "", c?.email ?? "", e.site ?? ""].filter(Boolean).join(" · ");
+  const nome = sem ? e.dona?.dados?.nomeCompleto?.trim() || e.nome : e.razaoSocial?.trim() || e.nome;
+  return [nome, doc, contato].filter(Boolean);
 }
 
 /** "proposta-p-2026-014-gabriela-teixeira.docx" */

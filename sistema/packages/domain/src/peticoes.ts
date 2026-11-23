@@ -14,6 +14,7 @@ import { ESTADOS_CIVIS, formatarDocumento, type EstadoCivil } from "./clientes.t
 import { dinheiro, formatar } from "./dinheiro.ts";
 import { faltasDoAdvogado, qualificacaoDoAdvogado, ROTULO_FALTA_ADVOGADO, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
 import { CAMPO_DOCX, MARCA_FALTA, type ParagrafoDocx } from "./docx.ts";
+import { enderecoDoEscritorioNoDocumento } from "./escritorio_dados.ts";
 import { AREAS_DIREITO, formatarCnj, type AreaDireito } from "./juridico.ts";
 import { fraseOab, type InscricaoOab, type TipoOab, type UfBrasil } from "./portal.ts";
 
@@ -311,6 +312,15 @@ export interface EscritorioDaPeticao {
   endereco: string | null;
   cidade: string | null;
   uf: string | null;
+  /** A sede em partes e a razão social (PA-07, 0860). */
+  razaoSocial?: string | null;
+  tipo?: "SOCIEDADE" | "SOCIEDADE_INDIVIDUAL" | "SEM_SOCIEDADE" | null;
+  cep?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  enderecoConfira?: boolean;
 }
 
 /** O que o formulário mostra para um caso (GET …/peticao-dados). */
@@ -560,10 +570,8 @@ export function montarValores(d: DadosPeticao, e: EscolhasPeticao): ValoresPetic
       : falta("ADVOGADOS"),
     ENDERECAMENTO: e.enderecamento.trim(),
     CIDADE_DATA: e.cidadeData.trim(),
-    ESCRITORIO_NOME: d.escritorio.nome,
-    ESCRITORIO_ENDERECO: d.escritorio.endereco?.trim()
-      ? `${d.escritorio.endereco.trim()}${d.escritorio.cidade ? `, ${d.escritorio.cidade}` : ""}${d.escritorio.uf ? `, ${d.escritorio.uf}` : ""}`
-      : falta("ENDEREÇO DO ESCRITÓRIO"),
+    ESCRITORIO_NOME: d.escritorio.razaoSocial?.trim() || d.escritorio.nome,
+    ESCRITORIO_ENDERECO: enderecoDoEscritorioNoDocumento(d.escritorio),
   };
   const origem: Record<string, OrigemValor> = {};
   for (const c of CAMPOS_PETICAO) origem[c.campo] = c.origem === "formulario" ? "formulario" : "cadastro";

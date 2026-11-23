@@ -20,6 +20,10 @@ import { cidadeDataPadrao, enderecoDoCliente, NOMES_CAMPOS, rgDoCliente, valorPo
 import { fraseOab, type InscricaoOab } from "./portal.ts";
 import { faltasDoAdvogado, qualificacaoDoAdvogado, ROTULO_FALTA_ADVOGADO, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
 import type { MarcaNoDocumento } from "./logo.ts";
+import {
+  enderecoDoEscritorioNoDocumento, marcadosDoEscritorio, nomeDoEscritorioNoDocumento, qualificacaoDoEscritorio,
+  type DadosEscritorioDocumentos,
+} from "./escritorio_dados.ts";
 import { hojeBrasilia } from "./clientes.ts";
 import {
   assinaturaComResponsavel, enderecoDoResponsavel, faltasDoResponsavel, qualificacaoDoResponsavel, quemAssina, trechoDaCuratela, trechoDoResponsavel,
@@ -86,7 +90,8 @@ export const CAMPOS_DOCUMENTO: readonly CampoDocumento[] = [
   { campo: "ESCRITORIO_NOME", grupo: "Escritório e data", descricao: "Nome do escritório, de Escritório no Portal", origem: "cadastro" },
   { campo: "ESCRITORIO_CNPJ", grupo: "Escritório e data", descricao: "CNPJ do escritório", origem: "cadastro" },
   { campo: "ESCRITORIO_OAB", grupo: "Escritório e data", descricao: "Registro da sociedade na OAB: “OAB/SP 31.874”", origem: "cadastro" },
-  { campo: "ESCRITORIO_ENDERECO", grupo: "Escritório e data", descricao: "Endereço do escritório, de Escritório no Portal", origem: "cadastro" },
+  { campo: "ESCRITORIO_ENDERECO", grupo: "Escritório e data", descricao: "A sede do escritório numa linha, com o CEP, de Escritório no Portal", origem: "cadastro" },
+  { campo: "ESCRITORIO_QUALIFICACAO", grupo: "Escritório e data", descricao: "Quem contrata numa frase: razão social, CNPJ, OAB e sede; sem sociedade, a sócia dona com a qualificação completa (PA-07)", origem: "cadastro" },
   { campo: "CIDADE_DATA", grupo: "Escritório e data", descricao: "“São Paulo, 21 de novembro de 2026”", origem: "formulario" },
 ];
 export const NOMES_CAMPOS_DOCUMENTO = CAMPOS_DOCUMENTO.map((c) => c.campo);
@@ -117,6 +122,7 @@ export function sugestaoCampoDocumento(campo: string): string | null {
     [/ESCRITORIO.*CNPJ|CNPJ.*ESCRITORIO|SOCIEDADE.*CNPJ/, "ESCRITORIO_CNPJ"],
     [/ESCRITORIO.*OAB|SOCIEDADE/, "ESCRITORIO_OAB"],
     [/ESCRITORIO.*ENDERECO|SEDE/, "ESCRITORIO_ENDERECO"],
+    [/ESCRITORIO.*QUALIFICA|CONTRATAD.*QUALIFICA/, "ESCRITORIO_QUALIFICACAO"],
     [/ESCRITORIO|CONTRATAD/, "ESCRITORIO_NOME"],
     [/ASSINATURA.*CLIENTE|CLIENTE.*ASSINA|OUTORGANTE.*ASSINA|CONTRATANTE.*ASSINA/, "CLIENTE_ASSINATURA"],
     [/ASSINA/, "ADVOGADOS_ASSINATURA"],
@@ -269,9 +275,18 @@ export function modeloPadraoDocumento(codigo: string): ModeloPadraoDocumento | n
   return MODELOS_PADRAO_DOCUMENTO.find((m) => m.codigo === codigo) ?? null;
 }
 
-export function camposDoPadraoDocumento(m: ModeloPadraoDocumento): string[] {
+/** O parágrafo da contratada sem sociedade (decisão 17): a sócia dona, com a qualificação dela. */
+const CONTRATADA_SEM_SOCIEDADE = "CONTRATADA: [ESCRITORIO_QUALIFICACAO].";
+
+/** Os parágrafos do padrão para este escritório: sem sociedade, a contratada é a sócia dona. */
+export function paragrafosPadraoDocumento(m: ModeloPadraoDocumento, esc?: Pick<EscritorioDoDocumento, "tipo"> | null): readonly ParagrafoDocx[] {
+  if (esc?.tipo !== "SEM_SOCIEDADE") return m.paragrafos;
+  return m.paragrafos.map((p) => (p.texto.startsWith("CONTRATADA: [ESCRITORIO_NOME]") ? { ...p, texto: CONTRATADA_SEM_SOCIEDADE } : p));
+}
+
+export function camposDoPadraoDocumento(m: ModeloPadraoDocumento, esc?: Pick<EscritorioDoDocumento, "tipo"> | null): string[] {
   const achados: string[] = [];
-  for (const p of m.paragrafos) for (const x of p.texto.matchAll(CAMPO_DOCX)) if (!achados.includes(x[1]!)) achados.push(x[1]!);
+  for (const p of paragrafosPadraoDocumento(m, esc)) for (const x of p.texto.matchAll(CAMPO_DOCX)) if (!achados.includes(x[1]!)) achados.push(x[1]!);
   return achados;
 }
 
@@ -315,15 +330,9 @@ export interface AdvogadoDoDocumento {
   dados?: DadosDocumentoPessoa | null;
 }
 
-export interface EscritorioDoDocumento {
-  nome: string;
-  cnpj: string | null;
-  endereco: string | null;
-  cidade: string | null;
-  uf: string | null;
-  /** "OAB/SP 31.874", o registro da sociedade. */
-  oab: string | null;
-  /** Para a linha de contato do timbrado. */
+/** O escritório como os documentos usam (PA-07: tipo, razão social, sede em partes e a sócia dona). */
+export interface EscritorioDoDocumento extends DadosEscritorioDocumentos {
+  /** Para a linha de contato do timbrado, quando o escritório não tem telefone nem e-mail próprios. */
   contatos?: { telefone?: string | null; email?: string | null }[];
 }
 
@@ -551,6 +560,8 @@ export interface ValoresDocumento {
   marcados: string[];
   /** Dos marcados, os dos advogados ("CPF de Rafael Menezes"): só contam se o modelo usa a qualificação. */
   marcadosAdvogados?: string[];
+  /** Sem sociedade, o que falta da sócia dona, a contratada (PA-07). */
+  marcadosDona?: string[];
 }
 
 /** O nome que vai no documento: o completo (EX-15) ou, sem ele, o da Equipe. */
@@ -600,9 +611,13 @@ export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos
   const hoje = d.hoje ?? hojeBrasilia();
   const outorgados = outorgadosEscolhidos(d, e);
   const marcados = faltasNoDocumento(c, hoje).map((f) => `${inicialMaiuscula(f)} de ${c.nome}`);
-  if (!d.escritorio.cnpj) marcados.push("CNPJ do escritório");
-  if (!d.escritorio.endereco?.trim()) marcados.push("Endereço do escritório");
-  if (!d.escritorio.oab?.trim()) marcados.push("Registro do escritório na OAB");
+  marcados.push(...marcadosDoEscritorio(d.escritorio));
+  // Sem sociedade, a contratada é a sócia dona: o que falta dela conta como do escritório.
+  const dona = d.escritorio.tipo === "SEM_SOCIEDADE" ? d.escritorio.dona : null;
+  const marcadosDona = dona?.dados
+    ? faltasDoAdvogado(dona.dados, dona.inscricoes ?? [], d.escritorio).map((f) => `${ROTULO_FALTA_ADVOGADO[f]} de ${dona.nome}`)
+    : dona ? [`Dados da contratada (${dona.nome})`] : [];
+  marcados.push(...marcadosDona.filter((m) => !marcados.includes(m)));
   const marcadosAdvogados = outorgados.flatMap((a) => faltasDoOutorgado(a, d.escritorio).map((f) => `${ROTULO_FALTA_ADVOGADO[f]} de ${a.nome}`));
   marcados.push(...marcadosAdvogados);
 
@@ -637,26 +652,28 @@ export function montarValoresDocumento(d: DadosDocumentos, e: EscolhasDocumentos
       : falta("ASSINATURA"),
     ADVOGADOS_QUALIFICACAO: outorgados.length ? qualificacoesOutorgados(outorgados, d.escritorio) : falta("ADVOGADOS"),
     PODERES_ESPECIAIS: trechoPoderes(e.poderes, e.outroPoder),
-    ESCRITORIO_NOME: esc.nome.toUpperCase(),
+    ESCRITORIO_NOME: nomeDoEscritorioNoDocumento(esc),
     ESCRITORIO_CNPJ: esc.cnpj ? formatarDocumento(esc.cnpj) : falta("CNPJ DO ESCRITÓRIO"),
     ESCRITORIO_OAB: esc.oab?.trim() || falta("REGISTRO NA OAB"),
-    ESCRITORIO_ENDERECO: esc.endereco?.trim()
-      ? `${esc.endereco.trim()}${esc.cidade ? `, ${esc.cidade}` : ""}${esc.uf ? `, ${esc.uf}` : ""}`
-      : falta("ENDEREÇO DO ESCRITÓRIO"),
+    ESCRITORIO_ENDERECO: enderecoDoEscritorioNoDocumento(esc),
+    ESCRITORIO_QUALIFICACAO: qualificacaoDoEscritorio(esc),
     CIDADE_DATA: e.cidadeData.trim(),
   };
   const origem: Record<string, "cadastro" | "formulario"> = {};
   for (const x of CAMPOS_DOCUMENTO) origem[x.campo] = x.origem;
-  return { valores, origem, marcados, marcadosAdvogados };
+  return { valores, origem, marcados, marcadosAdvogados, marcadosDona };
 }
 
 /** Os marcados que o modelo de fato usa (o que falta, mas o modelo não pede, não conta). */
 export function marcadosDoModeloDocumento(v: ValoresDocumento, campos: readonly string[]): string[] {
-  const usa = (x: string) => campos.includes(x);
+  const usa = (x: string) => campos.includes(x) || (x.startsWith("ESCRITORIO_") && campos.includes("ESCRITORIO_QUALIFICACAO"));
+  const daDona = new Set(v.marcadosDona ?? []);
   const deCliente = ["CLIENTE_QUALIFICACAO", "CLIENTE_CPF", "CLIENTE_RG", "CLIENTE_ENDERECO", "CLIENTE_ASSINATURA", "CLIENTE_NASCIMENTO", "REPRESENTANTE_NOME", "REPRESENTANTE_QUALIFICACAO"].some(usa);
   const deAdvogado = new Set(v.marcadosAdvogados ?? []);
   return v.marcados.filter((m) => {
-    if (deAdvogado.has(m)) return usa("ADVOGADOS_QUALIFICACAO");
+    if (deAdvogado.has(m)) return usa("ADVOGADOS_QUALIFICACAO") || (daDona.has(m) && campos.includes("ESCRITORIO_QUALIFICACAO"));
+    if (daDona.has(m)) return campos.includes("ESCRITORIO_QUALIFICACAO") || usa("ESCRITORIO_NOME");
+    if (m === "Razão social do escritório") return usa("ESCRITORIO_NOME");
     if (m === "CNPJ do escritório") return usa("ESCRITORIO_CNPJ");
     if (m === "Endereço do escritório") return usa("ESCRITORIO_ENDERECO");
     if (m === "Registro do escritório na OAB") return usa("ESCRITORIO_OAB");

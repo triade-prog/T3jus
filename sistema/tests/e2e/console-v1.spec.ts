@@ -19,6 +19,9 @@ function fichaCedro(permissoes = TODAS, extra: Record<string, unknown> = {}) {
     ...f,
     escritorio: {
       ...f.escritorio, cnpj: "22914870000109", endereco: "Rua da Aurora, 295, sala 1102, Boa Vista",
+      // PA-07 (0860): a sede em partes e o tipo, que a ficha do Console também edita.
+      tipo: "SOCIEDADE", razaoSocial: null, oabUf: null, oabNumero: null, oab: null, cep: "50050000", logradouro: "Rua da Aurora", numero: "295",
+      complemento: "sala 1102", bairro: "Boa Vista", enderecoConfira: false, telefone: null, email: null, site: null,
       contatos: [
         { nome: "Renata Lima", papel: "Sócia", telefone: "+5581997342210", email: "renata@cedroelima.adv.br" },
         { nome: "Joana Freitas", papel: "Secretária", telefone: "+558133261180" },
@@ -79,34 +82,38 @@ test.describe("Console v1: aba Ficha", () => {
     await semViolacoes(page);
 
     await page.getByRole("button", { name: "Editar ficha" }).click();
-    await page.getByLabel("CNPJ").fill("22.914.870/0001-66");
+    await page.getByLabel(/^CNPJ/).fill("22.914.870/0001-66");
     const joana = page.getByRole("group", { name: /Contato 2/ });
     await joana.getByLabel("Telefone").fill("");
     await page.getByRole("button", { name: "Salvar ficha" }).click();
     await expect(page.getByText("Falta acertar 2 pontos, marcados abaixo.")).toBeVisible();
     await expect(page.getByText("Os dígitos do CNPJ não conferem. Confira o número no cartão do CNPJ.")).toBeVisible();
     await expect(page.getByText("Informe telefone ou e-mail de Joana.")).toBeVisible();
-    await expect(page.getByLabel("CNPJ")).toBeFocused();
+    await expect(page.getByLabel(/^CNPJ/)).toBeFocused();
     expect(pedidos.filter((p) => p.metodo === "PUT")).toEqual([]);
     await semViolacoes(page);
 
-    await page.getByLabel("CNPJ").fill("22.914.870/0001-09");
+    await page.getByLabel(/^CNPJ/).fill("22.914.870/0001-09");
     await joana.getByLabel("E-mail").fill("joana@cedroelima.adv.br");
     await page.getByRole("button", { name: "Salvar ficha" }).click();
     await expect(page.getByText("Ficha salva.")).toBeVisible();
     expect(pedidos.find((p) => p.metodo === "PUT")?.corpo).toEqual({
-      versao: 3, nome: CEDRO.nome, cidade: "Recife", uf: "PE", endereco: "Rua da Aurora, 295, sala 1102, Boa Vista", cnpj: "22914870000109",
+      versao: 3, nome: CEDRO.nome, cidade: "Recife", uf: "PE", endereco: null, cnpj: "22914870000109",
       contatos: [
         { nome: "Renata Lima", papel: "Sócia", telefone: "+5581997342210", email: "renata@cedroelima.adv.br" },
         { nome: "Joana Freitas", papel: "Secretária", email: "joana@cedroelima.adv.br" },
       ],
+      documentos: {
+        tipo: "SOCIEDADE", razaoSocial: null, oabUf: null, oabNumero: null, cep: "50050000", logradouro: "Rua da Aurora", numero: "295", complemento: "sala 1102",
+        bairro: "Boa Vista", telefone: null, email: null, site: null,
+      },
     });
   });
 
   test("conflito: diz quem salvou antes e a hora, compara e salva a minha versão", async ({ page }) => {
     const salvoEm = "2026-11-18T17:32:00Z"; // 14h32 em Brasília
     const nova = fichaCedro(TODAS, { fichaAlteradaPor: "Rafael Teles", fichaAlteradaEm: salvoEm });
-    nova.escritorio = { ...nova.escritorio, versao: 4, endereco: "Rua da Aurora, 295, sala 1104, Boa Vista" };
+    nova.escritorio = { ...nova.escritorio, versao: 4, endereco: "Rua da Aurora, 295, sala 1104, Boa Vista", complemento: "sala 1104" };
     const pedidos = await simular(page, {
       "/v1/sessao": { corpo: SESSAO },
       [R]: [{ corpo: fichaCedro() }, { corpo: nova }],
@@ -114,12 +121,12 @@ test.describe("Console v1: aba Ficha", () => {
       [`PUT ${R}/ficha`]: [{ status: 409, corpo: { erro: { codigo: "VERSION_CONFLICT", detalhes: { versao: 4 } } } }, { corpo: { versao: 5 } }],
     });
     await page.goto(`${C}/clientes/${CEDRO.id}/ficha?editar=1`);
-    await page.getByLabel(/Endereço/).fill("Rua da Aurora, 295, sala 1102, Boa Vista, Recife");
+    await page.getByLabel(/Complemento/).fill("sala 1102, bloco B");
     await page.getByRole("button", { name: "Salvar ficha" }).click();
     await expect(page.getByText("Rafael Teles salvou esta ficha às 14h32, enquanto você editava.")).toBeVisible();
     const tabela = page.getByRole("table", { name: "Campos que mudaram" });
-    await expect(tabela).toContainText("Rua da Aurora, 295, sala 1104, Boa Vista");
-    await expect(page.getByLabel(/Endereço/)).toHaveValue("Rua da Aurora, 295, sala 1102, Boa Vista, Recife");
+    await expect(tabela).toContainText("sala 1104");
+    await expect(page.getByLabel(/Complemento/)).toHaveValue("sala 1102, bloco B");
     await expect(page.locator(".mudou")).toHaveCount(1);
     await semViolacoes(page);
     await page.getByRole("button", { name: "Salvar a minha versão" }).click();

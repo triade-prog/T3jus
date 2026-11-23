@@ -387,6 +387,14 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.put("/v1/clientes/:id/ficha", async (c) => {
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, fichaSchema);
+    // PA-07: a ficha nova manda os dados para os documentos e grava tudo de uma vez.
+    if (d.documentos) {
+      const versao = await rpc<number>("console_ficha_salvar", {
+        p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao,
+        p_dados: { ...d.documentos, nome: d.nome, cidade: d.cidade, uf: d.uf, cnpj: d.cnpj, contatos: d.contatos },
+      });
+      return c.json({ versao });
+    }
     const versao = await rpc<number>("console_editar_ficha", {
       p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_nome: d.nome, p_cidade: d.cidade, p_uf: d.uf,
       p_endereco: d.endereco, p_cnpj: d.cnpj, p_contatos: d.contatos,

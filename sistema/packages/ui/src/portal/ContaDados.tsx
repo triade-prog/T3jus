@@ -712,7 +712,7 @@ export function FormDados({ voce, nome, escritorioNome, dados, oab, escritorio, 
             </label>
             {r.enderecoDoEscritorio ? (
               <p className="cd-end-ok">
-                {endEsc ?? "O escritório ainda não tem endereço em Escritório; o documento sai com a marca."} Se o escritório mudar de endereço, {voce ? "os seus documentos mudam" : "os documentos mudam"} junto.
+                {endEsc ?? "O escritório ainda não tem a sede em Dados do escritório; o documento sai com a marca."} Se o escritório mudar de endereço, {voce ? "os seus documentos mudam" : `os documentos de ${pn} mudam`} junto.
               </p>
             ) : null}
           </div>
@@ -732,7 +732,7 @@ export function FormDados({ voce, nome, escritorioNome, dados, oab, escritorio, 
             {oab[0] ? <span className="cd-uf" aria-hidden="true">{oab[0].uf}</span> : null}
             <p>
               <b>{oab.length ? oab.map((i) => i.texto).join(" e ") : "Sem OAB cadastrada"}</b>
-              {voce ? "Para conferir. Quem muda a OAB é a sócia dona, na Equipe." : "As inscrições se mudam no quadro de inscrições da ficha."}
+              {voce ? "Para conferir. Quem muda a OAB é a sócia dona, na Equipe." : "Vem da Equipe. Só a sócia dona muda a OAB, lá."}
             </p>
             {oabAcao}
           </div>
@@ -768,7 +768,7 @@ export function FormDados({ voce, nome, escritorioNome, dados, oab, escritorio, 
       </aside>
       <section className="folha cd-a-pe" aria-label="Salvar">
         <div className="cd-pe-bts">
-          <p>Vale para os documentos gerados daqui em diante. Os já gerados não mudam. A mudança fica no histórico da equipe.</p>
+          <p>Vale para os documentos gerados daqui em diante. Os já gerados não mudam. A mudança fica no histórico do escritório.</p>
           <div className="cd-bts">
             <button className="btn btn-fantasma" type="button" onClick={aoCancelar}>
               Cancelar

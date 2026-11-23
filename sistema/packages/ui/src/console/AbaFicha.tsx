@@ -6,7 +6,7 @@
 
 import { soLeitura } from "./FimContrato.tsx";
 import { useId, useRef, useState, type ReactNode } from "react";
-import { UFS } from "@t3jus/domain";
+import { TEXTO_ERRO_ESCRITORIO, TIPOS_ESCRITORIO, UFS, type TipoEscritorio } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import {
@@ -16,6 +16,7 @@ import {
   formatarTelefone,
   novaChave,
   rascunhoDe,
+  sedeDaFicha,
   type ErrosFicha,
   type FichaDoCliente,
   type Nota,
@@ -84,9 +85,38 @@ function Ver({ f, nota, aoEditar }: { f: FichaDoCliente; nota: Nota | null; aoEd
                 <dd>{e.cidade ? `${e.cidade}${e.uf ? `, ${e.uf}` : ""}` : "Não informada"}</dd>
               </div>
               <div>
-                <dt>Endereço</dt>
-                {e.endereco ? <dd>{e.endereco}</dd> : <dd className="falta">Não informado</dd>}
+                <dt>Tipo</dt>
+                {e.tipo ? <dd>{TIPOS_ESCRITORIO[e.tipo].nome}</dd> : <dd className="falta">Não informado</dd>}
               </div>
+              {e.tipo === "SEM_SOCIEDADE" ? null : (
+                <>
+                  <div>
+                    <dt>Razão social</dt>
+                    {e.razaoSocial ? <dd>{e.razaoSocial}</dd> : <dd className="falta">Não informada</dd>}
+                  </div>
+                  <div>
+                    <dt>Registro da sociedade na OAB</dt>
+                    {e.oab ? <dd className="num">{e.oab}</dd> : <dd className="falta">Não informado</dd>}
+                  </div>
+                </>
+              )}
+              <div>
+                <dt>Sede</dt>
+                {sedeDaFicha(f) ? (
+                  <dd>
+                    {sedeDaFicha(f)}
+                    {e.enderecoConfira ? <span className="selo selo-atencao">Confira: texto antigo</span> : null}
+                  </dd>
+                ) : (
+                  <dd className="falta">Não informada</dd>
+                )}
+              </div>
+              {e.telefone || e.email || e.site ? (
+                <div>
+                  <dt>Contato do escritório</dt>
+                  <dd>{[e.telefone ? formatarTelefone(e.telefone.startsWith("+") ? e.telefone : `+55${e.telefone}`) : null, e.email, e.site].filter(Boolean).join(" · ")}</dd>
+                </div>
+              ) : null}
             </dl>
             {!pode ? (
               <p className="permissao" style={{ padding: "12px 24px" }}>
@@ -205,8 +235,14 @@ function Editar({ f, aoSair, aoSalvar, aoConflito }: {
       return;
     }
     const campos = resp.erro.detalhes?.campos;
+    const motivos = resp.erro.detalhes?.motivos as Record<string, string> | undefined;
     if (resp.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length === 1 && campos[0] === "cnpj") {
       setErros({ cnpj: "Este CNPJ já é de outro escritório. Confira o número." });
+      focarPrimeiroErro(form.current);
+      return;
+    }
+    if (resp.erro.codigo === "VALIDATION_ERROR" && motivos) {
+      setErros(Object.fromEntries(Object.entries(motivos).map(([k, m]) => [k, TEXTO_ERRO_ESCRITORIO[m] ?? "Confira este campo."])));
       focarPrimeiroErro(form.current);
       return;
     }
@@ -214,8 +250,9 @@ function Editar({ f, aoSair, aoSalvar, aoConflito }: {
   }
 
   const nErros = Object.keys(erros).length;
-  const campo = (chave: "nome" | "cnpj" | "cidade" | "endereco", rotulo: string, extra: {
-    opcional?: boolean; ajuda?: string; classe: string; auto?: string; modo?: "numeric"; mudouCampo?: string;
+  type CampoTexto = "nome" | "cnpj" | "cidade" | "razaoSocial" | "oabNumero" | "cep" | "logradouro" | "numero" | "complemento" | "bairro" | "telefone" | "email" | "site";
+  const campo = (chave: CampoTexto, rotulo: string, extra: {
+    opcional?: boolean; ajuda?: string; classe: string; auto?: string; modo?: "numeric" | "tel"; mudouCampo?: string; tipo?: string;
   }) => {
     const id = `${ids}-${chave}`;
     const e = erros[chave];
@@ -226,7 +263,7 @@ function Editar({ f, aoSair, aoSalvar, aoConflito }: {
           {extra.opcional ? <span className="opcional"> (opcional)</span> : null}
           {extra.mudouCampo && mudou(extra.mudouCampo) ? <Mudou /> : null}
         </label>
-        <input className="entrada" id={id} value={r[chave]} onChange={(ev) => mudar(chave, ev.target.value)}
+        <input className="entrada" id={id} type={extra.tipo ?? "text"} value={r[chave]} onChange={(ev) => mudar(chave, ev.target.value)}
           autoComplete={extra.auto ?? "off"} inputMode={extra.modo}
           aria-invalid={e ? true : undefined} aria-describedby={descritoPor(e && `${id}-erro`, !e && extra.ajuda && `${id}-ajuda`)} />
         {e ? <ErroCampo id={`${id}-erro`}>{e}</ErroCampo> : null}
@@ -246,7 +283,7 @@ function Editar({ f, aoSair, aoSalvar, aoConflito }: {
           <div className="folha-cab">
             <div>
               <h2 id={`${ids}-t`}>Editar ficha</h2>
-              <p className="sub">Os campos sem “(opcional)” são obrigatórios.</p>
+              <p className="sub">Os campos sem “(opcional)” são obrigatórios. O que ficar em branco sai marcado nos documentos do escritório.</p>
             </div>
           </div>
           <form ref={form} className="form-folha" noValidate onSubmit={(ev) => { ev.preventDefault(); void salvar(); }}>
@@ -305,25 +342,79 @@ function Editar({ f, aoSair, aoSalvar, aoConflito }: {
                 </Aviso>
               </div>
             ) : null}
-            {campo("nome", "Nome do escritório", { classe: "c4", auto: "organization", mudouCampo: "Nome" })}
-            {campo("cnpj", "CNPJ", { classe: "c2", opcional: true, ajuda: "Conferimos os dígitos ao salvar.", modo: "numeric", mudouCampo: "CNPJ" })}
-            {campo("cidade", "Cidade", { classe: "c4", auto: "address-level2", mudouCampo: "Cidade" })}
+            <h3 className="dd-sec">Quem é o escritório</h3>
+            {campo("nome", "Nome no T3jus", { classe: "c6", auto: "organization", mudouCampo: "Nome", ajuda: "O nome curto, do Console, do Portal e das conversas. Não sai nos documentos." })}
+            <fieldset className="grupo-opcoes dd-tipos">
+              <legend>Tipo{mudou("Tipo") ? <Mudou /> : null}</legend>
+              <div className="dd-ops">
+                {(Object.keys(TIPOS_ESCRITORIO) as TipoEscritorio[]).map((t) => (
+                  <label key={t} className="opcao">
+                    <input className="marcar" type="radio" name={`${ids}-tipo`} checked={r.tipo === t} onChange={() => mudar("tipo", t)} />
+                    <span>
+                      {TIPOS_ESCRITORIO[t].nome}
+                      <small>{TIPOS_ESCRITORIO[t].explica}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {r.tipo === "SEM_SOCIEDADE" ? null : (
+              <>
+                {campo("razaoSocial", "Razão social", { classe: "c6", opcional: true, mudouCampo: "Razão social", ajuda: "Como no registro da OAB e no CNPJ. Sai em maiúsculas no contrato." })}
+                {campo("cnpj", "CNPJ", { classe: "c2", opcional: true, ajuda: "Conferimos os dígitos ao salvar.", modo: "numeric", mudouCampo: "CNPJ" })}
             <div className="campo c2">
-              <label htmlFor={`${ids}-uf`}>UF{mudou("UF") ? <Mudou /> : null}</label>
-              <select className="entrada" id={`${ids}-uf`} value={r.uf} onChange={(ev) => mudar("uf", ev.target.value)}
-                aria-invalid={erros.uf ? true : undefined} aria-describedby={erros.uf ? `${ids}-uf-erro` : undefined}>
+              <label htmlFor={`${ids}-oabUf`}>Registro na OAB: seccional{mudou("Registro na OAB") ? <Mudou /> : null}</label>
+              <select className="entrada" id={`${ids}-oabUf`} value={r.oabUf} onChange={(ev) => mudar("oabUf", ev.target.value)}
+                aria-invalid={erros.oabUf ? true : undefined} aria-describedby={erros.oabUf ? `${ids}-oabUf-erro` : undefined}>
                 <option value="">Escolha</option>
                 {UFS.map((u) => (
                   <option key={u}>{u}</option>
                 ))}
               </select>
-              {erros.uf ? <ErroCampo id={`${ids}-uf-erro`}>{erros.uf}</ErroCampo> : null}
+              {erros.oabUf ? <ErroCampo id={`${ids}-oabUf-erro`}>{erros.oabUf}</ErroCampo> : null}
             </div>
-            {campo("endereco", "Endereço", { classe: "c6", opcional: true, auto: "street-address", mudouCampo: "Endereço" })}
+                {campo("oabNumero", "Registro na OAB: número", { classe: "c2", modo: "numeric", mudouCampo: "Registro na OAB", ajuda: "O da sociedade; em branco se não houver." })}
+              </>
+            )}
+            <h3 className="dd-sec">Onde fica</h3>
+            <fieldset className="end-grupo" aria-describedby={`${ids}-end-aj`}>
+              <legend>Endereço da sede{mudou("Sede") ? <Mudou /> : null}</legend>
+              <p className="ajuda" id={`${ids}-end-aj`}>
+                Sai no contrato, na procuração, nas petições e no timbrado. É o padrão do endereço de cobrança e do endereço profissional dos advogados.
+              </p>
+              {f.escritorio.enderecoConfira && f.escritorio.endereco ? (
+                <Aviso tom="atencao" titulo="Confira a sede: ela veio do cadastro antigo, num texto só.">
+                  O texto antigo está em “Rua”. Deixe ali só a rua e passe o número, o complemento e o bairro para os campos certos.
+                </Aviso>
+              ) : null}
+              <div className="end-grade">
+                {campo("cep", "CEP", { classe: "e2", auto: "postal-code", modo: "numeric", ajuda: "Só números ou com hífen." })}
+                {campo("logradouro", "Rua, avenida ou travessa", { classe: "e4", auto: "address-line1" })}
+                {campo("numero", "Número", { classe: "e1", ajuda: "Sem número: S/N." })}
+                {campo("complemento", "Complemento", { classe: "e2", opcional: true, auto: "address-line2" })}
+                {campo("bairro", "Bairro", { classe: "e3", auto: "address-level3" })}
+                {campo("cidade", "Cidade", { classe: "e4", auto: "address-level2", mudouCampo: "Cidade" })}
+                <div className="campo e2">
+                  <label htmlFor={`${ids}-uf`}>UF{mudou("UF") ? <Mudou /> : null}</label>
+                  <select className="entrada" id={`${ids}-uf`} value={r.uf} onChange={(ev) => mudar("uf", ev.target.value)} autoComplete="address-level1"
+                    aria-invalid={erros.uf ? true : undefined} aria-describedby={erros.uf ? `${ids}-uf-erro` : undefined}>
+                    <option value="">Escolha</option>
+                    {UFS.map((u) => (
+                      <option key={u}>{u}</option>
+                    ))}
+                  </select>
+                  {erros.uf ? <ErroCampo id={`${ids}-uf-erro`}>{erros.uf}</ErroCampo> : null}
+                </div>
+              </div>
+            </fieldset>
+            <h3 className="dd-sec">Como falar com o escritório</h3>
+            {campo("telefone", "Telefone do escritório", { classe: "c3", opcional: true, tipo: "tel", modo: "tel", mudouCampo: "Telefone", ajuda: "Vai no timbrado do recibo e do carnê." })}
+            {campo("email", "E-mail do escritório", { classe: "c3", opcional: true, tipo: "email", mudouCampo: "E-mail", ajuda: "Vai no timbrado; nas petições, se o modelo pedir." })}
+            {campo("site", "Site", { classe: "c6", opcional: true, mudouCampo: "Site", ajuda: "Só no timbrado do recibo." })}
             <fieldset className="contatos-edit">
               <legend>
                 Contatos{mudou("Contatos") ? <Mudou /> : null}
-                <small>Até 10. Cada um precisa de telefone ou e-mail.</small>
+                <small>Com quem a equipe T3jus fala. Até 10, cada um com telefone ou e-mail. Não saem nos documentos.</small>
               </legend>
               {r.contatos.map((c, i) => {
                 const par = erros[`contato.${c.chave}.par`];
@@ -373,6 +464,7 @@ function Editar({ f, aoSair, aoSalvar, aoConflito }: {
               ) : null}
             </fieldset>
             <div className="form-pe">
+              <p className="esq-pe">Vale para os próximos documentos; os já gerados não mudam.</p>
               <button className="btn btn-fantasma" type="button" onClick={aoSair}>
                 Cancelar
               </button>
@@ -391,11 +483,15 @@ function Editar({ f, aoSair, aoSalvar, aoConflito }: {
           <ul>
             <li>
               <Icone nome="escudo" className="ico" />
-              <span>O sócio vê estes dados no Portal. Notas e contrato ficam só com a equipe.</span>
+              <span>A sócia dona vê estes dados no Portal e também pode mudá-los, em Escritório › Dados do escritório. A última mudança vale.</span>
+            </li>
+            <li>
+              <Icone nome="doc" className="ico" />
+              <span>Razão social, CNPJ, registro na OAB e sede saem no contrato, na procuração, nas petições e no timbrado.</span>
             </li>
             <li>
               <Icone nome="historico" className="ico" />
-              <span>Cada mudança vai para o histórico, com seu nome e os campos alterados.</span>
+              <span>Cada mudança vai para o histórico, com seu nome, onde foi feita (Console ou Portal) e os campos alterados.</span>
             </li>
             <li>
               <Icone nome="pessoas" className="ico" />

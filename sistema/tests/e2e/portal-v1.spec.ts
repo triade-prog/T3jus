@@ -211,7 +211,7 @@ test.describe("Portal v1: área Escritório (F1.7, PT-15)", () => {
     });
     await page.goto(`${P}/meu-escritorio`);
     await expect(page.getByRole("heading", { level: 1, name: "Ribeiro & Matos" })).toBeVisible();
-    await expect(page.getByText("41.276.839/0001-34")).toBeVisible();
+    await expect(page.locator(".cd-dl").getByText("41.276.839/0001-34")).toBeVisible();
     await expect(page.getByText("Nunes Prado Advogados")).toBeVisible();
     await semViolacoes(page);
     await page.getByRole("button", { name: "Exportar os dados" }).click();

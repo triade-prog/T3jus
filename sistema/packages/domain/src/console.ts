@@ -92,6 +92,21 @@ export const fichaSchema = z.object({
   endereco: textoOpcional(200),
   cnpj: z.union([cnpj, z.null()]).optional().transform((v) => (v ? v : null)),
   contatos: z.array(contatoSchema).max(10),
+  /** Os dados para os documentos (PA-07, 0860). Ausentes, a tela antiga continua gravando só o texto do endereço. */
+  documentos: z.object({
+    tipo: z.enum(["SOCIEDADE", "SOCIEDADE_INDIVIDUAL", "SEM_SOCIEDADE"]).nullable().optional(),
+    razaoSocial: z.string().max(300).nullable().optional(),
+    oabUf: z.string().max(4).nullable().optional(),
+    oabNumero: z.string().max(12).nullable().optional(),
+    cep: z.string().max(12).nullable().optional(),
+    logradouro: z.string().max(300).nullable().optional(),
+    numero: z.string().max(30).nullable().optional(),
+    complemento: z.string().max(100).nullable().optional(),
+    bairro: z.string().max(120).nullable().optional(),
+    telefone: z.string().max(30).nullable().optional(),
+    email: z.string().max(300).nullable().optional(),
+    site: z.string().max(300).nullable().optional(),
+  }).optional(),
 });
 
 export const contratoSchema = z.object({ versao, referenciaContrato: textoOpcional(120) });

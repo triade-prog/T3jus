@@ -13,7 +13,7 @@ import type { Context, Hono } from "hono";
 import {
   arquivarModeloDocumentoSchema, CAMPOS_DOCUMENTO, camposDoPadraoDocumento, conferenciaModeloDocumento, conferirDocx, criarDocx,
   enviarModeloDocumentoSchema, ErroDocx, ErroDominio, escolhasDocumentosSchema, escreverZip, filtroDocumentosSchema, LIMITE_MODELO_BYTES,
-  linhasTimbrado, marcadosDoModeloDocumento, MODELOS_PADRAO_DOCUMENTO, modeloPadraoDocumento, montarValoresDocumento, nomeArquivoDocumento,
+  linhasTimbrado, marcadosDoModeloDocumento, MODELOS_PADRAO_DOCUMENTO, modeloPadraoDocumento, montarValoresDocumento, nomeArquivoDocumento, paragrafosPadraoDocumento,
   nomeDoPdf, nomeZipDocumentos, preencherDocx, previaDocumento, TIPO_DOCX,
   type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PadraoDocumento, type PreviaDocumento, type PreviaDocumentos, type ResultadoDocumentos,
@@ -93,11 +93,13 @@ export function rotasDocumentos(app: Hono<VarsPortal>, deps: DepsPortal) {
     if (d.padrao) {
       const p = modeloPadraoDocumento(d.padrao);
       if (!p) throw new ErroDominio("VALIDATION_ERROR", { campos: ["documentos"], motivo: "MODELO_INVALIDO" });
+      // Sem sociedade, a contratada do padrão é a sócia dona (PA-07, decisão 17).
+      const pars = paragrafosPadraoDocumento(p, dados.escritorio);
       return {
-        paragrafos: p.paragrafos.map((x) => x.texto),
-        campos: camposDoPadraoDocumento(p),
+        paragrafos: pars.map((x) => x.texto),
+        campos: camposDoPadraoDocumento(p, dados.escritorio),
         // O padrão sai no timbrado do escritório, com o logo de hoje (como a proposta).
-        bytes: async () => criarDocx(p.paragrafos, linhasTimbrado({ ...dados.escritorio, oab: dados.marca?.oab ?? dados.escritorio.oab }),
+        bytes: async () => criarDocx(pars, linhasTimbrado({ ...dados.escritorio, oab: dados.marca?.oab ?? dados.escritorio.oab }),
           await logoDaProposta(deps, c.get("escritorioId"), dados.marca)),
       };
     }
@@ -135,7 +137,7 @@ export function rotasDocumentos(app: Hono<VarsPortal>, deps: DepsPortal) {
       padrao.push({
         id: p.codigo, codigos: ms.map((m) => ({ codigo: m.codigo, nome: m.nome })), padrao: true, tipo,
         nome: tipo === "HIPOSSUFICIENCIA" ? "Declaração de hipossuficiência" : p.nome,
-        versao: 1, versaoId: null, campos: [...new Set(ms.flatMap(camposDoPadraoDocumento))], desconhecidos: [], enviadoPor: null,
+        versao: 1, versaoId: null, campos: [...new Set(ms.flatMap((m) => camposDoPadraoDocumento(m)))], desconhecidos: [], enviadoPor: null,
         atualizadoEm: p.atualizadoEm, usos: ms.reduce((n, m) => n + (r.usosPadrao[m.codigo] ?? 0), 0), linhaVersao: 0,
         emRevisao: ms.some((m) => m.emRevisao), anteriores: [],
       });
