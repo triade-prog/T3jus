@@ -288,6 +288,47 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
       etapaId: eid(8), resultado: "ACORDO", avisar: false, valores: { [JOANA.id]: 2800000 }, previstoEm: "2026-12-15" });
   });
 
+  test("EX-17: encerrado com acerto pendente, o selo, o âmbar com Ver o acerto e o quadro do Financeiro", async ({ page }) => {
+    const LEV = "1e000000-0000-4000-8000-000000000001";
+    const acerto = {
+      pendente: true, fechado: null, comValores: true, levantamentoId: LEV,
+      entrou: { tipo: "ALVARA", em: "2026-11-12", valor: 2800000 },
+      exitos: [{ cliente: JOANA.nome, feito: true, naoCobrado: false, em: "2026-11-13T13:00:00Z", por: MARINA, valor: 840000 }],
+      repasses: [{ cliente: JOANA.nome, feito: false, em: null, prazo: "2026-11-25", valor: 1960000 }],
+      outros: [{ nome: "Dr. Paulo (perito)", valor: 120000, prazo: "2026-11-28" }], faltaOutros: true,
+      contratos: [{ id: "k1", numero: "C-2026-014", situacao: "ATIVO", cliente: JOANA.nome, assinadoEm: "2026-02-20" }],
+    };
+    const ficha = { ...FICHA, situacao: "ENCERRADO", resultado: "ACORDO", encerradoEm: "2026-11-10T13:00:00Z", etapa: etapa(8), acerto };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    await expect(page.getByText("Encerrado · acerto pendente")).toBeVisible();
+    await expect(page.getByText(/Encerrado com acordo em 10\/11\. Falta o acerto no Financeiro: pagar Dr\. Paulo \(perito\) e encerrar\./)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver o acerto" })).toHaveAttribute("href", `/financeiro/repasses/${LEV}`);
+    const q = page.getByRole("region", { name: "Acerto no Financeiro" });
+    await expect(q).toContainText("Êxito conferido");
+    await expect(q).toContainText("Joana: falta repassar R$ 19.600,00");
+    await expect(q).toContainText("Depois: encerrar no financeiro e o contrato C-2026-014");
+    await semViolacoes(page);
+  });
+
+  test("EX-17: sem a área Financeiro, o quadro mostra o que falta sem valores e quem cuida", async ({ page }) => {
+    const acerto = {
+      pendente: true, fechado: null, comValores: false, levantamentoId: null,
+      entrou: { tipo: "ALVARA", em: "2026-11-12", valor: null }, exitos: [],
+      repasses: [{ cliente: JOANA.nome, feito: false, em: null, prazo: "2026-11-25", valor: null }],
+      outros: null, faltaOutros: true, contratos: [], quemCuida: ["Marina Ribeiro"],
+    };
+    const ficha = { ...FICHA, situacao: "ENCERRADO", resultado: "GANHO", encerradoEm: "2026-11-10T13:00:00Z", etapa: etapa(8), acerto };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    await expect(page.getByText(/O acerto está com o Financeiro\./)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver o acerto" })).toHaveCount(0);
+    const q = page.getByRole("region", { name: "Acerto no Financeiro" });
+    await expect(q).toContainText("Quem cuida: Marina, da área Financeiro");
+    await expect(q).toContainText("Faltam pagamentos a terceiros");
+    await expect(q).not.toContainText("R$");
+  });
+
   test("Celular: lista e ficha cabem na tela", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await simular(page, comuns());

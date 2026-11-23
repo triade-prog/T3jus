@@ -312,8 +312,16 @@ export function FichaCompromissoPortal({ id }: { id: string }) {
           </div>
         ) : null}
         <div className="inteira">
-          <dt>Cliente</dt>
-          <dd>{f.cliente ? <a href={`${ROTAS_PORTAL.clientes}/${f.cliente.id}`}>{f.cliente.nome}</a> : "Sem cliente (compromisso interno)"}</dd>
+          <dt>{f.conversa ? "Com quem" : "Cliente"}</dt>
+          <dd>{f.cliente ? <a href={`${ROTAS_PORTAL.clientes}/${f.cliente.id}`}>{f.cliente.nome}</a>
+            : f.conversa ? (
+              <>
+                <a href={`${ROTAS_CONVERSAS.mensagens}?c=${f.conversa.id}`}>{f.conversa.nome}</a> · <span className="num">{formatarTelefone(f.conversa.telefone)}</span>
+                <small className="ajuda" style={{ display: "block", margin: 0 }}>
+                  Da conversa. Ainda não está em Clientes; quando for cadastrada, o compromisso passa para a ficha{f.lembrete ? " e o lembrete começa" : ""}.
+                </small>
+              </>
+            ) : "Sem cliente (compromisso interno)"}</dd>
         </div>
         {f.caso ? (
           <div className="inteira">

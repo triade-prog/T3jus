@@ -1,0 +1,11 @@
+{
+  "id": "F3.137",
+  "texto": "Lembrete da primeira reunião pelo número da conversa antes do cadastro (hoje o lembrete pedido fica guardado e começa quando a pessoa é cadastrada)",
+  "peca": "S2",
+  "refs": [
+    "AP-07"
+  ],
+  "status": "pendente",
+  "ordem": 1045,
+  "proximo": "O motor de lembretes (automacao_execucoes.cliente_id obrigatório, LEMBRETE_AUDIENCIA em automacao_candidatos) só trabalha com a ficha. Falta aceitar a conversa como destino: execução com conversa_id em vez de cliente_id, o texto com o nome da conversa e o envio pela própria conversa (0870 já guarda compromissos.conversa_id e o lembrete pedido)."
+}

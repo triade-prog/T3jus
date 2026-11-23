@@ -72,7 +72,8 @@ export type TipoAvisoSino =
   | "BASE_DO_MES" | "PEDIDO_CONTRATO" | "CONTRATO_GERADO"
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
   | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
-  | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18";
+  | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18"
+  | "DOCUMENTOS_INICIO_CHEGARAM";
 
 export interface AvisoSino {
   id: string;
@@ -92,6 +93,8 @@ export interface AvisoSino {
     referencia?: string; contador?: string;
     /** Arquivo do cliente com documento pedido (F3.86): o arquivo e quantos documentos faltam. */
     arquivo?: string; quantos?: number;
+    /** Documentos para começar (EX-18): quantos eram na lista. */
+    total?: number;
     /** Carnê desatualizado (F3.80): o carnê, quando foi gerado e se foi você quem gerou. */
     carne?: string; gerado?: string; gerou?: boolean; parcela?: string;
     /** O êxito conferido no Financeiro (F3.14): o valor calculado pelo contrato e a explicação de não cobrar. */

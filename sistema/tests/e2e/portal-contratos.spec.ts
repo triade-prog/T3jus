@@ -592,3 +592,38 @@ test.describe("Contratos do Portal, arquivo assinado (CH-01)", () => {
     expect(envios).toEqual([`PUT /arquivos-falsos/${ESC}/${NOVO}`]);
   });
 });
+
+// Jornada do cliente, parte 2 (CH-13, EX-16), tela aprovada em docs/design/aprovadas/portal-jornada-fechamento.
+test.describe("Contratos: o caso na ficha do contrato e o encerrar do fechamento", () => {
+  test("contrato marcado 'não tem caso': a folha Caso diz quem marcou e abre um caso (decisão 28)", async ({ page }) => {
+    const CASO = "ca000000-0000-4000-8000-000000000044";
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${ct(19)}`]: { corpo: { ...F19, semCaso: true, caso: null, podeAbrirCaso: true, semCasoMarcado: { em: "2026-10-05T10:00:00-03:00", por: FELIPE } } },
+      [`GET /v1/escritorio/contratos/${ct(19)}/caso`]: { corpo: {
+        contrato: { id: ct(19), numero: "C-2026-019", objeto: "Cobranças e consultivo", situacao: "ATIVO", versao: 4, criadoEm: em(-70, "10:00"), area: "TRABALHISTA", semCaso: true,
+                    cliente: { id: cli(19), nome: "Farmácia Bom Jesus Ltda." } },
+        casoLigado: null, sugestao: { nome: "Farmácia Bom Jesus · Cobranças", area: "TRABALHISTA", responsavelId: FELIPE.id, papel: "REU" },
+        responsavelSugerido: FELIPE, escolhe: true, responsaveis: [FELIPE, MARINA], casos: [], modoSugerido: "NOVO", casosDoCliente: [] } },
+      [`POST /v1/escritorio/contratos/${ct(19)}/caso`]: { corpo: { casoId: CASO, semCaso: false } },
+    });
+    await page.goto(`${P}/contratos/contratos/${ct(19)}`);
+    const folha = page.getByRole("region", { name: "Caso" });
+    await expect(folha).toContainText("Este contrato não tem caso");
+    await expect(folha).toContainText("Marcado em 05/10/2026, por Felipe Matos");
+    await semViolacoes(page);
+    await folha.getByRole("button", { name: "Abrir um caso para este contrato" }).click();
+    const j = page.getByRole("dialog", { name: "Abrir um caso para este contrato" });
+    await expect(j.getByRole("radio", { name: /não tem caso/ })).toHaveCount(0);
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Abrir o caso" }).click();
+    await expect(page).toHaveURL(new RegExp(`/juridico/casos/${CASO}`));
+    expect(pedidos.find((p) => p.metodo === "POST" && p.caminho.endsWith("/caso"))?.corpo).toMatchObject({ caso: { modo: "NOVO", responsavelId: FELIPE.id } });
+  });
+
+  test("?encerrar=1, vindo do fechamento, abre a janela de encerrar", async ({ page }) => {
+    await simular(page, comuns());
+    await page.goto(`${P}/contratos/contratos/${ct(19)}?encerrar=1`);
+    await expect(page.getByRole("alertdialog", { name: "Encerrar contrato" })).toBeVisible();
+  });
+});

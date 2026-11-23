@@ -3,19 +3,43 @@
 // calculado no banco (0740_ficha_cliente_ligada.sql) com as áreas da sessão.
 
 import { z } from "zod";
+import { documentosDoCasoSchema } from "./documentos_pessoais.ts";
 import type { PessoaRef } from "./clientes.ts";
 import type { ContratoLinha } from "./contratos.ts";
 import type { PropostaLinha } from "./comercial.ts";
-import type { AreaDireito, LinhaCaso, PapelCaso } from "./juridico.ts";
+import type { AreaDireito, LinhaCaso, MensagemAviso, PapelCaso } from "./juridico.ts";
 
 export type TipoPassoCliente =
   | "SEM_PROPOSTA" | "PROPOSTA_RASCUNHO" | "PROPOSTA_ANDAMENTO" | "PROPOSTA_ACEITA"
-  | "CONTRATO_ELABORACAO" | "CONTRATO_SEM_CASO" | "CASO";
-export type AreaPassoCliente = "COMERCIAL" | "CONTRATOS" | "JURIDICO";
+  | "CONTRATO_ELABORACAO" | "CONTRATO_SEM_CASO" | "CASO"
+  // Jornada do cliente (0851; EX-16, CH-13): o fechamento, o contrato sem caso e o fim.
+  | "FECHAMENTO" | "CONTRATO_ATIVO" | "ATENDIDO"
+  // Documentos para começar (0854; EX-18): o caso aberto com documento faltando.
+  | "DOCUMENTOS";
+export type AreaPassoCliente = "COMERCIAL" | "CONTRATOS" | "JURIDICO" | "FINANCEIRO";
+
+/** Um passo do fechamento do caso (decisões 14 a 17). Os valores só vêm para quem tem Financeiro. */
+export interface PassoFechamento {
+  tipo: "EXITO" | "REPASSE" | "FINANCEIRO" | "CONTRATO";
+  area: "FINANCEIRO" | "CONTRATOS";
+  feito: boolean;
+  em: string | null;
+  por?: PessoaRef | null;
+  valor?: number | null;
+  percentual?: number | null;
+  naoCobrado?: boolean;
+  prazo?: string | null;
+  levantamentoId?: string | null;
+  entrou?: { tipo: string; valor: number; em: string } | null;
+  pendentes?: string[] | null;
+  contratos?: { id: string; numero: string }[];
+  comFinanceiro?: boolean;
+}
 
 /** O item do passo. Só vem para quem tem a área dele. */
 export interface ItemPasso {
-  id: string;
+  /** O item do passo; no fechamento, o id fica no caso. */
+  id?: string;
   numero?: string;
   nome?: string;
   servico?: string;
@@ -32,6 +56,19 @@ export interface ItemPasso {
   responsavel?: PessoaRef | null;
   etapa?: { ordem: number; nome: string } | null;
   etapas?: number;
+  /** CONTRATO_ELABORACAO: o caso que já existe e a que o contrato vai juntar (decisão 13). */
+  juntarA?: string | null;
+  /** CONTRATO_ATIVO: a próxima parcela (decisão 27). */
+  proximo?: { vencimento: string; descricao: string; valor: number | null } | null;
+  /** FECHAMENTO e ATENDIDO: o caso (sem nome para quem não tem Jurídico), os passos e o fim. */
+  caso?: { id: string | null; nome: string | null; resultado: "GANHO" | "PERDA" | "ACORDO" | null; encerradoEm: string | null } | null;
+  passos?: PassoFechamento[];
+  fim?: string | null;
+  /** DOCUMENTOS: quantos dos de começar chegaram, o que falta e o aviso com a lista (decisão 46). */
+  chegaram?: number;
+  total?: number;
+  faltam?: { id: string; descricao: string; tipoPessoal: string | null }[];
+  aviso?: MensagemAviso | null;
 }
 
 export interface PassoCliente {
@@ -40,6 +77,8 @@ export interface PassoCliente {
   pode: boolean;
   /** Quem tem a área do passo, quando a pessoa não pode. */
   quemPode: string[] | null;
+  /** No fechamento: quem tem a área do próximo passo, mesmo para quem pode (decisão 15). */
+  quemFaz?: string[] | null;
   item: ItemPasso | null;
   /** Sem Jurídico: com quem está o caso (decisão 19). */
   casoResponsavel?: PessoaRef | null;
@@ -76,6 +115,7 @@ export const casoDoContratoSchema = z.object({
   responsavelId: z.string().max(40).nullish(),
   papel: z.string().max(20).nullish(),
   casoId: z.string().max(40).nullish(),
+  documentos: documentosDoCasoSchema.nullish(),
 });
 export type CasoDoContrato = z.input<typeof casoDoContratoSchema>;
 

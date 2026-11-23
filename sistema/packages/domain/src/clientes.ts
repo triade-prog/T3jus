@@ -210,7 +210,7 @@ const docConfere = (c: { tipo?: TipoCliente; documento: string | null }) =>
   c.documento === null || (c.tipo === "PJ" ? cnpjValido(c.documento) : cpfValido(c.documento));
 
 export const cadastrarClienteSchema = z
-  .object({ tipo: z.enum(chaves(TIPOS_CLIENTE)), ...campos })
+  .object({ tipo: z.enum(chaves(TIPOS_CLIENTE)), ...campos, conversaId: uuid.nullish() })
   .refine(docConfere, { message: "Documento inválido", path: ["documento"] })
   .superRefine(quemAssinaRegras);
 

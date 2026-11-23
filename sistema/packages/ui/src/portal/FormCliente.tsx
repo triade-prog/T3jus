@@ -13,6 +13,7 @@ import {
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro } from "../console/pecas.tsx";
+import { formatarTelefone } from "../console/ficha.ts";
 import { dataLonga } from "../console/tempo.ts";
 import {
   campoDoServidor, conferirCliente, dataBr, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato,
@@ -36,8 +37,12 @@ export interface Conflito {
   diferencas: { chave: string; campo: string; salvo: string; meu: string }[];
 }
 
-export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, aoSalvo, aoCancelar, aoConflito, aoFicarComSalva }: {
+/** O cadastro aberto pela conversa (AP-07, decisão 30): o nome e o telefone vêm dela. */
+export interface CadastroDaConversa { id: string; telefone: string; nome: string | null }
+
+export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, daConversa, aoSalvo, aoCancelar, aoConflito, aoFicarComSalva }: {
   modo: "novo" | "editar";
+  daConversa?: CadastroDaConversa | null;
   inicial: RascunhoCliente;
   comercial: boolean;
   versao?: number;
@@ -112,7 +117,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
     setErros({});
     setSalvando(true);
     const resp = novo
-      ? await chamarPortal<{ id: string; versao: number }>("/v1/escritorio/clientes", { corpo: v.corpo })
+      ? await chamarPortal<{ id: string; versao: number }>("/v1/escritorio/clientes", { corpo: daConversa ? { ...v.corpo, conversaId: daConversa.id } : v.corpo })
       : await chamarPortal<{ id: string; versao: number }>(`/v1/escritorio/clientes/${idCliente}`, { metodo: "PUT", corpo: { ...v.corpo, versao } });
     setSalvando(false);
     if (resp.ok) return aoSalvo({ ...resp.dados, nome: v.corpo.nome });
@@ -130,7 +135,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
 
   const campo = (k: CampoTexto, rotulo: string, o: {
     classe: string; uso?: boolean; opcional?: boolean; ajuda?: string; modo?: "numeric" | "tel" | "email"; auto?: string; foco?: boolean;
-    tipo?: string; aoSair?: () => void; depois?: ReactNode;
+    tipo?: string; aoSair?: () => void; depois?: ReactNode; pre?: boolean;
   }) => {
     const id = `${ids}-${k}`;
     const e = erros[k];
@@ -139,6 +144,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
         <label htmlFor={id}>
           {rotulo}
           {o.opcional ? <span className="opcional"> (opcional)</span> : null}
+          {o.pre ? <span className="jf-pre">da conversa</span> : null}
           {o.uso ? <Uso>{PROC}</Uso> : null}
           {mudou(k) ? <Mudou /> : null}
         </label>
@@ -188,7 +194,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
   };
 
   /** Campo de um contato do formulário de cadastro (o primeiro contato). */
-  const campoContato = (k: "nome" | "papel" | "telefone" | "email", rotulo: string, o: { classe: string; opcional?: boolean; ajuda?: string; tipo?: string; modo?: "tel" | "email" }) => {
+  const campoContato = (k: "nome" | "papel" | "telefone" | "email", rotulo: string, o: { classe: string; opcional?: boolean; ajuda?: string; tipo?: string; modo?: "tel" | "email"; pre?: boolean }) => {
     const id = `${ids}-c0-${k}`;
     const par = erros[`contato.${contato0.chave}.par`];
     const e = erros[`contato.${contato0.chave}.${k}`] ?? (k === "telefone" ? par : undefined);
@@ -197,6 +203,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
         <label htmlFor={id}>
           {rotulo}
           {o.opcional ? <span className="opcional"> (opcional)</span> : null}
+          {o.pre ? <span className="jf-pre">da conversa</span> : null}
         </label>
         <input className="entrada" id={id} type={o.tipo ?? "text"} inputMode={o.modo} value={contato0[k]} autoComplete="off"
           onChange={(ev) => mudarContato(contato0.chave, k, ev.target.value)}
@@ -537,6 +544,17 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           </p>
         </div>
       </div>
+      {novo && daConversa ? (
+        <p className="jf-veio" role="note">
+          <Icone nome="whats" className="ico" />
+          <span>
+            <b>Veio da conversa com <span className="num">{formatarTelefone(daConversa.telefone)}</span>.</b>{" "}
+            {daConversa.nome ? "O nome e o telefone já estão aqui." : "O telefone já está aqui."} Ao cadastrar, a conversa fica ligada à ficha
+            {daConversa.nome ? ` de ${daConversa.nome.trim().split(/\s+/)[0]}` : ""} e você volta para ela.{" "}
+            <a href="#" onClick={(ev) => { ev.preventDefault(); aoCancelar(); }}>Voltar sem cadastrar</a>
+          </span>
+        </p>
+      ) : null}
       <form ref={form} className="form-folha" noValidate onSubmit={(ev) => { ev.preventDefault(); void salvar(); }}>
         {nErros ? (
           <div className="c6">
@@ -620,8 +638,8 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           </div>
         ) : null}
         {campo("nome", pf ? "Nome completo" : "Razão social", {
-          classe: novo ? "c6" : "c4", uso: true, foco: !conflito,
-          ajuda: novo ? (pf ? "Como está no documento. Vai na procuração e no contrato." : "Como está no CNPJ. Vai na procuração e no contrato.") : undefined,
+          classe: novo ? "c6" : "c4", uso: true, foco: !conflito, pre: !!(novo && daConversa?.nome && pf),
+          ajuda: novo && daConversa?.nome && pf ? "Veio da conversa. Confira com a pessoa: como está no documento, vai na procuração e no contrato." : novo ? (pf ? "Como está no documento. Vai na procuração e no contrato." : "Como está no CNPJ. Vai na procuração e no contrato.") : undefined,
         })}
         {novo && !pf ? (
           <>
@@ -631,8 +649,8 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
         ) : null}
         {novo ? (
           <>
-            {campoContato("telefone", "Telefone ou WhatsApp", { classe: "c3", tipo: "tel", modo: "tel",
-              ajuda: !pf ? "Telefone ou e-mail: pelo menos um." : cap !== "PLENA" ? "Para falar com o cliente. Se ele não tem, use o de quem responde por ele." : "Para falar com o cliente." })}
+            {campoContato("telefone", "Telefone ou WhatsApp", { classe: "c3", tipo: "tel", modo: "tel", pre: !!daConversa,
+              ajuda: daConversa ? "O número da conversa. Vira o contato principal da ficha." : !pf ? "Telefone ou e-mail: pelo menos um." : cap !== "PLENA" ? "Para falar com o cliente. Se ele não tem, use o de quem responde por ele." : "Para falar com o cliente." })}
             {campoContato("email", "E-mail", { classe: "c3", tipo: "email", modo: "email", opcional: true, ajuda: pf ? "Para falar com o cliente." : undefined })}
             {duplicados?.por === "telefone" ? avisoDuplicado : null}
           </>
@@ -662,11 +680,11 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
               : "Cada mudança vai para o histórico do escritório, com seu nome e os campos alterados."}
           </span>
           <button className="btn btn-fantasma" type="button" onClick={aoCancelar}>
-            Cancelar
+            {novo && daConversa ? "Voltar à conversa" : "Cancelar"}
           </button>
           <button className="btn btn-pri" type="submit" disabled={salvando}>
             <Icone nome="check" className="ico" />
-            {salvando ? "Salvando…" : novo ? "Cadastrar cliente" : "Salvar ficha"}
+            {salvando ? "Salvando…" : novo ? (daConversa ? "Cadastrar e voltar à conversa" : "Cadastrar cliente") : "Salvar ficha"}
           </button>
         </div>
       </form>

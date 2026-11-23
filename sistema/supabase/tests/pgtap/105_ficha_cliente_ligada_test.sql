@@ -96,7 +96,7 @@ select is((teste.erro($$ select portal_contrato_assinatura_caso(socia, rm, ct2.i
 -- "Este contrato não tem caso" (pergunta 4): o passo para de pedir o caso.
 select portal_contrato_assinatura_caso(socia, rm, ct2.id, 1, '2026-11-18', jsonb_build_object('modo', 'SEM')) from ids, ct2;
 select is((select sem_caso from contratos, ct2 where contratos.id = ct2.id), true, 'pergunta 4: o contrato diz que não tem caso');
-select is((select portal_cliente(socia, rm, cli.rosa) -> 'passo' ->> 'tipo' from ids, cli), 'SEM_PROPOSTA', 'e o passo não pede "Abrir o caso"');
+select is((select portal_cliente(socia, rm, cli.rosa) -> 'passo' ->> 'tipo' from ids, cli), 'CONTRATO_ATIVO', 'e o passo não pede "Abrir o caso": é "Contrato ativo" (CH-13, 0851)');
 
 -- Depois, quem tem Jurídico junta a Rosa ao caso da Antônia.
 select is((teste.erro($$ select portal_contrato_caso(bianca, rm, ct2.id, jsonb_build_object('modo', 'JUNTAR', 'casoId', ass.r ->> 'casoId')) from ids, ct2, ass $$))

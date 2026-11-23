@@ -142,8 +142,13 @@ export function nomeDoCaso(c: CasoDoCompromisso): string {
   return c.numero ? `${c.nome} · ${formatarCnj(c.numero)}` : c.nome;
 }
 
-export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, casos, tiposEscritos, eu, aoFechar, aoFeito, aoMudar }: {
+/** Com quem, quando ainda não há ficha: a conversa (AP-07, decisão 32). */
+export interface ConversaDoCompromisso { id: string; nome: string; telefone: string }
+
+export function JanelaCompromisso({ aberta, inicial, editar, conversa: daConversa, pessoas, clientes, casos, tiposEscritos, eu, aoFechar, aoFeito, aoMudar }: {
   aberta: boolean;
+  /** Marcado a partir da conversa com quem ainda não é cliente: no lugar do campo Cliente, o quadro "Com quem". */
+  conversa?: ConversaDoCompromisso | null;
   inicial: Rascunho;
   /** Editar ou remarcar: o compromisso lido (versão e horário original). */
   editar?: FichaCompromisso;
@@ -186,6 +191,7 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
     // O lembrete vem marcado nas audiências e desmarcado nos outros tipos (pergunta 5), até a pessoa mexer.
     setR((o) => ({ ...o, tipo: t, lembrete: lembreteTocado ? o.lembrete : t === "AUDIENCIA" }));
   }
+  const conversa = daConversa ?? (editar?.conversa && !editar.cliente ? editar.conversa : null);
   const cliente = clientes?.find((c) => c.id === r.clienteId) ?? (editar?.cliente && editar.cliente.id === r.clienteId ? { ...editar.cliente, contatoPrincipal: editar.contatoCliente } : null);
   const contato = cliente?.contatoPrincipal ?? null;
   const diaLido = lerDia(r.dia);
@@ -197,7 +203,9 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
     setErros(e);
     if (Object.keys(e).length) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
-    const dados = corpoDoRascunho(r, casos !== undefined);
+    const base = corpoDoRascunho(r, casos !== undefined);
+    // Com a conversa, o lembrete fica guardado e começa quando a pessoa for cadastrada (F3.137).
+    const dados = conversa ? { ...base, clienteId: null, conversaId: conversa.id, lembrete: r.tipo !== "INTERNO" && r.lembrete } : base;
     const res = editar
       ? await chamarPortal<{ id: string; versao: number }>(`/v1/escritorio/compromissos/${editar.id}`, {
           metodo: "PUT", corpo: { ...dados, versao: editar.versao, motivo: remarcando ? r.motivo.trim() : null },
@@ -221,7 +229,9 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
     const d = diaDe(dados.inicio);
     const quando = `${DIAS_SEMANA[diaDaSemana(d)]}, ${diaCurto(d)}, às ${horaDe(dados.inicio)}`;
     let texto = editar ? "" : `Está na agenda de ${resp}.`;
-    if (dados.lembrete && contato) {
+    if (dados.lembrete && conversa) {
+      texto += ` O lembrete a ${primeiroNome(conversa.nome)} começa quando ${primeiroNome(conversa.nome)} for cadastrada em Clientes.`;
+    } else if (dados.lembrete && contato) {
       const l = horariosDoLembrete(dados.inicio);
       texto += ` O lembrete a ${primeiroNome(contato.nome)} fica marcado para ${quandoCurto(l.umDia)}${l.duasHoras ? `, e ${quandoCurto(l.duasHoras)}` : ""}; sai pelo WhatsApp do escritório, quando ele estiver ligado.`;
     }
@@ -308,7 +318,7 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
         </>
       }>
       <div ref={corpo} style={{ display: "contents" }}>
-        <p id={`${ids}-desc`}>{editar ? "Mudar o dia ou a hora pede o motivo, que fica no histórico." : "Fica na agenda de quem vai, com seu nome e a hora, no histórico."}</p>
+        <p id={`${ids}-desc`}>{conversa && !editar ? `Marcado a partir da conversa com ${primeiroNome(conversa.nome)}. Fica na agenda de quem vai, com seu nome e a hora, no histórico.` : editar ? "Mudar o dia ou a hora pede o motivo, que fica no histórico." : "Fica na agenda de quem vai, com seu nome e a hora, no histórico."}</p>
         {n ? <Aviso tom="urgencia" titulo={faltaAcertar(n)}>{editar ? "Nada foi salvo ainda." : "O compromisso ainda não foi marcado."}</Aviso> : null}
         {erro ? <Aviso tom="urgencia" titulo="Não deu para salvar.">{textoDoErro(erro)}</Aviso> : null}
         {radio("tipo", "Tipo", (Object.keys(TIPOS_COMPROMISSO) as TipoCompromisso[]).map((t) => ({ v: t, t: TIPOS_COMPROMISSO[t] })), r.tipo,
@@ -332,19 +342,37 @@ export function JanelaCompromisso({ aberta, inicial, editar, pessoas, clientes, 
         {comLink
           ? campo("linkSala", "Link da sala", { tipo: "url", ajuda: "Vai no lembrete ao cliente e no botão “Entrar na sala”." })
           : campo("local", "Endereço", { opcional: true, ajuda: "Vai no lembrete ao cliente." })}
-        <div className="x-dois">
-          {selecao("clienteId", "Cliente", clientesOps, { ajuda: clientes === null ? "Carregando os clientes…" : "Da lista de Clientes." })}
+        {conversa ? (
+          <div className="jf-contato" role="group" aria-labelledby={`${ids}-com`}>
+            <b id={`${ids}-com`}>Com quem</b>
+            <span>{conversa.nome} · <span className="num">{formatarTelefone(conversa.telefone)}</span></span>
+            <span className="ajuda" style={{ margin: 0 }}>Da conversa. Ainda não está em Clientes; quando for cadastrada, o compromisso passa para a ficha dela.</span>
+          </div>
+        ) : null}
+        {conversa && casos === undefined ? null : <div className="x-dois">
+          {conversa ? null : selecao("clienteId", "Cliente", clientesOps, { ajuda: clientes === null ? "Carregando os clientes…" : "Da lista de Clientes." })}
           {casos !== undefined
             ? selecao("casoId", "Processo", casosOps, { opcional: true, ajuda: casos === null ? "Carregando os casos…" : "Dos casos em andamento no Jurídico." })
             : <span />}
-        </div>
+        </div>}
         <div className="x-dois">
           {selecao("responsavelId", "Responsável", [...(r.responsavelId ? [] : [{ v: "", t: "Escolha" }]), ...pessoasOps], { ajuda: "Quem responde pelo compromisso." })}
           {selecao("tambemVai", "Também vai", [{ v: "", t: "Ninguém mais" }, ...pessoasOps.filter((p) => p.v !== r.responsavelId)], { opcional: true })}
         </div>
         <fieldset className="x-grupo">
           <legend>Lembrete ao cliente</legend>
-          {cliente && contato?.telefone ? (
+          {conversa ? (
+            <label className="opcao">
+              <input className="marcar" type="checkbox" checked={r.lembrete} onChange={(ev) => { setLembreteTocado(true); mudar("lembrete", ev.target.checked); }} />
+              <span>
+                Lembrar {primeiroNome(conversa.nome)} pelo WhatsApp
+                <small>
+                  1 dia antes, no mesmo horário, e 2 horas antes, {comLink ? "com o link da sala" : "com o endereço"}. Começa quando {primeiroNome(conversa.nome)} for cadastrada
+                  em Clientes, e vai para o contato principal da ficha.
+                </small>
+              </span>
+            </label>
+          ) : cliente && contato?.telefone ? (
             <label className="opcao">
               <input className="marcar" type="checkbox" checked={r.lembrete} onChange={(ev) => { setLembreteTocado(true); mudar("lembrete", ev.target.checked); }} />
               <span>

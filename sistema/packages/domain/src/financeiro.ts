@@ -697,7 +697,18 @@ export interface AcertoCaso {
   pendencias: PendenciaCaso[];
   falta: number;
   fechado: { em: string; por: { id: string; nome: string } } | null;
+  /** Encerrar em cadeia (0852; EX-17): os contratos que se encerram junto e o motivo que fica neles. */
+  contratosLigados?: { id: string; numero: string; objeto: string; versao: number; cliente: { id: string; nome: string } }[];
+  podeEncerrarContratos?: boolean;
+  motivoContratos?: string;
+  /** Depois de encerrar: os contratos encerrados junto. */
+  contratosEncerrados?: { id: string; numero: string }[];
 }
+
+/** O corpo de "Encerrar o caso no financeiro": os contratos ligados, com a versão lida (EX-17). */
+export const encerrarCasoSchema = z.object({
+  contratos: z.array(z.object({ id: z.string().uuid(), versao: z.number().int().min(1) })).max(20).optional(),
+});
 
 /** Soma dos dias úteis (segunda a sexta), como o banco faz. Os feriados ainda não entram. */
 /** O domingo de Páscoa do ano (Meeus/Jones/Butcher), para a Sexta-feira Santa. */

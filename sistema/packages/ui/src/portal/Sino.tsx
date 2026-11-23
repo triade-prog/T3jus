@@ -199,6 +199,13 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         detalhe: <>{d.caso ? `${d.caso}. ` : ""}{d.contrato ? `Contrato ${d.contrato}. ` : ""}Confira o nome, a área e a etapa.</>,
         onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "andamento", texto: "Caso novo" },
       };
+    case "DOCUMENTOS_INICIO_CHEGARAM":
+      // EX-18, decisão 48: o último documento para começar chegou.
+      return {
+        icone: "doc", titulo: <>Chegaram os documentos para começar {d.caso ?? "o caso"}</>,
+        detalhe: <>{d.total ? `Os ${d.total} da lista. ` : ""}{d.quem ? `O último foi marcado por ${d.quem}. ` : ""}O caso pode seguir.</>,
+        onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "ok", texto: "Documentos" },
+      };
     case "CLIENTE_FEZ_18":
       // F3.98, pergunta 3: o aviso vai para quem responde pelo contrato ativo ou pelo caso aberto.
       return {

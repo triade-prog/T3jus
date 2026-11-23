@@ -1,0 +1,11 @@
+{
+  "id": "F3.134",
+  "texto": "Mudar o prazo do comprovante de residência (padrão 90 dias) em Ajustes do escritório",
+  "peca": "S6",
+  "refs": [
+    "AP-08"
+  ],
+  "status": "pendente",
+  "ordem": 1070,
+  "proximo": "O banco já guarda o prazo (escritorios.comprovante_validade_dias, 0853); falta a tela de Ajustes do escritório, que ainda não existe e precisa de desenho."
+}

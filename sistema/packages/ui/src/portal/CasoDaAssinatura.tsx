@@ -17,13 +17,14 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, focarPrimeir
 import { lerDia } from "./agenda.ts";
 import { CampoAnexo, enviarAnexo } from "./Anexos.tsx";
 import { primeiroNome } from "./equipe.ts";
+import { corpoDosDocumentos, DOCS_INICIAL, erroDoMais, SecaoDocumentosInicio, type DocsEscolha } from "./DocumentosAbertura.tsx";
 import { dia } from "./fichaLigada.ts";
 import { chamarPortal } from "./Moldura.tsx";
 
 export type FimDaAssinatura = AssinaturaComCaso & { responsavel: string | null; semCaso: boolean };
 export type FimDoCaso = { casoId: string | null; semCaso?: boolean };
 
-type Escolha = { modo: ModoCaso; nome: string; area: AreaDireito; responsavelId: string; papel: PapelCaso; casoId: string };
+type Escolha = { modo: ModoCaso; nome: string; area: AreaDireito; responsavelId: string; papel: PapelCaso; casoId: string; docs: DocsEscolha };
 
 function useOpcoes(aberta: boolean, contrato: string) {
   const [o, setO] = useState<OpcoesCasoContrato | "erro" | null>(null);
@@ -50,15 +51,19 @@ export function escolhaInicial(o: OpcoesCasoContrato, modo: ModoCaso): Escolha {
     responsavelId: o.sugestao.responsavelId ?? "",
     papel: juntar && um ? um.papel : o.sugestao.papel,
     casoId: juntar && um ? um.id : "",
+    docs: DOCS_INICIAL,
   };
 }
 
 /** O "caso" que vai ao servidor. Sem Jurídico, só o modo: o servidor usa os dados do contrato. */
 function corpoDoCaso(e: Escolha, escolhe: boolean): CasoDoContrato {
   if (e.modo === "SEM") return { modo: "SEM" };
-  if (!escolhe) return { modo: "NOVO" };
+  // EX-18: o caso novo leva os documentos para começar (sem Jurídico, só o aviso conta).
+  const d = corpoDosDocumentos(e.docs);
+  const documentos = d ? { documentos: d } : {};
+  if (!escolhe) return { modo: "NOVO", ...documentos };
   if (e.modo === "JUNTAR") return { modo: "JUNTAR", casoId: e.casoId, papel: e.papel };
-  return { modo: "NOVO", nome: e.nome.trim(), area: e.area, responsavelId: e.responsavelId || null, papel: e.papel };
+  return { modo: "NOVO", nome: e.nome.trim(), area: e.area, responsavelId: e.responsavelId || null, papel: e.papel, ...documentos };
 }
 
 /** O que falta na escolha, antes de ir ao servidor. */
@@ -67,7 +72,15 @@ function errosDaEscolha(e: Escolha): Record<string, string> {
   if (e.modo === "NOVO" && e.nome.trim().length < 3) x.nome = "Escreva o nome do caso, com pelo menos 3 letras.";
   if (e.modo === "NOVO" && !e.responsavelId) x.responsavelId = "Escolha quem fica responsável.";
   if (e.modo === "JUNTAR" && !e.casoId) x.casoId = "Escolha o caso em andamento.";
+  const mais = e.modo === "NOVO" ? erroDoMais(e.docs) : null;
+  if (mais) x.mais = mais;
   return x;
+}
+
+/** Sem Jurídico, só o documento a mais se confere. */
+function errosSemEscolha(e: Escolha): Record<string, string> {
+  const mais = erroDoMais(e.docs);
+  return mais ? { mais } : {};
 }
 
 /** Erros do servidor nos campos do caso ("caso.nome") viram erros da seção. */
@@ -81,6 +94,7 @@ function errosDoCaso(campos: unknown): Record<string, string> {
     if (c === "caso.papel") e.papel = "Escolha o papel do cliente no caso.";
     if (c === "caso.casoId") e.casoId = "Escolha o caso em andamento.";
     if (c === "caso.modo") e.modo = "Escolha o que fazer com o caso.";
+    if (c === "caso.documentos.mais") e.mais = "Diga qual documento, com 3 a 160 letras.";
   }
   return e;
 }
@@ -206,6 +220,35 @@ function SecaoCaso({ o, e, aoMudar, erros, pref, semOpcaoSem, legenda, sub }: {
   );
 }
 
+/** A seção do caso e, no caso novo, os documentos para começar (EX-18, decisão 45). */
+function SecaoCasoComDocs(props: Parameters<typeof SecaoCaso>[0]) {
+  const { o, e, aoMudar, erros, pref } = props;
+  return (
+    <>
+      <SecaoCaso {...props} />
+      {e.modo === "NOVO" && e.area !== "OUTRA" ? (
+        <SecaoDocumentosInicio area={e.area} clienteId={o.contrato.cliente.id} caso={e.nome.trim() || o.sugestao.nome} valor={e.docs}
+          aoMudar={(docs) => aoMudar({ docs })} pref={`${pref}-dd`} erroMais={erros.mais} />
+      ) : null}
+    </>
+  );
+}
+
+/** Sem Jurídico, o caso abre com os dados do contrato e a lista da área entra inteira. */
+function CasoSemEscolhaComDocs({ o, e, aoMudar, pref, erros }: {
+  o: OpcoesCasoContrato; e: Escolha; aoMudar: (x: Partial<Escolha>) => void; pref: string; erros: Record<string, string>;
+}) {
+  return (
+    <>
+      <CasoSemEscolha o={o} />
+      {o.sugestao.area !== "OUTRA" ? (
+        <SecaoDocumentosInicio area={o.sugestao.area} clienteId={o.contrato.cliente.id} caso={o.sugestao.nome} valor={e.docs}
+          aoMudar={(docs) => aoMudar({ docs })} pref={`${pref}-dd`} erroMais={erros.mais} />
+      ) : null}
+    </>
+  );
+}
+
 /** O caso que abre sem escolha, para quem não tem a área Jurídico (decisão 19). */
 function CasoSemEscolha({ o }: { o: OpcoesCasoContrato }) {
   const resp = o.responsavelSugerido?.nome ?? null;
@@ -281,7 +324,7 @@ export function JanelaAssinaturaCaso({ aberta, contrato, aoFechar, aoFeito }: {
     const d = lerDia(em);
     const semData = !d || d > hoje;
     const semArquivo = !anexado && !arquivo ? "Anexe o contrato assinado: PDF ou a foto das páginas." : !anexado ? erroArq : null;
-    const x: Record<string, string> = !ja && escolhe ? errosDaEscolha(e) : {};
+    const x: Record<string, string> = ja ? {} : escolhe ? errosDaEscolha(e) : errosSemEscolha(e);
     setErroData(semData);
     setErroArq(semArquivo);
     setErros(x);
@@ -376,9 +419,9 @@ export function JanelaAssinaturaCaso({ aberta, contrato, aoFechar, aoFeito }: {
                 arquivo={arquivo} aoEscolher={(a, er) => { setArquivo(er ? null : a); setErroArq(er); }} erro={erroArq} progresso={progresso} />
             )}
             {ja ? <CasoJaLigado o={pronto} /> : escolhe ? (
-              <SecaoCaso o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} erros={erros} pref={`${ids}-c`}
+              <SecaoCasoComDocs o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} erros={erros} pref={`${ids}-c`}
                 legenda="O caso em Jurídico" sub={`A assinatura leva ${primeiroNome(pronto.contrato.cliente.nome)} direto para Casos e processos.`} />
-            ) : <CasoSemEscolha o={pronto} />}
+            ) : <CasoSemEscolhaComDocs o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} pref={`${ids}-c`} erros={erros} />}
             <p className="fl-depois">
               <Icone nome="seta" className="ico" />
               <span>{depois}</span>
@@ -392,10 +435,12 @@ export function JanelaAssinaturaCaso({ aberta, contrato, aoFechar, aoFeito }: {
 
 const escolheVer = (o: OpcoesCasoContrato) => o.escolhe;
 
-export function JanelaAbrirCaso({ aberta, contrato, modoInicial = "NOVO", comSem = false, aoFechar, aoFeito }: {
+export function JanelaAbrirCaso({ aberta, contrato, modoInicial = "NOVO", comSem = false, titulo, aoFechar, aoFeito }: {
   aberta: boolean;
   contrato: string;
   modoInicial?: "NOVO" | "JUNTAR";
+  /** Da ficha do contrato marcado "não tem caso": "Abrir um caso para este contrato" (decisão 28). */
+  titulo?: string;
   /** Aberta das listas de assinados sem caso (decisão 8): oferece também "não tem caso". */
   comSem?: boolean;
   aoFechar: () => void;
@@ -435,7 +480,7 @@ export function JanelaAbrirCaso({ aberta, contrato, modoInicial = "NOVO", comSem
   const c = pronto?.contrato;
   return (
     <Janela id={`${ids}-ac`} classe="fl-janela" aberta={aberta} aoFechar={aoFechar} sobretitulo={c ? `${c.numero} · ${c.cliente.nome}` : "Contrato"}
-      titulo={comSem ? "O caso deste contrato" : e?.modo === "JUNTAR" ? "Juntar a um caso" : "Abrir o caso"} descricao={`${ids}-ac-d`} aoEnviar={() => void enviar()}
+      titulo={titulo ?? (comSem ? "O caso deste contrato" : e?.modo === "JUNTAR" ? "Juntar a um caso" : "Abrir o caso")} descricao={`${ids}-ac-d`} aoEnviar={() => void enviar()}
       pe={
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
@@ -465,7 +510,7 @@ export function JanelaAbrirCaso({ aberta, contrato, modoInicial = "NOVO", comSem
               </dl>
             </div>
             {pronto.casoLigado ? <CasoJaLigado o={pronto} /> : (
-              <SecaoCaso o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} erros={erros} pref={`${ids}-c`} semOpcaoSem={!comSem}
+              <SecaoCasoComDocs o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} erros={erros} pref={`${ids}-c`} semOpcaoSem={!comSem}
                 legenda="O caso" sub="Preenchido com o que está no contrato." />
             )}
             <p className="fl-depois">
@@ -507,7 +552,7 @@ export function usePerguntaDoCaso(ativa: boolean, contrato: string) {
       : pronto?.responsavelSugerido?.nome ?? null),
     /** Confere a escolha; devolve se está tudo certo. */
     validar(): boolean {
-      const x = pronto && e && !ja && escolhe ? errosDaEscolha(e) : {};
+      const x = pronto && e && !ja ? (escolhe ? errosDaEscolha(e) : errosSemEscolha(e)) : {};
       setErros(x);
       return !!pronto && !!e && !Object.keys(x).length;
     },
@@ -522,8 +567,8 @@ export function usePerguntaDoCaso(ativa: boolean, contrato: string) {
       : !pronto || !e ? <Carregando rotulo="Carregando o caso…" linhas={2} />
       : ja ? <CasoJaLigado o={pronto} />
       : escolhe ? (
-        <SecaoCaso o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} erros={erros} pref={`${ids}-c`}
+        <SecaoCasoComDocs o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} erros={erros} pref={`${ids}-c`}
           legenda="O caso em Jurídico" sub={`Anexar o contrato assinado leva ${primeiroNome(cliente)} para Casos e processos, como na assinatura.`} />
-      ) : <CasoSemEscolha o={pronto} />,
+      ) : <CasoSemEscolhaComDocs o={pronto} e={e} aoMudar={(x) => setE((v) => (v ? { ...v, ...x } : v))} pref={`${ids}-c`} erros={erros} />,
   };
 }

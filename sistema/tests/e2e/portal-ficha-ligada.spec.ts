@@ -234,3 +234,98 @@ test.describe("Ficha do cliente ligada (F3.110, F3.111)", () => {
     await semViolacoes(page);
   });
 });
+
+// Jornada do cliente, parte 2 (EX-16, CH-13; F3.127, F3.129, F3.130), tela aprovada em
+// docs/design/aprovadas/portal-jornada-fechamento (grupos 4, 6 e 8).
+test.describe("Jornada do cliente: o fechamento e o contrato sem caso", () => {
+  const CASO_F = { id: CASO, nome: "Ferreira Prado x INSS", resultado: "GANHO", encerradoEm: "2026-10-30T15:00:00-03:00" };
+  const PASSOS = [
+    { tipo: "EXITO", area: "FINANCEIRO", feito: true, em: "2026-11-10T12:00:00-03:00", por: DIEGO, valor: 1159200, percentual: 3000 },
+    { tipo: "REPASSE", area: "FINANCEIRO", feito: true, em: "2026-11-13", valor: 0, levantamentoId: "lv000000-0000-4000-8000-000000000001" },
+    { tipo: "FINANCEIRO", area: "FINANCEIRO", feito: false, em: null, valor: 381840, pendentes: ["Parceiro", "Perito"], levantamentoId: "lv000000-0000-4000-8000-000000000001" },
+    { tipo: "CONTRATO", area: "CONTRATOS", feito: false, em: null, contratos: [{ id: CT, numero: "C-2025-047" }] },
+  ];
+  const FECHA = { tipo: "FECHAMENTO", area: "FINANCEIRO", pode: true, quemPode: null, quemFaz: ["Marina Ribeiro", "Diego Almeida"], item: { caso: CASO_F, passos: PASSOS } };
+
+  test("Fechar o caso: os passos no lugar da trilha e o botão da próxima coisa (EX-16)", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, passo: FECHA } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo · fechamento" });
+    await expect(ambar.getByText("Fechar o caso", { exact: true })).toBeVisible();
+    await expect(ambar.getByRole("list", { name: "Caminho do cliente no escritório" })).toHaveCount(0);
+    const lista = ambar.getByRole("list", { name: "Fechamento do caso, em 4 passos" });
+    await expect(lista.getByRole("listitem")).toHaveText([
+      "Conferir o êxito: feitoConferido por Diego em 10/11",
+      "Repassar a Antônia: feitoRepassado em 13/11",
+      "3Encerrar no financeiro: é o próximo passoFaltam R$ 3.818,40: Parceiro e Perito",
+      "4Encerrar o contrato: depoisC-2025-047, junto com o financeiro",
+    ]);
+    await expect(ambar.getByRole("link", { name: "Ver o acerto" })).toHaveAttribute("href", "/financeiro/repasses/lv000000-0000-4000-8000-000000000001");
+    await expect(ambar).toContainText("Quem faz: a área Financeiro (Marina e Diego).");
+    await semViolacoes(page);
+  });
+
+  test("sem a área do passo: quem faz e Ver o caso, sem valores (decisão 16)", async ({ page }) => {
+    const semValor = PASSOS.map((x) => ({ ...x, valor: null, pendentes: null, levantamentoId: null }));
+    await simular(page, {
+      "/v1/escritorio": { corpo: { ...ESCRITORIO, pessoa: "Larissa Costa", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] } },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, comercial: false, passo: { ...FECHA, pode: false, quemPode: ["Marina Ribeiro", "Diego Almeida"], quemFaz: null, item: { caso: CASO_F, passos: semValor } } } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo · fechamento" });
+    await expect(ambar).toContainText("Quem faz: a área Financeiro, que não está liberada para você. Marina e Diego.");
+    await expect(ambar).toContainText("Falta pagar terceiros");
+    await expect(ambar.getByRole("link", { name: "Ver o acerto" })).toHaveCount(0);
+    await expect(ambar.getByRole("link", { name: "Ver o caso" })).toHaveAttribute("href", `/juridico/casos/${CASO}`);
+    await semViolacoes(page);
+  });
+
+  test("Cliente atendido: Gerar proposta secundário e Ver o caso ao lado (decisão 18)", async ({ page }) => {
+    const feitos = PASSOS.map((x) => ({ ...x, feito: true, em: "2026-11-18T12:00:00-03:00" }));
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, passo: { tipo: "ATENDIDO", area: "COMERCIAL", pode: true, quemPode: null,
+        item: { caso: CASO_F, passos: feitos, fim: "2026-11-18T12:00:00-03:00" } } } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo" });
+    await expect(ambar.getByText("Cliente atendido", { exact: true })).toBeVisible();
+    await expect(ambar.getByRole("link", { name: "Gerar proposta" })).toHaveClass(/btn-sec/);
+    await expect(ambar.getByRole("link", { name: "Ver o caso" })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("Contrato ativo (CH-13): Ver o contrato, e a trilha termina em Sem caso", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, passo: { tipo: "CONTRATO_ATIVO", area: "CONTRATOS", pode: true, quemPode: null,
+        item: { id: CT, numero: "C-2026-040", objeto: "Consultoria trabalhista mensal", proximo: { vencimento: "2026-12-10", descricao: "Mensalidade 3", valor: 120000 } } } } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo" });
+    await expect(ambar.getByText("Contrato ativo", { exact: true })).toBeVisible();
+    await expect(ambar.getByRole("list", { name: "Caminho do cliente no escritório" })).toContainText("Sem caso");
+    await expect(ambar.getByRole("link", { name: "Ver o contrato" })).toHaveAttribute("href", `/contratos/contratos/${CT}`);
+    await expect(ambar.getByRole("link", { name: "Gerar proposta" })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("o botão do passo uma vez só: no Histórico, só Registrar atendimento (decisão 33)", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: FICHA },
+      [`GET /v1/escritorio/clientes/${cid(1)}/atendimentos`]: { corpo: { atendimentos: [] } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}?aba=atendimentos`);
+    await expect(page.getByRole("button", { name: "Registrar assinatura" })).toHaveCount(1);
+    await expect(page.getByRole("region", { name: "Próximo passo" }).getByRole("button", { name: "Registrar assinatura" })).toBeVisible();
+  });
+});

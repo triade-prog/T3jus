@@ -7,6 +7,7 @@ export const ROTAS_JURIDICO = {
   casos: "/juridico/casos",
   novo: "/juridico/casos/novo",
   etapas: "/juridico/casos/etapas",
+  documentos: "/juridico/casos/documentos",
   caso: (id: string) => `/juridico/casos/${id}`,
   contrato: (id: string) => `/contratos/contratos/${id}`,
   cliente: (id: string) => `/clientes/${id}`,

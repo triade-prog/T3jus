@@ -6,6 +6,7 @@
     "AP-07",
     "AP-02"
   ],
-  "status": "pendente",
-  "ordem": 1040
+  "status": "feito",
+  "ordem": 1040,
+  "evidencia": "Botão do próximo passo só no quadro âmbar; ao lado do Histórico, só \"Registrar atendimento\" (FichaCliente.tsx, portal-ficha-ligada.spec.ts). Parte 5 (migration 0870): \"Cadastrar como cliente\" na conversa abre o Novo cliente com o nome e o telefone da conversa, cada um com a marca \"da conversa\", a faixa \"Veio da conversa com…\" e \"Cadastrar e voltar à conversa\"; o cadastro com conversaId liga a conversa à ficha na mesma transação (contato do mesmo número), passa para a ficha os compromissos marcados com a conversa e registra cliente.da_conversa no histórico; a conversa já ligada é recusada (CONVERSA_JA_LIGADA). De volta à conversa: o aviso \"X cadastrada.\", \"Cliente desde hoje\" e, na lateral, \"Marcar primeira reunião\" e \"Abrir a ficha\". \"Marcar primeira reunião\" abre o Novo compromisso em cima da conversa: Reunião com cliente, \"Primeira reunião · Nome\", o responsável da conversa e o quadro \"Com quem\" no lugar do Cliente; o compromisso guarda a conversa (compromissos.conversa_id) e a Agenda e a ficha do compromisso mostram com quem. Telas em NovoCliente.tsx, FormCliente.tsx, Conversas.tsx, JanelaCompromisso.tsx e FichaCompromisso.tsx; rota GET /v1/escritorio/conversas/:id/contato. Testes: pgTAP 124 (17), app_test.ts (AP-07) e tests/e2e/portal-cadastro-conversa.spec.ts (3 cenários, celular e computador, com axe). O lembrete pelo número da conversa antes do cadastro ficou no F3.137."
 }

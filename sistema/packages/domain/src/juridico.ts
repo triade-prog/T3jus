@@ -8,6 +8,7 @@ import type { PessoaRef } from "./clientes.ts";
 import type { Condicao } from "./honorarios.ts";
 import type { SituacaoContrato } from "./contratos.ts";
 import { TAMANHO_MAXIMO_DOCUMENTO, TIPOS_DOCUMENTO, type TipoDocumento } from "./console.ts";
+import { documentosDoCasoSchema, type InicioDoCaso, type TipoDocumentoPessoal } from "./documentos_pessoais.ts";
 
 export const AREAS_DIREITO = {
   TRABALHISTA: "Trabalhista",
@@ -73,6 +74,8 @@ export const dadosCasoSchema = z.object({
 export const criarCasoSchema = dadosCasoSchema.extend({
   etapaId: id,
   clientes: z.array(clienteDoCasoSchema).max(20).default([]),
+  /** Documentos para começar (EX-18): o que pedir da lista da área ao primeiro cliente. */
+  documentos: documentosDoCasoSchema.nullish(),
 });
 export type CriarCaso = z.input<typeof criarCasoSchema>;
 
@@ -173,7 +176,23 @@ export interface EnvioEtapa {
   mensagem: { envio: EnvioMensagem; em: string; envioEm: string | null; motivo: string | null } | null;
 }
 
+/** O resumo do acerto na ficha do caso encerrado (0852; EX-17, decisões 21 e 22). Valores só com Financeiro. */
+export interface ResumoAcertoCaso {
+  pendente: boolean;
+  fechado: { em: string; por: PessoaRef | null } | null;
+  comValores: boolean;
+  levantamentoId: string | null;
+  entrou: { tipo: string; em: string; valor: number | null } | null;
+  exitos: { cliente: string; feito: boolean; naoCobrado: boolean; em: string | null; por: PessoaRef | null; valor: number | null }[];
+  repasses: { cliente: string; feito: boolean; em: string | null; prazo: string | null; valor: number | null }[];
+  outros: { nome: string; valor: number | null; prazo: string | null }[] | null;
+  faltaOutros: boolean;
+  contratos: { id: string; numero: string; situacao: string; cliente: string; assinadoEm: string | null }[];
+  quemCuida: string[] | null;
+}
+
 export interface FichaCaso extends LinhaCaso {
+  acerto?: ResumoAcertoCaso | null;
   tribunal: string | null;
   vara: string | null;
   sistema: string | null;
@@ -197,6 +216,8 @@ export interface FichaCaso extends LinhaCaso {
   documentos: DocumentoDoCaso[];
   /** Se o aviso de etapa sai (F3.37): o WhatsApp ligado e a automação "Etapa do caso" ligada. */
   avisoEtapa?: { whatsappLigado: boolean; automacaoLigada: boolean };
+  /** Os documentos para começar (0854, EX-18): nulo quando o caso não abriu com a lista. */
+  inicio?: InicioDoCaso | null;
 }
 
 /**
@@ -372,6 +393,9 @@ export interface DocumentoFaltando {
   repedido?: MensagemAviso | null;
   /** O lembrete automático do documento pendente (PA-06), quando há automação ligada. */
   lembrete?: { automacao: { id: string; nome: string }; enviadoEm: string; ate: string | null; passaPara: PessoaRef | null } | null;
+  /** Documentos para começar (0854): o tipo da ficha, se é pessoal, e se veio da lista da abertura. */
+  tipoPessoal?: TipoDocumentoPessoal | null;
+  inicio?: boolean;
 }
 
 /** Uma mensagem de aviso posta na fila do WhatsApp: a situação e para quem. */

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
-  CasosJuridicoPortal, EtapasJuridicoPortal, FichaCasoPortal, ModelosPeticaoPortal, NovaPeticaoPortal, NovoCasoPortal, PeticaoPortal, PeticoesJuridicoPortal,
+  CasosJuridicoPortal, DocumentosInicioJuridicoPortal, EtapasJuridicoPortal, FichaCasoPortal, ModelosPeticaoPortal, NovaPeticaoPortal, NovoCasoPortal, PeticaoPortal, PeticoesJuridicoPortal,
   PrazosJuridicoPortal, TarefasJuridicoPortal, VersaoPeticaoPortal,
 } from "@t3jus/ui";
 import { paginaDa } from "../../_area/pagina";
 
 // Área Jurídico do Portal (EX-01, EX-03, EX-07, EX-14): Casos e processos (lista, novo caso e
-// ficha com mudar etapa), Prazos e Tarefas (EX-02, EX-04), Etapas do escritório (EX-07) e Petições
+// ficha com mudar etapa), Prazos e Tarefas (EX-02, EX-04), Etapas do escritório (EX-07), Documentos para começar (EX-18) e Petições
 // (EX-09: lista, modelos, nova petição, a petição com a revisão e a versão nova). O escritório vem da
 // sessão; um caso de outro escritório responde como não encontrado. A tela confere a área; o
 // servidor confere de novo.
@@ -23,6 +23,7 @@ export default async function Pagina({ params }: { params: Promise<{ secao?: str
     if (!a) return <CasosJuridicoPortal />;
     if (a === "novo") return <NovoCasoPortal />;
     if (a === "etapas") return <EtapasJuridicoPortal />;
+    if (a === "documentos") return <DocumentosInicioJuridicoPortal />;
     if (UUID.test(a)) return <FichaCasoPortal id={a.toLowerCase()} />;
     notFound();
   }

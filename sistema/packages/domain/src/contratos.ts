@@ -103,6 +103,10 @@ export interface FichaContrato extends ContratoLinha {
   area?: AreaDireito | null;
   semCaso?: boolean;
   caso?: CasoLigado | null;
+  /** Quem marcou "não tem caso" e quando (0851, decisão 28). */
+  semCasoMarcado?: { em: string; por: PessoaRef | null } | null;
+  /** Quem tem Jurídico abre o caso pela ficha do contrato. */
+  podeAbrirCaso?: boolean;
   observacoes: string | null;
   versao: number;
   assinadoEm: string | null;

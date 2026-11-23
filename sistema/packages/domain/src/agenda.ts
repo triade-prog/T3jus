@@ -44,6 +44,8 @@ export const dadosCompromissoSchema = z.object({
   observacoes: texto(2000),
   /** O processo do compromisso (F3.4): só quem tem o Jurídico manda; sem o campo, o caso fica como está. */
   casoId: uuid.nullish(),
+  /** A conversa de quem ainda não é cliente (AP-07, decisão 32): o compromisso passa para a ficha no cadastro. */
+  conversaId: uuid.nullish(),
 });
 export type DadosCompromisso = z.input<typeof dadosCompromissoSchema>;
 
@@ -80,6 +82,8 @@ export interface CompromissoLinha {
   responsavel: PessoaAgenda;
   tambemVai: PessoaAgenda[];
   cliente: { id: string; nome: string } | null;
+  /** Com quem, quando ainda não há ficha: a conversa (AP-07). */
+  conversa?: { id: string; nome: string; telefone: string } | null;
   /** O caso do compromisso, só para quem tem o Jurídico. */
   caso?: CasoDoCompromisso | null;
 }
