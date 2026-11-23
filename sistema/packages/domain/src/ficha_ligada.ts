@@ -8,6 +8,7 @@ import type { PessoaRef } from "./clientes.ts";
 import type { ContratoLinha } from "./contratos.ts";
 import type { PropostaLinha } from "./comercial.ts";
 import type { AreaDireito, LinhaCaso, MensagemAviso, PapelCaso } from "./juridico.ts";
+import type { EsperaAcerto } from "./financeiro.ts";
 
 export type TipoPassoCliente =
   | "SEM_PROPOSTA" | "PROPOSTA_RASCUNHO" | "PROPOSTA_ANDAMENTO" | "PROPOSTA_ACEITA"
@@ -34,6 +35,12 @@ export interface PassoFechamento {
   pendentes?: string[] | null;
   contratos?: { id: string; numero: string }[];
   comFinanceiro?: boolean;
+  /** F3.132 (decisão 4): sem levantamento, o contrato e o caso de "Ver o acerto" (#t-fecha-<caso>). */
+  contratoId?: string | null;
+  casoId?: string | null;
+  /** Pergunta 1: sem atraso, o que o fechamento espera. */
+  aVencer?: EsperaAcerto | null;
+  comLevantamento?: boolean;
 }
 
 /** O item do passo. Só vem para quem tem a área dele. */

@@ -12,7 +12,7 @@ import {
   cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
   type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido, type ContaPagar, CATEGORIAS_SAIDA,
-  type ExitoParaConferir, type ExitosParaConferir,
+  type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type FechamentoNoContrato,
 } from "@t3jus/domain";
 import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
@@ -28,6 +28,11 @@ import { Toast } from "./FichaCliente.tsx";
 import { BlocoExitos, JanelaConferir, JanelaNaoCobrar } from "./FinanceiroExito.tsx";
 import { comoVolta, gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela, textoCobranca } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
+import { juntarComE } from "./clientes.ts";
+import { ambarEncerra, casoDoHash, linhaEAtalhoDaPendencia, nomesCurtos, numerosDoFechamento } from "./fechamento.ts";
+import {
+  DeOndeVeio, diaOuInstante, FechadosAntes, FechamentoNaLateral, JanelaFechamento, QuadroFechamentoContrato, textoJaEncerradoPorOutro,
+} from "./FechamentoCaso.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
@@ -805,7 +810,61 @@ function JanelaCobranca({ p, pessoas, eu, aoFechar, aoFeito }: {
 
 // ------------------------------------------------------------------------- Parcelas de um contrato
 
-function DirParcelas({ f, hoje, aoRegistrar }: { f: ParcelasContrato; hoje: string; aoRegistrar: (p: ParcelaDoContrato) => void }) {
+type FechamentoComAcerto = Extract<FechamentoNoContrato, { acerto: AcertoCaso }>;
+const comAcerto = (x: FechamentoNoContrato): x is FechamentoComAcerto => !x.comLevantamento && !x.resumo;
+
+/** O âmbar da ficha (F3.132, estados 7, 11, 12, 13 e 14): o fechamento do caso, quando é ele o que falta. */
+function dirDoFechamento({ f, fp, fechado, comLev, aoEncerrar }: {
+  f: ParcelasContrato; fp: FechamentoComAcerto | null; fechado: FechamentoComAcerto | null; comLev: boolean; aoEncerrar: (b: HTMLButtonElement) => void;
+}): ReactNode {
+  const dir = (sobre: string, selo: ReactNode, oque: ReactNode, botao?: ReactNode) => (
+    <section className="dir campo-ambar" aria-labelledby="t-dir">
+      <p className="sobretitulo" id="t-dir">{sobre}</p>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <p className="grande num">{reais(0)}</p>
+        {selo}
+      </div>
+      <p className="fi-oque">{oque}</p>
+      {botao}
+    </section>
+  );
+  if (fp && ambarEncerra(f, fp)) {
+    const a = fp.acerto;
+    const nada = !a.recebidoNoCaso && !a.reembolsos?.adiantado;
+    const ca = a.caso;
+    return dir("Fechamento do caso", <Selo tom="ok" icone="check">{nada ? "Nada a receber" : "Nada falta"}</Selo>,
+      nada && ca
+        ? <><b>{ca.nome} terminou{ca.resultado === "PERDA" ? " com perda" : ""}{ca.encerradoEm ? ` em ${diaOuInstante(ca.encerradoEm)}` : ""}.</b><br />{f.parcelas.length ? "Não há nada a receber nem a reembolsar." : "O contrato era só de êxito: não há nada a receber nem a reembolsar."}</>
+        : <><b>Tudo recebido{a.reembolsos?.adiantado ? " e reembolsado" : ""}.</b><br />O caso {ca?.nome ?? ""} já pode ser encerrado no financeiro.</>,
+      <button className="btn btn-pri" type="button" onClick={(e) => aoEncerrar(e.currentTarget)}><Icone nome="cadeado" className="ico" />Encerrar o caso no financeiro</button>);
+  }
+  const aberto = f.parcelas.some((p) => p.situacao === "A_VENCER" || p.situacao === "PARCIAL");
+  if (aberto) return null;
+  if (f.situacao === "ENCERRADO" && fechado && !fp) {
+    const fe = fechado.acerto.fechado!;
+    const junto = fechado.origem.some((e) => e.acao === "contrato.encerrado_com_caso" && e.dados.deste);
+    return dir("Contrato encerrado", <Selo tom="ok" icone="check">Caso encerrado</Selo>,
+      <><b>Caso encerrado no financeiro {diaDoInstante(fe.em) === hojeBrasilia() ? "hoje, " : "em "}{diaOuInstante(fe.em)}.</b><br />{junto ? `O contrato ${f.numero} foi encerrado junto, com o motivo.` : `O contrato ${f.numero} está encerrado.`}</>,
+      <a className="btn btn-pri" href={ROTAS_CONTRATOS.cliente(f.cliente.id)}><Icone nome="pessoas" className="ico" />Ver a ficha de {primeiroNome(f.cliente.nome)}</a>);
+  }
+  if (f.situacao === "ENCERRADO" && fp) {
+    const c = fp.acerto.contratos?.find((x) => x.id === f.id);
+    const outro = fp.acerto.pendencias.map((p) => fp.acerto.contratos?.find((x) => x.id === (p.contratoId ?? p.parcela?.contrato.id))).find((x) => x && x.id !== f.id);
+    return dir("Nada a receber", <Selo tom="ok" icone="check">Tudo recebido</Selo>,
+      <><b>{reais(f.totais.recebido)}{c?.ultimaRecebidaEm ? ` recebidos, o último em ${diaCurto(c.ultimaRecebidaEm)}` : " recebidos"}.</b><br />
+        Contrato encerrado{c?.encerradoEm ? ` em ${diaOuInstante(c.encerradoEm)}` : ""}{c?.encerradoPor ? ` por ${primeiroNome(c.encerradoPor.nome)}` : ""}.
+        {outro ? ` O que falta no caso está no contrato de ${primeiroNome(outro.cliente.nome)}.` : ""}</>);
+  }
+  if (comLev && !fp) {
+    return dir("Nada a receber", <Selo tom="ok" icone="check">Tudo recebido</Selo>,
+      <><b>Tudo recebido neste contrato.</b><br />O caso teve levantamento: o fechamento fica na ficha do repasse.</>);
+  }
+  return null;
+}
+
+function DirParcelas({ f, hoje, aoRegistrar, fechamento }: {
+  f: ParcelasContrato; hoje: string; aoRegistrar: (p: ParcelaDoContrato) => void; fechamento?: ReactNode;
+}) {
   const vencidas = f.parcelas.filter((p) => p.situacao === "VENCIDA");
   const proxima = f.parcelas.find((p) => p.situacao === "A_VENCER" || p.situacao === "PARCIAL");
   const botao = (p: ParcelaDoContrato) => (
@@ -835,6 +894,7 @@ function DirParcelas({ f, hoje, aoRegistrar }: { f: ParcelasContrato; hoje: stri
       </section>
     );
   }
+  if (fechamento) return <>{fechamento}</>;
   if (proxima) {
     return (
       <section className="dir campo-ambar" aria-labelledby="t-dir">
@@ -960,11 +1020,33 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   const [feito, setFeito] = useState<Feito | null>(null);
   const [comprovante, setComprovante] = useState<{ p: ParcelaDoContrato; pg: PagamentoRecebido } | null>(null);
   const [falhaAbrir, setFalhaAbrir] = useState<string | null>(null);
+  // F3.132: a janela de fechamento, o caso de onde ela saiu, e o botão que a abriu (o foco volta a ele).
+  const [fechar, setFechar] = useState<FechamentoComAcerto | null>(null);
+  const [jaEncerrado, setJaEncerrado] = useState<string | null>(null);
+  const [abriu, setAbriu] = useState<HTMLElement | null>(null);
+  const voltarFoco = () => requestAnimationFrame(() => (abriu?.isConnected ? abriu : document.querySelector<HTMLElement>(".fs-folha h2[tabindex]"))?.focus());
   const anexos = useAnexosFinanceiro([], dados && dados !== "erro" ? dados.parcelas.flatMap((p) => p.pagamentos.map((x) => x.id)) : []);
   const nome = dados && dados !== "erro" ? dados.cliente.nome : null;
   useEffect(() => {
     if (nome) aoNome(nome);
   }, [nome, aoNome]);
+  // Decisão 12 (seção 4.6): chegar por "Ver o acerto" (#t-fecha ou #t-fecha-<caso>) foca o título da folha,
+  // também na troca de tela sem recarga.
+  const carregou = !!dados && dados !== "erro";
+  useEffect(() => {
+    if (!carregou) return;
+    const focar = () => {
+      const caso = casoDoHash(window.location.hash);
+      if (caso === undefined) return;
+      const alvo = (caso ? document.querySelector<HTMLElement>(`[data-caso="${CSS.escape(caso)}"] h2[tabindex]`) : null)
+        ?? document.querySelector<HTMLElement>("[data-caso] h2[tabindex]");
+      alvo?.focus({ preventScroll: false });
+      alvo?.scrollIntoView({ block: "start" });
+    };
+    focar();
+    window.addEventListener("hashchange", focar);
+    return () => window.removeEventListener("hashchange", focar);
+  }, [carregou]);
 
   if (dados === "erro") return <ErroAoCarregar oque="as parcelas do contrato" aoTentar={recarregar} />;
   if (!dados) return <Carregando rotulo="Carregando as parcelas…" linhas={5} />;
@@ -979,6 +1061,25 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
     <a className="btn btn-sec" href={ROTAS_CONTRATOS.contrato(f.id)}><Icone nome="pena" className="ico" />Ver o contrato</a>
   ) : undefined;
   const vivas = f.parcelas.filter((p) => p.situacao !== "CANCELADA");
+  // F3.132: os fechamentos dos casos do contrato (0901). Uma folha por caso ainda sem fechamento, logo
+  // depois do âmbar (a confirmar, b); os fechados e os com levantamento vão para a lateral.
+  const fechamentos = f.fechamentos ?? [];
+  const abertos = fechamentos.filter((x): x is FechamentoComAcerto => comAcerto(x) && !x.acerto.fechado);
+  const fechados = fechamentos.filter((x): x is FechamentoComAcerto => comAcerto(x) && !!x.acerto.fechado);
+  const comLev = fechamentos.filter((x) => x.comLevantamento);
+  const antes = fechamentos.filter((x): x is Extract<FechamentoNoContrato, { resumo: true }> => "resumo" in x && !!x.resumo);
+  const fp = abertos[0] ?? null;
+  const ambar = ambarEncerra(f, fp);
+  const lateral = [...fechados, ...comLev];
+  const comOrigem = [...abertos, ...lateral];
+  const primeiroFecha = abertos[0]?.casoId ?? lateral[0]?.casoId;
+  const parcelasDaFicha = new Set(f.parcelas.map((p) => p.id));
+  function encerrar(x: FechamentoComAcerto, b: HTMLButtonElement) {
+    setAbriu(b);
+    setJaEncerrado(null);
+    setFechar(x);
+  }
+  const soExito = !f.parcelas.length && f.condicoes.length > 0 && f.condicoes.every((c) => c.tipo === "EXITO") && fp?.acerto.caso?.resultado === "PERDA";
   return (
     <div className="fi">
       <div className="ficha-cab">
@@ -1001,8 +1102,13 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
             </div>
           </div>
         </div>
-        <DirParcelas f={f} hoje={hoje} aoRegistrar={setRegistrar} />
+        <DirParcelas f={f} hoje={hoje} aoRegistrar={(p) => { setAbriu(null); setRegistrar(p); }}
+          fechamento={dirDoFechamento({ f, fp, fechado: fechados[0] ?? null, comLev: comLev.length > 0, aoEncerrar: (b) => { if (fp) encerrar(fp, b); } })} />
       </div>
+      {abertos.map((x, i) => (
+        <QuadroFechamentoContrato key={x.casoId} casoId={x.casoId} acerto={x.acerto} contratoId={f.id} hoje={hoje} primeira={x.casoId === primeiroFecha}
+          botao={!(i === 0 && ambar)} aoEncerrar={(b) => encerrar(x, b)} />
+      ))}
       <div className="fi-grade">
         <div className="fi-col">
           <section className="folha" aria-labelledby="t-parc" style={{ overflow: "hidden" }}>
@@ -1074,6 +1180,10 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                   })}
                 </tbody>
               </table>
+            ) : soExito ? (
+              <div className="fs-vazio" role="status">
+                <Estado icone="moeda" titulo="Nenhuma parcela">O contrato era só de êxito e o caso terminou com perda. Com a base zero, o êxito não é criado.</Estado>
+              </div>
             ) : (
               <Estado icone="relogio" titulo="Nenhuma parcela com valor ainda">
                 As parcelas deste contrato dependem da base do mês ou de uma etapa do caso. Quando o valor existir, elas aparecem aqui.
@@ -1085,15 +1195,42 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
           </section>
           {f.adiantados?.length ? <AdiantadoNoCaso contas={f.adiantados} /> : null}
         </div>
-        <aside className="fi-col" aria-label="Carnê e cobrança">
+        <aside className="fi-col" aria-label={fechamentos.length ? "Origem, fechamento, carnê e cobrança" : "Carnê e cobrança"}>
+          {comOrigem.map((x) => (
+            <DeOndeVeio key={`o-${x.casoId}`} casoId={x.casoId} caso={x.comLevantamento ? x.caso.nome : x.acerto.caso?.nome ?? ""} origem={x.origem}
+              primeira={x.casoId === comOrigem[0]!.casoId} varios={comOrigem.length > 1} juridico={escritorio.areas.includes("JURIDICO")} />
+          ))}
+          {lateral.map((x) => <FechamentoNaLateral key={`f-${x.casoId}`} fc={x} contratoId={f.id} primeira={x.casoId === primeiroFecha} />)}
+          <FechadosAntes lista={antes} />
           <FolhaCarne contrato={f.id} area="FINANCEIRO" escritorio={escritorio} aberta={carne} aoAbrir={() => setCarne(true)} aoFechar={() => setCarne(false)} />
           <Cobranca p={emCobranca} hoje={hoje} aoAnotar={() => setAnotar(true)} />
         </aside>
       </div>
       {registrar ? (
-        <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} aoFechar={() => setRegistrar(null)}
-          aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); }} />
+        <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} aoFechar={() => { setRegistrar(null); if (abriu) voltarFoco(); }}
+          aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); if (abriu) voltarFoco(); }} />
       ) : null}
+      {fechar ? (
+        <JanelaFechamento casoId={fechar.casoId} acerto={fechar.acerto} nomeCaso={fechar.acerto.caso?.nome ?? "O caso"} voltar="Voltar ao contrato" noContrato
+          descricao={`É o caso ${fechar.acerto.caso?.nome ?? ""}, encerrado${fechar.acerto.caso?.resultado ? ` com ${RESULTADO_CASO[fechar.acerto.caso.resultado]}` : ""}${fechar.acerto.caso?.encerradoEm ? ` em ${dataBr(diaDoInstante(fechar.acerto.caso.encerradoEm))}` : ""}.`}
+          descricaoPronta={`${juntarComE([...new Set((fechar.acerto.contratos ?? []).map((c) => c.cliente.nome))])} · ${fechar.acerto.caso?.nome ?? ""}.`}
+          linha={(p) => { const l = linhaEAtalhoDaPendencia(fechar.acerto, p, { contratoId: f.id, casoId: fechar.casoId, hoje, parcelasDaFicha, areas: escritorio.areas }); return { texto: <b>{l.forte}</b>, sub: l.sub, espera: l.espera }; }}
+          atalho={(p) => linhaEAtalhoDaPendencia(fechar.acerto, p, { contratoId: f.id, casoId: fechar.casoId, hoje, parcelasDaFicha, areas: escritorio.areas }).atalho}
+          ajuda={(lista) => (fechar.acerto.aVencer && lista.every((p) => p.vencimento && p.vencimento >= hoje)
+            ? `${fechar.acerto.aVencer.exito ? "O êxito" : "A parcela"} ainda não venceu: o caso fica pronto para encerrar depois de ${diaCurto(fechar.acerto.aVencer.vencimento)}.` : null)}
+          resumo={<ResumoPronto a={fechar.acerto} />}
+          aoFechar={() => { setFechar(null); voltarFoco(); }}
+          aoAtalho={(a) => {
+            setFechar(null);
+            const p = a.tipo === "registrar" ? f.parcelas.find((x) => x.id === a.parcelaId) : undefined;
+            if (p) setRegistrar(p); else voltarFoco();
+          }}
+          aoFeito={(x) => { setFechar(null); setFeito(x); recarregar(); setAbriu(null); }}
+          aoJaEncerrado={() => { setFechar(null); setJaEncerrado(fechar.casoId); recarregar(); voltarFoco(); }} />
+      ) : null}
+      <p className="fs-anuncio" role="status" aria-live="polite">
+        {jaEncerrado ? textoJaEncerradoPorOutro(fechamentos.find((x): x is FechamentoComAcerto => x.casoId === jaEncerrado && comAcerto(x))?.acerto.fechado ?? null) : ""}
+      </p>
       {comprovante ? (
         <JanelaComprovante p={comprovante.p} pg={comprovante.pg} aoFechar={() => setComprovante(null)}
           aoFeito={(x) => { setComprovante(null); setFeito(x); anexos.recarregar(); }} />
@@ -1148,6 +1285,23 @@ function JanelaComprovante({ p, pg, aoFechar, aoFeito }: { p: ParcelaDoContrato;
 }
 
 /** O que o escritório adiantou nos casos deste contrato e como volta (F3.23, FI-07). */
+const RESULTADO_CASO: Record<string, string> = { GANHO: "ganho", PERDA: "perda", ACORDO: "acordo" };
+
+/** O resumo do caso pronto, na janela de encerrar pela ficha do contrato (estado 8). */
+function ResumoPronto({ a }: { a: AcertoCaso }) {
+  const n = numerosDoFechamento(a);
+  return (
+    <div className="fl-ja">
+      <dl>
+        <dt>Caso</dt><dd>{a.caso?.nome}</dd>
+        <dt>Recebido no caso</dt><dd>{reais(n.recebido)} · {contar(n.contratos, "contrato", "contratos")}</dd>
+        {a.reembolsos?.adiantado ? <><dt>Reembolsado</dt><dd>{reais(n.reembolsado)} · {nomesCurtos(a.pendencias).length ? "a reembolsar" : "custas"}</dd></> : null}
+        <dt>Falta</dt><dd>nada</dd>
+      </dl>
+    </div>
+  );
+}
+
 function AdiantadoNoCaso({ contas }: { contas: ContaPagar[] }) {
   return (
     <section className="folha" aria-labelledby="t-adi" style={{ overflow: "hidden" }}>

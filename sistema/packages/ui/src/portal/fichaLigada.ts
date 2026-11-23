@@ -2,10 +2,11 @@
 // próximo passo, sem React, para os testes de unidade. Tela aprovada em
 // docs/design/aprovadas/portal-ficha-cliente-ligada. O passo vem pronto do servidor.
 
-import { reais, type AreaPassoCliente, type PassoCliente, type PassoFechamento, type TipoPassoCliente } from "@t3jus/domain";
+import { reais, type AreaPassoCliente, type EsperaAcerto, type PassoCliente, type PassoFechamento, type TipoPassoCliente } from "@t3jus/domain";
 import { diaCurto } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
 import { juntarComE } from "./clientes.ts";
+import { parcelaCurta } from "./fechamento.ts";
 
 export type AbaLigada = "propostas" | "contratos" | "casos";
 
@@ -21,6 +22,8 @@ export const ROTAS_PASSO = {
   /** O fechamento (EX-16): A receber com o êxito para conferir, a ficha do repasse e encerrar o contrato. */
   receber: "/financeiro/a-receber",
   repasse: (levantamento: string) => `/financeiro/repasses/${levantamento}`,
+  /** F3.132 (decisão 4): sem levantamento, a folha "Fechamento do caso" da ficha do contrato. */
+  acertoContrato: (contrato: string, caso?: string | null) => `/financeiro/a-receber/contratos/${contrato}#t-fecha${caso ? `-${caso}` : ""}`,
   encerrarContrato: (id: string) => `/contratos/contratos/${id}?encerrar=1`,
   aba: (cliente: string, aba: AbaLigada) => `/clientes/${cliente}?aba=${aba}`,
 };
@@ -203,7 +206,17 @@ export function nomeDoPassoFechamento(x: PassoFechamento, primeiro: string): str
 export function quemFazFechamento(p: PassoCliente): string {
   const faz = p.quemFaz ?? [];
   const area = NOMES_AREA[p.area];
-  return faz.length ? `Quem faz: a área ${area} (${juntarComE(faz.map(primeiroNome))}).` : `Quem faz: a área ${area}.`;
+  const quem = faz.length ? `Quem faz: a área ${area} (${juntarComE(faz.map(primeiroNome))}).` : `Quem faz: a área ${area}.`;
+  // F3.132: sem levantamento, o contrato se encerra na mesma janela do financeiro.
+  const passos = p.item?.passos ?? [];
+  const x = proximoDoFechamento(p);
+  const junto = x?.tipo === "FINANCEIRO" && x.comLevantamento === false && passos.some((t) => t.tipo === "CONTRATO" && !t.feito);
+  return junto ? `${quem} O contrato pode ser encerrado junto.` : quem;
+}
+
+/** "o êxito de Joana" ou "a parcela 6/6" (pergunta 1). */
+function esperaDoPasso(x: EsperaAcerto): string {
+  return x.exito ? `o êxito de ${primeiroNome(x.cliente ?? "")}` : `a ${parcelaCurta(x.descricao).toLowerCase()}`;
 }
 
 /** O que foi feito ou o que falta, na linha de cada passo (decisão 14). */
@@ -224,9 +237,15 @@ export function detalheDoPassoFechamento(x: PassoFechamento, todos: PassoFechame
       return x.valor ? `Êxito de ${reais(x.valor)}${x.percentual ? ` (${(x.percentual / 100).toLocaleString("pt-BR")}%)` : ""}, calculado pelo contrato` : "Esperando a conferência";
     case "REPASSE":
       return x.valor ? `${reais(x.valor)}${x.prazo ? `, até ${dia(x.prazo)}` : ""}` : "Falta repassar";
-    case "FINANCEIRO":
-      if (x.valor === undefined || x.valor === null) return "Falta pagar terceiros";
-      return x.valor > 0 ? `Faltam ${reais(x.valor)}${x.pendentes?.length ? `: ${juntarComE(x.pendentes)}` : ""}` : "Tudo recebido e repassado";
+    case "FINANCEIRO": {
+      // F3.132: sem o campo (API de antes), o passo só existia com levantamento.
+      const lev = x.comLevantamento ?? true;
+      if (x.valor === undefined || x.valor === null) return lev ? "Falta pagar terceiros" : "Com o Financeiro";
+      if (x.aVencer) return `Esperando ${esperaDoPasso(x.aVencer)}, em ${dia(x.aVencer.vencimento)}`;
+      return x.valor > 0
+        ? `Faltam ${reais(x.valor)}${x.pendentes?.length ? `: ${juntarComE(x.pendentes.map(parcelaCurta))}` : ""}`
+        : lev ? "Tudo recebido e repassado" : "Tudo recebido";
+    }
     case "CONTRATO":
       return fin?.feito ? "Não foi encerrado junto com o financeiro" : fin ? `${numeros}, junto com o financeiro` : numeros;
   }
@@ -248,6 +267,13 @@ function oqueDoFechamento(p: PassoCliente, primeiro: string): string {
     case "REPASSE":
       return `${rep?.entrou ? `${NOMES_LEVANTAMENTO[rep.entrou.tipo] ?? "O dinheiro"} de ${reais(rep.entrou.valor)} entrou em ${dia(rep.entrou.em)}. ` : ""}A parte de ${primeiro} espera o repasse.`;
     case "FINANCEIRO":
+      if (fin?.comLevantamento === false) {
+        // F3.132 (estados 1, 2 e 15): o caso sem levantamento.
+        const terminou = `${ca?.nome ?? "O caso"} terminou${res ? ` com ${res}` : ""}${ca?.encerradoEm ? ` em ${dia(ca.encerradoEm)}` : ""}.`;
+        if (fin.aVencer) return `${terminou} Nada está atrasado: o fechamento espera ${esperaDoPasso(fin.aVencer)}.`;
+        if (fin.valor === undefined || fin.valor === null) return `${terminou} O acerto do caso está com o Financeiro.`;
+        return `${terminou} Falta o acerto no financeiro${todos.some((t) => t.tipo === "CONTRATO" && !t.feito) ? " e encerrar o contrato" : ""}.`;
+      }
       return `${rep?.feito && rep.em ? `${primeiro} recebeu em ${dia(rep.em)}. ` : ""}${fin?.pendentes?.length ? `No financeiro do caso ainda ${fin.pendentes.length === 1 ? "falta" : "faltam"} ${juntarComE(fin.pendentes)}.` : "O acerto do caso está com o Financeiro."}`;
     case "CONTRATO":
       return fin?.feito
@@ -265,7 +291,11 @@ export function botaoDoFechamento(x: PassoFechamento): { rotulo: string; href: s
   switch (x.tipo) {
     case "EXITO": return { rotulo: "Conferir o êxito", href: ROTAS_PASSO.receber, icone: "moeda" };
     case "REPASSE": return { rotulo: "Registrar o repasse", href: x.levantamentoId ? ROTAS_PASSO.repasse(x.levantamentoId) : null, icone: "enviar" };
-    case "FINANCEIRO": return { rotulo: "Ver o acerto", href: x.levantamentoId ? ROTAS_PASSO.repasse(x.levantamentoId) : null, icone: "cadeado" };
+    case "FINANCEIRO": return {
+      rotulo: "Ver o acerto", icone: "cadeado",
+      // F3.132 (decisão 4): sem levantamento, a folha da ficha do contrato; sem Financeiro, nada.
+      href: x.levantamentoId ? ROTAS_PASSO.repasse(x.levantamentoId) : x.contratoId ? ROTAS_PASSO.acertoContrato(x.contratoId, x.casoId) : null,
+    };
     case "CONTRATO": {
       const c = x.contratos?.[0];
       return { rotulo: "Encerrar o contrato", href: c ? ROTAS_PASSO.encerrarContrato(c.id) : null, icone: "pasta" };

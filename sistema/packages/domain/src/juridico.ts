@@ -189,10 +189,26 @@ export interface ResumoAcertoCaso {
   entrou: { tipo: string; em: string; valor: number | null } | null;
   exitos: { cliente: string; feito: boolean; naoCobrado: boolean; em: string | null; por: PessoaRef | null; valor: number | null }[];
   repasses: { cliente: string; feito: boolean; em: string | null; prazo: string | null; valor: number | null }[];
-  outros: { nome: string; valor: number | null; prazo: string | null }[] | null;
+  outros: {
+    nome: string; valor: number | null; prazo: string | null;
+    /** F3.132 (0900): o tipo, quem paga e, no reembolso, a parcela que o leva junto. */
+    tipo?: "PARCELA" | "PARCELA_SEM_VALOR" | "EXITO" | "REEMBOLSO"; cliente?: string | null; descricao?: string | null;
+    categoria?: string | null; vencimento?: string | null; junto?: string | null;
+  }[] | null;
   faltaOutros: boolean;
-  contratos: { id: string; numero: string; situacao: string; cliente: string; assinadoEm: string | null }[];
+  contratos: {
+    id: string; numero: string; situacao: string; cliente: string; assinadoEm: string | null;
+    /** F3.132: quem encerrou e, para quem tem o Financeiro, o que foi recebido. */
+    encerradoEm?: string | null; encerradoPor?: PessoaRef | null;
+    recebido?: number; falta?: number; ultimaRecebidaEm?: string | null; tudoRecebido?: boolean;
+  }[];
   quemCuida: string[] | null;
+  /** F3.132 (decisão 4): sem levantamento, o contrato de "Ver o acerto". Só para quem tem o Financeiro. */
+  contratoId?: string | null;
+  /** Nenhum valor de terceiros entrou (sem levantamento). */
+  semTerceiros?: boolean;
+  /** Nenhum êxito a cobrar no caso. */
+  semExito?: boolean;
 }
 
 export interface FichaCaso extends LinhaCaso {

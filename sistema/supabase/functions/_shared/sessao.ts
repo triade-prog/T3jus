@@ -83,7 +83,7 @@ type TipoLink = "recovery" | "invite";
 type ComSessao = { Variables: VarsSessao["Variables"] };
 
 /** O PostgREST diz assim que a função não existe (migration ainda não aplicada). */
-function funcaoNaoExiste(e: unknown): boolean {
+export function funcaoNaoExiste(e: unknown): boolean {
   return e instanceof ErroBanco && (e.codigo === "PGRST202" || e.codigo === "404");
 }
 

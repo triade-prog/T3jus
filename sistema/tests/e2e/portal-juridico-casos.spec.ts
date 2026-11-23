@@ -329,6 +329,61 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     await expect(q).not.toContainText("R$");
   });
 
+  // F3.132 (EX-17): o caso sem levantamento, desenho aprovado em
+  // docs/design/aprovadas/portal-fechamento-sem-levantamento (estados 3 e 4).
+  const ACERTO_L = {
+    pendente: true, fechado: null, comValores: true, levantamentoId: null, entrou: null, exitos: [], repasses: [], faltaOutros: true, quemCuida: null,
+    contratoId: "k1", semTerceiros: true, semExito: true,
+    outros: [
+      { nome: "Joana Pereira · Parcela 6 de 6", tipo: "PARCELA", valor: 100000, prazo: "2026-11-10", cliente: JOANA.nome, descricao: "Parcela 6 de 6", vencimento: "2026-11-10", junto: null },
+      { nome: "Custas iniciais", tipo: "REEMBOLSO", valor: 41230, prazo: null, cliente: JOANA.nome, categoria: "CUSTAS", vencimento: "2026-11-10", junto: "Parcela 6 de 6" },
+    ],
+    contratos: [{ id: "k1", numero: "C-2026-014", situacao: "ATIVO", cliente: JOANA.nome, assinadoEm: "2026-02-20", encerradoEm: null, encerradoPor: null,
+      recebido: 500000, falta: 100000, ultimaRecebidaEm: "2026-10-10", tudoRecebido: false }],
+  };
+
+  test("F3.132, estado 3: sem levantamento, Ver o acerto leva à folha do contrato e o quadro diz o que receber", async ({ page }) => {
+    const ficha = { ...FICHA, situacao: "ENCERRADO", resultado: "PERDA", encerradoEm: "2026-11-06T20:10:00Z", etapa: etapa(8), acerto: ACERTO_L };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    await expect(page.getByText(/Encerrado com perda em 06\/11\. Falta o acerto no Financeiro: receber a parcela 6\/6 de Joana e as custas, e encerrar\./)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver o acerto" })).toHaveAttribute("href", `/financeiro/a-receber/contratos/k1#t-fecha-${CASO}`);
+    const q = page.getByRole("region", { name: "Acerto no Financeiro" });
+    await expect(q).toContainText("Nenhum valor de terceiros entrou");
+    await expect(q).toContainText("Sem êxito a cobrar");
+    await expect(q).toContainText("Joana: falta a parcela 6/6, R$ 1.000,00");
+    await expect(q).toContainText("Custas adiantadas: falta o reembolso de R$ 412,30");
+    await expect(q).toContainText("Depois: encerrar no financeiro e o contrato C-2026-014");
+    await expect(page.getByRole("region", { name: "Contratos ligados" })).toContainText("ativo até o acerto");
+    await semViolacoes(page);
+  });
+
+  test("F3.132, estado 4 (PT-02): sem o Financeiro, sem valores nem link", async ({ page }) => {
+    const acerto = { ...ACERTO_L, comValores: false, contratoId: null, outros: null, quemCuida: ["Marina Ribeiro"],
+      contratos: [{ id: "k1", numero: "C-2026-014", situacao: "ATIVO", cliente: JOANA.nome, assinadoEm: "2026-02-20", encerradoEm: null, encerradoPor: null }] };
+    const ficha = { ...FICHA, situacao: "ENCERRADO", resultado: "PERDA", encerradoEm: "2026-11-06T20:10:00Z", etapa: etapa(8), acerto };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    await expect(page.getByRole("link", { name: "Ver o acerto" })).toHaveCount(0);
+    const q = page.getByRole("region", { name: "Acerto no Financeiro" });
+    await expect(q).toContainText("O acerto está com o Financeiro");
+    await expect(q).toContainText("Depois: encerrar no financeiro");
+    await expect(q).not.toContainText("R$");
+    await expect(q).not.toContainText("C-2026-014");
+    await semViolacoes(page);
+  });
+
+  test("F3.132: encerrar com perda avisa que o caso espera o Financeiro", async ({ page }) => {
+    await simular(page, comuns());
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    await page.getByRole("button", { name: "Mudar etapa" }).click();
+    await page.getByRole("radio", { name: /Encerrado/ }).check();
+    const j = page.getByRole("dialog", { name: "Encerrar o caso" });
+    await j.getByRole("radio", { name: /Perda/ }).check();
+    await expect(j).toContainText("O caso fica “Encerrado · acerto pendente” até o Financeiro encerrar.");
+    await semViolacoes(page);
+  });
+
   test("Celular: lista e ficha cabem na tela", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await simular(page, comuns());

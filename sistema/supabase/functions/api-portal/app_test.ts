@@ -257,6 +257,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_receber: (a) => ({ algum: true, parcelas: [], mostrar: a.p_mostrar, forma: a.p_forma, responsavel: a.p_responsavel }),
     portal_financeiro_contrato: (a) => ({ id: a.p_contrato, parcelas: [] }),
     portal_financeiro_contrato_adiantados: () => [{ id: "conta", descricao: "Custas da apelação" }],
+    portal_financeiro_contrato_fechamentos: (a) => [{ casoId: a.p_contrato, comLevantamento: false, acerto: { pendencias: [] }, origem: [] }],
     portal_financeiro_adiantar: (a) => ({ cliente: a.p_cliente, casos: [], proximaParcela: null }),
     portal_financeiro_receber_registrar_recibo: (a) => {
       if ((a.p_dados as Record<string, unknown>).valor === 90000) erroBanco("TC422", { motivo: "VALOR_ACIMA_DO_SALDO", campos: ["valor"], falta: 85000 });
@@ -1611,6 +1612,39 @@ Deno.test("F3.23, FI-07: o caso na conta adiantada, a parcela em que volta e o a
   const f = await (await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie })).json();
   assertEquals([f.id, f.adiantados[0].descricao], [CLIENTE, "Custas da apelação"]);
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_financeiro_contrato_adiantados")!.args.p_escritorio, AURORA);
+});
+
+Deno.test("F3.132 (EX-16, EX-17, FI-08): a ficha do contrato traz os fechamentos dos casos, com o escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const f = await (await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie })).json();
+  assertEquals([f.fechamentos.length, f.fechamentos[0].casoId], [1, CLIENTE]);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_contrato_fechamentos")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_contrato], [AURORA, CLIENTE]);
+});
+
+Deno.test("F3.132: sem a 0901 no banco (PGRST202), a ficha sai sem a folha; outro erro da função nova não é engolido", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const rpc = m.banco.rpc.bind(m.banco);
+  let falha = "PGRST202";
+  m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) => (f === "portal_financeiro_contrato_fechamentos" ? erroBancoAsync<T>(falha) : rpc<T>(f, a));
+  const r = await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie });
+  assertEquals(r.status, 200);
+  const f = await r.json();
+  assertEquals([f.id, f.adiantados.length, f.fechamentos], [CLIENTE, 1, []]);
+  falha = "TC404";
+  assertEquals((await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie })).status, 404);
+  falha = "XX000";
+  assertEquals((await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie })).status, 500);
+});
+
+Deno.test("F3.132: o contrato que não existe (TC404 do banco) continua 404, com as três leituras juntas", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const rpc = m.banco.rpc.bind(m.banco);
+  m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) => (f === "portal_financeiro_contrato" ? erroBancoAsync<T>("TC404") : rpc<T>(f, a));
+  assertEquals((await m.pedir(`/v1/escritorio/financeiro/contratos/${CLIENTE}`, { cookie })).status, 404);
 });
 
 Deno.test("FI-05, FI-06, FI-12: Repasses, proposta, registrar, feito, dispensar e prestação; o escritório vem da sessão", async () => {

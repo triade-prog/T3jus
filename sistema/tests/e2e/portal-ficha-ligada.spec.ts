@@ -285,6 +285,64 @@ test.describe("Jornada do cliente: o fechamento e o contrato sem caso", () => {
     await semViolacoes(page);
   });
 
+  // F3.132 (EX-16, FI-08): o caso sem levantamento, desenho aprovado em
+  // docs/design/aprovadas/portal-fechamento-sem-levantamento (estados 1, 2 e 15).
+  const CASO_L = { id: CASO, nome: "Carvalho x Construtora Lume", resultado: "PERDA", encerradoEm: "2026-11-06T17:10:00-03:00" };
+  const FIN_L = { tipo: "FINANCEIRO", area: "FINANCEIRO", feito: false, em: null, valor: 141230, pendentes: ["parcela 6 de 6", "custas"],
+    contratoId: CT, casoId: CASO, aVencer: null, comLevantamento: false };
+  const CTR_L = { tipo: "CONTRATO", area: "CONTRATOS", feito: false, em: null, contratos: [{ id: CT, numero: "C-2026-012" }] };
+  const FECHA_L = { ...FECHA, quemFaz: ["Marina Ribeiro", "Diego Almeida", "Bianca Lopes"], item: { caso: CASO_L, passos: [FIN_L, CTR_L] } };
+
+  test("F3.132, estado 1: sem levantamento, \"Ver o acerto\" leva à folha do contrato", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, passo: FECHA_L } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo · fechamento" });
+    await expect(ambar).toContainText("Carvalho x Construtora Lume terminou com perda em 06/11. Falta o acerto no financeiro e encerrar o contrato.");
+    await expect(ambar.getByRole("list", { name: "Fechamento do caso, em 2 passos" }).getByRole("listitem")).toHaveText([
+      "1Encerrar no financeiro: é o próximo passoFaltam R$ 1.412,30: parcela 6/6 e custas",
+      "2Encerrar o contrato: depoisC-2026-012, junto com o financeiro",
+    ]);
+    await expect(ambar.getByRole("link", { name: "Ver o acerto" })).toHaveAttribute("href", `/financeiro/a-receber/contratos/${CT}#t-fecha-${CASO}`);
+    await expect(ambar).toContainText("Quem faz: a área Financeiro (Marina, Diego e Bianca). O contrato pode ser encerrado junto.");
+    await semViolacoes(page);
+  });
+
+  test("F3.132, estado 2 (PT-02): sem o Financeiro, \"Com o Financeiro\" e Ver o caso, sem valores", async ({ page }) => {
+    const semValor = { ...FIN_L, valor: null, pendentes: null, contratoId: null, casoId: null };
+    await simular(page, {
+      "/v1/escritorio": { corpo: { ...ESCRITORIO, pessoa: "Larissa Costa", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] } },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, comercial: false, passo: { ...FECHA_L, pode: false, quemPode: ["Marina Ribeiro", "Diego Almeida"], quemFaz: null,
+        item: { caso: CASO_L, passos: [semValor, { ...CTR_L, contratos: undefined }] } } } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo · fechamento" });
+    await expect(ambar).toContainText("O acerto do caso está com o Financeiro.");
+    await expect(ambar).toContainText("Com o Financeiro");
+    await expect(ambar).not.toContainText("R$");
+    await expect(ambar.getByRole("link", { name: "Ver o acerto" })).toHaveCount(0);
+    await expect(ambar.getByRole("link", { name: "Ver o caso" })).toHaveAttribute("href", `/juridico/casos/${CASO}`);
+    await semViolacoes(page);
+  });
+
+  test("F3.132, estado 15 (pergunta 1): esperando o êxito, sem atraso", async ({ page }) => {
+    const espera = { ...FIN_L, valor: 840000, pendentes: ["êxito de Joana"], aVencer: { vencimento: "2026-12-15", descricao: "Êxito", cliente: "Joana Pereira", exito: true } };
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: { ...FICHA, passo: { ...FECHA_L, item: { caso: { ...CASO_L, nome: "Pereira x Mercado Bom Preço", resultado: "ACORDO", encerradoEm: "2026-11-18T14:50:00-03:00" }, passos: [espera, CTR_L] } } } },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const ambar = page.getByRole("region", { name: "Próximo passo · fechamento" });
+    await expect(ambar).toContainText("Nada está atrasado: o fechamento espera o êxito de Joana.");
+    await expect(ambar).toContainText("Esperando o êxito de Joana, em 15/12");
+    await semViolacoes(page);
+  });
+
   test("Cliente atendido: Gerar proposta secundário e Ver o caso ao lado (decisão 18)", async ({ page }) => {
     const feitos = PASSOS.map((x) => ({ ...x, feito: true, em: "2026-11-18T12:00:00-03:00" }));
     await simular(page, {
