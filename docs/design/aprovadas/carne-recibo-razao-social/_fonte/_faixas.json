@@ -1,0 +1,562 @@
+[
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "completa-vencida",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 16.3
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 3.3
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "completa-sem-pix",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 17.6
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 12.9
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "completa-uma-vencida",
+  "pior": [
+   {
+    "c": "cn-via",
+    "folga": 28.4
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "sem-vencida",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 16.3
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 3.3
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "sem-sem-pix",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 19.8
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 15.5
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "sem-uma-vencida",
+  "pior": [
+   {
+    "c": "cn-via",
+    "folga": 28.4
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "logo-vencida",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 12.9
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 1.7
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "logo-sem-pix",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 12.9
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 8.1
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "logo-uma-vencida",
+  "pior": [
+   {
+    "c": "cn-via",
+    "folga": 26.8
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "vazia-vencida",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 16.3
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 3.3
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "vazia-sem-pix",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 19.8
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 15.5
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "vazia-uma-vencida",
+  "pior": [
+   {
+    "c": "cn-via",
+    "folga": 28.4
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "sem-advocacia-vencida",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 16.3
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 3.2
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "sem-advocacia-sem-pix",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 17.4
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 9.7
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "sem-advocacia-uma-vencida",
+  "pior": [
+   {
+    "c": "cn-via",
+    "folga": 28.4
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "longa-vencida",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 8.2
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via tb-longo",
+    "folga": 3.3
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "longa-sem-pix",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 8.2
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via tb-longo",
+    "folga": 11.2
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "longa-uma-vencida",
+  "pior": [
+   {
+    "c": "cn-via tb-longo",
+    "folga": 27.8
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "longa-logo-vencida",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 3.5
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via tb-longo",
+    "folga": 1
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "longa-logo-sem-pix",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 3.5
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via tb-longo",
+    "folga": 7.4
+   }
+  ]
+ },
+ {
+  "arq": "_fonte/_teste-carne.html",
+  "e": "longa-logo-uma-vencida",
+  "pior": [
+   {
+    "c": "cn-via tb-longo",
+    "folga": 26.6
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "completa",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 17.6
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 8.7
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "uma",
+  "pior": [
+   {
+    "c": "cn-via",
+    "folga": 31
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 18.4
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "sem-sociedade",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 19.8
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 11.4
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "logo",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 12.9
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 4
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "razao-vazia",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 19.8
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 11.4
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "sem-advocacia",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 17.4
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via",
+    "folga": 5.5
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "razao-longa",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 8.2
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via tb-longo",
+    "folga": 7
+   }
+  ]
+ },
+ {
+  "arq": "carne-a4.html",
+  "e": "razao-longa-logo",
+  "pior": [
+   {
+    "c": "cn-col",
+    "folga": 3.5
+   },
+   {
+    "c": "cn-canhoto",
+    "folga": 5.9
+   },
+   {
+    "c": "cn-via tb-longo",
+    "folga": 3.3
+   }
+  ]
+ },
+ {
+  "arq": "recibo-a4.html",
+  "e": "completa",
+  "pior": [
+   {
+    "c": "rb-folha",
+    "folga": 17.5
+   }
+  ]
+ },
+ {
+  "arq": "recibo-a4.html",
+  "e": "sem-sociedade",
+  "pior": [
+   {
+    "c": "rb-folha",
+    "folga": 22.1
+   }
+  ]
+ },
+ {
+  "arq": "recibo-a4.html",
+  "e": "logo",
+  "pior": [
+   {
+    "c": "rb-folha",
+    "folga": 17.5
+   }
+  ]
+ },
+ {
+  "arq": "recibo-a4.html",
+  "e": "razao-vazia",
+  "pior": [
+   {
+    "c": "rb-folha",
+    "folga": 27.1
+   }
+  ]
+ },
+ {
+  "arq": "recibo-a4.html",
+  "e": "sem-advocacia",
+  "pior": [
+   {
+    "c": "rb-folha",
+    "folga": 22.1
+   }
+  ]
+ },
+ {
+  "arq": "recibo-a4.html",
+  "e": "razao-longa",
+  "pior": [
+   {
+    "c": "rb-folha tb-longo",
+    "folga": 3.8
+   }
+  ]
+ },
+ {
+  "arq": "recibo-a4.html",
+  "e": "razao-longa-logo",
+  "pior": [
+   {
+    "c": "rb-folha tb-longo",
+    "folga": 3.8
+   }
+  ]
+ }
+]
