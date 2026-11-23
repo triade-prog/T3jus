@@ -1,0 +1,10 @@
+{
+  "data": "23/11/2026",
+  "inicio": "03:12",
+  "fim": "03:43",
+  "texto": "Empréstimos no Financeiro, servidor (PR 2 da F3.51): migrations 0940 e 0941 (empréstimo, parcelas em A pagar, devolução, encerrar e lançado errado; Caixa e arquivo do contador sem contar como receita nem despesa), rotas da api-portal, domínio, aba Empréstimos da planilha e testes pgTAP 126, Deno e Vitest. Faltam as telas e a publicação (P6).",
+  "refs": [
+    "F3.51",
+    "FI-20"
+  ]
+}

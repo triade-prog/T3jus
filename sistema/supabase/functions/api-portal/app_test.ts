@@ -278,6 +278,21 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_financeiro_pagar: (a) => ({ algum: true, contas: [], mostrar: a.p_mostrar }),
     portal_financeiro_conta_lancar: () => ({ id: CLIENTE, recorrenteId: null }),
+    portal_financeiro_emprestimo_registrar: (a) => {
+      const d = a.p_dados as { credorNome?: string | null; valor?: number | null; parcelasTotal?: number | null };
+      const campos = [!d.credorNome ? "credorNome" : null, !d.valor ? "valor" : null].filter(Boolean);
+      if (campos.length) erroBanco("TC422", { campos });
+      return { id: CLIENTE, parcelasCriadas: d.parcelasTotal ?? 0 };
+    },
+    portal_financeiro_emprestimo: (a) => ({ id: a.p_emprestimo, parcelas: [], devolucoes: [], historico: [] }),
+    portal_financeiro_emprestimo_devolucao: () => ({ id: CLIENTE, acimaDoQueFalta: 0, emprestimo: { id: CLIENTE } }),
+    portal_financeiro_emprestimo_encerrar: (a) => ({ id: a.p_emprestimo, situacao: { situacao: "ENCERRADO" } }),
+    portal_financeiro_emprestimo_cancelar: (a) => {
+      const motivo = String((a.p_dados as { motivo?: string | null }).motivo ?? "");
+      if (motivo.length < 5) erroBanco("TC422", { campos: ["motivo"] });
+      if (a.p_emprestimo === ANEXO_NOTA) erroBanco("TC422", { motivo: "EMPRESTIMO_COM_PAGAMENTO" });
+      return { id: a.p_emprestimo, situacao: { situacao: "CANCELADO" } };
+    },
     portal_financeiro_conta_paga: (a) => {
       const d = a.p_dados as { pagaEm?: string };
       if ((d.pagaEm ?? "") > "2026-11-18") erroBanco("TC422", { motivo: "DATA_NO_FUTURO", campos: ["pagaEm"] });
@@ -1767,11 +1782,49 @@ Deno.test("IN-10: os grupos de honorário cobrem todos os tipos do banco, e o al
 });
 
 Deno.test("FI-20, FI-07: categorias de saída e formas de reembolso do domínio são as mesmas do banco", async () => {
-  const { CATEGORIAS_SAIDA, REEMBOLSO_COMO } = await import("@t3jus/domain");
+  const { CATEGORIAS_SAIDA, CATEGORIAS_LANCAR, REEMBOLSO_COMO, CREDORES_EMPRESTIMO, DEVOLUCAO_EMPRESTIMO } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0230_portal_financeiro_pagar.sql", import.meta.url));
-  const lista = (re: RegExp) => re.exec(sql)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
-  assertEquals(lista(/categoria_saida_valida\(p text\)[\s\S]*?select p in \(([^)]+)\)/), Object.keys(CATEGORIAS_SAIDA));
+  // A categoria Empréstimos entrou no fim da lista na 0940 (F3.51): a definição que vale é a dela, na ordem.
+  const sql0940 = await Deno.readTextFile(new URL("../../migrations/0940_emprestimos.sql", import.meta.url));
+  const lista = (re: RegExp, texto = sql) => re.exec(texto)?.[1]?.match(/'([A-Z_]+)'/g)?.map((x) => x.slice(1, -1));
+  assertEquals(lista(/categoria_saida_valida\(p text\)[\s\S]*?select p in \(([^)]+)\)/, sql0940), Object.keys(CATEGORIAS_SAIDA));
+  assertEquals(Object.keys(CATEGORIAS_LANCAR), Object.keys(CATEGORIAS_SAIDA).filter((k) => k !== "EMPRESTIMOS"));
   assertEquals(lista(/reembolso_como\s+text check \(reembolso_como in \(([^)]+)\)/), Object.keys(REEMBOLSO_COMO));
+  assertEquals(lista(/credor_tipo\s+text not null check \(credor_tipo in \(([^)]+)\)/, sql0940), Object.keys(CREDORES_EMPRESTIMO));
+  assertEquals(lista(/devolucao\s+text not null check \(devolucao in \(([^)]+)\)/, sql0940), Object.keys(DEVOLUCAO_EMPRESTIMO));
+});
+
+Deno.test("FI-20 (F3.51): empréstimos, registrar, ficha, devolução, encerrar e lançado errado; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/financeiro/emprestimos", {
+    corpo: { credorTipo: "BANCO", credorNome: "Sicoob", valor: 3000000, recebidoEm: "2026-10-05", devolucao: "PARCELAS", parcelasTotal: 24,
+      parcelaValor: 145000, proximoVencimento: "2026-10-20", parcelas: [{ n: 1, valor: 150000 }] }, cookie });
+  assertEquals([r.status, (await r.json()).parcelasCriadas], [201, 24]);
+  const reg = m.chamadas.find((x) => x.funcao === "portal_financeiro_emprestimo_registrar")!;
+  assertEquals([reg.args.p_escritorio, (reg.args.p_dados as { credorNome: string }).credorNome], [AURORA, "Sicoob"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/emprestimos", { corpo: { valor: "muito" }, cookie }))).detalhes?.campos, ["valor"]);
+  const sem = await erro(await m.pedir("/v1/escritorio/financeiro/emprestimos", { corpo: { credorTipo: "BANCO" }, cookie }));
+  assertEquals(sem.detalhes?.campos, ["credorNome", "valor"]);
+
+  assertEquals((await (await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}`, { cookie })).json()).id, CLIENTE);
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/emprestimos/nao-e-id", { cookie })).status, 404);
+  const ficha = m.chamadas.find((x) => x.funcao === "portal_financeiro_emprestimo")!;
+  assertEquals([ficha.args.p_escritorio, ficha.args.p_emprestimo], [AURORA, CLIENTE]);
+
+  const d = await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}/devolucoes`, { corpo: { valor: 250000, pagaEm: "2026-11-10", forma: "PIX" }, cookie });
+  assertEquals([d.status, (await d.json()).acimaDoQueFalta], [201, 0]);
+  const enc = await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}/encerrar`, { corpo: { motivo: "Quitado com o banco" }, cookie });
+  assertEquals([enc.status, (await enc.json()).situacao.situacao], [200, "ENCERRADO"]);
+  const curto = await erro(await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}/cancelar`, { corpo: { motivo: "erro" }, cookie }));
+  assertEquals(curto.detalhes?.campos, ["motivo"]);
+  const pago = await erro(await m.pedir(`/v1/escritorio/financeiro/emprestimos/${ANEXO_NOTA}/cancelar`, { corpo: { motivo: "Lançado errado" }, cookie }));
+  assertEquals(pago.detalhes?.motivo, "EMPRESTIMO_COM_PAGAMENTO");
+  for (const f of ["portal_financeiro_emprestimo_devolucao", "portal_financeiro_emprestimo_encerrar", "portal_financeiro_emprestimo_cancelar"]) {
+    assert(m.chamadas.filter((x) => x.funcao === f).every((x) => x.args.p_escritorio === AURORA), f);
+  }
+  // Sem a sessão, não chega ao banco.
+  assertEquals((await m.pedir(`/v1/escritorio/financeiro/emprestimos/${CLIENTE}`)).status, 401);
 });
 
 Deno.test("EX-01, EX-03: Jurídico, lista, cadastrar com o número só em dígitos, ficha e mudar etapa; o escritório vem da sessão", async () => {
