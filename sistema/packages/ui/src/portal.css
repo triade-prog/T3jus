@@ -5503,6 +5503,8 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
   .is-tempo{grid-template-columns:44px minmax(0,1fr)}
   .is-tempo .disco{--d:44px;--f:17px}
 }
+/* Clientes › lista vazia: os atalhos de onde importar (estado clientes-vazio, F3.115). */
+@media (max-width:760px){.is-vazio-l{grid-template-columns:1fr!important;padding:0 16px 16px!important}}
 
 /* ==========================================================================
    Clientes · quem assina pelo cliente menor ou sob curatela (prefixo rl-). Só tokens e pares aprovados.

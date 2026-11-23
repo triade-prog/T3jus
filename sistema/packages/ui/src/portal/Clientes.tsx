@@ -6,7 +6,7 @@
 
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { hojeBrasilia, ORIGENS, TIPOS_CLIENTE, type ClienteLinha, type ListaClientes } from "@t3jus/domain";
-import { Icone } from "../Icone.tsx";
+import { Icone, type NomeIcone } from "../Icone.tsx";
 import { formatarTelefone } from "../console/ficha.ts";
 import { Carregando, ErroAoCarregar, Estado } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
@@ -31,6 +31,17 @@ function Marca({ texto, termo }: { texto: string; termo: string }) {
       {texto.slice(i + t.length)}
     </>
   );
+}
+
+/** Os atalhos da lista vazia (F3.115). A planilha é de todos; o Astrea e o ADVBOX, da sócia dona. */
+function atalhosImportar(dono: boolean): { href: string; icone: NomeIcone; titulo: string; sub: string }[] {
+  const planilha = { href: ROTAS_IMPORTACAO.planilha, icone: "doc" as const, titulo: "Planilha", sub: "Do Excel ou do Google Planilhas. Clientes e contratos." };
+  if (!dono) return [planilha];
+  return [
+    planilha,
+    { href: ROTAS_IMPORTACAO.astrea, icone: "enviar", titulo: "Backup do Astrea", sub: "Você pede o backup no Astrea e envia aqui." },
+    { href: ROTAS_IMPORTACAO.advbox, icone: "link", titulo: "ADVBOX", sub: "Pela planilha exportada do ADVBOX." },
+  ];
 }
 
 export function SeloSituacao({ situacao }: { situacao: ClienteLinha["situacao"] }) {
@@ -465,9 +476,22 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
               }>
               Se os clientes já estão numa planilha ou em outro sistema, traga todos de uma vez: você confere tudo numa prévia antes de salvar. Ou cadastre um por um.
             </Estado>
+            {/* F3.115 (estado clientes-vazio): os atalhos de onde importar. Astrea e ADVBOX são só da sócia dona. */}
+            <h3 className="sr">De onde importar</h3>
+            <ul className="is-vazio-l" aria-label="De onde importar"
+              style={{ listStyle: "none", margin: 0, padding: "0 24px 20px", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
+              {atalhosImportar(escritorio?.dono === true).map((a) => (
+                <li key={a.href}>
+                  <a className="im-modelo" href={a.href} style={{ textDecoration: "none", color: "inherit" }}>
+                    <span className="im-ci"><Icone nome={a.icone} className="ico" /></span>
+                    <span><strong>{a.titulo}</strong><small>{a.sub}</small></span>
+                  </a>
+                </li>
+              ))}
+            </ul>
             <p className="pt-pe-folha">
               <Icone nome="doc" className="ico" />
-              <span>Não sabe por onde começar? Baixe a <a href={ROTAS_IMPORTACAO.modelo}>planilha-modelo</a>, cole os seus clientes e envie.</span>
+              <span>Usa outro sistema? Quase todos exportam planilha. Baixe a <a href={ROTAS_IMPORTACAO.modelo}>planilha-modelo</a> ou envie a planilha do jeito que vier.</span>
             </p>
           </section>
         ) : (

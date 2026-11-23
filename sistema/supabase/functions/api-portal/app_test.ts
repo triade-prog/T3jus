@@ -194,6 +194,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_importacao_criar: (a) => ({ id: CLIENTE, ...(a.p_dados as object) }),
     portal_importacao_linha: (a) => ({ linha: { numero: a.p_numero }, dados: a.p_dados }),
+    portal_importacao_arquivados: (a) => ({ id: a.p_importacao, versao: Number(a.p_versao) + 1, ...(a.p_dados as object) }),
+    portal_importacao_lancamentos: (a) => ({ linhas: [], total: 0, grupo: a.p_grupo }),
+    portal_importacao_colunas: (a) => ({ versao: Number(a.p_versao) + 1, dados: a.p_dados }),
     portal_relatorio_cliente: (a) => ({ cliente: { id: a.p_cliente } }),
     portal_relatorio_exportar: (a) => ({ formato: (a.p_dados as { formato: string }).formato }),
     portal_inicio_resumo: () => ({ areas: ["JURIDICO"], dono: false, pedem: { JURIDICO: 2 }, total: 2, compromissos: 0, proximoCompromisso: null }),
@@ -1359,6 +1362,29 @@ Deno.test("CH-01, CH-04, IN-01: criar o contrato da proposta, registrar a assina
   assertEquals((await erro(await m.pedir("/v1/escritorio/contratos?mostrar=todos", { cookie }))).detalhes?.campos, ["mostrar"]);
   assertEquals((await (await m.pedir("/v1/escritorio/contratos?mostrar=base", { cookie })).json()).mostrar, "BASE");
   assertEquals((await m.pedir("/v1/escritorio/contratos/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("F3.116, F3.117: a escolha dos arquivados, a prévia agrupada do financeiro e a linha até 10.001; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const base = `/v1/escritorio/importacoes/${CLIENTE}`;
+  const r = await (await m.pedir(`${base}/arquivados`, { metodo: "PATCH", corpo: { versao: 3, arquivados: "ENCERRADOS" }, cookie })).json();
+  assertEquals([r.versao, r.arquivados], [4, "ENCERRADOS"]);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_importacao_arquivados")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_versao, ch.args.p_dados], [AURORA, 3, { arquivados: "ENCERRADOS" }]);
+  assertEquals((await erro(await m.pedir(`${base}/arquivados`, { metodo: "PATCH", corpo: { versao: 3, arquivados: "TODOS" }, cookie }))).detalhes?.campos, ["arquivados"]);
+  // ADVBOX: a escolha vem com as colunas.
+  await m.pedir(`${base}/colunas`, { metodo: "PATCH", corpo: { versao: 2, ligacao: { "0": "numero" }, arquivados: "FORA" }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_importacao_colunas")!.args.p_dados as { arquivados: string }).arquivados, "FORA");
+  // A prévia agrupada.
+  await m.pedir(`${base}/lancamentos?grupo=DESPESAS&q=aluguel&pular=50`, { cookie });
+  const l = m.chamadas.find((c) => c.funcao === "portal_importacao_lancamentos")!;
+  assertEquals([l.args.p_escritorio, l.args.p_grupo, l.args.p_situacao, l.args.p_q, l.args.p_pular], [AURORA, "DESPESAS", null, "aluguel", 50]);
+  assertEquals((await erro(await m.pedir(`${base}/lancamentos?grupo=OUTRO`, { cookie }))).detalhes?.campos, ["grupo"]);
+  assertEquals((await m.pedir("/v1/escritorio/importacoes/nao-e-id/lancamentos", { cookie })).status, 404);
+  // O backup traz até 10.000 linhas: a última é a 10.001.
+  assertEquals((await (await m.pedir(`${base}/linhas/10001`, { metodo: "PATCH", corpo: { decisao: "PULAR" }, cookie })).json()).linha.numero, 10001);
+  assertEquals((await m.pedir(`${base}/linhas/10002`, { metodo: "PATCH", corpo: { decisao: "PULAR" }, cookie })).status, 404);
 });
 
 Deno.test("F3.56 parte 3: o financeiro do sistema antigo na ficha do cliente; o escritório vem da sessão", async () => {

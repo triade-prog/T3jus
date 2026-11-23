@@ -304,7 +304,8 @@ export const NOMES_ORIGEM_IMPORTACAO: Record<OrigemDados, string> = {
   PLANILHA: "Planilha", ASTREA: "Astrea · backup", ADVBOX_PLANILHA: "ADVBOX · planilha",
 };
 export type SituacaoImportacao = "PREVIA" | "CONCLUIDA" | "DESFEITA" | "CANCELADA" | "EXPIRADA";
-export type SituacaoLinha = "PRONTA" | "AVISO" | "ERRO" | "PULADA" | "IMPORTADA";
+/** FORA_REGRA: lida e mostrada na prévia, nunca importada (a despesa do escritório, F3.117). */
+export type SituacaoLinha = "PRONTA" | "AVISO" | "ERRO" | "PULADA" | "IMPORTADA" | "FORA_REGRA";
 export type DecisaoLinha = "JUNTAR" | "NOVO" | "SEGUIR" | "PULAR";
 export type TipoImportado = "FIXO" | "PARCELADO" | "MENSAL" | "EXITO";
 
@@ -367,7 +368,13 @@ export interface AbaSistema {
   reconhecida: boolean;
   /** Lida e guardada para a prévia (as abas que ficam de fora não chegam ao T3jus). */
   lida: boolean;
+  /** Na aba dos processos: quantos estão ativos e arquivados, pela situação (null sem a coluna). */
+  ativos?: number | null;
+  arquivados?: number | null;
 }
+
+/** O que fazer com os processos arquivados do sistema antigo (F3.116). FORA é o recomendado. */
+export type ArquivadosImportacao = "FORA" | "ENCERRADOS";
 export type DestinoAba = "CLIENTES" | "CASOS" | "FINANCEIRO" | "TAREFAS" | "AGENDA" | "PUBLICACOES" | "FORA";
 
 export interface Importacao {
@@ -403,6 +410,8 @@ export interface Importacao {
   podeDesfazer: boolean;
   fora: number;
   desfeita: { em: string; por: PessoaRef; motivo: string } | null;
+  /** A escolha dos processos arquivados (F3.116). */
+  arquivados?: ArquivadosImportacao;
   /** A importação dos clientes de onde vieram os processos (F3.56, parte 2). */
   pai?: string | null;
   /** A importação dos processos que nasceu desta, ao importar os clientes do backup. */
@@ -416,8 +425,12 @@ export interface ResultadoImportacao {
   vencidas: number; exitos: number; valorPagoAntes: number; linhas: number; fora: number;
   /** Nos processos: os casos novos e os que já existiam e ganharam um cliente. */
   casos?: number; juntadosCasos?: number;
+  /** Nos processos: dos casos novos, os que entraram encerrados (F3.116). */
+  encerrados?: number;
   /** No financeiro antigo: o que foi recebido, o que está em aberto e os lembretes de contrato. */
   recebidos?: number; valorRecebido?: number; emAberto?: number; valorEmAberto?: number; lembretes?: number;
+  /** No financeiro antigo: as despesas do escritório, que nunca entram. */
+  despesas?: number;
 }
 
 export interface ParValor { chave: string; valor: string; n: number; sugestao: string | null }
@@ -437,12 +450,16 @@ export interface ResumoPrevia {
   financeiro: { parcelas: number; valor: number; vencidas: number; pagasAntes: number; valorPagoAntes: number };
   meses: { mes: string; valor: number }[];
   /** Só nos processos. */
-  casos?: { novos: number; juntados: number; clientes: number };
+  casos?: { novos: number; juntados: number; clientes: number; ativos?: number; encerrados?: number };
   /** Só no financeiro antigo. */
   financeiroAntigo?: FinanceiroAntigoResumo;
 }
 export interface FinanceiroAntigoResumo {
   recebidos: number; valorRecebido: number; emAberto: number; valorEmAberto: number; lembretes: number; clientes: number;
+  /** As despesas do escritório, que ficam de fora (F3.117). */
+  despesas?: number;
+  /** A conta de cada grupo da prévia, com as linhas que não foram puladas. */
+  grupos?: Record<"recebidos" | "emAberto" | "despesas", { linhas: number; valor: number }>;
 }
 
 export type CodigoProblema =
@@ -487,13 +504,28 @@ export interface LinhaPrevia {
 
 export interface LancamentoDaLinha {
   descricao: string; data: string | null; valor: number | null; situacao: SituacaoLancamentoAntigo; caso: { id: string; nome: string } | null;
+  /** O grupo da prévia (F3.117). */
+  grupo?: GrupoLancamento;
 }
 export type SituacaoLancamentoAntigo = "PAGO" | "EM_ABERTO";
+export type GrupoLancamento = "RECEBIDOS" | "EM_ABERTO" | "DESPESAS";
+export const GRUPOS_LANCAMENTO: GrupoLancamento[] = ["RECEBIDOS", "EM_ABERTO", "DESPESAS"];
+export const NOMES_GRUPO_LANCAMENTO: Record<GrupoLancamento, string> = {
+  RECEBIDOS: "Recebidos", EM_ABERTO: "Em aberto", DESPESAS: "Despesas do escritório",
+};
+/** O grupo de uma linha da prévia do financeiro: a despesa pela situação; o resto pelo que foi pago. */
+export function grupoDoLancamento(l: Pick<LinhaPrevia, "situacao" | "lancamento">): GrupoLancamento {
+  if (l.lancamento?.grupo) return l.lancamento.grupo;
+  if (l.situacao === "FORA_REGRA") return "DESPESAS";
+  return l.lancamento?.situacao === "PAGO" ? "RECEBIDOS" : "EM_ABERTO";
+}
 
 export interface CasoDaLinha {
   nome: string; area: string; parteContraria: string | null; numero: string | null; tribunal: string | null; vara: string | null;
   valorCausa: number | null; distribuidoEm: string | null; etapa: { id: string; nome: string } | null; etapaAntiga: string | null;
   papel: "AUTOR" | "REU" | "INTERESSADO"; responsavel: PessoaRef | null;
+  /** O processo arquivado que entra encerrado, sem resultado (F3.116). */
+  encerrado?: boolean;
 }
 
 export interface PreviaImportacao extends ResumoPrevia {
@@ -506,6 +538,8 @@ export interface PlanoDesfazer {
   clientes: number; juntados: number; contratos: number; parcelas: number;
   /** Nos processos: os casos que vão para Encerrados e os clientes ligados a casos que já existiam. */
   casos?: number; ligacoes?: number;
+  /** Nos processos: os que entraram encerrados e passam a "importação desfeita". */
+  encerrados?: number;
   /** No financeiro antigo: os lançamentos e os lembretes que saem das fichas. */
   lancamentos?: number; lembretes?: number;
   mexidos: { tipo: "CLIENTE" | "CONTRATO" | "CASO" | "LEMBRETE"; id: string; nome: string }[];
@@ -528,8 +562,11 @@ export const ligacaoImportacaoSchema = z.object({
   aba: z.number().int().min(0).max(19).optional(),
   ligacao: z.record(z.string().regex(/^[0-9]{1,2}$/), z.union([campo, z.literal("")])),
 });
+const arquivados = z.enum(["FORA", "ENCERRADOS"]);
 export const colunasImportacaoSchema = ligacaoImportacaoSchema.extend({
   versao: z.number().int().positive(),
+  /** Na planilha de processos do ADVBOX, a escolha dos arquivados vem com as colunas. */
+  arquivados: arquivados.optional(),
   pares: z.object({
     responsavel: z.record(z.string().max(200), z.string().max(40)).optional(),
     tipo: z.record(z.string().max(200), z.string().max(40)).optional(),
@@ -551,11 +588,20 @@ export const decidirImportacaoSchema = z.object({
   decisao: z.enum(["JUNTAR", "NOVO", "SEGUIR", "PULAR"]),
 });
 export const importarSchema = z.object({ versao: z.number().int().positive() });
+/** A escolha dos arquivados no passo das abas do backup do Astrea. */
+export const arquivadosImportacaoSchema = z.object({ versao: z.number().int().positive(), arquivados });
 export const desfazerImportacaoSchema = z.object({ motivo: z.string().trim().min(3).max(300) });
 export const filtroLinhasSchema = z.object({
   situacao: z.enum(["PRONTA", "AVISO", "ERRO", "PULADA"]).optional(),
   q: z.string().max(120).optional(),
   desde: z.coerce.number().int().min(0).max(10001).optional(),
+});
+/** A prévia do financeiro agrupada: o chip do grupo, a situação, a busca e a página. */
+export const filtroLancamentosSchema = z.object({
+  grupo: z.enum(["RECEBIDOS", "EM_ABERTO", "DESPESAS"]).optional(),
+  situacao: z.enum(["PRONTA", "AVISO", "ERRO", "PULADA"]).optional(),
+  q: z.string().max(120).optional(),
+  pular: z.coerce.number().int().min(0).max(10000).optional(),
 });
 
 export interface OrigemImportacao { id: string; arquivo: string; em: string; por: PessoaRef }
