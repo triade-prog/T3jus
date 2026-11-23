@@ -5,6 +5,7 @@
 // atendimento não se edita nem se apaga; a lista de origens é fixa.
 
 import type { ContagensCliente, NoEscritorio, PassoCliente } from "./ficha_ligada.ts";
+import type { TermoCuratela } from "./documentos_pessoais.ts";
 import { z } from "zod";
 import { normalizarTelefone, cnpjValido, UFS } from "./console.ts";
 
@@ -461,6 +462,8 @@ export interface FichaCliente {
   totalQualificacao?: number;
   /** Quem assinava pelo cliente antes dos 18 (a folha "Quem assinava com..."). */
   quemAssinava?: { papel: "MAE" | "PAI" | "TUTORA" | "TUTOR"; nome: string | null; documento: string | null; ate: string; contratos: string[] } | null;
+  /** O termo de curatela em uso (F3.118): só de pessoa física sob curatela, nem arquivada nem excluída. */
+  termoCuratela?: TermoCuratela | null;
   situacao: SituacaoCliente;
   inativadoEm: string | null;
   motivoInativacao: string | null;
