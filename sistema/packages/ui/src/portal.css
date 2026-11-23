@@ -5904,6 +5904,7 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
   .pzc-outro{max-width:none;margin-left:0}
 }
 
+/* ==========================================================================
    Portal · fechamento do caso sem levantamento (F3.132, prefixo fs-), desenho aprovado em
    docs/design/aprovadas/portal-fechamento-sem-levantamento. A janela de encerrar, comum à
    ficha do repasse e à do contrato.
