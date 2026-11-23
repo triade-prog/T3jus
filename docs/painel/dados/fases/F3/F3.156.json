@@ -1,0 +1,12 @@
+{
+  "id": "F3.156",
+  "texto": "Anexos de conta a pagar ligada a cliente excluído (nota, guia e boleto da despesa reembolsável) e a pasta do contador que os contém: guardar pela obrigação fiscal ou apagar na exclusão a pedido do titular",
+  "peca": "S4",
+  "refs": [
+    "PT-11",
+    "FI-18"
+  ],
+  "status": "pendente",
+  "ordem": 1172,
+  "proximo": "Decidir com a Carol entre guardar (LGPD, art. 16, I; registrar no inventário de anexos) ou apagar pela fila arquivos_apagar da F3.141"
+}

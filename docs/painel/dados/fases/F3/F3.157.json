@@ -1,0 +1,12 @@
+{
+  "id": "F3.157",
+  "texto": "Conversas do WhatsApp do cliente excluído: conversas e conversa_mensagens ficam com o telefone, o nome do contato e os textos; a exclusão hoje só esconde o nome",
+  "peca": "S2",
+  "refs": [
+    "PT-11",
+    "PA-05"
+  ],
+  "status": "pendente",
+  "ordem": 1173,
+  "proximo": "Planejar o que sai das conversas na exclusão a pedido do titular (telefone, nome do contato e textos) e o que fica como prova"
+}

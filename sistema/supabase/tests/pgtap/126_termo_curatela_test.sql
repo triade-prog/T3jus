@@ -3,7 +3,7 @@
 -- (PT-03), escolhido no concluir (revisão, M1); a ficha e Gerar documentos mostram o termo; abrir
 -- fica no histórico (PT-07); o escritório vem da sessão (PT-01); o inventário cita o termo (PT-11).
 begin;
-select plan(45);
+select plan(46);
 
 select ajustar_relogio(('2026-11-23 10:00-03'::timestamptz - now()));
 
@@ -185,12 +185,15 @@ select portal_cliente_arquivar_lgpd(socia, rm, cli.seb, c.versao, jsonb_build_ob
 select is((select portal_documento_dados(socia, rm, ct.seb) -> 'termoCuratela' from ids, ct), 'null'::jsonb,
   'M2: cliente arquivado não mostra o termo em Gerar documentos');
 
--- Excluído a pedido do titular: não é encontrado; a linha continua guardada (lacuna I4 no painel).
+-- Excluído a pedido do titular: não é encontrado, e o termo sai (F3.141, 0970): a linha fica com
+-- apagado_em e sem o nome do arquivo, e o arquivo vai para a fila arquivos_apagar.
 select pg_temp.termo(ids.socia, cli.rui) from ids, cli;
 select portal_cliente_pedir_exclusao(socia, rm, cli.rui, jsonb_build_object('pedidoEm', hoje_brasilia(), 'canal', 'TELEFONE', 'quemPediu', 'TITULAR')) from ids, cli;
 select portal_cliente_excluir_dados(socia, rm, cli.rui, c.versao, jsonb_build_object('pedidoEm', hoje_brasilia(), 'canal', 'TELEFONE',
   'quemPediu', 'TITULAR', 'conferido', true, 'nomeConfirmado', 'Rui Teixeira')) from ids, cli, clientes_escritorio c where c.id = cli.rui;
 select is((teste.erro($$ select pg_temp.iniciar(socia, cli.rui) from ids, cli $$)) ->> 'codigo', 'TC404', 'AP-01 termo: excluído não é encontrado');
+select ok((select bool_and(apagado_em is not null and nome is null) from cliente_documentos, cli where cliente_id = cli.rui and tipo = 'TERMO_CURATELA'),
+  'PT-11 termo: o termo do excluído sai, sem o nome do arquivo');
 
 -- 16. Inventário.
 select ok((select o_que like '%termo de curatela%' and base_legal like '%art. 11, II, "d"%' from inventario_dados where tabela = 'cliente_documentos'),

@@ -61,7 +61,7 @@ import { ipDaChamada } from "../_shared/repasse.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
 import type { MeioPagamento, PedidoCobranca } from "../_shared/pagamento.ts";
 import { avisoAutenticadorTirado, avisoFimContrato, confirmacaoPedidoDemonstracao, emailCobranca, type AvisoFimContrato, type EnvioCobranca, type Emails } from "../_shared/email.ts";
-import { pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
+import { BUCKET_EXCLUSAO, caminhoValido, pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
 import { registrar } from "../_shared/registro.ts";
 
 export interface DepsConsole extends DepsSessao {
@@ -88,6 +88,8 @@ const ENVIOS_POR_CHAMADA = 20;
 
 /** Quantos arquivos cada chamada da rotina apaga por pasta, para caber no tempo do repasse. */
 const ARQUIVOS_POR_PASTA = 1000;
+/** Quantos arquivos da exclusão a pedido do titular (F3.141) cada chamada apaga. */
+const OBJETOS_POR_CHAMADA = 500;
 
 interface LinhaCarteira {
   escritorio_id: string;
@@ -166,26 +168,70 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-console" }));
 
-  // F0.15: a rotina da noite do banco chama esta rota quando há pasta do Storage para apagar
-  // no fim da guarda. Ela só faz o que o banco já decidiu (a fila), então não pede sessão.
+  // F0.15 e F3.141: a rotina do banco (pelo pg_net, de hora em hora pelo pg_cron e logo depois de
+  // cada exclusão a pedido do titular) chama esta rota quando há o que apagar no Storage. Ela
+  // atende as duas filas: as pastas do fim da guarda (guarda_arquivos) e os arquivos um a um da
+  // exclusão (arquivos_apagar). A rota é pública através do repasse do Console e não pede sessão:
+  // não aceita nada do pedido (o corpo é ignorado) e só cumpre o que o banco já decidiu.
   app.post("/v1/rotina/arquivos-da-guarda", async (c) => {
-    if (!deps.limpeza) return c.json({ pastas: 0, concluidas: 0, apagados: 0 });
-    const pendentes = await rpc<{ id: string; escritorioId: string; bucket: string }[]>("rotina_guarda_arquivos_pendentes", { p_limite: 4 });
+    if (!deps.limpeza) return c.json({ pastas: 0, concluidas: 0, apagados: 0, objetos: 0, objetosApagados: 0 });
+    const limpeza = deps.limpeza;
+    const pastas = await apagarPastasDaGuarda(limpeza);
+    const objetos = await apagarObjetosDaExclusao(limpeza);
+    return c.json({ ...pastas, ...objetos });
+  });
+
+  async function apagarPastasDaGuarda(limpeza: LimpezaArquivos) {
+    let pendentes: { id: string; escritorioId: string; bucket: string }[];
+    try {
+      pendentes = await rpc("rotina_guarda_arquivos_pendentes", { p_limite: 4 });
+    } catch {
+      return { pastas: 0, concluidas: 0, apagados: 0 };
+    }
     let concluidas = 0;
     let apagados = 0;
     for (const p of pendentes) {
       try {
         if (!pastaValida(p.escritorioId)) throw new Error("Pasta inválida");
-        const r = await deps.limpeza.apagarPasta(p.bucket, p.escritorioId, ARQUIVOS_POR_PASTA);
+        const r = await limpeza.apagarPasta(p.bucket, p.escritorioId, ARQUIVOS_POR_PASTA);
         await rpc("rotina_guarda_arquivos_registrar", { p_id: p.id, p_apagados: r.apagados, p_concluido: !r.restam });
         apagados += r.apagados;
         if (!r.restam) concluidas++;
       } catch (e) {
-        await rpc("rotina_guarda_arquivos_registrar", { p_id: p.id, p_apagados: 0, p_concluido: false, p_erro: e instanceof Error ? e.message : "Falhou" });
+        await rpc("rotina_guarda_arquivos_registrar", { p_id: p.id, p_apagados: 0, p_concluido: false, p_erro: e instanceof Error ? e.message : "Falhou" })
+          .catch(() => {});
       }
     }
-    return c.json({ pastas: pendentes.length, concluidas, apagados });
-  });
+    return { pastas: pendentes.length, concluidas, apagados };
+  }
+
+  // Os arquivos da exclusão a pedido do titular, pelos caminhos exatos da fila. Caminho fora dos dois
+  // formatos ou de outro bucket nunca vai ao Storage. Sem a 0970 no banco (a função não existe), o
+  // passo só devolve 0; a falha de um passo não impede o outro.
+  async function apagarObjetosDaExclusao(limpeza: LimpezaArquivos) {
+    let fila: { id: string; bucket: string; caminho: string }[];
+    try {
+      fila = await rpc("rotina_arquivos_apagar_pendentes", { p_limite: OBJETOS_POR_CHAMADA });
+    } catch {
+      return { objetos: 0, objetosApagados: 0 };
+    }
+    const validos = fila.filter((a) => a.bucket === BUCKET_EXCLUSAO && caminhoValido(a.caminho));
+    const invalidos = fila.filter((a) => !validos.includes(a));
+    try {
+      if (invalidos.length) await rpc("rotina_arquivos_apagar_registrar", { p_ids: invalidos.map((a) => a.id), p_erro: "Caminho inválido" });
+    } catch { /* fica na fila */ }
+    if (!validos.length) return { objetos: fila.length, objetosApagados: 0 };
+    const ids = validos.map((a) => a.id);
+    try {
+      const r = await limpeza.apagarObjetos(BUCKET_EXCLUSAO, validos.map((a) => a.caminho));
+      await rpc("rotina_arquivos_apagar_registrar", { p_ids: ids });
+      return { objetos: fila.length, objetosApagados: r.apagados };
+    } catch (e) {
+      await rpc("rotina_arquivos_apagar_registrar", { p_ids: ids, p_erro: e instanceof Error ? e.message : "Falhou" }).catch(() => {});
+      return { objetos: fila.length, objetosApagados: 0 };
+    }
+  }
+
   // Cobrança dos escritórios (CO-06, F1.18): manda o que está na fila de e-mails da cobrança e
   // registra cada resultado. Sem o segredo do Resend, a fila espera (nada se perde). A cópia vai
   // para o sócio dono, com o e-mail do Auth.

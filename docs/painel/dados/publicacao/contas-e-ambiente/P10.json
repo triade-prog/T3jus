@@ -1,0 +1,10 @@
+{
+  "id": "P10",
+  "texto": "Aplicar no Supabase as migrations 0970 e 0971 (arquivos do cliente excluído, F3.141) e publicar a api-console da main, com o ok da Carol",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 100,
+  "nota": "A ordem importa e a 0971 não tem volta: 1) aplicar a 0970 (estrutura e gatilhos); 2) rodar a consulta só de leitura contagem-antes-0971.sql e mostrar à Carol; 3) com o ok dela, aplicar a 0971; 4) conferir a fila (select escritorio, count(*), bool_and(caminho like escritorio::text || '/%') from arquivos_apagar group by 1); 5) publicar a api-console, que é quem apaga. Com a 0970 e a api-console antiga, a fila só espera; com a api-console nova e o banco antigo, o passo dos arquivos devolve 0. Antes de aplicar, conferir com list_migrations se as anteriores (até a 0950) já estão no ar."
+}

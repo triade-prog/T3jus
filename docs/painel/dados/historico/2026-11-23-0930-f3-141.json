@@ -1,0 +1,12 @@
+{
+  "data": "23/11/2026",
+  "inicio": "09:30",
+  "fim": "10:10",
+  "texto": "Exclusão a pedido do titular tira do Storage os documentos pessoais, o termo de curatela e os .docx das propostas do cliente e limpa o nome do arquivo, na mesma transação, pela fila arquivos_apagar (0970) e pela rota da api-console; os já excluídos entram pela 0971, a publicar com o ok da Carol (P10).",
+  "refs": [
+    "F3.141",
+    "PT-11",
+    "PT-07",
+    "CH-08"
+  ]
+}

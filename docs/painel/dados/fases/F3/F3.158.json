@@ -1,0 +1,12 @@
+{
+  "id": "F3.158",
+  "texto": "Importação e cliente excluído: limpar bruto, norm e preenchidos das linhas de importação do cliente excluído dentro do prazo de desfazer (até 7 dias), e tratar o desfazer da importação, que pode tornar excluível um cliente que tinha documentos do caso e petições com a qualificação dele",
+  "peca": "S7",
+  "refs": [
+    "PT-11",
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 1174,
+  "proximo": "Limpar as linhas de importação na exclusão e decidir o que acontece com os documentos do caso e as petições quando o desfazer deixa o cliente sem caso (revisão da F3.141, M5)"
+}
