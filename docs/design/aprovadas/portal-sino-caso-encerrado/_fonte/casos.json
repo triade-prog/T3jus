@@ -1,0 +1,47 @@
+[
+ {
+  "nome": "sp-novo",
+  "url": "index.html?estado=sp-novo",
+  "rotulo": "Marina: o aviso novo, entre os outros avisos"
+ },
+ {
+  "nome": "sp-motivos",
+  "url": "index.html?estado=sp-motivos",
+  "rotulo": "Diego: uma frase para cada motivo"
+ },
+ {
+  "nome": "sp-outro-caso",
+  "url": "index.html?estado=sp-outro-caso",
+  "rotulo": "Diego: as parcelas seguem com outro caso"
+ },
+ {
+  "nome": "sp-varios",
+  "url": "index.html?estado=sp-varios",
+  "rotulo": "Diego: um cliente e três clientes"
+ },
+ {
+  "nome": "sp-denovo",
+  "url": "index.html?estado=sp-denovo",
+  "rotulo": "Diego: o caso ficou pronto de novo"
+ },
+ {
+  "nome": "sp-lido",
+  "url": "index.html?estado=sp-lido",
+  "rotulo": "Marina: o aviso já lido, caso ainda pronto"
+ },
+ {
+  "nome": "sp-encerrado",
+  "url": "index.html?estado=sp-encerrado",
+  "rotulo": "Bianca: Marina já encerrou no financeiro"
+ },
+ {
+  "nome": "sp-pendente",
+  "url": "index.html?estado=sp-pendente",
+  "rotulo": "Bianca: o caso voltou a ter pendência"
+ },
+ {
+  "nome": "sp-fora",
+  "url": "index.html?estado=sp-fora",
+  "rotulo": "Diego: o caso ganhou levantamento"
+ }
+]
