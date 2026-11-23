@@ -41,3 +41,4 @@ export * from "./dados_advogado.ts";
 export * from "./ficha_ligada.ts";
 export * from "./pdf_fotos.ts";
 export * from "./responsavel_legal.ts";
+export * from "./escritorio_dados.ts";

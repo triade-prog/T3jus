@@ -167,6 +167,8 @@ export interface AssinaturaCb {
   cnpjNota?: string | null;
   /** Endereço de cobrança (F1.21): vai no boleto como endereço do pagador. */
   enderecoCobranca?: EnderecoCobranca | null;
+  /** PA-07 (0860): o endereço de cobrança é o da sede (o padrão). */
+  mesmoDaSede?: boolean;
   parcelasPorCarne?: number | null;
   desconto?: { pct: number; ate: string; motivo: string; por: string | null } | null;
   soConsulta?: { desde: string; motivo: string; por: string | null } | null;
@@ -193,6 +195,12 @@ export function enderecoEmLinha(e: EnderecoCobranca): string {
   return `${e.logradouro}, ${e.numero}${e.complemento ? `, ${e.complemento}` : ""} · ${e.bairro} · ${e.cidade}, ${e.uf} · CEP ${cep.slice(0, 5)}-${cep.slice(5)}`;
 }
 
+/** A sede serve de endereço do pagador só inteira e já separada em partes. */
+export function sedeParaCobranca(s: AssinaturaResposta["sede"]): EnderecoCobranca | null {
+  if (!s || s.confira || !s.cep || !s.logradouro || !s.numero || !s.bairro || !s.cidade || !s.uf) return null;
+  return { cep: s.cep, logradouro: s.logradouro, numero: s.numero, complemento: s.complemento ?? null, bairro: s.bairro, cidade: s.cidade, uf: s.uf };
+}
+
 /** GET /v1/clientes/:id/assinatura. */
 export interface AssinaturaResposta {
   hoje: string;
@@ -206,6 +214,8 @@ export interface AssinaturaResposta {
   /** Só para quem vê os valores: o que a ficha tem de endereço, para começar o de cobrança. */
   enderecoSugerido?: Partial<EnderecoCobranca>;
   fichaTemEndereco?: boolean;
+  /** PA-07 (0860): a sede em partes, da ficha; "confira" quando veio do texto antigo. */
+  sede?: (Partial<Omit<EnderecoCobranca, "complemento">> & { complemento?: string | null; confira?: boolean }) | null;
   planos: { id: string; nome: string; precoCentavos: number; pessoasIncluidas: number; previa: PreviaPlano | null }[] | null;
   pessoaAMaisCentavos: number | null;
   assinatura: AssinaturaCb | null;

@@ -244,7 +244,7 @@ const logoGuardado = (id: string, passa: boolean, extra = {}) => ({
 });
 
 test.describe("Logo do escritório no carnê e no recibo (F3.81, F3.19)", () => {
-  test("enviar o logo, conferir, ver a prévia e salvar com o registro na OAB", async ({ page }) => {
+  test("enviar o logo, conferir, ver a prévia e salvar; a OAB só para ler, com o caminho para mudar (PA-07)", async ({ page }) => {
     const pedidos = await simular(page, {
       "/v1/escritorio": { corpo: ESCRITORIO },
       "GET /v1/escritorio/recebimento": [{ corpo: RECEB }, { corpo: { ...RECEB, versao: 4, marca: "LOGO", logo: logoGuardado(LOGO, true), logoJeito: "SO_LOGO", oabUf: "SP", oabNumero: "31874", oab: "OAB/SP 31.874", atualizadoEm: em(0, "10:31") } }],
@@ -273,16 +273,14 @@ test.describe("Logo do escritório no carnê e no recibo (F3.81, F3.19)", () => 
     await expect(folha.getByRole("img", { name: "Prévia do alto do recibo, em preto e branco, com o logo" })).toBeVisible();
     await expect(folha.getByRole("radio", { name: /Só o logo/ })).toHaveCount(0);
 
-    await folha.getByLabel("Seccional").selectOption("SP");
-    await page.getByRole("button", { name: "Salvar" }).click();
-    await expect(folha.getByLabel("Número do registro")).toHaveAttribute("aria-invalid", "true");
-    expect(pedidos.some((p) => p.metodo === "PUT")).toBe(false);
-    await folha.getByLabel("Número do registro").fill("31.874");
-    await expect(folha.getByRole("img", { name: "Prévia do alto do carnê, em cores, com o logo" })).toContainText("CNPJ 41.276.839/0001-34 · OAB/SP 31.874");
+    // PA-07, decisão 3: a OAB da sociedade se muda em Dados do escritório; aqui, só para ler.
+    await expect(folha.getByLabel("Seccional")).toHaveCount(0);
+    await expect(folha.getByRole("link", { name: "Mudar em Dados do escritório" })).toHaveAttribute("href", "/meu-escritorio");
     await semViolacoes(page);
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Marca salva: o logo do escritório." })).toBeVisible();
-    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toMatchObject({ versao: 3, marca: "LOGO", logoId: LOGO, logoJeito: "SO_LOGO", logoCor: "ARQUIVO", oabUf: "SP", oabNumero: "31874" });
+    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toMatchObject({ versao: 3, marca: "LOGO", logoId: LOGO, logoJeito: "SO_LOGO", logoCor: "ARQUIVO" });
+    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).not.toHaveProperty("oabUf");
     await expect(page.getByRole("button", { name: "Remover o logo" })).toBeVisible();
   });
 
@@ -334,7 +332,7 @@ test.describe("Logo do escritório no carnê e no recibo (F3.81, F3.19)", () => 
     await semViolacoes(page);
     await j.getByRole("button", { name: "Remover o logo" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Logo removido." })).toBeVisible();
-    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toMatchObject({ marca: "LETRA", logoId: null, oabUf: "SP", oabNumero: "31874" });
+    expect(pedidos.find((p) => p.metodo === "PUT")!.corpo).toMatchObject({ marca: "LETRA", logoId: null });
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await simular(page, {

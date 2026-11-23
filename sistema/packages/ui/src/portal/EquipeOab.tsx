@@ -16,7 +16,11 @@ import { conferirOab, errosDoServidor, mensagemOab, previaOab, resumoOab, type C
 import { primeiroNome } from "./equipe.ts";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { JanelaAreas, JanelaRetirar, Toast, type Feito } from "./Equipe.tsx";
-import { CabecalhoDados, FormDados, InscricoesDados, OndeEntram, QuadroDados, QuadroSemOab, UltimasMudancas, ultimaMudanca } from "./ContaDados.tsx";
+import { CabecalhoDados, InscricoesDados, UltimasMudancas, ultimaMudanca } from "./ContaDados.tsx";
+import { ROTAS_ESCRITORIO } from "./WhatsApp.tsx";
+
+/** A edição dos dados de alguém para os documentos, em Escritório › Advogados nos documentos (PA-07). */
+const rotaDadosAdvogado = (pessoaId: string) => `${ROTAS_ESCRITORIO.advogados}?editar=${encodeURIComponent(pessoaId)}`;
 
 const EQUIPE_API = "/v1/escritorio/equipe";
 const UFS = Object.keys(UFS_BRASIL).sort() as UfBrasil[];
@@ -355,7 +359,6 @@ export function EquipePessoaPortal({ pessoaId }: { pessoaId: string }) {
   const [remover, setRemover] = useState<InscricaoOab | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [abertura, setAbertura] = useState(0);
-  const [modo, setModo] = useState<"ver" | "editar">("ver");
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -423,48 +426,39 @@ export function EquipePessoaPortal({ pessoaId }: { pessoaId: string }) {
       ) : !ficha || !escritorio ? (
         <Carregando rotulo="Carregando a ficha…" linhas={5} />
       ) : (
-        modo === "editar" ? (
-          <div className="cd">
-            <CabecalhoDados voce={false} nome={ficha.nome} papel={papelDe(ficha.dono, ficha.dados, ficha.oab.length > 0)} email={ficha.email} desde={ficha.desde}
-              dados={ficha.dados} oab={ficha.oab} escritorio={ficha.escritorio} voltar={{ href: ROTAS_PORTAL.equipe, rotulo: "Equipe" }} editando />
-            <FormDados voce={false} nome={ficha.nome} escritorioNome={escritorio.nome} dados={ficha.dados} oab={ficha.oab} escritorio={ficha.escritorio}
-              api={`${EQUIPE_API}/pessoas/${pessoaId}/dados`} aoCancelar={() => setModo("ver")}
-              aoSalvo={() => {
-                setModo("ver");
-                setFeito({ titulo: `Dados de ${primeiroNome(ficha.nome)} salvos.`, texto: "Valem para os documentos gerados daqui em diante. Os já gerados não mudam." });
-                void carregar();
-              }} />
-          </div>
-        ) : (
         <div className="cd">
           <CabecalhoDados voce={false} nome={ficha.nome} papel={papelDe(ficha.dono, ficha.dados, ficha.oab.length > 0)} email={ficha.email} desde={ficha.desde}
             dados={ficha.dados} oab={ficha.oab} escritorio={ficha.escritorio} voltar={{ href: ROTAS_PORTAL.equipe, rotulo: "Equipe" }}
-            aoCompletar={consulta ? undefined : () => abrir(() => setModo("editar"))}
+            aoCompletar={consulta ? undefined : () => irPara(rotaDadosAdvogado(ficha.pessoaId))}
             semOab={`Sem OAB cadastrada, ${primeiroNome(ficha.nome)} não aparece como advogado nos contratos e procurações. Para a recepção e o financeiro, é o normal. Se ${primeiroNome(ficha.nome)} é advogado, cadastre a inscrição abaixo.`} />
           <div className="hn-grade">
             <div className="hn-col">
               {ficha.oab.length ? (
-                <QuadroDados voce={false} nome={ficha.nome} dados={ficha.dados} oab={ficha.oab} escritorio={ficha.escritorio}
-                  aoEditar={consulta ? undefined : () => abrir(() => setModo("editar"))} ultima={ultimaMudanca(ficha.nome, ficha.dados.mudancas)}
-                  blocoOab={
-                    <div className="cd-oab">
-                      <div className="cd-oab-cab">
-                        <h3 className="cd-h3">Inscrições na OAB</h3>
-                        {consulta ? null : (
-                          <button className="btn btn-sec btn-compacto" type="button" onClick={() => abrir(() => setJanela("nova"))}>
-                            <Icone nome="mais" className="ico ico-s" />
-                            Adicionar inscrição
-                          </button>
-                        )}
-                      </div>
-                      <InscricoesDados nome={ficha.nome} oab={ficha.oab} aoEditar={consulta ? undefined : (i) => abrir(() => setEditar(i))}
-                        aoRemover={consulta ? undefined : (i) => abrir(() => setRemover(i))} />
-                      <p className="cd-pe">
-                        <Icone nome="historico" className="ico" />
-                        <span>Só a sócia dona muda as inscrições. A principal vem primeiro nos documentos.</span>
-                      </p>
+                <section className="folha" aria-labelledby="t-insc" style={{ overflow: "hidden" }}>
+                  <div className="folha-cab">
+                    <div>
+                      <h2 id="t-insc">Inscrições na OAB</h2>
+                      <p className="sub">A principal vem primeiro nos documentos.</p>
                     </div>
-                  } />
+                  </div>
+                  <InscricoesDados nome={ficha.nome} oab={ficha.oab} aoEditar={consulta ? undefined : (i) => abrir(() => setEditar(i))}
+                    aoRemover={consulta ? undefined : (i) => abrir(() => setRemover(i))} />
+                  {consulta ? null : (
+                    <div className="pt-acao-folha">
+                      <button className="btn btn-sec" type="button" onClick={() => abrir(() => setJanela("nova"))}>
+                        <Icone nome="mais" className="ico" />
+                        Adicionar inscrição
+                      </button>
+                    </div>
+                  )}
+                  <p className="cd-pe">
+                    <Icone nome="balanca" className="ico" />
+                    <span>
+                      Nome completo, estado civil, CPF, RG e endereço profissional de {primeiroNome(ficha.nome)} ficam em Escritório ›{" "}
+                      <a href={rotaDadosAdvogado(ficha.pessoaId)}>Advogados nos documentos</a>. {ultimaMudanca(ficha.nome, ficha.dados.mudancas) ?? ""}
+                    </span>
+                  </p>
+                </section>
               ) : (
                 <section className="folha" aria-labelledby="t-insc" style={{ overflow: "hidden" }}>
                   <div className="folha-cab">
@@ -550,7 +544,6 @@ export function EquipePessoaPortal({ pessoaId }: { pessoaId: string }) {
             </aside>
           </div>
         </div>
-        )
       )}
       {feito ? <Toast titulo={feito.titulo} texto={feito.texto} aoFechar={() => setFeito(null)} /> : null}
       {ficha && escritorio ? (
@@ -568,13 +561,15 @@ export function EquipePessoaPortal({ pessoaId }: { pessoaId: string }) {
   );
 }
 
-/** Sua conta (EX-15): os dados para os documentos, que a pessoa completa, e a OAB, só para conferir. */
+/**
+ * Sua conta só com o que é do sistema (PA-07, decisão da Carol de 22/11/2026, tela aprovada em
+ * docs/design/aprovadas/escritorio-dados-documentos/conta.html): como a pessoa aparece, como
+ * entra e onde está. Os dados para os documentos foram para Escritório › Advogados nos documentos.
+ */
 export function ContaPortalPagina() {
   const { escritorio, erro: erroEscritorio, recarregar } = useEscritorioPortal();
   const [conta, setConta] = useState<ContaPortal | null>(null);
   const [erro, setErro] = useState(false);
-  const [modo, setModo] = useState<"ver" | "editar">("ver");
-  const [feito, setFeito] = useState<Feito | null>(null);
   const carregar = useCallback(async () => {
     setErro(false);
     const r = await chamarPortal<ContaPortal>("/v1/escritorio/conta");
@@ -585,7 +580,7 @@ export function ContaPortalPagina() {
     void Promise.resolve().then(() => carregar());
   }, [carregar]);
 
-  const trilha = modo === "editar" ? [{ nome: "Sua conta", href: ROTAS_PORTAL.conta }, { nome: "Editar dados" }] : [{ nome: "Sua conta" }];
+  const trilha = [{ nome: "Sua conta" }];
   if (erroEscritorio || erro) {
     return (
       <MolduraPortal atual="conta" trilha={trilha} escritorio={escritorio}>
@@ -593,76 +588,71 @@ export function ContaPortalPagina() {
       </MolduraPortal>
     );
   }
-  const dona = conta?.socios[0] ?? "a sócia dona";
-  const consulta = soConsulta(escritorio);
-  const editar = () => {
-    setFeito(null);
-    setModo("editar");
-    window.scrollTo({ top: 0 });
-  };
+  const linhas: [string, ReactNode, ReactNode][] = conta && escritorio ? [
+    ["Nome de exibição", <span key="v">{conta.nome}<small>Como você aparece no menu, na agenda e nas conversas.</small></span>, null],
+    ["E-mail de entrada", <span key="v">{conta.email ?? "—"}<small>É com ele que você entra e recebe o código.</small></span>, null],
+    ["Senha", <span key="v">Entrada com senha e código por e-mail<small>Para trocar, peça um link novo por e-mail.</small></span>,
+      <a key="b" className="btn btn-sec" href="/redefinir">Trocar a senha<span className="sr"> (senha)</span></a>],
+    ["Escritórios", <span key="v">{escritorio.nome}<small>{escritorio.outrosEscritorios ? `Você está em ${escritorio.outrosEscritorios + 1} escritórios.` : "Você está em 1 escritório."}</small></span>,
+      escritorio.outrosEscritorios ? <a key="b" className="btn btn-sec" href={ROTAS_PORTAL.escolher}>Trocar de escritório</a> : null],
+  ] : [];
   return (
     <MolduraPortal atual="conta" trilha={trilha} escritorio={escritorio}>
       {!conta || !escritorio ? (
         <Carregando rotulo="Carregando a sua conta…" linhas={4} />
-      ) : modo === "editar" ? (
-        <div className="cd">
-          <CabecalhoDados voce nome={conta.nome} papel={papelDe(conta.dono, conta.dados, conta.oab.length > 0)} email={conta.email} desde={conta.desde}
-            dados={conta.dados} oab={conta.oab} escritorio={conta.escritorio} editando />
-          <FormDados voce nome={conta.nome} escritorioNome={escritorio.nome} dados={conta.dados} oab={conta.oab} escritorio={conta.escritorio}
-            api="/v1/escritorio/conta/dados" aoCancelar={() => setModo("ver")}
-            oabAcao={conta.dono ? <a href={rotaPessoaEquipe(conta.pessoaId)}>Corrigir na Equipe</a> : null}
-            aoSalvo={(d) => {
-              setConta((c) => (c ? { ...c, dados: d } : c));
-              setModo("ver");
-              setFeito({ titulo: "Seus dados foram salvos.", texto: "Valem para os documentos gerados daqui em diante. Os já gerados não mudam." });
-              window.scrollTo({ top: 0 });
-            }} />
-        </div>
       ) : (
         <div className="cd">
-          <CabecalhoDados voce nome={conta.nome} papel={papelDe(conta.dono, conta.dados, conta.oab.length > 0)} email={conta.email} desde={conta.desde}
-            dados={conta.dados} oab={conta.oab} escritorio={conta.escritorio} aoCompletar={consulta ? undefined : editar}
-            semOab={
-              <>
-                Sem OAB cadastrada, você não aparece como advogado nos documentos, e nada aqui é cobrado. Para a recepção e o financeiro, é o normal.
-                {conta.dono ? " Se você é advogado, cadastre a sua inscrição na Equipe." : ` Se você é advogado, peça a ${dona}, sócia dona, para cadastrar a sua inscrição na Equipe.`}
-              </>
-            } />
+          <header className="cd-cab">
+            <div className="cd-topo campo-vinho">
+              <Icone nome="cracha" className="ico estatua" />
+              <div className="cd-quem">
+                <p className="sobretitulo">Sua conta</p>
+                <h1>{conta.nome}</h1>
+                <p className="cd-meta">
+                  <span className="selo">{papelDe(conta.dono, conta.dados, conta.oab.length > 0)}</span>
+                  {conta.email ? <span style={{ overflowWrap: "anywhere" }}>{conta.email}</span> : null}
+                  <span>na equipe desde {diaBr(conta.desde)}</span>
+                </p>
+              </div>
+            </div>
+          </header>
+          {conta.oab.length ? (
+            <div className="ed-mudou" style={{ margin: 0 }}>
+              <Aviso tom="info" icone="ajuda" titulo="Seus dados para contratos e procurações agora ficam no Escritório."
+                acoes={
+                  <a className="btn btn-sec" href={ROTAS_ESCRITORIO.advogados}>
+                    <Icone nome="balanca" className="ico" />
+                    Ir para Advogados nos documentos
+                  </a>
+                }>
+                Nome completo, estado civil, CPF, RG e endereço profissional estão em Escritório › Advogados nos documentos, junto dos dados do escritório. Sua conta
+                fica só com o que é do sistema.
+              </Aviso>
+            </div>
+          ) : null}
           <div className="hn-grade">
             <div className="hn-col">
-              {conta.oab.length ? (
-                <QuadroDados voce nome={conta.nome} dados={conta.dados} oab={conta.oab} escritorio={conta.escritorio} aoEditar={consulta ? undefined : editar}
-                  blocoOab={
-                    <div className="cd-oab">
-                      <div className="cd-oab-cab">
-                        <h3 className="cd-h3">Sua OAB</h3>
-                      </div>
-                      <InscricoesDados nome={conta.nome} oab={conta.oab} />
-                      <p className="cd-pe">
-                        <Icone nome="cadeado" className="ico" />
-                        {conta.dono ? (
-                          <span>
-                            A OAB fica na Equipe, para ninguém ter duas versões dela. Como sócia dona, você corrige lá:{" "}
-                            <a href={rotaPessoaEquipe(conta.pessoaId)}>Corrigir a OAB na Equipe</a>.
-                          </span>
-                        ) : (
-                          <span>
-                            Algum número diferente da sua carteira? <b>Fale com {dona}, sócia dona:</b> só ela muda a OAB, na Equipe. Os documentos já gerados guardam a OAB do dia.
-                          </span>
-                        )}
-                      </p>
+              <section className="folha ed-sistema" aria-labelledby="t-conta" style={{ overflow: "hidden" }}>
+                <div className="folha-cab">
+                  <div>
+                    <h2 id="t-conta">Sua conta no T3jus</h2>
+                    <p className="sub">Só o que é do sistema: como você aparece, como entra e onde está.</p>
+                  </div>
+                </div>
+                <div className="ed-conta">
+                  {linhas.map(([a, b, c]) => (
+                    <div key={a} className="ed-linha">
+                      <dl style={{ margin: 0, minWidth: 0 }}>
+                        <dt>{a}</dt>
+                        <dd>{b}</dd>
+                      </dl>
+                      {c}
                     </div>
-                  } />
-              ) : (
-                <QuadroSemOab />
-              )}
-              {conta.oab.length ? (
-                <OndeAssina titulo="Onde você assina como advogado" sub="Contratos em que você está marcado, com as inscrições que vão nos documentos de cada um."
-                  contratos={conta.contratos} conta />
-              ) : null}
+                  ))}
+                </div>
+              </section>
             </div>
-            <aside className="hn-col" aria-label="Onde os dados entram e seu acesso">
-              {conta.oab.length ? <OndeEntram /> : null}
+            <aside className="hn-col" aria-label="Seu acesso">
               <section className="folha" aria-labelledby="t-ac">
                 <div className="folha-cab" style={{ paddingBottom: 8 }}>
                   <div>
@@ -695,14 +685,13 @@ export function ContaPortalPagina() {
                 </div>
                 <p className="cd-pe">
                   <Icone nome="ajuda" className="ico" />
-                  <span>O e-mail de entrada é o da sua senha. O profissional, se houver, é o que sai nos documentos.</span>
+                  <span>O e-mail de entrada é o da sua senha. O e-mail profissional, que sai nos documentos, fica em Escritório › Advogados nos documentos.</span>
                 </p>
               </section>
             </aside>
           </div>
         </div>
       )}
-      {feito ? <Toast titulo={feito.titulo} texto={feito.texto} aoFechar={() => setFeito(null)} /> : null}
     </MolduraPortal>
   );
 }
