@@ -392,10 +392,12 @@ export function JanelaAssinaturaCaso({ aberta, contrato, aoFechar, aoFeito }: {
 
 const escolheVer = (o: OpcoesCasoContrato) => o.escolhe;
 
-export function JanelaAbrirCaso({ aberta, contrato, modoInicial = "NOVO", comSem = false, aoFechar, aoFeito }: {
+export function JanelaAbrirCaso({ aberta, contrato, modoInicial = "NOVO", comSem = false, titulo, aoFechar, aoFeito }: {
   aberta: boolean;
   contrato: string;
   modoInicial?: "NOVO" | "JUNTAR";
+  /** Da ficha do contrato marcado "não tem caso": "Abrir um caso para este contrato" (decisão 28). */
+  titulo?: string;
   /** Aberta das listas de assinados sem caso (decisão 8): oferece também "não tem caso". */
   comSem?: boolean;
   aoFechar: () => void;
@@ -435,7 +437,7 @@ export function JanelaAbrirCaso({ aberta, contrato, modoInicial = "NOVO", comSem
   const c = pronto?.contrato;
   return (
     <Janela id={`${ids}-ac`} classe="fl-janela" aberta={aberta} aoFechar={aoFechar} sobretitulo={c ? `${c.numero} · ${c.cliente.nome}` : "Contrato"}
-      titulo={comSem ? "O caso deste contrato" : e?.modo === "JUNTAR" ? "Juntar a um caso" : "Abrir o caso"} descricao={`${ids}-ac-d`} aoEnviar={() => void enviar()}
+      titulo={titulo ?? (comSem ? "O caso deste contrato" : e?.modo === "JUNTAR" ? "Juntar a um caso" : "Abrir o caso")} descricao={`${ids}-ac-d`} aoEnviar={() => void enviar()}
       pe={
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>

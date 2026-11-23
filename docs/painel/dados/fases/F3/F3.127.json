@@ -5,6 +5,7 @@
   "refs": [
     "EX-16"
   ],
-  "status": "pendente",
-  "ordem": 1010
+  "status": "feito",
+  "ordem": 1010,
+  "evidencia": "Migration 0851: cliente_passo ganha FECHAMENTO (caso encerrado com algo do acerto em aberto), com os passos que se aplicam (conferir o êxito, repassar ao cliente, encerrar no financeiro, encerrar o contrato), cada um com feito, data, quem fez e, só para quem tem Financeiro, o valor; a área do passo é a do primeiro que falta, e ATENDIDO só com tudo encerrado (o cliente continua Ativo). Encerrar no financeiro entra nos passos quando o caso teve levantamento; o caso sem levantamento fica no F3.132. Tela: o âmbar \"Fechar o caso\" com a lista dos passos, o botão da próxima coisa, \"Quem faz\", e \"Cliente atendido\" com \"Gerar proposta\" secundário (FichaLigada.tsx, fichaLigada.ts). Testes: pgTAP 119 (28), 6 casos novos em fichaLigada.test.ts e 3 cenários novos em tests/e2e/portal-ficha-ligada.spec.ts (celular e computador, com axe)."
 }

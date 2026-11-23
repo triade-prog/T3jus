@@ -18,7 +18,7 @@ import { Selo, SeloSituacao } from "./Comercial.tsx";
 import { valorDaProposta } from "./comercial.ts";
 import { nomeSituacaoContrato, SELO_CONTRATO, textoProximo } from "./contratos.ts";
 import { primeiroNome } from "./equipe.ts";
-import { BOTAO_PASSO, contar, destinoPasso, dia, PASSOS_FEITOS, ROTAS_PASSO, textoPasso, TRILHA, type AbaLigada } from "./fichaLigada.ts";
+import { BOTAO_PASSO, botaoDoFechamento, contar, destinoPasso, detalheDoPassoFechamento, dia, nomeDoPassoFechamento, PASSOS_FEITOS, proximoDoFechamento, quemFazFechamento, ROTAS_PASSO, textoPasso, TRILHA, type AbaLigada } from "./fichaLigada.ts";
 import { nomePapel } from "./juridico.ts";
 import { chamarPortal } from "./Moldura.tsx";
 
@@ -28,6 +28,7 @@ export type JanelaLigada = { tipo: "assinar" | "caso"; contrato: string; modo?: 
 const ICONE_PASSO = {
   SEM_PROPOSTA: "maleta", PROPOSTA_RASCUNHO: "maleta", PROPOSTA_ANDAMENTO: "conversas", PROPOSTA_ACEITA: "pena",
   CONTRATO_ELABORACAO: "check", CONTRATO_SEM_CASO: "balanca", CASO: "balanca",
+  FECHAMENTO: "cadeado", CONTRATO_ATIVO: "pena", ATENDIDO: "maleta",
 } as const;
 
 /** O botão do próximo passo; null quando a pessoa não pode dar o passo. */
@@ -52,20 +53,59 @@ export function BotaoPasso({ passo, cliente, nomeCliente, secundario = false, ao
       </button>
     );
   }
+  if (passo.tipo === "FECHAMENTO") {
+    const x = proximoDoFechamento(passo);
+    const b = x ? botaoDoFechamento(x) : null;
+    if (!b?.href) return null;
+    return (
+      <a data-muda className={classe} href={b.href}>
+        <Icone nome={b.icone} className="ico" />
+        {b.rotulo}
+      </a>
+    );
+  }
   const href = destinoPasso(passo, cliente);
   if (!href) return null;
   return (
-    <a data-muda={passo.tipo === "CASO" ? undefined : true} className={classe} href={href} aria-label={aria}>
+    <a data-muda={passo.tipo === "CASO" || passo.tipo === "CONTRATO_ATIVO" ? undefined : true} className={classe} href={href} aria-label={aria}>
       {icone}
       {rotulo}
     </a>
   );
 }
 
-export function TrilhaCliente({ feitos }: { feitos: number }) {
+/** Os passos do fechamento, no lugar da trilha (decisão 14). */
+export function ListaFechamento({ passo, nomeCliente }: { passo: PassoCliente; nomeCliente: string }) {
+  const todos = passo.item?.passos ?? [];
+  const i = todos.findIndex((x) => !x.feito);
+  const primeiro = primeiroNome(nomeCliente);
+  return (
+    <ol className="jf-fecha" aria-label={`Fechamento do caso, em ${todos.length} ${todos.length === 1 ? "passo" : "passos"}`}>
+      {todos.map((x, n) => {
+        const d = detalheDoPassoFechamento(x, todos);
+        const nome = nomeDoPassoFechamento(x, primeiro);
+        return (
+          <li key={x.tipo} className={x.feito ? "jf-ok" : n === i ? "jf-ag" : undefined}>
+            <span className="jf-m">{x.feito ? <Icone nome="check" className="ico" /> : n + 1}</span>
+            <span>
+              {n === i ? <b>{nome}</b> : nome}
+              <span className="sr">{x.feito ? ": feito" : n === i ? ": é o próximo passo" : ": depois"}</span>
+              {d ? <small>{d}</small> : null}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+export function TrilhaCliente({ feitos, semCaso = false }: { feitos: number; semCaso?: boolean }) {
   return (
     <ol className="fl-jor" aria-label="Caminho do cliente no escritório">
-      {TRILHA.map((nome, i) => (
+      {TRILHA.map((nome, i) => semCaso && i === feitos ? (
+        // CH-13 (decisão 27): o contrato sem caso termina na assinatura.
+        <li key={nome}>Sem caso<span className="sr">: este contrato não tem caso</span></li>
+      ) : (
         <li key={nome} className={i < feitos ? "fl-ok" : i === feitos ? "fl-ag" : undefined}>
           {i < feitos ? <Icone nome="check" className="ico" /> : null}
           {nome}
@@ -95,11 +135,22 @@ export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJ
       Registrar atendimento
     </button>
   ) : null;
-  const principal = passo.pode ? <BotaoPasso passo={passo} cliente={f.id} aoJanela={aoJanela} /> : registrar(false);
+  const fecha = passo.tipo === "FECHAMENTO" || passo.tipo === "ATENDIDO";
+  const casoId = fecha ? passo.item?.caso?.id ?? null : null;
+  // Decisão 18: no "Cliente atendido", "Gerar proposta" é secundário e "Ver o caso" fica ao lado.
+  const principal = passo.tipo === "ATENDIDO"
+    ? (passo.pode ? <BotaoPasso passo={passo} cliente={f.id} secundario aoJanela={aoJanela} /> : registrar(true))
+    : passo.pode ? <BotaoPasso passo={passo} cliente={f.id} aoJanela={aoJanela} /> : registrar(false);
   const extra = passo.pode && passo.tipo === "PROPOSTA_ANDAMENTO" && passo.item?.id ? (
     <a className="btn btn-sec" href={ROTAS_PASSO.proposta(passo.item.id)}>
       <Icone nome="olho" className="ico" />
       Ver a proposta
+    </a>
+  ) : casoId && (passo.tipo === "ATENDIDO" || !passo.pode) ? (
+    // Decisão 16: sem a área do passo, quem tem Jurídico ainda vai ao caso.
+    <a className={`btn ${passo.tipo === "ATENDIDO" ? "btn-fantasma" : "btn-sec"}`} href={ROTAS_PASSO.caso(casoId)}>
+      <Icone nome="balanca" className="ico" />
+      Ver o caso
     </a>
   ) : null;
   return (
@@ -108,8 +159,9 @@ export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJ
         {t.sobre}
       </p>
       <p className="grande" style={{ fontSize: 30 }}>{t.titulo}</p>
-      <TrilhaCliente feitos={PASSOS_FEITOS[passo.tipo]} />
+      {fecha ? null : <TrilhaCliente feitos={PASSOS_FEITOS[passo.tipo]} semCaso={passo.tipo === "CONTRATO_ATIVO"} />}
       <p className="cl-oque">{t.oque}</p>
+      {fecha ? <ListaFechamento passo={passo} nomeCliente={f.nome} /> : null}
       {t.semAcao ? (
         <p className="fl-semacao">
           <Icone nome="cadeado" className="ico" />
@@ -121,6 +173,12 @@ export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJ
           {principal}
           {extra}
         </div>
+      ) : null}
+      {passo.tipo === "FECHAMENTO" && passo.pode ? (
+        <p className="jf-quem">
+          <Icone nome="pessoas" className="ico" />
+          <span>{quemFazFechamento(passo)}</span>
+        </p>
       ) : null}
       {comercial ? (
         <div className="fl-contato">
@@ -360,7 +418,7 @@ function AbaContratos({ lista, f, passo, juridico, aoJanela }: {
   const sub = `Os contratos de honorários de ${primeiro}, com a situação, a assinatura e o caso ligado.`;
   const ativo = f.situacao === "ATIVO";
   if (!lista.length) {
-    const aceita = passo?.tipo === "PROPOSTA_ACEITA" && passo.item ? passo.item : null;
+    const aceita = passo?.tipo === "PROPOSTA_ACEITA" && passo.item?.id ? { ...passo.item, id: passo.item.id } : null;
     return (
       <FolhaAba titulo="Contratos" sub={sub}>
         <Estado icone="pena" titulo="Nenhum contrato ainda"
@@ -489,7 +547,7 @@ function AbaCasos({ lista, f, passo, aoJanela }: { lista: CasoDoCliente[]; f: Fi
   const primeiro = primeiroNome(f.nome);
   const sub = `Os casos e processos em que ${primeiro} é cliente. Um processo pode ter mais de um cliente.`;
   if (!lista.length) {
-    const semCaso = passo?.tipo === "CONTRATO_SEM_CASO" && passo.pode && passo.item ? passo.item : null;
+    const semCaso = passo?.tipo === "CONTRATO_SEM_CASO" && passo.pode && passo.item?.id ? { ...passo.item, id: passo.item.id } : null;
     return (
       <FolhaAba titulo="Casos" sub={sub}>
         <Estado icone="balanca" titulo="Nenhum caso ainda"

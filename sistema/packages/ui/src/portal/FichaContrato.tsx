@@ -20,7 +20,7 @@ import { FolhaCarne } from "./Carne.tsx";
 import { JanelaInscricoes, PessoasOab } from "./ContratoOab.tsx";
 import { CondicoesLeitura, SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, irPara, type EscritorioPortal } from "./Moldura.tsx";
-import { JanelaAssinaturaCaso } from "./CasoDaAssinatura.tsx";
+import { JanelaAbrirCaso, JanelaAssinaturaCaso } from "./CasoDaAssinatura.tsx";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { abrirAnexo, CampoAnexo, enviarAnexo } from "./Anexos.tsx";
@@ -200,6 +200,40 @@ function Assinatura({ f, assinados, aoAnexar }: { f: FichaContrato; assinados: A
           <Icone nome="lapis" className="ico" />
           <span><b>Assinatura eletrônica:</b> em estudo. Por enquanto, imprime-se, assina-se e anexa-se o arquivo assinado.</span>
         </div>
+      </div>
+    </section>
+  );
+}
+
+/** A folha "Caso" do contrato ativo sem caso (CH-13, decisão 28; CH-11, decisão 8). */
+function FolhaCasoDoContrato({ f, aoAbrir }: { f: FichaContrato; aoAbrir: () => void }) {
+  if (f.situacao !== "ATIVO" || f.caso) return null;
+  const m = f.semCasoMarcado;
+  return (
+    <section className="folha" aria-labelledby="t-cs">
+      <div className="folha-cab">
+        <div>
+          <h2 id="t-cs">Caso</h2>
+          <p className="sub">{f.semCaso ? "Este contrato não tem caso" : "Este contrato foi assinado sem caso"}</p>
+        </div>
+      </div>
+      <div className="jf-semcaso">
+        {f.semCaso ? (
+          <>
+            <p>Marcado{m ? <> em {dataBr(m.em.slice(0, 10))}{m.por ? <>, por {m.por.nome}</> : null}</> : null}: <b>sem processo</b>. Por isso a ficha de {f.cliente.nome} mostra “Contrato ativo” e não pede proposta nem caso.</p>
+            <p>Se o contrato virar processo, abra o caso aqui. A marca sai e o contrato passa a ser o do caso.</p>
+          </>
+        ) : (
+          <p>O contrato está ativo, mas fora de Casos e processos. Abra o caso, junte a um que já existe ou marque que ele não tem caso.</p>
+        )}
+        {f.podeAbrirCaso ? (
+          <div className="acoes">
+            <button className="btn btn-sec" type="button" onClick={aoAbrir}>
+              <Icone nome="balanca" className="ico" />
+              {f.semCaso ? "Abrir um caso para este contrato" : "Abrir o caso"}
+            </button>
+          </div>
+        ) : <p><small>Quem abre o caso tem a área Jurídico.</small></p>}
       </div>
     </section>
   );
@@ -591,7 +625,7 @@ function JanelaEncerrar({ aberta, f, aoFechar, aoFeito }: { aberta: boolean; f: 
 
 function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba; escritorio: EscritorioPortal; aoNumero: (n: string) => void }) {
   const [f, setF] = useState<FichaContrato | null | "erro" | "nao">(null);
-  const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | "inscricoes" | null>(null);
+  const [janela, setJanela] = useState<"assinatura" | "encerrar" | "assinado" | "inscricoes" | "caso" | null>(null);
   const [janelaDocs, setJanelaDocs] = useState<{ so?: string } | null>(null);
   const [docs, setDocs] = useState<DocumentosDoContrato | null | "erro">(null);
   const [assinados, setAssinados] = useState<Anexo[] | null>(null);
@@ -613,6 +647,14 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
   useEffect(() => {
     void Promise.resolve().then(() => carregar());
   }, [carregar]);
+  // O "Encerrar o contrato" do fechamento (EX-16, decisão 15) chega com ?encerrar=1.
+  const pedeEncerrar = useRef(typeof window !== "undefined" && new URLSearchParams(window.location.search).get("encerrar") === "1");
+  useEffect(() => {
+    if (pedeEncerrar.current && f && f !== "erro" && f !== "nao" && f.situacao === "ATIVO") {
+      pedeEncerrar.current = false;
+      void Promise.resolve().then(() => setJanela("encerrar"));
+    }
+  }, [f]);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const t = q.has("criado") ? { titulo: "Contrato criado", texto: "Ele está em elaboração. Colha a assinatura e registre-a: aí a programação vai para o Financeiro." }
@@ -693,6 +735,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
             <aside className="hn-col" aria-label="Sobre o contrato">
               <PessoasOab f={f} dono={escritorio.dono} socios={escritorio.socios} aoMudar={() => setJanela("inscricoes")} />
               <Assinatura f={f} assinados={assinados} aoAnexar={() => setJanela("assinado")} />
+              <FolhaCasoDoContrato f={f} aoAbrir={() => setJanela("caso")} />
               <Situacao f={f} aoEncerrar={() => setJanela("encerrar")} />
             </aside>
           </div>
@@ -708,6 +751,16 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
               titulo: "Assinatura registrada",
               texto: `O contrato está ativo. ${n === 1 ? "1 recebimento foi programado" : `${n} recebimentos foram programados`}.${r.semCaso ? " Ele ficou sem caso." : r.casoId ? ` O caso abriu em Jurídico${r.responsavel ? `, com ${r.responsavel}` : ""}.` : ""}`,
             });
+            void carregar();
+          }} />
+      ) : null}
+      {janela === "caso" ? (
+        <JanelaAbrirCaso aberta contrato={f.id} comSem={!f.semCaso} titulo={f.semCaso ? "Abrir um caso para este contrato" : undefined}
+          aoFechar={() => setJanela(null)}
+          aoFeito={(r) => {
+            if (r.casoId) return irPara(`${ROTAS_JURIDICO.caso(r.casoId)}?aberto=1`);
+            setJanela(null);
+            setFeito({ titulo: "Contrato marcado sem caso", texto: "A ficha do cliente passa a mostrar “Contrato ativo”. Fica no histórico do contrato." });
             void carregar();
           }} />
       ) : null}

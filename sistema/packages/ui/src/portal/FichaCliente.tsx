@@ -29,7 +29,7 @@ import { OrigemPlanilha } from "./Importacao.tsx";
 import { FolhaSistemaAntigo } from "./ImportacaoFinanceiro.tsx";
 import { FolhaFunilCliente } from "./FunilSaida.tsx";
 import { FolhaSemAvisos, SeloSemAvisos, useAvisosCliente } from "./SemAvisos.tsx";
-import { AbaItensCliente, DirPasso, NoEscritorio, BotaoPasso, type JanelaLigada } from "./FichaLigada.tsx";
+import { AbaItensCliente, DirPasso, NoEscritorio, type JanelaLigada } from "./FichaLigada.tsx";
 import { JanelaAbrirCaso, JanelaAssinaturaCaso, type FimDaAssinatura } from "./CasoDaAssinatura.tsx";
 import type { AbaLigada } from "./fichaLigada.ts";
 import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaArquivar, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
@@ -873,9 +873,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const nomeDona = dona ?? "a sócia dona";
 
   // O âmbar vira "Próximo passo" (F3.110, decisão 1) para quem pode dar o passo, para quem tem
-  // Comercial e, com o caso aberto, para todos; os outros veem a procuração, como antes.
+  // Comercial e, com o caso aberto ou no fechamento (decisão 16 da jornada), para todos; os outros veem a procuração, como antes.
   const passo = ativo ? f.passo : undefined;
-  const comPasso = !!passo && (comercial || passo.pode || passo.tipo === "CASO");
+  const comPasso = !!passo && (comercial || passo.pode || passo.tipo === "CASO" || passo.tipo === "FECHAMENTO");
   const dir = fimLgpd ? (
     <RegistroNoCabecalho f={f} />
   ) : passo && comPasso ? (
@@ -1125,13 +1125,10 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           ) : (
             <Historico atendimentos={atendimentos} funil={funil && funil !== "erro" ? funil.eventos : []} f={f} hoje={hoje} destaque={destaque}
               acoes={ativo ? (
-                <>
-                  {f.passo?.pode ? <BotaoPasso passo={f.passo} cliente={f.id} aoJanela={abrirLigada} /> : null}
-                  <button data-muda className={`btn ${f.passo?.pode ? "btn-sec" : "btn-pri"}`} type="button" onClick={() => abrir("registrar")}>
-                    <Icone nome="mais" className="ico" />
-                    Registrar atendimento
-                  </button>
-                </>
+                <button data-muda className="btn btn-pri" type="button" onClick={() => abrir("registrar")}>
+                  <Icone nome="mais" className="ico" />
+                  Registrar atendimento
+                </button>
               ) : null} />
           )
         }

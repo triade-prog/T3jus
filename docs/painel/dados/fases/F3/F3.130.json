@@ -6,6 +6,8 @@
     "AP-07",
     "AP-02"
   ],
-  "status": "pendente",
-  "ordem": 1040
+  "status": "andamento",
+  "ordem": 1040,
+  "nota": "Feito: o botão do próximo passo ficou só no quadro âmbar; ao lado do Histórico, só \"Registrar atendimento\" (FichaCliente.tsx, cenário em portal-ficha-ligada.spec.ts).",
+  "proximo": "Parte 5 do D30: cadastro e primeira reunião a partir da conversa (AP-07)"
 }
