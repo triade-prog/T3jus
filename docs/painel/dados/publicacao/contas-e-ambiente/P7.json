@@ -4,7 +4,7 @@
   "refs": [
     "AP-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 70,
-  "nota": "A 0870 e a jornada (0850 a 0854) já foram aplicadas em 22/11/2026 por volta das 23h05 (Brasília), segundo a thread da jornada; conferir com list_migrations antes de aplicar a 0910."
+  "evidencia": "23/11/2026: api-portal v37 publicada no 3a72e9e (8h21, Brasília); 0910 aplicada pela Carol no SQL Editor às 9h04 e conferida em produção (10 funções, registrada em schema_migrations, só service_role executa); Portal na Vercel no faf467f (main com o #144)."
 }
