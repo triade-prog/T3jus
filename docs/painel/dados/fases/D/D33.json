@@ -1,0 +1,12 @@
+{
+  "id": "D33",
+  "texto": "Desenho do aviso no sino para o Financeiro quando o caso encerrado sem RPV nem alvará fica pronto para encerrar no financeiro, com o que o aviso mostra depois (encerrado, voltou a ter pendência, entrou levantamento, ficou pronto de novo)",
+  "peca": "S4",
+  "refs": [
+    "EX-16",
+    "EX-17"
+  ],
+  "status": "feito",
+  "ordem": 83,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-sino-caso-encerrado/ (9 estados, computador e celular, axe sem violação), com plano escrito por um especialista e revisado por outro (PLANO.md v3 e REVISAO.md) e desenho revisado por uma terceira especialista (REVISAO-DESENHO.md), aprovado pela Carol em 23/11/2026 às 10h57 (Bahia) com as recomendações das 5 perguntas"
+}

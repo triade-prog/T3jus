@@ -1,0 +1,12 @@
+{
+  "id": "F3.150",
+  "texto": "Aviso no sino quando o caso sem levantamento é encerrado no financeiro, para quem encerra os contratos e para a responsável pelo caso (decisão 16 da jornada do cliente)",
+  "peca": "S4",
+  "refs": [
+    "EX-16",
+    "EX-17"
+  ],
+  "status": "pendente",
+  "ordem": 1065.5,
+  "proximo": "Desenhar e programar logo depois da F3.147, reusando o gatilho e a origem do aviso de caso pronto (seção 6.4 do plano em docs/design/aprovadas/portal-sino-caso-encerrado)"
+}
