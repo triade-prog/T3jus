@@ -169,6 +169,8 @@ select is((select portal_juridico_documentos_inicio(socia, rm) -> 'areas' -> 4 -
   'Conta de luz, água ou telefone dos últimos 120 dias.', 'a sugestão traz o prazo do escritório');
 
 -- Com dois sócios donos, o segundo também muda, e os dois aparecem na ordem de entrada.
+-- Felipe entra uma hora depois (no mesmo instante a ordem ficaria por sorte).
+select ajustar_relogio(('2026-11-18 11:00-03'::timestamptz - now()));
 select teste.vincular(felipe, rm, 'SOCIO') from ids;
 select is((select portal_cliente_documentos(larissa, rm, cli.ant) -> 'sociosDonos' from ids, cli), '["Marina Ribeiro", "Felipe Matos"]'::jsonb,
   'a ficha diz os dois sócios donos, na ordem de entrada');

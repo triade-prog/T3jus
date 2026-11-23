@@ -73,7 +73,7 @@ create function socios_donos_nomes(p_escritorio uuid) returns jsonb
 language sql stable
 set search_path = public
 as $$
-  select coalesce(jsonb_agg(q.nome order by s.criado_em), '[]'::jsonb)
+  select coalesce(jsonb_agg(q.nome order by s.criado_em, q.nome), '[]'::jsonb)
     from vinculos s join pessoas q on q.id = s.pessoa_id
    where s.escritorio_id = p_escritorio and s.funcao = 'SOCIO' and s.revogado_em is null
 $$;
