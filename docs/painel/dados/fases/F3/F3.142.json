@@ -6,6 +6,7 @@
     "AP-01",
     "CH-08"
   ],
-  "status": "pendente",
-  "ordem": 1180
+  "status": "feito",
+  "ordem": 1180,
+  "evidencia": "Gerar documentos do menor como no D25 (packages/ui/src/portal/Procuracoes.tsx, procuracoes.ts e portal.css), sem migration e sem mudança na api-portal: aviso info do representado e do assistido com a conta do dia (idade, data dos 16 ou dos 18, quantos documentos), aviso em atenção quando falta dado de quem assina (gerar-falta) com o quadro tracejado e \"Faltam o CPF e o RG dela\", aviso dos 18 anos (gerar-fez-18) no lugar do quadro e do aviso genérico, e a faixa do botão com \"Em todos, Joana assina por Pedro\" / \"Em todos, Lucas e Marcos assinam\" e a lista do que sai marcado. As faltas de quem assina saem de faltasDoResponsavel (domínio) por mapa. Adaptações de frases aprovadas listadas no PR (\"(a)\" e primeiro nome no lugar de \"ele\", o papel do cadastro no lugar de \"a avó\", \"agora assina por si\", \"Ou complete a ficha antes.\" até o F3.148). Testes: Vitest procuracoes.test.ts (19, 10 novos, com os marcados montados pelo domínio) e e2e portal-responsavel-legal.spec.ts (5 cenários novos) e portal-procuracoes.spec.ts com axe, no celular e no computador (60 passaram)."
 }

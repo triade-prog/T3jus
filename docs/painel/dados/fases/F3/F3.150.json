@@ -1,0 +1,13 @@
+{
+  "id": "F3.150",
+  "texto": "Idade no singular e de bebê no cadastro do menor e em Gerar documentos: \"tem 1 ano hoje\" e \"tem menos de 1 ano hoje\" (hoje sai \"tem 1 anos hoje\" e \"tem 0 anos hoje\" no FormCliente e no aviso do F3.142)",
+  "peca": "S2",
+  "refs": [
+    "AP-01",
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 1210,
+  "nota": "Risco R1 da revisão do F3.142: cliente bebê é comum em ação de alimentos. O código não tem forma pronta para o singular nem para menos de 1 ano, e \"tem menos de 1 ano hoje\" é texto novo: ficou de fora do F3.142.",
+  "proximo": "Levar à Carol \"tem 1 ano hoje\" e \"tem menos de 1 ano hoje\" e trocar em FormCliente.tsx e em avisoDoMenor (procuracoes.ts)"
+}

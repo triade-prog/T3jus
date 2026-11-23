@@ -1,0 +1,13 @@
+{
+  "id": "F3.148",
+  "texto": "Editar a ficha vindo de Gerar documentos (estado editar do D25): \"Mudar na ficha\" e \"Completar na ficha\" abrem o editar na mesma aba, com o aviso \"Você veio de Gerar documentos.\" e \"Salvar e voltar\", e o aviso de falta de quem assina volta a dizer \"Ou complete a ficha antes: ao salvar, você volta para cá.\"",
+  "peca": "S2",
+  "refs": [
+    "AP-01",
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 1190,
+  "nota": "Diferenças do desenho D25 em Gerar documentos que ficaram de fora do F3.142 (anteriores a ele): no quadro do assistido, \"Lucas e Marcos Ferreira Moura\" / \"Lucas assina, assistido pelo pai, Marcos · CPF …\"; a linha do quadro termina em \"· da ficha do cliente\"; a linha do contrato em Documentos diz \"Contratante: Pedro, representado por Joana. …\"; no fez 18, só a procuração vem marcada (link \"Gerar procuração nova\" da ficha), com \"Vai sair 1 arquivo .docx: a procuração, assinada só por Rafaela.\" e \"Já assinado em 08/07/2026, por Rafaela e pela avó.\".",
+  "proximo": "Programar o estado editar do D25 (Salvar e voltar para Gerar documentos) e decidir com a Carol as diferenças do desenho listadas na nota"
+}

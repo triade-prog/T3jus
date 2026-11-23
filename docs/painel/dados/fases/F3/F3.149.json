@@ -1,0 +1,13 @@
+{
+  "id": "F3.149",
+  "texto": "Qualificação de quem assina pelo menor ou curatelado sai marcada no .docx quando falta a nacionalidade, o estado civil ou a profissão (hoje só é omitida, mas conta como 1 marcado na faixa e na aba da prévia)",
+  "peca": "S2",
+  "refs": [
+    "CH-08",
+    "AP-01"
+  ],
+  "status": "pendente",
+  "ordem": 1200,
+  "nota": "Achado na revisão do F3.142 (qualificacaoDoResponsavel só omite; na qualificação do próprio cliente a mesma falta sai como [ESTADO CIVIL: falta]). Enquanto isso, Gerar documentos não lista essa falta na faixa e o aviso diz só \"Dá para gerar assim, para preencher à mão ou no Word.\". Também do domínio: quem nasceu em 29/02 faz 18 anos em 01/03 para idadeEm e para o banco (age()), mas aniversario(…, 18) e o faz18 dizem 28/02 (o comentário \"29/02 vira 01/03\" de responsavel_legal.ts está errado; pelo art. 132, § 3º, do Código Civil, o certo é 01/03).",
+  "proximo": "Marcar no .docx a qualificação que falta de quem assina (domínio) e alinhar a data dos 18 anos de quem nasceu em 29/02"
+}
