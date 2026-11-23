@@ -70,6 +70,10 @@ export interface DocumentosPessoais {
   hoje: string;
   validadeDias: number;
   podeAnexar: boolean;
+  /** Só a sócia dona muda o prazo do comprovante (F3.134). */
+  podeMudarPrazo: boolean;
+  /** Os sócios donos, na ordem de entrada no escritório (o "Quem muda"). */
+  sociosDonos: string[];
   documentos: DocumentoPessoal[];
   pedidos: PedidoPessoalAberto[];
 }
@@ -139,7 +143,15 @@ export interface SugestaoDocumentoInicio {
 
 export interface DocumentosInicio {
   podeEditar: boolean;
+  /** Só a sócia dona muda o prazo do comprovante, mesmo com juridico.etapas.editar (F3.134). */
+  podeMudarPrazo: boolean;
+  sociosDonos: string[];
   validadeDias: number;
+  /** Os comprovantes em uso dos clientes ativos e quantos passaram do prazo (a conta da prévia). */
+  comprovantesTotal: number;
+  comprovantesVencidos: number;
+  /** Quantas listas dizem "últimos {validadeDias} dias" no "Como pedir" do comprovante. */
+  listasComFrase: number;
   areas: { area: AreaComLista; itens: DocumentoInicio[]; sugestao: SugestaoDocumentoInicio[] }[];
 }
 
@@ -154,6 +166,70 @@ export const documentoInicioSchema = z.object({
 export const tirarDocumentoInicioSchema = z.object({ versao: z.number().int().min(1) });
 export const sugestaoDocumentosInicioSchema = z.object({ area: z.enum(AREAS_COM_LISTA) });
 export const moverDocumentoInicioSchema = z.object({ direcao: z.enum(["SOBE", "DESCE"]) });
+
+// ------------------------------------------------------------------------- o prazo do comprovante (F3.134)
+
+/** O prazo do comprovante de residência, em dias da data do papel (0853: check de 30 a 365). */
+export const PRAZO_COMPROVANTE = { min: 30, max: 365, padrao: 90 } as const;
+
+/** As opções rápidas da folha "Prazo do comprovante", pelo desenho aprovado. */
+export const OPCOES_PRAZO_COMPROVANTE = [
+  { dias: 60, rotulo: "60 dias", ajuda: "Para juízos e cartórios que pedem conta mais recente." },
+  { dias: 90, rotulo: "90 dias · o padrão", ajuda: "O que o INSS, os cartórios e a maioria dos juízos aceitam." },
+  { dias: 180, rotulo: "180 dias", ajuda: "Para quem só lida com órgãos que aceitam até 6 meses." },
+] as const;
+
+/** O corpo do PUT. O limite de 30 a 365 é conferido no banco, para o erro vir preso ao campo. */
+export const prazoComprovanteSchema = z.object({
+  validadeDias: z.number().int().nullish(),
+  trocarTexto: z.boolean(),
+});
+export type PrazoComprovanteCorpo = z.infer<typeof prazoComprovanteSchema>;
+
+export interface PedidoComprovanteAberto {
+  casoId: string;
+  caso: string;
+  pedidoEm: string;
+  /** O contato principal, quando não é o próprio cliente. */
+  contato: { nome: string; papel: string | null } | null;
+  peloWhatsapp: boolean;
+}
+
+export interface PreviaPrazoComprovante {
+  dias: number;
+  atual: number;
+  totalComComprovante: number;
+  vencidosAgora: number;
+  vencidosCom: number;
+  passamAQtd: number;
+  passamA: { clienteId: string; nome: string; dias: number }[];
+  voltamAEmDiaQtd: number;
+  voltamAEmDia: { clienteId: string; nome: string; dias: number; dataDocumento: string; pedidos: PedidoComprovanteAberto[] }[];
+  listasComFrase: number;
+  itensComFrase: number;
+}
+
+export interface PrazoComprovanteSalvo {
+  validadeDias: number;
+  de: number;
+  mudou: boolean;
+  passaramA: number;
+  voltaramAEmDia: number;
+  textosTrocados: number;
+  listasTrocadas: number;
+  /** Os textos que passariam de 300 letras com o número novo e ficaram como estavam. */
+  naoCouberam: number;
+}
+
+/**
+ * Quem muda (o desenho aprovado): com uma sócia dona, o nome dela; com mais de um, todos, na
+ * ordem de entrada no escritório. `oque` entra depois de "Quem muda" ("as listas e o prazo").
+ */
+export function quemMuda(socios: readonly string[], oque?: string): string {
+  const q = oque ? `Quem muda ${oque}` : "Quem muda";
+  if (socios.length > 1) return `${q} são os sócios donos: ${listaComE([...socios])}.`;
+  return socios[0] ? `${q} é ${socios[0]}, a sócia dona.` : `${q} é a sócia dona.`;
+}
 
 // ------------------------------------------------------------------------- na abertura do caso (EX-18)
 

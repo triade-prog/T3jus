@@ -5866,6 +5866,45 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 }
 
 /* ==========================================================================
+   Prazo do comprovante (F3.134, AP-08), desenho aprovado em
+   docs/design/aprovadas/portal-prazo-comprovante. Prefixo pzc- (pc- já é de Contratos).
+   ========================================================================== */
+.pzc-corpo{display:grid;gap:12px;padding:4px 24px 20px}
+.pzc-corpo>p{margin:0;font-size:13.5px;line-height:1.5}
+.pzc-corpo.pzc-form{padding:0}
+.pzc-v{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 16px;border-radius:var(--raio);background:var(--sal-2)}
+.pzc-v b{font-family:var(--serifa);font-size:30px;font-weight:500;color:var(--vinho);line-height:1.1}
+.pzc-v span{font-size:13px;color:var(--texto-2)}
+.pzc-agora{display:flex;gap:8px;align-items:flex-start}
+.pzc-agora .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho)}
+.pzc-corpo .btn{justify-self:start}
+.pzc-ops{border:0;margin:0;padding:0;min-width:0;display:grid;gap:6px}
+.pzc-ops legend{font-size:13.5px;font-weight:500;color:var(--tinta);padding:0;margin-bottom:6px}
+.pzc-ops .opcao{min-height:44px}
+.pzc-outro{margin:2px 0 0 34px;max-width:180px}
+.pzc-efeito{display:grid;gap:8px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.pzc-efeito h3{margin:0;font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2)}
+.pzc-efeito p{margin:0}
+.pzc-efeito b{font-weight:600}
+.pzc-nomes{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.pzc-nomes li{display:flex;justify-content:space-between;gap:12px;padding:6px 10px;border-radius:8px;background:var(--papel);font-size:13px}
+.pzc-nomes li span:last-child{color:var(--texto-2);white-space:nowrap}
+.pzc-ao{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pzc-ao li{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.45}
+.pzc-ao li .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho-4)}
+.pzc-pe{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.pzc-corpo>.aviso{margin:0}
+.pzc-liga{display:block;margin:6px 0 0;font-size:12.5px;color:var(--texto-2);line-height:1.45}
+.pzc-liga a,.doc-meta .pzc-ficha a{color:var(--vinho);font-weight:500}
+.pzc-quem{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--texto-2);line-height:1.45;margin:0}
+.pzc-quem .ico{width:16px;height:16px;flex:none;margin-top:1px;color:var(--vinho-4)}
+@media (max-width:760px){
+  .pzc-corpo{padding:4px 16px 16px}
+  .pzc-pe .btn,.pzc-corpo .btn{width:100%;justify-content:center}
+  .pzc-outro{max-width:none;margin-left:0}
+}
+
+/* ==========================================================================
    Portal · fechamento do caso sem levantamento (F3.132, prefixo fs-), desenho aprovado em
    docs/design/aprovadas/portal-fechamento-sem-levantamento. A janela de encerrar, comum à
    ficha do repasse e à do contrato.

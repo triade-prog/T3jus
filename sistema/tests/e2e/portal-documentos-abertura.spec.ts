@@ -34,7 +34,7 @@ const FICHA = {
   contagens: { propostas: 1, contratos: 1, casos: 0 },
   noEscritorio: null,
 };
-const DOCS = { hoje: dia(0), validadeDias: 90, podeAnexar: true, documentos: [], pedidos: [] };
+const DOCS = { hoje: dia(0), validadeDias: 90, podeAnexar: true, podeMudarPrazo: true, sociosDonos: ["Marina Ribeiro"], documentos: [], pedidos: [] };
 const OPCOES = {
   contrato: { id: CT, numero: "C-2026-031", objeto: "Pensão por morte", situacao: "ATIVO", versao: 3, criadoEm: h(48), area: "PREVIDENCIARIO",
               cliente: { id: CLI, nome: "Antônia Ferreira Prado" } },
