@@ -6127,3 +6127,148 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
   .em-ftab thead th{white-space:normal}
   .em-ftab td.fi-v{white-space:nowrap}
 }
+
+/* ==========================================================================
+   Portal · sobras da importação de outros sistemas (F3.56, VA-05). Prefixo il-.
+   Só pares do contraste.md e do conceito Gabinete. O resto é aprovado (hn-, ct-, im-, is-, ju-, cl-).
+   ========================================================================== */
+/* Selo da origem: o mesmo .is-orig aprovado, aqui com o nome il- para valer também no Jurídico */
+.il-orig{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;background:var(--ambar-3);color:var(--vinho-escuro);font-size:12px;font-weight:600;white-space:nowrap}
+.il-orig .ico{width:14px;height:14px;color:var(--vinho)}
+.il-orig-l{background:var(--sal-2);color:var(--vinho)}
+/* Selo do caso que veio encerrado: neutro, com ícone e texto */
+.il-selo-enc{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 10px;border-radius:12px;background:var(--sal-2);color:var(--vinho);font-size:12px;font-weight:500;line-height:1.3;border:1px dashed var(--vinho-4)}
+.il-selo-enc .ico{width:14px;height:14px}
+.ficha-cab .esq .meta .il-selo-enc{background:var(--sal);border-color:var(--vinho-4)}
+
+/* Lista dos lembretes */
+.il-numeros{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.il-numeros .r .il-soma{display:block;font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho);line-height:1.2;margin-top:2px}
+.il-tab td{vertical-align:middle}
+.il-tab .esc a{font-family:var(--serifa);font-size:18px;font-weight:500}
+.il-valor{font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--vinho);line-height:1.2;white-space:nowrap}
+.il-tab td small.il-ja{display:flex;gap:6px;align-items:flex-start;margin-top:6px;color:var(--tinta);font-size:12px;line-height:1.4}
+.il-tab td small.il-ja .ico{width:14px;height:14px;flex:none;color:var(--vinho);margin-top:1px}
+.il-acoes{display:flex;flex-direction:column;gap:8px;align-items:stretch;max-width:200px;margin-left:auto}
+.il-acoes .btn{min-height:44px;white-space:normal;text-align:center;justify-content:center;height:auto;padding-top:8px;padding-bottom:8px}
+.il-tab tr.il-saiu td{background:#FCF8F5}
+.il-tab tr.il-saiu td:first-child{box-shadow:inset 3px 0 0 var(--vinho-4)}
+.il-motivo{display:block;margin-top:4px;font-family:var(--serifa);font-style:italic;font-size:15px;color:var(--tinta);line-height:1.35}
+.il-ferr .entrada{min-height:44px}
+.il-ferr select.entrada{width:auto;min-width:220px}
+.il-de{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 24px 12px;font-size:13px;color:var(--texto-2)}
+.il-de b{color:var(--texto);font-weight:500}
+.il-de a{color:var(--vinho);font-weight:500;display:inline-flex;align-items:center;min-height:44px}
+
+/* Esqueleto do carregando */
+.il-esq{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,.9fr) minmax(0,1fr) 260px;gap:20px;align-items:center;padding:18px 24px;border-top:1px solid var(--divisor)}
+.il-esq span{display:block;height:14px;border-radius:7px}
+.il-esq .g{height:20px;width:70%}
+
+/* Lateral */
+.explica.il-explica{padding-bottom:116px}
+.il-ver{display:inline-flex;align-items:center;min-height:44px;color:var(--vinho);font-weight:500}
+.il-noesc{list-style:none;margin:0;padding:0 24px 16px}
+.il-noesc li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px}
+.il-noesc li:first-child{border-top:0}
+.il-noesc .ico{width:18px;height:18px;color:var(--vinho-4);margin-top:1px}
+.il-noesc b{font-weight:500;display:block;font-size:14px}
+.il-noesc small{display:block;font-size:12px;color:var(--texto-2)}
+.il-lat-dl{margin:0;padding:0 24px 8px;display:grid;gap:0}
+.il-lat-dl div{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:10px 0;border-top:1px solid var(--divisor)}
+.il-lat-dl div:first-child{border-top:0;padding-top:0}
+.il-lat-dl dt{color:var(--texto-2)}
+.il-lat-dl dd{margin:0;font-weight:500;text-align:right}
+
+/* Janela de dispensar */
+.il-motivos{border:0;margin:0 0 4px;padding:0;min-width:0}
+.il-motivos legend{padding:0;font-weight:500;margin-bottom:6px}
+.il-motivos legend .ob{font-weight:400;color:var(--texto-2);font-size:12px;margin-left:6px}
+.il-motivos .opcao{min-height:44px}
+.il-motivos.il-erro{padding:10px 12px;border-radius:var(--raio);box-shadow:inset 3px 0 0 var(--vinho-3);background:#FCF6F2}
+.il-lemb{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--borda-folha);border-radius:var(--raio);background:#FCF8F5;margin:12px 0 14px}
+.il-ci{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.il-lemb strong{display:block;font-weight:500;line-height:1.3}
+.il-lemb small{display:block;font-size:12px;color:var(--texto-2)}
+.il-lemb .il-valor{font-size:20px}
+
+/* Aviso com ação (toast com Desfazer) */
+.il-toast .aviso-acoes .btn{min-height:44px}
+
+/* Folha "Do Astrea" na ficha do cliente */
+.il-antigo{padding:0 24px 20px;display:grid;gap:12px}
+.il-antigo>p{margin:0;font-size:13px}
+.il-antigo>p b{font-weight:600}
+.il-lanc{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.il-lanc li{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px}
+.il-lanc li:first-child{border-top:0}
+.il-lanc small{display:block;font-size:12px;color:var(--texto-2)}
+.il-lanc .v{text-align:right;font-weight:500}
+.il-lanc .v small{font-weight:400}
+.il-disp{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 12px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.il-disp .ico{flex:none;color:var(--vinho);margin-top:2px}
+.il-disp a{color:var(--vinho);font-weight:500}
+.il-mais-l{justify-self:start}
+
+/* A linha "veio da importação" na ficha do caso */
+.il-origem{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 20px;border:1px solid var(--borda-folha);border-radius:var(--raio-g);background:var(--papel)}
+.il-origem-t{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.il-origem-t strong{font-family:var(--serifa);font-size:19px;font-weight:500;color:var(--vinho);line-height:1.2}
+.il-origem dl{margin:6px 0 0;display:flex;flex-wrap:wrap;gap:4px 22px;font-size:13px}
+.il-origem dl div{display:flex;gap:6px}
+.il-origem dt{color:var(--texto-2)}
+.il-origem dd{margin:0;font-weight:500}
+.il-origem .btn{white-space:nowrap}
+.il-sem-prazo{padding:4px 24px 20px}
+.ju-hist li.il-imp em{font-style:normal;color:var(--texto-2)}
+.il-res{padding:0 24px 18px;display:grid;gap:10px;font-size:13px;line-height:1.5}
+.il-res p{color:var(--texto-2)}
+.il-res .il-selo-enc{justify-self:start}
+
+/* Encerrados */
+.il-como{display:grid;gap:4px}
+.il-como small{display:block;font-size:12px;color:var(--texto-2);line-height:1.4}
+
+@media (max-width:760px){
+  .il-numeros{grid-template-columns:1fr!important}
+  .il-numeros a{border-left:0!important;border-top:1px solid var(--divisor)}
+  .il-numeros a:first-child{border-top:0}
+  .il-numeros a[aria-current="true"]::after{left:16px;right:auto;width:4px;top:12px;bottom:12px;height:auto;border-radius:0 3px 3px 0;left:0}
+  .il-ferr select.entrada{width:100%;min-width:0}
+  .il-de{padding:0 16px 10px}
+  .il-acoes{flex-direction:row;flex-wrap:wrap;max-width:none;margin-left:0;width:100%}
+  .il-acoes .btn{flex:1 1 140px;justify-content:center}
+  .il-tab td.il-td-acoes::before{display:none}
+  .il-tab td.il-td-acoes{display:block!important;padding-top:6px!important}
+  .il-esq{grid-template-columns:1fr;gap:10px;padding:16px}
+  .il-esq span:nth-child(n+3){display:none}
+  .il-origem{grid-template-columns:minmax(0,1fr);padding:14px 16px}
+  .il-origem>.il-ci{display:none}
+  .il-origem .btn{justify-content:center}
+  .il-origem dl{flex-direction:column}
+  .il-antigo{padding:0 16px 16px}
+  .il-lemb{grid-template-columns:44px minmax(0,1fr)}
+  .il-lemb .il-valor{grid-column:2}
+  .il-sem-prazo,.il-res{padding-left:16px;padding-right:16px}
+}
+
+/* ==========================================================================
+   Rodada curta (23/11/2026): registrar o resultado, avisos de trazer de volta. Prefixo il-.
+   ========================================================================== */
+/* O que acontece, na janela do resultado: o mesmo desenho da lista .im-desf aprovada */
+.il-oque{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.il-oque li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5}
+.il-oque .ico{width:18px;height:18px;color:var(--vinho);flex:none;margin-top:2px}
+.il-oque b{font-weight:600}
+.il-oque-t{margin:4px 0 0;font-size:13px;font-weight:500}
+/* Grupo de opções com erro: o mesmo realce do .il-motivos.il-erro aprovado */
+.ju-fs.il-fs-erro{padding:10px 12px;border-radius:var(--raio);box-shadow:inset 3px 0 0 var(--vinho-3);background:#FCF6F2}
+.il-motivos .erro-msg,.ju-fs .erro-msg{margin-top:6px}
+/* Resultado registrado, na folha Resultado */
+.il-res .selo{justify-self:start}
+.il-res .il-motivo{margin-top:0}
+
+/* Desenho aprovado das sobras (rodada 2): o link do caso na aba Casos da ficha ligada, com 24 px (WCAG 2.5.8). */
+.il-fl-num>a{display:inline-flex;align-items:center;min-height:24px}
+/* No código: a lista do Jurídico usa jr-; o grupo de opções com erro da janela do resultado usa a mesma marca. */
+.jr-fs.il-fs-erro{padding:10px 12px;border-radius:var(--raio);box-shadow:inset 3px 0 0 var(--vinho-3);background:#FCF6F2}

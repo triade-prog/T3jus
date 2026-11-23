@@ -31,3 +31,5 @@ pg_prove --ext .sql -r "$RAIZ/supabase/tests/pgtap"
 
 # Edição simultânea do mesmo registro com duas conexões (T4, PT-19).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/edicao-simultanea.sh"
+# Dispensar, trazer de volta e o contrato novo do mesmo cliente ao mesmo tempo (F3.145, VA-05).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/dispensar-contrato.sh"

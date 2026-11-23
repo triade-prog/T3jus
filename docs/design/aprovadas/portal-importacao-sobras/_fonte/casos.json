@@ -1,0 +1,142 @@
+[
+ {
+  "nome": "lista",
+  "url": "lembretes.html?estado=lista",
+  "alto": 0,
+  "titulo": "Lembretes abertos",
+  "legenda": "Cada cliente (e caso) com valor em aberto no Astrea, os lançamentos e as ações: Criar o contrato (principal) e Dispensar. Os três números no alto são os filtros: abertos, viraram contrato e dispensados. Ao lado, de onde vieram e como funciona."
+ },
+ {
+  "nome": "entrada",
+  "url": "lembretes.html?estado=entrada",
+  "alto": 0,
+  "titulo": "Por onde se chega, em Contratos",
+  "legenda": "A lista de contratos aprovada ganha uma faixa enquanto houver lembrete aberto, com “Ver os lembretes”. Some quando não sobra nenhum."
+ },
+ {
+  "nome": "viraram",
+  "url": "lembretes.html?estado=viraram",
+  "alto": 0,
+  "titulo": "Viraram contrato",
+  "legenda": "O lembrete sai sozinho quando um contrato do cliente é criado. Fica aqui com o número do contrato, quem criou e quando."
+ },
+ {
+  "nome": "dispensados",
+  "url": "lembretes.html?estado=dispensados",
+  "alto": 0,
+  "titulo": "Dispensados",
+  "legenda": "O motivo, o detalhe, quem dispensou e quando, e “Trazer de volta”, sem prazo."
+ },
+ {
+  "nome": "busca-vazia",
+  "url": "lembretes.html?estado=busca-vazia",
+  "alto": 0,
+  "titulo": "Busca sem resultado",
+  "legenda": "Diz o que procurou, onde a busca olha e oferece limpar."
+ },
+ {
+  "nome": "vazio",
+  "url": "lembretes.html?estado=vazio",
+  "alto": 0,
+  "titulo": "Nenhum lembrete aberto",
+  "legenda": "Todos viraram contrato ou foram dispensados. Os números continuam levando aos dois grupos."
+ },
+ {
+  "nome": "carregando",
+  "url": "lembretes.html?estado=carregando",
+  "alto": 0,
+  "titulo": "Carregando",
+  "legenda": "Esqueleto das linhas e dos números, com a busca ocupada (aria-busy)."
+ },
+ {
+  "nome": "erro",
+  "url": "lembretes.html?estado=erro",
+  "alto": 0,
+  "titulo": "Erro ao carregar",
+  "legenda": "O que houve, o que continua igual e o que fazer, no tom aprovado."
+ },
+ {
+  "nome": "dispensar",
+  "url": "dispensar.html?estado=dispensar",
+  "alto": 1150,
+  "titulo": "Dispensar, pela lista",
+  "legenda": "Janela de confirmação (alertdialog, showModal) com o lembrete, o motivo obrigatório em quatro opções, o detalhe e o que acontece."
+ },
+ {
+  "nome": "dispensar-erro",
+  "url": "dispensar.html?estado=dispensar-erro",
+  "alto": 1250,
+  "titulo": "Faltou o motivo",
+  "legenda": "“Outro motivo” sem o texto: o erro no topo e no campo, que recebe o foco. O lembrete continua aberto."
+ },
+ {
+  "nome": "dispensar-conflito",
+  "url": "dispensar.html?estado=dispensar-conflito",
+  "alto": 0,
+  "titulo": "Alguém criou o contrato antes",
+  "legenda": "Enquanto a janela estava aberta, o contrato foi criado e o lembrete saiu sozinho. Nada foi dispensado."
+ },
+ {
+  "nome": "dispensado",
+  "url": "dispensar.html?estado=dispensado",
+  "alto": 0,
+  "titulo": "Dispensado",
+  "legenda": "O aviso com Desfazer, o lembrete fora da lista e os números atualizados."
+ },
+ {
+  "nome": "dispensados-hoje",
+  "url": "dispensar.html?estado=dispensados-hoje",
+  "alto": 0,
+  "titulo": "Em Dispensados",
+  "legenda": "O de hoje no alto, com o motivo e “Trazer de volta”."
+ },
+ {
+  "nome": "ficha",
+  "url": "dispensar.html?estado=ficha",
+  "alto": 0,
+  "titulo": "Na ficha do cliente: “Do Astrea”",
+  "legenda": "A folha aprovada no código, com o lembrete e as duas ações: Criar o contrato e Dispensar. Embaixo, o pago antes do T3jus e os lançamentos."
+ },
+ {
+  "nome": "ficha-dispensar",
+  "url": "dispensar.html?estado=ficha-dispensar",
+  "alto": 1150,
+  "titulo": "Dispensar, pela ficha",
+  "legenda": "A mesma janela, aberta da ficha."
+ },
+ {
+  "nome": "ficha-dispensado",
+  "url": "dispensar.html?estado=ficha-dispensado",
+  "alto": 0,
+  "titulo": "Na ficha, depois de dispensar",
+  "legenda": "O lembrete sai; fica uma linha discreta com quem dispensou, o motivo e o link para Dispensados. Os lançamentos não mudam."
+ },
+ {
+  "nome": "caso-importado",
+  "url": "caso-importado.html?estado=caso-importado",
+  "alto": 0,
+  "titulo": "Caso importado do Astrea",
+  "legenda": "Origem (Astrea · backup), data e hora, quem importou, a etapa no Astrea e a ligada, a linha do backup e o link para o resultado. Sem contrato, sem prazo, nenhum aviso ao cliente."
+ },
+ {
+  "nome": "caso-advbox",
+  "url": "caso-importado.html?estado=caso-advbox",
+  "alto": 0,
+  "titulo": "Caso importado do ADVBOX",
+  "legenda": "A mesma linha com o selo “ADVBOX · planilha” e o número do registro lá."
+ },
+ {
+  "nome": "encerrados",
+  "url": "caso-importado.html?estado=encerrados",
+  "alto": 0,
+  "titulo": "Encerrados, com os que vieram encerrados",
+  "legenda": "A coluna Resultado vira “Como encerrou”: resultado e acerto, ou “Veio encerrado” com a data do arquivamento e o selo da origem. Filtro “Como encerrou”."
+ },
+ {
+  "nome": "encerrado-importado",
+  "url": "caso-importado.html?estado=encerrado-importado",
+  "alto": 0,
+  "titulo": "Ficha do caso que veio encerrado",
+  "legenda": "Etapa 8 de 8 sem botão, o selo “Veio encerrado”, a linha da importação e a folha Resultado: sem resultado, fora das contas, sem acerto; dá para registrar."
+ }
+]

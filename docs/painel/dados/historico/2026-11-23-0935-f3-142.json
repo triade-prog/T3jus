@@ -2,12 +2,12 @@
   "data": "23/11/2026",
   "inicio": "09:35",
   "fim": "09:56",
-  "texto": "Gerar documentos do menor como no D25: o aviso de quem assina no dia, a falta de quem assina com o quadro tracejado, os 18 anos e a faixa 'Em todos, Joana assina por Pedro'. F3.142 feito; pendentes F3.148 (Salvar e voltar), F3.149 (qualificação de quem assina sem marca no .docx) e F3.150 (tem 1 ano / menos de 1 ano).",
+  "texto": "Gerar documentos do menor como no D25: o aviso de quem assina no dia, a falta de quem assina com o quadro tracejado, os 18 anos e a faixa 'Em todos, Joana assina por Pedro'. F3.142 feito; pendentes F3.160 (Salvar e voltar), F3.161 (qualificação de quem assina sem marca no .docx) e F3.162 (tem 1 ano / menos de 1 ano).",
   "refs": [
     "F3.142",
-    "F3.148",
-    "F3.149",
-    "F3.150",
+    "F3.160",
+    "F3.161",
+    "F3.162",
     "AP-01",
     "CH-08"
   ]

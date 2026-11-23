@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
-  ContratosPortal, FichaContratoPortal, GerarDocumentosPortal, HonorariosContratosPortal, ModelosDocumentoPortal, MudarContratoPortal, NovoContratoPortal,
-  ProcuracoesContratosPortal,
+  ContratosPortal, FichaContratoPortal, GerarDocumentosPortal, HonorariosContratosPortal, LembretesContratoPortal, ModelosDocumentoPortal, MudarContratoPortal,
+  NovoContratoPortal, ProcuracoesContratosPortal,
 } from "@t3jus/ui";
 
 // Área Contratos do Portal (CH-01 a CH-04, CH-06, IN-01): Contratos (lista, novo, ficha com
 // abas e mudar), Honorários e Procurações e modelos (CH-08, F3.16: lista, modelos de documento e
-// gerar). O escritório vem da sessão; um contrato de outro escritório responde como não
+// gerar). Lembretes de contrato (F3.144): o que ficou em aberto no sistema antigo; "Criar o
+// contrato" abre o contrato novo com ?cliente=. O escritório vem da sessão; um contrato de outro escritório responde como não
 // encontrado. A tela confere a área; o servidor confere de novo.
 export const metadata: Metadata = { title: "Contratos" };
 
@@ -32,9 +33,11 @@ export default async function Pagina({ params, searchParams }: {
   }
   if (secao === "contratos") {
     if (!a) return <ContratosPortal />;
+    if (a === "lembretes" && !b) return <LembretesContratoPortal />;
     if (a === "novo" && !b) {
-      const p = (await searchParams).proposta;
-      return <NovoContratoPortal propostaId={typeof p === "string" && UUID.test(p) ? p.toLowerCase() : null} />;
+      const { proposta: p, cliente: c } = await searchParams;
+      return <NovoContratoPortal propostaId={typeof p === "string" && UUID.test(p) ? p.toLowerCase() : null}
+        clienteId={typeof c === "string" && UUID.test(c) ? c.toLowerCase() : null} />;
     }
     if (UUID.test(a) && !b) {
       const x = (await searchParams).aba;

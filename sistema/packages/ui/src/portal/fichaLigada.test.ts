@@ -81,6 +81,11 @@ describe("Jornada do cliente: o fechamento, o contrato sem caso e o fim (EX-16, 
     expect([t.titulo, t.oque, t.detalhe]).toEqual(["Cliente atendido", "Tudo acertado em 18/11. Ferreira Prado x INSS: ganho, encerrado no escritório.", "caso encerrado e acertado em 18/11"]);
     expect(destinoPasso(at, "c1")).toBe("/comercial/propostas/nova?cliente=c1");
   });
+  it("decisão 2 do plano 2 (F3.148): cliente atendido pelo caso que veio encerrado do Astrea, com o resultado registrado", () => {
+    const at = passo({ tipo: "ATENDIDO", item: { caso: { id: "k1", nome: "Queiroz x Construtora Lume", resultado: "GANHO", encerradoEm: null, veioEncerradoDe: "ASTREA" }, passos: [], fim: null } });
+    const t = textoPasso(at, "Renata");
+    expect([t.titulo, t.oque, t.detalhe]).toEqual(["Cliente atendido", "Queiroz x Construtora Lume: ganho, veio encerrado do Astrea.", "caso veio encerrado do Astrea"]);
+  });
   it("decisão 13: o contrato em elaboração avisa que entra no caso que já existe", () => {
     const p = passo({ tipo: "CONTRATO_ELABORACAO", area: "CONTRATOS", item: { id: "ct1", numero: "C-2026-031", criadoEm: "2026-11-16T12:00:00Z", juntarA: "Ferreira Prado x INSS" } });
     expect(textoPasso(p, "Antônia").oque).toBe("C-2026-031 em elaboração desde 16/11. Ao registrar, o contrato entra no caso Ferreira Prado x INSS, que já existe.");

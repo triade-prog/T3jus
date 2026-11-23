@@ -179,6 +179,17 @@ export function textoPasso(p: PassoCliente, nomeCliente: string): TextoPasso {
     }
     case "ATENDIDO": {
       const ca = i?.caso;
+      // Decisão 2 do plano 2 (rodada 2, cliente-atendido): o caso que veio encerrado de outro
+      // sistema e teve o resultado registrado não foi encerrado no escritório.
+      if (ca?.veioEncerradoDe) {
+        const sistema = SISTEMA_DE[ca.veioEncerradoDe] ?? "sistema antigo";
+        return {
+          ...base,
+          oque: `${ca.nome ? `${ca.nome}: ` : "O caso: "}${RESULTADO[ca.resultado ?? ""] ?? "encerrado"}, veio encerrado do ${sistema}.`,
+          semAcao: null,
+          curto: "Cliente atendido", detalhe: `caso veio encerrado do ${sistema}`,
+        };
+      }
       return {
         ...base,
         oque: `Tudo acertado${i?.fim ? ` em ${dia(i.fim)}` : ""}.${ca?.nome ? ` ${ca.nome}: ${RESULTADO[ca.resultado ?? ""] ?? "encerrado"}, encerrado no escritório.` : ""}`,
@@ -190,6 +201,7 @@ export function textoPasso(p: PassoCliente, nomeCliente: string): TextoPasso {
 }
 
 const RESULTADO: Record<string, string> = { GANHO: "ganho", PERDA: "perda", ACORDO: "acordo" };
+const SISTEMA_DE: Record<string, string> = { ASTREA: "Astrea", ADVBOX_PLANILHA: "ADVBOX", PLANILHA: "sistema antigo" };
 
 // ------------------------------------------------------------------ o fechamento (EX-16)
 

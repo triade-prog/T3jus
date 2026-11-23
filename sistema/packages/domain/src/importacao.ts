@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
+import type { MotivoDispensa } from "./lembretes_contrato.ts";
 
 export const LIMITE_ARQUIVO_BYTES = 5 * 1024 * 1024;
 export const LIMITE_LINHAS = 2000;
@@ -611,7 +612,16 @@ export interface FinanceiroAnterior {
   origem: OrigemDados;
   importacao: { id: string; arquivo: string; em: string } | null;
   /** O que ficou em aberto lá: lembrar de criar o contrato, porque no T3jus a cobrança nasce dele. */
-  lembretes: { id: string; valor: number; lancamentos: number; caso: { id: string; nome: string } | null }[];
+  lembretes: {
+    id: string; valor: number; lancamentos: number; caso: { id: string; nome: string } | null;
+    /** O contrato ativo que o cliente já tinha quando o lembrete nasceu (F3.144). */
+    contratoAtivo?: { id: string; numero: string } | null;
+  }[];
+  /** Os lembretes dispensados (F3.145): saem da lista e ficam numa linha discreta. */
+  dispensados?: {
+    id: string; valor: number; caso: { id: string; nome: string } | null;
+    motivo: MotivoDispensa; detalhe: string | null; em: string; por: PessoaRef | null;
+  }[];
   /** O total pago antes do T3jus. */
   pago: number;
   lancamentos: { data: string | null; descricao: string; valor: number; situacao: SituacaoLancamentoAntigo; caso: string | null }[];

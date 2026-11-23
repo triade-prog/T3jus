@@ -1,13 +1,11 @@
 {
   "id": "F3.148",
-  "texto": "Editar a ficha vindo de Gerar documentos (estado editar do D25): \"Mudar na ficha\" e \"Completar na ficha\" abrem o editar na mesma aba, com o aviso \"Você veio de Gerar documentos.\" e \"Salvar e voltar\", e o aviso de falta de quem assina volta a dizer \"Ou complete a ficha antes: ao salvar, você volta para cá.\"",
-  "peca": "S2",
+  "texto": "Processos importados (F3.56, parte 2): o caso que veio encerrado do Astrea na ficha (de onde veio, lembretes ligados) e \"Registrar o resultado\" depois, sem aviso ao cliente",
+  "peca": "S7",
   "refs": [
-    "AP-01",
-    "CH-08"
+    "VA-05"
   ],
-  "status": "pendente",
-  "ordem": 1190,
-  "nota": "Diferenças do desenho D25 em Gerar documentos que ficaram de fora do F3.142 (anteriores a ele): no quadro do assistido, \"Lucas e Marcos Ferreira Moura\" / \"Lucas assina, assistido pelo pai, Marcos · CPF …\"; a linha do quadro termina em \"· da ficha do cliente\"; a linha do contrato em Documentos diz \"Contratante: Pedro, representado por Joana. …\"; no fez 18, só a procuração vem marcada (link \"Gerar procuração nova\" da ficha), com \"Vai sair 1 arquivo .docx: a procuração, assinada só por Rafaela.\" e \"Já assinado em 08/07/2026, por Rafaela e pela avó.\".",
-  "proximo": "Programar o estado editar do D25 (Salvar e voltar para Gerar documentos) e decidir com a Carol as diferenças do desenho listadas na nota"
+  "status": "feito",
+  "ordem": 958.4,
+  "evidencia": "Ficha do caso importado com a linha da importação, a folha e a janela \"Registrar o resultado\" (com conflito de versão), o cliente atendido pelo caso que veio encerrado na ficha ligada. Migration 0921_lembretes_caso_importado.sql, pgTAP 131_lembretes_caso_importado_test.sql (121 testes), app_test.ts (F3.143, F3.148), fichaLigada.test.ts e e2e portal-juridico-casos.spec.ts."
 }
