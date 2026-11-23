@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   comprimirJson, ErroArquivo, LIMITE_ARQUIVO_BYTES, LIMITE_BACKUP_BYTES, LIMITES_BACKUP, lerPlanilha, montarBackup,
-  type AbaSistema, type DestinoAba, type Importacao,
+  type AbaSistema, type ArquivadosImportacao, type DestinoAba, type Importacao,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
@@ -68,7 +68,7 @@ function VemDe({ sistema }: { sistema: "Astrea" | "ADVBOX" }) {
       <ul className="is-vem">
         {item(true, "Clientes", "Com contatos e qualificação. Quem já está no T3jus é juntado, só nos campos vazios.")}
         {item(true, "Processos ativos, como casos", sistema === "Astrea"
-          ? "No Jurídico, sem contrato, numa segunda prévia depois dos clientes. Os arquivados ficam de fora."
+          ? "No Jurídico, sem contrato, numa segunda prévia depois dos clientes. Os arquivados ficam de fora, a não ser que você escolha trazê-los como encerrados."
           : "Pela planilha de processos, depois da de clientes. Cada processo se liga a um cliente já cadastrado.")}
         {sistema === "Astrea"
           ? item(true, "Financeiro, só como informação", "O recebido fica na ficha como “pago antes do T3jus”; o que está em aberto vira lembrete para criar o contrato. Nada vai para o Caixa.")
@@ -393,6 +393,22 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
   const reconhecidas = abas.filter((a) => a.reconhecida).length;
   const novas = abas.filter((a) => !a.reconhecida);
   const lidas = abas.filter((a) => a.lida);
+  // F3.116 (estado astrea-abas): os processos arquivados ficam de fora ou entram como encerrados.
+  const abaCasos = abas.find((a) => a.destino === "CASOS" && a.lida);
+  const nArquivados = abaCasos?.arquivados ?? 0;
+  const [arquivados, setArquivados] = useState<ArquivadosImportacao>(imp.arquivados ?? "FORA");
+  const [salvando, setSalvando] = useState(false);
+  const [erroArq, setErroArq] = useState<string | null>(null);
+  const conferir = async (aba: number) => {
+    if (arquivados !== (imp.arquivados ?? "FORA")) {
+      setSalvando(true);
+      setErroArq(null);
+      const r = await chamarPortal<Importacao>(`${API}/${imp.id}/arquivados`, { metodo: "PATCH", corpo: { versao: imp.versao, arquivados } });
+      setSalvando(false);
+      if (!r.ok) return setErroArq(textoDoErro(r.erro));
+    }
+    irPara(ROTAS_IMPORTACAO.colunasDaAba(imp.id, aba));
+  };
 
   const situacao = (a: AbaSistema) => {
     if (!a.reconhecida) {
@@ -402,7 +418,13 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
       return <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span><small>Só como informação na ficha. Entra numa prévia própria, depois dos clientes. As despesas do escritório ficam de fora.</small></div>;
     }
     if (a.destino === "CASOS" && a.lida) {
-      return <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span><small>Só os processos ativos. Entram numa segunda prévia, depois dos clientes, ligados a eles.</small></div>;
+      return (
+        <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span>
+          <small>{typeof a.ativos === "number" && typeof a.arquivados === "number"
+            ? `${plural(a.ativos, "ativo", "ativos")} e ${plural(a.arquivados, "arquivado", "arquivados")}.`
+            : "Só os processos ativos. Entram numa segunda prévia, depois dos clientes, ligados a eles."}</small>
+        </div>
+      );
     }
     if (a.destino === "CLIENTES") {
       return <div className="im-sit"><span className="hn-selo"><Icone nome="check" className="ico" />Pelo modelo do Astrea</span><small>Os contatos do tipo cliente viram clientes; as partes contrárias e os terceiros ficam de fora.</small></div>;
@@ -475,6 +497,28 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
         <thead><tr><th scope="col">Aba do backup</th><th scope="col">Vai para</th><th scope="col">Situação</th></tr></thead>
         <tbody>{abas.map(linha)}</tbody>
       </table>
+      {nArquivados > 0 ? (
+        <fieldset className="is-escolha">
+          <legend>Processos arquivados ({nArquivados.toLocaleString("pt-BR")})</legend>
+          <p>Processos que já terminaram no Astrea.</p>
+          <div className="im-ops">
+            {([
+              ["FORA", "Deixar de fora", "Recomendado. A lista de casos começa só com o que está em andamento."],
+              ["ENCERRADOS", "Importar como encerrados", "Entram em Casos e processos › Encerrados, sem resultado nem acerto."],
+            ] as [ArquivadosImportacao, string, string][]).map(([v, t, sub]) => (
+              <label key={v} className="opcao">
+                <input className="marcar" type="radio" name="is-arquiv" value={v} checked={arquivados === v} onChange={() => setArquivados(v)} />
+                <span>{t}<small>{sub}</small></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+      {erroArq ? (
+        <div style={{ padding: "16px 24px 0" }}>
+          <Aviso tom="urgencia" titulo="A escolha dos arquivados não foi salva.">{erroArq}</Aviso>
+        </div>
+      ) : null}
       {clientes === null ? (
         <div style={{ padding: "16px 24px 0" }}>
           <Aviso tom="urgencia" titulo="Escolha a aba dos clientes.">Sem ela, não há o que importar. {lidas.length ? "" : "Este backup não tem uma aba que possa ir para os clientes."}</Aviso>
@@ -484,7 +528,7 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
         <span className="im-pe-t">As abas de fora não chegam ao T3jus. Nada entrou no cadastro ainda.</span>
         <a className="btn btn-fantasma" href={ROTAS_IMPORTACAO.astrea}><Icone nome="esquerda" className="ico" />Voltar</a>
         {clientes !== null ? (
-          <a className="btn btn-pri" href={ROTAS_IMPORTACAO.colunasDaAba(imp.id, clientes)}><Icone nome="dir" className="ico" />Conferir as colunas</a>
+          <button className="btn btn-pri" type="button" disabled={salvando} onClick={() => void conferir(clientes)}><Icone nome="dir" className="ico" />Conferir as colunas</button>
         ) : null}
       </div>
     </Folha>

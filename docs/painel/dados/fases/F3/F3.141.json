@@ -1,0 +1,12 @@
+{
+  "id": "F3.141",
+  "texto": "Exclusão a pedido do titular: tirar do arquivo privado os documentos pessoais e o termo de curatela do cliente e limpar o nome do arquivo (hoje ficam guardados)",
+  "peca": "S2",
+  "refs": [
+    "PT-11",
+    "PT-07",
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 1130
+}

@@ -32,7 +32,7 @@ const COLUNAS = [
 const LIGACAO = { 0: "nome", 1: "tipo_contato", 2: "documento", 3: "email", 4: "telefone" };
 const ABAS_SISTEMA = [
   { indice: 0, nome: "Contatos", linhas: 486, destino: "CLIENTES", reconhecida: true, lida: true },
-  { indice: 1, nome: "Processos", linhas: 312, destino: "CASOS", reconhecida: true, lida: true },
+  { indice: 1, nome: "Processos", linhas: 312, destino: "CASOS", reconhecida: true, lida: true, ativos: 241, arquivados: 71 },
   { indice: 2, nome: "Lançamentos", linhas: 1204, destino: "FINANCEIRO", reconhecida: true, lida: false },
   { indice: 3, nome: "Tarefas", linhas: 97, destino: "TAREFAS", reconhecida: true, lida: false },
   { indice: 4, nome: "Honorários", linhas: 96, destino: "FORA", reconhecida: false, lida: true },
@@ -42,7 +42,7 @@ const IMP = {
   situacao: "PREVIA", versao: 2, criadoEm: "2026-11-22T19:03:00Z", por: MARINA, linhasLidas: null, contratos: false, comercial: true,
   abas: ABAS_SISTEMA.map((a) => ({ indice: a.indice, nome: a.nome, linhas: a.lida ? a.linhas : 0, colunas: a.lida ? 6 : 0 })),
   aba: 0, colunas: COLUNAS, ligacao: LIGACAO, pares: {}, temPrevia: false, importadoEm: null, desfazerAte: null, resumo: null, podeDesfazer: false,
-  fora: 0, desfeita: null,
+  fora: 0, desfeita: null, arquivados: "FORA",
 };
 const PARES = {
   responsavel: [], tipo: [], origem: [], equipe: [FELIPE, MARINA], colunas: COLUNAS,
@@ -129,7 +129,8 @@ const PARES_FIN = {
 };
 const RESUMO_FIN = {
   ...RESUMO, contagens: { lidas: 1108, prontas: 1100, aviso: 3, erro: 5, puladas: 0, corrigidas: 0, decididas: 0 }, clientes: { novos: 0, juntados: 0 },
-  financeiroAntigo: { recebidos: 1021, valorRecebido: 61243000, emAberto: 79, valorEmAberto: 4890000, lembretes: 72, clientes: 190 },
+  financeiroAntigo: { recebidos: 1021, valorRecebido: 61243000, emAberto: 79, valorEmAberto: 4890000, lembretes: 72, clientes: 190, despesas: 96,
+    grupos: { recebidos: { linhas: 1021, valor: 61243000 }, emAberto: { linhas: 87, valor: 4890000 }, despesas: { linhas: 96, valor: 1830000 } } },
 };
 const lanc = (numero: number, cliente: string, descricao: string, data: string | null, valor: number | null, situacao: string, x: Record<string, unknown> = {}) => ({
   numero, situacao: "PRONTA", decisao: null, problemas: [], valores: { cliente, lanc_descricao: descricao }, corrigidas: [],
@@ -225,16 +226,30 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
   });
 
   test("Astrea, passo 2: as abas, as colunas pelo modelo e o tipo de contato", async ({ page }) => {
-    const pedidos = await simular(page, base({ [`PATCH ${A}/${ID}/colunas`]: { corpo: { versao: 3, ...RESUMO } } }));
+    const pedidos = await simular(page, base({
+      [`PATCH ${A}/${ID}/colunas`]: { corpo: { versao: 3, ...RESUMO } },
+      [`PATCH ${A}/${ID}/arquivados`]: [{ status: 409, corpo: { erro: { codigo: "CONFLICT" } } }, { corpo: { ...IMP, versao: 3, arquivados: "ENCERRADOS" } }],
+    }));
     await page.goto(`${P}/clientes/importar/${ID}?passo=abas`);
     await expect(page.getByRole("status").filter({ hasText: "Este backup está um pouco diferente do modelo que conhecemos." })).toContainText("Uma aba é nova");
     const t = page.getByRole("table", { name: "Abas do backup" });
     await expect(t.getByRole("row", { name: /^Processos/ })).toContainText("Casos no Jurídico");
-    await expect(t.getByRole("row", { name: /^Processos/ })).toContainText("Entram numa segunda prévia, depois dos clientes");
+    await expect(t.getByRole("row", { name: /^Processos/ })).toContainText("241 ativos e 71 arquivados.");
     await expect(page.getByLabel("Aba Processos: vai para")).toHaveCount(0);
     await expect(page.getByLabel("Aba Contatos: vai para")).toHaveValue("CLIENTES");
     await semViolacoes(page);
-    await expect(page.getByRole("link", { name: "Conferir as colunas" })).toHaveAttribute("href", `/clientes/importar/${ID}?passo=colunas&aba=0`);
+    // F3.116 (estado astrea-abas): os arquivados ficam de fora, a não ser que a sócia escolha trazê-los como encerrados.
+    const arq = page.getByRole("group", { name: "Processos arquivados (71)" });
+    await expect(arq.getByRole("radio", { name: /Deixar de fora/ })).toBeChecked();
+    await arq.getByRole("radio", { name: /Importar como encerrados/ }).check();
+    await page.getByRole("button", { name: "Conferir as colunas" }).click();
+    await expect(page.getByRole("alert").or(page.getByRole("status")).filter({ hasText: "A escolha dos arquivados não foi salva." })).toBeVisible();
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Conferir as colunas" }).click();
+    await expect(page).toHaveURL(`${P}/clientes/importar/${ID}?passo=colunas&aba=0`);
+    expect(pedidos.filter((p) => p.caminho === `${A}/${ID}/arquivados`).map((p) => p.corpo)).toEqual([
+      { versao: 2, arquivados: "ENCERRADOS" }, { versao: 2, arquivados: "ENCERRADOS" },
+    ]);
 
     await page.goto(`${P}/clientes/importar/${ID}?passo=colunas&aba=0`);
     const map = page.getByRole("table", { name: "Colunas do cliente" });
@@ -247,7 +262,7 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await semViolacoes(page);
     await page.getByRole("button", { name: "Ver a prévia" }).click();
     await expect(page).toHaveURL(`${P}/clientes/importar/${ID}?passo=previa`);
-    const patch = pedidos.find((p) => p.metodo === "PATCH")!.corpo as { aba: number; ligacao: Record<string, string>; pares: { tipoContato: Record<string, string> } };
+    const patch = pedidos.find((p) => p.metodo === "PATCH" && p.caminho.endsWith("/colunas"))!.corpo as { aba: number; ligacao: Record<string, string>; pares: { tipoContato: Record<string, string> } };
     expect([patch.aba, patch.ligacao, patch.pares.tipoContato]).toEqual([0, LIGACAO, { cliente: "CLIENTE", "parte contraria": "PARTE_CONTRARIA", perito: "FORA" }]);
   });
 
@@ -299,6 +314,7 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await expect(page.getByLabel("“Arquivado” vira")).toHaveValue("FORA");
     await expect(page.getByLabel("“Audiência marcada” vira")).toHaveValue("e1000000-0000-4000-8000-000000000001");
     await expect(page.getByRole("region", { name: "Só os processos ativos" })).toContainText("71 processos arquivados ficam de fora da prévia.");
+    await expect(page.getByRole("region", { name: "Processos arquivados" })).toHaveCount(0);
     await semViolacoes(page);
     await page.getByRole("button", { name: "Ver a prévia" }).click();
     await expect(page.getByRole("alert").or(page.getByRole("status")).filter({ hasText: "Falta ligar 1 campo obrigatório" })).toContainText("Responsável pelo caso");
@@ -307,6 +323,28 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await expect(page).toHaveURL(`${P}/clientes/importar/${IDC}?passo=previa`);
     const patch = pedidos.find((p) => p.metodo === "PATCH")!.corpo as { pares: { responsavel: Record<string, string>; situacaoProcesso: Record<string, string> } };
     expect([patch.pares.responsavel, patch.pares.situacaoProcesso]).toEqual([{ "felipe matos": FELIPE.id, "joao antigo": FELIPE.id }, { ativo: "ATIVO", arquivado: "FORA" }]);
+    expect("arquivados" in (patch as object)).toBe(false);
+  });
+
+  test("F3.116, ADVBOX: a escolha dos arquivados fica ao lado das colunas e vai com elas", async ({ page }) => {
+    const adv = { ...IMP_CASOS, origem: "ADVBOX_PLANILHA", pai: null, arquivo: "processos-advbox.xlsx" };
+    const pedidos = await simular(page, base({
+      [`GET ${A}/${IDC}`]: { corpo: adv },
+      [`POST ${A}/${IDC}/pares`]: { corpo: PARES_CASOS },
+      [`PATCH ${A}/${IDC}/colunas`]: { corpo: { versao: 3, ...RESUMO_CASOS } },
+    }));
+    await page.goto(`${P}/clientes/importar/${IDC}?passo=colunas`);
+    const arq = page.getByRole("region", { name: "Processos arquivados" });
+    await expect(arq).toContainText("71 no ADVBOX");
+    await expect(arq.getByRole("radio", { name: /Deixar de fora/ })).toBeChecked();
+    await arq.getByRole("radio", { name: /Importar como encerrados/ }).check();
+    await expect(page.getByRole("region", { name: "Os ativos e os arquivados" })).toContainText("71 processos arquivados entram como encerrados, sem resultado nem acerto.");
+    await expect(page.getByLabel("“Arquivado” vira").locator("option:checked")).toHaveText("Arquivado: entra encerrado");
+    await semViolacoes(page);
+    await page.getByLabel("“João Antigo” vira").selectOption(FELIPE.id);
+    await page.getByRole("button", { name: "Ver a prévia" }).click();
+    await expect(page).toHaveURL(`${P}/clientes/importar/${IDC}?passo=previa`);
+    expect((pedidos.find((p) => p.metodo === "PATCH")!.corpo as { arquivados: string }).arquivados).toBe("ENCERRADOS");
   });
 
   test("processos, prévia: o caso aberto, o mesmo número de um caso que existe, o número errado e o cliente que não bate", async ({ page }) => {
@@ -347,15 +385,41 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await semViolacoes(page);
   });
 
+  test("F3.116, prévia: o arquivado entra encerrado e o mesmo número entre ativo e arquivado pede você", async ({ page }) => {
+    const prev = { ...IMP_CASOS, temPrevia: true, linhasLidas: 312, foraTipo: null, arquivados: "ENCERRADOS" };
+    const ARQ = linhaCaso(18, "Rosa Almeida", caso("Almeida x Banco Sul", "1000456-74.2025.5.02.0001", { encerrado: true, etapa: { id: "fim", nome: "Encerrado" } }));
+    const MESMO = linhaCaso(19, "Benedito Ramos Filho", caso("Ramos x Banco Sul", "1000456-74.2025.5.02.0001", { encerrado: false }), {
+      situacao: "AVISO", mesmaDe: 18, problemas: [{ codigo: "CAMPO_INVALIDO", campo: "situacao_processo", nivel: "AVISO", valor: "Ativo" }],
+    });
+    const resumo = { ...RESUMO_CASOS, contagens: { ...RESUMO_CASOS.contagens, lidas: 312 }, casos: { ...RESUMO_CASOS.casos, encerrados: 71 } };
+    const pedidos = await simular(page, base({
+      [`GET ${A}/${IDC}`]: { corpo: prev },
+      [`GET ${A}/${IDC}/linhas`]: { corpo: { importacao: prev, ...resumo, linhas: [ARQ, MESMO], total: 312 } },
+      [`PATCH ${A}/${IDC}/linhas/19`]: { corpo: { versao: 3, ...resumo, linha: { ...MESMO, situacao: "PRONTA", decisao: "SEGUIR" } } },
+    }));
+    await page.goto(`${P}/clientes/importar/${IDC}?passo=previa`);
+    await expect(page.getByRole("navigation", { name: "Resumo da prévia" })).toContainText("ativos e arquivados");
+    await expect(page.getByRole("region", { name: "O que vai entrar" })).toContainText("dos novos, 71 entram encerrados, sem resultado nem acerto");
+    const linhas = page.getByRole("list", { name: "Processos" });
+    await expect(linhas.getByRole("listitem").filter({ hasText: "Almeida x Banco Sul" })).toContainText("1000456-74.2025.5.02.0001 · Trabalhista · encerrado");
+    const mesmo = linhas.getByRole("listitem").filter({ hasText: "Ramos x Banco Sul" });
+    await expect(mesmo).toContainText("Mesmo número, situação diferente");
+    await expect(mesmo).toContainText("Este processo está ativo aqui e arquivado na linha 18. O caso nasce da linha 18, encerrado");
+    await semViolacoes(page);
+    await mesmo.getByRole("button", { name: "Seguir como a linha 18" }).click();
+    expect(pedidos.find((p) => p.metodo === "PATCH")!.corpo).toEqual({ decisao: "SEGUIR" });
+    await expect(mesmo).toContainText("Entra no caso da linha 18.");
+  });
+
   test("processos, resultado: os clientes do backup chamam para os processos, e os casos levam ao Jurídico", async ({ page }) => {
     const pai = { ...FIM, filha: { id: IDC, situacao: "PREVIA", linhas: 312, criadoEm: "2026-11-22T19:20:00Z" } };
     const fimCasos = { ...IMP_CASOS, situacao: "CONCLUIDA", importadoEm: "2026-11-22T19:40:00Z", desfazerAte: "2026-11-29T19:40:00Z", podeDesfazer: true,
-      resumo: { ...FIM.resumo, clientes: 0, juntados: 0, linhas: 228, fora: 0, casos: 226, juntadosCasos: 2 } };
+      resumo: { ...FIM.resumo, clientes: 0, juntados: 0, linhas: 228, fora: 0, casos: 226, juntadosCasos: 2, encerrados: 40 } };
     await simular(page, base({
       [`GET ${A}/${ID}`]: { corpo: pai },
       [`GET ${A}/${IDC}`]: { corpo: fimCasos },
       [`GET ${A}`]: { corpo: { importacoes: [fimCasos, FIM] } },
-      [`GET ${A}/${IDC}/desfazer`]: { corpo: { clientes: 0, juntados: 0, contratos: 0, parcelas: 0, casos: 226, ligacoes: 2, mexidos: [{ tipo: "CASO", id: "x", nome: "Tavares x Metalúrgica Andrade" }] } },
+      [`GET ${A}/${IDC}/desfazer`]: { corpo: { clientes: 0, juntados: 0, contratos: 0, parcelas: 0, casos: 186, encerrados: 40, ligacoes: 2, mexidos: [{ tipo: "CASO", id: "x", nome: "Tavares x Metalúrgica Andrade" }] } },
     }));
     await page.goto(`${P}/clientes/importacoes/${ID}`);
     const agora = page.getByRole("region", { name: "Agora os processos" });
@@ -366,15 +430,17 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await page.goto(`${P}/clientes/importacoes/${IDC}`);
     const entrou = page.getByRole("region", { name: "O que entrou" });
     await expect(entrou).toContainText("226 casos novos");
+    await expect(entrou).toContainText("40 entraram encerrados, em Encerrados, sem resultado nem acerto.");
     await expect(entrou).toContainText("2 casos que já existiam ganharam o cliente");
     await expect(entrou.getByRole("link", { name: "Ver casos" })).toHaveAttribute("href", "/juridico/casos");
     await semViolacoes(page);
 
     await page.goto(`${P}/clientes/importacoes`);
-    await expect(page.getByRole("table", { name: "Importações do escritório" })).toContainText("226 casos, 2 juntados");
+    await expect(page.getByRole("table", { name: "Importações do escritório" })).toContainText("226 casos, 40 encerrados, 2 juntados");
     await page.getByRole("button", { name: "Desfazer" }).first().click();
     const janela = page.getByRole("alertdialog", { name: "Desfazer a importação?" });
-    await expect(janela).toContainText("226 casos vão para Encerrados");
+    await expect(janela).toContainText("186 casos vão para Encerrados");
+    await expect(janela).toContainText("40 casos que vieram encerrados ficam em Encerrados, marcados “importação desfeita”, com a data em que entraram.");
     await expect(janela).toContainText("2 casos que já existiam perdem só o cliente que a importação ligou.");
     await expect(janela).toContainText("Caso Tavares x Metalúrgica Andrade");
     await semViolacoes(page);
@@ -407,7 +473,7 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await expect(map.getByRole("row", { name: /^Valor , coluna D/ })).toContainText("Pelo modelo do Astrea");
     await expect(page.getByLabel("“Em aberto” vira")).toHaveValue("EM_ABERTO");
     await expect(page.getByLabel("“Despesa” vira")).toHaveValue("DESPESA");
-    await expect(page.getByRole("region", { name: "Só como informação" })).toContainText("96 despesas do escritório ficam de fora da prévia.");
+    await expect(page.getByRole("region", { name: "Só como informação" })).toContainText("96 despesas do escritório aparecem na prévia e ficam de fora.");
     await semViolacoes(page);
     await page.getByLabel("Coluna D, Valor: vai para").selectOption("");
     await page.getByRole("button", { name: "Ver a prévia" }).click();
@@ -420,26 +486,46 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
   });
 
   test("financeiro, prévia: o recebido é informação, o em aberto vira lembrete e nada vai para o Caixa", async ({ page }) => {
-    const prev = { ...IMP_FIN, temPrevia: true, linhasLidas: 1108, foraTipo: { DESPESAS: 96 } };
+    const prev = { ...IMP_FIN, temPrevia: true, linhasLidas: 1204, foraTipo: { DESPESAS: 96 } };
+    const fin = { ...RESUMO_FIN, contagens: { ...RESUMO_FIN.contagens, lidas: 1204 } };
+    const L77 = lanc(77, "", "Aluguel da sala", "2026-11-05", 420000, "PAGO", {
+      situacao: "FORA_REGRA", cliente: { nome: "", tipo: "PF", contatos: [] }, clienteId: null,
+      lancamento: { descricao: "Aluguel da sala", data: "2026-11-05", valor: 420000, situacao: "PAGO", caso: null, grupo: "DESPESAS" },
+    });
     const pedidos = await simular(page, base({
       [`GET ${A}/${IDF}`]: { corpo: prev },
-      [`GET ${A}/${IDF}/linhas`]: { corpo: { importacao: prev, ...RESUMO_FIN, linhas: [L8, L31, L40], total: 1108 } },
+      [`GET ${A}/${IDF}/lancamentos`]: { corpo: { importacao: prev, ...fin, linhas: [L8, L40, L31, L77], total: 1204 } },
+      [`GET ${A}/${IDF}/lancamentos?grupo=DESPESAS`]: { corpo: { importacao: prev, ...fin, linhas: [L77], total: 96 } },
       [`PATCH ${A}/${IDF}/linhas/40`]: { corpo: { versao: 3, ...RESUMO_FIN, linha: { ...L40, situacao: "PRONTA", problemas: [] } } },
     }));
     await page.goto(`${P}/clientes/importar/${IDF}?passo=previa`);
     await expect(page.getByRole("navigation", { name: "Resumo da prévia" })).toContainText("lançamentos lidos");
-    await expect(page.getByRole("status").filter({ hasText: "O financeiro do Astrea entra só como informação." })).toContainText("96 despesas do escritório ficaram de fora da prévia");
+    // F3.117 (estado previa-financeiro): a prévia agrupada, com as despesas listadas.
+    const nums = page.getByRole("navigation", { name: "Resumo da prévia" });
+    await expect(nums).toContainText("lançamentos lidos");
+    await expect(nums).toContainText("aba Lançamentos");
+    await expect(nums.getByRole("link", { name: /despesas/ })).toContainText("ficam de fora");
+    await expect(page.getByText("O financeiro do Astrea entra só como informação.")).toBeVisible();
+    await expect(page.getByText("Recebidos · R$ 612.430,00 · 1.021")).toBeVisible();
+    await expect(page.getByText("Em aberto · R$ 48.900,00 · 87")).toBeVisible();
+    await expect(page.getByText("Despesas do escritório · 96", { exact: true })).toBeVisible();
+    const desp = page.getByRole("list", { name: "Despesas do escritório" }).getByRole("listitem");
+    await expect(desp).toContainText("Fica de fora");
+    await expect(desp).toContainText("Despesa do escritório: o Caixa começa no T3jus.");
+    await expect(desp).toContainText("Sem cliente");
+    await expect(desp).toContainText("pago em 05/11/2026 · R$ 4.200,00");
+    await expect(desp.getByRole("button")).toHaveCount(0);
     const res = page.getByRole("region", { name: "O que vai entrar" });
     await expect(res).toContainText("Histórico financeiro");
     await expect(res).toContainText("1.021 recebidos, R$ 612.430,00, só como informação");
     await expect(res).toContainText("72 viram lembretes para criar o contrato");
     await expect(res).toContainText("Nada no Caixa");
-    const linhas = page.getByRole("list", { name: "Lançamentos" });
+    const linhas = page.getByRole("list", { name: "Recebidos" });
     const l8 = linhas.getByRole("listitem").filter({ hasText: "parcela 3 de 6" });
     await expect(l8).toContainText("recebido em 10/10/2026 · R$ 800,00");
     await expect(l8).toContainText("Ramos x INSS");
     await expect(l8).toContainText("Fica no histórico da ficha, como “pago antes do T3jus”.");
-    await expect(linhas.getByRole("listitem").filter({ hasText: "parcela 2 de 4" })).toContainText("Não vira cobrança. Vira um lembrete na ficha");
+    await expect(page.getByRole("list", { name: "Em aberto" }).getByRole("listitem").filter({ hasText: "parcela 2 de 4" })).toContainText("Não vira cobrança. Vira um lembrete na ficha");
     const l40 = linhas.getByRole("listitem").filter({ hasText: "L40" });
     await expect(l40).toContainText("Sem o valor");
     await expect(l40).toContainText("O lançamento precisa do valor.");
@@ -448,6 +534,10 @@ test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
     await page.getByLabel("Valor", { exact: true }).fill("1.000,00");
     await page.getByRole("button", { name: "Salvar a correção" }).click();
     expect(pedidos.find((p) => p.metodo === "PATCH")!.corpo).toEqual({ campos: { lanc_valor: "1.000,00" }, decisao: null });
+    await page.getByRole("group", { name: "Mostrar" }).getByRole("button", { name: "Despesas (96)" }).click();
+    await expect(page.getByRole("list", { name: "Recebidos" })).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "Despesas do escritório" }).getByRole("listitem")).toHaveCount(1);
+    expect(pedidos.some((p) => p.caminho === `${A}/${IDF}/lancamentos` && p.busca === "?grupo=DESPESAS")).toBe(true);
   });
 
   test("financeiro, resultado e desfazer: os clientes chamam para o financeiro; o lembrete que virou contrato fica", async ({ page }) => {

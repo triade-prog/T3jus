@@ -1,12 +1,13 @@
 {
   "id": "F3.139",
-  "texto": "O que sobrou da F3.133: o timbrado de 4 linhas (timbrado.ts) no .docx (proposta e documentos) e na prévia de Dados do escritório, a prévia de Marca e timbrado com a linha da identificação embaixo da marca, e o aviso de razão social em branco para quem gera o carnê ou o recibo",
-  "peca": "S7",
+  "texto": "Baixa de parcela vencida sem receber, com motivo, para que o caso que não vai receber feche no financeiro",
+  "peca": "S4",
   "refs": [
-    "PA-07"
+    "FI-24",
+    "FI-08",
+    "EX-16"
   ],
   "status": "pendente",
-  "ordem": 964,
-  "nota": "linhasTimbrado (proposta_docx.ts) ainda junta \"CNPJ · OAB · sede\" numa linha só e é usada no .docx (api-portal/documentos.ts e proposta_docx.ts) e em EscritorioDados.tsx; a tabela aprovada em escritorio-dados-documentos pede 4 linhas. MarcaTimbrado.tsx (MiniCarne) ainda mostra só \"CNPJ · OAB\" embaixo da marca.",
-  "proximo": "Desenhar a prévia de Marca e timbrado com a linha da identificação e o aviso de razão social em branco (pergunta 3 do desenho do carnê e recibo), levar à Carol e, aprovado, trocar linhasTimbrado pelas 4 linhas de timbrado.ts no .docx e em Dados do escritório"
+  "ordem": 1120,
+  "proximo": "Desenhar a baixa com motivo na ficha do contrato (pergunta 2 do D31, aprovada sem desenho)"
 }

@@ -156,7 +156,7 @@ describe("timbrado no carnê e no recibo (F3.133, PA-07)", () => {
     expect(timbradoDoEscritorio({ ...vazia, contatos: null }).contato).toEqual([]);
   });
 
-  it("linhasTimbrado (.docx) continua com 3 linhas (F3.139)", () => {
+  it("linhasTimbrado (.docx) continua com 3 linhas (F3.146)", () => {
     expect(linhasTimbrado(completa)).toHaveLength(3);
   });
 });

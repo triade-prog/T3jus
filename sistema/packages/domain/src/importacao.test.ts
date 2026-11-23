@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { dataDoExcel, lerCsv, lerPlanilha, type ErroArquivo } from "./importacao.ts";
+import {
+  arquivadosImportacaoSchema, colunasImportacaoSchema, dataDoExcel, filtroLancamentosSchema, grupoDoLancamento, lerCsv, lerPlanilha,
+  NOMES_GRUPO_LANCAMENTO, type ErroArquivo, type LinhaPrevia,
+} from "./importacao.ts";
 
 // Um .zip mínimo (só o que o leitor usa: diretório central e cabeçalhos locais).
 async function deflate(cru: Uint8Array): Promise<Uint8Array> {
@@ -101,5 +104,31 @@ describe("F3.55: ler a planilha (.xlsx e .csv) na memória", () => {
   it("número de série do Excel vira data", () => {
     expect(dataDoExcel(46275)).toBe("10/09/2026");
     expect(dataDoExcel(1)).toBe("31/12/1899");
+  });
+});
+
+describe("F3.116 e F3.117: os arquivados e a prévia agrupada do financeiro", () => {
+  it("a escolha dos arquivados é FORA ou ENCERRADOS, com a versão", () => {
+    expect(arquivadosImportacaoSchema.safeParse({ versao: 3, arquivados: "ENCERRADOS" }).success).toBe(true);
+    expect(arquivadosImportacaoSchema.safeParse({ versao: 3, arquivados: "TODOS" }).success).toBe(false);
+    expect(arquivadosImportacaoSchema.safeParse({ arquivados: "FORA" }).success).toBe(false);
+    expect(colunasImportacaoSchema.safeParse({ versao: 1, ligacao: {}, arquivados: "FORA" }).success).toBe(true);
+    expect(colunasImportacaoSchema.safeParse({ versao: 1, ligacao: {}, arquivados: "x" }).success).toBe(false);
+  });
+  it("o filtro dos lançamentos: grupo, situação, busca e página", () => {
+    expect(filtroLancamentosSchema.parse({ grupo: "DESPESAS", pular: "50" })).toEqual({ grupo: "DESPESAS", pular: 50 });
+    expect(filtroLancamentosSchema.safeParse({ grupo: "OUTRO" }).success).toBe(false);
+    expect(filtroLancamentosSchema.safeParse({ pular: "10001" }).success).toBe(false);
+    expect(filtroLancamentosSchema.safeParse({ q: "x".repeat(121) }).success).toBe(false);
+  });
+  it("o grupo de cada lançamento", () => {
+    const l = (situacao: LinhaPrevia["situacao"], pago: boolean, grupo?: "RECEBIDOS"): Pick<LinhaPrevia, "situacao" | "lancamento"> => ({
+      situacao, lancamento: { descricao: "", data: null, valor: 100, situacao: pago ? "PAGO" : "EM_ABERTO", caso: null, grupo },
+    });
+    expect(grupoDoLancamento(l("FORA_REGRA", true))).toBe("DESPESAS");
+    expect(grupoDoLancamento(l("PRONTA", true))).toBe("RECEBIDOS");
+    expect(grupoDoLancamento(l("ERRO", false))).toBe("EM_ABERTO");
+    expect(grupoDoLancamento(l("ERRO", false, "RECEBIDOS"))).toBe("RECEBIDOS");
+    expect(NOMES_GRUPO_LANCAMENTO.DESPESAS).toBe("Despesas do escritório");
   });
 });

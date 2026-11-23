@@ -1,10 +1,11 @@
 {
   "id": "F3.116",
-  "texto": "Processos importados (F3.56, parte 2): a opção de trazer os arquivados como casos encerrados e a linha “veio da importação” na ficha do caso",
+  "texto": "Processos importados (F3.56, parte 2): a opção de trazer os arquivados como casos encerrados",
   "peca": "S7",
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
-  "ordem": 957
+  "status": "feito",
+  "ordem": 957,
+  "evidencia": "A sócia dona escolhe deixar de fora (recomendado) ou importar como encerrados: no backup do Astrea, no passo das abas, que mostra quantos processos estão ativos e arquivados, e a escolha passa para a prévia dos processos; na planilha do ADVBOX, ao lado das colunas. O arquivado entra na etapa final, sem resultado nem acerto (encerrado_por IMPORTADO_ENCERRADO), fora do fechamento e dos relatórios do sócio; o mesmo número entre ativo e arquivado pede decisão; desfazer passa a importação desfeita com a data. Migration 0920_importar_sobras.sql, testes 127_importar_sobras_test.sql, 111 e 112 ajustados, importacao.test.ts, app_test.ts (F3.116, F3.117) e e2e portal-importacao-sistemas.spec.ts. A linha \"veio da importação\" no caso e o selo do Jurídico ficaram em F3.143."
 }

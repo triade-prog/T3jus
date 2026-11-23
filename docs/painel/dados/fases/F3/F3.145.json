@@ -1,0 +1,11 @@
+{
+  "id": "F3.145",
+  "texto": "Financeiro importado do Astrea (F3.56, parte 3): dispensar um lembrete de contrato à mão",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 958.3,
+  "nota": "P8 da revisão do plano (23/11), deixado de fora: o lançamento de um caso encerrado não se liga ao caso (o filtro situacao <> 'ENCERRADO' da 0820 vale para todos os encerrados), porque ligar o lembrete de contrato a um caso encerrado não ajuda a criar o contrato. Vem com o plano 2 (migration 0921)."
+}

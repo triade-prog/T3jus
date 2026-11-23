@@ -3,7 +3,7 @@
 // leitura, como no desenho aprovado em docs/design/aprovadas/portal-responsavel-legal: a folha
 // "Quem assina por…", a linha do tempo do menor, a faixa e a janela dos 18 anos (pergunta 3) e a
 // folha "Quem assinava com…", que fica guardada depois. A conta de quem assina vem do servidor,
-// feita com a data de hoje.
+// feita com a data de hoje. O termo de curatela (F3.118) aparece na folha para baixar.
 
 import { useId, useState, type ReactNode } from "react";
 import { ESTADOS_CIVIS, formatarDocumento, PAPEIS_RESPONSAVEL, type FichaCliente } from "@t3jus/domain";
@@ -12,6 +12,7 @@ import { Icone } from "../Icone.tsx";
 import { Aviso, descritoPor, ErroCampo, Janela } from "../console/pecas.tsx";
 import { dataBr } from "./clientes.ts";
 import { chamarPortal } from "./Moldura.tsx";
+import { baixarTermoCuratela, metaTermoNaFicha } from "./termoCuratela.ts";
 
 const primeiroNome = (n: string) => n.trim().split(/\s+/)[0] ?? n;
 const iniciais = (n: string) => n.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
@@ -71,8 +72,38 @@ function civil(f: FichaCliente): string | null {
   return ESTADOS_CIVIS[f.rlEstadoCivil].replace(/o\(a\)$/, fem ? "a" : "o");
 }
 
+/**
+ * "Baixar o termo" (F3.118): pede o link de 60 s, que fica no histórico, e baixa. É botão, e não
+ * link, porque faz POST; a aparência é a do desenho.
+ */
+export function BaixarTermo({ id, compacto = false }: { id: string; compacto?: boolean }) {
+  const idErro = useId();
+  const [baixando, setBaixando] = useState(false);
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  async function baixar() {
+    setErro(null);
+    setBaixando(true);
+    const r = await baixarTermoCuratela(id);
+    setBaixando(false);
+    if (!r.ok) setErro(r.erro);
+  }
+  return (
+    <>
+      <button className={`btn btn-sec${compacto ? " btn-compacto" : ""}`} type="button" onClick={() => void baixar()} disabled={baixando}
+        aria-busy={baixando || undefined} aria-describedby={descritoPor(erro && idErro)}>
+        <Icone nome="baixar" className={compacto ? "ico ico-s" : "ico"} />
+        Baixar o termo
+      </button>
+      {/* TODO(F3.118): o aviso do erro ao baixar espera o ok da Carol
+          (docs/design/propostas/portal-termo-curatela/NOTAS.md, item 2); até lá, o texto do erro. */}
+      {erro ? <ErroCampo id={idErro}>{textoDoErro(erro)}</ErroCampo> : null}
+    </>
+  );
+}
+
 /** "Quem assina por Pedro": o responsável, com a qualificação e a regra do dia. */
 export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
+  const idTermo = useId();
   const a = f.assina;
   if (!a || a.situacao === "PROPRIO" || a.situacao === "FEZ_18" || !f.rlNome) return null;
   const pn = primeiroNome(f.nome);
@@ -121,6 +152,20 @@ export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: (
         {curatela ? item("Processo da curatela", f.curProcesso ? <span className="num">{f.curProcesso}</span> : null, false, false) : null}
         {curatela ? item("Vara", f.curVara ?? null, false, false) : null}
       </dl>
+      {curatela && f.termoCuratela ? (
+        <div className="rl-termo-ficha">
+          <div className="rl-arq rl-tem" role="group" aria-labelledby={`${idTermo}-t`}>
+            <span className="rl-ic" aria-hidden="true">
+              <Icone nome="doc" className="ico" />
+            </span>
+            <div>
+              <strong id={`${idTermo}-t`}>Termo de curatela</strong>
+              <small>{metaTermoNaFicha(f.termoCuratela)}</small>
+            </div>
+            <BaixarTermo id={f.termoCuratela.id} compacto />
+          </div>
+        </div>
+      ) : null}
       {a.situacao === "REPRESENTADO" && a.faz16 ? (
         <p className="rl-regra">
           <Icone nome="relogio" className="ico" />

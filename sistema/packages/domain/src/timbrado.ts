@@ -8,7 +8,7 @@
 //   4. telefone · e-mail · site do escritório; sem telefone e e-mail, o primeiro contato.
 // Nunca sai "[falta]" nem "confira": o papel vai para o cliente (decisão 12). O CPF da sócia dona
 // não entra em lugar nenhum. A tela e os dois PDFs do servidor usam estas mesmas funções.
-// `linhasTimbrado` (proposta_docx.ts) continua com 3 linhas para o .docx (F3.139).
+// `linhasTimbrado` (proposta_docx.ts) continua com 3 linhas para o .docx (F3.146).
 
 import { linhaDaSede } from "./escritorio_dados.ts";
 import { cnpjFmt, telefoneFmt, type EscritorioDoTimbrado } from "./proposta_docx.ts";

@@ -685,6 +685,14 @@ export interface PendenciaCaso {
   contratoId?: string;
   contaId?: string;
   exitoId?: string;
+  /** F3.132 (0900): a parcela, quem paga e, no reembolso, a parcela que o leva junto. */
+  parcelaId?: string;
+  descricao?: string;
+  cliente?: string;
+  clienteId?: string;
+  exito?: boolean;
+  categoria?: CategoriaSaida;
+  parcela?: { id: string; descricao: string; vencimento: string; contrato: { id: string; numero: string } } | null;
 }
 
 /** O acerto do caso: o que entrou, o que foi pago, o que falta e se já foi encerrado. */
@@ -704,6 +712,14 @@ export interface AcertoCaso {
   motivoContratos?: string;
   /** Depois de encerrar: os contratos encerrados junto. */
   contratosEncerrados?: { id: string; numero: string }[];
+  /**
+   * Fechamento sem levantamento (F3.132; EX-17, decisões 9 e 10): os contratos ligados já
+   * encerrados, que a janela mostra sem caixa, e quem encerra contratos, para quem não encerra.
+   */
+  contratosJaEncerrados?: { id: string; numero: string; cliente: { id: string; nome: string }; encerradoEm: string; encerradoPor: PessoaRef | null }[];
+  quemContratos?: string[];
+  /** Se o caso teve levantamento (RPV, alvará…). Sem o campo, vale o que entrou. */
+  comLevantamento?: boolean;
 }
 
 /** O corpo de "Encerrar o caso no financeiro": os contratos ligados, com a versão lida (EX-17). */
