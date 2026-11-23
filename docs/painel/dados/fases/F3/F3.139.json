@@ -1,0 +1,13 @@
+{
+  "id": "F3.139",
+  "texto": "Baixa de parcela vencida sem receber, com motivo, para que o caso que não vai receber feche no financeiro",
+  "peca": "S4",
+  "refs": [
+    "FI-24",
+    "FI-08",
+    "EX-16"
+  ],
+  "status": "pendente",
+  "ordem": 1120,
+  "proximo": "Desenhar a baixa com motivo na ficha do contrato (pergunta 2 do D31, aprovada sem desenho)"
+}

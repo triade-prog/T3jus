@@ -1,0 +1,13 @@
+{
+  "id": "D31",
+  "texto": "Desenho do fechamento no financeiro do caso que não teve RPV nem alvará: folha \"Fechamento do caso\" na ficha do contrato em Financeiro › A receber, para onde \"Ver o acerto\" leva",
+  "peca": "S4",
+  "refs": [
+    "EX-16",
+    "EX-17",
+    "FI-08"
+  ],
+  "status": "feito",
+  "ordem": 81,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-fechamento-sem-levantamento/ (16 estados, computador e celular, axe sem violação), com plano escrito por uma especialista e revisado por outro antes do desenho (PLANO.md e REVISAO.md), aprovado pela Carol em 22/11/2026 às 23h28 (Bahia) com as recomendações das 3 perguntas"
+}
