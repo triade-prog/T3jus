@@ -114,7 +114,7 @@ function idDaRota(c: Context, nome: string): string {
 export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   const app = criarApp<VarsPortal>("api-portal", segredo);
   const sessao = criarSessao(
-    { sistema: "portal", cookie: COOKIES_PORTAL.sessao, cookieLink: COOKIES_PORTAL.link, autenticadorObrigatorio: false, funcaoAcesso: "acesso_portal", urlApp: deps.urlApp },
+    { sistema: "portal", cookie: COOKIES_PORTAL.sessao, cookieLink: COOKIES_PORTAL.link, autenticadorObrigatorio: false, funcaoAcesso: "acesso_portal", funcaoContexto: "acesso_portal_sessao", urlApp: deps.urlApp },
     deps,
   );
 
@@ -134,8 +134,10 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   // Quem está logado, os escritórios dele e o escolhido nesta sessão.
   app.get("/v1/sessao", async (c) => {
     const s = c.get("sessao");
-    const escritorios = await deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: s.pessoaId });
-    const atual = await deps.banco.rpc<string | null>("escritorio_da_sessao", { p_pessoa: s.pessoaId, p_sessao: s.sessaoId });
+    const [escritorios, atual] = await Promise.all([
+      deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: s.pessoaId }),
+      escritorioDaSessao(c, deps),
+    ]);
     return c.json({
       pessoaId: s.pessoaId,
       escritorioAtual: atual,
@@ -167,14 +169,22 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.get("/v1/escritorio", async (c) => {
     const id = c.get("escritorioId");
     const pessoaId = c.get("sessao").pessoaId;
-    const escritorios = await deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: pessoaId });
-    const atual = escritorios.find((x) => x.escritorio_id === id);
-    if (!atual) throw new ErroDominio("ESCRITORIO_REQUIRED");
-    const [dados, cobranca] = await Promise.all([
+    // F3.136: as três juntas, sem fila. O erro sai na mesma ordem de antes: a lista, depois o
+    // escritório fora dela (ESCRITORIO_REQUIRED) e só então a ficha ou a cobrança.
+    const [lista, ficha, cobrancaR] = await Promise.allSettled([
+      deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: pessoaId }),
       deps.banco.rpc<Record<string, unknown>>("portal_escritorio", { p_pessoa: pessoaId, p_escritorio: id }),
       // F1.18 (CO-06): as faixas de atraso (só o sócio dono) e de só consulta (todos).
       deps.banco.rpc<Record<string, unknown>>("portal_cobranca", { p_pessoa: pessoaId, p_escritorio: id }),
     ]);
+    if (lista.status === "rejected") throw lista.reason;
+    const escritorios = lista.value;
+    const atual = escritorios.find((x) => x.escritorio_id === id);
+    if (!atual) throw new ErroDominio("ESCRITORIO_REQUIRED");
+    if (ficha.status === "rejected") throw ficha.reason;
+    if (cobrancaR.status === "rejected") throw cobrancaR.reason;
+    const dados = ficha.value;
+    const cobranca = cobrancaR.value;
     return c.json({ ...dados, cobranca, id, nome: atual.nome, funcoes: atual.funcoes, outrosEscritorios: escritorios.length - 1 });
   });
 
@@ -1601,10 +1611,18 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 }
 
 /** Rotas de dado de escritório: sessão completa e o escritório escolhido, ainda com vínculo ativo. */
+/** O escritório da sessão: o que já veio com a conferência do acesso (F3.136) ou do banco. */
+function escritorioDaSessao(c: Context<VarsPortal>, deps: DepsSessao): Promise<string | null> {
+  const doContexto = c.get("escritorioDaSessao");
+  if (doContexto !== undefined) return Promise.resolve(doContexto);
+  const s = c.get("sessao");
+  return deps.banco.rpc<string | null>("escritorio_da_sessao", { p_pessoa: s.pessoaId, p_sessao: s.sessaoId });
+}
+
 export function exigirEscritorio(deps: DepsSessao): MiddlewareHandler<VarsPortal> {
   return async (c, next) => {
-    const s = c.get("sessao");
-    const escritorio = await deps.banco.rpc<string | null>("escritorio_da_sessao", { p_pessoa: s.pessoaId, p_sessao: s.sessaoId });
+    if (c.get("escritorioId")) return await next();
+    const escritorio = await escritorioDaSessao(c, deps);
     if (!escritorio) throw new ErroDominio("ESCRITORIO_REQUIRED");
     c.set("escritorioId", escritorio);
     await next();
