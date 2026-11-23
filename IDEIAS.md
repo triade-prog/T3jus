@@ -163,6 +163,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | PT-24 | Funções da equipe interna, cada uma só com os escritórios atribuídos | [BASE] |
 | PT-25 | Padrão único de telas: lista, ficha, criar e editar iguais em todos os módulos, com trilha de navegação e formulário de edição já preenchido | [BASE] |
 | PT-26 | Entrar com a conta Google, além de e-mail e senha | [VAL] |
+| PT-27 | Portal rápido: trocar de tela sem recarregar a página, baixar só o código da tela aberta e pedir os dados sem esperas em fila | [BASE] |
 
 ## 9. Site comercial e entrada de clientes
 
@@ -209,8 +210,8 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 5. Execução jurídica | 18 |
 | 6. Indicadores | 15 |
 | 7. A validar com os pilotos | 8 |
-| 8. Princípios técnicos e de qualidade | 26 |
+| 8. Princípios técnicos e de qualidade | 27 |
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 6 |
 | 11. Portal do advogado | 7 |
-| **Total** | **137** |
+| **Total** | **138** |

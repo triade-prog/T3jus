@@ -5,7 +5,8 @@
 // Ajuda. No celular (até 760 px), uma barra fixa embaixo com Início, Conversas, Agenda e Mais;
 // o Mais abre uma folha com o resto (Carol, 18/11/2026).
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { AREAS_PORTAL, mesPorExtenso, type AreaPortal, type DadosEscritorioDocumentos, type DatasContrato } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
@@ -163,23 +164,103 @@ export async function chamarPortal<T>(caminho: string, opcoes?: Parameters<typeo
   return r;
 }
 
+/*
+ * O escritório da sessão fica guardado na memória da aba enquanto a pessoa navega pelo Portal
+ * sem recarregar a página: a tela nova mostra na hora o que já veio e confere de novo por trás
+ * (no máximo a cada FRESCOR_MS). Várias partes da mesma tela pedindo juntas viram uma chamada
+ * só. Recarregar a página, sair ou trocar de escritório (sempre com recarga) limpa tudo.
+ */
+const FRESCOR_MS = 15_000;
+type FotoEscritorio = { escritorio: EscritorioPortal | null; erro: boolean };
+const escritorioGuardado: { foto: FotoEscritorio; em: number; emVoo: Promise<void> | null } = {
+  foto: { escritorio: null, erro: false }, em: 0, emVoo: null,
+};
+const FOTO_VAZIA: FotoEscritorio = { escritorio: null, erro: false };
+const ouvintesEscritorio = new Set<() => void>();
+const avisarEscritorio = (foto: FotoEscritorio) => {
+  escritorioGuardado.foto = foto;
+  for (const f of ouvintesEscritorio) f();
+};
+
+function buscarEscritorio(forcar = false): Promise<void> {
+  const g = escritorioGuardado;
+  if (g.emVoo) return g.emVoo;
+  if (!forcar && g.foto.escritorio && Date.now() - g.em < FRESCOR_MS) return Promise.resolve();
+  g.emVoo = chamarPortal<EscritorioPortal>("/v1/escritorio").then((r) => {
+    g.emVoo = null;
+    if (r.ok) {
+      g.em = Date.now();
+      avisarEscritorio({ escritorio: r.dados, erro: false });
+    } else if (r.status !== 401 && r.erro.codigo !== "ESCRITORIO_REQUIRED" && !g.foto.escritorio) {
+      // Com o escritório já na tela, uma falha na conferência de fundo não apaga nada.
+      avisarEscritorio({ escritorio: null, erro: true });
+    }
+  });
+  return g.emVoo;
+}
+
+// Começa a buscar o escritório assim que o código do Portal chega ao navegador, antes de a tela
+// ligar, para os dados da tela não esperarem uma viagem a mais. Fora das telas de entrada.
+if (typeof window !== "undefined" && !/^\/(entrar|criar-senha|redefinir|escritorio)(\/|$)/.test(window.location.pathname)) {
+  void buscarEscritorio();
+}
+
+function assinarEscritorio(f: () => void) {
+  ouvintesEscritorio.add(f);
+  return () => {
+    ouvintesEscritorio.delete(f);
+  };
+}
+
 /** O escritório da sessão (GET /v1/escritorio): null enquanto carrega; "erro" se falhar. */
 export function useEscritorioPortal(): { escritorio: EscritorioPortal | null; erro: boolean; recarregar: () => void } {
-  const [escritorio, setEscritorio] = useState<EscritorioPortal | null>(null);
-  const [erro, setErro] = useState(false);
-  const [vez, setVez] = useState(0);
+  // Na primeira montagem depois do servidor, a foto vazia (a mesma do servidor); depois, a guardada.
+  const foto = useSyncExternalStore(assinarEscritorio, () => escritorioGuardado.foto, () => FOTO_VAZIA);
   useEffect(() => {
-    let vivo = true;
-    void chamarPortal<EscritorioPortal>("/v1/escritorio").then((r) => {
-      if (!vivo) return;
-      if (r.ok) setEscritorio(r.dados);
-      else if (r.status !== 401 && r.erro.codigo !== "ESCRITORIO_REQUIRED") setErro(true);
-    });
-    return () => {
-      vivo = false;
+    void buscarEscritorio();
+  }, []);
+  const recarregar = useCallback(() => {
+    if (escritorioGuardado.foto.erro) avisarEscritorio(FOTO_VAZIA);
+    void buscarEscritorio(true);
+  }, []);
+  return { escritorio: foto.escritorio, erro: foto.erro, recarregar };
+}
+
+/*
+ * Troca de tela sem recarregar a página. Os links do Portal são links comuns (<a href>); a
+ * moldura pega o clique num link interno e pede só a tela nova ao Next, sem jogar fora o
+ * JavaScript, o escritório e o sino que já estão na aba. Continuam com recarga completa: as
+ * telas de entrada e a escolha do escritório (a sessão muda), os arquivos da /api, os links
+ * para fora, os que abrem em outra aba ou baixam, os com tecla de atalho, os com ? e os que
+ * levam à mesma página.
+ */
+const SEMPRE_RECARREGA = /^\/(entrar|criar-senha|redefinir|escritorio|api)(\/|$)/;
+
+function linkInterno(alvo: EventTarget | null): URL | null {
+  const a = alvo instanceof Element ? alvo.closest("a") : null;
+  if (!a || !a.getAttribute("href") || (a.target && a.target !== "_self") || a.hasAttribute("download")) return null;
+  const u = new URL(a.href, window.location.href);
+  if (u.origin !== window.location.origin || SEMPRE_RECARREGA.test(u.pathname)) return null;
+  // Endereço com ?: a tela lê o pedido ao abrir (a conversa, o dia da agenda); a mesma tela:
+  // recarregar é o jeito de ver os dados de novo. Nos dois casos, recarga completa, como antes.
+  if (u.search || u.pathname === window.location.pathname) return null;
+  return u;
+}
+
+function useNavegarSemRecarga() {
+  const router = useRouter();
+  useEffect(() => {
+    const clicar = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const u = linkInterno(e.target);
+      if (!u) return;
+      e.preventDefault();
+      router.push(`${u.pathname}${u.search}${u.hash}`);
     };
-  }, [vez]);
-  return { escritorio, erro, recarregar: () => { setErro(false); setVez((v) => v + 1); } };
+    // Na janela, depois dos cliques das telas: quem já tratou o clique (preventDefault) fica como está.
+    window.addEventListener("click", clicar);
+    return () => window.removeEventListener("click", clicar);
+  }, [router]);
 }
 
 export type LugarPortal = "inicio" | "conversas" | "clientes" | "agenda" | "equipe" | "escritorio" | "ajuda" | "conta" | AreaPortal | null;
@@ -217,6 +298,7 @@ export function MolduraPortal({
   pagina?: string;
   children: ReactNode;
 }) {
+  useNavegarSemRecarga();
   const [saindo, setSaindo] = useState(false);
   const mais = useRef<HTMLDialogElement>(null);
   const abrirMais = useRef<HTMLButtonElement>(null);
