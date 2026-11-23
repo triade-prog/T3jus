@@ -1,0 +1,11 @@
+{
+  "id": "F3.142",
+  "texto": "Gerar documentos do menor como no desenho aprovado D25: aviso de quem assina e a faixa \"Em todos, Joana assina por Pedro\" (dívida do F3.98)",
+  "peca": "S2",
+  "refs": [
+    "AP-01",
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 1140
+}
