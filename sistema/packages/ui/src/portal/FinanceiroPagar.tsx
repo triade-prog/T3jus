@@ -5,7 +5,9 @@
 // reembolso, as saídas do mês por categoria, e as janelas de lançar conta, marcar paga e
 // registrar o reembolso. Nada se apaga: a conta só ganha o pagamento e o reembolso.
 // A coluna "Nota ou guia" e o arquivo em Lançar conta são do F3.22 (FI-18): conta sem nota
-// ganha o selo de atenção e pode receber o arquivo depois.
+// ganha o selo de atenção e pode receber o arquivo depois. A parcela de empréstimo (F3.51, desenho em
+// portal-financeiro-emprestimos) entra na lista com o selo que leva à ficha e fica fora do total das
+// saídas por categoria, abaixo de um divisor.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -20,7 +22,7 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, falt
 import { contar, diaBr, diaCurto, lerDia, nomeDoMes } from "./agenda.ts";
 import { Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
-import { comoVolta, origemConta, quandoConta } from "./financeiro.ts";
+import { comoVolta, origemConta, quandoConta, ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
@@ -28,13 +30,24 @@ import { ListaRecorrentes } from "./Recorrentes.tsx";
 
 type Feito = { titulo: string; texto: string };
 
-// Lançar conta não oferece Empréstimos: a parcela nasce do empréstimo, no Caixa (F3.51). As telas dos empréstimos vêm depois.
+// Lançar conta não oferece Empréstimos: a parcela nasce do empréstimo, no Caixa (F3.51).
 const ORDEM_CATEGORIAS = Object.keys(CATEGORIAS_LANCAR) as CategoriaSaida[];
 const ORDEM_FORMAS = Object.keys(FORMAS_PAGAMENTO) as FormaPagamento[];
 const ORDEM_COMO = Object.keys(REEMBOLSO_COMO) as ReembolsoComo[];
 const paraCampo = (c: number) => reais(c).replace(/^R\$\s?/, "");
 const nomeCliente = (c: ContaPagar) => c.adiantada?.cliente.nome ?? "";
 
+
+/** O selo da parcela de empréstimo, com o link para a ficha (F3.51). */
+function SeloEmprestimo({ e }: { e: NonNullable<ContaPagar["emprestimo"]> }) {
+  const qual = e.parcela ? `${e.parcela}/${e.total}` : "devolução";
+  // O nome acessível começa pelo texto visível (WCAG 2.5.3, regra label-content-name-mismatch do axe).
+  return (
+    <a className="em-selo-link" href={ROTAS_FINANCEIRO.emprestimo(e.id)} aria-label={`Empréstimo · ${qual}: abrir a ficha de ${e.credor}`}>
+      <span className="em-selo"><Icone nome="trocar" className="ico" />Empréstimo · {qual}</span>
+    </a>
+  );
+}
 
 function CabPagar({ aoLancar }: { aoLancar?: () => void }) {
   return (
@@ -133,15 +146,20 @@ function PagarConteudo() {
     </button>
   );
   const nenhumaOu = (n: number) => (n ? contar(n, "conta", "contas") : "nenhuma");
-  const maior = Math.max(1, ...dados.categorias.map((c) => c.valor));
-  const totalMes = dados.categorias.reduce((s, c) => s + c.valor, 0);
+  // As parcelas de empréstimo ficam à parte, fora do total das saídas do mês (F3.51).
+  const doDia = dados.categorias.filter((c) => c.categoria !== "EMPRESTIMOS");
+  const deEmprestimo = dados.categorias.find((c) => c.categoria === "EMPRESTIMOS");
+  const maior = Math.max(1, ...doDia.map((c) => c.valor));
+  const totalMes = doDia.reduce((s, c) => s + c.valor, 0);
+  const emprestimosSemana = dados.contas.filter((c) => c.emprestimo).length;
   const totalReembolso = dados.adiantados.reduce((s, c) => s + (c.valorPago ?? c.valor), 0);
   const clientesReembolso = new Set(dados.adiantados.map((c) => c.adiantada?.cliente.id)).size;
   return (
     <div className="fi">
       <CabPagar aoLancar={() => setLancar(true)} />
       <div className="fi-nums" role="group" aria-label="Mostrar">
-        {numero("SEMANA", "Vencem esta semana", reais(t.semana.valor), nenhumaOu(t.semana.contas))}
+        {numero("SEMANA", "Vencem esta semana", reais(t.semana.valor),
+          `${nenhumaOu(t.semana.contas)}${mostrar === "SEMANA" && emprestimosSemana ? `, ${emprestimosSemana} de empréstimo` : ""}`)}
         {numero("VENCIDAS", <>{t.vencidas.contas ? <Icone nome="alerta" className="ico" /> : null}Vencidas</>, reais(t.vencidas.valor), nenhumaOu(t.vencidas.contas))}
         {numero("RECORRENTES", `Recorrentes de ${nomeDoMes(dados.mes)}`, t.recorrentes.ativas ?? t.recorrentes.contas,
           t.recorrentes.encerradasMes ? `ativas · ${contar(t.recorrentes.encerradasMes, "encerrada", "encerradas")} este mês`
@@ -187,13 +205,21 @@ function PagarConteudo() {
                     </td>
                     <td data-r="Categoria"><span className="fi-cat">{CATEGORIAS_SAIDA[c.categoria]}</span></td>
                     <td data-r="Origem">
-                      <div className="fi-forma">
-                        <b>{o.repete || c.adiantada ? <Icone nome="reenviar" className="ico" /> : null}{o.titulo}</b>
-                        <small>{o.detalhe}</small>
-                      </div>
+                      {c.emprestimo ? (
+                        <div className="fi-forma">
+                          <SeloEmprestimo e={c.emprestimo} />
+                          <small>Nasceu do empréstimo</small>
+                        </div>
+                      ) : (
+                        <div className="fi-forma">
+                          <b>{o.repete || c.adiantada ? <Icone nome="reenviar" className="ico" /> : null}{o.titulo}</b>
+                          <small>{o.detalhe}</small>
+                        </div>
+                      )}
                     </td>
                     <td data-r="Nota ou guia">
-                      <NotaDaConta c={c} anexos={anexos.porDono.get(c.id)} aoAbrir={(a) => void abrir(a)} aoAnexar={() => setAnexar(c)} />
+                      {c.emprestimo ? <span className="fi-pq">Não tem nota fiscal</span>
+                        : <NotaDaConta c={c} anexos={anexos.porDono.get(c.id)} aoAbrir={(a) => void abrir(a)} aoAnexar={() => setAnexar(c)} />}
                     </td>
                     <td data-r="Valor" className="fi-v num">
                       {reais(c.valorPago ?? c.valor)}
@@ -273,9 +299,9 @@ function PagarConteudo() {
             <div className="folha-cab">
               <div><h2 id="t-cat"><Icone nome="funcoes" className="ico" />Saídas de {nomeDoMes(dados.mes)} por categoria</h2></div>
             </div>
-            {dados.categorias.length ? (
+            {doDia.length ? (
               <div className="fi-barras" role="group" aria-label="Saídas por categoria">
-                {dados.categorias.map((c, i) => (
+                {doDia.map((c, i) => (
                   <div key={c.categoria} className="fi-barra" style={{ gridTemplateColumns: "minmax(0,1fr) 110px" }}>
                     <span className="rot">{CATEGORIAS_SAIDA[c.categoria]}</span>
                     <span className="val"><b className="num">{reais(c.valor)}</b></span>
@@ -289,9 +315,21 @@ function PagarConteudo() {
               <p className="fi-cob-sem">Nenhuma conta com vencimento em {nomeDoMes(dados.mes)}.</p>
             )}
             <p className="fi-total"><span>Pagas e a pagar no mês</span><b className="num">{reais(totalMes)}</b></p>
+            {deEmprestimo ? (
+              <div className="em-cat-parte" role="group" aria-label="Empréstimos, à parte">
+                <p className="em-cat-rot"><Icone nome="trocar" className="ico" />À parte · não é despesa do dia a dia</p>
+                <div className="fi-barra" style={{ gridTemplateColumns: "minmax(0,1fr) 110px" }}>
+                  <span className="rot">Empréstimos <span className="fi-pq">(à parte)</span><small>parcelas e devoluções do mês, fora do total</small></span>
+                  <span className="val"><b className="num">{reais(deEmprestimo.valor)}</b></span>
+                  <span className="fi-trilho" style={{ gridColumn: "1/-1" }} aria-hidden="true">
+                    <i className="em-barra" style={{ width: `${Math.min(Math.max((deEmprestimo.valor / maior) * 100, 1.2), 100).toFixed(1)}%` }} />
+                  </span>
+                </div>
+              </div>
+            ) : null}
             <p className="pt-pe-folha">
               <Icone nome="ajustes" className="ico" />
-              <span>São as mesmas categorias da exportação para o contador. Repasses a terceiros não entram aqui: não são despesa do escritório.</span>
+              <span>São as mesmas categorias da exportação para o contador. Repasses a terceiros não entram aqui: não são despesa do escritório.{deEmprestimo ? " As parcelas de empréstimo também ficam fora do total." : ""}</span>
             </p>
           </section>
         </aside>
@@ -447,11 +485,12 @@ function JanelaLancar({ aoFechar, aoFeito }: { aoFechar: () => void; aoFeito: (f
           <div className="campo">
             <label htmlFor="nc-cat">Categoria</label>
             <select className="entrada" id="nc-cat" value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaSaida)}
-              aria-invalid={tem("categoria") || undefined} aria-describedby={descritoPor(tem("categoria") && "nc-cat-er")}>
+              aria-invalid={tem("categoria") || undefined} aria-describedby={descritoPor(tem("categoria") ? "nc-cat-er" : "nc-cat-aj")}>
               <option value="">Escolha a categoria</option>
               {ORDEM_CATEGORIAS.map((c) => <option key={c} value={c}>{CATEGORIAS_SAIDA[c]}</option>)}
             </select>
-            {tem("categoria") ? <ErroCampo id="nc-cat-er">Escolha a categoria. Ela vai junto na exportação para o contador.</ErroCampo> : null}
+            {tem("categoria") ? <ErroCampo id="nc-cat-er">Escolha a categoria. Ela vai junto na exportação para o contador.</ErroCampo>
+              : <p className="ajuda" id="nc-cat-aj">Parcela de empréstimo? Registre o empréstimo no Caixa e as parcelas nascem sozinhas. <a href={`${ROTAS_FINANCEIRO.caixa}?registrar=1`}>Registrar no Caixa</a></p>}
           </div>
           <div className="campo">
             <label htmlFor="nc-forma">Como vai pagar <span className="opcional">(opcional)</span></label>
@@ -547,7 +586,7 @@ function NotaDaConta({ c, anexos, aoAbrir, aoAnexar }: { c: ContaPagar; anexos: 
   );
 }
 
-function JanelaAnexarConta({ conta, aoFechar, aoFeito }: { conta: ContaPagar; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+export function JanelaAnexarConta({ conta, aoFechar, aoFeito }: { conta: ContaPagar; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [tipoArq, setTipoArq] = useState<CategoriaAnexo>("NOTA_FISCAL");
   const [erro, setErro] = useState<string | null>(null);
@@ -604,7 +643,7 @@ function AlvoConta({ c }: { c: ContaPagar }) {
   );
 }
 
-function JanelaPaga({ conta, aoFechar, aoFeito }: { conta: ContaPagar; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
+export function JanelaPaga({ conta, aoFechar, aoFeito }: { conta: ContaPagar; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
   const hoje = hojeBrasilia();
   const [valor, setValor] = useState(paraCampo(conta.valor));
   const [dia, setDia] = useState(diaBr(hoje));

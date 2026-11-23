@@ -5991,3 +5991,137 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
   .fs-vazio{margin:8px 16px 18px}
   .fs-pe-orig{padding:0 16px 12px}
 }
+
+/* F3.51 · Empréstimos (FI-20), desenho aprovado em docs/design/aprovadas/portal-financeiro-emprestimos.
+   Prefixo em-. Empréstimo fica à parte, mas não é de terceiros: nunca leva âmbar. Usa só areia (sal,
+   sal-2), papel e a família vinho, com os pares do Gabinete: vinho sobre sal-2 9,06:1, vinho-2 sobre
+   sal-2 6,7:1, texto-2 sobre papel 6,1:1. */
+.em-faixa{display:flex;align-items:center;gap:10px;padding:10px 24px;background:var(--sal-2);color:var(--vinho);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;border-radius:var(--raio-g) var(--raio-g) 0 0;border-bottom:1px solid var(--divisor)}
+.em-faixa .ico{width:18px;height:18px}
+.em-selo{display:inline-flex;align-items:center;gap:5px;min-height:24px;padding:2px 10px;border-radius:12px;background:var(--sal-2);color:var(--vinho);font-size:12px;font-weight:500;white-space:nowrap}
+.em-selo .ico{width:14px;height:14px}
+.em-selo-linha{background:transparent;box-shadow:inset 0 0 0 1px var(--vinho-4);color:var(--vinho-2)}
+.em-selos{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.em-selos .selo{margin:0}
+.em-linha{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start;padding:16px 24px;border-top:1px solid var(--divisor)}
+.em-linha:first-child{border-top:0}
+.em-linha .fi-lado{max-width:230px}
+.em-linha .em-det{line-height:1.45}
+.em-linha .fi-quem a{margin:-12px 0 -10px}
+.em-nota-l{margin-top:8px;font-size:12px;line-height:1.45;color:var(--texto-2);padding-left:10px;border-left:2px solid var(--vinho-4)}
+.em-novo{background:#FCF8F5}
+.em-pe{border-top:1px solid var(--divisor);padding-top:14px}
+.em-pe b{font-weight:600;color:var(--texto)}
+.em-vazio{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 18px;border:1.5px dashed var(--vinho-4);border-radius:var(--raio-g);background:var(--papel)}
+.em-vazio>.ico{color:var(--vinho);flex:none}
+.em-vazio p{flex:1 1 300px;font-size:13px;line-height:1.5;color:var(--texto)}
+.em-no-saldo{display:flex;gap:8px;align-items:flex-start;font-size:12px!important;color:var(--ambar-3)!important;margin-top:2px;position:relative;z-index:1}
+.em-no-saldo .ico{width:16px;height:16px;color:var(--sal);flex:none;margin-top:1px}
+.em-no-saldo b{color:var(--papel)}
+.em-tab th,.em-tab td{text-align:right}
+.em-tab th:first-child,.em-tab td:first-child{text-align:left}
+.em-tab td small{display:block;font-size:12px;color:var(--texto-2);font-weight:400;white-space:nowrap}
+.em-tab .em-r{font-weight:500;white-space:nowrap}
+.em-tab .em-saldo{font-weight:600;white-space:nowrap}
+.em-tab .em-col{background:var(--sal-2)}
+.em-tab thead .em-col{background:var(--sal)}
+.em-th-sub{font-size:11px;letter-spacing:.08em;color:var(--texto-2);text-transform:none}
+.em-tab tr.fi-futuro .em-r{color:var(--texto-2);font-weight:400}
+/* Janela de registrar */
+.em-tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.em-dois-op{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.em-op{border:1px solid var(--borda-folha);border-radius:var(--raio);padding:10px 12px;align-items:flex-start}
+.em-op:has(input:checked){border-color:var(--vinho);background:var(--sal-2);box-shadow:inset 0 0 0 1px var(--vinho)}
+.em-op span{display:grid;gap:2px}
+.em-op span .ico{width:18px;height:18px;color:var(--vinho);margin-bottom:2px}
+.em-op b{font-weight:500}
+.em-duvida,.em-mais,.em-lista{border-radius:var(--raio)}
+.em-duvida summary,.em-mais summary,.em-lista summary{display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:13px;font-weight:500;color:var(--vinho);cursor:pointer;list-style:none}
+.em-duvida summary::-webkit-details-marker,.em-mais summary::-webkit-details-marker,.em-lista summary::-webkit-details-marker{display:none}
+.em-duvida summary:hover,.em-mais summary:hover,.em-lista summary:hover{text-decoration:underline}
+.em-duvida{margin-top:-8px}
+.em-duvidas{list-style:none;margin:0;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:8px}
+.em-duvidas li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;font-size:13px;line-height:1.5}
+.em-duvidas .ico{width:18px;height:18px;color:var(--vinho);margin-top:1px}
+.em-duvidas b{font-weight:600}
+.em-mais{margin-top:-8px}
+.em-mais .campo{margin-top:4px}
+.em-previa{display:grid;gap:8px;padding:14px 16px;border-radius:var(--raio);background:var(--sal-2)}
+.em-previa .fi-rotulo{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2)}
+.em-previa-l{font-size:14px;line-height:1.5}
+.em-previa-l b{font-weight:600;color:var(--vinho)}
+.em-previa-c{font-size:13px;line-height:1.5}
+.em-previa-c b{font-weight:600}
+.em-previa-c small{display:block;font-size:12px;color:var(--texto-2)}
+.em-previa-vazia{background:transparent;border:1.5px dashed var(--vinho-4)}
+.em-previa-vazia .em-previa-l{font-size:13px;color:var(--texto-2)}
+.em-lista{border-top:1px solid var(--divisor);padding-top:2px}
+.em-lista .ajuda{margin:0 0 10px}
+.em-parc-lista{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.em-parc-lista li{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;align-items:center}
+.em-parc-lista label{display:grid;font-size:13px;line-height:1.3}
+.em-parc-lista label b{font-weight:500}
+.em-parc-lista label small{font-size:12px;color:var(--texto-2)}
+.em-parc-lista .entrada{min-height:44px;height:44px;text-align:right;background:var(--papel)}
+.em-c6{padding:12px 14px;border-radius:var(--raio);border:1.5px solid var(--vinho-4)}
+.em-c6 legend{float:left;width:100%;font-size:14px;line-height:1.5;font-weight:500;margin-bottom:8px}
+.em-c6 .opcao small{display:block}
+/* Ficha */
+.em-cab .dir.em-dir{background:var(--papel);color:var(--tinta)}
+.em-dir .sobretitulo{color:var(--vinho-2)!important}
+.em-dir .grande{color:var(--vinho)!important}
+.em-dir .fi-oque{color:var(--texto)}
+.em-dir .btn{align-self:flex-start}
+.em-selo-claro{background:var(--sal)!important;color:var(--vinho)!important;display:inline-flex;align-items:center;gap:5px}
+.em-selo-claro .ico{width:14px;height:14px}
+.em-quatro dd{font-size:21px}
+.em-quatro .em-q-sub{display:block;margin-top:4px;font-family:var(--sans);font-size:12px;line-height:1.4;color:var(--texto-2);font-weight:400}
+.em-aviso-topo{margin-top:16px}
+.em-motivo .aviso{background:var(--papel)}
+.em-falta-comp{display:grid;gap:4px;justify-items:start}
+.fi-tab tr.em-cancelada td{color:var(--texto-2)}
+.fi-tab tr.em-cancelada .fi-v{text-decoration:line-through;text-decoration-color:var(--vinho-4)}
+.em-pe-corpo{padding:0 24px 20px;display:grid;gap:12px}
+.em-pe-corpo p{font-size:13px;line-height:1.5;color:var(--texto-2)}
+.em-pe-corpo .btn{justify-self:start}
+.em-o-que li .ico{color:var(--vinho-3)}
+.em-o-que li:nth-child(n+2) .ico{color:var(--vinho)}
+.em-casos{padding:12px 14px;border-radius:var(--raio);background:var(--sal-2)}
+.em-casos .fi-check li{border-top-color:var(--sal)}
+/* A pagar */
+.em-selo-link{display:inline-flex;align-items:center;min-height:44px;margin:-10px 0;text-decoration:none}
+.em-selo-link:hover .em-selo{text-decoration:underline;background:var(--sal)}
+.c-selos .em-selo-link{margin:0}
+.em-cat-parte{margin:0 24px 6px;padding:12px 0 6px;border-top:2px dashed var(--vinho-4)}
+.em-cat-rot{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2)}
+.em-cat-rot .ico{width:16px;height:16px}
+.em-cat-parte .fi-barra .rot small{display:block}
+.fi-trilho i.em-barra{background:var(--sal-2);box-shadow:inset 0 0 0 1.5px var(--vinho-2);background-image:repeating-linear-gradient(135deg,transparent 0 5px,rgba(105,39,70,.28) 5px 6.5px)}
+/* Exportar */
+.fi-check li.em-li .ico{color:var(--vinho)}
+.fi-check li.em-li b{font-weight:600}
+@media (max-width:760px){
+  .em-faixa{padding:10px 16px}
+  .em-linha{grid-template-columns:minmax(0,1fr);padding:14px 16px;gap:8px}
+  .em-linha .fi-lado{justify-items:start;text-align:left;max-width:none}
+  .em-tres,.em-dois-op{grid-template-columns:1fr}
+  .em-parc-lista{grid-template-columns:1fr}
+  .em-pe-corpo{padding:0 16px 16px}
+  .em-pe-corpo .btn{justify-self:stretch}
+  .em-cat-parte{margin:0 16px 6px}
+  .em-vazio .btn{flex:1 1 100%}
+  .em-dir .btn{align-self:stretch}
+  .em-quatro dd{font-size:19px}
+}
+.janela-corpo .ajuda a{text-decoration:underline;text-underline-offset:2px}
+.fi .em-tab thead th{text-align:right}
+.fi .em-tab thead th:first-child{text-align:left}
+@media (max-width:1400px){.em-tab td small{white-space:normal}}
+.em-quatro .em-q-sub{white-space:normal}
+@media (min-width:761px){.em-cab .dir.em-dir{margin-left:0;clip-path:none;padding:26px 32px}}
+@media (max-width:1400px){
+  .fi-grade .em-ftab thead th,.fi-grade .em-ftab tbody td{padding-left:8px;padding-right:8px}
+  .fi-grade .em-ftab thead th:first-child,.fi-grade .em-ftab tbody td:first-child{padding-left:20px}
+  .em-ftab thead th{white-space:normal}
+  .em-ftab td.fi-v{white-space:nowrap}
+}

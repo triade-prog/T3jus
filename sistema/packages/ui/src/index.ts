@@ -59,6 +59,7 @@ export { AjustesDoFinanceiro } from "./portal/AjustesFinanceiro.tsx";
 export { BotaoCarne, CarneImprimir, FolhaCarne, FolhasCarne, QrPix, RecebimentoPortal, rotaCarne } from "./portal/Carne.tsx";
 export { AutomacoesPortal, hrefAutomacao } from "./portal/Automacoes.tsx";
 export { CaixaDoFinanceiro, ResumoDoFinanceiro } from "./portal/FinanceiroResumo.tsx";
+export { EmprestimoFinanceiro } from "./portal/FinanceiroEmprestimos.tsx";
 export { abasContador, arquivoContador, crc32, csvContador, planilhaXlsx, zipar } from "./portal/planilha.ts";
 export { CasosJuridicoPortal, FichaCasoPortal, NovoCasoPortal } from "./portal/Juridico.tsx";
 export { PrazosJuridicoPortal, TarefasJuridicoPortal } from "./portal/JuridicoPrazos.tsx";
