@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   contaPrestacao, dataBr, hojeBrasilia, TIPOS_REQUISICAO, MOTIVOS_ATRASO_REPASSE, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
-  type AcertoCaso, type Destinacao, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
+  type Destinacao, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -20,13 +20,14 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, falt
 import { contar, diaBr, diaCurto, lerDia, nomeDoMes } from "./agenda.ts";
 import { Selo, useCarga } from "./Comercial.tsx";
 import { primeiroNome } from "./equipe.ts";
-import { juntarComE } from "./clientes.ts";
 import { Toast } from "./FichaCliente.tsx";
 import { quando, ROTAS_FINANCEIRO, situacaoPrestacao } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { FolhaACaminho, JanelaExpedido, JanelaDataRequisicao, mesAno } from "./ACaminho.tsx";
+import { ItemParcelas, JanelaFechamento, textoJaEncerradoPorOutro } from "./FechamentoCaso.tsx";
+import { rotuloRepasse, type Atalho } from "./fechamento.ts";
 import { atrasada, FolhaQuemCuida, JanelaAnotarAtraso, JanelaTrocarResponsavel, NotaAtraso, SeloAtraso } from "./RepasseCuida.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -903,6 +904,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
   const [trocar, setTrocar] = useState(false);
   const [anotar, setAnotar] = useState<Destinacao | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
+  const [jaEncerrado, setJaEncerrado] = useState(false);
   const nome = dados && dados !== "erro" ? dados.cliente.nome : null;
   useEffect(() => {
     if (nome) aoNome(nome);
@@ -1131,168 +1133,23 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
         <JanelaAnotarAtraso d={anotar} l={f} pessoas={f.podemCuidar} responsavelId={f.responsavel.id} hoje={hoje} aoFechar={() => setAnotar(null)} aoFeito={terminar} />
       ) : null}
       {encerrar ? (
-        <JanelaEncerrar f={f} aoFechar={() => setEncerrar(false)} aoFeito={terminar}
-          aoRegistrar={(id) => { const d = f.destinacoes.find((x) => x.id === id); setEncerrar(false); if (d) setFeitoEm(d); }} />
+        <JanelaFechamento casoId={f.caso.id} acerto={f.acerto} nomeCaso={f.caso.nome} voltar="Voltar ao caso"
+          descricao={`Este é o caso de ${f.cliente.nome}, ${TIPOS_LEVANTAMENTO[f.tipo]} de ${dataBr(f.entrouEm)}.`}
+          atalho={(x) => atalhoDoRepasse(f, x)} aoFechar={() => setEncerrar(false)} aoFeito={terminar}
+          aoAtalho={(x) => { const d = x.tipo === "repasse" ? f.destinacoes.find((y) => y.id === x.destinacaoId) : undefined; setEncerrar(false); if (d) setFeitoEm(d); }}
+          aoJaEncerrado={() => { setEncerrar(false); setJaEncerrado(true); recarregar(); }} />
       ) : null}
+      <p className="fs-anuncio" role="status" aria-live="polite">{jaEncerrado && f.acerto.fechado ? textoJaEncerradoPorOutro(f.acerto.fechado) : ""}</p>
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );
 }
 
-/** As parcelas dos contratos do caso no fechamento (F3.45). */
-function ItemParcelas({ a }: { a: AcertoCaso }) {
-  const p = a.parcelas;
-  if (!p.total) return null;
-  const todas = p.pagas === p.total;
-  return (
-    <li className={todas ? undefined : "falta"}>
-      <Icone nome={todas ? "check" : "alerta"} className="ico" />
-      <span>
-        {todas ? "Parcelas do contrato todas recebidas" : <><b>Parcelas do contrato:</b> {p.falta ? `falta receber ${reais(p.falta)}` : "há parcela ainda sem valor"}</>}
-        <small style={{ display: "block", color: "var(--texto-2)" }}>
-          {p.pagas} de {p.total}{todas && p.ultima ? `, a última em ${diaCurto(p.ultima)}` : " recebidas"}
-        </small>
-      </span>
-    </li>
-  );
-}
-
-/** O que falta, em palavras, para cada pendência do fechamento. */
-function detalheDaPendencia(x: PendenciaCaso): string {
-  if (x.tipo === "REPASSE") return `${PARA_DESTINACAO[x.para!].toLowerCase()} · combinado para até ${diaCurto(x.prazo!)}`;
-  if (x.tipo === "PARCELA") return `parcela do contrato · vence em ${diaCurto(x.vencimento!)}`;
-  if (x.tipo === "EXITO") return "êxito calculado no encerramento, esperando a conferência em A receber";
-  if (x.tipo === "PARCELA_SEM_VALOR") return "parcela do contrato ainda sem valor (base do mês ou etapa do caso)";
-  return "o escritório adiantou e o cliente ainda não reembolsou";
-}
-
-/**
- * Encerrar o caso no financeiro (decisão 13, FI-08). O botão nunca fica desabilitado: com
- * pendência, a janela (alertdialog, foco em Voltar ao caso) diz o que falta, com valores, e leva
- * a registrar o repasse; sem pendência, pede a confirmação.
- */
-function JanelaEncerrar({ f, aoFechar, aoFeito, aoRegistrar }: {
-  f: FichaRepasse; aoFechar: () => void; aoFeito: (x: Feito) => void; aoRegistrar: (destinacao: string) => void;
-}) {
-  const [pend, setPend] = useState<{ lista: PendenciaCaso[]; falta: number }>({ lista: f.acerto.pendencias, falta: f.acerto.falta });
-  const [falha, setFalha] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
-  // EX-17 (decisão 24): os contratos ligados se encerram junto, já marcado.
-  const ligados = f.acerto.podeEncerrarContratos ? f.acerto.contratosLigados ?? [] : [];
-  const [junto, setJunto] = useState(true);
-  const desc = `Este é o caso de ${f.cliente.nome}, ${TIPOS_LEVANTAMENTO[f.tipo]} de ${dataBr(f.entrouEm)}.`;
-  const comContratos = junto && ligados.length > 0;
-  const numeros = juntarComE(ligados.map((c) => c.numero));
-
-  async function enviar() {
-    setFalha(null);
-    setEnviando(true);
-    const corpo = comContratos ? { contratos: ligados.map((c) => ({ id: c.id, versao: c.versao })) } : {};
-    const r = await chamarPortal<AcertoCaso>(`/v1/escritorio/financeiro/casos/${f.caso.id}/encerrar`, { metodo: "POST", corpo });
-    setEnviando(false);
-    if (r.ok) {
-      const n = r.dados.contratosEncerrados?.length ?? 0;
-      return aoFeito(n
-        ? { titulo: n === 1 ? "Caso e contrato encerrados." : "Caso e contratos encerrados.",
-            texto: `${f.caso.nome}: tudo recebido e repassado. ${n === 1 ? `O contrato ${numeros} foi encerrado junto` : `Os contratos ${numeros} foram encerrados junto`}. Ficou no histórico do caso e do contrato.` }
-        : { titulo: "Caso encerrado no financeiro.", texto: `${f.caso.nome}: tudo recebido e repassado. O encerramento ficou no histórico do caso.` });
-    }
-    if (comContratos && r.erro.codigo !== "VALIDATION_ERROR" && r.erro.detalhes?.motivo !== "PENDENCIAS") {
-      // Decisão 25: caso e contratos andam juntos; se algo falhou, nada foi encerrado.
-      return setFalha(`${r.erro.codigo === "VERSION_CONFLICT" ? "Um dos contratos mudou agora há pouco. " : ""}O caso e ${ligados.length === 1 ? "o contrato continuam abertos" : "os contratos continuam abertos"}. Feche esta janela, confira e tente de novo. ${textoDoErro(r.erro)}`);
-    }
-    if (r.erro.detalhes?.motivo === "PENDENCIAS") {
-      return setPend({ lista: (r.erro.detalhes.pendencias ?? []) as PendenciaCaso[], falta: Number(r.erro.detalhes.falta ?? 0) });
-    }
-    setFalha(textoDoErro(r.erro));
-  }
-
-  if (pend.lista.length) {
-    const repasses = pend.lista.filter((x) => x.tipo === "REPASSE");
-    const daqui = repasses.find((x) => x.levantamentoId === f.id);
-    const destino = daqui ? f.destinacoes.find((d) => pendente(d) && d.nome === daqui.nome && d.valor === daqui.valor) : undefined;
-    const titulo = repasses.length === pend.lista.length
-      ? `Ainda há ${contar(repasses.length, "repasse pendente", "repasses pendentes")} neste caso.`
-      : `Ainda há ${contar(pend.lista.length, "pendência", "pendências")} neste caso.`;
-    return (
-      <Janela id="j-enc" aberta alerta aoFechar={aoFechar} sobretitulo="Fechamento do caso" titulo="Ainda não dá para encerrar" descricao="j-enc-d"
-        aoEnviar={() => (destino ? aoRegistrar(destino.id) : aoFechar())}
-        pe={
-          <>
-            <button className="btn btn-sec" type="button" onClick={aoFechar} data-foco="">Voltar ao caso</button>
-            {destino ? (
-              <button className="btn btn-pri" type="submit">
-                <Icone nome="enviar" className="ico" />Registrar repasse {destino.para === "CLIENTE" ? `a ${primeiroNome(destino.nome)}` : `ao ${PARA_DESTINACAO[destino.para].toLowerCase()}`}
-              </button>
-            ) : null}
-          </>
-        }>
-        <div style={{ display: "grid", gap: 16 }}>
-          <p id="j-enc-d">{desc}</p>
-          <Aviso tom="urgencia" titulo={titulo}>
-            O financeiro do caso só encerra com tudo recebido e tudo repassado.{pend.falta ? ` Faltam ${reais(pend.falta)}.` : ""}
-          </Aviso>
-          <ul className="fi-check">
-            {pend.lista.map((x, i) => (
-              <li key={i} className="falta">
-                <Icone nome="alerta" className="ico" />
-                <span>
-                  <b>{x.nome}:</b>{x.valor !== null ? ` ${reais(x.valor)}` : ""}
-                  <small style={{ display: "block", color: "var(--texto-2)" }}>{detalheDaPendencia(x)}</small>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <Aviso tom="info" icone="ajuda">
-            Registre o que falta e o caso fica pronto para encerrar. Se algum repasse não vai acontecer (por exemplo, o perito abriu mão), registre isso no repasse, com o motivo. Assim nada some sem explicação.
-          </Aviso>
-        </div>
-      </Janela>
-    );
-  }
-
-  return (
-    <Janela id="j-enc" aberta aoFechar={aoFechar} sobretitulo="Fechamento do caso" titulo="Encerrar o caso no financeiro" descricao="j-enc-d" aoEnviar={() => void enviar()}
-      pe={
-        <>
-          <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
-          <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined} data-foco={ligados.length ? undefined : ""}>
-            <Icone nome="cadeado" className="ico" />
-            {comContratos ? (ligados.length === 1 ? "Encerrar o caso e o contrato" : "Encerrar o caso e os contratos") : "Encerrar o caso"}
-          </button>
-        </>
-      }>
-      <div style={{ display: "grid", gap: 16 }}>
-        <p id="j-enc-d">{desc} Tudo foi recebido e repassado. O encerramento fica no histórico do caso, com o seu nome e a hora.</p>
-        {falha ? <Aviso tom="urgencia" titulo={comContratos ? "Nada foi encerrado." : "O caso não foi encerrado."}>{falha}</Aviso> : null}
-        {ligados.length ? (
-          <fieldset className="fl-caso">
-            <legend>Contratos ligados ao caso<small>Encerrar para as cobranças novas. Nada é apagado.</small></legend>
-            <label className="opcao">
-              <input className="marcar" type="checkbox" checked={junto} onChange={(e) => setJunto(e.target.checked)} data-foco="" aria-describedby="j-enc-ctrs" />
-              <span>Encerrar também os contratos ligados<small>Só entram os que não têm outro caso em andamento.</small></span>
-            </label>
-            <ul className="jf-ctrs" id="j-enc-ctrs">
-              {ligados.map((c) => (
-                <li key={c.id}><Icone nome="pena" className="ico" /><span><b>{c.numero} · {c.cliente.nome}</b><small>{c.objeto}</small></span></li>
-              ))}
-            </ul>
-            {f.acerto.motivoContratos ? (
-              <p className="jf-motivo"><Icone nome="doc" className="ico" /><span>Motivo que fica no contrato: “{f.acerto.motivoContratos}”</span></p>
-            ) : null}
-          </fieldset>
-        ) : null}
-        {ligados.length ? (
-          <p className="fl-depois">
-            <Icone nome="seta" className="ico" />
-            <span>{comContratos
-              ? <>O caso sai de “acerto pendente” no Jurídico e {ligados.length === 1 ? "o contrato fica encerrado" : "os contratos ficam encerrados"}. Os dois andam juntos: ou ficam os dois, ou nenhum.</>
-              : <>O caso sai de “acerto pendente” no Jurídico. {ligados.length === 1 ? "O contrato continua ativo" : "Os contratos continuam ativos"}, e o próximo passo do cliente lembra de encerrar.</>}</span>
-          </p>
-        ) : null}
-      </div>
-    </Janela>
-  );
+/** O atalho da janela de pendência na ficha do repasse: registrar o repasse daqui (o de hoje). */
+function atalhoDoRepasse(f: FichaRepasse, x: PendenciaCaso): Atalho | null {
+  if (x.tipo !== "REPASSE" || x.levantamentoId !== f.id) return null;
+  const d = f.destinacoes.find((y) => pendente(y) && y.nome === x.nome && y.valor === x.valor);
+  return d ? { tipo: "repasse", destinacaoId: d.id, rotulo: rotuloRepasse(d) } : null;
 }
 
 export function RepasseFinanceiro({ id }: { id: string }) {

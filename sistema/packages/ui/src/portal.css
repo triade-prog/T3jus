@@ -5858,3 +5858,16 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
   .jf-sug-caixa{margin:0 16px 16px}
   .jf-fotos-bts .btn{flex:1 1 auto;justify-content:center}
 }
+
+/* ==========================================================================
+   Portal · fechamento do caso sem levantamento (F3.132, prefixo fs-), desenho aprovado em
+   docs/design/aprovadas/portal-fechamento-sem-levantamento. A janela de encerrar, comum à
+   ficha do repasse e à do contrato.
+   ========================================================================== */
+.fi-check li.fs-espera .ico{color:var(--vinho-2)}
+.fs-leg{font-family:var(--serifa);font-size:19px;font-weight:600;color:var(--vinho);margin:0}
+.jf-ctrs li.fs-ja{color:var(--texto-2)}
+.jf-ctrs li.fs-ja .ico{color:var(--vinho-4)}
+.fs-quem-ctr{display:flex;gap:10px;align-items:flex-start;margin:8px 0 0;padding:10px 12px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.fs-quem-ctr .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho)}
+.fs-anuncio{margin:0}
