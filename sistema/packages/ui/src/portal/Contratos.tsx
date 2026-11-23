@@ -24,6 +24,7 @@ import { MolduraArea } from "./MolduraArea.tsx";
 import { TabelaSemCaso, useSemCaso } from "./SemCaso.tsx";
 import { chamarPortal } from "./Moldura.tsx";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
+import { FaixaLembretes } from "./LembretesContrato.tsx";
 
 function CabContratos() {
   return (
@@ -118,6 +119,7 @@ function ContratosConteudo() {
       <div className="hn">
         <CabContratos />
         {bloco}
+        <FaixaLembretes />
         <section className="folha" aria-labelledby="t-cl" style={{ overflow: "hidden" }}>
           <h2 id="t-cl" className="sr">Lista de contratos</h2>
           <Estado icone="pena" titulo="Nenhum contrato ainda"
@@ -144,6 +146,8 @@ function ContratosConteudo() {
     <div className="hn">
       <CabContratos />
       {bloco}
+      {/* F3.144 (estado entrada): o que ficou em aberto no sistema antigo; some quando não sobra nenhum. */}
+      <FaixaLembretes />
       <section className="folha" aria-labelledby="t-cl" style={{ overflow: "hidden" }}>
         <h2 id="t-cl" className="sr">Lista de contratos</h2>
         <Busca id="ct-b" rotulo="Buscar por cliente, número ou objeto" dica="Cliente, número do contrato ou objeto" valor={busca} aoMudar={setBusca}>

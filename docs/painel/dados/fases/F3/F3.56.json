@@ -7,6 +7,6 @@
   ],
   "status": "andamento",
   "ordem": 560,
-  "proximo": "Conferir as abas e as colunas do modelo com o backup real do Astrea e as planilhas do ADVBOX de um piloto; partes que faltam em F3.114, F3.143, F3.144 e F3.145",
-  "evidencia": "Parte 1, os clientes: escolher a origem (só a sócia dona vê Astrea e ADVBOX), o backup do Astrea lido no navegador com só as abas que entram indo ao T3jus, as abas, as colunas ligadas pelo modelo, o tipo de contato (só clientes entram) e a planilha de clientes do ADVBOX até 10.000 linhas. Migration 0790_importar_sistemas.sql, testes 110_importar_sistemas_test.sql, modelos_sistemas.test.ts, app_test.ts (F3.56) e e2e portal-importacao-sistemas.spec.ts. Parte 2, os processos ativos como casos: ver F3.112. Parte 3, o financeiro antigo só como informação: ver F3.113."
+  "proximo": "Conferir as abas e as colunas do modelo com o backup real do Astrea e as planilhas do ADVBOX de um piloto; partes que faltam em F3.114 e F3.149",
+  "evidencia": "Parte 1, os clientes: escolher a origem (só a sócia dona vê Astrea e ADVBOX), o backup do Astrea lido no navegador com só as abas que entram indo ao T3jus, as abas, as colunas ligadas pelo modelo, o tipo de contato (só clientes entram) e a planilha de clientes do ADVBOX até 10.000 linhas. Migration 0790_importar_sistemas.sql, testes 110_importar_sistemas_test.sql, modelos_sistemas.test.ts, app_test.ts (F3.56) e e2e portal-importacao-sistemas.spec.ts. Parte 2, os processos ativos como casos: ver F3.112. Parte 3, o financeiro antigo só como informação: ver F3.113. Lembretes de contrato, dispensar e o caso que veio encerrado: ver F3.143, F3.144, F3.145 e F3.148."
 }

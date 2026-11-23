@@ -9,9 +9,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AREAS_DIREITO, dataBr, formatarCnj, numeroCnjValido, PAPEIS_CASO, reais, RESULTADOS_CASO, textoAvisoEtapa,
+  AREAS_DIREITO, COMO_ENCERROU, dataBr, formatarCnj, numeroCnjValido, PAPEIS_CASO, reais, RESULTADOS_CASO, textoAvisoEtapa, type ComoEncerrou,
   type AreaDireito, type ClienteLinha, type DocumentoFaltando, type Etapa, type FichaCaso, type ListaCasos, type ListaClientes, type OpcoesCaso,
-  type PapelCaso, type ResultadoCaso, type SituacaoCaso, percentual,
+  type OrigemCaso, type PapelCaso, type ResultadoCaso, type SituacaoCaso, percentual,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -22,12 +22,18 @@ import { Busca, CabAmbar, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
 import { SeloTipo } from "./Honorarios.tsx";
 import { centavos as lerCentavos } from "./honorarios.ts";
-import { botaoMudar, diaDaSemanaCurto, fraseAvisoEtapa, juntarNomes, situacaoEnvioEtapa, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr, urgenciaPrazo } from "./juridico.ts";
+import {
+  botaoMudar, diaDaSemanaCurto, fraseAvisoEtapa, juntarNomes, situacaoEnvioEtapa, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr, urgenciaPrazo,
+  diaDe, nomeDoSistema, resumoEncerrados, textoComoEncerrou, textoOrigemCaso,
+} from "./juridico.ts";
+import { SeloOrigem } from "./Importacao.tsx";
 import { JanelaPrazo, JanelaTarefa, OQueTrava, PrazosETarefas, SeloUrgencia } from "./JuridicoPrazos.tsx";
 import { corpoDosDocumentos, DOCS_INICIAL, erroDoMais, SecaoDocumentosInicio, type DocsEscolha } from "./DocumentosAbertura.tsx";
 import { JanelaChegouPessoal } from "./DocumentosPessoais.tsx";
 import { DocumentosDoCaso, JanelaEnviarDocumento, JanelaJaChegou, JanelaPedirDeNovo, JanelaPedirDocumento } from "./JuridicoDocumentos.tsx";
-import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
+import { chamarPortal, irPara, ROTAS_PORTAL, soConsulta, type EscritorioPortal } from "./Moldura.tsx";
+import { ROTAS_PASSO } from "./fichaLigada.ts";
+import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { PeticoesDoCaso } from "./Peticoes.tsx";
 import { AvisoSemCasoJuridico } from "./SemCaso.tsx";
@@ -85,8 +91,12 @@ function CabCasos({ souDono = false }: { souDono?: boolean }) {
   );
 }
 
-function CasosConteudo() {
-  const [situacao, setSituacao] = useState<SituacaoCaso>("ANDAMENTO");
+function CasosConteudo({ situacaoInicial = "ANDAMENTO", comoInicial = null }: { situacaoInicial?: SituacaoCaso; comoInicial?: ComoEncerrou | null }) {
+  const [situacao, setSituacao] = useState<SituacaoCaso>(situacaoInicial);
+  // F3.143: "Como encerrou" nos Encerrados; a lista deles vem em páginas de 25 ("Mostrar mais 25").
+  const [como, setComo] = useState<ComoEncerrou | "">(situacaoInicial === "ENCERRADO" ? comoInicial ?? "" : "");
+  const [maisDe, setMaisDe] = useState<{ caminho: string; casos: ListaCasos["casos"] }>({ caminho: "", casos: [] });
+  const [carregandoMais, setCarregandoMais] = useState(false);
   const [busca, setBusca] = useState("");
   const [q, setQ] = useState("");
   const [resp, setResp] = useState("");
@@ -99,7 +109,17 @@ function CasosConteudo() {
   if (q) filtros.set("q", q);
   if (resp) filtros.set("responsavel", resp);
   if (etapa) filtros.set("etapa", etapa);
-  const { dados, recarregar } = useCarga<ListaCasos>(`/v1/escritorio/juridico/casos?${filtros}`);
+  if (situacao === "ENCERRADO" && como) filtros.set("como", como.toLowerCase());
+  const caminho = `/v1/escritorio/juridico/casos?${filtros}`;
+  const { dados, recarregar } = useCarga<ListaCasos>(caminho);
+  // As páginas a mais valem só para o filtro em que foram pedidas.
+  const mais = maisDe.caminho === caminho ? maisDe.casos : [];
+  async function mostrarMais(pular: number) {
+    setCarregandoMais(true);
+    const r = await chamarPortal<ListaCasos>(`${caminho}&pular=${pular}`);
+    setCarregandoMais(false);
+    if (r.ok) setMaisDe((m) => ({ caminho, casos: [...(m.caminho === caminho ? m.casos : []), ...r.dados.casos] }));
+  }
 
   if (dados === "erro") return <><CabCasos /><ErroAoCarregar oque="os casos" aoTentar={recarregar} /></>;
   if (!dados) return <><CabCasos /><Carregando rotulo="Carregando os casos…" linhas={4} /></>;
@@ -125,13 +145,16 @@ function CasosConteudo() {
     );
   }
   const andamento = dados.etapas.filter((e) => !e.final);
-  const lista = dados.casos;
+  const lista = [...dados.casos, ...mais];
   const n = lista.length;
-  const filtrando = Boolean(q || resp || etapa);
+  const total = dados.total ?? n;
+  const filtrando = Boolean(q || resp || etapa || como);
+  const enc = situacao === "ENCERRADO";
+  const re = resumoEncerrados(dados, n);
   const resumo = filtrando
-    ? <b>{contar(n, "caso encontrado", "casos encontrados")}{q ? <> para “{q}”</> : null}</b>
+    ? <b>{contar(enc ? total : n, "caso encontrado", "casos encontrados")}{q ? <> para “{q}”</> : null}</b>
     : situacao === "ANDAMENTO" ? <><b>{contar(n, "caso em andamento", "casos em andamento")}</b>{t.prazoHoje ? ` · ${t.prazoHoje} com prazo hoje` : ""} · ordenados pelo prazo mais próximo</>
-    : <b>{contar(n, "caso encerrado", "casos encerrados")}</b>;
+    : <><b>{re.forte}</b>{re.resto}</>;
   return (
     <div className="hn">
       <CabCasos souDono={dados.souDono} />
@@ -148,7 +171,16 @@ function CasosConteudo() {
             <option value="">Todas as etapas</option>
             {dados.etapas.map((e) => <option key={e.id} value={e.id}>{e.ordem}. {e.nome}</option>)}
           </select>
-          <Chips rotulo="Mostrar" atual={situacao} aoEscolher={(v) => setSituacao(v as SituacaoCaso)}
+          {enc ? (
+            <>
+              <label className="sr" htmlFor="jr-como">Como encerrou</label>
+              <select className="entrada" id="jr-como" value={como} onChange={(e) => setComo(e.target.value as ComoEncerrou | "")}>
+                <option value="">Todos os encerrados</option>
+                {(Object.keys(COMO_ENCERROU) as ComoEncerrou[]).map((k) => <option key={k} value={k}>{COMO_ENCERROU[k]}</option>)}
+              </select>
+            </>
+          ) : null}
+          <Chips rotulo="Mostrar" atual={situacao} aoEscolher={(v) => { setSituacao(v as SituacaoCaso); if (v !== "ENCERRADO") setComo(""); }}
             opcoes={[{ v: "ANDAMENTO", t: `Em andamento (${t.andamento})` }, { v: "ENCERRADO", t: `Encerrados (${t.encerrados})` }]} />
         </Busca>
         {situacao === "ANDAMENTO" ? <AvisoSemCasoJuridico /> : null}
@@ -172,7 +204,7 @@ function CasosConteudo() {
           <table className="hn-tab jr-tab">
             <caption className="sr">Casos</caption>
             <colgroup>{(situacao === "ANDAMENTO" ? ["27%", "16%", "15%", "15%", "14%", "13%"] : ["36%", "22%", "22%", "20%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
-            <thead><tr>{["Caso e processo", "Cliente", situacao === "ANDAMENTO" ? "Etapa" : "Resultado", "Responsável", ...(situacao === "ANDAMENTO" ? ["Próximo prazo", "Pendências"] : [])].map((x) => <th key={x} scope="col">{x}</th>)}</tr></thead>
+            <thead><tr>{["Caso e processo", "Cliente", situacao === "ANDAMENTO" ? "Etapa" : "Como encerrou", "Responsável", ...(situacao === "ANDAMENTO" ? ["Próximo prazo", "Pendências"] : [])].map((x) => <th key={x} scope="col">{x}</th>)}</tr></thead>
             <tbody>
               {lista.map((c) => (
                 <tr key={c.id} className={c.proximoPrazo?.data && c.proximoPrazo.data <= dados.hoje ? "jr-hoje" : undefined}>
@@ -181,6 +213,7 @@ function CasosConteudo() {
                       <div>
                         <a className="jr-nome" href={ROTAS_JURIDICO.caso(c.id)}>{c.nome}</a>
                         <small>{linhaProcesso(c)}</small>
+                        {enc && c.origem ? <div style={{ marginTop: 4 }}><SeloOrigem origem={c.origem.sistema} leve /></div> : null}
                       </div>
                     </div>
                   </td>
@@ -191,10 +224,8 @@ function CasosConteudo() {
                       {c.semContrato ? <small className="jr-sem">sem contrato</small> : null}
                     </div>
                   </td>
-                  <td data-r={situacao === "ANDAMENTO" ? "Etapa" : "Resultado"}>
-                    {c.situacao === "ENCERRADO" && c.resultado ? (
-                      <Selo tom={c.resultado === "PERDA" ? "neutro" : "ativo"}>{RESULTADOS_CASO[c.resultado]}</Selo>
-                    ) : (
+                  <td data-r={situacao === "ANDAMENTO" ? "Etapa" : "Como encerrou"}>
+                    {c.situacao === "ENCERRADO" ? <ComoEncerrouCelula c={c} /> : (
                       <div className="jr-etapa">
                         <b>{c.etapa.nome}</b>
                         <Trilha ordem={c.etapa.ordem} total={dados.etapas.length} />
@@ -224,9 +255,21 @@ function CasosConteudo() {
             {filtrando ? "Confira o nome do caso, o número ou o cliente, ou limpe os filtros." : situacao === "ENCERRADO" ? "Os casos encerrados aparecem aqui, com o resultado." : "Quando houver, eles aparecem nesta lista."}
           </Estado>
         )}
+        {enc && total > n ? (
+          <div className="mais">
+            <span>Mostrando {n.toLocaleString("pt-BR")} de {total.toLocaleString("pt-BR")}</span>
+            <button className="btn btn-sec" type="button" disabled={carregandoMais} onClick={() => void mostrarMais(n)}>
+              <Icone nome="baixo" className="ico" />{carregandoMais ? "Carregando…" : "Mostrar mais 25"}
+            </button>
+          </div>
+        ) : null}
         <p className="hn-pe">
           <Icone nome="historico" className="ico" />
-          <span>Caso não se apaga. O encerrado fica guardado com o resultado, e cada mudança de etapa fica no histórico com o motivo.</span>
+          <span>
+            {enc && dados.como && (dados.como.importados || dados.como.desfeitos)
+              ? `Caso não se apaga. O que veio encerrado de outro sistema fica aqui sem resultado e sem acerto, fora das contas de ganho, perda e acordo; se quiser, registre o resultado na ficha.${dados.como.desfeitos ? " O de importação desfeita também fica, sem resultado." : ""}`
+              : "Caso não se apaga. O encerrado fica guardado com o resultado, e cada mudança de etapa fica no histórico com o motivo."}
+          </span>
         </p>
       </section>
     </div>
@@ -245,8 +288,21 @@ function ProximoPrazo({ data, hoje, oque }: { data: string; hoje: string; oque: 
   );
 }
 
-export function CasosJuridicoPortal() {
-  return <MolduraArea area="JURIDICO" secao="casos">{() => <CasosConteudo />}</MolduraArea>;
+/** A célula "Como encerrou" (F3.143): o resultado com o acerto, "Veio encerrado" ou "Importação desfeita". */
+function ComoEncerrouCelula({ c }: { c: ListaCasos["casos"][number] }) {
+  const x = textoComoEncerrou(c);
+  return (
+    <div className="il-como">
+      {x.tipo === "IMPORTADO" ? <span className="il-selo-enc"><Icone nome="pasta" className="ico" />{x.selo}</span>
+        : x.tipo === "DESFEITA" ? <Selo tom="neutro" icone="historico">{x.selo}</Selo>
+        : <Selo tom={c.resultado === "PERDA" ? "neutro" : "ativo"}>{x.selo}</Selo>}
+      <small>{x.sub}</small>
+    </div>
+  );
+}
+
+export function CasosJuridicoPortal({ situacao = "ANDAMENTO", como = null }: { situacao?: SituacaoCaso; como?: ComoEncerrou | null }) {
+  return <MolduraArea area="JURIDICO" secao="casos">{() => <CasosConteudo situacaoInicial={situacao} comoInicial={como} />}</MolduraArea>;
 }
 
 // ------------------------------------------------------------------------- Novo caso
@@ -1058,7 +1114,14 @@ function Clientes({ f, aoAdicionar }: { f: FichaCaso; aoAdicionar?: () => void }
             </div>
             <span className="jr-tel">{c.telefone ? <><Icone nome="whats" className="ico ico-s" />{telefoneBr(c.telefone)}</> : null}</span>
             <div className="jr-hon">
-              {!c.contrato ? <Selo tom="atencao" icone="alerta">sem contrato</Selo>
+              {!c.contrato && f.origem ? (
+                <>
+                  <b>Sem contrato</b>
+                  <small>{f.origem.veioEncerrado ? "Veio encerrado: não pede contrato"
+                    : lembreteDe(f, c.id) ? <a className="il-ver" href={ROTAS_JURIDICO.cliente(c.id)}>{reais(lembreteDe(f, c.id)!.valor)} em aberto no {nomeDoSistema(lembreteDe(f, c.id)!.sistema)}</a>
+                    : "Honorários na área Contratos"}</small>
+                </>
+              ) : !c.contrato ? <Selo tom="atencao" icone="alerta">sem contrato</Selo>
                 : f.veHonorarios && c.contrato.condicoes ? (
                   <>
                     <div className="hn-selos">{c.contrato.condicoes.map((x) => <SeloTipo key={x.tipo} c={x} />)}</div>
@@ -1079,7 +1142,7 @@ function Clientes({ f, aoAdicionar }: { f: FichaCaso; aoAdicionar?: () => void }
   );
 }
 
-function Contratos({ f }: { f: FichaCaso }) {
+function Contratos({ f, podeCriar = false }: { f: FichaCaso; podeCriar?: boolean }) {
   const ligados = f.clientes.filter((c) => c.contrato);
   return (
     <section className="folha" aria-labelledby="t-cl">
@@ -1102,8 +1165,175 @@ function Contratos({ f }: { f: FichaCaso }) {
             );
           })}
         </ul>
+      ) : f.origem ? (
+        <>
+          <ul className="jr-contratos">
+            <li>
+              <Icone nome="pena" className="ico ico-s" />
+              <div>
+                <b>Nenhum contrato ligado</b>
+                <small>{f.situacao === "ENCERRADO" ? "Caso encerrado não ganha lembrete de contrato." : `Veio do ${nomeDoSistema(f.origem.sistema)} sem contrato, como todo caso importado.`}</small>
+              </div>
+            </li>
+          </ul>
+          {f.situacao === "ANDAMENTO" && podeCriar ? (
+            <div className="hn-folha-acao" style={{ paddingTop: 0 }}>
+              {(f.lembretes ?? []).filter((l) => l.valor).slice(0, 1).map((l) => (
+                <p key={l.clienteId}>{f.clientes.find((c) => c.id === l.clienteId)?.nome.split(/\s+/)[0] ?? "O cliente"} tem um lembrete: <b>{reais(l.valor)}</b> em aberto no {nomeDoSistema(l.sistema)}.</p>
+              ))}
+              {f.clientes[0] ? (
+                <a data-muda className="btn btn-sec" href={ROTAS_PASSO.novoContrato((f.lembretes?.[0]?.clienteId) ?? f.clientes[0].id)}><Icone nome="pena" className="ico" />Criar o contrato</a>
+              ) : null}
+            </div>
+          ) : null}
+        </>
       ) : <p className="hn-pe" style={{ borderTop: 0 }}><Icone nome="pena" className="ico" /><span>Nenhum contrato ligado ainda.</span></p>}
     </section>
+  );
+}
+
+/** O lembrete de contrato de um cliente do caso (só para quem tem Contratos ou Financeiro). */
+const lembreteDe = (f: FichaCaso, cliente: string) => (f.lembretes ?? []).find((l) => l.clienteId === cliente && l.valor) ?? null;
+
+/** "Veio da importação" (F3.143): logo abaixo do cabeçalho, para sempre, só no caso importado. */
+function LinhaOrigem({ o }: { o: OrigemCaso }) {
+  const t = textoOrigemCaso(o);
+  return (
+    <section className="il-origem" aria-labelledby="t-ilo">
+      <span className="il-ci" aria-hidden="true"><Icone nome={o.sistema === "ASTREA" ? "enviar" : "doc"} className="ico" /></span>
+      <div>
+        <div className="il-origem-t"><h2 id="t-ilo" className="sr">Origem do caso</h2><strong aria-hidden="true">{t.titulo}</strong><SeloOrigem origem={o.sistema} /></div>
+        <dl>
+          {t.importadoEm ? <div><dt>Importado em</dt><dd>{t.importadoEm}</dd></div> : null}
+          {o.por ? <div><dt>Por</dt><dd>{o.por.nome}</dd></div> : null}
+          {t.etapa ? <div><dt>{t.rotuloEtapa}</dt><dd>{t.etapa}</dd></div> : null}
+          {t.onde ? <div><dt>{t.rotuloOnde}</dt><dd>{t.onde}</dd></div> : null}
+        </dl>
+      </div>
+      <a className="btn btn-sec" href={ROTAS_IMPORTACAO.resultado(o.importacaoId)}><Icone nome="historico" className="ico" />Ver o resultado da importação</a>
+    </section>
+  );
+}
+
+/** A folha Resultado do caso que veio encerrado (R3): sem resultado, ou o resultado registrado depois. */
+function FolhaResultado({ f, aoRegistrar }: { f: FichaCaso; aoRegistrar?: () => void }) {
+  const s = nomeDoSistema(f.origem?.sistema);
+  const reg = f.resultadoRegistrado;
+  return (
+    <section className="folha" aria-labelledby="t-res">
+      <div className="folha-cab" style={{ paddingBottom: 8 }}><div><h2 id="t-res" style={{ fontSize: 20 }}>Resultado</h2></div></div>
+      <div className="il-res">
+        {reg && f.resultado ? (
+          <>
+            <Selo tom={f.resultado === "PERDA" ? "neutro" : "ativo"} icone="check">{RESULTADOS_CASO[f.resultado]}</Selo>
+            <p>
+              <b style={{ color: "var(--texto)", fontWeight: 500 }}>Registrado {quandoFoi(reg.em)}{reg.por ? ` por ${reg.por.nome}` : ""}.</b> Entra nas contas de ganho, perda e acordo.
+              {f.acerto ? "" : " Não pede acerto no Financeiro, porque o caso veio sem contrato."}
+            </p>
+          </>
+        ) : (
+          <>
+            <span className="il-selo-enc"><Icone nome="pasta" className="ico" />Sem resultado</span>
+            <p>Veio encerrado do {s}, que não diz se foi ganho, perda ou acordo. Fica fora das contas de resultado e não pede acerto no Financeiro.</p>
+            {aoRegistrar ? (
+              <button data-muda className="btn btn-sec" type="button" onClick={aoRegistrar} style={{ justifySelf: "start" }}>
+                <Icone nome="lapis" className="ico" />Registrar o resultado
+              </button>
+            ) : null}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** "hoje" ou "em 23/11/2026". */
+function quandoFoi(em: string): string {
+  const d = diaDoInstante(em);
+  return d === diaDoInstante(new Date().toISOString()) ? "hoje" : `em ${dataBr(d)}`;
+}
+
+/** Registrar o resultado do caso que veio encerrado (F3.148; rodada 2, estados resultado e resultado-erro). */
+function JanelaResultado({ f, aoFechar, aoFeito }: { f: FichaCaso; aoFechar: () => void; aoFeito: (r: ResultadoCaso) => void }) {
+  const [resultado, setResultado] = useState<ResultadoCaso | "">("");
+  const [motivo, setMotivo] = useState("");
+  const [erros, setErros] = useState<string[]>([]);
+  const [falha, setFalha] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const corpo = useRef<HTMLDivElement>(null);
+  const s = nomeDoSistema(f.origem?.sistema);
+  const tem = (c: string) => erros.includes(c);
+  const nomes = juntarNomes(f.clientes.map((c) => c.nome.split(/\s+/)[0]!));
+
+  async function registrar() {
+    if (enviando) return;
+    setFalha(null);
+    const e = [...(resultado ? [] : ["resultado"]), ...(motivo.trim().length < 3 || motivo.trim().length > 1000 ? ["motivo"] : [])];
+    setErros(e);
+    if (e.length) return focarPrimeiroErro(corpo.current);
+    setEnviando(true);
+    const r = await chamarPortal<{ versao: number }>(`/v1/escritorio/juridico/casos/${f.id}/resultado`, { corpo: { versao: f.versao, resultado, motivo: motivo.trim() } });
+    setEnviando(false);
+    if (r.ok) return aoFeito(resultado as ResultadoCaso);
+    const campos = r.erro.detalhes?.campos;
+    if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
+      setErros(campos as string[]);
+      return focarPrimeiroErro(corpo.current);
+    }
+    setFalha(r.erro.codigo === "VERSION_CONFLICT" ? "Alguém mudou este caso enquanto a janela estava aberta. Feche e abra de novo para ver como ele está." : textoDoErro(r.erro));
+  }
+
+  return (
+    <Janela id="janela-resultado" classe="jr-larga" aberta aoFechar={aoFechar} aoEnviar={() => void registrar()}
+      sobretitulo={`Caso encerrado · veio do ${s}`} titulo={`Registrar o resultado de ${f.nome}`} descricao="janela-resultado-d"
+      pe={
+        <>
+          <button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
+          <button className="btn btn-pri" type="submit" disabled={enviando}><Icone nome="check" className="ico" />{enviando ? "Registrando…" : "Registrar o resultado"}</button>
+        </>
+      }>
+      <div ref={corpo} style={{ display: "grid", gap: 18 }}>
+        <p id="janela-resultado-d">O {s} não diz como o caso terminou. Registre aqui o que aconteceu.</p>
+        {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>Nada foi registrado: o caso continua encerrado e sem resultado, como veio do {s}.</Aviso> : null}
+        {falha ? <Aviso tom="urgencia" titulo="O resultado não foi registrado.">{falha}</Aviso> : null}
+        <p className="jr-agora">
+          Agora: <b>{f.etapa.ordem}. {f.etapa.nome}</b>, sem resultado.{f.origem?.arquivadoEm ? ` Arquivado no ${s} em ${dataBr(f.origem.arquivadoEm)}.` : ""}
+        </p>
+        <fieldset className={`grupo-opcoes jr-fs${tem("resultado") ? " il-fs-erro" : ""}`} id="jr-res" aria-describedby={descritoPor(tem("resultado") && "jr-res-er")}>
+          <legend>Resultado <span className="opcional">entra nas contas de ganho, perda e acordo</span></legend>
+          <div className="jr-opcoes jr-opcoes-3">
+            {(Object.entries(RESULTADOS_CASO) as [ResultadoCaso, string][]).map(([v, t], i) => (
+              <label key={v} className={`jr-op${resultado === v ? " jr-op-sel" : ""}`}>
+                <input className="marcar" type="radio" name="jr-res" value={v} checked={resultado === v} aria-invalid={tem("resultado") || undefined}
+                  data-foco={i === 0 ? true : undefined}
+                  onChange={() => { setResultado(v); setErros((e) => e.filter((x) => x !== "resultado")); }} />
+                <span>
+                  {t}
+                  <small>{v === "GANHO" ? "Decisão a favor do cliente" : v === "PERDA" ? "Decisão contra o cliente" : "As partes fecharam acordo"}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+          {tem("resultado") ? <ErroCampo id="jr-res-er">Escolha o resultado: ganho, perda ou acordo.</ErroCampo> : null}
+        </fieldset>
+        <div className="campo">
+          <label htmlFor="jr-res-mot">Motivo</label>
+          <textarea className="entrada" id="jr-res-mot" rows={3} maxLength={1000} value={motivo} onChange={(e) => setMotivo(e.target.value)}
+            aria-invalid={tem("motivo") || undefined} aria-describedby={descritoPor("jr-res-mot-aj", tem("motivo") && "jr-res-mot-er")} />
+          <p className="ajuda" id="jr-res-mot-aj">Só para a equipe; o cliente não vê. De 3 a 1.000 caracteres. Ex.: sentença procedente, confirmada pelo TRT; pago e arquivado em 2025.</p>
+          {tem("motivo") ? <ErroCampo id="jr-res-mot-er">O motivo está curto. Escreva pelo menos 3 caracteres: ele fica no histórico do caso e explica a quem consultar depois.</ErroCampo> : null}
+        </div>
+        <div>
+          <p className="il-oque-t">O que acontece</p>
+          <ul className="il-oque">
+            <li><Icone nome="balanca" className="ico" /><span><b>O caso entra nas contas de ganho, perda e acordo.</b> A etapa continua {f.etapa.ordem}. {f.etapa.nome}.</span></li>
+            <li><Icone nome="whats" className="ico" /><span><b>Não avisa o cliente.</b> Nenhuma mensagem vai para {nomes || "o cliente"}.</span></li>
+            <li><Icone nome="moeda" className="ico" /><span><b>Não pede acerto nem cobra êxito</b>, porque o caso não tem contrato.</span></li>
+            <li><Icone nome="historico" className="ico" /><span><b>Fica em Mudanças de etapa e no histórico do caso</b>, com seu nome, a hora e o motivo. Se a importação for desfeita, este caso fica, como tudo o que foi mexido depois dela.</span></li>
+          </ul>
+        </div>
+      </div>
+    </Janela>
   );
 }
 
@@ -1114,7 +1344,11 @@ function AvisoCliente({ f }: { f: FichaCaso }) {
       <div className="folha-cab" style={{ paddingBottom: 8 }}><div><h2 id="t-ac" style={{ fontSize: 20 }}>Aviso ao cliente</h2></div></div>
       <div className="hn-folha-acao" style={{ paddingTop: 0 }}>
         <p className="jr-ligado"><Icone nome="whats" className="ico ico-s" />{f.avisarCliente ? `Ligado para ${juntarNomes(f.clientes.map((c) => c.nome.split(/\s+/)[0]!))}` : "Desligado neste caso"}</p>
-        <p>A cada mudança de etapa, os clientes recebem um aviso simples pelo WhatsApp do escritório. {fraseAvisoEtapa(f.avisoEtapa).texto}</p>
+        {f.origem && !ultimo && f.situacao === "ANDAMENTO" ? (
+          <p>A importação não mandou mensagem. O primeiro aviso sai na próxima mudança de etapa, pela regra do escritório.</p>
+        ) : (
+          <p>A cada mudança de etapa, os clientes recebem um aviso simples pelo WhatsApp do escritório. {fraseAvisoEtapa(f.avisoEtapa).texto}</p>
+        )}
         {ultimo ? (
           ultimo.envios?.some((e) => e.mensagem)
             ? <p>Último aviso: <b>{diaCurto(diaDoInstante(ultimo.em))} · {ultimo.para.nome}</b>, {ultimo.envios.map((e) => `${e.cliente.nome.split(/\s+/)[0]} ${situacaoEnvioEtapa(e)}`).join("; ")}.</p>
@@ -1134,6 +1368,21 @@ function Mudancas({ f }: { f: FichaCaso }) {
         {f.mudancas.map((m, i) => (
           <li key={i}>
             <time dateTime={m.em}>{diaCurto(diaDoInstante(m.em))}</time>
+            {f.origem && !m.de && i === f.mudancas.length - 1 ? (
+              <div>
+                <p>Entrou em <b>{m.para.nome}</b> · pela importação do {nomeDoSistema(f.origem.sistema)}, por {m.por.nome}</p>
+                <p className="jr-motivo" style={{ fontStyle: "normal" }}>
+                  {f.origem.etapaOrigem ? `No ${nomeDoSistema(f.origem.sistema)}: “${f.origem.etapaOrigem}”${f.origem.arquivadoEm ? ` em ${dataBr(f.origem.arquivadoEm)}` : ""}. ` : ""}
+                  {f.origem.veioEncerrado ? "Entrou como encerrado, porque a importação marcou “Importar como encerrados”." : "Nenhum aviso foi ao cliente."}
+                </p>
+              </div>
+            ) : m.de && m.de.ordem === m.para.ordem && m.resultado ? (
+              <div>
+                <p>Resultado: <b>{RESULTADOS_CASO[m.resultado].toLowerCase()}</b> · {m.por.nome}</p>
+                <p className="jr-motivo">“{m.motivo}”</p>
+                <p><small>Nenhum aviso foi ao cliente.</small></p>
+              </div>
+            ) : (
             <div>
               <p>Para <b>{m.para.nome}</b> · {m.por.nome}</p>
               <p className="jr-motivo">“{m.motivo}”</p>
@@ -1162,6 +1411,7 @@ function Mudancas({ f }: { f: FichaCaso }) {
                 </>
               ) : null}
             </div>
+            )}
           </li>
         ))}
       </ol>
@@ -1171,7 +1421,7 @@ function Mudancas({ f }: { f: FichaCaso }) {
 
 function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio: EscritorioPortal; aoNome: (n: string) => void }) {
   const [f, setF] = useState<FichaCaso | null | "erro" | "nao">(null);
-  const [janela, setJanela] = useState<"etapa" | "editar" | "cliente" | "prazo" | "tarefa" | "pedir" | "enviar" | null>(null);
+  const [janela, setJanela] = useState<"etapa" | "editar" | "cliente" | "prazo" | "tarefa" | "pedir" | "enviar" | "resultado" | null>(null);
   const [doc, setDoc] = useState<{ d: DocumentoFaltando; acao: "denovo" | "chegou" } | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [vez, setVez] = useState(0);
@@ -1217,6 +1467,12 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
   const chegou = (x: Feito) => pronto(ini && doc?.d.inicio && ini.total - ini.chegaram === 1
     ? { titulo: "Os documentos para começar chegaram.", texto: `${f.responsavel ? `${f.responsavel.nome.split(/\s+/)[0]} recebe o aviso no sino. ` : ""}O lembrete automático parou de pedir.` }
     : x);
+  // F3.143, F3.148: o caso que veio de outro sistema.
+  const o = f.origem ?? null;
+  const veioSemResultado = f.encerradoPor === "IMPORTADO_ENCERRADO";
+  const pelaImportacao = Boolean(o && f.mudancas.length === 1 && !f.mudancas[0]!.de);
+  const arquivado = o?.arquivadoEm ? `Arquivado no ${nomeDoSistema(o.sistema)} em ${dataBr(o.arquivadoEm)}. ` : o && veioSemResultado ? `Veio do ${nomeDoSistema(o.sistema)} em ${dataBr(diaDe(o.em ?? f.criadoEm))}. ` : "";
+  const consulta = soConsulta(escritorio);
   const folhaDocs = (
     <DocumentosDoCaso f={f} andamento={andamento} aoPedir={() => setJanela("pedir")} aoEnviar={() => setJanela("enviar")}
       aoPedirDeNovo={(d) => setDoc({ d, acao: "denovo" })} aoChegou={(d) => setDoc({ d, acao: "chegou" })} />
@@ -1241,6 +1497,7 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
                 ) : (
                   <span className={`selo selo-${andamento ? "ativo" : "neutro"}`}>{andamento ? "Em andamento" : `Encerrado${f.resultado ? ` · ${RESULTADOS_CASO[f.resultado]}` : ""}`}</span>
                 )}
+                {veioSemResultado ? <span className="il-selo-enc"><Icone nome="pasta" className="ico" />Veio encerrado</span> : null}
                 <span>{f.numero ? formatarCnj(f.numero) : "Sem número ainda"}</span>
                 {f.tribunal || f.sistema ? <span>{[f.tribunal, f.sistema].filter(Boolean).join(" · ")}</span> : null}
               </p>
@@ -1255,8 +1512,10 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
             {andamento && ini
               ? <>Desde {diaCurto(diaDoInstante(f.etapaDesde))}. <b>Antes de seguir: juntar os documentos, {ini.chegaram} de {ini.total}.</b></>
               : andamento
-              ? <>Desde {diaCurto(diaDoInstante(f.etapaDesde))}.{prox ? <> Próxima: <b>{prox}</b>.</> : null}</>
+              ? <>Desde {diaCurto(diaDoInstante(f.etapaDesde))}{pelaImportacao ? ", pela importação" : ""}.{prox ? <> Próxima: <b>{prox}</b>.</> : null}</>
               : acertoTxt ? <>{acertoTxt.frase}</>
+              : veioSemResultado ? <>{arquivado}Entrou encerrado, sem resultado e sem acerto.</>
+              : f.resultadoRegistrado ? <>{arquivado}Resultado registrado {quandoFoi(f.resultadoRegistrado.em)}{f.resultadoRegistrado.por ? `, por ${f.resultadoRegistrado.por.nome}` : ""}.</>
               : <>Encerrado em {f.encerradoEm ? dataBr(diaDoInstante(f.encerradoEm)) : "—"}.</>}
           </p>
           {/* EX-17, decisão 21: no caso com acerto pendente, "Ver o acerto" no lugar de "Mudar etapa". */}
@@ -1283,9 +1542,16 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
           ) : null}
         </section>
       </div>
+      {o ? <LinhaOrigem o={o} /> : null}
       <div className="hn-grade">
         <div className="hn-col">
           {ini ? folhaDocs : null}
+          {o && andamento && !f.prazos.length ? (
+            <Aviso tom="atencao" titulo="Nenhum prazo cadastrado."
+              acoes={consulta ? undefined : <button data-muda className="btn btn-pri" type="button" onClick={() => setJanela("prazo")}><Icone nome="mais" className="ico" />Cadastrar o próximo prazo</button>}>
+              A importação não traz prazos, audiências nem tarefas do {nomeDoSistema(o.sistema)}. Confira o processo no tribunal e cadastre o próximo prazo.
+            </Aviso>
+          ) : null}
           <Dados f={f} aoEditar={andamento ? () => setJanela("editar") : undefined} />
           <Clientes f={f} aoAdicionar={andamento ? () => setJanela("cliente") : undefined} />
           <PrazosETarefas f={f} escritorio={andamento ? escritorio : undefined} aoNovoPrazo={andamento ? () => setJanela("prazo") : undefined} aoNovaTarefa={andamento ? () => setJanela("tarefa") : undefined}
@@ -1295,8 +1561,11 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
         <aside className="hn-col" aria-label="Sobre o caso">
           <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} aoDocumentoChegou={(d) => setDoc({ d, acao: "chegou" })} />
           <PeticoesDoCaso key={`pc-${vez}`} casoId={f.id} andamento={andamento} />
+          {veioSemResultado || f.resultadoRegistrado ? (
+            <FolhaResultado f={f} aoRegistrar={f.podeRegistrarResultado && !consulta ? () => setJanela("resultado") : undefined} />
+          ) : null}
           {f.acerto ? <FolhaAcertoCaso a={f.acerto} caso={{ encerradoEm: f.encerradoEm, resultado: f.resultado }} /> : null}
-          <Contratos f={f} />
+          <Contratos f={f} podeCriar={!consulta && escritorio.areas.includes("CONTRATOS")} />
           <AvisoCliente f={f} />
           <Mudancas f={f} />
         </aside>
@@ -1308,6 +1577,18 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
             setFeito(r.encerrado
               ? { titulo: "Caso encerrado", texto: "O resultado ficou no histórico do caso." }
               : { titulo: `Etapa mudada para ${r.para}`, texto: r.aviso ? "O aviso ao cliente ficou guardado nas mudanças de etapa." : "A mudança ficou no histórico do caso." });
+            setVez((v) => v + 1);
+          }} />
+      ) : null}
+      {janela === "resultado" ? (
+        <JanelaResultado f={ficha} aoFechar={fechar}
+          aoFeito={(r) => {
+            fechar();
+            const nomes = juntarNomes(ficha.clientes.map((c) => c.nome.split(/\s+/)[0]!));
+            setFeito({
+              titulo: `Resultado registrado: ${RESULTADOS_CASO[r].toLowerCase()}.`,
+              texto: `O caso entra nas contas de resultado e a mudança está no histórico. Nenhum aviso foi ${nomes ? `a ${nomes}` : "ao cliente"}.`,
+            });
             setVez((v) => v + 1);
           }} />
       ) : null}

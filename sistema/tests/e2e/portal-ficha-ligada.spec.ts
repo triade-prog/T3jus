@@ -155,6 +155,33 @@ test.describe("Ficha do cliente ligada (F3.110, F3.111)", () => {
     await semViolacoes(page);
   });
 
+  test("F3.145: dispensar o lembrete na folha do Astrea; o dispensado vira uma linha discreta", async ({ page }) => {
+    const anterior = (x: Record<string, unknown>) => ({ corpo: { anterior: {
+      origem: "ASTREA", importacao: { id: "f1", arquivo: "backup-astrea.xlsx", em: "2026-11-22T19:50:00Z" }, pago: 0, total: 1,
+      lembretes: [{ id: "d1000000-0000-4000-8000-000000000001", valor: 375000, lancamentos: 3, caso: { id: CASO, nome: "Tavares x Metalúrgica Andrade" } }],
+      dispensados: [], lancamentos: [{ data: "2026-11-15", descricao: "Honorários · parcela 2 de 4", valor: 125000, situacao: "EM_ABERTO", caso: null }], ...x,
+    } } });
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: FICHA },
+      "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET /v1/escritorio/clientes/${cid(1)}/anterior`]: [anterior({}), anterior({ lembretes: [], dispensados: [{
+        id: "d1000000-0000-4000-8000-000000000001", valor: 375000, caso: null, motivo: "JA_NEGOCIADO", detalhe: null, em: new Date().toISOString(), por: MARINA }] })],
+      "POST /v1/escritorio/contratos/lembretes/d1000000-0000-4000-8000-000000000001/dispensar": { corpo: { lembrete: { id: "d1000000-0000-4000-8000-000000000001" }, totais: {}, clientesAbertos: 0 } },
+    });
+    await page.goto(`${P}/clientes/${cid(1)}`);
+    const antigo = page.getByRole("region", { name: "Do Astrea" });
+    await antigo.getByRole("button", { name: "Dispensar" }).click();
+    const j = page.getByRole("alertdialog", { name: "Dispensar o lembrete de Antônia?" });
+    await expect(j).toContainText("Caso Tavares x Metalúrgica Andrade · 3 lançamentos em aberto no Astrea");
+    await j.getByRole("radio", { name: "Já negociado ou recebido fora do T3jus" }).check();
+    await j.getByRole("button", { name: "Dispensar o lembrete" }).click();
+    await expect(antigo).toContainText("Lembrete de R$ 3.750,00 dispensado hoje por Marina Ribeiro: “Já negociado ou recebido fora do T3jus”.");
+    await expect(antigo.getByRole("link", { name: "Ver em Dispensados" })).toHaveAttribute("href", "/contratos/contratos/lembretes?mostrar=dispensados");
+    expect(pedidos.find((p) => p.metodo === "POST")?.corpo).toEqual({ motivo: "JA_NEGOCIADO", detalhe: null });
+    await semViolacoes(page);
+  });
+
   test("assinatura na ficha: abre o caso junto e leva à ficha do caso (CH-10)", async ({ page }) => {
     await page.route("**/arquivos-falsos/**", (rota) => rota.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
     const pedidos = await simular(page, {

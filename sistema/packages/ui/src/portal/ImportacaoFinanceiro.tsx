@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  CAMPOS_LANCAMENTO_IMPORTACAO, dataBr, NOMES_CAMPO_IMPORTACAO, reais,
+  CAMPOS_LANCAMENTO_IMPORTACAO, dataBr, MOTIVOS_DISPENSA, NOMES_CAMPO_IMPORTACAO, reais,
   type CampoImportacao, type ColunaImportacao, type DecisaoLinha, type FinanceiroAnterior, type Importacao, type LinhaPrevia,
   type ParesImportacao, type ProblemaLinha, type ResumoPrevia,
 } from "@t3jus/domain";
@@ -20,6 +20,8 @@ import { ROTAS_PASSO } from "./fichaLigada.ts";
 import { explicaProblema, ROTAS_IMPORTACAO } from "./importacao.ts";
 import { chamarPortal, irPara } from "./Moldura.tsx";
 import { API, CabFluxo, Corrigir, Folha, Grade, GrupoPares, Lgpd, Passos, plural, SISTEMA_ORIGEM } from "./Importacao.tsx";
+import { JanelaDispensar, type AlvoDispensa } from "./LembretesContrato.tsx";
+import { quandoDispensado, ROTAS_LEMBRETES } from "./lembretes.ts";
 
 type EscolhasLanc = { lancSituacao: Record<string, string>; lancTipo: Record<string, string> };
 const SITUACOES_LANC = [{ v: "PAGO", t: "Pago: fica no histórico da ficha" }, { v: "EM_ABERTO", t: "Em aberto: vira lembrete de contrato" }];
@@ -443,6 +445,7 @@ export function EntrouFinanceiro({ imp }: { imp: Importacao }) {
       <li>
         <span className="im-ci"><Icone nome="pena" className="ico" /></span>
         <span><strong>{plural(r.lembretes ?? 0, "lembrete de contrato", "lembretes de contrato")}</strong><small>Clientes com valor em aberto no Astrea, {reais(r.valorEmAberto ?? 0)}. Crie o contrato para cobrar; o lembrete some da ficha quando o contrato é criado.</small></span>
+        {r.lembretes && !imp.desfeita ? <a className="btn btn-sec" href={ROTAS_LEMBRETES.lista}>Ver lembretes</a> : null}
       </li>
       <li>
         <span className="im-ci"><Icone nome="carteira" className="ico" /></span>
@@ -455,9 +458,20 @@ export function EntrouFinanceiro({ imp }: { imp: Importacao }) {
 // ------------------------------------------------------------------------------- na ficha do cliente
 
 /** Ficha do cliente: o que veio do sistema antigo. Quem não é do Financeiro nem dos Contratos não vê. */
-export function FolhaSistemaAntigo({ cliente, podeCriarContrato }: { cliente: string; podeCriarContrato: boolean }) {
+export function FolhaSistemaAntigo({ cliente, nome = "", podeCriarContrato, podeDispensar = false, veLembretes = false }: {
+  cliente: string;
+  /** O nome do cliente, para a janela de dispensar. */
+  nome?: string;
+  podeCriarContrato: boolean;
+  /** Quem tem a área Contratos dispensa o lembrete (F3.145, R1). */
+  podeDispensar?: boolean;
+  /** Quem tem a área Contratos abre a lista dos lembretes ("Ver em Dispensados"). */
+  veLembretes?: boolean;
+}) {
   const [a, setA] = useState<FinanceiroAnterior | null>(null);
   const [todos, setTodos] = useState(false);
+  const [alvo, setAlvo] = useState<AlvoDispensa | null>(null);
+  const [vez, setVez] = useState(0);
   useEffect(() => {
     let vivo = true;
     void chamarPortal<{ anterior: FinanceiroAnterior | null }>(`/v1/escritorio/clientes/${cliente}/anterior`).then((r) => {
@@ -466,9 +480,10 @@ export function FolhaSistemaAntigo({ cliente, podeCriarContrato }: { cliente: st
     return () => {
       vivo = false;
     };
-  }, [cliente]);
+  }, [cliente, vez]);
   if (!a) return null;
   const sistema = SISTEMA_ORIGEM[a.origem] || "sistema antigo";
+  const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const lista = todos ? a.lancamentos : a.lancamentos.slice(0, 5);
   return (
     <section className="folha" aria-labelledby="t-antigo">
@@ -481,9 +496,29 @@ export function FolhaSistemaAntigo({ cliente, podeCriarContrato }: { cliente: st
       <div style={{ padding: "0 24px 20px", display: "grid", gap: 12 }}>
         {a.lembretes.map((l) => (
           <Aviso key={l.id} tom="atencao" icone="pena" titulo={`${reais(l.valor)} em aberto no ${sistema}${l.caso ? `, no caso ${l.caso.nome}` : ""}.`}
-            acoes={podeCriarContrato ? <a className="btn btn-sec" href={ROTAS_PASSO.novoContrato(cliente)}><Icone nome="pena" className="ico" />Criar o contrato</a> : undefined}>
-            No T3jus, a cobrança nasce do contrato. Crie o contrato para cobrar; este lembrete some quando ele é criado.
+            acoes={podeCriarContrato || podeDispensar ? (
+              <>
+                {podeCriarContrato ? <a data-muda className="btn btn-sec" href={ROTAS_PASSO.novoContrato(cliente)}><Icone nome="pena" className="ico" />Criar o contrato</a> : null}
+                {podeDispensar ? (
+                  <button data-muda className="btn btn-fantasma" type="button"
+                    onClick={() => setAlvo({ id: l.id, cliente: nome, caso: l.caso?.nome ?? null, lancamentos: l.lancamentos, valor: l.valor, origem: a.origem })}>
+                    <Icone nome="xis" className="ico" />Dispensar
+                  </button>
+                ) : null}
+              </>
+            ) : undefined}>
+            No T3jus, a cobrança nasce do contrato. Crie o contrato para cobrar; este lembrete some quando ele é criado.{podeDispensar ? " Se o escritório não vai cobrar, dispense com o motivo." : ""}
+            {l.contratoAtivo ? ` Já tem o contrato ${l.contratoAtivo.numero}, ativo: se este valor já entra nele, dispense o lembrete.` : ""}
           </Aviso>
+        ))}
+        {(a.dispensados ?? []).map((x) => (
+          <p key={x.id} className="il-disp">
+            <Icone nome="historico" className="ico" />
+            <span>
+              Lembrete de {reais(x.valor)} {quandoDispensado(x.em, x.por, hoje).replace(/^Dispensado/, "dispensado")}: “{MOTIVOS_DISPENSA[x.motivo]}”.{" "}
+              {veLembretes ? <a href={ROTAS_LEMBRETES.dispensados}>Ver em Dispensados</a> : null}
+            </span>
+          </p>
         ))}
         {a.pago ? <p style={{ margin: 0 }}><b>{reais(a.pago)}</b> pagos antes do T3jus. Sem recibo e fora do Caixa.</p> : null}
         <ul className="im-antigo" aria-label={`Lançamentos do ${sistema}`} style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
@@ -499,6 +534,8 @@ export function FolhaSistemaAntigo({ cliente, podeCriarContrato }: { cliente: st
         ) : null}
         {a.total > a.lancamentos.length && todos ? <p style={{ margin: 0, fontSize: 13, color: "var(--texto-2)" }}>Mostrando os {a.lancamentos.length} mais recentes de {a.total}.</p> : null}
       </div>
+      {alvo ? <JanelaDispensar key={alvo.id} id="janela-dispensar-f" alvo={alvo} aoFechar={() => setAlvo(null)}
+        aoFeito={() => { setAlvo(null); setVez((v) => v + 1); }} aoAtualizar={() => { setAlvo(null); setVez((v) => v + 1); }} /> : null}
     </section>
   );
 }

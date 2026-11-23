@@ -24,6 +24,7 @@ export * from "./ia.ts";
 export * from "./inicio.ts";
 export * from "./relatorios.ts";
 export * from "./importacao.ts";
+export * from "./lembretes_contrato.ts";
 export * from "./modelos_sistemas.ts";
 export * from "./zip.ts";
 export * from "./docx.ts";

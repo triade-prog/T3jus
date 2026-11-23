@@ -299,7 +299,27 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       if ((d.pagaEm ?? "") > "2026-11-18") erroBanco("TC422", { motivo: "DATA_NO_FUTURO", campos: ["pagaEm"] });
       return { id: a.p_conta, pagaEm: d.pagaEm };
     },
-    portal_juridico_casos: (a) => ({ situacao: a.p_situacao, q: a.p_q, escritorio: a.p_escritorio, casos: [] }),
+    portal_juridico_casos: (a) => ({ situacao: a.p_situacao, q: a.p_q, escritorio: a.p_escritorio, como: a.p_como, pular: a.p_pular, casos: [] }),
+    portal_juridico_caso_resultado: (a) => {
+      const d = a.p_dados as { resultado?: string; motivo?: string };
+      const campos = [...(d.resultado ? [] : ["resultado"]), ...((d.motivo ?? "").trim().length >= 3 ? [] : ["motivo"])];
+      if (campos.length) erroBanco("TC422", { motivo: d.resultado ? "MOTIVO_OBRIGATORIO" : "RESULTADO_OBRIGATORIO", campos });
+      if (a.p_versao !== 4) erroBanco("TC409", { versao: 5 });
+      return { id: a.p_caso, versao: 5, resultado: d.resultado };
+    },
+    portal_contratos_lembretes: (a) => ({ situacao: a.p_situacao, q: a.p_q, ordem: a.p_ordem, pular: a.p_pular, escritorio: a.p_escritorio, lembretes: [] }),
+    portal_contratos_lembretes_resumo: (a) => ({ clientes: 81, abertos: 87, valor: 4525000, escritorio: a.p_escritorio }),
+    portal_lembrete_dispensar: (a) => {
+      const d = a.p_dados as { motivo?: string; detalhe?: string };
+      if (a.p_lembrete === ANEXO_NOTA) erroBanco("TC409", { motivo: "JA_RESOLVIDO", contrato: { id: CLIENTE, numero: "C-2026-038" } });
+      const campos = [...(d.motivo ? [] : ["motivo"]), ...(d.motivo === "OUTRO" && (d.detalhe ?? "").trim().length < 3 ? ["detalhe"] : [])];
+      if (campos.length) erroBanco("TC422", { motivo: "MOTIVO_OBRIGATORIO", campos });
+      return { lembrete: { id: a.p_lembrete, situacao: "DISPENSADO" }, totais: {}, escritorio: a.p_escritorio };
+    },
+    portal_lembrete_trazer: (a) => {
+      if (a.p_lembrete === ANEXO_NOTA) erroBanco("TC409", { motivo: "NAO_DISPENSADO" });
+      return { lembrete: { id: a.p_lembrete, situacao: "ABERTO" }, totais: {}, escritorio: a.p_escritorio };
+    },
     portal_juridico_opcoes: () => ({ etapas: [], contratos: [] }),
     portal_juridico_caso_criar: (a) => ({ id: CLIENTE, versao: 1, numero: (a.p_dados as { numero: string | null }).numero }),
     portal_juridico_caso: (a) => ({ id: a.p_caso, nome: "Benedito x Metalúrgica" }),
@@ -1890,6 +1910,68 @@ Deno.test("EX-01, EX-03: Jurídico, lista, cadastrar com o número só em dígit
   assertEquals(sem.detalhes?.motivo, "MOTIVO_OBRIGATORIO");
   assertEquals((await (await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/etapa`, { corpo: { versao: 1, etapaId: CLIENTE, motivo: "Citação" }, cookie })).json()).versao, 2);
   assertEquals((await m.pedir("/v1/escritorio/juridico/casos/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("F3.143, F3.148: Encerrados com \"Como encerrou\" e a página de 25, e registrar o resultado do caso que veio encerrado", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const l = await (await m.pedir("/v1/escritorio/juridico/casos?situacao=encerrado&como=importado&pular=25", { cookie })).json();
+  assertEquals([l.situacao, l.como, l.pular, l.escritorio], ["ENCERRADO", "IMPORTADO", 25, AURORA]);
+  const sem = await (await m.pedir("/v1/escritorio/juridico/casos", { cookie })).json();
+  assertEquals([sem.como, sem.pular], [null, 0]);
+  // "Como encerrou" só vale nos Encerrados; valor desconhecido e página fora da faixa não chegam ao banco.
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/casos?como=importado", { cookie }))).detalhes?.campos, ["como"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/casos?situacao=encerrado&como=tudo", { cookie }))).detalhes?.campos, ["como"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/casos?situacao=encerrado&pular=-1", { cookie }))).detalhes?.campos, ["pular"]);
+  const n = m.chamadas.filter((x) => x.funcao === "portal_juridico_casos").length;
+  assertEquals(n, 2);
+
+  const r = await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/resultado`, { corpo: { versao: 4, resultado: "GANHO", motivo: "Sentença procedente" }, cookie });
+  assertEquals([r.status, (await r.json()).versao], [200, 5]);
+  const ch = m.chamadas.findLast((x) => x.funcao === "portal_juridico_caso_resultado")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_caso, ch.args.p_versao, ch.args.p_dados], [AURORA, CLIENTE, 4, { resultado: "GANHO", motivo: "Sentença procedente" }]);
+  // Os dois erros juntos, com o motivo e os campos, como a tela espera.
+  const e = await erro(await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/resultado`, { corpo: { versao: 4, motivo: "ok" }, cookie }));
+  assertEquals([e.codigo, e.detalhes?.motivo, e.detalhes?.campos], ["VALIDATION_ERROR", "RESULTADO_OBRIGATORIO", ["resultado", "motivo"]]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/resultado`, { corpo: { versao: 3, resultado: "PERDA", motivo: "Sentença" }, cookie }))).codigo, "VERSION_CONFLICT");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/resultado`, { corpo: { resultado: "PERDA" }, cookie }))).detalhes?.campos, ["versao"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/casos/nao-e-id/resultado", { corpo: { versao: 1 }, cookie })).status, 404);
+  assertEquals((await m.pedir(`/v1/escritorio/juridico/casos/${CLIENTE}/resultado`, { corpo: { versao: 4, resultado: "GANHO", motivo: "abc" } })).status, 401);
+});
+
+Deno.test("F3.144, F3.145: lembretes de contrato, a lista, a faixa, dispensar e trazer de volta; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const l = await (await m.pedir("/v1/escritorio/contratos/lembretes?situacao=dispensado&q=Tavares&ordem=antigo&pular=25", { cookie })).json();
+  assertEquals([l.situacao, l.q, l.ordem, l.pular, l.escritorio], ["DISPENSADO", "Tavares", "ANTIGO", 25, AURORA]);
+  const p = await (await m.pedir("/v1/escritorio/contratos/lembretes", { cookie })).json();
+  assertEquals([p.situacao, p.q, p.ordem, p.pular], ["ABERTO", null, null, 0]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/contratos/lembretes?situacao=todos", { cookie }))).detalhes?.campos, ["situacao"]);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/contratos/lembretes?ordem=data", { cookie }))).detalhes?.campos, ["ordem"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/contratos/lembretes?q=${"x".repeat(121)}`, { cookie }))).detalhes?.campos, ["q"]);
+  // A rota não cai em /contratos/:id.
+  assertEquals((await (await m.pedir("/v1/escritorio/contratos/lembretes/resumo", { cookie })).json()).escritorio, AURORA);
+  assertEquals(m.chamadas.some((x) => x.funcao === "portal_contrato"), false);
+
+  const d = await (await m.pedir(`/v1/escritorio/contratos/lembretes/${CLIENTE}/dispensar`, { corpo: { motivo: "PERDOADO", detalhe: "Cliente antigo" }, cookie })).json();
+  assertEquals([d.lembrete.situacao, d.escritorio], ["DISPENSADO", AURORA]);
+  const ch = m.chamadas.findLast((x) => x.funcao === "portal_lembrete_dispensar")!;
+  assertEquals([ch.args.p_lembrete, ch.args.p_dados], [CLIENTE, { motivo: "PERDOADO", detalhe: "Cliente antigo" }]);
+  const sem = await erro(await m.pedir(`/v1/escritorio/contratos/lembretes/${CLIENTE}/dispensar`, { corpo: {}, cookie }));
+  assertEquals([sem.codigo, sem.detalhes?.motivo, sem.detalhes?.campos], ["VALIDATION_ERROR", "MOTIVO_OBRIGATORIO", ["motivo"]]);
+  const outro = await erro(await m.pedir(`/v1/escritorio/contratos/lembretes/${CLIENTE}/dispensar`, { corpo: { motivo: "OUTRO", detalhe: " a " }, cookie }));
+  assertEquals(outro.detalhes?.campos, ["detalhe"]);
+  const ja = await erro(await m.pedir(`/v1/escritorio/contratos/lembretes/${ANEXO_NOTA}/dispensar`, { corpo: { motivo: "PERDOADO" }, cookie }));
+  assertEquals([ja.codigo, ja.detalhes?.motivo, (ja.detalhes?.contrato as { numero: string }).numero], ["VERSION_CONFLICT", "JA_RESOLVIDO", "C-2026-038"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/contratos/lembretes/${CLIENTE}/dispensar`, { corpo: { detalhe: "x".repeat(401) }, cookie }))).detalhes?.campos, ["detalhe"]);
+
+  assertEquals((await (await m.pedir(`/v1/escritorio/contratos/lembretes/${CLIENTE}/trazer`, { metodo: "POST", cookie })).json()).lembrete.situacao, "ABERTO");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/contratos/lembretes/${ANEXO_NOTA}/trazer`, { metodo: "POST", cookie }))).detalhes?.motivo, "NAO_DISPENSADO");
+  assertEquals((await m.pedir("/v1/escritorio/contratos/lembretes/nao-e-id/trazer", { metodo: "POST", cookie })).status, 404);
+  for (const f of ["portal_contratos_lembretes", "portal_contratos_lembretes_resumo", "portal_lembrete_dispensar", "portal_lembrete_trazer"]) {
+    assert(m.chamadas.filter((x) => x.funcao === f).every((x) => x.args.p_escritorio === AURORA), f);
+  }
+  assertEquals((await m.pedir("/v1/escritorio/contratos/lembretes")).status, 401);
 });
 
 Deno.test("EX-01: áreas do direito e o número do CNJ do domínio batem com o banco", async () => {

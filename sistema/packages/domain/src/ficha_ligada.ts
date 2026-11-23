@@ -68,7 +68,11 @@ export interface ItemPasso {
   /** CONTRATO_ATIVO: a próxima parcela (decisão 27). */
   proximo?: { vencimento: string; descricao: string; valor: number | null } | null;
   /** FECHAMENTO e ATENDIDO: o caso (sem nome para quem não tem Jurídico), os passos e o fim. */
-  caso?: { id: string | null; nome: string | null; resultado: "GANHO" | "PERDA" | "ACORDO" | null; encerradoEm: string | null } | null;
+  caso?: {
+    id: string | null; nome: string | null; resultado: "GANHO" | "PERDA" | "ACORDO" | null; encerradoEm: string | null;
+    /** ATENDIDO: o sistema de onde o caso veio encerrado, quando o resultado foi registrado depois (F3.148). */
+    veioEncerradoDe?: "PLANILHA" | "ASTREA" | "ADVBOX_PLANILHA" | null;
+  } | null;
   passos?: PassoFechamento[];
   fim?: string | null;
   /** DOCUMENTOS: quantos dos de começar chegaram, o que falta e o aviso com a lista (decisão 46). */

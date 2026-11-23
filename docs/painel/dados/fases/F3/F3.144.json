@@ -5,6 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
-  "ordem": 958.2
+  "status": "feito",
+  "ordem": 958.2,
+  "evidencia": "Lista dos lembretes em Contratos › Contratos › Lembretes (Abertos, Viraram contrato, Dispensados; busca, ordem, \"De onde vieram\"), a faixa na lista de Contratos e o \"Ver lembretes\" do resultado da importação. Migration 0921_lembretes_caso_importado.sql, pgTAP 131_lembretes_caso_importado_test.sql (121 testes), app_test.ts (F3.144), lembretes_contrato.test.ts, lembretes.test.ts e e2e portal-lembretes-contrato.spec.ts."
 }

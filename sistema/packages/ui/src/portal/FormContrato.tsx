@@ -117,12 +117,16 @@ function ResumoCorpo({ lista, ativo }: { lista: RascunhoCondicao[]; ativo: boole
 
 const nomeTipo = (t: string) => ({ FIXO: "Fixo", PARCELADO: "Parcelado", MENSAL: "Mensal", EXITO: "Êxito", SUCUMBENCIA: "Sucumbência", ATO: "Por ato", RECORRENTE: "Percentual recorrente" })[t] ?? t;
 
-function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPortal; ficha: FichaContrato | null; proposta: PropostaParaContrato | null }) {
+function Formulario({ escritorio, ficha, proposta, clienteInicial = null }: {
+  escritorio: EscritorioPortal; ficha: FichaContrato | null; proposta: PropostaParaContrato | null;
+  /** "Criar o contrato" de um lembrete (F3.144): o contrato novo já com o cliente escolhido. */
+  clienteInicial?: string | null;
+}) {
   const [pessoas, setPessoas] = useState<Pessoa[] | null>(null);
   const [clientes, setClientes] = useState<ClienteLinha[] | null>(ficha || proposta ? [] : null);
-  const [trocando, setTrocando] = useState(!ficha && !proposta);
+  const [trocando, setTrocando] = useState(!ficha && !proposta && !clienteInicial);
   const [r, setR] = useState<Rascunho>(() => ({
-    clienteId: ficha?.cliente.id ?? proposta?.cliente.id ?? "",
+    clienteId: ficha?.cliente.id ?? proposta?.cliente.id ?? clienteInicial ?? "",
     objeto: ficha?.objeto ?? proposta?.servico ?? "",
     area: ficha?.area ?? "",
     responsavelId: ficha?.responsavel.id ?? proposta?.responsavel.id ?? "",
@@ -401,7 +405,7 @@ function Formulario({ escritorio, ficha, proposta }: { escritorio: EscritorioPor
   );
 }
 
-function CarregarProposta({ propostaId, escritorio }: { propostaId: string | null; escritorio: EscritorioPortal }) {
+function CarregarProposta({ propostaId, escritorio, clienteId }: { propostaId: string | null; escritorio: EscritorioPortal; clienteId: string | null }) {
   const [p, setP] = useState<PropostaParaContrato | null | "erro" | "nao" | "nao-aceita">(propostaId ? null : "nao");
   const [vez, setVez] = useState(0);
   useEffect(() => {
@@ -409,7 +413,7 @@ function CarregarProposta({ propostaId, escritorio }: { propostaId: string | nul
     void chamarPortal<PropostaParaContrato>(`/v1/escritorio/contratos/da-proposta/${propostaId}`).then((r) =>
       setP(r.ok ? r.dados : r.status === 404 ? "nao" : r.erro.detalhes?.motivo === "PROPOSTA_NAO_ACEITA" ? "nao-aceita" : "erro"));
   }, [propostaId, vez]);
-  if (!propostaId) return <Formulario escritorio={escritorio} ficha={null} proposta={null} />;
+  if (!propostaId) return <Formulario escritorio={escritorio} ficha={null} proposta={null} clienteInicial={clienteId} />;
   if (p === "erro") return <ErroAoCarregar oque="a proposta" aoTentar={() => setVez((v) => v + 1)} />;
   if (p === "nao") return <ErroAoCarregar oque="a proposta" aoTentar={() => setVez((v) => v + 1)} texto="Ela não existe ou é de outro escritório. Volte para Propostas e abra de novo." />;
   if (p === "nao-aceita") {
@@ -424,10 +428,10 @@ function CarregarProposta({ propostaId, escritorio }: { propostaId: string | nul
   return <Formulario escritorio={escritorio} ficha={null} proposta={p} />;
 }
 
-export function NovoContratoPortal({ propostaId }: { propostaId?: string | null }) {
+export function NovoContratoPortal({ propostaId, clienteId }: { propostaId?: string | null; clienteId?: string | null }) {
   return (
     <MolduraArea area="CONTRATOS" secao="contratos" trilha={[{ nome: "Novo contrato" }]} pagina="co-ficha">
-      {(e) => <CarregarProposta propostaId={propostaId ?? null} escritorio={e} />}
+      {(e) => <CarregarProposta propostaId={propostaId ?? null} escritorio={e} clienteId={clienteId ?? null} />}
     </MolduraArea>
   );
 }

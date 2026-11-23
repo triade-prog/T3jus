@@ -1213,7 +1213,8 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
               <Contatos f={f} aoEditar={editar} />
               <FolhaSemAvisos f={f} dados={avisos.dados} eu={escritorio.pessoa} podeEscrever={!soConsulta(escritorio) && !arquivado}
                 aoFeito={(x) => { setFeito(x); avisos.recarregar(); }} />
-              <FolhaSistemaAntigo cliente={f.id} podeCriarContrato={!soConsulta(escritorio) && !arquivado && escritorio.areas.includes("CONTRATOS")} />
+              <FolhaSistemaAntigo cliente={f.id} nome={f.nome} podeCriarContrato={!soConsulta(escritorio) && !arquivado && escritorio.areas.includes("CONTRATOS")}
+                podeDispensar={!soConsulta(escritorio) && escritorio.areas.includes("CONTRATOS")} veLembretes={escritorio.areas.includes("CONTRATOS")} />
             </>
           )
         }
