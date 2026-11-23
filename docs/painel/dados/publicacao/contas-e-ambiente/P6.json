@@ -1,0 +1,10 @@
+{
+  "id": "P6",
+  "texto": "Aplicar no Supabase as migrations 0940 e 0941 juntas (empréstimos, F3.51) e publicar a api-portal com as rotas dos empréstimos",
+  "refs": [
+    "FI-20"
+  ],
+  "status": "pendente",
+  "ordem": 60,
+  "nota": "As duas vão juntas: a 0940 põe a categoria e as parcelas, a 0941 tira os empréstimos das despesas e da receita no Caixa e no arquivo do contador. Só a 0940 sozinha mostraria as parcelas como despesa."
+}

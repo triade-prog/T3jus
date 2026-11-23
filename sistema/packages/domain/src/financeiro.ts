@@ -260,8 +260,16 @@ export const CATEGORIAS_SAIDA = {
   FORNECEDORES: "Fornecedores e sistemas",
   TAXAS: "Taxas bancárias",
   OUTRAS: "Outras despesas",
+  /** F3.51: as parcelas e devoluções de empréstimo, à parte das despesas do dia a dia. No fim, como no SQL (0940). */
+  EMPRESTIMOS: "Empréstimos",
 } as const;
 export type CategoriaSaida = keyof typeof CATEGORIAS_SAIDA;
+
+/** As categorias de Lançar conta: a parcela de empréstimo nasce do empréstimo, no Caixa (F3.51). */
+export const CATEGORIAS_LANCAR = Object.fromEntries(
+  Object.entries(CATEGORIAS_SAIDA).filter(([k]) => k !== "EMPRESTIMOS"),
+) as Omit<typeof CATEGORIAS_SAIDA, "EMPRESTIMOS">;
+export type CategoriaLancar = keyof typeof CATEGORIAS_LANCAR;
 
 /** Como volta o que o escritório adiantou para o cliente (FI-07). */
 export const REEMBOLSO_COMO = {
@@ -306,6 +314,8 @@ export interface ContaPagar {
   pagaEm: string | null;
   situacao: "A_VENCER" | "VENCIDA" | "PAGA" | "CANCELADA";
   recorrente: { id?: string; dia: number; mes: string; lancadaSozinha: boolean } | null;
+  /** F3.51: a parcela ou a devolução de um empréstimo, para o selo "Empréstimo · 3/24" e o link da ficha. */
+  emprestimo?: ContaDoEmprestimo | null;
   /** A conta do mês cancelada ao encerrar a recorrência (F3.24): fica no histórico, fora das somas. */
   cancelada?: { em: string; por: PessoaRef; motivo: string } | null;
   adiantada: {
@@ -910,6 +920,8 @@ export const emailCompleto = (t: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.
 
 export interface MesCaixa {
   mes: string;
+  /** F3.51: a coluna Empréstimos, já tirada das saídas; o saldo já a conta. */
+  emprestimos?: EmprestimosDoMes;
   /** Já somado em entradasPrevistas: a parte do escritório nos RPVs e precatórios a caminho (F3.48). */
   aCaminho?: number;
   entradasPrevistas: number;
@@ -935,6 +947,8 @@ export interface CaixaFinanceiro {
   contador?: Pick<Contador, "nome" | "firma" | "email" | "mandarAoExportar" | "lembrarDia5"> | null;
   lembrete?: string | null;
   dono?: boolean;
+  /** F3.51: a folha "Empréstimos · à parte". */
+  emprestimos?: EmprestimosCaixa;
 }
 
 export const FORMATOS_EXPORTACAO = { XLSX: "Planilha (.xlsx)", CSV: "Só a planilha (.csv)" } as const;
@@ -954,6 +968,11 @@ export interface PreviaExportacao {
   despesas: { n: number; valor: number };
   recibos: number;
   terceiros: { entrou: number; repassado: number };
+  /** F3.51: os empréstimos recebidos e as parcelas pagas no mês, que vão numa aba à parte. */
+  emprestimos?: {
+    recebidos: { n: number; valor: number };
+    parcelas: { n: number; valor: number; devolucoes: number; semComprovante: number };
+  };
 }
 
 export interface DadosExportacao {
@@ -976,6 +995,8 @@ export interface DadosExportacao {
     entrouEm: string; tipo: TipoLevantamento; cliente: string; caso: string; levantado: number;
     para: ParaDestinacao; nome: string; valor: number; feitoEm: string | null; situacao: "FEITO" | "DISPENSADO" | "PENDENTE";
   }[];
+  /** F3.51: a aba Empréstimos. As parcelas já não estão em despesas. */
+  emprestimos?: EmprestimosExportacao;
 }
 
 /** Os tipos de honorário agrupados como o Resumo mostra (decisão 2, IN-10). */
@@ -1027,4 +1048,224 @@ export function quemEspera(t: TerceirosNaConta): string {
   ].filter((x): x is string => !!x);
   if (partes.length <= 1) return partes[0] ?? "";
   return `${partes.slice(0, -1).join(", ")} e ${partes[partes.length - 1]}`;
+}
+
+// ---------------------------------------------------------------------------------------
+// Empréstimos (F3.51; FI-20). Regras em 0940_emprestimos.sql e 0941_emprestimos_caixa_contador.sql.
+// O empréstimo fica à parte, como os valores de terceiros: entra no saldo do Caixa, mas não é receita.
+
+/** De quem é o empréstimo. */
+export const CREDORES_EMPRESTIMO = { BANCO: "Banco", SOCIO: "Sócio", OUTRO: "Outro" } as const;
+export type CredorEmprestimo = keyof typeof CREDORES_EMPRESTIMO;
+
+/** Como o escritório devolve. */
+export const DEVOLUCAO_EMPRESTIMO = { PARCELAS: "Em parcelas", LIVRE: "Devolve quando der" } as const;
+export type DevolucaoEmprestimo = keyof typeof DEVOLUCAO_EMPRESTIMO;
+
+/** A situação num dia: a ficha usa hoje; o contador, o último dia do mês exportado. */
+export const SITUACAO_EMPRESTIMO = { ATIVO: "Ativo", QUITADO: "Quitado", ENCERRADO: "Encerrado", CANCELADO: "Lançado errado" } as const;
+export type SituacaoEmprestimo = keyof typeof SITUACAO_EMPRESTIMO;
+
+/** Registrar empréstimo. "parcelas" traz o valor de cada parcela, quando a pessoa troca algum antes de gravar (S2). */
+export const registrarEmprestimoSchema = z.object({
+  credorTipo: txt(10),
+  credorNome: txt(200),
+  finalidade: txt(200),
+  valor: z.number().int().nullish(),
+  valorContrato: z.number().int().nullish(),
+  recebidoEm: txt(20),
+  forma: txt(30),
+  devolucao: txt(10),
+  parcelasTotal: z.number().int().nullish(),
+  parcelaValor: z.number().int().nullish(),
+  parcelasAntes: z.number().int().nullish(),
+  proximoVencimento: txt(20),
+  parcelas: z.array(z.object({ n: z.number().int(), valor: z.number().int() })).max(120).nullish(),
+});
+export type RegistrarEmprestimo = z.input<typeof registrarEmprestimoSchema>;
+
+/** Registrar devolução (só sem parcelas fixas). */
+export const devolucaoEmprestimoSchema = z.object({ valor: z.number().int().nullish(), pagaEm: txt(20), forma: txt(30) });
+export type DevolucaoEmprestimoPedido = z.input<typeof devolucaoEmprestimoSchema>;
+
+/** Encerrar as parcelas que faltam e "Lançado errado": o motivo, de 5 a 300 caracteres. */
+export const motivoEmprestimoSchema = z.object({ motivo: z.string().max(400).nullish() });
+
+/** O selo da conta de A pagar que é parcela ou devolução de empréstimo. */
+export interface ContaDoEmprestimo {
+  id: string;
+  parcela: number | null;
+  total: number | null;
+  credor: string;
+  credorTipo: CredorEmprestimo;
+  devolucao: boolean;
+}
+
+export interface SituacaoDoEmprestimo {
+  dia: string;
+  situacao: SituacaoEmprestimo;
+  /** Pago antes do T3jus, estimado pelo valor da parcela. */
+  pagoAntes: number;
+  pagoNoT3jus: number;
+  jaPago: number;
+  /** Em parcelas, a soma das em aberto; sem parcelas fixas, o falta devolver. Zero no encerrado e no cancelado. */
+  faltaPagar: number;
+  faltaDevolver: number | null;
+  /** Sem parcelas fixas e encerrado com valor não devolvido. */
+  naoDevolvido: number | null;
+  parcelasPagas: number | null;
+  parcelasAbertas: number | null;
+  /** As parcelas canceladas ao encerrar ou ao marcar como lançado errado. */
+  canceladas: { n: number; valor: number } | null;
+  devolucoes: number | null;
+  proxima: { id: string; n: number; vencimento: string; valor: number } | null;
+  terminaEm: string | null;
+  ultimoPagamento: string | null;
+  totalParcelas: number | null;
+  /** O total das parcelas menos o que entrou; sem parcelas fixas, o devolvido além do que entrou. */
+  custo: number;
+}
+
+export interface Emprestimo {
+  id: string;
+  credorTipo: CredorEmprestimo;
+  credor: string;
+  finalidade: string | null;
+  valor: number;
+  valorContrato: number | null;
+  /** Valor do contrato menos o que entrou (S3). */
+  iofTarifas: number | null;
+  recebidoEm: string;
+  forma: FormaPagamento | null;
+  devolucao: DevolucaoEmprestimo;
+  parcelasTotal: number | null;
+  parcelasAntes: number;
+  parcelaValor: number | null;
+  /** Conta no saldo do Caixa. */
+  noCaixa: boolean;
+  anteriorAoT3jus: boolean;
+  /** Por que está fora do saldo: entrou até o saldo de abertura (já está nele) ou antes do começo do caixa no T3jus. */
+  foraDoCaixa: "ANTES_DA_ABERTURA" | "ANTES_DO_T3JUS" | null;
+  registrado: { em: string; por: PessoaRef | null };
+  encerrado: { em: string; por: PessoaRef | null; motivo: string } | null;
+  cancelado: { em: string; por: PessoaRef | null; motivo: string } | null;
+  situacao: SituacaoDoEmprestimo;
+}
+
+export interface EmprestimoRegistrado extends Emprestimo { parcelasCriadas: number }
+
+export interface FichaEmprestimo extends Emprestimo {
+  parcelas: (ContaPagar & { n: number; anexos: number })[];
+  devolucoes: (ContaPagar & { anexos: number })[];
+  historico: { acao: string; em: string; por: PessoaRef | null; dados: Record<string, unknown> }[];
+}
+
+export interface DevolucaoRegistrada { id: string; acimaDoQueFalta: number; emprestimo: Emprestimo }
+
+/** A coluna Empréstimos de um mês do Caixa: + o que entrou, − as parcelas e devoluções. */
+export interface EmprestimosDoMes {
+  entrou: number;
+  parcelasPrevistas: number;
+  parcelasRealizadas: number | null;
+  liquidoPrevisto: number;
+  liquidoRealizado: number | null;
+}
+
+/** A folha "Empréstimos · à parte" do Caixa. */
+export interface EmprestimosCaixa {
+  /** Algum empréstimo não cancelado: a coluna do mês a mês só aparece com ele. */
+  algum: boolean;
+  n: number;
+  /** Soma o falta pagar dos bancos e o falta devolver do sócio. */
+  faltaPagar: number;
+  /** O líquido dos empréstimos que está no saldo de hoje (o que entrou menos o que foi pago). */
+  noSaldo: number;
+  /** De quando o empréstimo entra no caixa, e o primeiro lançamento, para o aviso "entrou antes do T3jus?". */
+  comecoCaixa: string | null;
+  primeiroLancamento: string | null;
+  lista: Emprestimo[];
+}
+
+export interface EmprestimosExportacao {
+  recebidos: {
+    dia: string; credorTipo: CredorEmprestimo; credor: string; finalidade: string | null; forma: FormaPagamento | null;
+    valor: number; valorContrato: number | null;
+  }[];
+  parcelas: {
+    pagoEm: string; vencimento: string; credorTipo: CredorEmprestimo; credor: string; parcela: number | null; total: number | null;
+    devolucao: boolean; forma: FormaPagamento | null; valor: number; comprovante: boolean;
+  }[];
+  situacao: (SituacaoDoEmprestimo & {
+    credorTipo: CredorEmprestimo; credor: string; finalidade: string | null; devolucao: DevolucaoEmprestimo; recebidoEm: string;
+    valor: number; valorContrato: number | null; anteriorAoT3jus: boolean; parcelasTotal: number | null;
+  })[];
+}
+
+const dataUtc = (d: string) => new Date(`${d.slice(0, 10)}T00:00:00Z`);
+const textoData = (d: Date) => d.toISOString().slice(0, 10);
+
+/** O vencimento no mês: o dia, ou o último dia de um mês mais curto (vencimento_no_mes, 0230). */
+export function vencimentoNoMes(mes: string, dia: number): string {
+  const m = dataUtc(mes);
+  const ultimo = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 0)).getUTCDate();
+  return textoData(new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth(), Math.min(dia, ultimo))));
+}
+
+/** O vencimento da parcela n, quando a próxima a pagar (a antes + 1) vence em proximo (emprestimo_vencimento, 0940). */
+export function vencimentoDaParcela(proximo: string, antes: number, n: number): string {
+  const p = dataUtc(proximo);
+  const mes = new Date(Date.UTC(p.getUTCFullYear(), p.getUTCMonth() + (n - antes - 1), 1));
+  return vencimentoNoMes(textoData(mes), p.getUTCDate());
+}
+
+/** As parcelas que nascem em A pagar: da antes + 1 até o total, com o valor sugerido ou o trocado (S2). */
+export function parcelasDoEmprestimo(e: {
+  total: number; antes: number; valor: number; proximo: string; valores?: { n: number; valor: number }[] | null;
+}): { n: number; vencimento: string; valor: number }[] {
+  const trocados = new Map((e.valores ?? []).map((x) => [x.n, x.valor]));
+  const saida: { n: number; vencimento: string; valor: number }[] = [];
+  for (let n = e.antes + 1; n <= e.total; n++) {
+    saida.push({ n, vencimento: vencimentoDaParcela(e.proximo, e.antes, n), valor: trocados.get(n) ?? e.valor });
+  }
+  return saida;
+}
+
+/**
+ * O custo do empréstimo num número só (C3): o pago antes do T3jus (estimado), mais as parcelas pagas e
+ * em aberto, menos o que entrou. Sem parcelas fixas, o devolvido além do que entrou, nunca abaixo de zero.
+ */
+export function custoEmprestimo(e: {
+  valor: number; devolucao: DevolucaoEmprestimo; parcelasAntes?: number; parcelaValor?: number | null; parcelas?: number[]; devolvido?: number;
+}): number {
+  if (e.devolucao === "LIVRE") return Math.max((e.devolvido ?? 0) - e.valor, 0);
+  const antes = (e.parcelasAntes ?? 0) * (e.parcelaValor ?? 0);
+  return antes + (e.parcelas ?? []).reduce((s, x) => s + x, 0) - e.valor;
+}
+
+export interface SugestaoParcelasAntes {
+  /** O vencimento da última parcela que já venceu: "As parcelas até mm/aaaa já foram pagas?". */
+  ate: string;
+  /** Nenhuma fica vencida; nulo quando todas já venceram. */
+  nenhuma: { antes: number; n: number; proximo: string } | null;
+  /** Uma fica em aberto, como vencida. */
+  umaVencida: { antes: number; n: number; proximo: string };
+}
+
+/**
+ * Quando a próxima parcela cai mais de 1 mês antes de hoje (C6), sugere quantas foram pagas antes: a
+ * conta que deixa nenhuma vencida e a que deixa uma. Nulo quando a próxima não está tão atrás.
+ */
+export function sugerirParcelasAntes(e: { total: number; antes: number; proximo: string; hoje: string }): SugestaoParcelasAntes | null {
+  const h = dataUtc(e.hoje);
+  const umMesAntes = vencimentoNoMes(textoData(new Date(Date.UTC(h.getUTCFullYear(), h.getUTCMonth() - 1, 1))), h.getUTCDate());
+  if (e.proximo >= umMesAntes) return null;
+  let vencidas = 0;
+  for (let n = e.antes + 1; n <= e.total && vencimentoDaParcela(e.proximo, e.antes, n) < e.hoje; n++) vencidas++;
+  if (vencidas === 0) return null;
+  const opcao = (antes: number) => ({ antes, n: antes + 1, proximo: vencimentoDaParcela(e.proximo, e.antes, antes + 1) });
+  return {
+    ate: vencimentoDaParcela(e.proximo, e.antes, e.antes + vencidas),
+    nenhuma: e.antes + vencidas <= e.total - 1 ? opcao(e.antes + vencidas) : null,
+    umaVencida: opcao(e.antes + vencidas - 1),
+  };
 }

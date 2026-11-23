@@ -7,6 +7,6 @@
   ],
   "status": "andamento",
   "ordem": 510,
-  "proximo": "Servidor e domínio dos empréstimos (migrations 0940 e 0941, rotas, planilha do contador e testes)",
-  "nota": "Decisão da Carol (22/11): à parte, como terceiros; entra no saldo, não é receita. Plano revisado e desenho aprovados em 22/11 (docs/design/aprovadas/portal-financeiro-emprestimos)."
+  "proximo": "Telas dos empréstimos",
+  "nota": "Decisão da Carol (22/11): à parte, como terceiros; entra no saldo, não é receita. Plano revisado e desenho aprovados em 22/11 (docs/design/aprovadas/portal-financeiro-emprestimos). Servidor pronto (23/11): migrations 0940 e 0941 (empréstimo, parcelas em A pagar, devolução livre, encerrar e lançado errado, Caixa e arquivo do contador com a aba Empréstimos), rotas da api-portal, domínio e planilha; testes pgTAP 126, Deno e Vitest. Faltam as telas (PR 3) e a publicação (P6)."
 }
