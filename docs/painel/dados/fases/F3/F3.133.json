@@ -1,11 +1,11 @@
 {
   "id": "F3.133",
-  "texto": "Mudar o prazo do comprovante de residência (padrão 90 dias) em Ajustes do escritório",
-  "peca": "S6",
+  "texto": "Usar a razão social e os contatos do escritório no timbrado do carnê e do recibo gerados no banco (portal_carne, recibo_montar) e na marca das telas Carnê e Recibo, que ainda mostram o nome curto",
+  "peca": "S7",
   "refs": [
-    "AP-08"
+    "PA-07"
   ],
   "status": "pendente",
-  "ordem": 1070,
-  "proximo": "O banco já guarda o prazo (escritorios.comprovante_validade_dias, 0853); falta a tela de Ajustes do escritório, que ainda não existe e precisa de desenho."
+  "ordem": 963,
+  "proximo": "Trocar o nome curto pela razão social (ou pelo nome da sócia dona, sem sociedade) no carnê e no recibo, com migration nova e teste pgTAP, depois do ok da Carol na 0860"
 }

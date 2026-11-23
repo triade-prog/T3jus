@@ -24,7 +24,7 @@ export class ErroDocx extends Error {
 /** Um campo entre colchetes: letras maiúsculas, números e sublinhado. */
 export const CAMPO_DOCX = /\[([A-Z][A-Z0-9_]{1,40})\]/g;
 /** O que saiu marcado por falta de dado: "[RG: falta]". */
-export const MARCA_FALTA = /\[[^[\]]{1,80}: falta\]/g;
+export const MARCA_FALTA = /\[[^[\]]{1,80}: (?:falta|confira)\]/g;
 
 // ------------------------------------------------------------------------------- XML
 

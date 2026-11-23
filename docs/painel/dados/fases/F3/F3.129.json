@@ -7,5 +7,5 @@
   ],
   "status": "feito",
   "ordem": 1030,
-  "evidencia": "Migration 0851: o contrato ativo marcado \"não tem caso\" vira CONTRATO_ATIVO no próximo passo (com a próxima parcela), e não mais \"Gerar proposta\"; a ficha do contrato traz quem marcou e quando e se a pessoa abre o caso. Tela: o âmbar \"Contrato ativo\" com \"Ver o contrato\" e a trilha terminando em \"Sem caso\"; na ficha do contrato, a folha \"Caso\" com \"Abrir um caso para este contrato\" (a marca sai, 0850). Testes: pgTAP 119 e 105 ajustado, cenários em tests/e2e/portal-ficha-ligada.spec.ts e portal-contratos.spec.ts."
+  "evidencia": "Migration 0851: o contrato ativo marcado \"não tem caso\" vira CONTRATO_ATIVO no próximo passo (com a próxima parcela), e não mais \"Gerar proposta\"; a ficha do contrato traz quem marcou e quando e se a pessoa abre o caso. Tela: o âmbar \"Contrato ativo\" com \"Ver o contrato\" e a trilha terminando em \"Sem caso\"; na ficha do contrato, a folha \"Caso\" com \"Abrir um caso para este contrato\" (a marca sai, 0850). Testes: pgTAP 120 e 105 ajustado, cenários em tests/e2e/portal-ficha-ligada.spec.ts e portal-contratos.spec.ts."
 }

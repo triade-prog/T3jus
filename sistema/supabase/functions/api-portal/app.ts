@@ -3,7 +3,7 @@
 
 import type { MiddlewareHandler } from "hono";
 import {
-  areasSchema, assinaPorSiSchema, dadosDocumentoSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
+  areasSchema, assinaPorSiSchema, dadosDocumentoSchema, dadosEscritorioSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
   cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL, encerrarFunilSchema, type SaidaFunil, type ClienteFunil,
@@ -177,6 +177,18 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     ]);
     return c.json({ ...dados, cobranca, id, nome: atual.nome, funcoes: atual.funcoes, outrosEscritorios: escritorios.length - 1 });
   });
+
+  // Dados do escritório para os documentos (PA-07): só a sócia dona grava; o banco confere.
+  app.put("/v1/escritorio/dados", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, dadosEscritorioSchema);
+    const pessoaId = c.get("sessao").pessoaId;
+    const id = c.get("escritorioId");
+    const dados = await deps.banco.rpc<Record<string, unknown>>("portal_escritorio_dados_salvar", { p_pessoa: pessoaId, p_escritorio: id, p_versao: versao, p_dados: d });
+    return c.json({ documentos: dados.documentos, versao: dados.versao, dadosMudados: dados.dadosMudados });
+  });
+  // Advogados nos documentos (PA-07, pergunta 5): a lista para todos; os dados de cada um só para si e para a sócia dona.
+  app.get("/v1/escritorio/advogados", async (c) =>
+    c.json(await deps.banco.rpc("portal_escritorio_advogados", { p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") })));
 
   // Escritório › Plano e faturas (F1.18, CO-06): só o sócio dono; o banco confere.
   app.get("/v1/escritorio/faturas", async (c) =>

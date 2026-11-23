@@ -126,7 +126,7 @@ test.describe("Carnê de pagamento do Portal (FI-23)", () => {
     await expect(page.getByRole("status").filter({ hasText: "Recebimento salvo" })).toBeVisible();
     const put = pedidos.find((p) => p.metodo === "PUT")!;
     expect(put.corpo).toEqual({ versao: 0, pixTipo: "CNPJ", pixChave: "11.222.333/0001-81", recebedor: "Ribeiro e Matos Soc Adv", cidade: "São Paulo", instrucoes: null,
-      marca: "LETRA", logoId: null, logoJeito: null, logoCor: null, oabUf: null, oabNumero: null });
+      marca: "LETRA", logoId: null, logoJeito: null, logoCor: null });
     await expect(page.getByRole("textbox", { name: "Chave Pix", exact: true })).toHaveValue("11.222.333/0001-81");
   });
 

@@ -1,0 +1,12 @@
+{
+  "id": "F3.135",
+  "texto": "Portal mais rápido, só no código: trocar de tela sem recarregar a página, escritório e sino guardados entre as telas (e o escritório pedido assim que o código chega) e só o JavaScript da tela aberta",
+  "peca": "B4",
+  "refs": [
+    "PT-27"
+  ],
+  "status": "feito",
+  "nota": "Medido em 22/11: 5,6 s no pior clique e 1,5 a 2 s com tudo ligado; 2,6 MB de JavaScript em toda página. O banco não pesa (15 a 60 ms por consulta).",
+  "evidencia": "Moldura do Portal troca de tela pelo Next sem recarga (links com ?, da mesma página, de entrada e da /api seguem com recarga); escritório e sino na memória da aba, conferidos de novo por trás a cada 15 s; @t3jus/ui com sideEffects, e o JavaScript por página caiu de 2,6 MB para 0,5 a 1,7 MB no build. Teste: tests/e2e/portal-navegacao.spec.ts. Relatório: project-files t3jus/desempenho/lentidao-portal-2026-11-22.md.",
+  "ordem": 1090
+}

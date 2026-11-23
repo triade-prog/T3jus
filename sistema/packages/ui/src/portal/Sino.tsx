@@ -222,16 +222,36 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
   }
 }
 
+// A última lista do sino fica na memória da aba entre as telas (sem recarregar a página): a
+// tela nova mostra o sino na hora e confere de novo por trás, no máximo a cada 15 s.
+const sinoGuardado: { lista: ListaAvisosSino | null; em: number } = { lista: null, em: 0 };
+
 /** O estado do sino, compartilhado pelos dois botões (topo e barra do celular). */
 export function useSino() {
-  const [lista, setLista] = useState<ListaAvisosSino | "erro" | null>(null);
+  const [lista, setListaAqui] = useState<ListaAvisosSino | "erro" | null>(null);
+  const setLista = useCallback((x: ListaAvisosSino | "erro" | null | ((antes: ListaAvisosSino | "erro" | null) => ListaAvisosSino | "erro" | null)) => {
+    setListaAqui((antes) => {
+      const nova = typeof x === "function" ? x(antes) : x;
+      if (nova && nova !== "erro") sinoGuardado.lista = nova;
+      return nova;
+    });
+  }, []);
   const carregar = useCallback(async () => {
     const r = await chamarPortal<ListaAvisosSino>("/v1/escritorio/avisos");
-    setLista((antes) => (r.ok ? r.dados : antes && antes !== "erro" ? antes : "erro"));
+    if (r.ok) {
+      sinoGuardado.lista = r.dados;
+      sinoGuardado.em = Date.now();
+    }
+    setListaAqui((antes) => (r.ok ? r.dados : antes && antes !== "erro" ? antes : "erro"));
     return r.ok;
   }, []);
   useEffect(() => {
-    void Promise.resolve().then(() => carregar());
+    // Depois de ligar a tela (o servidor não conhece a lista guardada), mostra a guardada.
+    const guardada = sinoGuardado.lista;
+    void Promise.resolve().then(() => {
+      if (guardada) setListaAqui((antes) => antes ?? guardada);
+      if (!guardada || Date.now() - sinoGuardado.em >= 15_000) void carregar();
+    });
   }, [carregar]);
   return { lista, setLista, carregar };
 }

@@ -58,6 +58,8 @@ export async function semViolacoes(page: Page) {
   await page.evaluate(() =>
     Promise.all(document.getAnimations().filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished.catch(() => null))),
   );
+  // Na troca de tela sem recarga, o título da página nova chega logo depois do conteúdo.
+  await expect(page).toHaveTitle(/\S/);
   const axe = await new AxeBuilder({ page }).withTags(TAGS).analyze();
   expect(axe.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

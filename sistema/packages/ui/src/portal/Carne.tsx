@@ -1039,14 +1039,12 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
   const [versao, setVersao] = useState(r.versao);
   const [naoSalvo, setNaoSalvo] = useState<number | null>(null);
   const [erroMarca, setErroMarca] = useState(false);
-  const [erroOab, setErroOab] = useState<("oabUf" | "oabNumero")[]>([]);
   const [remover, setRemover] = useState(false);
   const form = useRef<HTMLFormElement>(null);
   const mudarMarca = (m: Partial<EstadoMarca>) => {
     setMarca((x) => ({ ...x, ...m }));
     if (m.marca || m.logo) setErroMarca(false);
     if (m.cor) setNaoSalvo(null);
-    if ("oabUf" in m || "oabNumero" in m) setErroOab([]);
   };
   const salvoEm = r.marca === "LOGO" && r.logo && r.atualizadoEm ? `salvo em ${diaCurto(diaDoInstante(r.atualizadoEm))}, às ${horaDoInstante(r.atualizadoEm)}` : null;
   const tem = (c: Campo) => erros.includes(c);
@@ -1072,14 +1070,9 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
     return e;
   }
 
-  /** A marca e a OAB (F3.81, F3.19): logo marcado sem arquivo; seccional sem número e o contrário. */
-  function conferirMarca(): { marca: boolean; oab: ("oabUf" | "oabNumero")[] } {
-    const n = marca.oabNumero.replace(/\D/g, "");
-    const oab: ("oabUf" | "oabNumero")[] = [];
-    if (marca.oabUf && !n) oab.push("oabNumero");
-    if (!marca.oabUf && n) oab.push("oabUf");
-    if (n && !/^[1-9][0-9]{0,5}$/.test(n)) oab.push("oabNumero");
-    return { marca: marca.marca === "LOGO" && !marca.logo, oab };
+  /** A marca (F3.81): logo marcado sem arquivo. A OAB da sociedade se muda em Dados do escritório (PA-07). */
+  function conferirMarca(): { marca: boolean } {
+    return { marca: marca.marca === "LOGO" && !marca.logo };
   }
 
   const trocaChave = () => !!r.pixChave && (norm !== r.pixChave || rec !== (r.recebedor ?? "") || cid !== (r.cidade ?? ""));
@@ -1090,8 +1083,7 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
     const m = conferirMarca();
     setErros(e);
     setErroMarca(m.marca);
-    setErroOab(m.oab);
-    if (e.length || m.marca || m.oab.length) {
+    if (e.length || m.marca) {
       if (!e.length && m.marca) return requestAnimationFrame(() => document.getElementById("lg-logo")?.querySelector<HTMLElement>("label.btn")?.focus());
       return focarPrimeiroErro(form.current);
     }
@@ -1111,7 +1103,6 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
         versao, pixTipo: algum ? tipo : null, pixChave: algum ? chave : null, recebedor: algum ? recebedor : null, cidade: algum ? cidade : null, instrucoes: instrucoes.trim() || null,
         marca: m.marca, logoId: m.marca === "LOGO" ? m.logo?.id ?? null : null,
         logoJeito: m.marca === "LOGO" ? m.jeito : null, logoCor: m.marca === "LOGO" ? m.cor : null,
-        oabUf: m.oabUf || null, oabNumero: m.oabNumero.replace(/\D/g, "") || null,
       },
     });
     setSalvando(false);
@@ -1125,8 +1116,7 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
     const c = res.erro.detalhes?.campos;
     if (res.erro.codigo === "VALIDATION_ERROR" && Array.isArray(c) && c.length) {
       const cs = c.map(String);
-      setErros(cs.filter((x) => x !== "oabUf" && x !== "oabNumero") as Campo[]);
-      setErroOab(cs.filter((x): x is "oabUf" | "oabNumero" => x === "oabUf" || x === "oabNumero"));
+      setErros(cs as Campo[]);
       return focarPrimeiroErro(form.current);
     }
     setFalha(res.erro.codigo === "VERSION_CONFLICT" ? "Outra pessoa mudou o recebimento antes de você. Recarregue a página para ver o que mudou." : textoDoErro(res.erro));
@@ -1220,7 +1210,7 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
         </div>
       </section>
       <MarcaTimbrado e={marca} mudar={mudarMarca} d={dadosTimbrado(escritorio, fraseOabSociedade(marca.oabUf, marca.oabNumero))}
-        salvoEm={salvoEm} erroMarca={erroMarca} erroOab={erroOab} naoSalvo={naoSalvo} aoRemover={() => setRemover(true)} />
+        salvoEm={salvoEm} erroMarca={erroMarca} naoSalvo={naoSalvo} aoRemover={() => setRemover(true)} />
       <div className="form-pe">
         <span className="esq-pe">Cada mudança fica no histórico do escritório. Os carnês novos já saem com ela.</span>
         <button className="btn btn-pri" type="submit" disabled={salvando} aria-busy={salvando || undefined}>

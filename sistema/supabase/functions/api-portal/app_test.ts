@@ -3,7 +3,7 @@ import { assert, assertEquals, assertMatch } from "@std/assert";
 import { criarApiPortal } from "./app.ts";
 import type { Cerebro } from "../_shared/ia.ts";
 import type { Emails, MensagemEmail } from "../_shared/email.ts";
-import { abrirEntrada, abrirTexto, comprimirJson, conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosDocumentos, type DadosPeticao } from "@t3jus/domain";
+import { abrirEntrada, CAMPOS_DOCUMENTO, CAMPOS_PETICAO, abrirTexto, comprimirJson, conferirDocx, criarDocx, lerZip, paragrafosDocx, type ContextoIa, type DadosDocumentos, type DadosPeticao } from "@t3jus/domain";
 import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookieChamado, cookieDe, erro, erroBanco, limitesFalsos, pedido, TOKEN_CONVITE, TOKEN_LINK, TOKEN_RECUPERACAO } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -162,6 +162,8 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_conta: (a) => ({ pessoaId: a.p_pessoa, nome: "Ana", oab: [], frase: null, contratos: [], socios: ["Ana"] }),
     portal_conta_dados: () => ({ nomeCompleto: "Ana Paula Souza", versao: 0 }),
     portal_conta_dados_salvar: (a) => ({ ...(a.p_dados as object), versao: Number(a.p_versao) + 1 }),
+    portal_escritorio_dados_salvar: (a) => ({ documentos: a.p_dados, versao: Number(a.p_versao) + 1, dadosMudados: { onde: "PORTAL" }, outro: "não sai" }),
+    portal_escritorio_advogados: (a) => ({ dono: true, eu: a.p_pessoa, advogados: [], semOab: [] }),
     portal_equipe_pessoa_dados: (a) => ({ nomeCompleto: "Lara", alvo: a.p_alvo, versao: 2, mudancas: [] }),
     portal_equipe_pessoa_dados_salvar: (a) => ({ alvo: a.p_alvo, versao: Number(a.p_versao) + 1, mudancas: [] }),
     portal_mudar_areas: (a) => a.p_areas,
@@ -774,6 +776,21 @@ Deno.test("EX-15: os dados para os documentos; a pessoa vem da sessão em Sua co
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_equipe_pessoa_dados_salvar")!.args.p_alvo, LARA);
   const lida = await m.pedir(`/v1/escritorio/equipe/pessoas/${LARA}/dados`, { cookie });
   assertEquals((await lida.json()).alvo, LARA);
+});
+
+Deno.test("PA-07: a sócia dona grava os dados do escritório; a lista dos advogados vem do banco", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { versao: 4, nome: "Santana", tipo: "SOCIEDADE", razaoSocial: "Santana Advogados", cep: "46250-000", escritorioId: LARA };
+  const r = await m.pedir("/v1/escritorio/dados", { metodo: "PUT", corpo, cookie });
+  const j = await r.json();
+  assertEquals([j.versao, j.dadosMudados.onde, j.outro], [5, "PORTAL", undefined]);
+  const args = m.chamadas.find((c) => c.funcao === "portal_escritorio_dados_salvar")!.args;
+  assertEquals([args.p_pessoa, args.p_escritorio, args.p_versao], [ANA, AURORA, 4]);
+  assertEquals((args.p_dados as Record<string, unknown>).escritorioId, undefined);
+  assertEquals((await m.pedir("/v1/escritorio/dados", { metodo: "PUT", corpo: { nome: "X" }, cookie })).status, 400);
+  const lista = await (await m.pedir("/v1/escritorio/advogados", { cookie })).json();
+  assertEquals(lista.eu, ANA);
 });
 
 Deno.test("EX-12: incluir, mudar (com a versão) e remover a inscrição", async () => {
@@ -1859,7 +1876,7 @@ Deno.test("EX-09: a lista de modelos junta os 8 padrão com o uso de cada um", a
   const r = await (await m.pedir("/v1/escritorio/peticoes/modelos", { cookie })).json();
   assertEquals(r.modelos.length, 8);
   assertEquals(r.modelos.find((x: { id: string }) => x.id === "JUNTADA").usos, 2);
-  assertEquals(r.campos.length, 20);
+  assertEquals(r.campos.length, CAMPOS_PETICAO.length);
 });
 
 Deno.test("EX-09: aprovar copia o arquivo limpo para os documentos; o rascunho baixa com a marca", async () => {
@@ -1935,7 +1952,7 @@ Deno.test("F3.16: a lista de modelos põe o padrão só onde o escritório não 
   assertEquals(r.modelos.map((x: { id: string }) => x.id), ["CONTRATO", MODELO_DOC, "HIPOSSUFICIENCIA_PF"]);
   const declaracao = r.modelos[2];
   assertEquals([declaracao.usos, declaracao.emRevisao, declaracao.codigos.length], [3, true, 2]);
-  assertEquals(r.campos.length, 21);
+  assertEquals(r.campos.length, CAMPOS_DOCUMENTO.length);
 });
 
 Deno.test("F3.16: enviar modelo confere o arquivo e avisa o campo esperado que falta; PDF é recusado", async () => {

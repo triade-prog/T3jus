@@ -1,7 +1,10 @@
 // Dados da ficha do cliente no Console (GET /v1/clientes/:id) e o que as abas calculam deles.
 // Módulo simples (sem "use client"), para os testes e as páginas do servidor usarem.
 
-import { fichaSchema, type EncerramentoConsole, type SocioCliente } from "@t3jus/domain";
+import {
+  conferirFormEscritorio, formDoEscritorio, linhaDaSede, TEXTO_ERRO_ESCRITORIO, TIPOS_ESCRITORIO, fichaSchema, type DadosEscritorioDocumentos, type EncerramentoConsole,
+  type FormEscritorio, type SocioCliente,
+} from "@t3jus/domain";
 
 export interface ContatoFicha {
   nome: string;
@@ -21,7 +24,7 @@ export interface FichaDoCliente {
     contatos?: ContatoFicha[];
     criadoEm: string;
     versao: number;
-  };
+  } & Partial<Omit<DadosEscritorioDocumentos, "nome" | "cnpj" | "cidade" | "uf" | "endereco" | "dona">>;
   cliente: { estagio: "IMPLANTACAO" | "ATIVO" | "ENCERRADO"; referenciaContrato: string | null; versao: number };
   /** Fim do contrato registrado (F0.14); null enquanto não há. */
   encerramento?: EncerramentoConsole | null;
@@ -54,11 +57,8 @@ export function formatarTelefone(t: string): string {
 }
 
 /** O que a pessoa escreve no formulário da ficha. */
-export interface RascunhoFicha {
-  nome: string;
-  cnpj: string;
-  cidade: string;
-  uf: string;
+/** O rascunho: os campos dos documentos (PA-07) e os contatos. O endereço antigo vem só para comparar. */
+export interface RascunhoFicha extends FormEscritorio {
   endereco: string;
   contatos: { chave: number; nome: string; papel: string; telefone: string; email: string }[];
 }
@@ -69,6 +69,9 @@ export const novaChave = () => proximaChave++;
 export function rascunhoDe(f: FichaDoCliente): RascunhoFicha {
   const e = f.escritorio;
   return {
+    ...formDoEscritorio({ ...e, endereco: e.endereco ?? null, oab: e.oab ?? null }),
+    // Ficha sem as partes (servidor antes da 0860): o texto antigo vai para a rua, como na migração.
+    ...(e.logradouro === undefined && e.endereco ? { logradouro: e.endereco } : {}),
     nome: e.nome,
     cnpj: e.cnpj ? formatarCnpj(e.cnpj) : "",
     cidade: e.cidade ?? "",
@@ -100,11 +103,25 @@ export function conferirFicha(r: RascunhoFicha, versao: number):
     ...(c.telefone.trim() ? { telefone: c.telefone } : {}),
     ...(c.email.trim() ? { email: c.email } : {}),
   }));
+  const t = (x: string) => (x.trim() ? x.trim() : null);
+  const sem = r.tipo === "SEM_SOCIEDADE";
   const v = fichaSchema.safeParse({
-    versao, nome: r.nome, cidade: r.cidade, uf: r.uf, endereco: r.endereco, cnpj: r.cnpj, contatos,
+    versao, nome: r.nome, cidade: r.cidade, uf: r.uf, cnpj: sem ? null : r.cnpj, contatos,
+    documentos: {
+      tipo: r.tipo || null, razaoSocial: sem ? null : t(r.razaoSocial), oabUf: sem ? null : t(r.oabUf), oabNumero: sem ? null : t(r.oabNumero.replace(/\D/g, "")),
+      cep: t(r.cep.replace(/\D/g, "")), logradouro: t(r.logradouro), numero: t(r.numero), complemento: t(r.complemento), bairro: t(r.bairro),
+      telefone: t(r.telefone.replace(/\D/g, "")), email: t(r.email), site: t(r.site),
+    },
   });
-  if (v.success) return { ok: true, corpo: v.data };
-  const erros: ErrosFicha = {};
+  // Os campos dos documentos: a mesma conferência do Portal e do servidor (0860).
+  const doc = conferirFormEscritorio(r, "CONSOLE");
+  const extra: ErrosFicha = {};
+  for (const [k, cod] of Object.entries(doc)) {
+    if (cod && !["nome", "cnpj", "cidade", "uf"].includes(k)) extra[k] = TEXTO_ERRO_ESCRITORIO[cod] ?? "Confira este campo.";
+  }
+  if (v.success && !Object.keys(extra).length) return { ok: true, corpo: v.data };
+  const erros: ErrosFicha = { ...extra };
+  if (v.success) return { ok: false, erros };
   for (const i of v.error.issues) {
     const [campo, n, sub] = i.path;
     if (campo === "contatos" && typeof n === "number") {
@@ -121,7 +138,6 @@ export function conferirFicha(r: RascunhoFicha, versao: number):
     else if (campo === "cnpj") erros.cnpj = "Os dígitos do CNPJ não conferem. Confira o número no cartão do CNPJ.";
     else if (campo === "cidade") erros.cidade = "O nome da cidade precisa de ao menos 2 letras.";
     else if (campo === "uf") erros.uf = "Escolha a UF.";
-    else if (campo === "endereco") erros.endereco = "O endereço tem no máximo 200 caracteres.";
   }
   return { ok: false, erros };
 }
@@ -137,11 +153,25 @@ export function camposDiferentes(salvo: RascunhoFicha, meu: RascunhoFicha): { ca
   par("CNPJ", salvo.cnpj.replace(/\D/g, ""), meu.cnpj.replace(/\D/g, ""));
   par("Cidade", salvo.cidade, meu.cidade);
   par("UF", salvo.uf, meu.uf);
-  par("Endereço", salvo.endereco, meu.endereco);
+  const tipo = (x: string) => (x ? TIPOS_ESCRITORIO[x as keyof typeof TIPOS_ESCRITORIO]?.nome ?? x : "");
+  par("Tipo", tipo(salvo.tipo), tipo(meu.tipo));
+  par("Razão social", salvo.razaoSocial, meu.razaoSocial);
+  par("Registro na OAB", `${salvo.oabUf} ${salvo.oabNumero}`.trim(), `${meu.oabUf} ${meu.oabNumero.replace(/\D/g, "")}`.trim());
+  const sede = (r: RascunhoFicha) => [r.cep.replace(/\D/g, ""), r.logradouro, r.numero, r.complemento, r.bairro].map(limpa).filter(Boolean).join(", ");
+  par("Sede", sede(salvo), sede(meu));
+  par("Telefone", salvo.telefone.replace(/\D/g, ""), meu.telefone.replace(/\D/g, ""));
+  par("E-mail", salvo.email, meu.email);
+  par("Site", salvo.site, meu.site);
   const resumo = (r: RascunhoFicha) => r.contatos.map((c) => `${c.nome}|${c.papel}|${c.telefone.replace(/\D/g, "")}|${c.email.toLowerCase()}`).join(";");
   if (resumo(salvo) !== resumo(meu)) {
     const n = (r: RascunhoFicha) => (r.contatos.length === 1 ? "1 contato" : `${r.contatos.length} contatos`);
     lista.push({ campo: "Contatos", salvo: n(salvo), meu: n(meu) });
   }
   return lista;
+}
+
+/** A sede numa linha só, para a leitura da ficha; o texto antigo, se ainda não foi separado. */
+export function sedeDaFicha(f: FichaDoCliente): string | null {
+  const e = f.escritorio;
+  return linhaDaSede({ ...e, endereco: e.endereco ?? null }) ?? (e.endereco?.trim() || null);
 }

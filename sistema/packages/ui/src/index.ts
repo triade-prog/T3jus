@@ -31,6 +31,7 @@ export * from "./portal/areas.ts";
 export { EquipePortal } from "./portal/Equipe.tsx";
 export { EquipePessoaPortal, ContaPortalPagina } from "./portal/EquipeOab.tsx";
 export { EscritorioDoPortal, nomeArquivoExportacao } from "./portal/Escritorio.tsx";
+export { AdvogadosDocumentosPagina } from "./portal/AdvogadosDocumentos.tsx";
 export { PaginaComumPortal, PaginaAreaPortal } from "./portal/Paginas.tsx";
 export * from "./portal/equipe.ts";
 export { ListaClientesPortal, type FiltroClientes } from "./portal/Clientes.tsx";

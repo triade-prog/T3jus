@@ -2,22 +2,23 @@
 // Escritório › Recebimento › "Marca e timbrado" (F3.81, FI-23; resto do F3.19, FI-14), desenho
 // aprovado em docs/design/aprovadas/portal-nao-paga-logo (decisões 13 a 27): o nome em letra ou o
 // logo no alto do carnê e do recibo, o envio do logo com a conferência para impressão, a prévia
-// em cores e em preto e branco e o registro da sociedade na OAB. Só a sócia dona muda.
+// em cores e em preto e branco e o registro da sociedade na OAB, que agora só se mostra aqui: ele
+// se muda em Dados do escritório (PA-07, decisão 3). Só a sócia dona muda.
 // Também o logo no papel (LogoNoDocumento), lido da cópia da marca guardada em cada documento.
 
 import { useRef, useState, type ReactNode } from "react";
 import {
-  contrasteLegivel, enderecoDoLogo, jeitoPadrao, LOGO_MIN_CONTRASTE, LOGO_MIN_LADO, quaseQuadrado, textoRecusaLogo, UFS_BRASIL,
+  contrasteLegivel, enderecoDoLogo, fraseOabSociedade, jeitoPadrao, LOGO_MIN_CONTRASTE, LOGO_MIN_LADO, quaseQuadrado, textoRecusaLogo,
   type CorLogo, type JeitoLogo, type LogoEscritorio, type MarcaDocumento, type MarcaNoDocumento, type RecusaLogo,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, descritoPor, ErroCampo, Janela } from "../console/pecas.tsx";
 import { chamarPortal } from "./Moldura.tsx";
+import { ROTAS_ESCRITORIO } from "./WhatsApp.tsx";
 import { consultaDoEnvio, prepararLogo } from "./logoArquivo.ts";
 
 const ACEITA = ".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml";
-const UFS = Object.keys(UFS_BRASIL);
 const kb = (b: number) => `${Math.max(1, Math.round(b / 1024))} KB`;
 
 export type EstadoMarca = {
@@ -120,7 +121,7 @@ function Conferencia({ l }: { l: LogoEscritorio }) {
 }
 
 /** A folha "Marca e timbrado", controlada pelo formulário do Recebimento (um Salvar só). */
-export function MarcaTimbrado({ e, mudar, d, salvoEm, erroMarca, erroOab, naoSalvo, aoRemover }: {
+export function MarcaTimbrado({ e, mudar, d, salvoEm, erroMarca, naoSalvo, aoRemover }: {
   e: EstadoMarca;
   mudar: (m: Partial<EstadoMarca>) => void;
   d: DadosTimbrado;
@@ -128,7 +129,6 @@ export function MarcaTimbrado({ e, mudar, d, salvoEm, erroMarca, erroOab, naoSal
   salvoEm: string | null;
   /** Marcou "O logo" sem enviar. */
   erroMarca: boolean;
-  erroOab: ("oabUf" | "oabNumero")[];
   /** O servidor não salvou a marca: o logo some no papel nas cores do arquivo (pergunta 7). */
   naoSalvo: number | null;
   aoRemover: () => void;
@@ -288,27 +288,14 @@ export function MarcaTimbrado({ e, mudar, d, salvoEm, erroMarca, erroOab, naoSal
         ) : null}
         <PreviaMarca e={e} d={d} titulo={e.marca === "LOGO" && !l ? "Como sai hoje, enquanto não houver logo" : "Como vai sair"} />
         <div className="lg-bloco">
-          <h3><Icone nome="balanca" className="ico" />Registro da sociedade na OAB <span className="opcional">(opcional)</span></h3>
-          <p className="ajuda" id="lg-oab-aj">
-            O registro da sociedade de advogados na seccional, como no ato de registro. Vai no alto do carnê e no timbrado do recibo, depois do CNPJ. Advogado que atua sozinho, sem sociedade, deixa em branco: a linha sai só com o CNPJ.
+          <h3><Icone nome="balanca" className="ico" />Registro da sociedade na OAB</h3>
+          <p className="lg-oab-ler">
+            <b>{fraseOabSociedade(e.oabUf, e.oabNumero) ?? "Sem registro cadastrado"}</b>
+            <span>
+              Vai no alto do carnê e no timbrado do recibo, depois do CNPJ. Fica em Dados do escritório, junto da razão social e do CNPJ, para ninguém ter duas
+              versões dele. <a href={ROTAS_ESCRITORIO.dados}>Mudar em Dados do escritório</a>
+            </span>
           </p>
-          <div className="lg-oab">
-            <div className="campo">
-              <label htmlFor="lg-oab-uf">Seccional</label>
-              <select className="entrada" id="lg-oab-uf" value={e.oabUf} onChange={(x) => mudar({ oabUf: x.target.value })}
-                aria-invalid={erroOab.includes("oabUf") || undefined} aria-describedby={descritoPor("lg-oab-aj", erroOab.includes("oabUf") && "lg-oab-uf-er")}>
-                <option value="">Escolha</option>
-                {UFS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-              {erroOab.includes("oabUf") ? <ErroCampo id="lg-oab-uf-er">Escolha a seccional do registro.</ErroCampo> : null}
-            </div>
-            <div className="campo">
-              <label htmlFor="lg-oab-n">Número do registro</label>
-              <input className="entrada" id="lg-oab-n" type="text" inputMode="numeric" autoComplete="off" maxLength={12} value={e.oabNumero} onChange={(x) => mudar({ oabNumero: x.target.value })}
-                aria-invalid={erroOab.includes("oabNumero") || undefined} aria-describedby={descritoPor(erroOab.includes("oabNumero") && "lg-oab-n-er")} />
-              {erroOab.includes("oabNumero") ? <ErroCampo id="lg-oab-n-er">Escreva o número do registro, só com números, sem zero na frente.</ErroCampo> : null}
-            </div>
-          </div>
         </div>
       </div>
     </section>

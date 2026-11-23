@@ -2166,3 +2166,15 @@
 .co .pdf-status b{color:var(--texto);font-weight:500}
 .co .pdf-erro .aviso{margin:0}
 .co .pdf-erro .codigo{margin:6px 0 0;font-size:11px;color:var(--texto-2);letter-spacing:.04em}
+
+/* Dados do escritório para os documentos (PA-07), desenho aprovado em
+   docs/design/aprovadas/escritorio-dados-documentos (console-ficha.html, estados dd-editar e dd-mesmo) */
+.co .dd-sec{grid-column:1/-1;font-family:var(--sans,Poppins);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--vinho-2);font-weight:500;margin:8px 0 -6px;padding-top:14px;border-top:1px solid var(--divisor)}
+.co .dd-sec:first-child{border-top:0;padding-top:0;margin-top:0}
+.co .dd-tipos{grid-column:1/-1}
+.co .dd-tipos .dd-ops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 16px}
+.co .dd-mesmo{clear:both;margin:0 0 6px}
+.co .dd-mesmo-txt{margin:-4px 0 0 34px;font-size:13px;color:var(--texto-2);line-height:1.5;overflow-wrap:anywhere}
+.co .dd-mesmo-txt b{color:var(--texto);font-weight:500}
+.co .end-grade .e6{grid-column:span 6}
+@media (max-width:760px){.co .dd-tipos .dd-ops{grid-template-columns:1fr}.co .dd-mesmo-txt{margin-left:0}}
