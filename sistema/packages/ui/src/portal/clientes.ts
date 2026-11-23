@@ -3,8 +3,8 @@
 // campos que mudaram no conflito (PT-19) e os rótulos de próximo contato.
 
 import {
-  CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, ORIGENS, TOTAL_QUALIFICACAO,
-  type DadosCliente, type FichaCliente, type ProxContato, type TipoCliente,
+  CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, ORIGENS, TIPOS_DOCUMENTO_PESSOAL, TOTAL_QUALIFICACAO,
+  type DadosCliente, type FichaCliente, type ProxContato, type TipoCliente, type TipoDocumentoPessoal,
 } from "@t3jus/domain";
 import { formatarTelefone } from "../console/ficha.ts";
 
@@ -18,6 +18,12 @@ export interface ContatoRascunho {
   telefone: string;
   email: string;
 }
+
+/**
+ * Os tipos que os seletores de documento pessoal oferecem (Documentos pessoais e a lista por área).
+ * O termo de curatela (F3.118) fica de fora: só aparece nas telas do responsável legal.
+ */
+export const TIPOS_NO_SELETOR = Object.keys(TIPOS_DOCUMENTO_PESSOAL) as TipoDocumentoPessoal[];
 
 export interface RascunhoCliente {
   tipo: TipoCliente;
