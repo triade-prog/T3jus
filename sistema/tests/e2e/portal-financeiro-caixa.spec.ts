@@ -225,12 +225,14 @@ test.describe("Financeiro do Portal, Resumo e Caixa (FI-03, FI-06, FI-09, FI-21,
     const meses = prev.getByRole("group", { name: "Entradas do escritório por mês, previstas e realizadas" });
     await expect(meses).toContainText("R$ 39.910,00 realizados");
     await expect(meses).toContainText("Janeiro");
+    // F3.51: o mês a mês saiu do Previsto para uma folha própria, depois dos empréstimos.
+    const mam = page.getByRole("region", { name: "Mês a mês" });
     if (ehCelular(page)) {
-      await expect(prev.getByRole("list", { name: "Mês a mês" })).toContainText("R$ 46.900,00 prev.");
+      await expect(mam.getByRole("list", { name: "Mês a mês" })).toContainText("R$ 46.900,00 prev.");
     } else {
-      const tab = prev.getByRole("table", { name: "Entradas, saídas e saldo por mês" });
+      const tab = mam.getByRole("table", { name: "Entradas, saídas e saldo por mês" });
       await expect(tab.getByRole("row", { name: /Novembro \(até hoje\)/ })).toContainText("R$ 40.310,00");
-      await expect(tab.getByRole("row", { name: /Dezembro \(previsto\)/ })).toContainText("—");
+      await expect(tab.getByRole("row", { name: /Dezembro \(previsto\)/ })).toContainText("previstas");
     }
     const cont = page.getByRole("region", { name: "Para o contador" });
     await expect(cont).toContainText("Setembro de 2026");

@@ -14,6 +14,8 @@ export const ROTAS_FINANCEIRO = {
   repasses: "/financeiro/repasses",
   repasse: (id: string) => `/financeiro/repasses/${id}`,
   caixa: "/financeiro/caixa",
+  /** A ficha do empréstimo (F3.51). */
+  emprestimo: (id: string) => `/financeiro/caixa/emprestimos/${id}`,
   recibo: (pagamento: string) => `/recibos/${pagamento}`,
 };
 

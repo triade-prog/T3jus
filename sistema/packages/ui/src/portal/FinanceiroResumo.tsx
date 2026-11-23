@@ -25,6 +25,7 @@ import { mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela } from "./fina
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { FolhaACaminho } from "./ACaminho.tsx";
+import { FolhaEmprestimos, JanelaRegistrarEmprestimo } from "./FinanceiroEmprestimos.tsx";
 import { arquivoContador, nomeMesAno } from "./planilha.ts";
 import { tamanhoLegivel } from "../console/documentos.ts";
 
@@ -62,15 +63,18 @@ export function Cab({ titulo, lede, botao }: { titulo: string; lede: string; bot
   );
 }
 
-export function Folha({ id, titulo, icone, sub, ver, acoes, terc, children }: {
-  id: string; titulo: string; icone: NomeIcone; sub?: string; ver?: { texto: string; href: string }; acoes?: ReactNode; terc?: boolean; children: ReactNode;
+export function Folha({ id, titulo, icone, sub, ver, acoes, terc, classe, antes, children }: {
+  id: string; titulo: string; icone?: NomeIcone; sub?: string; ver?: { texto: string; href: string }; acoes?: ReactNode; terc?: boolean;
+  /** Classe a mais na folha e uma faixa no alto (a areia dos empréstimos, F3.51). */
+  classe?: string; antes?: ReactNode; children: ReactNode;
 }) {
   return (
-    <section className={terc ? "folha fi-terc" : "folha"} aria-labelledby={id} style={{ overflow: "hidden" }}>
+    <section className={`${terc ? "folha fi-terc" : "folha"}${classe ? ` ${classe}` : ""}`} aria-labelledby={id} style={{ overflow: "hidden" }}>
       {terc ? <div className="fi-terc-cab"><Icone nome="escudo" className="ico" />De terceiros · não é do escritório</div> : null}
+      {antes}
       <div className="folha-cab">
         <div>
-          <h2 id={id}><Icone nome={icone} className="ico" />{titulo}</h2>
+          <h2 id={id}>{icone ? <Icone nome={icone} className="ico" /> : null}{titulo}</h2>
           {sub ? <p className="sub">{sub}</p> : null}
         </div>
         {ver || acoes ? (
@@ -648,7 +652,6 @@ function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
   const ultimo = c.meses[c.meses.length - 1]!.mes;
   const sub = (m: MesCaixa) => (m.mes === c.mes ? "até hoje" : m.mes > c.mes ? "previsto" : null);
   const futuro = (m: MesCaixa) => m.mes > c.mes;
-  const valorOuTraco = (v: number | null) => (v === null ? <span className="fi-pq">—</span> : reais(v));
   return (
     <Folha id="t-prev" titulo="Previsto e realizado" icone="moeda"
       sub={`Entradas do escritório, de ${nomeDoMes(primeiro)} a ${nomeDoMes(ultimo)}. Saldo de ${nomeDoMes(c.mes)} em diante é previsão.`}>
@@ -679,43 +682,88 @@ function FolhaPrevistoCaixa({ c }: { c: CaixaFinanceiro }) {
         {c.aCaminho.n ? <span><i style={{ background: "var(--ambar)" }} />RPV ou precatório com data estimada</span> : null}
       </p>
       {c.aCaminho.passou.n ? <PassouDaData c={c} /> : null}
-      <p className="fi-sub3" style={{ marginTop: 0 }}>Mês a mês</p>
-      <div style={{ overflowX: "auto" }} className="so-pc">
-        <table className="fi-tab fi-tab-caixa">
-          <caption className="sr">Entradas, saídas e saldo por mês</caption>
-          <colgroup><col style={{ width: "18%" }} /><col /><col /><col /><col /><col /></colgroup>
+    </Folha>
+  );
+}
+
+/** O sinal do empréstimo no mês: + o que entrou, − as parcelas e devoluções (F3.51). */
+function comSinal(v: number | null): ReactNode {
+  if (v === null) return <span className="fi-pq">—</span>;
+  if (v === 0) return reais(0);
+  return `${v > 0 ? "+" : "−"}${reais(Math.abs(v))}`;
+}
+
+/**
+ * Mês a mês (F3.51, desenho aprovado em portal-financeiro-emprestimos): cada tipo numa coluna, com o
+ * realizado em cima e o previsto embaixo. A coluna Empréstimos, em areia, só aparece com empréstimo.
+ */
+function FolhaMeses({ c }: { c: CaixaFinanceiro }) {
+  const emp = !!c.emprestimos?.algum;
+  const sub = (m: MesCaixa) => (m.mes === c.mes ? "até hoje" : m.mes > c.mes ? "previsto" : null);
+  const futuro = (m: MesCaixa) => m.mes > c.mes;
+  const par = (real: number | null, prev: number, rotulo: string) => (real !== null && real !== undefined
+    ? <><b className="em-r">{reais(real)}</b><small>de {reais(prev)} prev.</small></>
+    : <><b className="em-r">{reais(prev)}</b><small>{rotulo}</small></>);
+  const liquido = (m: MesCaixa) => m.emprestimos ?? { entrou: 0, parcelasPrevistas: 0, parcelasRealizadas: futuro(m) ? null : 0, liquidoPrevisto: 0, liquidoRealizado: futuro(m) ? null : 0 };
+  return (
+    <Folha id="t-meses" titulo="Mês a mês" icone="agenda" sub={`Realizado em cima, previsto embaixo. De ${nomeDoMes(c.mes)} em diante, o saldo é previsão.`}>
+      <div className="so-pc">
+        <table className="fi-tab fi-tab-caixa em-tab">
+          <caption className="sr">{emp ? "Entradas, saídas, empréstimos e saldo por mês" : "Entradas, saídas e saldo por mês"}</caption>
+          <colgroup><col style={{ width: "16%" }} /><col /><col />{emp ? <col /> : null}<col /></colgroup>
           <thead>
             <tr>
-              <th scope="col">Mês</th><th scope="col">Entradas previstas</th><th scope="col">Entradas realizadas</th>
-              <th scope="col">Saídas previstas</th><th scope="col">Saídas realizadas</th><th scope="col">Saldo no fim</th>
+              <th scope="col">Mês</th><th scope="col">Entradas</th><th scope="col">Saídas</th>
+              {emp ? <th scope="col" className="em-col">Empréstimos<br /><span className="em-th-sub">à parte</span></th> : null}
+              <th scope="col">Saldo no fim</th>
             </tr>
           </thead>
           <tbody>
-            {c.meses.map((m) => (
-              <tr key={m.mes} className={futuro(m) ? "fi-futuro" : undefined}>
-                <td><b style={{ fontWeight: 500 }} title={nomeMesAno(m.mes)}>{maiuscula(nomeDoMes(m.mes))}</b>{sub(m) ? <span className="fi-pq"> ({sub(m)})</span> : null}</td>
-                <td className="num">{reais(m.entradasPrevistas)}</td>
-                <td className="num">{valorOuTraco(m.entradasRealizadas)}</td>
-                <td className="num">{reais(m.saidasPrevistas)}</td>
-                <td className="num">{valorOuTraco(m.saidasRealizadas)}</td>
-                <td className="num"><b style={{ fontWeight: 600 }}>{reais(m.saldo)}</b></td>
-              </tr>
-            ))}
+            {c.meses.map((m) => {
+              const e = liquido(m);
+              return (
+                <tr key={m.mes} className={futuro(m) ? "fi-futuro" : undefined}>
+                  <td><b style={{ fontWeight: 500 }} title={nomeMesAno(m.mes)}>{maiuscula(nomeDoMes(m.mes))}</b>{sub(m) ? <><br /><span className="fi-pq">({sub(m)})</span></> : null}</td>
+                  <td className="num">{par(m.entradasRealizadas, m.entradasPrevistas, "previstas")}</td>
+                  <td className="num">{par(m.saidasRealizadas, m.saidasPrevistas, "previstas")}</td>
+                  {emp ? (
+                    <td className="num em-col">
+                      {e.liquidoRealizado !== null
+                        ? <><b className="em-r">{comSinal(e.liquidoRealizado)}</b><small>{comSinal(e.liquidoPrevisto)} prev.</small></>
+                        : <><b className="em-r">{comSinal(e.liquidoPrevisto)}</b><small>previsto</small></>}
+                    </td>
+                  ) : null}
+                  <td className="num"><b className="em-saldo">{reais(m.saldo)}</b></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
       <ul className="cartoes so-cel" aria-label="Mês a mês">
-        {c.meses.map((m) => (
-          <li className="cartao" key={m.mes}>
-            <div className="c-topo"><div><strong className="c-nome rs-mes">{nomeMes(m.mes, c.hoje)}</strong><small>{sub(m) ?? "realizado"}</small></div></div>
-            <dl className="c-dados">
-              <dt>Entradas</dt><dd className="num">{futuro(m) ? `${reais(m.entradasPrevistas)} prev.` : reais(m.entradasRealizadas ?? 0)}</dd>
-              <dt>Saídas</dt><dd className="num">{futuro(m) ? `${reais(m.saidasPrevistas)} prev.` : reais(m.saidasRealizadas ?? 0)}</dd>
-              <dt>Saldo no fim</dt><dd className="num">{reais(m.saldo)}</dd>
-            </dl>
-          </li>
-        ))}
+        {c.meses.map((m) => {
+          const e = liquido(m);
+          return (
+            <li className="cartao" key={m.mes}>
+              <div className="c-topo"><div><strong className="c-nome rs-mes">{nomeMes(m.mes, c.hoje)}</strong><small>{sub(m) ?? "realizado"}</small></div></div>
+              <dl className="c-dados">
+                <dt>Entradas</dt><dd className="num">{futuro(m) ? `${reais(m.entradasPrevistas)} prev.` : reais(m.entradasRealizadas ?? 0)}</dd>
+                <dt>Saídas</dt><dd className="num">{futuro(m) ? `${reais(m.saidasPrevistas)} prev.` : reais(m.saidasRealizadas ?? 0)}</dd>
+                {emp ? <><dt>Empréstimos</dt><dd className="num">{comSinal(e.liquidoRealizado ?? e.liquidoPrevisto)}{e.liquidoRealizado === null ? " prev." : ""}</dd></> : null}
+                <dt>Saldo no fim</dt><dd className="num"><b>{reais(m.saldo)}</b></dd>
+              </dl>
+            </li>
+          );
+        })}
       </ul>
+      {emp ? (
+        <p className="pt-pe-folha em-pe">
+          <Icone nome="trocar" className="ico" />
+          <span>Entradas e Saídas são do dia a dia. <b>Empréstimos</b> fica à parte: <b>+</b> o que entrou emprestado, <b>−</b> as parcelas e devoluções pagas. Entra no saldo, mas não é receita nem despesa.</span>
+        </p>
+      ) : (
+        <p className="pt-pe-folha em-pe"><Icone nome="filtro" className="ico" /><span>Entradas e Saídas são do dia a dia do escritório. Valores de terceiros não entram aqui.</span></p>
+      )}
     </Folha>
   );
 }
@@ -765,7 +813,17 @@ function FolhaContador({ c, aoExportar }: { c: CaixaFinanceiro; aoExportar: () =
 function CaixaConteudo() {
   const { dados, recarregar } = useCarga<CaixaFinanceiro>("/v1/escritorio/financeiro/caixa");
   const [exportar, setExportar] = useState(false);
+  const [registrar, setRegistrar] = useState(false);
+  const [novo, setNovo] = useState<string | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
+  // Vindo de Lançar conta em A pagar (?registrar=1), a janela do empréstimo já abre (F3.51).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has("registrar")) return;
+    q.delete("registrar");
+    window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
+    void Promise.resolve().then(() => setRegistrar(true));
+  }, []);
   const lede = "O que entrou e saiu, o que está previsto e o saldo do escritório, sem misturar o que é de terceiros.";
   const botao = (
     <button className="btn btn-pri" type="button" onClick={() => setExportar(true)} style={{ marginBottom: 6 }}>
@@ -785,6 +843,11 @@ function CaixaConteudo() {
           <p className="sobretitulo" id="t-s1">Do escritório · hoje</p>
           <p><span className="fi-big num">{reais(c.saldo)}</span></p>
           <p>Saldo do caixa do escritório, pelos registros do T3jus. Se tudo o que está previsto entrar e sair, fecha {mes} em <b>{reais(c.fechaMes)}</b>.</p>
+          {c.emprestimos?.algum && c.emprestimos.noSaldo ? (
+            <p className="em-no-saldo"><Icone nome="trocar" className="ico" /><span>{c.emprestimos.noSaldo > 0
+              ? <>Inclui <b>{reais(c.emprestimos.noSaldo)}</b> de empréstimos, já descontado o que foi pago. Entra no saldo, mas não é receita.</>
+              : <>Já descontou <b>{reais(-c.emprestimos.noSaldo)}</b> de parcelas de empréstimos, além do que eles trouxeram. Não é despesa do dia a dia.</>}</span></p>
+          ) : null}
           {c.abertura ? (
             <p className="ct-abertura"><Icone nome="historico" className="ico" /><span>Começa no saldo de abertura de <b>{reais(c.abertura.valor)}</b>, em {diaBr(c.abertura.data)}.</span> <a href={ROTA_AJUSTES}>Ver em Escritório</a></p>
           ) : c.abertura === null ? (
@@ -806,7 +869,11 @@ function CaixaConteudo() {
         </section>
       </div>
       <div className="fi-grade">
-        <div className="fi-col"><FolhaPrevistoCaixa c={c} /></div>
+        <div className="fi-col">
+          <FolhaPrevistoCaixa c={c} />
+          <FolhaEmprestimos e={c.emprestimos} hoje={c.hoje} novo={novo} aoRegistrar={() => setRegistrar(true)} />
+          <FolhaMeses c={c} />
+        </div>
         <aside className="fi-col" aria-label="A caminho e contador">
           <FolhaACaminho a={c.aCaminho} titulo="RPVs e precatórios a caminho" ateMes={c.meses[c.meses.length - 1]!.mes} verEm={`${ROTAS_FINANCEIRO.repasses}#t-cam`} />
           <FolhaContador c={c} aoExportar={() => setExportar(true)} />
@@ -822,6 +889,10 @@ function CaixaConteudo() {
       {exportar ? (
         <JanelaExportar c={c} aoFechar={() => setExportar(false)}
           aoFeito={(f) => { setExportar(false); setFeito(f); recarregar(); }} />
+      ) : null}
+      {registrar ? (
+        <JanelaRegistrarEmprestimo c={c} aoFechar={() => setRegistrar(false)}
+          aoFeito={(f, id) => { setRegistrar(false); setNovo(id); setFeito(f); recarregar(); }} />
       ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
@@ -854,6 +925,23 @@ export function salvar(nome: string, tipo: string, dados: Uint8Array | string) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** A linha dos empréstimos na janela de exportar (F3.51, T5): vão numa aba à parte, sem campo novo. */
+function LinhaEmprestimosExportar({ e }: { e: NonNullable<PreviaExportacao["emprestimos"]> }) {
+  const r = e.recebidos;
+  const p = e.parcelas;
+  const parc = p.n - p.devolucoes;
+  const partes = [parc ? contar(parc, "parcela", "parcelas") : null, p.devolucoes ? contar(p.devolucoes, "devolução", "devoluções") : null].filter(Boolean).join(" e ");
+  const texto = !r.n && !p.n
+    ? "Nenhum empréstimo entrou nem foi pago no mês."
+    : `${r.n ? `${contar(r.n, "recebido", "recebidos")} (${reais(r.valor)})` : "Nenhum recebido"} e ${p.n ? `${contar(p.n, "pagamento", "pagamentos")} (${reais(p.valor)}): ${partes}${p.semComprovante ? `, ${p.semComprovante} sem comprovante` : ""}` : "nenhum pagamento"}.`;
+  return (
+    <li className="em-li">
+      <Icone nome="trocar" className="ico" />
+      <span><b>Empréstimos numa aba à parte</b><small>{texto} Não são receita nem despesa; a aba traz o custo e o falta pagar de cada empréstimo.</small></span>
+    </li>
+  );
 }
 
 function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar: () => void; aoFeito: (f: Feito) => void }) {
@@ -979,7 +1067,7 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
               <li><Icone nome="check" className="ico" /><span>{contar(p.despesas.n, "despesa paga", "despesas pagas")}, por categoria<small>{reais(p.despesas.valor)}</small></span></li>
               <li><Icone nome="check" className="ico" /><span>{p.recibos ? `${contar(p.recibos, "recibo emitido", "recibos emitidos")}, com o número na planilha` : "Nenhum recibo emitido no mês"}</span></li>
               {formato === "XLSX" ? (
-                <li><Icone nome="check" className="ico" /><span>Saldo do caixa no começo e no fim do mês<small>{c.abertura ? "A partir do saldo de abertura" : "Sem saldo de abertura, o saldo começa em R$ 0,00"}</small></span></li>
+                <li><Icone nome="check" className="ico" /><span>Saldo do caixa no começo e no fim do mês<small>{c.abertura ? "A partir do saldo de abertura" : "Sem saldo de abertura, o saldo começa em R$ 0,00"}{c.emprestimos?.algum ? " e com os empréstimos" : ""}</small></span></li>
               ) : null}
               <li>
                 <Icone nome="escudo" className="ico" />
@@ -1007,6 +1095,7 @@ function JanelaExportar({ c, aoFechar, aoFeito }: { c: CaixaFinanceiro; aoFechar
                   </span>
                 </li>
               ) : null}
+              {p.emprestimos && (c.emprestimos?.algum || p.emprestimos.recebidos.n || p.emprestimos.parcelas.n) ? <LinhaEmprestimosExportar e={p.emprestimos} /> : null}
               {an && an.semNota.length ? (
                 <li className="rs-falta">
                   <Icone nome="alerta" className="ico" />

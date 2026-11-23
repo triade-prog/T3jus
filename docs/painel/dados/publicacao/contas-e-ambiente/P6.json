@@ -4,7 +4,8 @@
   "refs": [
     "FI-20"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 60,
-  "nota": "As duas vão juntas: a 0940 põe a categoria e as parcelas, a 0941 tira os empréstimos das despesas e da receita no Caixa e no arquivo do contador. Só a 0940 sozinha mostraria as parcelas como despesa."
+  "nota": "As duas vão juntas: a 0940 põe a categoria e as parcelas, a 0941 tira os empréstimos das despesas e da receita no Caixa e no arquivo do contador. Só a 0940 sozinha mostraria as parcelas como despesa.",
+  "evidencia": "0940 e 0941 aplicadas juntas em 23/11/2026 às 8h10 (Bahia), com ok da Carol, pelo conteúdo do commit 81c38af conferido por md5; api-portal v37 publicada no commit 3a72e9e às 8h21, com as rotas dos empréstimos, saude 200."
 }
