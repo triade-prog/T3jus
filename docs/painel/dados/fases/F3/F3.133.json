@@ -5,7 +5,7 @@
   "refs": [
     "PA-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 963,
-  "proximo": "Trocar o nome curto pela razão social (ou pelo nome da sócia dona, sem sociedade) no carnê e no recibo, com migration nova e teste pgTAP, depois do ok da Carol na 0860"
+  "evidencia": "Desenho aprovado pela Carol em 22/11/2026, 23h41 (Bahia), com as 4 recomendações (docs/design/aprovadas/carne-recibo-razao-social). Migration 0890_carne_recibo_timbrado: escritorio_timbrado_json sobre escritorio_documentos_json e pessoa_dados_json (sem sociedade, só o nome completo e a OAB principal da sócia dona), gatilhos before insert em carnes (coluna timbrado) e em recibo_copias, envoltórios de portal_carne e portal_carne_opcoes, inventário (carnes passa a dado pessoal). Domínio timbrado.ts; telas Carne.tsx e Recibo.tsx (carnê e recibo antigos, sem comTimbrado, saem como antes); PDFs carne_pdf.ts e recibo_pdf.ts. Testes: timbrado.test.ts (15), pgTAP 126 (32), api-portal/timbrado_pdf_test.ts (26, folga de 1 mm nos 6 escritórios) e e2e portal-carne-recibo-timbrado (9 em celular e computador, axe sem violação). Aplicar e publicar fica no P6; o .docx e a prévia de Marca e timbrado no F3.139"
 }

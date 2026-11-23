@@ -8,10 +8,11 @@
 
 import { PDFDocument, type PDFFont, type PDFImage, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 import {
-  dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasTimbrado, localEData, mesDeReferencia,
-  numeroDoRecibo, parcelaDoRecibo, pngEmUmaCor, reais, telefoneBr, textoDoRecibo, tituloDoRecibo, totalDoRecibo, type ReciboParaImprimir,
+  assinaturaDoRecibo, dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasDoTimbreRecibo, linhasTimbrado, localEData,
+  mesDeReferencia, numeroDoRecibo, parcelaDoRecibo, pngEmUmaCor, razaoLonga, reais, subMarcaAdvocacia, telefoneBr, textoDoRecibo, tituloDoRecibo,
+  totalDoRecibo, type ReciboParaImprimir,
 } from "@t3jus/domain";
-import { A4, AMBAR, limpo, MM, quebrar, SUAVE, TINTA, VINHO } from "./carne_pdf.ts";
+import { A4, AMBAR, desenharCorridas, limpo, linhasCorridas, MM, quebrar, SUAVE, TINTA, VINHO } from "./carne_pdf.ts";
 
 const SAL = rgb(0xf2 / 255, 0xec / 255, 0xe8 / 255);
 const FIO = rgb(0xdd / 255, 0xd0 / 255, 0xd6 / 255);
@@ -24,7 +25,7 @@ interface F { r: PDFFont; b: PDFFont; i: PDFFont; sr: PDFFont; sb: PDFFont; si: 
 /** Escreve do topo (y é a linha de cima), quebrando em `largura`. Devolve o y de baixo. */
 function texto(pg: PDFPage, s: string, x: number, y: number, o: { t: number; f: PDFFont; cor?: ReturnType<typeof rgb>; largura?: number; dir?: boolean; centro?: boolean; alto?: number }): number {
   const alto = o.t * (o.alto ?? 1.3);
-  const linhas = o.largura && !o.dir && !o.centro ? quebrar(limpo(s), o.f, o.t, o.largura) : [limpo(s)];
+  const linhas = o.largura && !o.dir ? quebrar(limpo(s), o.f, o.t, o.largura) : [limpo(s)];
   let yy = y;
   for (const l of linhas) {
     yy -= alto;
@@ -76,9 +77,22 @@ function corrido(pg: PDFPage, pedacos: { texto: string; forte?: boolean; extenso
 
 /** A folha do recibo num PDF A4. `logo` é o PNG do logo do dia, quando o recibo saiu com ele. */
 export async function pdfDoRecibo(r: ReciboParaImprimir, logo: Uint8Array | null = null): Promise<Uint8Array> {
+  return await (await desenharRecibo(r, logo)).doc.save();
+}
+
+/** Para o teste: a folga (mm) entre os dados do pagamento e o local e a data, e entre a assinatura e o pé. */
+export async function folgasDoRecibo(r: ReciboParaImprimir): Promise<{ dados: number; assinatura: number }> {
+  return (await desenharRecibo(r, null)).folgas;
+}
+
+async function desenharRecibo(r: ReciboParaImprimir, logo: Uint8Array | null): Promise<{ doc: PDFDocument; folgas: { dados: number; assinatura: number } }> {
   const doc = await PDFDocument.create();
   doc.setTitle(limpo(tituloDoRecibo(r)));
-  doc.setAuthor(limpo(r.escritorio.nome));
+  // Com o timbrado do dia (F3.133, 0890), o autor é quem assina: a razão social, ou a sócia dona sem sociedade.
+  const tim = !!r.escritorio.comTimbrado;
+  const ass = tim ? assinaturaDoRecibo(r.escritorio) : null;
+  const longo = !!ass && razaoLonga(ass.nome);
+  doc.setAuthor(limpo(ass ? ass.nome : r.escritorio.nome));
   doc.setProducer("T3jus");
   doc.setCreator("T3jus");
   const f: F = {
@@ -109,12 +123,20 @@ export async function pdfDoRecibo(r: ReciboParaImprimir, logo: Uint8Array | null
     if (r.marca?.jeito === "LOGO_E_NOME") texto(pg, r.escritorio.nome, esq + w + 3 * MM, y - h / 2 + 8, { t: 16, f: f.sb, cor: VINHO });
   } else {
     baseMarca = texto(pg, r.escritorio.nome, esq, y, { t: 24, f: f.sb, cor: VINHO, largura: largura - 100 * MM, alto: 1.05 });
-    baseMarca = texto(pg, "A D V O C A C I A", esq, baseMarca - 1, { t: 7, f: f.b, cor: SUAVE });
+    // O "Advocacia" pequeno: com o timbrado, só quando o nome curto não diz isso (decisão 4).
+    if (!tim || subMarcaAdvocacia(r.escritorio.nome)) baseMarca = texto(pg, "A D V O C A C I A", esq, baseMarca - 1, { t: 7, f: f.b, cor: SUAVE });
   }
-  const linhas = linhasTimbrado({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined }).slice(1);
-  if (r.escritorio.whatsapp) linhas.push(`WhatsApp ${telefoneBr(r.escritorio.whatsapp)}`);
   let ye = y;
-  for (const l of linhas) for (const q of quebrar(limpo(l), f.r, 7.8, 96 * MM)) ye = texto(pg, q, dir, ye, { t: 7.8, f: f.r, cor: SUAVE, dir: true, alto: 1.5 });
+  if (tim) {
+    // As 4 linhas aprovadas à direita, a razão social em destaque, e o WhatsApp por último (decisão 5).
+    const t = linhasDoTimbreRecibo(r.escritorio);
+    if (t.destaque) ye = desenharCorridas(pg, linhasCorridas([{ texto: t.destaque }], f.b, f.b, longo ? 8.2 : 9, 96 * MM), dir, ye, { t: longo ? 8.2 : 9, dir: true, alto: 1.3 }) - 0.6 * MM;
+    for (const l of t.linhas) ye = desenharCorridas(pg, linhasCorridas(l, f.r, f.b, 7.8, 96 * MM), dir, ye, { t: 7.8, cor: SUAVE, dir: true, alto: 1.5 });
+  } else {
+    const linhas = linhasTimbrado({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined }).slice(1);
+    if (r.escritorio.whatsapp) linhas.push(`WhatsApp ${telefoneBr(r.escritorio.whatsapp)}`);
+    for (const l of linhas) for (const q of quebrar(limpo(l), f.r, 7.8, 96 * MM)) ye = texto(pg, q, dir, ye, { t: 7.8, f: f.r, cor: SUAVE, dir: true, alto: 1.5 });
+  }
   y = Math.min(baseMarca, ye) - 5 * MM;
 
   // O fio vinho com o toque âmbar.
@@ -187,21 +209,31 @@ export async function pdfDoRecibo(r: ReciboParaImprimir, logo: Uint8Array | null
   }
 
   // Local e data, quitação e assinatura do escritório, no pé da folha.
-  const yFim = 62 * MM;
+  // O local e a data ficam a 62 mm do pé; quando o timbrado longo e os dados descem, o bloco desce junto
+  // (até 50 mm), para nada ficar por cima (decisão 13: o recibo continua em 1 página).
+  const fundoDados = y - 6.5 * MM - alturaCaixa;
+  const yFim = Math.max(50 * MM, Math.min(62 * MM, fundoDados - 3 * MM));
   texto(pg, localEData(r), esq, yFim, { t: 12, f: f.sr });
   texto(pg, "Este recibo dá quitação somente da parcela e dos valores descritos acima. As demais parcelas do contrato seguem como combinado.",
     esq, yFim - 8 * MM, { t: 7.8, f: f.r, cor: SUAVE, largura: 80 * MM, alto: 1.5 });
   const ax = dir - 42 * MM, aw = 84 * MM;
   pg.drawLine({ start: { x: dir - aw, y: yFim - 2 * MM }, end: { x: dir, y: yFim - 2 * MM }, thickness: 0.3 * MM, color: TINTA });
-  let ya = texto(pg, r.escritorio.nome, ax, yFim - 3.5 * MM, { t: 9.2, f: f.b, centro: true });
-  if (r.escritorio.cnpj) ya = texto(pg, documentoComNome(r.escritorio.cnpj) ?? "", ax, ya, { t: 8.4, f: f.r, cor: SUAVE, centro: true });
+  let ya: number;
+  if (ass) {
+    // Assina a razão social com "CNPJ · OAB"; sem sociedade, a sócia dona com a OAB dela (decisão 6).
+    ya = texto(pg, ass.nome, ax, yFim - 3.5 * MM, { t: longo ? 8.4 : 9.2, f: f.b, centro: true, largura: aw });
+    if (ass.documento) ya = desenharCorridas(pg, linhasCorridas(ass.documento, f.r, f.b, 8.4, aw), ax, ya, { t: 8.4, cor: SUAVE, centro: true, alto: 1.3 });
+  } else {
+    ya = texto(pg, r.escritorio.nome, ax, yFim - 3.5 * MM, { t: 9.2, f: f.b, centro: true });
+    if (r.escritorio.cnpj) ya = texto(pg, documentoComNome(r.escritorio.cnpj) ?? "", ax, ya, { t: 8.4, f: f.r, cor: SUAVE, centro: true });
+  }
   const reg = `Recebimento registrado por ${r.registradoPor.nome}${r.registradoPor.oab ? `, ${r.registradoPor.oab}` : ""}, em ${dataBr(diaDe(r.registradoEm))}, às ${horaDe(r.registradoEm)}.`;
   for (const q of quebrar(limpo(reg), f.r, 7.4, aw)) ya = texto(pg, q, ax, ya, { t: 7.4, f: f.r, cor: SUAVE, centro: true });
 
   pg.drawLine({ start: { x: esq, y: 20 * MM }, end: { x: dir, y: 20 * MM }, thickness: 0.2 * MM, color: FIO });
   texto(pg, `Recibo nº ${n} · emitido pelo escritório em ${dataBr(diaDe(r.registradoEm))} · 1 página`, esq, 19 * MM, { t: 7, f: f.r, cor: SUAVE });
   texto(pg, "Modelo T3jus", dir, 19 * MM, { t: 7, f: f.b, cor: VINHO, dir: true });
-  return await doc.save();
+  return { doc, folgas: { dados: (fundoDados - yFim) / MM, assinatura: (ya - 21 * MM) / MM } };
 }
 
 /** O PNG do logo do dia do recibo, do Storage do escritório; nulo quando saiu com o nome em letra. */

@@ -43,3 +43,4 @@ export * from "./documentos_pessoais.ts";
 export * from "./pdf_fotos.ts";
 export * from "./responsavel_legal.ts";
 export * from "./escritorio_dados.ts";
+export * from "./timbrado.ts";

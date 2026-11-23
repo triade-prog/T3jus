@@ -1,0 +1,11 @@
+{
+  "id": "D31",
+  "texto": "Desenho da razão social e dos contatos do escritório no carnê e no recibo: a linha da identificação na via, o timbrado no campo Escritório da capa, as 4 linhas e a assinatura do recibo, o canhoto com o nome curto e os casos sem sociedade, razão social vazia e razão social longa",
+  "peca": "S7",
+  "refs": [
+    "PA-07"
+  ],
+  "status": "feito",
+  "ordem": 81,
+  "evidencia": "Desenho em docs/design/aprovadas/carne-recibo-razao-social/ (16 estados, computador e celular, axe sem violação, 36 casos de folga medidos), aprovado pela Carol em 22/11/2026 às 23h41 (Bahia) com as 4 recomendações do NOTAS.md"
+}
