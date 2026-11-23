@@ -1,7 +1,7 @@
 -- Ajustes do financeiro (F3.50, F3.46) e a meta do mês (F3.49): o contador, o saldo de abertura no
 -- Caixa, corrigir com motivo, o envio ao contador, o lembrete do dia 5 e a meta que não muda mês fechado.
 begin;
-select plan(32);
+select plan(33);
 
 select ajustar_relogio(('2026-11-18 10:00-03'::timestamptz - now()));
 
@@ -64,6 +64,8 @@ create temp table ex as select portal_financeiro_exportar(bianca, rm, '{"mes": "
 select is((select (e ->> 'saldoFim')::bigint from ex), 1318000::bigint, 'a exportação diz o saldo do fim do mês');
 select is((select p ->> 'para' from ids, ex, lateral (select portal_financeiro_envio_preparar(bianca, rm, (e ->> 'id')::uuid) p) z), 'contato@exemplo.com.br',
   'preparar diz para quem vai');
+select is((select p ->> 'responderPara' from ids, ex, lateral (select portal_financeiro_envio_preparar(bianca, rm, (e ->> 'id')::uuid) p) z),
+  (select bianca || '@exemplo.invalid' from ids), 'a resposta do contador volta para o e-mail de quem mandou');
 select is((select portal_financeiro_envio_registrar(bianca, rm, (e ->> 'id')::uuid, 'FALHOU') ->> 'situacao' from ids, ex), 'FALHOU', 'a falha fica registrada');
 select ajustar_relogio(('2026-11-18 10:05-03'::timestamptz - now()));
 select is((select portal_financeiro_envio_registrar(bianca, rm, (e ->> 'id')::uuid, 'ENVIADO') ->> 'situacao' from ids, ex), 'ENVIADO', 'mandar de novo');

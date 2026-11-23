@@ -1,11 +1,12 @@
 {
   "id": "F3.136",
-  "texto": "Portal mais rápido, no servidor e no CSS: juntar a conferência do acesso e o escritório da sessão numa consulta só, decidir se a conferência do login pode ficar guardada por uns segundos e tirar o CSS do Console do Portal",
+  "texto": "Portal mais rápido no servidor: o acesso e o escritório da sessão numa consulta só, feita ao mesmo tempo que o Auth confere o login, e a moldura sem viagens em fila",
   "peca": "B4",
   "refs": [
     "PT-27"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1100,
-  "proximo": "Cada chamada da api-portal faz 4 viagens em fila (login, acesso, escritório, dado); juntar exige migration e publicar a api-portal com o ok da Carol, e guardar a conferência mexe na PT-21 (decisão dela)"
+  "nota": "Medido em 22/11 nos registros do Supabase: o banco responde em 13 a 77 ms, mas cada viagem da função custa 40 a 60 ms a mais; as telas faziam 4 viagens em fila e a moldura conferia o login duas vezes. Plano revisado por outro especialista antes do código (project-files t3jus/desempenho/plano-f3-136.md). A ideia de guardar a conferência por uns segundos (que mexia na PT-21) foi trocada por fazer as consultas juntas: nada fica guardado e o Auth continua conferindo cada chamada.",
+  "evidencia": "Migration 0880 (acesso_portal_sessao chama acesso_portal e escritorio_da_sessao numa viagem); api-portal pede essa consulta junto com o /auth/v1/user e só usa o resultado se o Auth devolver a mesma pessoa e a mesma sessão; o login e o escritório são conferidos uma vez só por pedido (antes /v1/escritorio e /v1/sessao conferiam duas, também no Console); a moldura pede lista, ficha e cobrança juntas, com os erros na mesma ordem; sem a 0880 a função volta às consultas de antes. Telas de 4 para 2 viagens em fila; moldura de 8 para 2. Testes: supabase/tests/pgtap/125_acesso_portal_sessao_test.sql e os testes F3.136 em api-portal/app_test.ts."
 }

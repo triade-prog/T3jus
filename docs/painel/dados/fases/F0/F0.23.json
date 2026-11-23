@@ -1,0 +1,14 @@
+{
+  "id": "F0.23",
+  "texto": "O sistema alcança o Supabase Auth sem permissão no esquema auth: ponte do postgres com quatro funções mínimas para o e-mail, os aparelhos, desconectar e apagar a entrada",
+  "peca": "B1",
+  "refs": [
+    "PT-23",
+    "PT-11",
+    "FI-21"
+  ],
+  "status": "feito",
+  "ordem": 230,
+  "evidencia": "Migration 0950_ponte_auth: esquema ponte_auth (do postgres, fora da API) com email, aparelhos, encerrar_sessoes e apagar_entrada, só para o dominio; o dominio perde o que sobrou no auth, como em produção; busca e ficha do Suporte, desconectar, responderPara do envio ao contador e a entrada apagada aos 90 dias passam pela ponte. pgTAP 125 (privilégios, ponte com dono sem superusuário, guarda contra função que cite o auth) e 064 (responderPara); suíte do banco inteira passando",
+  "proximo": "Aplicar a 0950 no Supabase com o ok da Carol (sem publicar função) e conferir em produção numa transação desfeita"
+}
