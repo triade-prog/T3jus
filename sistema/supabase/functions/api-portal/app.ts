@@ -5,7 +5,7 @@ import type { MiddlewareHandler } from "hono";
 import {
   areasSchema, assinaPorSiSchema, dadosDocumentoSchema, dadosEscritorioSchema, mudarOabSchema, oabSchema, removerOabSchema, type ContaPortal, type FichaPessoaEquipe, buscaClientesSchema, cadastrarClienteSchema, CAMPOS_CLIENTE_BANCO, convidarEquipeSchema, COOKIES_PORTAL, editarClienteSchema, ErroDominio,
   escolherEscritorioSchema, inativarClienteSchema, reativarClienteSchema, registrarAtendimentoSchema, retirarEquipeSchema,
-  cancelarCompromissoSchema, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
+  cancelarCompromissoSchema, type ContatoDaConversa, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL, encerrarFunilSchema, type SaidaFunil, type ClienteFunil,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
   baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
@@ -362,8 +362,10 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   });
 
   app.post("/v1/escritorio/clientes", async (c) => {
-    const d = await lerCorpo(c, cadastrarClienteSchema);
-    const r = await deps.banco.rpc<{ id: string; versao: number }>("portal_cliente_cadastrar", { ...quem(c), p_dados: clienteParaBanco(d) });
+    const { conversaId, ...d } = await lerCorpo(c, cadastrarClienteSchema);
+    // Pela conversa (AP-07): o banco liga a conversa à ficha na mesma transação.
+    const p_dados = { ...clienteParaBanco(d), ...(conversaId ? { conversaId } : {}) };
+    const r = await deps.banco.rpc<{ id: string; versao: number }>("portal_cliente_cadastrar", { ...quem(c), p_dados });
     return c.json(r, 201);
   });
 
@@ -538,6 +540,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.get("/v1/escritorio/conversas/:id", async (c) => {
     return c.json(await deps.banco.rpc<Conversa>("portal_conversa", { ...quem(c), p_conversa: idDaRota(c, "id") }));
+  });
+
+  // O nome e o telefone da conversa, para o cadastro e a primeira reunião (AP-07).
+  app.get("/v1/escritorio/conversas/:id/contato", async (c) => {
+    return c.json(await deps.banco.rpc<ContatoDaConversa>("portal_conversa_contato", { ...quem(c), p_conversa: idDaRota(c, "id") }));
   });
 
   app.post("/v1/escritorio/conversas/:id/assumir", async (c) => {

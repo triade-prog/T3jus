@@ -182,3 +182,12 @@ export interface AvisosDaConversa {
   ativo: PedidoSemAvisos | null;
   podeMudar: boolean;
 }
+
+/** O contato da conversa, para "Cadastrar como cliente" e "Marcar primeira reunião" (AP-07). */
+export interface ContatoDaConversa {
+  id: string;
+  nome: string | null;
+  telefone: string;
+  clienteId: string | null;
+  responsavel: { id: string; nome: string } | null;
+}

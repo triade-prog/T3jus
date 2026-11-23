@@ -248,7 +248,7 @@ test.describe("Conversas do Portal, Mensagens (PD-07, EX-10, AP-02)", () => {
     if (ehCelular(page)) await page.getByText("Sobre Rafaela").click();
     const ctx = page.getByRole(ehCelular(page) ? "group" : "complementary", { name: /Sobre Rafaela/ });
     await expect(ctx).toContainText("Foi para Diego porque contato novo é da área Comercial.");
-    await expect(ctx.getByRole("link", { name: "Cadastrar como cliente" })).toHaveAttribute("href", "/clientes/novo");
+    await expect(ctx.getByRole("link", { name: "Cadastrar como cliente" })).toHaveAttribute("href", `/clientes/novo?conversa=${RAF}`);
     await semViolacoes(page);
     await page.goto(`${P}/conversas?mostrar=resolvidas&c=${GAB}`);
     await expect(page.getByText("Resolvida pela IA").first()).toBeVisible();

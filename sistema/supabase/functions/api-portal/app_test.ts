@@ -347,6 +347,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_financeiro_caixa: (a) => ({ saldo: 0, escritorio: a.p_escritorio }),
     portal_conversas: (a) => ({ filtro: a.p_filtro, busca: a.p_busca, escritorio: a.p_escritorio }),
     portal_conversa: (a) => ({ id: a.p_conversa }),
+    portal_conversa_contato: (a) => ({ id: a.p_conversa, nome: "Rafaela Moura", telefone: "+5511976402281", clienteId: null, responsavel: null }),
     portal_whatsapp: (a) => ({ escritorio: a.p_escritorio }),
     portal_whatsapp_rascunho: (a) => a.p_dados,
     portal_whatsapp_conferir_numero: (a) => {
@@ -894,6 +895,22 @@ Deno.test("AP-01: CPF errado, contato sem telefone nem e-mail ou sem principal n
     assertEquals((await erro(r)).detalhes?.campos, [campo]);
   }
   assert(!m.chamadas.some((c) => c.funcao === "portal_cliente_cadastrar"));
+});
+
+Deno.test("AP-07: cadastrar pela conversa leva a conversa ao banco, e a reunião com a conversa também", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const ct = await (await m.pedir(`/v1/escritorio/conversas/${CLIENTE}/contato`, { cookie })).json();
+  assertEquals([ct.nome, ct.telefone], ["Rafaela Moura", "+5511976402281"]);
+  assertEquals((await m.pedir("/v1/escritorio/conversas/nao-e-id/contato", { cookie })).status, 404);
+  assertEquals((await m.pedir("/v1/escritorio/clientes", { metodo: "POST", corpo: { ...HELENA, conversaId: CLIENTE }, cookie })).status, 201);
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_cliente_cadastrar")!.args.p_dados as Record<string, unknown>).conversaId, CLIENTE);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/clientes", { metodo: "POST", corpo: { ...HELENA, conversaId: "nao-e-id" }, cookie }))).detalhes?.campos, ["conversaId"]);
+  const reuniao = { tipo: "CLIENTE", titulo: "Primeira reunião · Rafaela Moura", inicio: "2026-11-20T17:00:00Z", fim: "2026-11-20T18:00:00Z", modalidade: "PRESENCIAL", responsavelId: CLIENTE };
+  assertEquals((await erro(await m.pedir("/v1/escritorio/compromissos", { corpo: { ...reuniao, conversaId: "x" }, cookie }))).detalhes?.campos, ["conversaId"]);
+  await m.pedir("/v1/escritorio/compromissos", { corpo: { ...reuniao, conversaId: CLIENTE }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_compromisso_marcar")!.args.p_dados as Record<string, unknown>).conversaId, CLIENTE);
+  assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_conversa_contato") || c.funcao === "portal_cliente_cadastrar").every((c) => c.args.p_escritorio === AURORA));
 });
 
 Deno.test("AP-01: a busca vai ao banco com o termo, e o filtro errado volta como campo", async () => {

@@ -4,20 +4,23 @@
 // passar, resolvida, novo-contato, fila-vazia, nao-conectado e nao-conectado-equipe).
 // Lista à esquerda, conversa no meio e contexto à direita; no celular, uma coisa por vez.
 // O banco decide quem responde e o que cada pessoa vê; a tela só mostra e pede.
+// Contato novo (AP-07, docs/design/aprovadas/portal-jornada-fechamento, grupo 7): "Cadastrar como
+// cliente" abre o Novo cliente com o nome e o telefone da conversa e volta para cá, já ligada à
+// ficha; "Marcar primeira reunião" abre o Novo compromisso em cima da conversa.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ENVIO_MENSAGEM, FILTROS_CONVERSA, haQuanto, iniciaisConversa, MOTIVOS_CONVERSA, RAZOES_RESPONSAVEL, telefoneBr,
-  type Conversa, type FiltroConversa, type LinhaConversa, type ListaConversas, type MensagemConversa,
+  type ClienteLinha, type Conversa, type FiltroConversa, type ListaClientes, type LinhaConversa, type ListaConversas, type MensagemConversa,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
-import { diaCurto, diaDe, horaDe, nomeDoTipo } from "./agenda.ts";
+import { diaCurto, diaDe, horaDe, nomeDoTipo, somarDias } from "./agenda.ts";
 import { Toast, type Feito } from "./FichaCliente.tsx";
 import { JanelaPedido, JanelaRetirar, SeloSemAvisos, type ClienteDoPedido, type PedidoNaConversa } from "./SemAvisos.tsx";
 import { dataLonga, hora as horaCurta } from "../console/tempo.ts";
-import type { Pessoa } from "./JanelaCompromisso.tsx";
+import { JanelaCompromisso, rascunhoNovo, type Pessoa, type Rascunho } from "./JanelaCompromisso.tsx";
 import { chamarPortal, MolduraPortal, ROTAS_PORTAL, useEscritorioPortal } from "./Moldura.tsx";
 
 export const ROTAS_CONVERSAS = {
@@ -398,7 +401,7 @@ function RodapeConversa({ c, aoAssumir, mudando, aoEnviado }: { c: Conversa; aoA
     : `A IA está respondendo ${para}. Se quiser entrar, use “Assumir mesmo assim”, no alto.`, false);
 }
 
-function CabConversa({ c }: { c: Conversa }) {
+function CabConversa({ c, cadastrado }: { c: Conversa; cadastrado: boolean }) {
   const quem = !c.cliente ? "Nome dito na conversa"
     : !c.quemEscreve || c.quemEscreve === c.cliente.nome ? `${c.principal ? "O próprio cliente, contato principal" : "O próprio cliente"}`
     : null;
@@ -413,7 +416,10 @@ function CabConversa({ c }: { c: Conversa }) {
       <p className="cv-quem">
         {quem ?? <>Quem escreve: <b>{c.quemEscreve}</b>{c.papel ? `, ${c.papel}` : ""}{c.principal ? ", contato principal" : ""}</>}
         {c.cliente ? (
-          <a href={`${ROTAS_PORTAL.clientes}/${c.cliente.id}`}><Icone nome="pessoas" className="ico ico-s" />Abrir a ficha</a>
+          <>
+            <a href={`${ROTAS_PORTAL.clientes}/${c.cliente.id}`}><Icone nome="pessoas" className="ico ico-s" />Abrir a ficha</a>
+            {cadastrado ? <> <span className="selo selo-implant"><Icone nome="check" className="ico ico-s" />Cliente desde hoje</span></> : null}
+          </>
         ) : (
           <> <span className="selo selo-neutro">Ainda não está em Clientes</span></>
         )}
@@ -508,7 +514,7 @@ function SecAvisos({ c, aoAbrir }: { c: Conversa; aoAbrir: (j: JanelaAvisos) => 
   );
 }
 
-function secoesDoContexto(c: Conversa, hoje: string, aoAvisos: (j: JanelaAvisos) => void): ReactNode[] {
+function secoesDoContexto(c: Conversa, hoje: string, aoAvisos: (j: JanelaAvisos) => void, aoReuniao: () => void, cadastrado: boolean): ReactNode[] {
   const s: ReactNode[] = [];
   if (c.situacao !== "IA" && c.motivo) {
     const razao = c.responsavelRazao && c.responsavelRazao !== "ASSUMIU" ? RAZOES_RESPONSAVEL[c.responsavelRazao] : null;
@@ -545,7 +551,11 @@ function secoesDoContexto(c: Conversa, hoje: string, aoAvisos: (j: JanelaAvisos)
           <div><dt>Quem escreve</dt><dd>{!c.quemEscreve || c.quemEscreve === c.cliente.nome ? "O próprio cliente" : `${primeiro(c.quemEscreve)}${c.papel ? `, ${c.papel}` : ""}`}</dd></div>
           <div><dt>Contato</dt><dd>{c.principal ? "Principal da ficha" : "Da ficha"}</dd></div>
         </dl>
+        {cadastrado ? <button className="btn btn-pri" type="button" onClick={aoReuniao}><Icone nome="agenda" className="ico" />Marcar primeira reunião</button> : null}
         <a className="btn btn-sec" href={`${ROTAS_PORTAL.clientes}/${c.cliente.id}`}><Icone nome="pessoas" className="ico" />Abrir a ficha</a>
+        {cadastrado ? (
+          <p className="cv-nota"><Icone nome="escudo" className="ico" /><span>A conversa ficou ligada à ficha. Dado de saúde e outros dados sensíveis ditos aqui continuam só na conversa, fora do cadastro.</span></p>
+        ) : null}
       </Sec>,
     );
     if (c.avisos) s.push(<SecAvisos key="avisos" c={c} aoAbrir={aoAvisos} />);
@@ -553,9 +563,9 @@ function secoesDoContexto(c: Conversa, hoje: string, aoAvisos: (j: JanelaAvisos)
     s.push(
       <Sec key="novo" titulo="Contato novo" icone="pessoa-mais">
         <p>Este número não está em Clientes. Se for um cliente novo, cadastre e confira os dados com a pessoa.</p>
-        <a className="btn btn-pri" href={`${ROTAS_PORTAL.clientes}/novo`}><Icone nome="pessoa-mais" className="ico" />Cadastrar como cliente</a>
-        <a className="btn btn-sec" href={ROTAS_PORTAL.agenda}><Icone nome="agenda" className="ico" />Marcar primeira reunião</a>
-        <p className="cv-nota"><Icone nome="escudo" className="ico" /><span>Dado de saúde e outros dados sensíveis ditos na conversa ficam só aqui, fora do cadastro.</span></p>
+        <a className="btn btn-pri" href={`${ROTAS_PORTAL.clientes}/novo?conversa=${c.id}`}><Icone nome="pessoa-mais" className="ico" />Cadastrar como cliente</a>
+        <button className="btn btn-sec" type="button" onClick={aoReuniao}><Icone nome="agenda" className="ico" />Marcar primeira reunião</button>
+        <p className="cv-nota"><Icone nome="escudo" className="ico" /><span>A IA não cadastra sozinha: o cadastro abre com o nome e o telefone da conversa, para você conferir, e ao salvar você volta para cá. Dado de saúde e outros dados sensíveis ditos na conversa ficam só aqui, fora do cadastro.</span></p>
       </Sec>,
     );
   }
@@ -814,10 +824,22 @@ export function ConversasPortal() {
   const [falha, setFalha] = useState<string | null>(null);
   const [feito, setFeito] = useState<Feito | null>(null);
   const titulo = useRef(false);
+  // Voltou do cadastro pela conversa (?cadastrado=1): o aviso e "Cliente desde hoje".
+  const [cadastrado, setCadastrado] = useState<string | null>(null);
+  const [reuniao, setReuniao] = useState<{ aberta: boolean; inicial: Rascunho; vez: number } | null>(null);
+  const [pessoas, setPessoas] = useState<Pessoa[] | null>(null);
+  const [clientes, setClientes] = useState<ClienteLinha[] | null>(null);
 
   useEffect(() => {
     const ler = () => setEstado(lerEndereco());
-    void Promise.resolve().then(ler);
+    void Promise.resolve().then(() => {
+      const e = lerEndereco();
+      if (e.c && new URLSearchParams(window.location.search).get("cadastrado") === "1") {
+        setCadastrado(e.c);
+        escreverEndereco(e, false);
+      }
+      ler();
+    });
     window.addEventListener("popstate", ler);
     return () => window.removeEventListener("popstate", ler);
   }, []);
@@ -874,6 +896,26 @@ export function ConversasPortal() {
     setVez((v) => v + 1);
   }
 
+  // Quando volta do cadastro, o aviso diz quem foi cadastrado.
+  useEffect(() => {
+    if (!cadastrado || !conversa || conversa === "erro" || conversa.id !== cadastrado || !conversa.cliente) return;
+    const nome = conversa.cliente.nome;
+    void Promise.resolve().then(() => setFeito((f) => f ?? {
+      titulo: `${nome} cadastrada.`, texto: `A conversa ficou ligada à ficha de ${primeiro(nome)}. O histórico da conversa continua aqui.`,
+    }));
+  }, [cadastrado, conversa]);
+
+  function abrirReuniao(c: Conversa) {
+    if (!pessoas) void chamarPortal<{ pessoas: Pessoa[] }>("/v1/escritorio/pessoas").then((r) => setPessoas(r.ok ? r.dados.pessoas : []));
+    if (c.cliente && !clientes) void chamarPortal<ListaClientes>("/v1/escritorio/clientes?situacao=ATIVO").then((r) => setClientes(r.ok ? r.dados.clientes : []));
+    const nome = c.cliente?.nome ?? c.quemEscreve ?? c.nome;
+    const base = rascunhoNovo(somarDias(diaDe(new Date().toISOString()), 1), "14:00", c.responsavel?.id ?? c.eu ?? "");
+    setReuniao((x) => ({
+      aberta: true, vez: (x?.vez ?? 0) + 1,
+      inicial: { ...base, tipo: "CLIENTE", titulo: `Primeira reunião · ${nome}`.slice(0, 160), clienteId: c.cliente?.id ?? "", lembrete: true },
+    }));
+  }
+
   const esperando = escritorio?.conversasEsperando ?? (lista && lista !== "erro" ? lista.contagem.precisa : 0);
   const atual = conversa && conversa !== "erro" && estado?.c === conversa.id ? conversa : null;
   const trilha = [{ nome: "Conversas", href: ROTAS_CONVERSAS.mensagens }, { nome: atual ? atual.nome : "Mensagens" }];
@@ -891,7 +933,8 @@ export function ConversasPortal() {
     } else {
       const hoje = diaDe(new Date().toISOString());
       const abrirAvisos = (j: JanelaAvisos) => { setVezJanela((v) => v + 1); setJanela(j); };
-      const ctx = atual ? secoesDoContexto(atual, hoje, abrirAvisos) : [];
+      const comCadastro = !!atual && cadastrado === atual.id && !!atual.cliente;
+      const ctx = atual ? secoesDoContexto(atual, hoje, abrirAvisos, () => abrirReuniao(atual), comCadastro) : [];
       const cliPedido = atual ? clienteDoPedido(atual) : null;
       const feitoAvisos = (x: Feito) => depois(x);
       miolo = (
@@ -915,7 +958,7 @@ export function ConversasPortal() {
               <section className="cv-conv" aria-label="Conversa"><div style={{ padding: 24 }}><Carregando rotulo="Carregando a conversa" linhas={5} /></div></section>
             ) : (
               <section className="cv-conv" aria-labelledby="cv-ct">
-                <CabConversa c={atual} />
+                <CabConversa c={atual} cadastrado={comCadastro} />
                 <BarraSituacao c={atual} dono={escritorio.dono} mudando={mudando} aoAssumir={() => void assumir(atual)}
                   aoPassar={() => setJanela("passar")} aoDevolver={() => setJanela("devolver")} />
                 <Mensagens c={atual} hoje={hoje} />
@@ -926,7 +969,7 @@ export function ConversasPortal() {
                       Sobre {primeiro(atual.nome)}{atual.contexto.caso && atual.avisos ? ", o caso e os avisos" : atual.contexto.caso ? " e o caso" : atual.avisos ? " e os avisos" : ""}
                       <Icone nome="baixo" className="ico ico-s" />
                     </summary>
-                    <div className="cv-ctx" role="group" aria-label={`Sobre ${primeiro(atual.nome)}, no celular`}>{secoesDoContexto(atual, hoje, abrirAvisos)}</div>
+                    <div className="cv-ctx" role="group" aria-label={`Sobre ${primeiro(atual.nome)}, no celular`}>{secoesDoContexto(atual, hoje, abrirAvisos, () => abrirReuniao(atual), comCadastro)}</div>
                   </details>
                 ) : null}
                 <RodapeConversa c={atual} mudando={mudando} aoAssumir={() => void assumir(atual)} aoEnviado={() => setVez((v) => v + 1)} />
@@ -934,6 +977,13 @@ export function ConversasPortal() {
             )}
             <aside className="cv-ctx" aria-label={atual ? `Sobre ${primeiro(atual.nome)}` : "Contexto"}>{ctx}</aside>
           </div>
+          {atual && reuniao ? (
+            <JanelaCompromisso key={`re-${reuniao.vez}`} aberta={reuniao.aberta && pessoas !== null} inicial={reuniao.inicial}
+              conversa={atual.cliente ? null : { id: atual.id, nome: atual.quemEscreve ?? atual.nome, telefone: atual.telefone }}
+              pessoas={pessoas ?? []} clientes={atual.cliente ? clientes : []} tiposEscritos={[]} eu={escritorio.pessoa}
+              aoFechar={() => setReuniao((x) => x && { ...x, aberta: false })}
+              aoFeito={(m) => { setReuniao((x) => x && { ...x, aberta: false }); depois({ titulo: m.titulo, texto: m.texto }); }} />
+          ) : null}
           {atual && janela === "devolver" ? <JanelaDevolver c={atual} aoFechar={() => setJanela(null)} aoFeito={depois} /> : null}
           {atual && janela === "passar" ? <JanelaPassar c={atual} aoFechar={() => setJanela(null)} aoFeito={depois} /> : null}
           {atual && cliPedido && (janela === "avisos" || janela === "avisos-mudar") ? (

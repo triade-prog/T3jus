@@ -1,0 +1,10 @@
+{
+  "data": "22/11/2026",
+  "inicio": "22:15",
+  "fim": "22:55",
+  "texto": "Jornada do cliente, parte 5: cadastrar como cliente pela conversa, com o nome e o telefone dela, liga a conversa à ficha na mesma transação e volta para a conversa; Marcar primeira reunião abre o Novo compromisso em cima da conversa, com Com quem, e o compromisso passa para a ficha no cadastro (F3.130 feito; o lembrete antes do cadastro fica no F3.137).",
+  "refs": [
+    "AP-07",
+    "AP-02"
+  ]
+}
