@@ -6,7 +6,7 @@
     "EX-16",
     "EX-17"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 1065,
-  "proximo": "Desenhar e programar o aviso no sino do Financeiro para o caso sem levantamento pronto para encerrar, que ficou de fora da F3.132 (o fechamento hoje só aparece na ficha do cliente, na do caso e na do contrato)"
+  "proximo": "Desenho aprovado pela Carol em 23/11/2026 (D33). Falta o plano de código revisado e a programação: migration 0990, gatilhos adiados, rotina das 7h, o tipo CASO_PRONTO_FECHAR no sino"
 }
