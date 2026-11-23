@@ -1,7 +1,8 @@
 -- Importar do Astrea, parte 3: o financeiro antigo só como informação (F3.56, F3.113). Ao importar
 -- os clientes do backup, a aba dos lançamentos vira mais uma prévia; o recebido fica no histórico
 -- da ficha como "pago antes do T3jus", fora do Caixa; o que está em aberto vira um lembrete de
--- criar o contrato, que some quando o contrato é criado; as despesas ficam de fora; desfazer tira
+-- criar o contrato, que some quando o contrato é criado; as despesas ficam de fora (listadas na prévia
+-- como FORA_REGRA, desde a 0920, e nunca importadas); desfazer tira
 -- o histórico e os lembretes, e o lembrete que já virou contrato fica como está.
 begin;
 select plan(25);
@@ -81,12 +82,12 @@ create temp table col as select portal_importacao_colunas(socia, rm, f.id, (sele
 select is((select fora_tipo from importacoes, f where importacoes.id = f.id), '{"DESPESAS": 1}'::jsonb,
   'decisão 23: as despesas do escritório ficam de fora e são contadas');
 select is((select jsonb_object_agg(numero, situacao) from importacao_linhas, f where importacao_id = f.id),
-  '{"2": "PRONTA", "3": "PRONTA", "4": "PRONTA", "5": "PRONTA", "6": "PRONTA", "7": "ERRO", "8": "ERRO", "10": "AVISO"}'::jsonb,
-  'cada linha com a situação');
+  '{"2": "PRONTA", "3": "PRONTA", "4": "PRONTA", "5": "PRONTA", "6": "PRONTA", "7": "ERRO", "8": "ERRO", "9": "FORA_REGRA", "10": "AVISO"}'::jsonb,
+  'cada linha com a situação (a despesa do escritório aparece na prévia e nunca entra)');
 select is((select jsonb_agg(p ->> 'codigo' order by numero) from importacao_linhas, f, jsonb_array_elements(problemas) p where importacao_id = f.id),
   '["VALOR_FALTA", "CLIENTE_NAO_ENCONTRADO", "CAMPO_INVALIDO"]'::jsonb, 'o valor que falta, o cliente que não está no T3jus e a data ilegível');
-select is((select r -> 'financeiroAntigo' from col),
-  '{"recebidos": 3, "valorRecebido": 230000, "emAberto": 2, "valorEmAberto": 100000, "lembretes": 1, "clientes": 2}'::jsonb,
+select is((select (r -> 'financeiroAntigo') - 'grupos' from col),
+  '{"recebidos": 3, "valorRecebido": 230000, "emAberto": 2, "valorEmAberto": 100000, "lembretes": 1, "clientes": 2, "despesas": 1}'::jsonb,
   'o resumo: o que foi recebido e o que está em aberto');
 
 -- Corrigir e decidir.

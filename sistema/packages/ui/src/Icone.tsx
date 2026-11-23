@@ -330,6 +330,8 @@ const DESENHOS = {
   // Escritório › WhatsApp e IA (desenho aprovado).
   ligar: <><path d="M12 3v9" /><path d="M7 6.2a7.5 7.5 0 1 0 10 0" /></>,
   pausa: <path d="M8 5v14M16 5v14" />,
+  // Clientes › lista vazia, o atalho do ADVBOX (desenho aprovado portal-importacao-sistemas).
+  link: <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>,
   janela: <><path d="M3 4.5h18v15H3Z" /><path d="M3 8.5h18" /><path d="M13 13h5v4" /><path d="m18 13-6 6" /></>,
   chave: <><path d="M8.5 10a4.5 4.5 0 1 1 0 .1Z" /><path d="M13 12.5h8v3.5" /><path d="M17.5 12.5v2.5" /></>,
   medidor: <><path d="M3.5 17a8.5 8.5 0 1 1 17 0" /><path d="m12 17 4-6" /></>,

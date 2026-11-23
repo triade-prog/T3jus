@@ -61,7 +61,7 @@ export const SELO_PROBLEMA: Record<CodigoProblema, string> = {
 };
 
 /** A explicação de cada problema, com o que fazer. */
-export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplicado" | "telefoneDe"> & Partial<Pick<LinhaPrevia, "casoExistente" | "caso" | "lancamento">>): string {
+export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplicado" | "telefoneDe"> & Partial<Pick<LinhaPrevia, "casoExistente" | "caso" | "lancamento" | "mesmaDe">>): string {
   const campo = NOMES_CAMPO_IMPORTACAO[p.campo] ?? p.campo;
   const v = p.valor ? `“${p.valor}”` : "";
   switch (p.codigo) {
@@ -88,7 +88,15 @@ export function explicaProblema(p: ProblemaLinha, l?: Pick<LinhaPrevia, "duplica
     case "TELEFONE_DE_OUTRO": return l?.telefoneDe ? `É o telefone de ${l.telefoneDe.nome}. Pode ser da família.` : "É o telefone de outro cliente. Pode ser da família.";
     case "SEM_ASSINATURA": return "O contrato entra em elaboração e vai ao Financeiro quando a assinatura for registrada.";
     case "FORA_DA_LISTA": return `${v} não está na lista de ${campo.toLowerCase()}. O campo fica vazio, ou escolha um da lista.`;
-    case "CAMPO_INVALIDO": if (l?.lancamento) return `A data ${v} não existe ou ainda não chegou. O lançamento entra sem a data, ou corrija.`;
+    case "CAMPO_INVALIDO":
+      // F3.116: o mesmo processo ativo numa linha e arquivado na outra. A primeira linha decide.
+      if (p.campo === "situacao_processo" && l?.caso) {
+        const n = l.mesmaDe ?? "anterior";
+        return l.caso.encerrado
+          ? `Este processo está arquivado aqui e ativo na linha ${n}. O caso nasce da linha ${n}, em andamento: seguir põe este cliente nele, ou pule a linha.`
+          : `Este processo está ativo aqui e arquivado na linha ${n}. O caso nasce da linha ${n}, encerrado: seguir põe este cliente nele, ou pule a linha.`;
+      }
+      if (l?.lancamento) return `A data ${v} não existe ou ainda não chegou. O lançamento entra sem a data, ou corrija.`;
       return `${campo} ${v} não dá para ler. O campo fica vazio, ou corrija.`;
     case "CLIENTE_FALTA": return "A linha não traz o nome nem o CPF do cliente. Escreva um dos dois ou pule a linha.";
     case "CLIENTE_NAO_ENCONTRADO": return `${v || "O cliente"} não bate com nenhum cliente cadastrado. Escreva o nome como está no cadastro, ou o CPF, ou pule a linha.`;
