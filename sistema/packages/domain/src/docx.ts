@@ -53,7 +53,7 @@ interface Peca {
   fim: number;
   texto: string;
 }
-const TOKENS = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:t(?:\s[^>]*)?\/>|<w:p(?:\s[^>]*)?\/>|<w:p[\s>]|<\/w:p>|<w:tab\/>|<w:br(?:\s[^>]*)?\/>|<w:cr\/>/g;
+const TOKENS = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:t(?:\s[^>]*)?\/>|<w:p(?:\s[^>]*)?\/>|<w:p[\s>]|<\/w:p>|<w:tab\/>|<w:noBreakHyphen\/>|<w:br(?:\s[^>]*)?\/>|<w:cr\/>/g;
 
 function gruposDeTexto(xml: string): { pecas: Peca[]; texto: string }[] {
   const grupos: { pecas: Peca[]; texto: string }[] = [];
@@ -73,6 +73,10 @@ function gruposDeTexto(xml: string): { pecas: Peca[]; texto: string }[] {
     } else if (t === "<w:tab/>") {
       texto += "\t";
       atual.push({ inicio: -1, fim: -1, texto: "\t" });
+    } else if (t === "<w:noBreakHyphen/>") {
+      // O hífen que não quebra (o CNPJ e o CEP do timbrado, F3.146): é texto, mas o preenchimento não o troca.
+      texto += "-";
+      atual.push({ inicio: -1, fim: -1, texto: "-" });
     } else if (t.startsWith("<w:br") || t === "<w:cr/>") {
       texto += "\n";
       atual.push({ inicio: -1, fim: -1, texto: "\n" });
@@ -331,19 +335,28 @@ function paragrafoXml(p: ParagrafoDocx): string {
   return `<w:p>${pPr}<w:r>${rPr}${linhas}</w:r></w:p>`;
 }
 
-/** O timbrado no cabeçalho de cada página: a primeira linha em negrito, as outras menores. */
-/** O logo do escritório no cabeçalho (F3.92): o PNG, o tamanho em pixels e se vai com o nome ao lado. */
-export interface LogoDocx { png: Uint8Array; largura: number; altura: number; comNome: boolean }
+/** O logo do escritório no cabeçalho (F3.92): o PNG, o tamanho em pixels, se vai com o nome ao lado
+ *  e o nome curto (o texto ao lado e o texto alternativo do logo, decisões 17 e 3). */
+export interface LogoDocx { png: Uint8Array; largura: number; altura: number; comNome: boolean; nome?: string }
+
+/** Um pedaço de linha do cabeçalho; `inteiro` não quebra no meio (CNPJ, OAB, CEP, telefone, e-mail, site). */
+export interface PedacoDocx { texto: string; inteiro?: boolean }
+/** O timbrado do cabeçalho (timbradoDoDocx, F3.146): a 1ª linha em negrito (nula quando o logo já
+ *  diz o nome), as outras em pedaços e a letra menor para a razão social longa. */
+export interface TimbradoDocx { nome: string | null; linhas: readonly (readonly PedacoDocx[])[]; longa?: boolean }
 
 const EMU_MM = 36000;
+/** O cabeçalho começa a 10 mm da borda (decisão 15 de razao-social-sobras; antes, 12,5 mm). */
+export const CABECALHO_DOCX_MM = 10;
+/** A caixa do logo no .docx: 92 × 12 mm (decisão 16 de razao-social-sobras; antes, 18 mm). */
+export const LOGO_DOCX_MM = { largura: 92, altura: 12 };
 
-/** O logo cabe em até 92 × 18 mm, como no recibo (decisão 24 do desenho portal-nao-paga-logo). */
-function logoXml(l: LogoDocx, nome: string): string {
-  const esc = Math.min((92 * EMU_MM) / l.largura, (18 * EMU_MM) / l.altura);
+function logoXml(l: LogoDocx, alt: string): string {
+  const esc = Math.min((LOGO_DOCX_MM.largura * EMU_MM) / l.largura, (LOGO_DOCX_MM.altura * EMU_MM) / l.altura);
   const cx = Math.round(l.largura * esc), cy = Math.round(l.altura * esc);
-  const alt = escaparXml(semControle(nome));
+  const descr = escaparXml(semControle(alt)).replace(/"/g, "&quot;");
   return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">' +
-    `<wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logo" descr="${alt}"/>` +
+    `<wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logo" descr="${descr}"/>` +
     '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
     '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr>' +
     '<pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
@@ -351,33 +364,60 @@ function logoXml(l: LogoDocx, nome: string): string {
     "</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>";
 }
 
-function cabecalhoXml(linhas: readonly string[], w: string, logo?: LogoDocx): string {
+/** O texto de um pedaço dentro do run: nos inteiros, o espaço vira U+00A0 e o hífen vira
+ *  <w:noBreakHyphen/> (no PDF, o U+2011 sumiria: documento_pdf.ts só desenha WinAnsi). */
+function textoDoPedaco(p: PedacoDocx): string {
+  const t = semControle(p.texto);
+  if (!p.inteiro) return `<w:t xml:space="preserve">${escaparXml(t)}</w:t>`;
+  return t.replace(/ /g, "\u00a0").split("-").map((x) => (x ? `<w:t xml:space="preserve">${escaparXml(x)}</w:t>` : "")).join("<w:noBreakHyphen/>");
+}
+
+/** O timbrado como vinha antes (linhas de texto): a 1ª é o nome. */
+function comoTimbrado(t: readonly string[] | TimbradoDocx): TimbradoDocx {
+  if (!Array.isArray(t)) return t as TimbradoDocx;
+  const [nome, ...resto] = t as readonly string[];
+  return { nome: nome ?? null, linhas: resto.map((x) => [{ texto: x }]) };
+}
+const temTimbrado = (t: TimbradoDocx | undefined): t is TimbradoDocx => !!t && (!!t.nome || t.linhas.length > 0);
+
+/** O cabeçalho de cada página (decisões 15 a 18): o logo (com o nome curto ao lado no "logo e nome"),
+ *  a 1ª linha em negrito de 13 pt (11 pt na razão longa), as outras em 9 pt cinza e o fio vinho embaixo. */
+function cabecalhoXml(t: TimbradoDocx, w: string, logo?: LogoDocx): string {
   const r = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
-  const ps = linhas.map((l, i) => {
-    const rPr = i === 0 ? '<w:rPr><w:b/><w:sz w:val="26"/></w:rPr>' : '<w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr>';
-    const borda = i === linhas.length - 1 ? '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="6" w:color="6B2346"/></w:pBdr>' : "";
-    // Com o logo, a primeira linha (o nome) vira o logo; com o nome ao lado, os dois na mesma linha.
-    if (i === 0 && logo) {
-      const nome = logo.comNome ? `<w:r>${rPr}<w:t xml:space="preserve">  ${escaparXml(semControle(l))}</w:t></w:r>` : "";
-      return `<w:p><w:pPr>${borda}<w:spacing w:after="60"/><w:jc w:val="center"/></w:pPr>${logoXml(logo, l)}${nome}</w:p>`;
-    }
-    return `<w:p><w:pPr>${borda}<w:spacing w:after="0"/><w:jc w:val="center"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${escaparXml(semControle(l))}</w:t></w:r></w:p>`;
-  }).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${w} ${r}>${ps}</w:hdr>`;
+  const rNome = `<w:rPr><w:b/><w:sz w:val="${t.longa ? 22 : 26}"/></w:rPr>`;
+  const rLinha = '<w:rPr><w:sz w:val="18"/><w:color w:val="555555"/></w:rPr>';
+  const borda = '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="6" w:color="6B2346"/></w:pBdr>';
+  const linhas: string[] = [];
+  if (t.nome) linhas.push(`<w:r>${rNome}<w:t xml:space="preserve">${escaparXml(semControle(t.nome))}</w:t></w:r>`);
+  for (const l of t.linhas) linhas.push(l.map((p) => `<w:r>${rLinha}${textoDoPedaco(p)}</w:r>`).join(""));
+  const ps: string[] = [];
+  if (logo) {
+    const nome = logo.nome ?? t.nome ?? "";
+    const lado = logo.comNome && nome ? `<w:r><w:rPr><w:b/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">  ${escaparXml(semControle(nome))}</w:t></w:r>` : "";
+    ps.push(`<w:p><w:pPr>${linhas.length ? "" : borda}<w:spacing w:after="60"/><w:jc w:val="center"/></w:pPr>${logoXml(logo, nome)}${lado}</w:p>`);
+  }
+  linhas.forEach((l, i) => {
+    ps.push(`<w:p><w:pPr>${i === linhas.length - 1 ? borda : ""}<w:spacing w:after="0"/><w:jc w:val="center"/></w:pPr>${l}</w:p>`);
+  });
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${w} ${r}>${ps.join("")}</w:hdr>`;
 }
 
 /**
  * Um .docx simples (Times New Roman 12, A4, margens de 3 e 2 cm), para os modelos padrão. Com
- * `timbrado`, as linhas vão no cabeçalho de cada página (nome do escritório, CNPJ e endereço); com
- * `logo`, o logo do escritório entra no lugar do nome, ou ao lado dele (F3.92).
+ * `timbrado`, o timbrado vai no cabeçalho de cada página, a 10 mm da borda (as 4 linhas de
+ * timbradoDoDocx; texto solto ainda vale, com a 1ª linha como o nome); com `logo`, o logo do
+ * escritório vai em cima das linhas (F3.92, F3.146).
  */
-export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?: readonly string[], logo?: LogoDocx): Promise<Uint8Array> {
-  const comLogo = !!(timbrado?.length && logo);
+export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?: readonly string[] | TimbradoDocx, logo?: LogoDocx): Promise<Uint8Array> {
+  const tim = timbrado ? comoTimbrado(timbrado) : undefined;
+  const comCab = temTimbrado(tim);
+  const comLogo = !!(comCab && logo);
   const w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
   const r = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
   const cab = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   const enc = new TextEncoder();
   const corpo = paragrafos.map(paragrafoXml).join("");
+  const twipsCab = Math.round((CABECALHO_DOCX_MM / 25.4) * 1440);
   const arquivos: [string, string][] = [
     ["[Content_Types].xml", `${cab}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
@@ -385,22 +425,22 @@ export async function criarDocx(paragrafos: readonly ParagrafoDocx[], timbrado?:
       (comLogo ? '<Default Extension="png" ContentType="image/png"/>' : "") +
       '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
       '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
-      (timbrado?.length ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : "") +
+      (comCab ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : "") +
       "</Types>"],
     ["_rels/.rels", `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
     ["word/_rels/document.xml.rels", `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
-      (timbrado?.length ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>' : "") +
+      (comCab ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>' : "") +
       "</Relationships>"],
     ["word/styles.xml", `${cab}<w:styles ${w}><w:docDefaults><w:rPrDefault><w:rPr>` +
       '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="pt-BR"/>' +
       "</w:rPr></w:rPrDefault></w:docDefaults></w:styles>"],
     ["word/document.xml", `${cab}<w:document ${w} ${r}><w:body>${corpo}` +
-      `<w:sectPr>${timbrado?.length ? '<w:headerReference w:type="default" r:id="rId2"/>' : ""}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="1701" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>` +
+      `<w:sectPr>${comCab ? '<w:headerReference w:type="default" r:id="rId2"/>' : ""}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="1701" w:header="${twipsCab}" w:footer="709" w:gutter="0"/></w:sectPr>` +
       "</w:body></w:document>"],
   ];
-  if (timbrado?.length) arquivos.push(["word/header1.xml", cabecalhoXml(timbrado, w, comLogo ? logo : undefined)]);
+  if (comCab) arquivos.push(["word/header1.xml", cabecalhoXml(tim!, w, comLogo ? logo : undefined)]);
   if (comLogo) {
     arquivos.push(["word/_rels/header1.xml.rels", `${cab}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
       '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/></Relationships>']);
@@ -431,8 +471,11 @@ export interface ParagrafoLido {
 export interface DocxLido {
   cabecalho: ParagrafoLido[];
   corpo: ParagrafoLido[];
-  /** A primeira imagem PNG ou JPEG do cabeçalho (o logo do timbrado), se houver. */
-  imagemCabecalho: { bytes: Uint8Array; tipo: "png" | "jpg" } | null;
+  /** A primeira imagem PNG ou JPEG do cabeçalho (o logo do timbrado), se houver, com o tamanho
+   *  dela no Word (wp:extent), em milímetros, quando o .docx diz. */
+  imagemCabecalho: { bytes: Uint8Array; tipo: "png" | "jpg"; larguraMm?: number; alturaMm?: number } | null;
+  /** A distância do cabeçalho à borda (w:header), em milímetros; nula quando o .docx não diz. */
+  cabecalhoMm: number | null;
   /** O modelo tem o que o leiaute simples não reproduz: tabela, imagem no corpo, caixa de texto ou colunas. */
   complexo: boolean;
 }
@@ -459,8 +502,10 @@ function lerParagrafo(xml: string, padraoTamanho: number | null): ParagrafoLido 
     const sz = /<w:sz w:val="(\d+)"/.exec(rPr)?.[1];
     if (sz && tamanho === null) tamanho = Number(sz) / 2;
     let texto = "";
-    for (const m of corpo.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\/>|<w:br(?:\s[^>]*)?\/>|<w:cr\/>/g)) {
+    for (const m of corpo.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\/>|<w:noBreakHyphen\/>|<w:br(?:\s[^>]*)?\/>|<w:cr\/>/g)) {
       if (m[0].startsWith("<w:tab")) texto += "\t";
+      // O hífen que não quebra (F3.146): sem isto, o hífen do CNPJ sumiria no PDF do contrato.
+      else if (m[0] === "<w:noBreakHyphen/>") texto += "-";
       else if (m[0].startsWith("<w:br") || m[0] === "<w:cr/>") texto += "\n";
       else texto += semEntidades(m[1] ?? "");
     }
@@ -532,12 +577,14 @@ export async function lerDocxParaPdf(b: Uint8Array): Promise<DocxLido> {
       if (e) {
         const bytes = await abrirEntrada(d.bytes, e);
         const tipo = comeca(bytes, 0x89, 0x50, 0x4e, 0x47) ? "png" : comeca(bytes, 0xff, 0xd8, 0xff) ? "jpg" : null;
-        if (tipo) imagemCabecalho = { bytes, tipo };
+        const ext = /<wp:extent\s+cx="(\d+)"\s+cy="(\d+)"/.exec(hdr);
+        if (tipo) imagemCabecalho = ext ? { bytes, tipo, larguraMm: Number(ext[1]) / 36000, alturaMm: Number(ext[2]) / 36000 } : { bytes, tipo };
       }
     }
   }
   const corpo = paragrafosLidos(corpoXml.replace(/<w:sectPr[\s\S]*?<\/w:sectPr>/g, ""), padrao);
-  return { cabecalho, corpo, imagemCabecalho, complexo };
+  const header = /<w:pgMar\s[^>]*w:header="(\d+)"/.exec(doc)?.[1];
+  return { cabecalho, corpo, imagemCabecalho, complexo, cabecalhoMm: header ? Number(header) * TWIP_MM : null };
 }
 
 /** O nome do PDF: o mesmo do .docx, com a outra extensão. */

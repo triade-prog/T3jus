@@ -1,0 +1,142 @@
+[
+ {
+  "nome": "mt-hoje",
+  "url": "marca.html?estado=hoje"
+ },
+ {
+  "nome": "mt-letra",
+  "url": "marca.html?estado=letra"
+ },
+ {
+  "nome": "mt-logo",
+  "url": "marca.html?estado=logo"
+ },
+ {
+  "nome": "mt-quadrado",
+  "url": "marca.html?estado=quadrado"
+ },
+ {
+  "nome": "mt-sem-sociedade",
+  "url": "marca.html?estado=sem-sociedade"
+ },
+ {
+  "nome": "mt-razao-vazia",
+  "url": "marca.html?estado=razao-vazia"
+ },
+ {
+  "nome": "mt-tipo-vazio",
+  "url": "marca.html?estado=tipo-vazio"
+ },
+ {
+  "nome": "mt-sem-advocacia",
+  "url": "marca.html?estado=sem-advocacia"
+ },
+ {
+  "nome": "mt-razao-longa",
+  "url": "marca.html?estado=razao-longa"
+ },
+ {
+  "nome": "mt-razao-longa-logo",
+  "url": "marca.html?estado=razao-longa-logo"
+ },
+ {
+  "nome": "mt-leitura",
+  "url": "marca.html?estado=leitura"
+ },
+ {
+  "nome": "mt-leitura-letra",
+  "url": "marca.html?estado=leitura-letra"
+ },
+ {
+  "nome": "mt-leitura-sem-sociedade",
+  "url": "marca.html?estado=leitura-sem-sociedade"
+ },
+ {
+  "nome": "mt-leitura-sem-sociedade-sem-area",
+  "url": "marca.html?estado=leitura-sem-sociedade-sem-area"
+ },
+ {
+  "nome": "cn-razao-dona",
+  "url": "carne.html?estado=razao-dona"
+ },
+ {
+  "nome": "cn-razao-equipe",
+  "url": "carne.html?estado=razao-equipe"
+ },
+ {
+  "nome": "cn-tipo-dona",
+  "url": "carne.html?estado=tipo-dona"
+ },
+ {
+  "nome": "cn-tipo-equipe",
+  "url": "carne.html?estado=tipo-equipe"
+ },
+ {
+  "nome": "cn-sem-pix-equipe",
+  "url": "carne.html?estado=sem-pix-equipe"
+ },
+ {
+  "nome": "cn-sem-sociedade",
+  "url": "carne.html?estado=sem-sociedade"
+ },
+ {
+  "nome": "cn-completa",
+  "url": "carne.html?estado=completa"
+ },
+ {
+  "nome": "rg-razao-dona",
+  "url": "recibo.html?estado=razao-dona"
+ },
+ {
+  "nome": "rg-razao-equipe",
+  "url": "recibo.html?estado=razao-equipe"
+ },
+ {
+  "nome": "rg-tipo-equipe",
+  "url": "recibo.html?estado=tipo-equipe"
+ },
+ {
+  "nome": "rg-sem-recibo",
+  "url": "recibo.html?estado=sem-recibo"
+ },
+ {
+  "nome": "rg-sem-sociedade",
+  "url": "recibo.html?estado=sem-sociedade"
+ },
+ {
+  "nome": "dx-hoje",
+  "url": "docx.html?estado=hoje"
+ },
+ {
+  "nome": "dx-sem-logo",
+  "url": "docx.html?estado=sem-logo"
+ },
+ {
+  "nome": "dx-logo",
+  "url": "docx.html?estado=logo"
+ },
+ {
+  "nome": "dx-logo-nome",
+  "url": "docx.html?estado=logo-nome"
+ },
+ {
+  "nome": "dx-sem-sociedade",
+  "url": "docx.html?estado=sem-sociedade"
+ },
+ {
+  "nome": "dx-razao-vazia-logo",
+  "url": "docx.html?estado=razao-vazia-logo"
+ },
+ {
+  "nome": "dx-razao-longa",
+  "url": "docx.html?estado=razao-longa"
+ },
+ {
+  "nome": "dx-razao-longa-logo",
+  "url": "docx.html?estado=razao-longa-logo"
+ },
+ {
+  "nome": "dx-endereco-antigo",
+  "url": "docx.html?estado=endereco-antigo"
+ }
+]

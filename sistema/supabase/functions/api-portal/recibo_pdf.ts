@@ -8,7 +8,7 @@
 
 import { PDFDocument, type PDFFont, type PDFImage, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 import {
-  assinaturaDoRecibo, dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasDoTimbreRecibo, linhasTimbrado, localEData,
+  assinaturaDoRecibo, dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasDoReciboAntigo, linhasDoTimbreRecibo, localEData,
   mesDeReferencia, numeroDoRecibo, parcelaDoRecibo, pngEmUmaCor, razaoLonga, reais, subMarcaAdvocacia, telefoneBr, textoDoRecibo, tituloDoRecibo,
   totalDoRecibo, type ReciboParaImprimir,
 } from "@t3jus/domain";
@@ -133,7 +133,7 @@ async function desenharRecibo(r: ReciboParaImprimir, logo: Uint8Array | null): P
     if (t.destaque) ye = desenharCorridas(pg, linhasCorridas([{ texto: t.destaque }], f.b, f.b, longo ? 8.2 : 9, 96 * MM), dir, ye, { t: longo ? 8.2 : 9, dir: true, alto: 1.3 }) - 0.6 * MM;
     for (const l of t.linhas) ye = desenharCorridas(pg, linhasCorridas(l, f.r, f.b, 7.8, 96 * MM), dir, ye, { t: 7.8, cor: SUAVE, dir: true, alto: 1.5 });
   } else {
-    const linhas = linhasTimbrado({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined }).slice(1);
+    const linhas = linhasDoReciboAntigo({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined }).slice(1);
     if (r.escritorio.whatsapp) linhas.push(`WhatsApp ${telefoneBr(r.escritorio.whatsapp)}`);
     for (const l of linhas) for (const q of quebrar(limpo(l), f.r, 7.8, 96 * MM)) ye = texto(pg, q, dir, ye, { t: 7.8, f: f.r, cor: SUAVE, dir: true, alto: 1.5 });
   }

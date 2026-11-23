@@ -1,0 +1,274 @@
+[
+ {
+  "estado": "hoje",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 15.08,
+  "corpo": 30,
+  "perde": 0
+ },
+ {
+  "estado": "hoje",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 15.08,
+  "corpo": 30,
+  "perde": 0
+ },
+ {
+  "estado": "sem-logo",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 18.52,
+  "corpo": 31.02,
+  "perde": 1.02
+ },
+ {
+  "estado": "sem-logo",
+  "cab": 10,
+  "logo": 18,
+  "altura": 18.52,
+  "corpo": 30,
+  "perde": 0
+ },
+ {
+  "estado": "sem-logo",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 18.52,
+  "corpo": 31.02,
+  "perde": 1.02
+ },
+ {
+  "estado": "sem-logo",
+  "cab": 10,
+  "logo": 12,
+  "altura": 18.52,
+  "corpo": 30,
+  "perde": 0
+ },
+ {
+  "estado": "logo",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 37.57,
+  "corpo": 50.07,
+  "perde": 20.07
+ },
+ {
+  "estado": "logo",
+  "cab": 10,
+  "logo": 18,
+  "altura": 37.57,
+  "corpo": 47.57,
+  "perde": 17.57
+ },
+ {
+  "estado": "logo",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 31.75,
+  "corpo": 44.25,
+  "perde": 14.25
+ },
+ {
+  "estado": "logo",
+  "cab": 10,
+  "logo": 12,
+  "altura": 31.75,
+  "corpo": 41.75,
+  "perde": 11.75
+ },
+ {
+  "estado": "logo-nome",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 37.57,
+  "corpo": 50.07,
+  "perde": 20.07
+ },
+ {
+  "estado": "logo-nome",
+  "cab": 10,
+  "logo": 18,
+  "altura": 37.57,
+  "corpo": 47.57,
+  "perde": 17.57
+ },
+ {
+  "estado": "logo-nome",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 31.75,
+  "corpo": 44.25,
+  "perde": 14.25
+ },
+ {
+  "estado": "logo-nome",
+  "cab": 10,
+  "logo": 12,
+  "altura": 31.75,
+  "corpo": 41.75,
+  "perde": 11.75
+ },
+ {
+  "estado": "sem-sociedade",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 18.52,
+  "corpo": 31.02,
+  "perde": 1.02
+ },
+ {
+  "estado": "sem-sociedade",
+  "cab": 10,
+  "logo": 18,
+  "altura": 18.52,
+  "corpo": 30,
+  "perde": 0
+ },
+ {
+  "estado": "sem-sociedade",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 18.52,
+  "corpo": 31.02,
+  "perde": 1.02
+ },
+ {
+  "estado": "sem-sociedade",
+  "cab": 10,
+  "logo": 12,
+  "altura": 18.52,
+  "corpo": 30,
+  "perde": 0
+ },
+ {
+  "estado": "razao-vazia-logo",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 32.28,
+  "corpo": 44.78,
+  "perde": 14.78
+ },
+ {
+  "estado": "razao-vazia-logo",
+  "cab": 10,
+  "logo": 18,
+  "altura": 32.28,
+  "corpo": 42.28,
+  "perde": 12.28
+ },
+ {
+  "estado": "razao-vazia-logo",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 26.46,
+  "corpo": 38.96,
+  "perde": 8.96
+ },
+ {
+  "estado": "razao-vazia-logo",
+  "cab": 10,
+  "logo": 12,
+  "altura": 26.46,
+  "corpo": 36.46,
+  "perde": 6.46
+ },
+ {
+  "estado": "razao-longa",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 26.72,
+  "corpo": 39.22,
+  "perde": 9.22
+ },
+ {
+  "estado": "razao-longa",
+  "cab": 10,
+  "logo": 18,
+  "altura": 26.72,
+  "corpo": 36.72,
+  "perde": 6.72
+ },
+ {
+  "estado": "razao-longa",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 26.72,
+  "corpo": 39.22,
+  "perde": 9.22
+ },
+ {
+  "estado": "razao-longa",
+  "cab": 10,
+  "logo": 12,
+  "altura": 26.72,
+  "corpo": 36.72,
+  "perde": 6.72
+ },
+ {
+  "estado": "razao-longa-logo",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 45.77,
+  "corpo": 58.27,
+  "perde": 28.27
+ },
+ {
+  "estado": "razao-longa-logo",
+  "cab": 10,
+  "logo": 18,
+  "altura": 45.77,
+  "corpo": 55.77,
+  "perde": 25.77
+ },
+ {
+  "estado": "razao-longa-logo",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 39.69,
+  "corpo": 52.19,
+  "perde": 22.19
+ },
+ {
+  "estado": "razao-longa-logo",
+  "cab": 10,
+  "logo": 12,
+  "altura": 39.69,
+  "corpo": 49.69,
+  "perde": 19.69
+ },
+ {
+  "estado": "endereco-antigo",
+  "cab": 12.5,
+  "logo": 18,
+  "altura": 18.52,
+  "corpo": 31.02,
+  "perde": 1.02
+ },
+ {
+  "estado": "endereco-antigo",
+  "cab": 10,
+  "logo": 18,
+  "altura": 18.52,
+  "corpo": 30,
+  "perde": 0
+ },
+ {
+  "estado": "endereco-antigo",
+  "cab": 12.5,
+  "logo": 12,
+  "altura": 18.52,
+  "corpo": 31.02,
+  "perde": 1.02
+ },
+ {
+  "estado": "endereco-antigo",
+  "cab": 10,
+  "logo": 12,
+  "altura": 18.52,
+  "corpo": 30,
+  "perde": 0
+ }
+]

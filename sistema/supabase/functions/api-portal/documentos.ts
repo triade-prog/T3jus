@@ -13,8 +13,8 @@ import type { Context, Hono } from "hono";
 import {
   arquivarModeloDocumentoSchema, CAMPOS_DOCUMENTO, camposDoPadraoDocumento, conferenciaModeloDocumento, conferirDocx, criarDocx,
   enviarModeloDocumentoSchema, ErroDocx, ErroDominio, escolhasDocumentosSchema, escreverZip, filtroDocumentosSchema, LIMITE_MODELO_BYTES,
-  linhasTimbrado, marcadosDoModeloDocumento, MODELOS_PADRAO_DOCUMENTO, modeloPadraoDocumento, montarValoresDocumento, nomeArquivoDocumento, paragrafosPadraoDocumento,
-  nomeDoPdf, nomeZipDocumentos, preencherDocx, previaDocumento, TIPO_DOCX,
+  marcadosDoModeloDocumento, MODELOS_PADRAO_DOCUMENTO, modeloPadraoDocumento, montarValoresDocumento, nomeArquivoDocumento, paragrafosPadraoDocumento,
+  nomeDoPdf, nomeZipDocumentos, preencherDocx, previaDocumento, timbradoDoDocx, TIPO_DOCX,
   type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PadraoDocumento, type PreviaDocumento, type PreviaDocumentos, type ResultadoDocumentos,
   type TipoDocumentoContrato, type ValoresDocumento,
@@ -98,9 +98,12 @@ export function rotasDocumentos(app: Hono<VarsPortal>, deps: DepsPortal) {
       return {
         paragrafos: pars.map((x) => x.texto),
         campos: camposDoPadraoDocumento(p, dados.escritorio),
-        // O padrão sai no timbrado do escritório, com o logo de hoje (como a proposta).
-        bytes: async () => criarDocx(pars, linhasTimbrado({ ...dados.escritorio, oab: dados.marca?.oab ?? dados.escritorio.oab }),
-          await logoDaProposta(deps, c.get("escritorioId"), dados.marca)),
+        // O padrão sai no timbrado do escritório (as 4 linhas, F3.146), com o logo de hoje (como a
+        // proposta). A OAB é a de Dados do escritório, não a da marca (decisão 21).
+        bytes: async () => {
+          const logo = await logoDaProposta(deps, c.get("escritorioId"), dados.marca, dados.escritorio.nome);
+          return criarDocx(pars, timbradoDoDocx(dados.escritorio, { logo: !!logo }), logo);
+        },
       };
     }
     return {

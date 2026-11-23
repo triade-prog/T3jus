@@ -265,6 +265,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_financeiro_cobranca_anotar: () => ({ id: CLIENTE }),
     portal_recibo: (a) => ({ ...RECIBO_TESTE, pagamentoId: a.p_pagamento }),
+    // F3.146 (migration 1000): o timbrado do dia, só para a rota do .docx da proposta.
+    portal_proposta_timbrado: () => ({
+      comTimbrado: true, nome: "Aurora Advocacia", tipo: "SOCIEDADE", razaoSocial: "AURORA SOCIEDADE DE ADVOGADOS", cnpj: "11222333000181",
+      oab: "OAB/SP 31.874", cep: "01310100", logradouro: "Av. Paulista", numero: "2.100", complemento: null, bairro: "Bela Vista",
+      cidade: "São Paulo", uf: "SP", endereco: "Av. Paulista, 2.100, Bela Vista", enderecoConfira: false, telefone: "1130517720",
+      email: "contato@aurora.adv.br", site: null, contatos: [], whatsapp: null, dona: null,
+    }),
     portal_recebimento_marca: () => (opcoes.logo
       ? { tipo: "LOGO", logoId: LOGO_TESTE, largura: 1200, altura: 300, jeito: "SO_LOGO", cor: "ARQUIVO", oab: "OAB/BA 1.234" }
       : { tipo: "LETRA" }),
@@ -1502,10 +1509,18 @@ Deno.test("AP-05: baixar a proposta em .docx no timbrado, na pasta do escritóri
   assert(texto.includes("Recurso, se negado."));
   assert(texto.some((t) => t.startsWith("Parcelado: R$ 3.000,00 em 3 parcelas")));
   assert(texto.includes("Esta proposta vale até 30/11/2026."));
+  // F3.146: o cabeçalho com as 4 linhas do timbrado do dia (portal_proposta_timbrado), sem [falta].
+  const bytes = m.storage.bytes.get(caminho)!;
+  const cab = await abrirTexto(bytes, lerZip(bytes).get("word/header1.xml")!);
+  assertEquals(cab.match(/<w:p>/g)?.length, 4);
+  assertMatch(cab, />AURORA SOCIEDADE DE ADVOGADOS</);
+  assertMatch(cab, /CNPJ\u00a011\.222\.333\/0001<\/w:t><w:noBreakHyphen\/>/);
+  assertEquals(/falta|confira/.test(cab), false);
+  assert(m.chamadas.some((c) => c.funcao === "portal_proposta_timbrado" && c.args.p_escritorio === AURORA));
   assertEquals((await m.pedir("/v1/escritorio/propostas/nao-e-id/docx", { corpo: {}, cookie })).status, 404);
 });
 
-Deno.test("F3.92: com o logo do escritório, a proposta em Word leva o logo no cabeçalho, no lugar do nome", async () => {
+Deno.test("F3.92 e F3.146: com o logo do escritório, a proposta em Word leva o logo em cima das 4 linhas", async () => {
   const m = montar({ logo: true });
   m.storage.bytes.set(`${AURORA}/logos/${LOGO_TESTE}.png`, new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]));
   const cookie = await noEscritorio(m);
@@ -1515,9 +1530,14 @@ Deno.test("F3.92: com o logo do escritório, a proposta em Word leva o logo no c
   assertEquals((await abrirEntrada(bytes, docx.get("word/media/logo.png")!)).length, 11);
   const cab = await abrirTexto(bytes, docx.get("word/header1.xml")!);
   assertMatch(cab, /r:embed="rIdLogo"/);
-  // 1200 × 300 px cabe em 72 × 18 mm (a altura manda).
-  assertMatch(cab, /cx="2592000" cy="648000"/);
-  assertMatch(cab, /OAB\/BA 1\.234/);
+  // 1200 × 300 px cabe em 48 × 12 mm (a caixa do .docx é de 92 × 12 mm, decisão 16; a altura manda).
+  assertMatch(cab, /cx="1728000" cy="432000"/);
+  assertMatch(cab, /descr="Aurora Advocacia"/);
+  // A OAB é a de Dados do escritório, não a da marca (decisão 21).
+  assertMatch(cab, /OAB\/SP\u00a031\.874/);
+  assertEquals(/OAB\/BA.1\.234/.test(cab), false);
+  // Só o logo: a razão social (diferente do nome curto) vai embaixo; o nome curto não se repete em texto.
+  assertMatch(cab, />AURORA SOCIEDADE DE ADVOGADOS</);
   assertEquals(cab.includes(">Aurora Advocacia<"), false);
   // Sem logo, o cabeçalho segue com o nome em letra.
   const sem = montar();

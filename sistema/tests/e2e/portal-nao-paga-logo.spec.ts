@@ -255,7 +255,7 @@ test.describe("Logo do escritório no carnê e no recibo (F3.81, F3.19)", () => 
     await page.goto(`${P}/meu-escritorio/recebimento`);
     const folha = page.getByRole("region", { name: "Marca e timbrado" });
     await expect(folha.getByRole("radio", { name: /O nome do escritório em letra/ })).toBeChecked();
-    await expect(folha.getByRole("img", { name: "Prévia do alto do carnê, em cores, com o nome em letra" })).toBeVisible();
+    await expect(folha.getByRole("img", { name: /^Prévia do alto do carnê, em cores, com o nome em letra e a identificação do escritório: Ribeiro & Matos · CNPJ 41\.276\.839\/0001-34/ })).toBeVisible();
     await folha.getByRole("radio", { name: /O logo do escritório/ }).check();
     await expect(folha.getByRole("list", { name: "Como o T3jus confere o logo" })).toBeVisible();
     await semViolacoes(page);
@@ -270,7 +270,7 @@ test.describe("Logo do escritório no carnê e no recibo (F3.81, F3.19)", () => 
     expect(new URLSearchParams(envio.busca).get("formato")).toBe("PNG");
     expect(new URLSearchParams(envio.busca).get("corte")).toBe("20,20,20,20");
     expect(envio.bytes).toBeGreaterThan(100);
-    await expect(folha.getByRole("img", { name: "Prévia do alto do recibo, em preto e branco, com o logo" })).toBeVisible();
+    await expect(folha.getByRole("img", { name: /^Prévia do alto do recibo, em preto e branco, com o logo e a identificação do escritório: / })).toBeVisible();
     await expect(folha.getByRole("radio", { name: /Só o logo/ })).toHaveCount(0);
 
     // PA-07, decisão 3: a OAB da sociedade se muda em Dados do escritório; aqui, só para ler.
@@ -343,7 +343,7 @@ test.describe("Logo do escritório no carnê e no recibo (F3.81, F3.19)", () => 
     await page.goto(`${P}/meu-escritorio/recebimento`);
     await expect(page.getByText("Quem muda a chave Pix, as instruções e a marca é Marina Ribeiro")).toBeVisible();
     await expect(page.getByText(/O logo do escritório, desde/)).toBeVisible();
-    await expect(page.getByRole("img", { name: "Prévia do alto do carnê com o logo" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Prévia do alto do carnê com o logo e a identificação do escritório: CNPJ 41.276.839/0001-34 · OAB/SP 31.874" })).toBeVisible();
     await expect(page.getByRole("definition").filter({ hasText: "OAB/SP 31.874" }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Salvar" })).toHaveCount(0);
     await semViolacoes(page);

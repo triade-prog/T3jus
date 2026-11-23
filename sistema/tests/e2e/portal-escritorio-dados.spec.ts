@@ -105,6 +105,35 @@ test.describe("Dados do escritório para os documentos (PA-07)", () => {
     await semViolacoes(page);
   });
 
+  test("F3.146: ?editar=1 abre no editar e a prévia do timbrado tem as 4 linhas; trocar o tipo troca a prévia", async ({ page }) => {
+    const comContato = { ...COMPLETO, telefone: "7734921180", email: "contato@santana.adv.br" };
+    await simular(page, { "/v1/escritorio": { corpo: { ...ESCRITORIO, documentos: comContato } }, "/v1/escritorio/advogados": { corpo: ADVS } });
+    await page.goto(`${P}/meu-escritorio?editar=1`);
+    await expect(page.getByLabel("Nome no T3jus")).toBeVisible();
+    const tim = page.locator(".ed-tim");
+    await expect(tim.locator(":scope > *")).toHaveText([
+      "Santana Sociedade Individual de Advocacia",
+      "CNPJ 60.814.144/0001-03 · OAB/BA 4.217",
+      "Rua Coronel Zeca Leite, 118, sala 2, Centro, Presidente Jânio Quadros/BA, CEP 45240-000",
+      "(77) 3492-1180 · contato@santana.adv.br",
+    ]);
+    await semViolacoes(page);
+    await page.getByRole("radio", { name: /^Advogada ou advogado sem sociedade/ }).check();
+    await expect(tim.locator("strong")).toHaveText("Carol Santana");
+    await expect(tim.locator(":scope > span").first()).toHaveText("sem CNPJ");
+  });
+
+  test("F3.146: com o endereço antigo, a prévia do timbrado leva o texto antigo, sem confira", async ({ page }) => {
+    const antigo = { ...COMPLETO, cep: null, logradouro: "Rua da Aurora, 295, sala 1102", numero: null, complemento: null, bairro: null,
+      endereco: "Rua da Aurora, 295, sala 1102", enderecoConfira: true };
+    await simular(page, { "/v1/escritorio": { corpo: { ...ESCRITORIO, documentos: antigo } }, "/v1/escritorio/advogados": { corpo: ADVS } });
+    await page.goto(`${P}/meu-escritorio?editar=1`);
+    const tim = page.locator(".ed-tim");
+    await expect(tim).toContainText("Presidente Jânio Quadros/BA");
+    await expect(tim).not.toContainText("confira");
+    await expect(tim).not.toContainText("falta");
+  });
+
   test("quem não é a sócia dona lê, sem editar, e sabe com quem falar", async ({ page }) => {
     await simular(page, {
       "/v1/escritorio": { corpo: { ...ESCRITORIO, pessoa: "Rafael Menezes", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"], documentos: COMPLETO } },
