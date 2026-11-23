@@ -86,3 +86,46 @@ describe("Jornada do cliente: o fechamento, o contrato sem caso e o fim (EX-16, 
     expect(textoPasso(p, "Antônia").oque).toBe("C-2026-031 em elaboração desde 16/11. Ao registrar, o contrato entra no caso Ferreira Prado x INSS, que já existe.");
   });
 });
+
+describe("Fechamento sem levantamento na ficha do cliente (F3.132; EX-16, FI-08)", () => {
+  const CASO = { id: "k9", nome: "Carvalho x Construtora Lume", resultado: "PERDA" as const, encerradoEm: "2026-11-06T20:10:00Z" };
+  const fin = { tipo: "FINANCEIRO" as const, area: "FINANCEIRO" as const, feito: false, em: null, valor: 141230, pendentes: ["parcela 6 de 6", "custas"],
+                contratoId: "ct12", casoId: "k9", aVencer: null, comLevantamento: false };
+  const ctr = { tipo: "CONTRATO" as const, area: "CONTRATOS" as const, feito: false, em: null, contratos: [{ id: "ct12", numero: "C-2026-012" }] };
+  const fecha = (passos: PassoFechamento[], x: Partial<PassoCliente> = {}) =>
+    passo({ tipo: "FECHAMENTO", area: "FINANCEIRO", item: { caso: CASO, passos }, quemFaz: ["Marina Ribeiro", "Diego Almeida", "Bianca Lopes"], ...x });
+
+  it("estado 1: com o Financeiro, \"Ver o acerto\" leva à folha do contrato, com o caso no hash (decisão 4)", () => {
+    const p = fecha([fin, ctr]);
+    expect(botaoDoFechamento(fin)).toEqual({ rotulo: "Ver o acerto", href: "/financeiro/a-receber/contratos/ct12#t-fecha-k9", icone: "cadeado" });
+    expect(destinoPasso(p, "c1")).toBe("/financeiro/a-receber/contratos/ct12#t-fecha-k9");
+    expect(detalheDoPassoFechamento(fin, [fin, ctr])).toBe("Faltam R$ 1.412,30: parcela 6/6 e custas");
+    expect(textoPasso(p, "Noemi").oque).toBe("Carvalho x Construtora Lume terminou com perda em 06/11. Falta o acerto no financeiro e encerrar o contrato.");
+    expect(quemFazFechamento(p)).toBe("Quem faz: a área Financeiro (Marina, Diego e Bianca). O contrato pode ser encerrado junto.");
+  });
+  it("estado 2: sem o Financeiro, sem valor nem link: \"Com o Financeiro\"", () => {
+    const larissa = { ...fin, valor: null, pendentes: null, contratoId: null, casoId: null };
+    const p = fecha([larissa, ctr], { pode: false, quemPode: ["Marina Ribeiro"] });
+    expect(botaoDoFechamento(larissa).href).toBeNull();
+    expect(detalheDoPassoFechamento(larissa, [larissa, ctr])).toBe("Com o Financeiro");
+    expect(textoPasso(p, "Noemi").oque).toBe("Carvalho x Construtora Lume terminou com perda em 06/11. O acerto do caso está com o Financeiro.");
+  });
+  it("estado 15 (pergunta 1): esperando o êxito, sem tom de atraso", () => {
+    const joana = { ...fin, valor: 840000, pendentes: ["êxito de Joana"], aVencer: { vencimento: "2026-12-15", descricao: "Êxito", cliente: "Joana Pereira", exito: true } };
+    const p = fecha([joana, ctr], { item: { caso: { ...CASO, nome: "Pereira x Mercado Bom Preço", resultado: "ACORDO", encerradoEm: "2026-11-18T17:50:00Z" }, passos: [joana, ctr] } });
+    expect(detalheDoPassoFechamento(joana, [joana, ctr])).toBe("Esperando o êxito de Joana, em 15/12");
+    expect(textoPasso(p, "Joana").oque).toBe("Pereira x Mercado Bom Preço terminou com acordo em 18/11. Nada está atrasado: o fechamento espera o êxito de Joana.");
+    const parcela = { ...joana, aVencer: { vencimento: "2027-03-10", descricao: "Parcela 6 de 6", cliente: "Noemi", exito: false } };
+    expect(detalheDoPassoFechamento(parcela, [parcela])).toBe("Esperando a parcela 6/6, em 10/03");
+  });
+  it("tudo recebido sem levantamento não diz \"repassado\"; com levantamento, continua como era", () => {
+    expect(detalheDoPassoFechamento({ ...fin, valor: 0 }, [fin])).toBe("Tudo recebido");
+    const lev = { tipo: "FINANCEIRO" as const, area: "FINANCEIRO" as const, feito: false, em: null, valor: 0, levantamentoId: "lv1" };
+    expect(detalheDoPassoFechamento(lev, [lev])).toBe("Tudo recebido e repassado");
+    expect(detalheDoPassoFechamento({ ...lev, valor: null }, [lev])).toBe("Falta pagar terceiros");
+    expect(botaoDoFechamento(lev).href).toBe("/financeiro/repasses/lv1");
+  });
+  it("para quem tem o Financeiro, o passo sem levantamento sempre tem para onde ir", () => {
+    expect(botaoDoFechamento({ ...fin, casoId: null }).href).toBe("/financeiro/a-receber/contratos/ct12#t-fecha");
+  });
+});

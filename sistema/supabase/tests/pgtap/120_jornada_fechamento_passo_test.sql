@@ -61,8 +61,8 @@ select portal_juridico_caso_etapa(larissa, rm, cs.id, 1, jsonb_build_object('eta
 -- EX-16: o fechamento, passo 1 (conferir o êxito), pelo Financeiro.
 create temp table p1 as select portal_cliente(socia, rm, cli.ant) -> 'passo' p from ids, cli;
 select is((select p ->> 'tipo' from p1), 'FECHAMENTO', 'EX-16: depois da etapa final, o passo é o fechamento');
-select is((select jsonb_path_query_array(p -> 'item' -> 'passos', '$[*].tipo') from p1), '["EXITO", "CONTRATO"]'::jsonb,
-  'só os passos que se aplicam: sem RPV ainda, não há repasse nem encerrar no financeiro');
+select is((select jsonb_path_query_array(p -> 'item' -> 'passos', '$[*].tipo') from p1), '["EXITO", "FINANCEIRO", "CONTRATO"]'::jsonb,
+  'só os passos que se aplicam: sem RPV ainda, não há repasse; encerrar no financeiro entra pelo contrato (F3.132)');
 select is((select p ->> 'area' from p1), 'FINANCEIRO', 'o primeiro que falta é do Financeiro');
 select is((select p -> 'item' -> 'passos' -> 0 ->> 'valor' from p1), '1159200', 'com o valor do êxito para quem tem Financeiro');
 create temp table pl as select portal_cliente(larissa, rm, cli.ant) -> 'passo' p from ids, cli;

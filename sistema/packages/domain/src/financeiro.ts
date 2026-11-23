@@ -212,6 +212,8 @@ export interface ParcelasContrato {
   parcelas: ParcelaDoContrato[];
   /** O que o escritório adiantou nos casos do contrato (F3.23). */
   adiantados: ContaPagar[];
+  /** Os fechamentos dos casos encerrados ligados ao contrato (F3.132, 0901). Sem a 0901, vem vazio. */
+  fechamentos?: FechamentoNoContrato[];
 }
 
 /** O que vai no papel do recibo (FI-14, F3.19), como estava no registro. */
@@ -730,7 +732,76 @@ export interface AcertoCaso {
   quemContratos?: string[];
   /** Se o caso teve levantamento (RPV, alvará…). Sem o campo, vale o que entrou. */
   comLevantamento?: boolean;
+  /** Pergunta 1 (0900): sem nada em atraso, a parcela ou o êxito que ainda vai vencer, o último. */
+  aVencer?: EsperaAcerto | null;
+  /** O quadro do fechamento (0900, decisão 6): o caso, os êxitos, os contratos e os números. */
+  caso?: { id: string; nome: string; resultado: "GANHO" | "PERDA" | "ACORDO" | null; encerradoEm: string | null; encerradoPor: PessoaRef | null; encerradoPorImportacao?: boolean };
+  exitos?: ExitoNoAcerto[];
+  contratos?: ContratoNoAcerto[];
+  reembolsos?: { adiantado: number; reembolsado: number };
+  recebidoNoCaso?: number;
+  contratosNoRecebido?: number;
 }
+
+/** O que o fechamento espera, sem atraso (pergunta 1): "Pronto para encerrar depois de …". */
+export interface EsperaAcerto {
+  vencimento: string;
+  descricao: string;
+  cliente: string | null;
+  exito: boolean;
+}
+
+/** Um contrato ligado ao caso, no quadro do fechamento. `seguePor`: os outros casos em andamento dele (pergunta 3). */
+export interface ContratoNoAcerto {
+  id: string;
+  numero: string;
+  cliente: { id: string; nome: string };
+  situacao: SituacaoContrato;
+  encerradoEm: string | null;
+  encerradoPor: PessoaRef | null;
+  comCaso: boolean;
+  exitoPercentual: number | null;
+  parcelas: { total: number; pagas: number };
+  recebido: number;
+  falta: number;
+  ultimaRecebidaEm: string | null;
+  seguePor: { id: string; nome: string }[];
+}
+
+/** Um êxito do caso, no quadro do fechamento. */
+export interface ExitoNoAcerto {
+  cliente: { id: string; nome: string };
+  contratoId: string;
+  situacao: "PARA_CONFERIR" | "LANCADO" | "NAO_COBRADO";
+  calculado: number;
+  percentual: number | null;
+  valorLancado: number | null;
+  vencimento: string | null;
+  conferidoPor: PessoaRef | null;
+  conferidoEm: string | null;
+  motivoNaoCobrar: "PERDOADO" | "INDEVIDO" | "OUTRO" | null;
+  explicacao: string | null;
+}
+
+/** Um evento de "De onde veio" (decisão 1). */
+export interface EventoDeOrigem {
+  acao: string;
+  em: string;
+  por: PessoaRef | null;
+  dados: Record<string, unknown>;
+}
+
+type CasoDoFechamento = { nome: string; resultado: string | null; encerradoEm: string | null };
+
+/**
+ * Um caso encerrado ligado ao contrato, na ficha do contrato (0901): sem levantamento, o acerto
+ * completo; com levantamento, só para ler (o fechamento fica na ficha do repasse); o fechado
+ * mais antigo, só o resumo (sugestão 2).
+ */
+export type FechamentoNoContrato =
+  | { casoId: string; comLevantamento: false; resumo?: undefined; acerto: AcertoCaso; origem: EventoDeOrigem[] }
+  | { casoId: string; comLevantamento: true; levantamentoId: string; caso: CasoDoFechamento; fechado: { em: string; por: PessoaRef } | null; falta: number; origem: EventoDeOrigem[] }
+  | { casoId: string; comLevantamento: false; resumo: true; caso: CasoDoFechamento; fechado: { em: string; por: PessoaRef } };
 
 /** O corpo de "Encerrar o caso no financeiro": os contratos ligados, com a versão lida (EX-17). */
 export const encerrarCasoSchema = z.object({

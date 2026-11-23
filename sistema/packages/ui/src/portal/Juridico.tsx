@@ -32,6 +32,7 @@ import { MolduraArea } from "./MolduraArea.tsx";
 import { PeticoesDoCaso } from "./Peticoes.tsx";
 import { AvisoSemCasoJuridico } from "./SemCaso.tsx";
 import { FolhaAcertoCaso, hrefDoAcerto, textoAcertoNoCaso } from "./AcertoCaso.tsx";
+import { situacaoDoContratoNoCaso } from "./acertoCaso.ts";
 
 type Pessoa = { id: string; nome: string };
 type Feito = { titulo: string; texto: string };
@@ -781,6 +782,10 @@ function JanelaEtapa({ f, escritorio, aberta, aoFechar, aoFeito }: {
             )}
           </>
         ) : null}
+        {para?.final && resultado === "PERDA" && comContrato.length ? (
+          // F3.132: sem êxito, o caso também espera o Financeiro encerrar.
+          <p className="ajuda">O caso fica “Encerrado · acerto pendente” até o Financeiro encerrar.</p>
+        ) : null}
         {!para?.final && para?.avisaFinanceiro ? (
           <Aviso tom="info" titulo="O Financeiro ainda não recebe o valor desta etapa sozinho.">
             O valor a receber da etapa vai ao Financeiro numa próxima entrega. Por ora, avise quem cuida do Financeiro.
@@ -1081,15 +1086,21 @@ function Contratos({ f }: { f: FichaCaso }) {
       <div className="folha-cab" style={{ paddingBottom: 8 }}><div><h2 id="t-cl" style={{ fontSize: 20 }}>Contratos ligados</h2></div></div>
       {ligados.length ? (
         <ul className="jr-contratos">
-          {ligados.map((c) => (
-            <li key={c.id}>
-              <Icone nome="pena" className="ico ico-s" />
-              <div>
-                {f.veHonorarios ? <a href={ROTAS_JURIDICO.contrato(c.contrato!.id)}>{c.contrato!.numero} · {c.nome}</a> : <b>{c.contrato!.numero} · {c.nome}</b>}
-                <small>{c.contrato!.assinadoEm ? `Assinado em ${dataBr(c.contrato!.assinadoEm)}` : "Em elaboração"}</small>
-              </div>
-            </li>
-          ))}
+          {ligados.map((c) => {
+            // F3.132 (estado 3): "ativo até o acerto" e quem encerrou em Contratos.
+            const sit = situacaoDoContratoNoCaso(f.acerto, c.contrato!.id);
+            const encerrado = sit?.startsWith("Encerrado");
+            const assinado = c.contrato!.assinadoEm ? `Assinado em ${dataBr(c.contrato!.assinadoEm)}` : "Em elaboração";
+            return (
+              <li key={c.id}>
+                <Icone nome={encerrado ? "pasta" : "pena"} className="ico ico-s" />
+                <div>
+                  {f.veHonorarios ? <a href={ROTAS_JURIDICO.contrato(c.contrato!.id)}>{c.contrato!.numero} · {c.nome}</a> : <b>{c.contrato!.numero} · {c.nome}</b>}
+                  <small>{encerrado ? sit : sit ? `${assinado} · ${sit}` : assinado}</small>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       ) : <p className="hn-pe" style={{ borderTop: 0 }}><Icone nome="pena" className="ico" /><span>Nenhum contrato ligado ainda.</span></p>}
     </section>
@@ -1198,7 +1209,7 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
   const andamento = f.situacao === "ANDAMENTO";
   const prox = proximaEtapa(f.etapa.ordem, f.etapas);
   const acertoTxt = andamento ? null : textoAcertoNoCaso(f);
-  const verAcerto = andamento ? null : hrefDoAcerto(f.acerto);
+  const verAcerto = andamento ? null : hrefDoAcerto(f.acerto, f.id);
   const fechar = () => { setJanela(null); setDoc(null); };
   const pronto = (x: Feito) => { fechar(); setFeito(x); setVez((v) => v + 1); };
   // EX-18 (decisões 46 a 48): enquanto falta algo da lista da abertura, a folha vem primeiro.
@@ -1284,7 +1295,7 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
         <aside className="hn-col" aria-label="Sobre o caso">
           <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} aoDocumentoChegou={(d) => setDoc({ d, acao: "chegou" })} />
           <PeticoesDoCaso key={`pc-${vez}`} casoId={f.id} andamento={andamento} />
-          {f.acerto ? <FolhaAcertoCaso a={f.acerto} /> : null}
+          {f.acerto ? <FolhaAcertoCaso a={f.acerto} caso={{ encerradoEm: f.encerradoEm, resultado: f.resultado }} /> : null}
           <Contratos f={f} />
           <AvisoCliente f={f} />
           <Mudancas f={f} />
