@@ -1,0 +1,72 @@
+[
+ {
+  "nome": "resultado",
+  "url": "juridico.html?estado=resultado",
+  "alto": 1250,
+  "titulo": "A janela “Registrar o resultado”",
+  "legenda": "Resultado (ganho, perda ou acordo), Motivo obrigatório (3 a 1.000 caracteres) e o que acontece: entra nas contas, não avisa o cliente, não pede acerto, fica no histórico."
+ },
+ {
+  "nome": "resultado-erro",
+  "url": "juridico.html?estado=resultado-erro",
+  "alto": 1350,
+  "titulo": "Faltou o resultado e o motivo está curto",
+  "legenda": "O resumo no topo, os dois erros presos aos campos e o foco no primeiro. Diz que nada foi registrado."
+ },
+ {
+  "nome": "resultado-feito",
+  "url": "juridico.html?estado=resultado-feito",
+  "alto": 0,
+  "titulo": "A ficha depois de registrar",
+  "legenda": "O aviso de sucesso, o selo “Veio encerrado” dá lugar ao resultado, a folha Resultado diz quem registrou e Mudanças de etapa ganha a linha nova. A linha da importação fica."
+ },
+ {
+  "nome": "encerrados-desfeitos",
+  "url": "juridico.html?estado=encerrados-desfeitos",
+  "alto": 0,
+  "titulo": "Encerrados com a importação desfeita",
+  "legenda": "A contagem diz os três grupos, e o caso de importação desfeita leva o Selo neutro “Importação desfeita”. P12."
+ },
+ {
+  "nome": "dispensar-sem-motivo",
+  "url": "lembretes.html?estado=dispensar-sem-motivo",
+  "alto": 1300,
+  "titulo": "Dispensar sem escolher o motivo",
+  "legenda": "O resumo no topo e o erro no grupo de motivos, com o foco na primeira opção. O lembrete continua aberto."
+ },
+ {
+  "nome": "ja-dispensado",
+  "url": "lembretes.html?estado=ja-dispensado",
+  "alto": 0,
+  "titulo": "Alguém já tinha dispensado",
+  "legenda": "O mesmo corpo e o botão único do conflito aprovado, com o texto de quem dispensou e quando. Nada mudou."
+ },
+ {
+  "nome": "trazido",
+  "url": "lembretes.html?estado=trazido",
+  "alto": 0,
+  "titulo": "Trazido de volta",
+  "legenda": "O aviso diz que o lembrete voltou para Abertos; a linha sai de Dispensados e os números mudam."
+ },
+ {
+  "nome": "trazido-resolvido",
+  "url": "lembretes.html?estado=trazido-resolvido",
+  "alto": 0,
+  "titulo": "Trazido de volta, já resolvido",
+  "legenda": "Um contrato do cliente nasceu enquanto o lembrete estava dispensado: ele volta direto para Viraram contrato."
+ },
+ {
+  "nome": "busca-vazia-viraram",
+  "url": "lembretes.html?estado=busca-vazia-viraram",
+  "alto": 0,
+  "titulo": "Busca vazia fora de Abertos",
+  "legenda": "A busca vale no grupo atual e a Ordem some fora de Abertos. O texto diz onde a busca olhou e como procurar nos outros grupos."
+ },
+ {
+  "nome": "cliente-atendido",
+  "url": "cliente.html?estado=cliente-atendido",
+  "alto": 0,
+  "titulo": "Ficha de Renata: “Cliente atendido”",
+  "legenda": "“Queiroz x Construtora Lume: ganho, veio encerrado do Astrea.”, sem “Tudo acertado” e sem os passos do fechamento, que não se aplicam. “Gerar proposta” como secundário e “Ver o caso”."
+ }
+]

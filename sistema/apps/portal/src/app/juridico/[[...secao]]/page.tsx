@@ -15,12 +15,23 @@ export const metadata: Metadata = { title: "Jurídico" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function Pagina({ params }: { params: Promise<{ secao?: string[] }> }) {
+const COMOS = { resultado: "RESULTADO", importado: "IMPORTADO", desfeita: "DESFEITA" } as const;
+
+export default async function Pagina({ params, searchParams }: {
+  params: Promise<{ secao?: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const s = (await params).secao ?? [];
   const [secao = "casos", a] = s;
   if (secao === "casos") {
     if (s.length > 2) notFound();
-    if (!a) return <CasosJuridicoPortal />;
+    if (!a) {
+      // F3.143: os Encerrados com "Como encerrou" pela URL (?situacao=ENCERRADO&como=importado).
+      const { situacao: si, como: co } = await searchParams;
+      const enc = typeof si === "string" && si.toUpperCase() === "ENCERRADO";
+      const como = enc && typeof co === "string" ? COMOS[co.toLowerCase() as keyof typeof COMOS] ?? null : null;
+      return <CasosJuridicoPortal situacao={enc ? "ENCERRADO" : "ANDAMENTO"} como={como} />;
+    }
     if (a === "novo") return <NovoCasoPortal />;
     if (a === "etapas") return <EtapasJuridicoPortal />;
     if (a === "documentos") return <DocumentosInicioJuridicoPortal />;

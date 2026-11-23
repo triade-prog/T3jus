@@ -5,7 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 958.1,
-  "nota": "Sai da PR das sobras (decisão 1 de 23/11): vem com o plano 2, que tem o desenho aprovado (\"Veio encerrado\", coluna e filtro \"Como encerrou\"). A lista de casos já traz encerradoPor."
+  "evidencia": "No Jurídico, o selo \"Veio encerrado\", a coluna e o filtro \"Como encerrou\" (com resultado, veio encerrado da importação, importação desfeita), a página de 25 dos Encerrados com \"Mostrar mais 25\", e na ficha do caso a linha de onde veio. Migration 0921_lembretes_caso_importado.sql, pgTAP 131_lembretes_caso_importado_test.sql (121 testes), app_test.ts (F3.143), lembretes_contrato.test.ts, lembretes.test.ts e e2e portal-juridico-casos.spec.ts."
 }

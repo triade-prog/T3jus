@@ -1,7 +1,10 @@
 // Jurídico do Portal, parte 1 (EX-01, EX-03, EX-07, EX-14): rotas, textos e contas da tela,
 // sem React, para os testes de unidade. As regras de verdade estão no servidor.
 
-import { AREAS_DIREITO, formatarCnj, PAPEIS_CASO, type AreaDireito, type EnvioEtapa, type Etapa, type LinhaCaso, type PapelCaso } from "@t3jus/domain";
+import {
+  AREAS_DIREITO, dataBr, formatarCnj, PAPEIS_CASO, RESULTADOS_CASO,
+  type AreaDireito, type ComoEncerrou, type EnvioEtapa, type Etapa, type LinhaCaso, type ListaCasos, type OrigemCaso, type OrigemDados, type PapelCaso,
+} from "@t3jus/domain";
 
 export const ROTAS_JURIDICO = {
   casos: "/juridico/casos",
@@ -11,6 +14,8 @@ export const ROTAS_JURIDICO = {
   caso: (id: string) => `/juridico/casos/${id}`,
   contrato: (id: string) => `/contratos/contratos/${id}`,
   cliente: (id: string) => `/clientes/${id}`,
+  /** Os Encerrados com "Como encerrou" pela URL (F3.143): ?situacao=ENCERRADO&como=importado. */
+  encerrados: (como?: ComoEncerrou | null) => `/juridico/casos?situacao=ENCERRADO${como ? `&como=${como.toLowerCase()}` : ""}`,
 };
 
 /** "1001234-77.2026.5.02.0011 · Trabalhista", ou "Sem número ainda · Família". */
@@ -156,4 +161,75 @@ export function situacaoEnvioEtapa(e: EnvioEtapa): string {
     return `não saiu: ${m.charAt(0).toLowerCase()}${m.slice(1)}`;
   }
   return "ainda não saiu";
+}
+
+// ------------------------------------------------------------------------- O caso que veio de outro sistema
+// (F3.143, F3.148; desenho aprovado em docs/design/aprovadas/portal-importacao-sobras e na rodada 2).
+
+const SISTEMA: Record<OrigemDados, string> = { PLANILHA: "sistema antigo", ASTREA: "Astrea", ADVBOX_PLANILHA: "ADVBOX" };
+export const nomeDoSistema = (o: OrigemDados | null | undefined) => SISTEMA[o ?? "PLANILHA"];
+
+const fuso = { timeZone: "America/Sao_Paulo" } as const;
+/** O dia (AAAA-MM-DD) de um instante ou de uma data, em Brasília. */
+export function diaDe(v: string): string {
+  if (v.length <= 10) return v;
+  return new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(v));
+}
+const horaDe = (em: string) => new Intl.DateTimeFormat("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(em)).replace(":", "h");
+
+/** "Astrea e ADVBOX" → "do Astrea e do ADVBOX". */
+function doSistemas(l: OrigemDados[]): string {
+  const n = [...new Set(l.map(nomeDoSistema))].map((x) => `do ${x}`);
+  return n.length <= 1 ? (n[0] ?? "de outro sistema") : `${n.slice(0, -1).join(", ")} e ${n[n.length - 1]}`;
+}
+
+/** O que diz a coluna "Como encerrou" (o selo e a linha de baixo). */
+export function textoComoEncerrou(c: Pick<LinhaCaso, "resultado" | "encerradoPor" | "etapaDesde" | "origem" | "acerto">): {
+  tipo: "RESULTADO" | "IMPORTADO" | "DESFEITA"; selo: string; sub: string;
+} {
+  const s = nomeDoSistema(c.origem?.sistema);
+  if (c.encerradoPor === "IMPORTADO_ENCERRADO") {
+    const quando = c.origem?.arquivadoEm ? `arquivado no ${s} em ${dataBr(c.origem.arquivadoEm)}`
+      : c.origem?.importadoEm ? `importado do ${s} em ${dataBr(diaDe(c.origem.importadoEm))}` : `veio do ${s}`;
+    return { tipo: "IMPORTADO", selo: "Veio encerrado", sub: `sem resultado · ${quando}` };
+  }
+  if (c.encerradoPor === "IMPORTACAO_DESFEITA") {
+    const de = c.origem?.importadoEm ? ` de ${dataBr(diaDe(c.origem.importadoEm)).slice(0, 5)}` : "";
+    const em = c.origem?.desfeitaEm ? ` desfeita em ${dataBr(diaDe(c.origem.desfeitaEm))}` : " desfeita";
+    return { tipo: "DESFEITA", selo: "Importação desfeita", sub: `sem resultado · importação do ${s}${de}${em}` };
+  }
+  const acerto = c.acerto === "FEITO" ? " · acerto feito" : c.acerto === "PENDENTE" ? " · acerto pendente" : "";
+  const quando = c.origem?.arquivadoEm ? `arquivado no ${s} em ${dataBr(c.origem.arquivadoEm)}` : `encerrado em ${dataBr(diaDe(c.etapaDesde))}`;
+  return { tipo: "RESULTADO", selo: c.resultado ? RESULTADOS_CASO[c.resultado] : "Encerrado", sub: `${quando}${acerto}` };
+}
+
+/** A contagem dos Encerrados: "85 casos encerrados · 14 com resultado e 71 que vieram encerrados do Astrea · do mais recente…". */
+export function resumoEncerrados(d: Pick<ListaCasos, "como" | "origensImportados" | "total">, n: number): { forte: string; resto: string } {
+  const total = d.total ?? n;
+  const forte = `${total.toLocaleString("pt-BR")} ${total === 1 ? "caso encerrado" : "casos encerrados"}`;
+  const c = d.como;
+  const partes: string[] = [];
+  if (c && (c.importados || c.desfeitos)) {
+    partes.push(`${c.resultado.toLocaleString("pt-BR")} com resultado`);
+    if (c.importados) partes.push(`${c.importados.toLocaleString("pt-BR")} que ${c.importados === 1 ? "veio encerrado" : "vieram encerrados"} ${doSistemas(d.origensImportados ?? [])}`);
+    if (c.desfeitos) partes.push(`${c.desfeitos.toLocaleString("pt-BR")} com a importação desfeita`);
+  }
+  const lista = partes.length <= 1 ? (partes[0] ?? "") : `${partes.slice(0, -1).join(", ")} e ${partes[partes.length - 1]}`;
+  return { forte, resto: `${lista ? ` · ${lista}` : ""} · do mais recente para o mais antigo` };
+}
+
+/** A linha "Veio da importação" da ficha do caso. */
+export function textoOrigemCaso(o: OrigemCaso): {
+  titulo: string; importadoEm: string | null; rotuloEtapa: string; etapa: string | null; rotuloOnde: string; onde: string | null;
+} {
+  const s = nomeDoSistema(o.sistema);
+  const ligada = o.etapaLigada ? `${o.etapaLigada.ordem}. ${o.etapaLigada.nome}` : null;
+  const etapa = o.etapaOrigem ? `“${o.etapaOrigem}”${ligada ? `, ligada a ${ligada}` : ""}` : ligada ? `Ligada a ${ligada}` : null;
+  const onde = o.registroOrigem ? `Registro ${o.registroOrigem}`
+    : o.linhaOrigem ? `Linha P${o.linhaOrigem}${o.abaOrigem ? ` da aba ${o.abaOrigem}` : ""}` : null;
+  return {
+    titulo: `Veio da importação do ${s}`,
+    importadoEm: o.em ? `${dataBr(diaDe(o.em))}, ${horaDe(o.em)}` : null,
+    rotuloEtapa: `Etapa no ${s}`, etapa, rotuloOnde: `No ${s}`, onde,
+  };
 }
