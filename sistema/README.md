@@ -619,7 +619,7 @@ Tela aprovada em `docs/design/aprovadas/portal-responsavel-legal` (Carol, 22/11/
 
 ### Prazo do comprovante (F3.134; AP-08)
 
-Tela aprovada em `docs/design/aprovadas/portal-prazo-comprovante` (Carol, 22/11/2026). Migration `0910_prazo_comprovante.sql`, teste `125_prazo_comprovante_test.sql`. O prazo continua em `escritorios.comprovante_validade_dias` (0853: de 30 a 365, padrão 90); não há tabela nova.
+Tela aprovada em `docs/design/aprovadas/portal-prazo-comprovante` (Carol, 22/11/2026). Migration `0910_prazo_comprovante.sql`, teste `126_prazo_comprovante_test.sql`. O prazo continua em `escritorios.comprovante_validade_dias` (0853: de 30 a 365, padrão 90); não há tabela nova.
 
 - **Onde muda:** Jurídico › Casos e processos › Documentos para começar, na folha "Prazo do comprovante", no alto da coluna do lado (`PrazoComprovante.tsx`, textos em `prazoComprovante.ts`). O item do comprovante da lista e a linha do comprovante na ficha do cliente (`DocumentosPessoais.tsx`) levam até ela com "Mudar o prazo"; quem não é dona lê "Quem muda é …" (`quemMuda`, com todos os sócios donos na ordem de entrada).
 - **Quem muda:** só a sócia dona (`e_socio_dono`, TC401 `SO_SOCIO_DONO`), mesmo que alguém da equipe tenha `juridico.etapas.editar`. O escritório vem da sessão.
