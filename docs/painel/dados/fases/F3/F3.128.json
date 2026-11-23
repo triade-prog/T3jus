@@ -5,6 +5,7 @@
   "refs": [
     "EX-17"
   ],
-  "status": "pendente",
-  "ordem": 1020
+  "status": "feito",
+  "ordem": 1020,
+  "evidencia": "Migration 0852: o acerto do caso traz os contratos ativos ligados a ele e sem outro caso em andamento, se a pessoa encerra contratos (área Contratos e contratos.editar) e o motivo fixo; \"Encerrar o caso no financeiro\" aceita a lista desses contratos com a versão lida e encerra tudo numa transação só, pela mesma regra de \"Encerrar contrato\" (se um falha, nada é encerrado; contrato de fora recusa com CONTRATO_FORA_DO_CASO). A ficha do caso no Jurídico traz o resumo do acerto: selo \"Encerrado · acerto pendente\", âmbar com \"Ver o acerto\" e o quadro \"Acerto no Financeiro\" (valores e link só com a área Financeiro; sem ela, quem cuida). Tela: com tudo pago o âmbar do repasse encerra; a janela marca \"Encerrar também os contratos ligados\" (FinanceiroRepasses.tsx, AcertoCaso.tsx, Juridico.tsx). Rota com encerrarCasoSchema (app_test.ts). Testes: pgTAP 120 (17), 2 cenários novos em portal-financeiro-repasses.spec.ts e 2 em portal-juridico-casos.spec.ts (celular e computador, com axe)."
 }

@@ -29,6 +29,7 @@ import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Mol
 import { MolduraArea } from "./MolduraArea.tsx";
 import { PeticoesDoCaso } from "./Peticoes.tsx";
 import { AvisoSemCasoJuridico } from "./SemCaso.tsx";
+import { FolhaAcertoCaso, hrefDoAcerto, textoAcertoNoCaso } from "./AcertoCaso.tsx";
 
 type Pessoa = { id: string; nome: string };
 type Feito = { titulo: string; texto: string };
@@ -1178,6 +1179,8 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
   const ficha = f;
   const andamento = f.situacao === "ANDAMENTO";
   const prox = proximaEtapa(f.etapa.ordem, f.etapas);
+  const acertoTxt = andamento ? null : textoAcertoNoCaso(f);
+  const verAcerto = andamento ? null : hrefDoAcerto(f.acerto);
   const fechar = () => { setJanela(null); setDoc(null); };
   const pronto = (x: Feito) => { fechar(); setFeito(x); setVez((v) => v + 1); };
 
@@ -1195,7 +1198,11 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
               <p className="sobretitulo">Caso · {AREAS_DIREITO[f.area]}</p>
               <h1>{f.nome}</h1>
               <p className="meta">
-                <span className={`selo selo-${andamento ? "ativo" : "neutro"}`}>{andamento ? "Em andamento" : `Encerrado${f.resultado ? ` · ${RESULTADOS_CASO[f.resultado]}` : ""}`}</span>
+                {acertoTxt ? (
+                  <span className="selo selo-atencao"><Icone nome="relogio" className="ico" />{acertoTxt.selo}</span>
+                ) : (
+                  <span className={`selo selo-${andamento ? "ativo" : "neutro"}`}>{andamento ? "Em andamento" : `Encerrado${f.resultado ? ` · ${RESULTADOS_CASO[f.resultado]}` : ""}`}</span>
+                )}
                 <span>{f.numero ? formatarCnj(f.numero) : "Sem número ainda"}</span>
                 {f.tribunal || f.sistema ? <span>{[f.tribunal, f.sistema].filter(Boolean).join(" · ")}</span> : null}
               </p>
@@ -1209,8 +1216,16 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
           <p className="hn-oque">
             {andamento
               ? <>Desde {diaCurto(diaDoInstante(f.etapaDesde))}.{prox ? <> Próxima: <b>{prox}</b>.</> : null}</>
+              : acertoTxt ? <>{acertoTxt.frase}</>
               : <>Encerrado em {f.encerradoEm ? dataBr(diaDoInstante(f.encerradoEm)) : "—"}.</>}
           </p>
+          {/* EX-17, decisão 21: no caso com acerto pendente, "Ver o acerto" no lugar de "Mudar etapa". */}
+          {verAcerto ? (
+            <a className="btn btn-pri" href={verAcerto}>
+              <Icone nome="cadeado" className="ico" />
+              Ver o acerto
+            </a>
+          ) : null}
           {andamento ? (
             <button data-muda className="btn btn-pri" type="button" onClick={() => setJanela("etapa")}>
               <Icone nome="seta" className="ico" />
@@ -1231,6 +1246,7 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
         <aside className="hn-col" aria-label="Sobre o caso">
           <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} aoDocumentoChegou={(d) => setDoc({ d, acao: "chegou" })} />
           <PeticoesDoCaso key={`pc-${vez}`} casoId={f.id} andamento={andamento} />
+          {f.acerto ? <FolhaAcertoCaso a={f.acerto} /> : null}
           <Contratos f={f} />
           <AvisoCliente f={f} />
           <Mudancas f={f} />

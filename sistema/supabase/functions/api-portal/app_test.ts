@@ -2068,6 +2068,12 @@ Deno.test("F3.45, FI-08: a ficha do repasse traz o acerto do caso; encerrar devo
   const e = await erro(await m.pedir(`/v1/escritorio/financeiro/casos/${CLIENTE}/encerrar`, { corpo: {}, cookie }));
   assertEquals([e.detalhes?.motivo, e.detalhes?.falta], ["PENDENCIAS", 381840]);
   assertEquals((await m.pedir("/v1/escritorio/financeiro/casos/x/encerrar", { corpo: {}, cookie })).status, 404);
+  // EX-17: em cadeia, os contratos vão ao banco com a versão lida.
+  await m.pedir(`/v1/escritorio/financeiro/casos/${ANA}/encerrar`, { corpo: { contratos: [{ id: CLIENTE, versao: 3 }] }, cookie });
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_financeiro_caso_encerrar").at(-1)!.args.p_contratos, [{ id: CLIENTE, versao: 3 }]);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_financeiro_caso_encerrar")[0]!.args.p_contratos, []);
+  const r = await erro(await m.pedir(`/v1/escritorio/financeiro/casos/${ANA}/encerrar`, { corpo: { contratos: [{ id: "x", versao: 0 }] }, cookie }));
+  assertEquals(r.codigo, "VALIDATION_ERROR");
 });
 
 Deno.test("CH-01, FI-18: anexos do contrato, da conta e do recebimento, enviados em duas etapas no caminho do escritório da sessão", async () => {

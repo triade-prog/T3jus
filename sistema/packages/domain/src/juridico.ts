@@ -173,7 +173,23 @@ export interface EnvioEtapa {
   mensagem: { envio: EnvioMensagem; em: string; envioEm: string | null; motivo: string | null } | null;
 }
 
+/** O resumo do acerto na ficha do caso encerrado (0852; EX-17, decisões 21 e 22). Valores só com Financeiro. */
+export interface ResumoAcertoCaso {
+  pendente: boolean;
+  fechado: { em: string; por: PessoaRef | null } | null;
+  comValores: boolean;
+  levantamentoId: string | null;
+  entrou: { tipo: string; em: string; valor: number | null } | null;
+  exitos: { cliente: string; feito: boolean; naoCobrado: boolean; em: string | null; por: PessoaRef | null; valor: number | null }[];
+  repasses: { cliente: string; feito: boolean; em: string | null; prazo: string | null; valor: number | null }[];
+  outros: { nome: string; valor: number | null; prazo: string | null }[] | null;
+  faltaOutros: boolean;
+  contratos: { id: string; numero: string; situacao: string; cliente: string; assinadoEm: string | null }[];
+  quemCuida: string[] | null;
+}
+
 export interface FichaCaso extends LinhaCaso {
+  acerto?: ResumoAcertoCaso | null;
   tribunal: string | null;
   vara: string | null;
   sistema: string | null;

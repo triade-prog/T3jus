@@ -33,6 +33,7 @@ import {
   arquivarLgpdSchema, contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
   abrirCasoDoContratoSchema, assinaturaComCasoSchema, type AssinaturaComCaso, type ContratosSemCaso, type OpcoesCasoContrato,
+  encerrarCasoSchema,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -1089,7 +1090,11 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   // Encerrar o caso no financeiro (F3.45): só com tudo recebido e repassado; senão, PENDENCIAS com a lista.
   app.post("/v1/escritorio/financeiro/casos/:id/encerrar", async (c) => {
-    return c.json(await deps.banco.rpc<AcertoCaso>("portal_financeiro_caso_encerrar", { ...quem(c), p_caso: idDaRota(c, "id") }));
+    // EX-17: com "contratos", encerra também os contratos ligados, na mesma transação.
+    const d = await lerCorpo(c, encerrarCasoSchema);
+    return c.json(await deps.banco.rpc<AcertoCaso>("portal_financeiro_caso_encerrar", {
+      ...quem(c), p_caso: idDaRota(c, "id"), p_contratos: d.contratos ?? [],
+    }));
   });
 
   app.post("/v1/escritorio/financeiro/repasses/:id/prestacao", async (c) => {
