@@ -5,7 +5,7 @@
 // folha "Quem assinava com…", que fica guardada depois. A conta de quem assina vem do servidor,
 // feita com a data de hoje. O termo de curatela (F3.118) aparece na folha para baixar.
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { ESTADOS_CIVIS, formatarDocumento, PAPEIS_RESPONSAVEL, type FichaCliente } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -74,31 +74,44 @@ function civil(f: FichaCliente): string | null {
 
 /**
  * "Baixar o termo" (F3.118): pede o link de 60 s, que fica no histórico, e baixa. É botão, e não
- * link, porque faz POST; a aparência é a do desenho.
+ * link, porque faz POST; a aparência é a do desenho. O erro (estado ficha-baixar-erro de
+ * docs/design/aprovadas/portal-termo-curatela) vai logo abaixo da linha do arquivo, por isso a
+ * peça entrega o botão e o erro separados. O aviso com role="alert" entra no momento do erro e é
+ * recriado a cada falha (a chave muda), para o leitor de tela ler também a segunda; o botão
+ * continua e aponta para ele.
  */
-export function BaixarTermo({ id, compacto = false }: { id: string; compacto?: boolean }) {
+export function BaixarTermo({ id, compacto = false, children }: {
+  id: string; compacto?: boolean;
+  children: (botao: ReactNode, erro: ReactNode) => ReactNode;
+}) {
   const idErro = useId();
+  const vez = useRef(0);
   const [baixando, setBaixando] = useState(false);
-  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [falha, setFalha] = useState<{ erro: ErroApi; vez: number } | null>(null);
   async function baixar() {
-    setErro(null);
+    setFalha(null);
     setBaixando(true);
     const r = await baixarTermoCuratela(id);
     setBaixando(false);
-    if (!r.ok) setErro(r.erro);
+    if (!r.ok) setFalha({ erro: r.erro, vez: ++vez.current });
   }
-  return (
-    <>
-      <button className={`btn btn-sec${compacto ? " btn-compacto" : ""}`} type="button" onClick={() => void baixar()} disabled={baixando}
-        aria-busy={baixando || undefined} aria-describedby={descritoPor(erro && idErro)}>
-        <Icone nome="baixar" className={compacto ? "ico ico-s" : "ico"} />
-        Baixar o termo
-      </button>
-      {/* TODO(F3.118): o aviso do erro ao baixar espera o ok da Carol
-          (docs/design/propostas/portal-termo-curatela/NOTAS.md, item 2); até lá, o texto do erro. */}
-      {erro ? <ErroCampo id={idErro}>{textoDoErro(erro)}</ErroCampo> : null}
-    </>
+  const botao = (
+    <button className={`btn btn-sec${compacto ? " btn-compacto" : ""}`} type="button" onClick={() => void baixar()} disabled={baixando}
+      aria-busy={baixando || undefined} aria-describedby={descritoPor(falha && idErro)}>
+      <Icone nome="baixar" className={compacto ? "ico ico-s" : "ico"} />
+      Baixar o termo
+    </button>
   );
+  const erro = falha ? (
+    <div key={falha.vez} className="aviso aviso-urgencia rl-baixar-erro" id={idErro} role="alert">
+      <Icone nome="alerta" className="ico" />
+      <div>
+        <strong className="aviso-titulo">Não deu para baixar o termo.</strong>
+        <p>{textoDoErro(falha.erro)}</p>
+      </div>
+    </div>
+  ) : null;
+  return <>{children(botao, erro)}</>;
 }
 
 /** "Quem assina por Pedro": o responsável, com a qualificação e a regra do dia. */
@@ -108,6 +121,7 @@ export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: (
   if (!a || a.situacao === "PROPRIO" || a.situacao === "FEZ_18" || !f.rlNome) return null;
   const pn = primeiroNome(f.nome);
   const curatela = a.situacao === "CURATELA";
+  const termo = f.termoCuratela;
   const papel = f.rlPapel ? PAPEIS_RESPONSAVEL[f.rlPapel] : "Responsável";
   const assiste = a.situacao === "ASSISTIDO" || (curatela && a.modo === "ASSISTE");
   const selo = curatela ? `${assiste ? "Assiste" : "Representa"} · como diz o termo`
@@ -152,19 +166,24 @@ export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: (
         {curatela ? item("Processo da curatela", f.curProcesso ? <span className="num">{f.curProcesso}</span> : null, false, false) : null}
         {curatela ? item("Vara", f.curVara ?? null, false, false) : null}
       </dl>
-      {curatela && f.termoCuratela ? (
-        <div className="rl-termo-ficha">
-          <div className="rl-arq rl-tem" role="group" aria-labelledby={`${idTermo}-t`}>
-            <span className="rl-ic" aria-hidden="true">
-              <Icone nome="doc" className="ico" />
-            </span>
-            <div>
-              <strong id={`${idTermo}-t`}>Termo de curatela</strong>
-              <small>{metaTermoNaFicha(f.termoCuratela)}</small>
+      {curatela && termo ? (
+        <BaixarTermo id={termo.id} compacto>
+          {(botao, erro) => (
+            <div className="rl-termo-ficha">
+              <div className="rl-arq rl-tem" role="group" aria-labelledby={`${idTermo}-t`}>
+                <span className="rl-ic" aria-hidden="true">
+                  <Icone nome="doc" className="ico" />
+                </span>
+                <div>
+                  <strong id={`${idTermo}-t`}>Termo de curatela</strong>
+                  <small>{metaTermoNaFicha(termo)}</small>
+                </div>
+                {botao}
+              </div>
+              {erro}
             </div>
-            <BaixarTermo id={f.termoCuratela.id} compacto />
-          </div>
-        </div>
+          )}
+        </BaixarTermo>
       ) : null}
       {a.situacao === "REPRESENTADO" && a.faz16 ? (
         <p className="rl-regra">

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { TIPO_TERMO_CURATELA } from "@t3jus/domain";
 import { rascunhoVazio, TIPOS_NO_SELETOR } from "./clientes.ts";
-import { codigoDoErroDoTermo, descricaoArquivoTermo, erroDoCodigoDoTermo, fichaMudou, metaTermoNaFicha } from "./termoCuratela.ts";
+import {
+  casoDoTermoQueFalhou, codigoDoErroDoTermo, descricaoArquivoTermo, erroDoCodigoDoTermo, fichaMudou, fraseDoTermoQueFalhou, metaTermoNaFicha,
+} from "./termoCuratela.ts";
 
 describe("F3.118: a linha do arquivo do termo, sem as páginas", () => {
   it("no formulário: PDF ou foto e o tamanho", () => {
@@ -45,5 +47,42 @@ describe("M8: os seletores de Documentos pessoais não oferecem o termo", () => 
   it("TIPOS_NO_SELETOR não tem TERMO_CURATELA", () => {
     expect(TIPOS_NO_SELETOR).not.toContain(TIPO_TERMO_CURATELA);
     expect(TIPOS_NO_SELETOR).toContain("RG_CPF");
+  });
+});
+
+describe("F3.118: o termo que não foi guardado, frase fixa por caso (NOTAS, item 1)", () => {
+  const MANDE = " Mande de novo em “Mudar”, na folha Quem assina por Sebastião.";
+  // A tabela caso → código → frase do desenho aprovado, código a código, ida e volta pelo endereço.
+  const tabela: [string, ReturnType<typeof casoDoTermoQueFalhou>, string][] = [
+    ["VALIDATION_ERROR", "ARQUIVO", `O termo de curatela não foi guardado: o arquivo precisa ser PDF ou foto, até 10 MB.${MANDE}`],
+    ["ARQUIVO_NAO_CHEGOU", "CONEXAO", `O termo de curatela não foi guardado: não deu para falar com o T3jus.${MANDE}`],
+    ["UPSTREAM_UNAVAILABLE", "CONEXAO", `O termo de curatela não foi guardado: não deu para falar com o T3jus.${MANDE}`],
+    ["CLIENTE_NAO_CURATELA", "NAO_CURATELA", "O termo de curatela não foi guardado: Sebastião não está mais sob curatela na ficha."],
+    ["UNAUTHORIZED", "SESSAO", "O termo de curatela não foi guardado: sua sessão terminou. Entre de novo para enviar o termo."],
+    ["FORBIDDEN", "PERMISSAO", "O termo de curatela não foi guardado: o seu acesso não permite enviar o termo. Fale com quem cuida dos acessos."],
+    ["INTERNAL_ERROR", "OUTRO", `O termo de curatela não foi guardado: algo deu errado do nosso lado.${MANDE}`],
+    ["RATE_LIMITED", "OUTRO", `O termo de curatela não foi guardado: algo deu errado do nosso lado.${MANDE}`],
+    ["NOT_FOUND", "OUTRO", `O termo de curatela não foi guardado: algo deu errado do nosso lado.${MANDE}`],
+  ];
+  it.each(tabela)("%s → %s", (codigo, caso, frase) => {
+    const erro = erroDoCodigoDoTermo(codigo);
+    expect(casoDoTermoQueFalhou(erro)).toBe(caso);
+    expect(fraseDoTermoQueFalhou(erro, "Sebastião")).toBe(frase);
+  });
+
+  it("os erros como saem do envio, antes do endereço", () => {
+    // O tipo conferido no navegador antes do envio (sem motivo) e o arquivo que não chegou inteiro.
+    expect(casoDoTermoQueFalhou({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["arquivoTipo"] } })).toBe("ARQUIVO");
+    expect(casoDoTermoQueFalhou({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["arquivo"], motivo: "ARQUIVO_NAO_CHEGOU" } })).toBe("CONEXAO");
+    // Um motivo que não é do arquivo não diz que o arquivo foi recusado.
+    expect(casoDoTermoQueFalhou({ codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_NAO_ATIVO" } })).toBe("OUTRO");
+    // Sem código legível no endereço, vale "outro".
+    expect(casoDoTermoQueFalhou(erroDoCodigoDoTermo("<script>"))).toBe("OUTRO");
+  });
+
+  it("a mensagem do servidor não entra na frase; o nome é o primeiro do cliente", () => {
+    const f = fraseDoTermoQueFalhou({ codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_NAO_CURATELA" } }, "Ana");
+    expect(f).toBe("O termo de curatela não foi guardado: Ana não está mais sob curatela na ficha.");
+    expect(fraseDoTermoQueFalhou({ codigo: "VALIDATION_ERROR" }, "Ana")).not.toMatch(/Confira os campos/);
   });
 });

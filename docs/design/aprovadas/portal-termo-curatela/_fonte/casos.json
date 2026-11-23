@@ -1,0 +1,27 @@
+[
+ {
+  "nome": "ficha-termo-falhou",
+  "url": "index.html?estado=ficha-termo-falhou",
+  "rotulo": "Cadastrou, mas o termo não subiu (sem conexão)"
+ },
+ {
+  "nome": "ficha-termo-falhou-salva",
+  "url": "index.html?estado=ficha-termo-falhou-salva",
+  "rotulo": "Salvou a ficha, mas o termo não subiu (arquivo recusado)"
+ },
+ {
+  "nome": "ficha-baixar-erro",
+  "url": "index.html?estado=ficha-baixar-erro",
+  "rotulo": "Erro ao baixar o termo"
+ },
+ {
+  "nome": "ficha-curatela",
+  "url": "index.html?estado=ficha-curatela",
+  "rotulo": "Ficha: Sebastião (sai “2 páginas”)"
+ },
+ {
+  "nome": "novo-curatela",
+  "url": "index.html?estado=novo-curatela",
+  "rotulo": "Novo cliente sob curatela (sai “2 páginas”)"
+ }
+]

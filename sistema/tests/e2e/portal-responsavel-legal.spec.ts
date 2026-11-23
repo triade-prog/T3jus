@@ -248,7 +248,7 @@ test.describe("Termo de curatela (F3.118)", () => {
     await expect(page.getByRole("region", { name: "Quem assina por Sebastião" }).getByText("Termo de curatela", { exact: true })).toBeVisible();
   });
 
-  test("cadastro: o envio do termo cai depois de salvar e vai para a ficha com o erro", async ({ page }) => {
+  test("cadastro: o envio do termo cai depois de salvar e a ficha avisa, em atenção, com a frase do caso", async ({ page }) => {
     await simular(page, {
       ...comuns(CURATELA),
       "GET /v1/escritorio/clientes/duplicados": { corpo: { duplicados: [] } },
@@ -259,9 +259,56 @@ test.describe("Termo de curatela (F3.118)", () => {
     await cadastrarCuratela(page);
     await escolher(page, "Escolher arquivo: termo de curatela", PDF);
     await page.getByRole("button", { name: "Cadastrar cliente" }).click();
+    // Docs/design/aprovadas/portal-termo-curatela, item 1 (caso sem conexão: o envio caiu no meio).
     const aviso = page.getByRole("status").filter({ hasText: "Sebastião Ramos Filho cadastrado." });
-    await expect(aviso).toContainText("O arquivo não chegou inteiro. Envie de novo.");
+    await expect(aviso).toHaveText("Sebastião Ramos Filho cadastrado.O termo de curatela não foi guardado: não deu para falar com o T3jus. "
+      + "Mande de novo em “Mudar”, na folha Quem assina por Sebastião.");
+    await expect(aviso).toHaveClass(/aviso-atencao/);
+    await expect(aviso).not.toHaveClass(/aviso-sucesso/);
+    await expect(aviso.getByRole("button", { name: "Fechar aviso" })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`/clientes/${CLI}$`));
+    // Sem termo guardado, a folha fica sem o bloco do termo.
+    const folha = page.getByRole("region", { name: "Quem assina por Sebastião" });
+    await expect(folha).toBeVisible();
+    await expect(folha.getByRole("group", { name: "Termo de curatela" })).toHaveCount(0);
+    await semViolacoes(page);
+    await aviso.getByRole("button", { name: "Fechar aviso" }).click();
+    await expect(page.getByText("O termo de curatela não foi guardado", { exact: false })).toHaveCount(0);
+  });
+
+  test("ficha: a área do aviso de feito já está na página antes do texto", async ({ page }) => {
+    // O leitor de tela só lê o que muda numa área role="status" que ele já conhece.
+    await page.addInitScript(() => {
+      const w = window as unknown as { vazioAntes?: boolean };
+      new MutationObserver(() => {
+        for (const el of document.querySelectorAll(".toast")) {
+          if (el.getAttribute("role") === "status" && w.vazioAntes === undefined) w.vazioAntes = el.getAttribute("data-vazio") === "1";
+        }
+        for (const el of document.querySelectorAll("[role=status].sr")) if (!el.textContent) el.setAttribute("data-vazio", "1");
+      }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
+    });
+    await simular(page, comuns(CURATELA));
+    await page.goto(`${P}/clientes/${CLI}?cadastrado=1&termo=UPSTREAM_UNAVAILABLE`);
+    await expect(page.getByRole("status").filter({ hasText: "Sebastião Ramos Filho cadastrado." })).toContainText("não deu para falar com o T3jus");
+    expect(await page.evaluate(() => (window as unknown as { vazioAntes?: boolean }).vazioAntes)).toBe(true);
+  });
+
+  test("editar: salvou a ficha, mas o arquivo foi recusado: “Ficha salva.” em atenção", async ({ page }) => {
+    await simular(page, {
+      ...comuns(CURATELA),
+      [`PUT /v1/escritorio/clientes/${CLI}`]: { corpo: { id: CLI, versao: 5 } },
+      [`POST /v1/escritorio/clientes/${CLI}/termo-curatela`]: { status: 400, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["tamanho"] } } } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Mudar quem assina por Sebastião" }).click();
+    await escolher(page, "Escolher arquivo: termo de curatela", PDF);
+    await page.getByRole("button", { name: "Salvar ficha" }).click();
+    const aviso = page.getByRole("status").filter({ hasText: "Ficha salva." });
+    await expect(aviso).toHaveText("Ficha salva.O termo de curatela não foi guardado: o arquivo precisa ser PDF ou foto, até 10 MB. "
+      + "Mande de novo em “Mudar”, na folha Quem assina por Sebastião.");
+    await expect(aviso).toHaveClass(/aviso-atencao/);
+    // Saiu do formulário (a versão mudou com o PUT).
+    await expect(page.getByRole("button", { name: "Salvar ficha" })).toHaveCount(0);
     await semViolacoes(page);
   });
 
@@ -291,6 +338,39 @@ test.describe("Termo de curatela (F3.118)", () => {
     expect(baixado.suggestedFilename()).toBe("termo.pdf");
     expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/clientes/documentos/${TERMO}/abrir`)).toBe(true);
     await expect(page.getByRole("region", { name: /Documentos pessoais/ })).not.toContainText("termo");
+  });
+
+  test("ficha: o erro ao baixar o termo, logo abaixo da linha do arquivo, a cada falha", async ({ page }) => {
+    const falha = { status: 503, corpo: { erro: { codigo: "UPSTREAM_UNAVAILABLE" } } };
+    await simular(page, {
+      ...comuns({ ...CURATELA, termoCuratela: termoNaFicha() }),
+      [`GET /v1/escritorio/clientes/${CLI}/documentos`]: { corpo: { hoje, validadeDias: 90, podeAnexar: true, documentos: [], pedidos: [] } },
+      [`POST /v1/escritorio/clientes/documentos/${TERMO}/abrir`]: [falha, falha, { corpo: { url: `${P}/leitura-falsa/${TERMO}?download=termo.pdf`, validadeSegundos: 60 } }],
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const folha = page.getByRole("region", { name: "Quem assina por Sebastião" });
+    const botao = folha.getByRole("button", { name: "Baixar o termo" });
+    await expect(folha.getByRole("alert")).toHaveCount(0);
+    await botao.click();
+    const erro = folha.getByRole("alert");
+    await expect(erro).toHaveText("Não deu para baixar o termo.Não deu para falar com o T3jus agora. Confira a sua internet e tente de novo em instantes.");
+    await expect(erro).toHaveClass(/aviso-urgencia/);
+    // Logo abaixo da linha do arquivo, e o botão continua e aponta para o erro.
+    expect(await erro.evaluate((el) => el.previousElementSibling?.matches(".rl-arq") ?? false)).toBe(true);
+    await expect(botao).toBeEnabled();
+    await expect(botao).toHaveAttribute("aria-describedby", (await erro.getAttribute("id"))!);
+    await expect(botao).toHaveAccessibleDescription(/Não deu para baixar o termo/);
+    await semViolacoes(page);
+    // Na segunda falha o aviso é outro elemento, para o leitor de tela ler de novo.
+    await erro.evaluate((el) => el.setAttribute("data-primeiro", "1"));
+    await botao.click();
+    await expect(folha.getByRole("alert")).toHaveCount(1);
+    await expect(folha.locator("[role=alert][data-primeiro]")).toHaveCount(0);
+    // Tentar de novo é clicar outra vez: baixa e o erro sai.
+    const [baixado] = await Promise.all([page.waitForEvent("download"), botao.click()]);
+    expect(baixado.suggestedFilename()).toBe("termo.pdf");
+    await expect(folha.getByRole("alert")).toHaveCount(0);
+    await expect(botao).not.toHaveAttribute("aria-describedby");
   });
 
   test("editar: trocar o termo e salvar só com ele", async ({ page }) => {
@@ -363,6 +443,22 @@ test.describe("Termo de curatela (F3.118)", () => {
     const [baixado] = await Promise.all([page.waitForEvent("download"), aviso.getByRole("button", { name: "Baixar o termo" }).click()]);
     expect(baixado.suggestedFilename()).toBe("termo.pdf");
     expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/clientes/documentos/${TERMO}/abrir`)).toBe(true);
+  });
+
+  test("Gerar documentos da curatela: o erro ao baixar o termo", async ({ page }) => {
+    await simular(page, {
+      ...rotasGerar(termoNaFicha()),
+      [`POST /v1/escritorio/clientes/documentos/${TERMO}/abrir`]: { status: 503, corpo: { erro: { codigo: "UPSTREAM_UNAVAILABLE" } } },
+    });
+    await page.goto(`${P}/contratos/modelos/gerar?contrato=${CT}`);
+    const aviso = page.getByRole("status").filter({ hasText: "Sebastião está sob curatela: Helena assina por Sebastião." });
+    const botao = aviso.getByRole("button", { name: "Baixar o termo" });
+    await botao.click();
+    const erro = page.getByRole("alert").filter({ hasText: "Não deu para baixar o termo." });
+    await expect(erro).toHaveText("Não deu para baixar o termo.Não deu para falar com o T3jus agora. Confira a sua internet e tente de novo em instantes.");
+    await expect(botao).toBeEnabled();
+    await expect(botao).toHaveAttribute("aria-describedby", (await erro.getAttribute("id"))!);
+    await semViolacoes(page);
   });
 
   test("Gerar documentos da curatela sem termo na ficha: o aviso sem o botão", async ({ page }) => {

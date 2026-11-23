@@ -6,8 +6,8 @@
     "AP-01",
     "CH-08"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 959,
-  "nota": "Programado no PR (migration 0930, pgTAP 126, rota POST /v1/escritorio/clientes/:id/termo-curatela, termo na ficha e em Gerar documentos). Faltam os dois avisos novos (envio do termo que falhou e erro ao baixar), em aprovação da Carol.",
-  "proximo": "Carol aprovar os avisos em docs/design/propostas/portal-termo-curatela; programar os dois; aplicar 0853 e depois 0930 com o ok dela."
+  "proximo": "Publicar a api-portal com a rota do termo.",
+  "evidencia": "PR #143 (migration 0930, aplicada em 23/11; pgTAP 126; rota POST /v1/escritorio/clientes/:id/termo-curatela; termo no cadastro, na ficha e em Gerar documentos) e o commit dos dois avisos aprovados pela Carol em 23/11 (docs/design/aprovadas/portal-termo-curatela): o termo que não foi guardado depois de salvar, em atenção e com frase fixa por caso, e o erro ao baixar o termo na ficha e em Gerar documentos. Testes: Vitest termoCuratela.test.ts (código → frase) e e2e portal-responsavel-legal.spec.ts com axe, no celular e no computador (34 passaram)."
 }
