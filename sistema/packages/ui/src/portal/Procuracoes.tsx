@@ -1032,10 +1032,23 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
               {curatela ? (
                 // O estado gerar-curatela do desenho aprovado (decisões 23 e 26; F3.118).
                 <div className="c6">
-                  <Aviso tom="info" icone="balanca" titulo={tituloCuratela(cli.nome, cli.rlNome, quem === "CURATELA_ASSISTE")}
-                    acoes={dados.termoCuratela ? <BaixarTermo id={dados.termoCuratela.id} /> : undefined}>
-                    {textoCuratela(cli.rlNome, cli.rlPapel === "CURADOR", quem === "CURATELA_ASSISTE", docsPedido.length, !!dados.termoCuratela)}
-                  </Aviso>
+                  {dados.termoCuratela ? (
+                    // O erro ao baixar vem logo abaixo do aviso, como na ficha (F3.118).
+                    <BaixarTermo id={dados.termoCuratela.id}>
+                      {(botao, erro) => (
+                        <>
+                          <Aviso tom="info" icone="balanca" titulo={tituloCuratela(cli.nome, cli.rlNome, quem === "CURATELA_ASSISTE")} acoes={botao}>
+                            {textoCuratela(cli.rlNome, cli.rlPapel === "CURADOR", quem === "CURATELA_ASSISTE", docsPedido.length, true)}
+                          </Aviso>
+                          {erro}
+                        </>
+                      )}
+                    </BaixarTermo>
+                  ) : (
+                    <Aviso tom="info" icone="balanca" titulo={tituloCuratela(cli.nome, cli.rlNome, quem === "CURATELA_ASSISTE")}>
+                      {textoCuratela(cli.rlNome, cli.rlPapel === "CURADOR", quem === "CURATELA_ASSISTE", docsPedido.length, false)}
+                    </Aviso>
+                  )}
                 </div>
               ) : null}
               {cli.tipo === "PJ" ? (

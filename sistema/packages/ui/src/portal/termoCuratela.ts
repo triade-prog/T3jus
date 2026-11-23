@@ -68,3 +68,38 @@ export function erroDoCodigoDoTermo(codigo: string | null | undefined): ErroApi 
   if (!codigo || !/^[A-Z_]{1,40}$/.test(codigo)) return null;
   return ehCodigoErro(codigo) ? { codigo } : { codigo: "VALIDATION_ERROR", detalhes: { motivo: codigo } };
 }
+
+/**
+ * O termo que não foi guardado depois de salvar a ficha (desenho aprovado em
+ * docs/design/aprovadas/portal-termo-curatela, item 1): o caso que o erro do envio indica. A frase
+ * é fixa por caso; a mensagem do servidor não entra no aviso.
+ */
+export type CasoTermoQueFalhou = "ARQUIVO" | "CONEXAO" | "NAO_CURATELA" | "SESSAO" | "PERMISSAO" | "OUTRO";
+
+export function casoDoTermoQueFalhou(e: ErroApi | null | undefined): CasoTermoQueFalhou {
+  const m = typeof e?.detalhes?.motivo === "string" ? e.detalhes.motivo : null;
+  if (m === "ARQUIVO_NAO_CHEGOU") return "CONEXAO"; // o envio caiu no meio
+  if (m === "CLIENTE_NAO_CURATELA") return "NAO_CURATELA";
+  switch (e?.codigo) {
+    // Recusa do arquivo (tipo, tamanho, vazio); um motivo que não é do arquivo cai em "outro".
+    case "VALIDATION_ERROR": return !m || m.startsWith("ARQUIVO_") ? "ARQUIVO" : "OUTRO";
+    case "UPSTREAM_UNAVAILABLE": return "CONEXAO";
+    case "UNAUTHORIZED": return "SESSAO";
+    case "FORBIDDEN": return "PERMISSAO";
+    default: return "OUTRO";
+  }
+}
+
+/** A frase do aviso, com o primeiro nome do cliente onde o desenho pede. */
+export function fraseDoTermoQueFalhou(e: ErroApi | null | undefined, primeiro: string): string {
+  const mande = ` Mande de novo em “Mudar”, na folha Quem assina por ${primeiro}.`;
+  const inicio = "O termo de curatela não foi guardado:";
+  switch (casoDoTermoQueFalhou(e)) {
+    case "ARQUIVO": return `${inicio} o arquivo precisa ser PDF ou foto, até 10 MB.${mande}`;
+    case "CONEXAO": return `${inicio} não deu para falar com o T3jus.${mande}`;
+    case "NAO_CURATELA": return `${inicio} ${primeiro} não está mais sob curatela na ficha.`;
+    case "SESSAO": return `${inicio} sua sessão terminou. Entre de novo para enviar o termo.`;
+    case "PERMISSAO": return `${inicio} o seu acesso não permite enviar o termo. Fale com quem cuida dos acessos.`;
+    case "OUTRO": return `${inicio} algo deu errado do nosso lado.${mande}`;
+  }
+}

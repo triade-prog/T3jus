@@ -25,7 +25,7 @@ import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 import { FolhaDocumentosPessoais } from "./DocumentosPessoais.tsx";
 import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
-import { erroDoCodigoDoTermo } from "./termoCuratela.ts";
+import { erroDoCodigoDoTermo, fraseDoTermoQueFalhou } from "./termoCuratela.ts";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { FolhaSistemaAntigo } from "./ImportacaoFinanceiro.tsx";
@@ -37,7 +37,8 @@ import type { AbaLigada } from "./fichaLigada.ts";
 import { AcaoLgpd, DadosExcluidos, FaixaPedido, JanelaArquivar, JanelaExcluir, JanelaPedir, JanelaRecusar, RegistroExclusao, RegistroNoCabecalho } from "./ExclusaoCliente.tsx";
 
 export type AbaCliente = "ficha" | "atendimentos" | AbaLigada;
-export type Feito = { titulo: string; texto: string; acoes?: ReactNode };
+/** O aviso de feito; "atencao" quando algo ficou por fazer (o termo de curatela que não foi guardado, F3.118). */
+export type Feito = { titulo: string; texto: string; acoes?: ReactNode; tom?: "atencao" };
 
 export function Toast({ feito, aoFechar }: { feito: Feito; aoFechar: () => void }) {
   return (
@@ -51,6 +52,32 @@ export function Toast({ feito, aoFechar }: { feito: Feito; aoFechar: () => void 
       <button className="fechar" type="button" aria-label="Fechar aviso" onClick={aoFechar}>
         <Icone nome="xis" className="ico" />
       </button>
+    </div>
+  );
+}
+
+/**
+ * O aviso de feito da ficha. A área com role="status" já está na página antes de o texto entrar
+ * (o leitor de tela só lê o que muda numa área que ele já conhece); sem aviso, ela fica vazia e
+ * fora da vista. No tom de atenção, o ícone de alerta (docs/design/aprovadas/portal-termo-curatela).
+ */
+function AvisoDaFicha({ feito, aoFechar }: { feito: Feito | null; aoFechar: () => void }) {
+  const atencao = feito?.tom === "atencao";
+  return (
+    <div className={feito ? `aviso aviso-${atencao ? "atencao" : "sucesso"} toast` : "sr"} role="status">
+      {feito ? (
+        <>
+          <Icone nome={atencao ? "alerta" : "check"} className="ico" />
+          <div>
+            <strong className="aviso-titulo">{feito.titulo}</strong>
+            <p>{feito.texto}</p>
+            {feito.acoes ? <div className="aviso-acoes">{feito.acoes}</div> : null}
+          </div>
+          <button className="fechar" type="button" aria-label="Fechar aviso" onClick={aoFechar}>
+            <Icone nome="xis" className="ico" />
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -775,14 +802,17 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
       if (r.ok) setPessoas(r.dados.pessoas);
     });
   }, [comercial, aba, carregarAtendimentos]);
+  const avisouCadastro = useRef(false);
   useEffect(() => {
-    if (!cadastrado || !f) return;
-    const erroTermo = erroDoCodigoDoTermo(termo);
-    void Promise.resolve().then(() => setFeito({
-      titulo: `${f.nome} cadastrado.`,
-      // TODO(F3.118): o aviso do termo que não subiu espera o ok da Carol
-      // (docs/design/propostas/portal-termo-curatela/NOTAS.md, item 1); até lá, o texto do erro.
-      texto: erroTermo ? textoDoErro(erroTermo) : "A ficha está pronta para usar. A qualificação pode ficar para quando for preparar a procuração.",
+    if (!cadastrado || !f || avisouCadastro.current) return;
+    avisouCadastro.current = true;
+    // O termo que não foi guardado (F3.118): o mesmo aviso, no tom de atenção, com a frase do caso.
+    const nome = f.nome;
+    void Promise.resolve().then(() => setFeito(termo ? {
+      titulo: `${nome} cadastrado.`, texto: fraseDoTermoQueFalhou(erroDoCodigoDoTermo(termo), primeiroNome(nome)), tom: "atencao",
+    } : {
+      titulo: `${nome} cadastrado.`,
+      texto: "A ficha está pronta para usar. A qualificação pode ficar para quando for preparar a procuração.",
     }));
     const u = new URL(window.location.href);
     u.searchParams.delete("cadastrado");
@@ -1117,13 +1147,10 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
               setMeuTermo(null);
               const historico = "A mudança ficou no histórico, com seu nome e os campos alterados.";
               const guardado = "O termo de curatela ficou guardado na ficha.";
-              void concluir({
-                titulo: "Ficha salva.",
-                // TODO(F3.118): o aviso do termo que não subiu espera o ok da Carol
-                // (docs/design/propostas/portal-termo-curatela/NOTAS.md, item 1); até lá, o texto do erro.
-                texto: r.termo && r.termo !== "ENVIADO" ? textoDoErro(r.termo.erro)
-                  : r.termo === "ENVIADO" ? (r.fichaMudou ? `${historico} ${guardado}` : guardado) : historico,
-              });
+              void concluir(r.termo && r.termo !== "ENVIADO"
+                // O termo que não foi guardado (F3.118): no tom de atenção, com a frase do caso.
+                ? { titulo: "Ficha salva.", texto: fraseDoTermoQueFalhou(r.termo.erro, primeiroNome(r.nome)), tom: "atencao" }
+                : { titulo: "Ficha salva.", texto: r.termo === "ENVIADO" ? (r.fichaMudou ? `${historico} ${guardado}` : guardado) : historico });
             }}
             aoCancelar={() => { setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }}
             aoConflito={(x, t) => void aoConflitoEditar(x, t)}
@@ -1216,7 +1243,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
         ) : null}
         {corpo}
       </div>
-      {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
+      <AvisoDaFicha feito={feito} aoFechar={() => setFeito(null)} />
       {comercial && ativo ? (
         <JanelaRegistrar key={`r-${abertura}`} aberta={janela === "registrar"} f={f} pessoas={pessoas} eu={escritorio.pessoa} aoFechar={() => setJanela(null)}
           aoFeito={(x) => void concluir(x, async () => {

@@ -1,0 +1,11 @@
+{
+  "data": "23/11/2026",
+  "inicio": "08:15",
+  "fim": "08:21",
+  "texto": "F3.118 feito: os dois avisos aprovados pela Carol em 23/11. O termo que não foi guardado depois de salvar sai no aviso da ficha em tom de atenção, com frase fixa por caso; o erro ao baixar o termo aparece logo abaixo da linha do arquivo, na ficha e em Gerar documentos. Falta publicar a api-portal com a rota do termo.",
+  "refs": [
+    "F3.118",
+    "AP-01",
+    "CH-08"
+  ]
+}
