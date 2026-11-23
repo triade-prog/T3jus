@@ -1,0 +1,11 @@
+{
+  "id": "F3.155",
+  "texto": "Janela de exclusão a pedido do titular: \"O que é apagado\" passa a citar os documentos pessoais, o termo de curatela e o arquivo da proposta, com a contagem na ficha só para a sócia dona",
+  "peca": "S2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1171,
+  "proximo": "Desenhar com o agente de frontend a linha nova de \"O que é apagado\" (ExclusaoCliente.tsx; sugestão no plano da F3.141, seção 6) e o campo arquivosParaApagar da ficha, levar à Carol e só então programar"
+}

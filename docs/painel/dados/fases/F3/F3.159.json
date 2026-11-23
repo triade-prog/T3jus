@@ -1,0 +1,11 @@
+{
+  "id": "F3.159",
+  "texto": "Serviço da proposta do cliente excluído: o texto livre (até 160 letras) pode trazer nome, e hoje só o escopo é limpo na exclusão",
+  "peca": "S2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1175,
+  "proximo": "Decidir com a Carol se o serviço da proposta do excluído vira um texto neutro na exclusão (revisão da F3.141, M6)"
+}
