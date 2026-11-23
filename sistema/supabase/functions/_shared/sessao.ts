@@ -19,11 +19,11 @@ import {
   usarLinkAcessoSchema,
 } from "@t3jus/domain";
 import type { Portador, ProvedorAuth, SessaoAuth } from "./auth.ts";
-import type { Banco } from "./banco.ts";
+import { ErroBanco, type Banco } from "./banco.ts";
 import { apagarCookie, gravarCookie, lerCookie } from "./cookies.ts";
 import { base64url, deBase64url, sha256Hex } from "./cripto.ts";
 import { ipDaChamada } from "./repasse.ts";
-import { claimsJwt } from "./jwt.ts";
+import { claimsJwt, claimsSemValidar } from "./jwt.ts";
 import { registrar } from "./registro.ts";
 import type { ConferirVazada } from "./senha.ts";
 import { lerCorpo } from "./validar.ts";
@@ -42,6 +42,11 @@ export interface ConfigSistema {
   autenticadorObrigatorio: boolean;
   /** Função do banco que diz se a pessoa entra neste sistema. */
   funcaoAcesso: "acesso_portal" | "acesso_console";
+  /**
+   * Portal (F3.136): o acesso e o escritório da sessão numa consulta só, pedida ao banco ao
+   * mesmo tempo que o Auth confere o token. Sem ela, só a funcaoAcesso, depois do Auth.
+   */
+  funcaoContexto?: "acesso_portal_sessao";
   /** Endereço do app, para o link de redefinir senha. */
   urlApp: string;
 }
@@ -60,12 +65,27 @@ export interface Sessao {
   accessToken: string;
 }
 
-export type VarsSessao = { Variables: { sessao: Sessao } };
+/**
+ * escritorioDaSessao: o escritório escolhido nesta sessão, quando já veio junto com a
+ * conferência do acesso (null = nenhum escolhido; ausente = não calculado ainda).
+ */
+export type VarsSessao = { Variables: { sessao: Sessao; escritorioDaSessao?: string | null } };
+
+interface Contexto {
+  acesso: boolean;
+  /** undefined quando o banco ainda não tem acesso_portal_sessao (migration 0880 não aplicada). */
+  escritorio?: string | null;
+}
 
 type TipoLink = "recovery" | "invite";
 
 /** Qualquer app cujas variáveis incluem a sessão (o Portal soma o escritório). */
 type ComSessao = { Variables: VarsSessao["Variables"] };
+
+/** O PostgREST diz assim que a função não existe (migration ainda não aplicada). */
+function funcaoNaoExiste(e: unknown): boolean {
+  return e instanceof ErroBanco && (e.codigo === "PGRST202" || e.codigo === "404");
+}
 
 /** m: manter conectado (cookie com prazo) ou não (cookie que some ao fechar o navegador). */
 function empacotar(s: Pick<SessaoAuth, "accessToken" | "refreshToken">, manter: boolean): string {
@@ -111,15 +131,48 @@ export function criarSessao(cfg: ConfigSistema, deps: DepsSessao) {
   }
 
   /** Toda rota fora do login: sessão completa de quem ainda tem acesso a este sistema. */
+  /** Acesso e escritório da sessão numa consulta só (Portal); sem a 0880, só o acesso. */
+  async function contexto(pessoa: string, sessaoId: string): Promise<Contexto> {
+    if (cfg.funcaoContexto) {
+      try {
+        const r = await deps.banco.rpc<{ acesso: boolean; escritorio: string | null }>(cfg.funcaoContexto, { p_pessoa: pessoa, p_sessao: sessaoId });
+        return { acesso: r?.acesso === true, escritorio: r?.escritorio ?? null };
+      } catch (e) {
+        if (!funcaoNaoExiste(e)) throw e;
+      }
+    }
+    return { acesso: Boolean(await deps.banco.rpc<boolean>(cfg.funcaoAcesso, { p_pessoa: pessoa })) };
+  }
+
   const exigirSessao: MiddlewareHandler<ComSessao> = async (c, next) => {
+    // "/v1/x" e "/v1/x/*" casam com o mesmo caminho: confere uma vez só por pedido (F3.136).
+    if (c.get("sessao")) return await next();
+    // F3.136: com funcaoContexto, o banco é consultado ao mesmo tempo que o Auth confere o
+    // token, com a pessoa e a sessão que o token diz ter. O resultado só é usado se o Auth
+    // aceitar o token e devolver a mesma pessoa e a mesma sessão (renovar mantém as duas).
+    const previa = cfg.funcaoContexto ? claimsSemValidar(desempacotar(lerCookie(c.req.raw.headers, cfg.cookie))?.a ?? "") : null;
+    const adiantado = previa
+      ? contexto(previa.pessoaId, previa.sessaoId).then((v) => ({ v }), (erro: unknown) => ({ erro }))
+      : null;
+
     const s = await sessaoDoCookie(c);
     if (!s) throw new ErroDominio("UNAUTHORIZED");
     if (!s.emailVerificado) throw new ErroDominio("EMAIL_NOT_VERIFIED");
     if (cfg.autenticadorObrigatorio && !s.temAutenticador) throw new ErroDominio("MFA_REQUIRED");
     if ((cfg.autenticadorObrigatorio || s.temAutenticador) && s.aal !== "aal2") throw new ErroDominio("MFA_REQUIRED");
     // Conferido a cada chamada: vínculo revogado ou equipe desativada param na hora (PT-21).
-    if (!(await deps.banco.rpc<boolean>(cfg.funcaoAcesso, { p_pessoa: s.userId }))) throw new ErroDominio("FORBIDDEN");
+    const mesmo = adiantado && previa!.pessoaId === s.userId.toLowerCase() && previa!.sessaoId === s.sessaoId.toLowerCase();
+    let ctx: Contexto;
+    if (mesmo) {
+      const r = await adiantado;
+      if ("erro" in r) throw r.erro;
+      ctx = r.v;
+    } else {
+      ctx = await contexto(s.userId, s.sessaoId);
+    }
+    if (!ctx.acesso) throw new ErroDominio("FORBIDDEN");
     c.set("sessao", { pessoaId: s.userId, email: s.email, sessaoId: s.sessaoId, accessToken: s.accessToken });
+    if (ctx.escritorio !== undefined) c.set("escritorioDaSessao", ctx.escritorio);
     await next();
   };
 

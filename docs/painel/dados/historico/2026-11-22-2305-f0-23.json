@@ -1,0 +1,12 @@
+{
+  "data": "22/11/2026",
+  "inicio": "23:05",
+  "fim": "23:20",
+  "texto": "Ponte para o Supabase Auth (0950): busca e ficha do Suporte, desconectar, responder-para do contador e a entrada apagada aos 90 dias voltam a funcionar sem permissão no esquema auth.",
+  "refs": [
+    "F0.23",
+    "PT-23",
+    "PT-11",
+    "FI-21"
+  ]
+}

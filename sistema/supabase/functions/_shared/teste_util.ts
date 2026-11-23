@@ -131,6 +131,17 @@ type Handler = (args: Record<string, unknown>) => unknown;
 /** Banco falso: cada função responde pelo handler; as chamadas ficam registradas. */
 export function bancoFalso(handlers: Record<string, Handler>) {
   const chamadas: { funcao: string; args: Record<string, unknown> }[] = [];
+  // Como a 0880: acesso_portal_sessao chama acesso_portal e, com acesso, escritorio_da_sessao.
+  if (!handlers.acesso_portal_sessao && handlers.acesso_portal) {
+    handlers = {
+      ...handlers,
+      acesso_portal_sessao: (a) => {
+        const acesso = Boolean(handlers.acesso_portal!({ p_pessoa: a.p_pessoa }));
+        const escritorio = acesso && a.p_sessao && handlers.escritorio_da_sessao ? handlers.escritorio_da_sessao(a) ?? null : null;
+        return { acesso, escritorio };
+      },
+    };
+  }
   const banco: Banco = {
     rpc<T>(funcao: string, args: Record<string, unknown> = {}): Promise<T> {
       chamadas.push({ funcao, args });

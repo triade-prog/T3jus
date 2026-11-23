@@ -1,0 +1,12 @@
+{
+  "id": "F3.138",
+  "texto": "Portal mais rápido, o que sobrou da F3.136: tirar o CSS do Console do Portal (550 KB no primeiro acesso) e, quando houver volume de dados, trocar nas políticas de RLS o current_setting() por (select ...) e medir de novo",
+  "peca": "B4",
+  "refs": [
+    "PT-27"
+  ],
+  "status": "pendente",
+  "ordem": 1110,
+  "nota": "Medido em 22/11: com os dados de hoje nenhuma consulta está lenta; o assessor do Supabase aponta 133 políticas que recalculam o contexto por linha e 258 chaves estrangeiras sem índice (quase todas de autoria, que nenhuma tela filtra). Não criar índices em massa: deixam as gravações mais lentas.",
+  "proximo": "CSS do Console fora do Portal num PR só de front (sem mudar o visual); RLS e índices só depois da primeira medição com um escritório piloto"
+}
