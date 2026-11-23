@@ -4,9 +4,10 @@
   "peca": "S4",
   "refs": [
     "EX-16",
-    "EX-17"
+    "EX-17",
+    "FI-08"
   ],
   "status": "pendente",
   "ordem": 1060,
-  "proximo": "Desenhar a folha Fechamento do caso na ficha do contrato (pergunta 5 do D30, aprovada sem desenho)"
+  "proximo": "Programar pelo desenho aprovado em docs/design/aprovadas/portal-fechamento-sem-levantamento (D31), com plano revisado antes do código"
 }
