@@ -15,7 +15,7 @@ import {
   type ListaRepasses, type FichaRepasse, type PropostaRepasse, type Destinacao,
   exportarSchema, enviarContadorSchema, salvarAjustesSchema, corrigirAberturaSchema, definirMetaSchema,
   type AjustesFinanceiro, type EnvioContador, type MetasReceita, type ResumoFinanceiro, type CaixaFinanceiro, type PreviaExportacao, type DadosExportacao,
-  type ListaReceber, type ParcelasContrato, type RecebimentoRegistrado,
+  type ListaReceber, type ParcelasContrato, type FechamentoNoContrato, type RecebimentoRegistrado,
   criarCasoSchema, editarCasoSchema, mudarEtapaSchema, filtroCasosSchema, clienteDoCasoSchema, digitosCnj,
   type ListaCasos, type FichaCaso, type OpcoesCaso, MOSTRAR_PRAZOS, VISOES_TAREFAS, prazoSchema, tarefaSchema, editarPrazoSchema, editarTarefaSchema, concluirTarefaSchema,
   type ListaPrazos, type ListaTarefas, type MensagemAviso, pedirDocumentoSchema, iniciarDocumentoCasoSchema, type DocumentoFaltando, type DocumentoDoCaso, etapaSchema, moverEtapaSchema, removerEtapaSchema, peticaoSchema, type EtapasEscritorio, type Etapa, type RespostaPeticoes,
@@ -41,7 +41,7 @@ import { entregarWhatsapp, type EntregaWhatsapp } from "./envio_whatsapp.ts";
 import { criarApp } from "../_shared/app.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
 import { baixarCarneCobranca, baixarDocumentoCobranca, type DocumentoCarne, type DocumentoCobranca } from "../_shared/cobranca_pdf.ts";
-import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
+import { criarSessao, funcaoNaoExiste, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { rotasPeticoes } from "./peticoes.ts";
 import { rotasDocumentos } from "./documentos.ts";
@@ -944,9 +944,14 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.get("/v1/escritorio/financeiro/contratos/:id", async (c) => {
     const args = { ...quem(c), p_contrato: idDaRota(c, "id") };
     const f = await deps.banco.rpc<ParcelasContrato>("portal_financeiro_contrato", args);
-    // O que o escritório adiantou nos casos do contrato (F3.23), lido à parte.
-    const adiantados = await deps.banco.rpc<ContaPagar[]>("portal_financeiro_contrato_adiantados", args);
-    return c.json({ ...f, adiantados });
+    // O que o escritório adiantou nos casos do contrato (F3.23) e os fechamentos dos casos dele
+    // (F3.132: EX-16, EX-17, FI-08), lidos à parte. Sem a 0901 no banco, a ficha sai sem a folha.
+    const [adiantados, fechamentos] = await Promise.all([
+      deps.banco.rpc<ContaPagar[]>("portal_financeiro_contrato_adiantados", args),
+      deps.banco.rpc<FechamentoNoContrato[]>("portal_financeiro_contrato_fechamentos", args)
+        .catch((e) => (funcaoNaoExiste(e) ? [] : Promise.reject(e))),
+    ]);
+    return c.json({ ...f, adiantados, fechamentos });
   });
 
   // O êxito para conferir (F3.14: CH-07, EX-08): o bloco do alto do A receber, lançar ou não cobrar.
