@@ -1,0 +1,11 @@
+{
+  "id": "P5",
+  "texto": "Aplicar no Supabase a migration 0850 (jornada do cliente, parte 1, PR #134) e publicar a api-portal e a api-console da main (as publicadas são do commit bb30fbb, PR #135, sem a rota dos assinados sem caso)",
+  "refs": [
+    "CH-11",
+    "CH-12"
+  ],
+  "status": "pendente",
+  "ordem": 50,
+  "nota": "Conferido em 22/11/2026 às 22h45 (Brasília): migrations aplicadas até a 0860, menos a 0850; api-portal v34 e api-console v15 fixadas no commit bb30fbb. Enquanto isso, o filtro Assinados sem caso em Contratos e o aviso do Jurídico não carregam."
+}

@@ -1,0 +1,11 @@
+{
+  "id": "F0.16b",
+  "texto": "Trocar o contato provisório dos avisos por e-mail do fim do contrato pelo e-mail de contato real do T3jus",
+  "peca": "B3",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 165,
+  "proximo": "A Carol definir o e-mail de contato real; aí trocar CONTATO_T3JUS (atendimento@exemplo.com.br) em packages/domain/src/contrato.ts e publicar a api-console"
+}
