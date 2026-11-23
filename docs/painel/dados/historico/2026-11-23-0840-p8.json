@@ -1,0 +1,11 @@
+{
+  "data": "23/11/2026",
+  "inicio": "08:40",
+  "fim": "08:45",
+  "texto": "0890 aplicada no Supabase com o ok da Carol, depois da api-portal v37 (3a72e9e, com o #146): carnês e recibos novos guardam o timbrado com a razão social. Falta o Portal na Vercel, parado no limite diário.",
+  "refs": [
+    "P8",
+    "F3.133",
+    "PA-07"
+  ]
+}
