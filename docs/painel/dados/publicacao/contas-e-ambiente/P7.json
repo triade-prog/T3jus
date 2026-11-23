@@ -1,10 +1,10 @@
 {
   "id": "P7",
-  "texto": "Publicar o Portal (Vercel) e a api-portal da main e, logo depois, aplicar no Supabase a migration 0890 (razão social e contatos no carnê e no recibo, F3.133), com o ok da Carol",
+  "texto": "Aplicar no Supabase a migration 0910 e publicar a api-portal da main (prazo do comprovante, F3.134)",
   "refs": [
-    "PA-07"
+    "AP-08"
   ],
   "status": "pendente",
   "ordem": 70,
-  "nota": "A ordem importa: primeiro o Portal e a api-portal, depois a 0890, com intervalo curto. O PDF do carnê e do recibo é gerado no primeiro pedido e guardado; com a 0890 aplicada e a api-portal antiga no ar, o papel desse intervalo ficaria guardado sem o timbrado. Na ordem certa, até a 0890 nada tem comTimbrado e tudo sai como hoje. A 0890 depende só da 0860 (já aplicada); para o histórico seguir a ordem dos números, aplicar antes a 0850 (P5), a 0870 e a 0880, se ainda não estiverem (conferir com list_migrations), e a 0950 (F0.23) só depois da 0890. Depois: contar os carnês com timbrado nulo (os antigos, que ficam ao vivo) e testar um carnê e um recibo no escritório de demonstração."
+  "nota": "A 0870 e a jornada (0850 a 0854) já foram aplicadas em 22/11/2026 por volta das 23h05 (Brasília), segundo a thread da jornada; conferir com list_migrations antes de aplicar a 0910."
 }
