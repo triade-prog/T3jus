@@ -5604,6 +5604,8 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .pr-rep .rl-linha{display:block;margin-top:2px}
 .pr-rep small{overflow-wrap:anywhere}
 .pr-rep.rl-falta{border-color:var(--vinho-3);border-style:dashed}
+/* Gerar documentos do menor com falta de quem assina (F3.142): a borda tracejada sem mudar o tamanho da caixa. */
+.pe-dado.rl-falta{border:1px dashed var(--vinho-3);padding:11px 13px}
 .rl-assina{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .rl-assina>span{display:block}
 .pe-ass .rl-fio{display:block;width:min(240px,85%);margin:18px auto 6px;border-top:1px solid var(--tinta)}
