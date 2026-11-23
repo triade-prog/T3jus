@@ -1,6 +1,7 @@
 // Documentos para começar (AP-08, EX-18), desenho aprovado em
 // docs/design/aprovadas/portal-jornada-fechamento (grupo 9): os documentos pessoais na ficha do
 // cliente e a lista por área. As regras estão no banco (0853); aqui o esquema confere a forma.
+// O termo de curatela (F3.118, 0930) fica na mesma tabela, mas fora de Documentos pessoais.
 
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
@@ -19,6 +20,9 @@ export const TIPOS_DOCUMENTO_PESSOAL = {
   OUTRO: "Outro documento pessoal",
 } as const;
 export type TipoDocumentoPessoal = keyof typeof TIPOS_DOCUMENTO_PESSOAL;
+
+/** Fora de `TIPOS_DOCUMENTO_PESSOAL`: não aparece em Documentos pessoais (F3.118). */
+export const TIPO_TERMO_CURATELA = "TERMO_CURATELA" as const;
 const TIPOS = Object.keys(TIPOS_DOCUMENTO_PESSOAL) as [TipoDocumentoPessoal, ...TipoDocumentoPessoal[]];
 
 /** As áreas que têm lista (Outra não tem). */
@@ -41,6 +45,19 @@ export interface DocumentoPessoal {
   anteriores: number;
 }
 
+/** O termo de curatela em uso, na ficha e em Gerar documentos (F3.118). */
+export interface TermoCuratela {
+  id: string;
+  tipo: typeof TIPO_TERMO_CURATELA;
+  nome: string;
+  arquivoTipo: TipoDocumento;
+  tamanho: number;
+  fotos: null;
+  enviadoPor: PessoaRef | null;
+  enviadoEm: string;
+  anteriores: number;
+}
+
 export interface PedidoPessoalAberto {
   id: string;
   tipoPessoal: TipoDocumentoPessoal;
@@ -58,19 +75,29 @@ export interface DocumentosPessoais {
 }
 
 const idOpcional = z.string().uuid().nullish();
+const nomeArquivoSchema = z.string().trim().min(1).max(200).refine((n) => !/[/\\]/.test(n), { message: "Nome de arquivo inválido" });
+const arquivoTipoSchema = z.enum(Object.keys(TIPOS_DOCUMENTO) as [TipoDocumento, ...TipoDocumento[]]);
+const tamanhoSchema = z.number().int().min(1).max(TAMANHO_MAXIMO_DOCUMENTO);
 
 export const iniciarDocumentoPessoalSchema = z.object({
   tipo: z.enum(TIPOS),
   descricao: z.string().trim().max(160).nullish(),
   dataDocumento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
-  nome: z.string().trim().min(1).max(200).refine((n) => !/[/\\]/.test(n), { message: "Nome de arquivo inválido" }),
-  arquivoTipo: z.enum(Object.keys(TIPOS_DOCUMENTO) as [TipoDocumento, ...TipoDocumento[]]),
-  tamanho: z.number().int().min(1).max(TAMANHO_MAXIMO_DOCUMENTO),
+  nome: nomeArquivoSchema,
+  arquivoTipo: arquivoTipoSchema,
+  tamanho: tamanhoSchema,
   fotos: z.number().int().min(2).max(MAX_FOTOS_ASSINADO).nullish(),
   substitui: idOpcional,
   pedidoId: idOpcional,
 });
 export type IniciarDocumentoPessoal = z.infer<typeof iniciarDocumentoPessoalSchema>;
+
+/**
+ * O envio do termo de curatela: um arquivo só (PDF, JPG ou PNG, até 10 MB). O tipo, o cliente e o
+ * escritório não vêm do navegador; o que vier a mais é descartado.
+ */
+export const iniciarTermoCuratelaSchema = z.object({ nome: nomeArquivoSchema, arquivoTipo: arquivoTipoSchema, tamanho: tamanhoSchema });
+export type IniciarTermoCuratela = z.infer<typeof iniciarTermoCuratelaSchema>;
 
 /** O nome que a equipe vê: a descrição, se houver, senão o tipo. */
 export function nomeDoDocumentoPessoal(d: Pick<DocumentoPessoal, "tipo" | "descricao">): string {

@@ -1,10 +1,11 @@
 {
   "id": "F3.117",
-  "texto": "Financeiro importado do Astrea (F3.56, parte 3): a lista dos lembretes de contrato do escritório (o “Ver lembretes” do resultado), a prévia agrupada em Recebidos, Em aberto e Despesas, com as despesas listadas, e dispensar um lembrete à mão",
+  "texto": "Financeiro importado do Astrea (F3.56, parte 3): a prévia agrupada em Recebidos, Em aberto e Despesas, com as despesas listadas",
   "peca": "S7",
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
-  "ordem": 958
+  "status": "feito",
+  "ordem": 958,
+  "evidencia": "A prévia do financeiro agrupada (estado previa-financeiro): números de lidos, recebidos, em aberto e despesas; chips por grupo; títulos com a conta de cada grupo; busca por cliente, caso ou valor; a despesa do escritório listada como \"Fica de fora\" (FORA_REGRA, nunca importada nem corrigida); \"lidas\" conta todas as linhas. Migration 0920_importar_sobras.sql (portal_importacao_lancamentos), testes 127_importar_sobras_test.sql, 112_importar_financeiro_test.sql, app_test.ts e e2e portal-importacao-sistemas.spec.ts. A lista dos lembretes e dispensar um lembrete ficaram em F3.144 e F3.145."
 }

@@ -6,6 +6,8 @@
     "AP-01",
     "CH-08"
   ],
-  "status": "pendente",
-  "ordem": 959
+  "status": "andamento",
+  "ordem": 959,
+  "nota": "Programado no PR (migration 0930, pgTAP 126, rota POST /v1/escritorio/clientes/:id/termo-curatela, termo na ficha e em Gerar documentos). Faltam os dois avisos novos (envio do termo que falhou e erro ao baixar), em aprovação da Carol.",
+  "proximo": "Carol aprovar os avisos em docs/design/propostas/portal-termo-curatela; programar os dois; aplicar 0853 e depois 0930 com o ok dela."
 }

@@ -59,7 +59,7 @@ describe("A janela de encerrar (F3.132, EX-17)", () => {
   });
 });
 
-// O acerto do caso A, como a 0900 devolve (pgTAP 126): Noemi com a 6/6 vencida e as custas junto
+// O acerto do caso A, como a 0900 devolve (pgTAP 128): Noemi com a 6/6 vencida e as custas junto
 // com ela; Cláudio pago e com o contrato encerrado por Felipe.
 const N = { id: "ct12", numero: "C-2026-012" };
 const P6 = "p6";

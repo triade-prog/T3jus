@@ -1,0 +1,11 @@
+{
+  "id": "F3.143",
+  "texto": "Processos importados (F3.56, parte 2): a linha “veio da importação” na ficha do caso e, no Jurídico, o selo e o filtro “Como encerrou” do caso que veio encerrado",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 958.1,
+  "nota": "Sai da PR das sobras (decisão 1 de 23/11): vem com o plano 2, que tem o desenho aprovado (\"Veio encerrado\", coluna e filtro \"Como encerrou\"). A lista de casos já traz encerradoPor."
+}

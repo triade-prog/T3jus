@@ -1,12 +1,11 @@
 {
   "id": "F3.140",
-  "texto": "Aviso no sino para o Financeiro quando o caso sem levantamento fica pronto para encerrar no financeiro (tudo recebido, ou a última parcela a vencer chegou)",
-  "peca": "S4",
+  "texto": "Termo de tutela como anexo na ficha do menor quando quem assina é tutora ou tutor (pergunta 2 do desenho D25, como o termo de curatela do F3.118), com desenho próprio",
+  "peca": "S2",
   "refs": [
-    "EX-16",
-    "EX-17"
+    "AP-01",
+    "CH-08"
   ],
   "status": "pendente",
-  "ordem": 1065,
-  "proximo": "Desenhar e programar o aviso no sino do Financeiro para o caso sem levantamento pronto para encerrar, que ficou de fora da F3.132 (o fechamento hoje só aparece na ficha do cliente, na do caso e na do contrato)"
+  "ordem": 1120
 }

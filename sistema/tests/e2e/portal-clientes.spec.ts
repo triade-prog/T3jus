@@ -167,6 +167,25 @@ test.describe("Clientes do Portal: lista (AP-01, AP-06)", () => {
     await semViolacoes(page);
     await page.getByRole("button", { name: "Tentar de novo" }).click();
     await expect(page.getByRole("link", { name: "Cadastrar o primeiro cliente" })).toBeVisible();
+    // F3.115 (estado clientes-vazio): os atalhos de onde importar; Astrea e ADVBOX só para a sócia dona.
+    const atalhos = page.getByRole("list", { name: "De onde importar" });
+    await expect(atalhos.getByRole("link", { name: /^Planilha/ })).toHaveAttribute("href", "/clientes/importar?origem=planilha");
+    await expect(atalhos.getByRole("link", { name: /^Backup do Astrea/ })).toHaveAttribute("href", "/clientes/importar/astrea");
+    await expect(atalhos.getByRole("link", { name: /^ADVBOX/ })).toContainText("Pela planilha exportada do ADVBOX.");
+    await expect(page.getByText("Usa outro sistema? Quase todos exportam planilha.")).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("F3.115: na lista vazia, a equipe vê só o atalho da planilha", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: LARISSA },
+      "GET /v1/escritorio/clientes?situacao=ATIVO": { corpo: { comercial: false, clientes: [] } },
+      "GET /v1/escritorio/clientes?situacao=INATIVO": { corpo: { comercial: false, clientes: [] } },
+    });
+    await page.goto(`${P}/clientes`);
+    const atalhos = page.getByRole("list", { name: "De onde importar" });
+    await expect(atalhos.getByRole("link")).toHaveCount(1);
+    await expect(atalhos.getByRole("link", { name: /^Planilha/ })).toBeVisible();
   });
 });
 

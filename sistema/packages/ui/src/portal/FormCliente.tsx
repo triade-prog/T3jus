@@ -8,11 +8,12 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   CAPACIDADES, ESTADOS_CIVIS, hojeBrasilia, MODOS_CURATELA, ORIGENS, PAPEIS_CURATELA, PAPEIS_MENOR, situacaoNoDia, UFS, type Capacidade,
-  type PossivelDuplicado, type TipoCliente,
+  type PossivelDuplicado, type TermoCuratela, type TipoCliente,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro } from "../console/pecas.tsx";
+import { problemaDoArquivo } from "../console/documentos.ts";
 import { formatarTelefone } from "../console/ficha.ts";
 import { dataLonga } from "../console/tempo.ts";
 import {
@@ -20,6 +21,7 @@ import {
   type ErrosCliente, type RascunhoCliente,
 } from "./clientes.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
+import { descricaoArquivoTermo, enviarTermoCuratela, fichaMudou } from "./termoCuratela.ts";
 
 type CampoTexto = Exclude<keyof RascunhoCliente, "tipo" | "contatos" | "principal" | "rlMoraJunto">;
 const PROC = "procuração";
@@ -40,7 +42,14 @@ export interface Conflito {
 /** O cadastro aberto pela conversa (AP-07, decisão 30): o nome e o telefone vêm dela. */
 export interface CadastroDaConversa { id: string; telefone: string; nome: string | null }
 
-export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, daConversa, aoSalvo, aoCancelar, aoConflito, aoFicarComSalva }: {
+/** Depois de salvar: o termo subiu, caiu (com o erro) ou não havia termo para mandar (F3.118). */
+export type TermoAoSalvar = "ENVIADO" | { erro: ErroApi } | null;
+export interface Salvo { id: string; versao: number; nome: string; termo: TermoAoSalvar; fichaMudou: boolean }
+
+const ACEITOS_TERMO = "application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png";
+
+export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, daConversa, termoAtual = null, termoInicial = null, aoSalvo, aoCancelar,
+  aoConflito, aoFicarComSalva }: {
   modo: "novo" | "editar";
   daConversa?: CadastroDaConversa | null;
   inicial: RascunhoCliente;
@@ -48,10 +57,14 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
   versao?: number;
   idCliente?: string;
   conflito?: Conflito | null;
-  aoSalvo: (r: { id: string; versao: number; nome: string }) => void;
+  /** O termo de curatela em uso (editar). */
+  termoAtual?: TermoCuratela | null;
+  /** O arquivo do termo escolhido antes de um conflito de versão, para não se perder. */
+  termoInicial?: File | null;
+  aoSalvo: (r: Salvo) => void;
   aoCancelar: () => void;
   /** Editar: a versão lida ficou velha. Quem chama recarrega a ficha e compara. */
-  aoConflito?: (meu: RascunhoCliente) => void;
+  aoConflito?: (meu: RascunhoCliente, termo: File | null) => void;
   aoFicarComSalva?: () => void;
 }) {
   const ids = useId();
@@ -60,6 +73,9 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
   const [erros, setErros] = useState<ErrosCliente>({});
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [termo, setTermo] = useState<File | null>(termoInicial);
+  const [erroTermo, setErroTermo] = useState<string | null>(null);
+  const termoInput = useRef<HTMLInputElement>(null);
   const [qualAberta, setQualAberta] = useState(modo === "editar");
   const [duplicados, setDuplicados] = useState<{ por: "documento" | "telefone"; lista: PossivelDuplicado[] } | null>(null);
   const novo = modo === "novo";
@@ -119,9 +135,18 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
     const resp = novo
       ? await chamarPortal<{ id: string; versao: number }>("/v1/escritorio/clientes", { corpo: daConversa ? { ...v.corpo, conversaId: daConversa.id } : v.corpo })
       : await chamarPortal<{ id: string; versao: number }>(`/v1/escritorio/clientes/${idCliente}`, { metodo: "PUT", corpo: { ...v.corpo, versao } });
+    if (resp.ok) {
+      // O termo sobe depois de a ficha salvar, só se ela ficou sob curatela; o botão segue em "Salvando…".
+      let t: TermoAoSalvar = null;
+      if (pf && r.capacidade === "CURATELA" && termo) {
+        const envio = await enviarTermoCuratela(resp.dados.id, termo);
+        t = envio.ok ? "ENVIADO" : { erro: envio.erro };
+      }
+      setSalvando(false);
+      return aoSalvo({ ...resp.dados, nome: v.corpo.nome, termo: t, fichaMudou: novo || !!conflito || fichaMudou(inicial, pronto) });
+    }
     setSalvando(false);
-    if (resp.ok) return aoSalvo({ ...resp.dados, nome: v.corpo.nome });
-    if (resp.erro.codigo === "VERSION_CONFLICT" && aoConflito) return aoConflito(r);
+    if (resp.erro.codigo === "VERSION_CONFLICT" && aoConflito) return aoConflito(r, termo);
     const campos = resp.erro.detalhes?.campos;
     if (resp.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       const e = errosDosCaminhos(pronto, campos.map((c) => [campoDoServidor(String(c))]));
@@ -304,6 +329,48 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
       )}
     </>
   );
+  // O arquivo do termo (F3.118): um só, PDF ou foto, conferido na hora em que é escolhido. O erro
+  // fica preso ao grupo e não entra no resumo do alto, porque não trava o salvar.
+  const temTermo = !!(termo || termoAtual);
+  const arquivoDoTermo = (
+    <div className="c6">
+      <div className={`rl-arq${temTermo ? " rl-tem" : ""}`} role="group" aria-labelledby={`${ids}-termo-r`} aria-describedby={descritoPor(erroTermo && `${ids}-termo-er`)}>
+        <span className="rl-ic" aria-hidden="true">
+          <Icone nome="doc" className="ico" />
+        </span>
+        {termo ? (
+          <div>
+            <strong id={`${ids}-termo-r`}>{termo.name}</strong>
+            <small>{descricaoArquivoTermo(termo.name, termo.type, termo.size)}</small>
+          </div>
+        ) : termoAtual ? (
+          <div>
+            <strong id={`${ids}-termo-r`}>{termoAtual.nome}</strong>
+            <small>{descricaoArquivoTermo(termoAtual.nome, termoAtual.arquivoTipo, termoAtual.tamanho)}</small>
+          </div>
+        ) : (
+          <div>
+            <strong id={`${ids}-termo-r`}>Termo de curatela <span className="opcional">(opcional)</span></strong>
+            <small>PDF ou foto, até 10 MB. Fica guardado na ficha, só para o escritório.</small>
+          </div>
+        )}
+        <button className="btn btn-sec btn-compacto" type="button" onClick={() => termoInput.current?.click()} data-erro={erroTermo ? "" : undefined}>
+          <Icone nome={temTermo ? "trocar" : "mais"} className="ico ico-s" />
+          {temTermo ? "Trocar arquivo: termo de curatela" : "Escolher arquivo: termo de curatela"}
+        </button>
+      </div>
+      <input ref={termoInput} type="file" accept={ACEITOS_TERMO} className="sr" tabIndex={-1} aria-hidden="true"
+        onChange={(e) => {
+          const a = e.target.files?.[0];
+          e.target.value = "";
+          if (!a) return;
+          const p = problemaDoArquivo(a.name, a.type, a.size);
+          setErroTermo(p);
+          if (!p) setTermo(a);
+        }} />
+      {erroTermo ? <ErroCampo id={`${ids}-termo-er`}>{erroTermo}</ErroCampo> : null}
+    </div>
+  );
   const quemAssina = (
     <>
       <div className="cl-sec">
@@ -380,6 +447,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           </fieldset>
           {campo("curProcesso", "Número do processo da curatela", { classe: "c3", uso: true, opcional: true, modo: "numeric" })}
           {campo("curVara", "Vara e comarca", { classe: "c6", uso: true, opcional: true })}
+          {arquivoDoTermo}
         </div>
       ) : null}
     </>

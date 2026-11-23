@@ -17,12 +17,13 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, falt
 import { contar } from "./agenda.ts";
 import { useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
+import { TIPOS_NO_SELETOR } from "./clientes.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 
 type Feito = { titulo: string; texto: string };
-const TIPOS = Object.keys(TIPOS_DOCUMENTO_PESSOAL) as TipoDocumentoPessoal[];
+const TIPOS = TIPOS_NO_SELETOR;
 
 interface Rascunho { nome: string; comoPedir: string; onde: "PESSOAL" | "CASO"; pessoal: TipoDocumentoPessoal | ""; seHouver: boolean }
 const MSG: Record<string, string> = {

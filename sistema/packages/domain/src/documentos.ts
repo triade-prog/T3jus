@@ -12,6 +12,7 @@
 
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
+import type { TermoCuratela } from "./documentos_pessoais.ts";
 import { ESTADOS_CIVIS, formatarDocumento, type EstadoCivil } from "./clientes.ts";
 import { CAMPO_DOCX, type ParagrafoDocx } from "./docx.ts";
 import { dataBr, dividirParcelas, percentual, reais, resumoParcelas, somarMeses, type Condicao } from "./honorarios.ts";
@@ -398,6 +399,8 @@ export interface DadosDocumentos {
   poderesIniciais: PoderEspecial[];
   /** A pessoa da sessão, para o link de completar os dados (EX-15). */
   eu?: string;
+  /** O termo de curatela do cliente, para "Baixar o termo" (F3.118); nulo fora da curatela. */
+  termoCuratela?: TermoCuratela | null;
 }
 
 // ------------------------------------------------------------------------------- valores

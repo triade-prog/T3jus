@@ -5,6 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
-  "ordem": 956
+  "status": "feito",
+  "ordem": 956,
+  "evidencia": "A lista vazia de Clientes mostra os atalhos de onde importar (estado clientes-vazio): Planilha para todos; Backup do Astrea e ADVBOX (pela planilha exportada) só para a sócia dona; o rodapé leva à planilha-modelo. Clientes.tsx e e2e portal-clientes.spec.ts (lista vazia e a equipe só com a planilha)."
 }

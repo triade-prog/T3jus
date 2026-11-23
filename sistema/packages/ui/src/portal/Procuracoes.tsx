@@ -28,6 +28,7 @@ import { usePerguntaDoCaso } from "./CasoDaAssinatura.tsx";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 import { chamarPortal, irPara, ROTAS_PORTAL } from "./Moldura.tsx";
 import { rotaPessoaEquipe } from "./EquipeOab.tsx";
+import { BaixarTermo } from "./ResponsavelLegal.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { CabPeticoes, LegendaPrevia, Papel, SeloDados, useBaixar } from "./Peticoes.tsx";
 import { contar, erroDoArquivo, Quando, quando, tamanhoArquivo } from "./peticoes.ts";
@@ -39,6 +40,25 @@ import {
 
 const SOBRE = "Procurações e modelos";
 const primeiro = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
+
+// Gerar documentos da curatela, como no estado gerar-curatela aprovado (F3.118). O T3jus não guarda
+// o gênero do cliente: onde o desenho diz "por ele", vai o primeiro nome.
+function tituloCuratela(cliente: string, rl: string | null | undefined, assiste: boolean): string {
+  const quem = rl ? primeiro(rl) : "quem foi nomeado pelo juiz";
+  return assiste ? `${primeiro(cliente)} está sob curatela: ${primeiro(cliente)} e ${quem} assinam juntos.`
+    : `${primeiro(cliente)} está sob curatela: ${quem} assina por ${primeiro(cliente)}.`;
+}
+const QUANTOS = ["", "o documento", "os dois documentos", "os três documentos"];
+function textoCuratela(rl: string | null | undefined, curador: boolean, assiste: boolean, docs: number, temTermo: boolean): string {
+  const quais = QUANTOS[docs] ?? `os ${docs} documentos`;
+  const assina = assiste ? `Os dois assinam ${quais || "os documentos"}, como diz o termo.`
+    : `${rl ? (curador ? "Ele" : "Ela") : "Quem foi nomeado pelo juiz"} assina ${curador || !rl ? "sozinho" : "sozinha"} ${quais || "os documentos"}, como diz o termo.`;
+  return `${assina} A qualificação cita o processo da curatela. ${temTermo ? "Junte uma cópia do termo à procuração: ele está na ficha, para baixar." : "Junte uma cópia do termo à procuração."}`;
+}
+function faixaCuratela(cliente: string, rl: string | null | undefined, assiste: boolean): string {
+  const quem = rl ? primeiro(rl) : "quem foi nomeado pelo juiz";
+  return `Em todos, ${assiste ? `${primeiro(cliente)} e ${quem} assinam` : `${quem} assina por ${primeiro(cliente)}`}. Junte o termo de curatela à procuração.`;
+}
 const diaBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
 
 // ------------------------------------------------------------- Word e PDF (D23, docs/design/aprovadas/portal-contrato-pdf)
@@ -880,6 +900,7 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   const cli = dados.cliente;
   const faltas = faltasNoDocumento(cli, dados.hoje);
   const quem = quemAssina(cli, dados.hoje);
+  const curatela = cli.tipo === "PF" && (quem === "CURATELA_REPRESENTA" || quem === "CURATELA_ASSISTE");
   const faltasAdv = dados.advogados
     .filter((a) => form_.outorgados[a.pessoaId]?.length)
     .map((a) => ({ a, f: a.dados ? faltasDoAdvogado(a.dados, a.inscricoes, dados.escritorio).filter((x) => x !== "OAB") : [] }))
@@ -995,16 +1016,26 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                     <span>
                       <b>{cli.rlNome || "Não cadastrado"}</b>
                       <small>{[cli.rlPapel ? PAPEIS_RESPONSAVEL[cli.rlPapel] : null, cli.rlDocumento ? `CPF ${formatarDocumento(cli.rlDocumento)}` : null].filter(Boolean).join(" · ") || "Papel e CPF não cadastrados"}</small>
+                      {curatela && dados.termoCuratela ? <small>Termo de curatela na ficha{cli.curProcesso ? ` · processo ${cli.curProcesso}` : ""}</small> : null}
                     </span>
                     <span className="selo selo-implant">{rotuloQuemAssina(quem)}</span>
                     <a className="pe-completar" style={{ marginLeft: "auto" }} href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener">Mudar na ficha<span className="sr"> (abre numa aba nova)</span></a>
                   </div>
-                  <p className="ajuda">
-                    {quem === "REPRESENTADO" ? `${primeiro(cli.nome)} tem menos de 16 anos: a procuração e o contrato saem com “neste ato representado(a) por…”, e só ${cli.rlNome ? primeiro(cli.rlNome) : "quem responde"} assina.`
-                      : quem === "ASSISTIDO" ? `${primeiro(cli.nome)} tem 16 ou 17 anos: os documentos saem com “neste ato assistido(a) por…”, e os dois assinam.`
-                      : quem === "CURATELA_ASSISTE" ? "Sob curatela, com assistência: os documentos saem com “neste ato assistido(a) por…”, e os dois assinam. Junte o termo de curatela à procuração."
-                      : "Sob curatela: os documentos saem com “neste ato representado(a) por…”, e só quem foi nomeado pelo juiz assina. Junte o termo de curatela à procuração."}
-                  </p>
+                  {!curatela ? (
+                    <p className="ajuda">
+                      {quem === "REPRESENTADO" ? `${primeiro(cli.nome)} tem menos de 16 anos: a procuração e o contrato saem com “neste ato representado(a) por…”, e só ${cli.rlNome ? primeiro(cli.rlNome) : "quem responde"} assina.`
+                        : `${primeiro(cli.nome)} tem 16 ou 17 anos: os documentos saem com “neste ato assistido(a) por…”, e os dois assinam.`}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              {curatela ? (
+                // O estado gerar-curatela do desenho aprovado (decisões 23 e 26; F3.118).
+                <div className="c6">
+                  <Aviso tom="info" icone="balanca" titulo={tituloCuratela(cli.nome, cli.rlNome, quem === "CURATELA_ASSISTE")}
+                    acoes={dados.termoCuratela ? <BaixarTermo id={dados.termoCuratela.id} /> : undefined}>
+                    {textoCuratela(cli.rlNome, cli.rlPapel === "CURADOR", quem === "CURATELA_ASSISTE", docsPedido.length, !!dados.termoCuratela)}
+                  </Aviso>
                 </div>
               ) : null}
               {cli.tipo === "PJ" ? (
@@ -1159,7 +1190,8 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
         <div>
           <p><b>{fraseVaoSair(dados, form_)}</b></p>
           <p className="sub">
-            {prev ? prev.frase : faltas.length ? "Algum dado sai marcado, para completar." : "Nenhum dado sai marcado."} Cada geração fica registrada, com quem gerou e quando.
+            {prev ? prev.frase : faltas.length ? "Algum dado sai marcado, para completar." : "Nenhum dado sai marcado."}
+            {curatela ? ` ${faixaCuratela(cli.nome, cli.rlNome, quem === "CURATELA_ASSISTE")}` : ""} Cada geração fica registrada, com quem gerou e quando.
             {hipoPj ? " Junte à declaração da empresa a prova de que ela não pode pagar as custas." : ""}
           </p>
           {falha ? <Aviso tom="urgencia" titulo="Nada foi gerado.">{falha}</Aviso> : null}

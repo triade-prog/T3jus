@@ -16,6 +16,7 @@ const ANEXO_NOTA = "1a2b3c4d-0000-4000-8000-00000000a001";
 const ANEXO_SUMIU = "1a2b3c4d-0000-4000-8000-00000000a002";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-socia" };
 const PETICAO = "8d5e1b8a-3f9c-4e0d-9a6b-9c0d1e2f3a4b";
+const TERMO = "a1180000-0000-4000-8000-000000000001";
 const VERSAO_PET = "9e6f2c9b-4a0d-4f1e-8b7c-0d1e2f3a4b5c";
 const OAB_ANA = "0f7a3d0c-5b1e-4a2f-9c8d-1e2f3a4b5c6d";
 const DADOS_PETICAO: DadosPeticao = {
@@ -193,6 +194,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_importacao_criar: (a) => ({ id: CLIENTE, ...(a.p_dados as object) }),
     portal_importacao_linha: (a) => ({ linha: { numero: a.p_numero }, dados: a.p_dados }),
+    portal_importacao_arquivados: (a) => ({ id: a.p_importacao, versao: Number(a.p_versao) + 1, ...(a.p_dados as object) }),
+    portal_importacao_lancamentos: (a) => ({ linhas: [], total: 0, grupo: a.p_grupo }),
+    portal_importacao_colunas: (a) => ({ versao: Number(a.p_versao) + 1, dados: a.p_dados }),
     portal_relatorio_cliente: (a) => ({ cliente: { id: a.p_cliente } }),
     portal_relatorio_exportar: (a) => ({ formato: (a.p_dados as { formato: string }).formato }),
     portal_inicio_resumo: () => ({ areas: ["JURIDICO"], dono: false, pedem: { JURIDICO: 2 }, total: 2, compromissos: 0, proximoCompromisso: null }),
@@ -322,6 +326,8 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_cliente_documento_para_concluir: () => [{ tipo: "application/pdf", tamanho: 2400 }],
     portal_cliente_documento_concluir: (a) => ({ id: a.p_documento, tipo: "RG_CPF", nome: "rg.pdf" }),
     portal_cliente_documento_abrir: () => "rg.pdf",
+    portal_cliente_termo_iniciar: () => TERMO,
+    portal_documento_dados: (a) => ({ contrato: { id: a.p_contrato }, termoCuratela: { id: TERMO, tipo: "TERMO_CURATELA", nome: "termo-curatela.pdf", anteriores: 0 } }),
     portal_juridico_documentos_inicio: () => ({ podeEditar: true, validadeDias: 90, areas: [] }),
     portal_cliente_documentos_previa: (a) => ({ area: a.p_area, itens: [], cliente: null, contato: null, whatsappLigado: false, modelo: null, escritorio: "Aurora", podeConferir: true }),
     portal_juridico_documento_inicio_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, ...(a.p_dados as object) }),
@@ -1359,6 +1365,29 @@ Deno.test("CH-01, CH-04, IN-01: criar o contrato da proposta, registrar a assina
   assertEquals((await m.pedir("/v1/escritorio/contratos/nao-e-id", { cookie })).status, 404);
 });
 
+Deno.test("F3.116, F3.117: a escolha dos arquivados, a prévia agrupada do financeiro e a linha até 10.001; o escritório vem da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const base = `/v1/escritorio/importacoes/${CLIENTE}`;
+  const r = await (await m.pedir(`${base}/arquivados`, { metodo: "PATCH", corpo: { versao: 3, arquivados: "ENCERRADOS" }, cookie })).json();
+  assertEquals([r.versao, r.arquivados], [4, "ENCERRADOS"]);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_importacao_arquivados")!;
+  assertEquals([ch.args.p_escritorio, ch.args.p_versao, ch.args.p_dados], [AURORA, 3, { arquivados: "ENCERRADOS" }]);
+  assertEquals((await erro(await m.pedir(`${base}/arquivados`, { metodo: "PATCH", corpo: { versao: 3, arquivados: "TODOS" }, cookie }))).detalhes?.campos, ["arquivados"]);
+  // ADVBOX: a escolha vem com as colunas.
+  await m.pedir(`${base}/colunas`, { metodo: "PATCH", corpo: { versao: 2, ligacao: { "0": "numero" }, arquivados: "FORA" }, cookie });
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_importacao_colunas")!.args.p_dados as { arquivados: string }).arquivados, "FORA");
+  // A prévia agrupada.
+  await m.pedir(`${base}/lancamentos?grupo=DESPESAS&q=aluguel&pular=50`, { cookie });
+  const l = m.chamadas.find((c) => c.funcao === "portal_importacao_lancamentos")!;
+  assertEquals([l.args.p_escritorio, l.args.p_grupo, l.args.p_situacao, l.args.p_q, l.args.p_pular], [AURORA, "DESPESAS", null, "aluguel", 50]);
+  assertEquals((await erro(await m.pedir(`${base}/lancamentos?grupo=OUTRO`, { cookie }))).detalhes?.campos, ["grupo"]);
+  assertEquals((await m.pedir("/v1/escritorio/importacoes/nao-e-id/lancamentos", { cookie })).status, 404);
+  // O backup traz até 10.000 linhas: a última é a 10.001.
+  assertEquals((await (await m.pedir(`${base}/linhas/10001`, { metodo: "PATCH", corpo: { decisao: "PULAR" }, cookie })).json()).linha.numero, 10001);
+  assertEquals((await m.pedir(`${base}/linhas/10002`, { metodo: "PATCH", corpo: { decisao: "PULAR" }, cookie })).status, 404);
+});
+
 Deno.test("F3.56 parte 3: o financeiro do sistema antigo na ficha do cliente; o escritório vem da sessão", async () => {
   const m = montar();
   const cookie = await noEscritorio(m);
@@ -1894,6 +1923,32 @@ Deno.test("AP-08 e EX-18: documentos pessoais em duas etapas e a lista por área
   assertEquals((await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/caso`, { corpo: { caso: { modo: "NOVO", documentos: { pedir: ["nao-e-id"] } } }, cookie })).status, 400);
   const chamadas = m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_documento") || c.funcao.startsWith("portal_juridico_documento_inicio") || c.funcao.startsWith("portal_juridico_documentos_inicio"));
   assert(chamadas.length >= 8 && chamadas.every((c) => c.args.p_escritorio === AURORA));
+});
+
+Deno.test("F3.118 / AP-01: termo de curatela em duas etapas, no escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { nome: "termo-curatela.pdf", arquivoTipo: "application/pdf", tamanho: 2400 };
+  // O escritório e o tipo vindos do navegador são descartados (M3): vale o da sessão.
+  const ini = await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-curatela`, { corpo: { ...corpo, escritorioId: BELA_VISTA, tipo: "RG_CPF" }, cookie });
+  assertEquals(ini.status, 201);
+  assertEquals((await ini.json()).id, TERMO);
+  assertEquals(m.storage.pedidosDeEnvio, [`${AURORA}/${TERMO}`]);
+  const chamada = m.chamadas.find((c) => c.funcao === "portal_cliente_termo_iniciar")!;
+  assertEquals([chamada.args.p_escritorio, chamada.args.p_cliente, chamada.args.p_dados], [AURORA, ANA, corpo]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-curatela`, { corpo: { ...corpo, tamanho: 10485761 }, cookie }))).detalhes?.campos, ["tamanho"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-curatela`, { corpo: { ...corpo, arquivoTipo: "application/msword" }, cookie }))).detalhes?.campos, ["arquivoTipo"]);
+  assertEquals((await m.pedir("/v1/escritorio/clientes/nao-e-id/termo-curatela", { corpo, cookie })).status, 404);
+  // Concluir e abrir são as rotas de Documentos pessoais, pelo id.
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/concluir`, { corpo: {}, cookie }))).detalhes?.motivo, "ARQUIVO_NAO_CHEGOU");
+  m.storage.guardados.set(`${AURORA}/${TERMO}`, { tamanho: 2400, tipo: "application/pdf" });
+  assertEquals((await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/concluir`, { corpo: {}, cookie })).status, 200);
+  const abrir = await (await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/abrir`, { corpo: {}, cookie })).json();
+  assertMatch(abrir.url, /^https:\/\/storage\.exemplo\/ler\//);
+  // Gerar documentos recebe o termo como veio do banco.
+  const dados = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos-dados`, { cookie })).json();
+  assertEquals(dados.termoCuratela.id, TERMO);
+  assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_") || c.funcao === "portal_documento_dados").every((c) => c.args.p_escritorio === AURORA));
 });
 
 Deno.test("EX-05: documentos do caso (pedir, pedir de novo, já chegou, enviar em duas etapas e abrir) no caminho do escritório da sessão", async () => {

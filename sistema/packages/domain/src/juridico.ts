@@ -113,6 +113,8 @@ export interface Etapa {
   casos: number;
 }
 
+export type EncerradoPor = "RESULTADO" | "IMPORTACAO_DESFEITA" | "IMPORTADO_ENCERRADO";
+
 export interface LinhaCaso {
   id: string;
   nome: string;
@@ -120,6 +122,8 @@ export interface LinhaCaso {
   numero: string | null;
   situacao: SituacaoCaso;
   resultado: ResultadoCaso | null;
+  /** Como o caso encerrou: com resultado, por importação desfeita ou já encerrado no sistema antigo. */
+  encerradoPor?: EncerradoPor | null;
   parteContraria: string | null;
   cliente: PessoaRef | null;
   outrosClientes: number;

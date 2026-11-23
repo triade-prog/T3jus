@@ -20,6 +20,7 @@ import { enviarArquivo, tipoDoArquivo } from "../console/documentos.ts";
 import { formatarTelefone } from "../console/ficha.ts";
 import { Aviso, descritoPor, ErroAoCarregar, ErroCampo, Estado, Janela } from "../console/pecas.tsx";
 import { lerDia } from "./agenda.ts";
+import { TIPOS_NO_SELETOR } from "./clientes.ts";
 import { useCarga } from "./Comercial.tsx";
 import { juntarFotos, ordenarFotos } from "./fotos.ts";
 import { chamarPortal } from "./Moldura.tsx";
@@ -423,7 +424,7 @@ export function JanelaAnexarDocumento({ f, dados, inicial, aoFechar, aoFeito }: 
           <select className="entrada" id="dp-tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoDocumentoPessoal)} data-foco={inicial.tipo ? undefined : true}
             aria-invalid={erros.tipo ? true : undefined} aria-describedby={descritoPor("dp-tipo-aj", erros.tipo && "dp-tipo-er")}>
             <option value="" />
-            {(Object.keys(TIPOS_DOCUMENTO_PESSOAL) as TipoDocumentoPessoal[]).map((t) => <option key={t} value={t}>{TIPOS_DOCUMENTO_PESSOAL[t]}</option>)}
+            {TIPOS_NO_SELETOR.map((t) => <option key={t} value={t}>{TIPOS_DOCUMENTO_PESSOAL[t]}</option>)}
           </select>
           <p className="ajuda" id="dp-tipo-aj">Documento pessoal fica na ficha e serve a todos os casos. Documento só do processo vai em Documentos do caso.</p>
           {erros.tipo ? <ErroCampo id="dp-tipo-er">{erros.tipo}</ErroCampo> : null}

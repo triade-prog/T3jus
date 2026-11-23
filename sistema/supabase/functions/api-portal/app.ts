@@ -24,7 +24,7 @@ import {
   conferirNumeroSchema, desligarWhatsappSchema, ligarIaSchema, pausarIaSchema, rascunhoLigacaoSchema,
   respostaIaSchema, salvarIaSchema, situacaoRespostaSchema, telefoneE164, testarIaSchema, type ClienteTesteIa, type ContextoIa, AVISOS_WHATSAPP, type PaginaIa, type PaginaWhatsapp,
   devolverConversaSchema, enviarConversaSchema, passarConversaSchema, versaoConversaSchema, FILTROS_CONVERSA, type Conversa, type ListaConversas,
-  colunasImportacaoSchema, tirarMetaSchema, VALIDADE_LINK_PASTA_S, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema,
+  colunasImportacaoSchema, tirarMetaSchema, VALIDADE_LINK_PASTA_S, decidirImportacaoSchema, desfazerImportacaoSchema, enviarImportacaoSchema, ErroArquivo, filtroLinhasSchema, importarSchema, arquivadosImportacaoSchema, filtroLancamentosSchema,
   LIMITE_ARQUIVO_BYTES, LIMITE_BACKUP_LINHAS, lerPlanilha, MODELOS, prepararAbas, backupLidoSchema, descomprimirJson, type AbaLida, type AbaParaOBanco, ligacaoImportacaoSchema, linhaImportacaoSchema, type Importacao, type LinhaPrevia, type LinhasFora,
   type FinanceiroAnterior, type OrigemImportacao, type ParesImportacao, type PlanoDesfazer, type PreviaImportacao, type ResumoPrevia,
   exportarRelatorioSchema, periodoRelatorioSchema, type DadosRelatorioExportado, type RelatorioAreas, type RelatorioCliente, type RelatorioClientes,
@@ -1326,7 +1326,26 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.patch("/v1/escritorio/importacoes/:id/colunas", async (c) => {
     const d = await lerCorpo(c, colunasImportacaoSchema);
     return c.json(await deps.banco.rpc<ResumoPrevia & { versao: number }>("portal_importacao_colunas", {
-      ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao, p_dados: { aba: d.aba, ligacao: d.ligacao, pares: d.pares ?? {} },
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao, p_dados: { aba: d.aba, ligacao: d.ligacao, pares: d.pares ?? {}, arquivados: d.arquivados },
+    }));
+  });
+  // F3.116: a escolha dos arquivados no passo das abas do backup do Astrea.
+  app.patch("/v1/escritorio/importacoes/:id/arquivados", async (c) => {
+    const d = await lerCorpo(c, arquivadosImportacaoSchema);
+    return c.json(await deps.banco.rpc<Importacao>("portal_importacao_arquivados", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_versao: d.versao, p_dados: { arquivados: d.arquivados },
+    }));
+  });
+  // F3.117: a prévia do financeiro agrupada (Recebidos, Em aberto, Despesas), 50 por vez.
+  app.get("/v1/escritorio/importacoes/:id/lancamentos", async (c) => {
+    const r = filtroLancamentosSchema.safeParse({
+      grupo: c.req.query("grupo") || undefined, situacao: c.req.query("situacao") || undefined,
+      q: c.req.query("q") || undefined, pular: c.req.query("pular") || undefined,
+    });
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: r.error.issues.map((i) => String(i.path[0])) });
+    return c.json(await deps.banco.rpc<PreviaImportacao>("portal_importacao_lancamentos", {
+      ...quem(c), p_importacao: idDaRota(c, "id"), p_grupo: r.data.grupo ?? null, p_situacao: r.data.situacao ?? null,
+      p_q: r.data.q ?? null, p_pular: r.data.pular ?? 0,
     }));
   });
   app.get("/v1/escritorio/importacoes/:id/linhas", async (c) => {
@@ -1338,7 +1357,8 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   });
   app.patch("/v1/escritorio/importacoes/:id/linhas/:n", async (c) => {
     const n = Number(c.req.param("n"));
-    if (!Number.isInteger(n) || n < 2 || n > 2001) throw new ErroDominio("NOT_FOUND");
+    // A linha 1 é o cabeçalho; o backup traz até 10.000 linhas (a última é a 10.001).
+    if (!Number.isInteger(n) || n < 2 || n > 10001) throw new ErroDominio("NOT_FOUND");
     const d = await lerCorpo(c, linhaImportacaoSchema);
     return c.json(await deps.banco.rpc<ResumoPrevia & { linha: LinhaPrevia; versao: number }>("portal_importacao_linha", {
       ...quem(c), p_importacao: idDaRota(c, "id"), p_numero: n, p_dados: d,
