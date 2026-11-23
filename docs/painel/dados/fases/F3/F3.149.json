@@ -1,0 +1,11 @@
+{
+  "id": "F3.149",
+  "texto": "Processos importados (F3.56): a data do arquivamento e o registro do ADVBOX no caso importado",
+  "peca": "S7",
+  "refs": [
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 958.5,
+  "proximo": "Conferir num backup real do Astrea a coluna da data do arquivamento e, numa planilha real do ADVBOX, o registro do processo; hoje os dois vêm vazios e a ficha mostra \"importado do Astrea em …\""
+}

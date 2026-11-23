@@ -395,4 +395,95 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await semViolacoes(page);
   });
+
+  // F3.143, F3.148 (docs/design/aprovadas/portal-importacao-sobras, estados encerrados e
+  // encerrado-importado; rodada 2, resultado, resultado-erro, resultado-feito e encerrados-desfeitos).
+  const ORIGEM = { sistema: "ASTREA", arquivadoEm: null, importadoEm: "2026-11-21T19:52:00Z", desfeitaEm: null };
+  const QUEIROZ = "a1000000-0000-4000-8000-000000000009";
+  const ENCERRADOS = {
+    ...LISTA, totais: { andamento: 246, encerrados: 88, prazoHoje: 0 }, total: 88, pular: 0,
+    como: { resultado: 14, importados: 71, desfeitos: 3 }, origensImportados: ["ASTREA"],
+    casos: [
+      { ...LINHA, id: "a1000000-0000-4000-8000-000000000007", nome: "Souza x Telecom Aurora", situacao: "ENCERRADO", etapa: etapa(8), encerradoPor: "IMPORTACAO_DESFEITA",
+        origem: { ...ORIGEM, importadoEm: "2026-11-20T15:00:00Z", desfeitaEm: "2026-11-21T15:00:00Z" }, acerto: null },
+      { ...LINHA, id: "a1000000-0000-4000-8000-000000000008", nome: "Castro x Banco Horizonte", situacao: "ENCERRADO", resultado: "GANHO", etapa: etapa(8),
+        etapaDesde: "2026-10-30T15:00:00Z", encerradoPor: "RESULTADO", origem: null, acerto: "FEITO" },
+      { ...LINHA, id: QUEIROZ, nome: "Queiroz x Construtora Lume", situacao: "ENCERRADO", etapa: etapa(8), encerradoPor: "IMPORTADO_ENCERRADO", origem: ORIGEM, acerto: null },
+    ],
+  };
+  const FICHA_IMP = {
+    ...FICHA, id: QUEIROZ, nome: "Queiroz x Construtora Lume", situacao: "ENCERRADO", etapa: etapa(8), encerradoPor: "IMPORTADO_ENCERRADO", versao: 2,
+    clientes: [{ ...JOANA, nome: "Renata Queiroz", papel: "AUTOR", telefone: "+5511988412073", contrato: null }],
+    mudancas: [{ para: { ordem: 8, nome: "Encerrado" }, de: null, motivo: "Importado do Astrea", resultado: null, aviso: null, avisoEnviadoEm: null, por: MARINA, em: "2026-11-21T19:52:00Z" }],
+    origem: { importacaoId: "f1000000-0000-4000-8000-000000000001", sistema: "ASTREA", em: "2026-11-21T19:52:00Z", por: MARINA, desfeitaEm: null, etapaOrigem: "Arquivado",
+      linhaOrigem: 203, abaOrigem: "Processos", registroOrigem: null, arquivadoEm: null, veioEncerrado: true, etapaLigada: { ordem: 8, nome: "Encerrado" } },
+    resultadoRegistrado: null, lembretes: [], podeRegistrarResultado: true, acerto: null,
+  };
+
+  test("F3.143: Encerrados com \"Como encerrou\", os selos, a contagem, o filtro pela URL e a página de 25", async ({ page }) => {
+    const pedidos = await simular(page, { ...comuns(), "GET /v1/escritorio/juridico/casos": { corpo: ENCERRADOS } });
+    await page.goto(`${P}/juridico/casos?situacao=ENCERRADO&como=importado`);
+    await expect.poll(() => pedidos.find((p) => p.caminho === "/v1/escritorio/juridico/casos")?.busca).toContain("como=importado");
+    await expect(page.getByRole("combobox", { name: "Como encerrou" })).toHaveValue("IMPORTADO");
+    await page.getByRole("combobox", { name: "Como encerrou" }).selectOption("");
+    await expect(page.getByRole("status").filter({ hasText: "casos encerrados" }))
+      .toContainText("88 casos encerrados · 14 com resultado, 71 que vieram encerrados do Astrea e 3 com a importação desfeita · do mais recente para o mais antigo");
+    const tab = page.getByRole("table", { name: "Casos" });
+    await expect(tab.getByRole("columnheader", { name: "Como encerrou" })).toBeVisible();
+    await expect(tab.getByRole("row", { name: /Queiroz/ })).toContainText("Veio encerrado");
+    await expect(tab.getByRole("row", { name: /Queiroz/ })).toContainText("sem resultado · importado do Astrea em 21/11/2026");
+    await expect(tab.getByRole("row", { name: /Souza/ })).toContainText("Importação desfeita");
+    await expect(tab.getByRole("row", { name: /Souza/ })).toContainText("sem resultado · importação do Astrea de 20/11 desfeita em 21/11/2026");
+    await expect(tab.getByRole("row", { name: /Castro/ })).toContainText("encerrado em 30/10/2026 · acerto feito");
+    await expect(page.getByText("O de importação desfeita também fica, sem resultado.")).toBeVisible();
+    await expect(page.getByText("Mostrando 3 de 88")).toBeVisible();
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Mostrar mais 25" }).click();
+    await expect.poll(() => pedidos.filter((p) => p.caminho === "/v1/escritorio/juridico/casos").at(-1)?.busca).toContain("pular=3");
+  });
+
+  test("F3.143, F3.148: o caso que veio encerrado, a linha da importação e registrar o resultado", async ({ page }) => {
+    const feito = { ...FICHA_IMP, encerradoPor: "RESULTADO", resultado: "GANHO", versao: 3, podeRegistrarResultado: false,
+      resultadoRegistrado: { em: new Date().toISOString(), por: MARINA },
+      mudancas: [{ para: { ordem: 8, nome: "Encerrado" }, de: { ordem: 8, nome: "Encerrado" }, motivo: "Sentença procedente, confirmada pelo TRT.", resultado: "GANHO", aviso: null, avisoEnviadoEm: null, por: MARINA, em: new Date().toISOString() },
+        ...FICHA_IMP.mudancas] };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/juridico/casos/${QUEIROZ}`]: [{ corpo: FICHA_IMP }, { corpo: feito }],
+      [`POST /v1/escritorio/juridico/casos/${QUEIROZ}/resultado`]: { corpo: { id: QUEIROZ, versao: 3, resultado: "GANHO" } },
+    });
+    await page.goto(`${P}/juridico/casos/${QUEIROZ}`);
+    await expect(page.getByRole("heading", { level: 1, name: "Queiroz x Construtora Lume" })).toBeVisible();
+    const origem = page.getByRole("region", { name: "Origem do caso" });
+    await expect(origem).toContainText("Veio da importação do Astrea");
+    await expect(origem).toContainText("21/11/2026, 16h52");
+    await expect(origem).toContainText("“Arquivado”, ligada a 8. Encerrado");
+    await expect(origem).toContainText("Linha P203 da aba Processos");
+    await expect(origem.getByRole("link", { name: "Ver o resultado da importação" })).toHaveAttribute("href", "/clientes/importacoes/f1000000-0000-4000-8000-000000000001");
+    await expect(page.getByText("Entrou encerrado, sem resultado e sem acerto.")).toBeVisible();
+    const res = page.getByRole("region", { name: "Resultado" });
+    await expect(res).toContainText("Sem resultado");
+    await semViolacoes(page);
+    await res.getByRole("button", { name: "Registrar o resultado" }).click();
+    const j = page.getByRole("dialog", { name: "Registrar o resultado de Queiroz x Construtora Lume" });
+    await expect(j).toContainText("O Astrea não diz como o caso terminou. Registre aqui o que aconteceu.");
+    await expect(j).toContainText("Nenhuma mensagem vai para Renata.");
+    await j.getByRole("textbox", { name: "Motivo" }).fill("ok");
+    await j.getByRole("button", { name: "Registrar o resultado" }).click();
+    await expect(j).toContainText("Falta acertar 2 pontos, marcados abaixo.");
+    await expect(j).toContainText("Nada foi registrado: o caso continua encerrado e sem resultado, como veio do Astrea.");
+    await expect(j).toContainText("Escolha o resultado: ganho, perda ou acordo.");
+    await expect(j).toContainText("O motivo está curto.");
+    await expect(j.getByRole("radio", { name: /Ganho/ })).toBeFocused();
+    await semViolacoes(page);
+    await j.getByRole("radio", { name: /Ganho/ }).check();
+    await j.getByRole("textbox", { name: "Motivo" }).fill("Sentença procedente, confirmada pelo TRT.");
+    await j.getByRole("button", { name: "Registrar o resultado" }).click();
+    await expect(page.getByText("Resultado registrado: ganho.")).toBeVisible();
+    await expect(page.getByText("Nenhum aviso foi a Renata.")).toBeVisible();
+    expect(pedidos.find((p) => p.metodo === "POST")?.corpo).toEqual({ versao: 2, resultado: "GANHO", motivo: "Sentença procedente, confirmada pelo TRT." });
+    await expect(page.getByRole("region", { name: "Resultado" })).toContainText("Registrado hoje por Marina Ribeiro.");
+    await expect(page.getByText("Resultado registrado hoje, por Marina Ribeiro.")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Origem do caso" })).toBeVisible();
+  });
 });

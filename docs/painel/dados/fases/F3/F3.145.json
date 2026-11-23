@@ -5,7 +5,7 @@
   "refs": [
     "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 958.3,
-  "nota": "P8 da revisão do plano (23/11), deixado de fora: o lançamento de um caso encerrado não se liga ao caso (o filtro situacao <> 'ENCERRADO' da 0820 vale para todos os encerrados), porque ligar o lembrete de contrato a um caso encerrado não ajuda a criar o contrato. Vem com o plano 2 (migration 0921)."
+  "evidencia": "Dispensar com o motivo (e o detalhe em \"Outro motivo\"), Desfazer e Trazer de volta, na lista e na folha do sistema antigo da ficha do cliente; conflito com o contrato criado ao mesmo tempo. Migration 0921_lembretes_caso_importado.sql, pgTAP 131_lembretes_caso_importado_test.sql (121 testes), app_test.ts (F3.145), roteiro de concorrência dispensar-contrato.sh e e2e portal-lembretes-contrato.spec.ts e portal-ficha-ligada.spec.ts."
 }

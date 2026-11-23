@@ -9,6 +9,7 @@ import type { Condicao } from "./honorarios.ts";
 import type { SituacaoContrato } from "./contratos.ts";
 import { TAMANHO_MAXIMO_DOCUMENTO, TIPOS_DOCUMENTO, type TipoDocumento } from "./console.ts";
 import { documentosDoCasoSchema, type InicioDoCaso, type TipoDocumentoPessoal } from "./documentos_pessoais.ts";
+import type { OrigemDados } from "./importacao.ts";
 
 export const AREAS_DIREITO = {
   TRABALHISTA: "Trabalhista",
@@ -95,12 +96,33 @@ export const mudarEtapaSchema = z.object({
 });
 export type MudarEtapa = z.input<typeof mudarEtapaSchema>;
 
+/** O filtro "Como encerrou" dos Encerrados (F3.143, F3.148): com resultado, veio encerrado, importação desfeita. */
+export const COMO_ENCERROU = {
+  RESULTADO: "Com resultado",
+  IMPORTADO: "Veio encerrado da importação",
+  DESFEITA: "Importação desfeita",
+} as const;
+export type ComoEncerrou = keyof typeof COMO_ENCERROU;
+
+/** Os Encerrados vêm em páginas de 25, do mais recente para o mais antigo. */
+export const PAGINA_ENCERRADOS = 25;
+
 export const filtroCasosSchema = z.object({
   situacao: z.enum(SITUACOES_CASO).default("ANDAMENTO"),
   q: texto(120),
   responsavel: id,
   etapa: id,
+  como: z.enum(Object.keys(COMO_ENCERROU) as [ComoEncerrou, ...ComoEncerrou[]]).nullish(),
+  pular: z.coerce.number().int().min(0).max(10000).default(0),
+}).refine((f) => !f.como || f.situacao === "ENCERRADO", { path: ["como"] });
+
+/** Registrar o resultado do caso que veio encerrado de outro sistema (F3.148, pergunta 3 do desenho). */
+export const registrarResultadoSchema = z.object({
+  versao: z.number().int().min(1),
+  resultado: texto(20),
+  motivo: texto(1000),
 });
+export type RegistrarResultado = z.input<typeof registrarResultadoSchema>;
 
 export interface Etapa {
   id: string;
@@ -133,6 +155,10 @@ export interface LinhaCaso {
   etapaDesde: string;
   proximoPrazo: { data: string; fazerAte: string | null; descricao: string } | null;
   pendencias: number;
+  /** O caso que veio de outro sistema (F3.143): de qual, quando e, se for o caso, a data do arquivamento lá. */
+  origem?: { sistema: OrigemDados; arquivadoEm: string | null; importadoEm: string | null; desfeitaEm: string | null } | null;
+  /** O acerto do caso encerrado com resultado: feito, pendente ou nada a acertar. */
+  acerto?: "FEITO" | "PENDENTE" | null;
 }
 
 export interface ListaCasos {
@@ -143,6 +169,13 @@ export interface ListaCasos {
   responsaveis: PessoaRef[];
   souDono: boolean;
   casos: LinhaCaso[];
+  /** Como os encerrados encerraram (a contagem do alto dos Encerrados). */
+  como?: { resultado: number; importados: number; desfeitos: number };
+  /** Os sistemas de onde vieram os casos encerrados importados. */
+  origensImportados?: OrigemDados[];
+  /** Quantos casos o filtro achou (nos Encerrados, a lista vem em páginas de 25). */
+  total?: number;
+  pular?: number | null;
 }
 
 export interface OpcoesCaso {
@@ -211,7 +244,7 @@ export interface ResumoAcertoCaso {
   semExito?: boolean;
 }
 
-export interface FichaCaso extends LinhaCaso {
+export interface FichaCaso extends Omit<LinhaCaso, "origem" | "acerto"> {
   acerto?: ResumoAcertoCaso | null;
   tribunal: string | null;
   vara: string | null;
@@ -238,6 +271,31 @@ export interface FichaCaso extends LinhaCaso {
   avisoEtapa?: { whatsappLigado: boolean; automacaoLigada: boolean };
   /** Os documentos para começar (0854, EX-18): nulo quando o caso não abriu com a lista. */
   inicio?: InicioDoCaso | null;
+  /** "Veio da importação" (F3.143): nulo quando o caso nasceu no T3jus. */
+  origem?: OrigemCaso | null;
+  /** Quando o resultado do caso que veio encerrado foi registrado (F3.148). */
+  resultadoRegistrado?: { em: string; por: PessoaRef | null } | null;
+  /** Os lembretes de contrato dos clientes do caso; nulo para quem não tem Contratos nem Financeiro. */
+  lembretes?: { clienteId: string; valor: number; sistema: OrigemDados }[] | null;
+  podeRegistrarResultado?: boolean;
+}
+
+/** De onde veio o caso importado. A data do arquivamento e o registro do ADVBOX ainda vêm vazios (F3.149). */
+export interface OrigemCaso {
+  importacaoId: string;
+  sistema: OrigemDados;
+  em: string | null;
+  por: PessoaRef | null;
+  desfeitaEm: string | null;
+  etapaOrigem: string | null;
+  linhaOrigem: number | null;
+  abaOrigem: string | null;
+  registroOrigem: string | null;
+  arquivadoEm: string | null;
+  /** Entrou encerrado (ainda sem resultado, ou com o resultado registrado depois). */
+  veioEncerrado: boolean;
+  /** A etapa do escritório em que o caso entrou. */
+  etapaLigada: { ordem: number; nome: string } | null;
 }
 
 /**

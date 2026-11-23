@@ -36,6 +36,7 @@ import {
   type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
   abrirCasoDoContratoSchema, assinaturaComCasoSchema, type AssinaturaComCaso, type ContratosSemCaso, type OpcoesCasoContrato,
   encerrarCasoSchema,
+  filtroLembretesSchema, pedidoDispensaSchema, registrarResultadoSchema, type ListaLembretes, type MudancaLembrete, type ResumoLembretes,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -869,6 +870,31 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     return c.json(await deps.banco.rpc<ContratosSemCaso>("portal_contratos_sem_caso", quem(c)));
   });
 
+  // Lembretes de contrato (F3.144, F3.145; VA-05): a lista, a faixa e dispensar ou trazer de volta.
+  // Antes de /contratos/:id. O motivo e o detalhe vão como vieram: o banco confere e devolve o
+  // motivo da recusa com os campos juntos (MOTIVO_OBRIGATORIO), como a tela espera.
+  app.get("/v1/escritorio/contratos/lembretes", async (c) => {
+    const f = filtroLembretesSchema.safeParse({
+      situacao: (c.req.query("situacao") || "ABERTO").toUpperCase(), q: c.req.query("q") || null,
+      ordem: c.req.query("ordem") ? c.req.query("ordem")!.toUpperCase() : null, pular: c.req.query("pular") || 0,
+    });
+    if (!f.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(f.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await deps.banco.rpc<ListaLembretes>("portal_contratos_lembretes", {
+      ...quem(c), p_situacao: f.data.situacao, p_q: f.data.q ?? null, p_ordem: f.data.ordem ?? null, p_pular: f.data.pular,
+    }));
+  });
+
+  app.get("/v1/escritorio/contratos/lembretes/resumo", async (c) =>
+    c.json(await deps.banco.rpc<ResumoLembretes>("portal_contratos_lembretes_resumo", quem(c))));
+
+  app.post("/v1/escritorio/contratos/lembretes/:id/dispensar", async (c) => {
+    const d = await lerCorpo(c, pedidoDispensaSchema);
+    return c.json(await deps.banco.rpc<MudancaLembrete>("portal_lembrete_dispensar", { ...quem(c), p_lembrete: idDaRota(c, "id"), p_dados: d }));
+  });
+
+  app.post("/v1/escritorio/contratos/lembretes/:id/trazer", async (c) =>
+    c.json(await deps.banco.rpc<MudancaLembrete>("portal_lembrete_trazer", { ...quem(c), p_lembrete: idDaRota(c, "id") })));
+
   app.post("/v1/escritorio/contratos", async (c) => {
     const d = await lerCorpo(c, dadosContratoSchema);
     // Com a escolha das inscrições de cada advogado (EX-12, 0530).
@@ -1465,17 +1491,20 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   // Jurídico (EX-01, EX-03, EX-07, EX-14): casos, ficha e mudar etapa.
   app.get("/v1/escritorio/juridico/casos", async (c) => {
+    // F3.143: "Como encerrou" vem em minúsculas na URL (?como=importado) e a página dos Encerrados em "pular".
     const f = filtroCasosSchema.safeParse({
       situacao: (c.req.query("situacao") || "ANDAMENTO").toUpperCase(), q: c.req.query("q") || null,
       responsavel: c.req.query("responsavel") || null, etapa: c.req.query("etapa") || null,
+      como: c.req.query("como") ? c.req.query("como")!.toUpperCase() : null, pular: c.req.query("pular") || 0,
     });
-    if (!f.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["situacao"] });
+    if (!f.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(f.error.issues.map((i) => String(i.path[0] ?? "situacao")))] });
     const uuid = /^[0-9a-f-]{36}$/i;
     if ((f.data.responsavel && !uuid.test(f.data.responsavel)) || (f.data.etapa && !uuid.test(f.data.etapa))) {
       throw new ErroDominio("VALIDATION_ERROR", { campos: ["filtro"] });
     }
     return c.json(await deps.banco.rpc<ListaCasos>("portal_juridico_casos", {
       ...quem(c), p_situacao: f.data.situacao, p_q: f.data.q ?? null, p_responsavel: f.data.responsavel ?? null, p_etapa: f.data.etapa ?? null,
+      p_como: f.data.como ?? null, p_pular: f.data.pular,
     }));
   });
 
@@ -1504,6 +1533,14 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/juridico/casos/:id/clientes", async (c) => {
     const d = await lerCorpo(c, clienteDoCasoSchema);
     return c.json(await deps.banco.rpc<{ id: string }>("portal_juridico_caso_cliente", { ...quem(c), p_caso: idDaRota(c, "id"), p_dados: d }), 201);
+  });
+
+  // F3.148: registrar o resultado do caso que veio encerrado de outro sistema. Sem aviso ao cliente.
+  app.post("/v1/escritorio/juridico/casos/:id/resultado", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, registrarResultadoSchema);
+    return c.json(await deps.banco.rpc<{ id: string; versao: number; resultado: string }>("portal_juridico_caso_resultado", {
+      ...quem(c), p_caso: idDaRota(c, "id"), p_versao: versao, p_dados: d,
+    }));
   });
 
   app.post("/v1/escritorio/juridico/casos/:id/etapa", async (c) => {
