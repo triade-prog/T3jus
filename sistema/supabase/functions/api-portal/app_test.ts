@@ -320,6 +320,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_cliente_documento_concluir: (a) => ({ id: a.p_documento, tipo: "RG_CPF", nome: "rg.pdf" }),
     portal_cliente_documento_abrir: () => "rg.pdf",
     portal_juridico_documentos_inicio: () => ({ podeEditar: true, validadeDias: 90, areas: [] }),
+    portal_cliente_documentos_previa: (a) => ({ area: a.p_area, itens: [], cliente: null, contato: null, whatsappLigado: false, modelo: null, escritorio: "Aurora", podeConferir: true }),
     portal_juridico_documento_inicio_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, ...(a.p_dados as object) }),
     portal_juridico_documento_inicio_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
     portal_juridico_documento_inicio_tirar: (a) => [{ id: a.p_id, versao: a.p_versao }],
@@ -1716,6 +1717,13 @@ Deno.test("AP-08 e EX-18: documentos pessoais em duas etapas e a lista por área
   assertEquals((await m.pedir(`/v1/escritorio/juridico/documentos-inicio/${CLIENTE}/tirar`, { corpo: { versao: 3 }, cookie })).status, 200);
   assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/sugestao", { corpo: { area: "OUTRA" }, cookie })).status, 400);
   assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/sugestao", { corpo: { area: "FAMILIA" }, cookie })).status, 200);
+  // A prévia na abertura do caso (EX-18): a área precisa existir; o cliente é opcional.
+  assertEquals((await erro(await m.pedir("/v1/escritorio/juridico/documentos-inicio/previa?area=NADA", { cookie }))).detalhes?.campos, ["area"]);
+  assertEquals((await m.pedir("/v1/escritorio/juridico/documentos-inicio/previa?area=PREVIDENCIARIO&cliente=nao-e-id", { cookie })).status, 404);
+  assertEquals((await (await m.pedir(`/v1/escritorio/juridico/documentos-inicio/previa?area=PREVIDENCIARIO&cliente=${ANA}`, { cookie })).json()).area, "PREVIDENCIARIO");
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_cliente_documentos_previa")?.args.p_cliente, ANA);
+  // As portas do caso aceitam "documentos"; o que vem a mais na lista é recusado.
+  assertEquals((await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/caso`, { corpo: { caso: { modo: "NOVO", documentos: { pedir: ["nao-e-id"] } } }, cookie })).status, 400);
   const chamadas = m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_documento") || c.funcao.startsWith("portal_juridico_documento_inicio") || c.funcao.startsWith("portal_juridico_documentos_inicio"));
   assert(chamadas.length >= 8 && chamadas.every((c) => c.args.p_escritorio === AURORA));
 });

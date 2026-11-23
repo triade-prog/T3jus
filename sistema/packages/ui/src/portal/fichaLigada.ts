@@ -38,7 +38,7 @@ export const NOMES_AREA: Record<AreaPassoCliente, string> = { COMERCIAL: "Comerc
 /** Quantos dos quatro passos (Proposta, Contrato, Assinatura, Caso) já foram feitos. */
 export const PASSOS_FEITOS: Record<TipoPassoCliente, number> = {
   SEM_PROPOSTA: 0, PROPOSTA_RASCUNHO: 0, PROPOSTA_ANDAMENTO: 0, PROPOSTA_ACEITA: 1, CONTRATO_ELABORACAO: 2, CONTRATO_SEM_CASO: 3, CASO: 4,
-  FECHAMENTO: 4, CONTRATO_ATIVO: 3, ATENDIDO: 4,
+  FECHAMENTO: 4, CONTRATO_ATIVO: 3, ATENDIDO: 4, DOCUMENTOS: 3,
 };
 export const TRILHA = ["Proposta", "Contrato", "Assinatura", "Caso"] as const;
 
@@ -53,6 +53,7 @@ const TITULOS: Record<TipoPassoCliente, string> = {
   FECHAMENTO: "Fechar o caso",
   CONTRATO_ATIVO: "Contrato ativo",
   ATENDIDO: "Cliente atendido",
+  DOCUMENTOS: "Juntar os documentos",
 };
 
 /** O que faz quem dá o passo, para "Quem … tem a área …". */
@@ -67,6 +68,7 @@ const ACAO: Record<TipoPassoCliente, string> = {
   FECHAMENTO: "faz este passo",
   CONTRATO_ATIVO: "vê o contrato",
   ATENDIDO: "faz a proposta",
+  DOCUMENTOS: "junta os documentos",
 };
 
 export interface TextoPasso {
@@ -142,6 +144,15 @@ export function textoPasso(p: PassoCliente, nomeCliente: string): TextoPasso {
         ...base, sobre: "Caso em andamento", titulo: i.nome ?? "Caso",
         oque: `${et}${i.responsavel ? ` · com ${i.responsavel.nome}` : ""}.`,
         curto: "Caso em andamento", detalhe: i.etapa ? `${i.etapa.nome} · ${i.etapa.ordem} de ${i.etapas ?? "?"}` : "",
+      };
+    }
+    // EX-18, decisão 46: o caso abriu e ainda falta documento para começar.
+    case "DOCUMENTOS": {
+      const n = `${i?.chegaram ?? 0} de ${i?.total ?? 0}`;
+      return {
+        ...base, sobre: "Próximo passo · antes de seguir o caso",
+        oque: `${n} chegaram para começar ${i?.nome ?? "o caso"}.`,
+        curto: "Juntar os documentos", detalhe: `${n} chegaram`,
       };
     }
     case "CONTRATO_ATIVO": {
@@ -274,6 +285,7 @@ export const BOTAO_PASSO: Record<TipoPassoCliente, string> = {
   FECHAMENTO: "Ver o acerto",
   CONTRATO_ATIVO: "Ver o contrato",
   ATENDIDO: "Gerar proposta",
+  DOCUMENTOS: "Anexar o que chegou",
 };
 
 /** Para onde o botão leva; null quando abre uma janela na própria ficha. */
@@ -285,6 +297,7 @@ export function destinoPasso(p: PassoCliente, cliente: string): string | null {
     case "PROPOSTA_ANDAMENTO": return id ? ROTAS_PASSO.responder(id) : null;
     case "PROPOSTA_ACEITA": return id ? ROTAS_PASSO.gerarContrato(id) : null;
     case "CASO": return id ? ROTAS_PASSO.caso(id) : null;
+    case "DOCUMENTOS": return id ? `${ROTAS_PASSO.caso(id)}#t-docs` : null;
     case "CONTRATO_ATIVO": return id ? ROTAS_PASSO.contrato(id) : null;
     case "ATENDIDO": return ROTAS_PASSO.novaProposta(cliente);
     case "FECHAMENTO": {

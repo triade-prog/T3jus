@@ -5,7 +5,7 @@
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import { TAMANHO_MAXIMO_DOCUMENTO, TIPOS_DOCUMENTO, type TipoDocumento } from "./console.ts";
-import type { AreaDireito } from "./juridico.ts";
+import type { AreaDireito, MensagemAviso } from "./juridico.ts";
 import { MAX_FOTOS_ASSINADO } from "./pdf_fotos.ts";
 
 /** Os tipos fixos e poucos (decisão 35). */
@@ -87,8 +87,8 @@ export const precisaAtencao = (d: DocumentoPessoal) => d.vencido;
 export function textoPedirDocumentosPessoais(contato: string, escritorio: string, cliente: string, documentos: string[]): string {
   const primeiro = contato.trim().split(/\s+/)[0] ?? "";
   const sobre = contato.trim() === cliente.trim() ? "" : ` de ${cliente.trim().split(/\s+/)[0]}`;
-  const lista = documentos.length <= 1 ? (documentos[0] ?? "") : `${documentos.slice(0, -1).join(", ")} e ${documentos.at(-1)}`;
-  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Para deixar os documentos${sobre} em dia, precisamos de: ${lista.toLowerCase()}. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.`;
+  const lista = listaComE(documentos.map(textoNoMeio));
+  return `Olá, ${primeiro}. Aqui é do escritório ${escritorio}. Para deixar os documentos${sobre} em dia, precisamos de: ${lista}. Pode mandar uma foto ou o arquivo por aqui mesmo. Se já mandou, agradecemos e pode desconsiderar esta mensagem.`;
 }
 
 // ------------------------------------------------------------------------- a lista por área
@@ -127,3 +127,69 @@ export const documentoInicioSchema = z.object({
 export const tirarDocumentoInicioSchema = z.object({ versao: z.number().int().min(1) });
 export const sugestaoDocumentosInicioSchema = z.object({ area: z.enum(AREAS_COM_LISTA) });
 export const moverDocumentoInicioSchema = z.object({ direcao: z.enum(["SOBE", "DESCE"]) });
+
+// ------------------------------------------------------------------------- na abertura do caso (EX-18)
+
+/** Um item da lista na abertura: "Já temos" (na ficha e em dia), o comprovante vencido ou a pedir. */
+export interface ItemPreviaInicio {
+  itemId: string;
+  nome: string;
+  comoPedir: string | null;
+  pessoal: TipoDocumentoPessoal | null;
+  seHouver: boolean;
+  /** Como o documento entra no aviso ao cliente: o nome e o "como pedir". */
+  noAviso: string;
+  situacao: "JA_TEMOS" | "VENCIDO" | "PEDIR";
+  doc: DocumentoPessoal | null;
+}
+
+export interface PreviaDocumentosInicio {
+  area: AreaDireito;
+  itens: ItemPreviaInicio[];
+  cliente: { id: string; nome: string } | null;
+  contato: { nome: string; celular: boolean; semAvisos: boolean } | null;
+  whatsappLigado: boolean;
+  /** O texto do aviso "Pedido de documento" do escritório, com {nome}, {caso} e {documento}. */
+  modelo: string | null;
+  escritorio: string;
+  podeConferir: boolean;
+}
+
+/** O que vai com o caso novo: os itens marcados, os pedidos a mais e se avisa o contato. */
+export const documentosDoCasoSchema = z.object({
+  pedir: z.array(z.string().uuid()).max(30).default([]),
+  mais: z.array(z.string().trim().max(160)).max(10).default([]),
+  avisar: z.boolean().default(false),
+});
+export type DocumentosNaAbertura = z.input<typeof documentosDoCasoSchema>;
+
+/** Os de começar na ficha do caso: a contagem, o que falta e o que já temos. */
+export interface InicioDoCaso {
+  total: number;
+  chegaram: number;
+  area: AreaDireito;
+  faltam: { id: string; descricao: string; tipoPessoal: TipoDocumentoPessoal | null }[];
+  temos: { id: string; descricao: string; tipoPessoal: TipoDocumentoPessoal | null; chegouEm: string; chegouPor: PessoaRef | null; daFicha: boolean }[];
+  aviso: MensagemAviso | null;
+}
+
+/** "Comprovante de residência" no meio da frase; "RG e CPF" fica como está (igual ao banco). */
+export function textoNoMeio(t: string): string {
+  return /^.[a-zà-ÿ]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t;
+}
+
+/** "a, b e c". */
+export function listaComE(p: string[]): string {
+  return p.length <= 1 ? (p[0] ?? "") : `${p.slice(0, -1).join(", ")} e ${p.at(-1)}`;
+}
+
+/**
+ * A prévia do aviso com a lista (decisão 44): o aviso "Pedido de documento" do escritório, o
+ * mesmo que o banco preenche, com o primeiro nome do contato, o caso e o que falta.
+ */
+export function textoAvisoDocumentosInicio(modelo: string, contato: string, escritorio: string, caso: string, documentos: string[]): string {
+  const campos: Record<string, string> = {
+    nome: contato.trim().split(/\s+/)[0] ?? "", "nome do escritório": escritorio, caso: caso.trim(), documento: listaComE(documentos),
+  };
+  return modelo.replace(/\{([^{}]{1,40})\}/g, (m, c: string) => campos[c] ?? m);
+}

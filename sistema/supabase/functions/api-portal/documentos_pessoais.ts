@@ -9,8 +9,10 @@
 import type { Context, Hono } from "hono";
 import {
   documentoInicioSchema, ErroDominio, moverDocumentoInicioSchema, iniciarDocumentoPessoalSchema, sugestaoDocumentosInicioSchema, tirarDocumentoInicioSchema,
-  type DocumentoInicio, type DocumentoPessoal, type DocumentosInicio, type DocumentosPessoais,
+  AREAS_DIREITO, type DocumentoInicio, type DocumentoPessoal, type DocumentosInicio, type DocumentosPessoais, type PreviaDocumentosInicio,
 } from "@t3jus/domain";
+
+const AREAS_DIREITO_LISTA = Object.keys(AREAS_DIREITO);
 import { VALIDADE_LEITURA_S } from "../_shared/arquivos.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import type { DepsPortal, VarsPortal } from "./app.ts";
@@ -50,6 +52,17 @@ export function rotasDocumentosPessoais(app: Hono<VarsPortal>, deps: DepsPortal)
     const doc = idDaRota(c, "id");
     const nome = await deps.banco.rpc<string>("portal_cliente_documento_abrir", { ...quem(c), p_documento: doc });
     return c.json({ url: await deps.arquivos.enderecoDeLeitura(`${c.get("escritorioId")}/${doc}`, VALIDADE_LEITURA_S, nome), validadeSegundos: VALIDADE_LEITURA_S });
+  });
+
+  // A prévia da lista na abertura do caso (EX-18): a área e, quando já se sabe, o cliente.
+  app.get("/v1/escritorio/juridico/documentos-inicio/previa", async (c) => {
+    const area = c.req.query("area") ?? "";
+    const cliente = c.req.query("cliente") || null;
+    if (!(AREAS_DIREITO_LISTA as readonly string[]).includes(area)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["area"] });
+    if (cliente && !UUID.test(cliente)) throw new ErroDominio("NOT_FOUND");
+    return c.json(await deps.banco.rpc<PreviaDocumentosInicio>("portal_cliente_documentos_previa", {
+      ...quem(c), p_area: area, p_cliente: cliente?.toLowerCase() ?? null,
+    }));
   });
 
   // A lista por área (EX-18).

@@ -152,7 +152,7 @@ test.describe("Documentos pessoais na ficha do cliente (AP-08)", () => {
     await expect(folha).toContainText("Comprovante de residência de até 90 dias");
     await folha.getByRole("button", { name: "Pedir pelo WhatsApp" }).click();
     const j = page.getByRole("dialog", { name: "Pedir pelo WhatsApp" });
-    await expect(j).toContainText("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Para deixar os documentos de Antônia em dia, precisamos de: rg e cpf, ou cnh,");
+    await expect(j).toContainText("Olá, Joana. Aqui é do escritório Ribeiro & Matos. Para deixar os documentos de Antônia em dia, precisamos de: RG e CPF, ou CNH,");
     await expect(j.getByRole("link", { name: "Abrir no WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/5511987654321\?text=/);
     await semViolacoes(page);
     expect(pedidos.filter((p) => p.metodo === "POST")).toHaveLength(0);

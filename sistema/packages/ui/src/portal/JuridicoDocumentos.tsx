@@ -8,7 +8,7 @@
 
 import { useRef, useState } from "react";
 import {
-  CATEGORIAS_DOCUMENTO_CASO, dataBr, textoPedirDocumento, type CategoriaDocumentoCaso, type DocumentoDoCaso, type DocumentoFaltando, type FichaCaso,
+  AREAS_DIREITO, CATEGORIAS_DOCUMENTO_CASO, dataBr, textoPedirDocumento, type CategoriaDocumentoCaso, type DocumentoDoCaso, type DocumentoFaltando, type FichaCaso,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -52,6 +52,9 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
 }) {
   const [abrindo, setAbrindo] = useState<string | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
+  // EX-18, decisão 47: enquanto falta algo da lista da abertura, a folha é "Documentos para começar".
+  const ini = andamento && f.inicio && f.inicio.chegaram < f.inicio.total ? f.inicio : null;
+  const cliente = f.clientes[0] ? primeiroNome(f.clientes[0].nome) : null;
 
   async function abrir(d: DocumentoDoCaso) {
     setFalha(null);
@@ -69,8 +72,10 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
     <section className="folha" aria-labelledby="t-docs" style={{ overflow: "hidden" }}>
       <div className="folha-cab">
         <div>
-          <h2 id="t-docs">Documentos</h2>
-          <p className="sub">O que já está no caso e o que ainda falta</p>
+          <h2 id="t-docs">{ini ? "Documentos para começar" : "Documentos"}</h2>
+          <p className="sub">{ini
+            ? `${ini.chegaram} de ${ini.total} · a lista de ${AREAS_DIREITO[ini.area].toLowerCase()}, conferida na abertura`
+            : "O que já está no caso e o que ainda falta"}</p>
         </div>
         {andamento ? (
           <div className="acoes">
@@ -89,7 +94,8 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
                 <span className="doc-ico" aria-hidden="true"><Icone nome="alerta" className="ico" /></span>
                 <div>
                   <span className="doc-nome">{d.descricao}</span>
-                  <p className="doc-meta"><span className="selo selo-atencao">Falta</span><span>{textoFalta(d)}</span></p>
+                  <p className="doc-meta"><span className="selo selo-atencao">Falta</span>
+                    <span>{d.inicio ? `${d.tipoPessoal ? "Pessoal" : "Do caso"} · ` : ""}{textoFalta(d)}</span></p>
                   {d.repedido ? (
                     <p className="gn-ju-auto"><Icone nome="whats" className="ico" /><span>Pedido de novo pelo WhatsApp: {situacaoPrestacao(d.repedido)}.</span></p>
                   ) : null}
@@ -106,6 +112,27 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
                   <button className="btn btn-fantasma btn-compacto" type="button" onClick={() => aoChegou(d)} aria-label={`Já chegou: ${d.descricao}`}>
                     <Icone nome="enviar" className="ico ico-s" />Já chegou
                   </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {ini && ini.temos.length ? (
+        <>
+          <div className="jr-sub"><h3 className="sobretitulo">Já temos · {ini.temos.length}</h3></div>
+          <ul className="lista docs">
+            {ini.temos.map((d) => (
+              <li key={d.id}>
+                <span className="doc-ico" aria-hidden="true"><Icone nome="doc" className="ico" /></span>
+                <div>
+                  <span className="doc-nome">{d.descricao}</span>
+                  <p className="doc-meta">
+                    <span className="selo selo-ativo">{d.daFicha ? "Da ficha" : "Chegou"}</span>
+                    <span>{d.tipoPessoal ? "Pessoal" : "Do caso"} · {d.daFicha
+                      ? `guardado na ficha${cliente ? ` de ${cliente}` : ""}`
+                      : `marcado${d.chegouPor ? ` por ${primeiroNome(d.chegouPor.nome)}` : ""} em ${ddmm(d.chegouEm.slice(0, 10))}`}</span>
+                  </p>
                 </div>
               </li>
             ))}
@@ -141,8 +168,10 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
         <p className="jr-vazio">Nenhum arquivo ligado a este caso ainda.</p>
       )}
       <p className="docs-pe">
-        <Icone nome="cadeado" className="ico" />
-        Nada é apagado: cada arquivo fica com quem enviou e quando. “Pedir de novo” mostra o texto pronto para o cliente.
+        <Icone nome={ini ? "relogio" : "cadeado"} className="ico" />
+        {ini
+          ? `Enquanto faltar algo, a automação “Documento pendente”, se estiver ligada, lembra de novo. Os pessoais que chegarem vão para a ficha${cliente ? ` de ${cliente}` : ""} e servem aos próximos casos.`
+          : "Nada é apagado: cada arquivo fica com quem enviou e quando. “Pedir de novo” mostra o texto pronto para o cliente."}
       </p>
     </section>
   );

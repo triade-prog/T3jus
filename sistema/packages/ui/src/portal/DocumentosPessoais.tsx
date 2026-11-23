@@ -224,9 +224,37 @@ export function FolhaDocumentosPessoais({ f, escritorio, aoFeito }: { f: FichaCl
   );
 }
 
+// ------------------------------------------------------------------------- "Já chegou" do caso
+
+/**
+ * "Já chegou" de um documento pessoal na ficha do caso (EX-18, decisão 47): o anexo vai para a
+ * ficha do cliente, serve aos próximos casos e fecha o pedido do caso.
+ */
+export function JanelaChegouPessoal({ cliente, pedidoId, tipo, aoFechar, aoFeito }: {
+  cliente: { id: string; nome: string };
+  pedidoId: string;
+  tipo: TipoDocumentoPessoal;
+  aoFechar: () => void;
+  aoFeito: (x: Feito) => void;
+}) {
+  const { dados, recarregar } = useCarga<DocumentosPessoais>(`/v1/escritorio/clientes/${cliente.id}/documentos`);
+  if (dados === "erro" || !dados) {
+    return (
+      <Janela id="j-dp" aberta aoFechar={aoFechar} sobretitulo={`${cliente.nome} · documentos pessoais`} titulo="Anexar documento" descricao="j-dp-c" aoEnviar={aoFechar}
+        pe={<button className="btn btn-fantasma" type="button" onClick={aoFechar}>Fechar</button>}>
+        <p id="j-dp-c" className="sr">Os documentos pessoais de {cliente.nome}.</p>
+        {dados === "erro" ? <ErroAoCarregar oque="os documentos pessoais" aoTentar={recarregar} /> : <p className="ajuda" role="status">Carregando os documentos pessoais…</p>}
+      </Janela>
+    );
+  }
+  const pedido = dados.pedidos.find((p) => p.id === pedidoId);
+  const anterior = dados.documentos.find((d) => d.tipo === tipo && d.vencido);
+  return <JanelaAnexarDocumento f={cliente} dados={dados} inicial={{ tipo, pedido, substitui: anterior }} aoFechar={aoFechar} aoFeito={aoFeito} />;
+}
+
 // ------------------------------------------------------------------------- Pedir pela conversa
 
-function JanelaPedirPelaConversa({ f, escritorio, documentos, aoFechar }: { f: FichaCliente; escritorio: string; documentos: string[]; aoFechar: () => void }) {
+export function JanelaPedirPelaConversa({ f, escritorio, documentos, aoFechar }: { f: FichaCliente; escritorio: string; documentos: string[]; aoFechar: () => void }) {
   const c = contato(f);
   const texto = textoPedirDocumentosPessoais(c.nome, escritorio, f.nome, documentos);
   const fone = c.telefone?.replace(/\D/g, "") ?? "";

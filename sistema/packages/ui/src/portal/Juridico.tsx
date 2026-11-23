@@ -24,6 +24,8 @@ import { SeloTipo } from "./Honorarios.tsx";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { botaoMudar, diaDaSemanaCurto, fraseAvisoEtapa, juntarNomes, situacaoEnvioEtapa, linhaProcesso, nomePapel, posicaoEtapa, proximaEtapa, ROTAS_JURIDICO, telefoneBr, urgenciaPrazo } from "./juridico.ts";
 import { JanelaPrazo, JanelaTarefa, OQueTrava, PrazosETarefas, SeloUrgencia } from "./JuridicoPrazos.tsx";
+import { corpoDosDocumentos, DOCS_INICIAL, erroDoMais, SecaoDocumentosInicio, type DocsEscolha } from "./DocumentosAbertura.tsx";
+import { JanelaChegouPessoal } from "./DocumentosPessoais.tsx";
 import { DocumentosDoCaso, JanelaEnviarDocumento, JanelaJaChegou, JanelaPedirDeNovo, JanelaPedirDocumento } from "./JuridicoDocumentos.tsx";
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
@@ -267,15 +269,16 @@ const MSG: Record<string, string> = {
   distribuidoEm: "Escreva uma data de hoje ou antes, no formato dd/mm/aaaa.",
   etapaId: "Escolha a etapa em que o caso começa.",
   responsavelId: "Escolha quem cuida do caso.",
+  "documentos.mais": "Diga qual documento, com 3 a 160 letras.",
 };
 const ROTULO: Record<string, string> = {
   nome: "Nome do caso", area: "Área", parteContraria: "Parte contrária", clientes: "Clientes do caso", numero: "Número do processo",
   tribunal: "Tribunal", vara: "Vara ou órgão", sistema: "Sistema", valorCausa: "Valor da causa", distribuidoEm: "Distribuído em",
-  etapaId: "Etapa", responsavelId: "Responsável",
+  etapaId: "Etapa", responsavelId: "Responsável", "documentos.mais": "Pedir mais um documento",
 };
 const ID: Record<string, string> = {
   nome: "nc-nome", area: "nc-area", parteContraria: "nc-parte", clientes: "nc-cli-1", numero: "nc-num", tribunal: "nc-trib", vara: "nc-vara",
-  sistema: "nc-sis", valorCausa: "nc-valor", distribuidoEm: "nc-dist", etapaId: "nc-etapa", responsavelId: "nc-resp",
+  sistema: "nc-sis", valorCausa: "nc-valor", distribuidoEm: "nc-dist", etapaId: "nc-etapa", responsavelId: "nc-resp", "documentos.mais": "nc-dd-mais",
 };
 
 /** Confere na tela o que dá para conferir antes de ir ao servidor. */
@@ -340,6 +343,7 @@ function NovoCaso({ escritorio }: { escritorio: EscritorioPortal }) {
   });
   const [linhas, setLinhas] = useState<LinhaCliente[]>([{ chave: 1, clienteId: "", papel: "AUTOR", contratoId: "" }]);
   const [etapaId, setEtapaId] = useState("");
+  const [docs, setDocs] = useState<DocsEscolha>(DOCS_INICIAL);
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -370,6 +374,7 @@ function NovoCaso({ escritorio }: { escritorio: EscritorioPortal }) {
     const e = errosDosDados(d);
     if (!linhas.some((l) => l.clienteId) || new Set(linhas.filter((l) => l.clienteId).map((l) => l.clienteId)).size !== linhas.filter((l) => l.clienteId).length) e.push("clientes");
     if (!etapaId) e.push("etapaId");
+    if (erroDoMais(docs)) e.push("documentos.mais");
     if (e.length) {
       setErros(e);
       requestAnimationFrame(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
@@ -381,6 +386,7 @@ function NovoCaso({ escritorio }: { escritorio: EscritorioPortal }) {
       corpo: {
         ...corpoDosDados(d), etapaId,
         clientes: linhas.filter((l) => l.clienteId).map((l) => ({ clienteId: l.clienteId, papel: l.papel, contratoId: l.contratoId || null })),
+        ...(corpoDosDocumentos(docs) ? { documentos: corpoDosDocumentos(docs) } : {}),
       },
     });
     setEnviando(false);
@@ -549,6 +555,14 @@ function NovoCaso({ escritorio }: { escritorio: EscritorioPortal }) {
                   <small>Com o texto simples de cada etapa. Antes de enviar, sempre aparece a prévia.</small>
                 </span>
               </label>
+
+              {/* EX-18, decisão 45: a lista da área, para o primeiro cliente do caso. */}
+              {d.area && d.area !== "OUTRA" ? (
+                <div className="c6">
+                  <SecaoDocumentosInicio area={d.area as AreaDireito} clienteId={linhas[0]?.clienteId || null} caso={d.nome} valor={docs} aoMudar={setDocs}
+                    pref="nc-dd" erroMais={tem("documentos.mais") ? MSG["documentos.mais"] : null} />
+                </div>
+              ) : null}
 
               <div className="form-pe">
                 <span className="esq-pe">Os campos sem “(opcional)” são obrigatórios. O cadastro fica no histórico do caso, com seu nome e a hora.</span>
@@ -1187,6 +1201,15 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
   const verAcerto = andamento ? null : hrefDoAcerto(f.acerto);
   const fechar = () => { setJanela(null); setDoc(null); };
   const pronto = (x: Feito) => { fechar(); setFeito(x); setVez((v) => v + 1); };
+  // EX-18 (decisões 46 a 48): enquanto falta algo da lista da abertura, a folha vem primeiro.
+  const ini = andamento && f.inicio && f.inicio.chegaram < f.inicio.total ? f.inicio : null;
+  const chegou = (x: Feito) => pronto(ini && doc?.d.inicio && ini.total - ini.chegaram === 1
+    ? { titulo: "Os documentos para começar chegaram.", texto: `${f.responsavel ? `${f.responsavel.nome.split(/\s+/)[0]} recebe o aviso no sino. ` : ""}O lembrete automático parou de pedir.` }
+    : x);
+  const folhaDocs = (
+    <DocumentosDoCaso f={f} andamento={andamento} aoPedir={() => setJanela("pedir")} aoEnviar={() => setJanela("enviar")}
+      aoPedirDeNovo={(d) => setDoc({ d, acao: "denovo" })} aoChegou={(d) => setDoc({ d, acao: "chegou" })} />
+  );
 
   return (
     <div className="hn">
@@ -1218,7 +1241,9 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
           <p className="grande jr-grande"><span className="num">{posicaoEtapa(f.etapa.ordem, f.etapas)}</span> {f.etapa.nome}</p>
           <Trilha ordem={f.etapa.ordem} total={f.etapas.length} grande />
           <p className="hn-oque">
-            {andamento
+            {andamento && ini
+              ? <>Desde {diaCurto(diaDoInstante(f.etapaDesde))}. <b>Antes de seguir: juntar os documentos, {ini.chegaram} de {ini.total}.</b></>
+              : andamento
               ? <>Desde {diaCurto(diaDoInstante(f.etapaDesde))}.{prox ? <> Próxima: <b>{prox}</b>.</> : null}</>
               : acertoTxt ? <>{acertoTxt.frase}</>
               : <>Encerrado em {f.encerradoEm ? dataBr(diaDoInstante(f.encerradoEm)) : "—"}.</>}
@@ -1230,7 +1255,16 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
               Ver o acerto
             </a>
           ) : null}
-          {andamento ? (
+          {/* Pergunta 8: "Mudar etapa" continua livre, como secundário, enquanto falta documento. */}
+          {andamento && ini ? (
+            <div className="fl-acoes">
+              <a className="btn btn-pri" href="#t-docs"><Icone nome="doc" className="ico" />Ver o que falta</a>
+              <button data-muda className="btn btn-sec" type="button" onClick={() => setJanela("etapa")}>
+                <Icone nome="seta" className="ico" />
+                Mudar etapa
+              </button>
+            </div>
+          ) : andamento ? (
             <button data-muda className="btn btn-pri" type="button" onClick={() => setJanela("etapa")}>
               <Icone nome="seta" className="ico" />
               Mudar etapa
@@ -1240,12 +1274,12 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
       </div>
       <div className="hn-grade">
         <div className="hn-col">
+          {ini ? folhaDocs : null}
           <Dados f={f} aoEditar={andamento ? () => setJanela("editar") : undefined} />
           <Clientes f={f} aoAdicionar={andamento ? () => setJanela("cliente") : undefined} />
           <PrazosETarefas f={f} escritorio={andamento ? escritorio : undefined} aoNovoPrazo={andamento ? () => setJanela("prazo") : undefined} aoNovaTarefa={andamento ? () => setJanela("tarefa") : undefined}
             aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} />
-          <DocumentosDoCaso f={f} andamento={andamento} aoPedir={() => setJanela("pedir")} aoEnviar={() => setJanela("enviar")}
-            aoPedirDeNovo={(d) => setDoc({ d, acao: "denovo" })} aoChegou={(d) => setDoc({ d, acao: "chegou" })} />
+          {ini ? null : folhaDocs}
         </div>
         <aside className="hn-col" aria-label="Sobre o caso">
           <OQueTrava f={f} aoMudou={(x) => { setFeito(x); setVez((v) => v + 1); }} aoDocumentoChegou={(d) => setDoc({ d, acao: "chegou" })} />
@@ -1285,7 +1319,9 @@ function FichaCasoConteudo({ id, escritorio, aoNome }: { id: string; escritorio:
       {janela === "pedir" ? <JanelaPedirDocumento f={ficha} aoFechar={fechar} aoFeito={pronto} /> : null}
       {janela === "enviar" ? <JanelaEnviarDocumento f={ficha} aoFechar={fechar} aoFeito={pronto} /> : null}
       {doc?.acao === "denovo" ? <JanelaPedirDeNovo f={ficha} d={doc.d} aoFechar={fechar} aoFeito={pronto} /> : null}
-      {doc?.acao === "chegou" ? <JanelaJaChegou f={ficha} d={doc.d} aoFechar={fechar} aoFeito={pronto} /> : null}
+      {doc?.acao === "chegou" && doc.d.tipoPessoal ? (
+        <JanelaChegouPessoal cliente={{ id: doc.d.cliente.id, nome: doc.d.cliente.nome }} pedidoId={doc.d.id} tipo={doc.d.tipoPessoal} aoFechar={fechar} aoFeito={chegou} />
+      ) : doc?.acao === "chegou" ? <JanelaJaChegou f={ficha} d={doc.d} aoFechar={fechar} aoFeito={chegou} /> : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
   );

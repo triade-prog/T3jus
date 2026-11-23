@@ -876,12 +876,12 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   // O âmbar vira "Próximo passo" (F3.110, decisão 1) para quem pode dar o passo, para quem tem
   // Comercial e, com o caso aberto ou no fechamento (decisão 16 da jornada), para todos; os outros veem a procuração, como antes.
   const passo = ativo ? f.passo : undefined;
-  const comPasso = !!passo && (comercial || passo.pode || passo.tipo === "CASO" || passo.tipo === "FECHAMENTO");
+  const comPasso = !!passo && (comercial || passo.pode || passo.tipo === "CASO" || passo.tipo === "DOCUMENTOS" || passo.tipo === "FECHAMENTO");
   const dir = fimLgpd ? (
     <RegistroNoCabecalho f={f} />
   ) : passo && comPasso ? (
     <DirPasso f={f} passo={passo} comercial={comercial} hoje={hoje} editando={editando} aoRegistrar={comercial ? () => abrir("registrar") : null}
-      aoJanela={abrirLigada} />
+      aoJanela={abrirLigada} escritorio={nomeEsc} />
   ) : comercial ? (
     <section className="dir campo-ambar" aria-labelledby="cl-t-prox">
       <p className="sobretitulo" id="cl-t-prox">

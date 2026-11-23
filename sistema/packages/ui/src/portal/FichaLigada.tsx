@@ -18,6 +18,7 @@ import { Selo, SeloSituacao } from "./Comercial.tsx";
 import { valorDaProposta } from "./comercial.ts";
 import { nomeSituacaoContrato, SELO_CONTRATO, textoProximo } from "./contratos.ts";
 import { primeiroNome } from "./equipe.ts";
+import { JanelaPedirPelaConversa } from "./DocumentosPessoais.tsx";
 import { BOTAO_PASSO, botaoDoFechamento, contar, destinoPasso, detalheDoPassoFechamento, dia, nomeDoPassoFechamento, PASSOS_FEITOS, proximoDoFechamento, quemFazFechamento, ROTAS_PASSO, textoPasso, TRILHA, type AbaLigada } from "./fichaLigada.ts";
 import { nomePapel } from "./juridico.ts";
 import { chamarPortal } from "./Moldura.tsx";
@@ -28,7 +29,7 @@ export type JanelaLigada = { tipo: "assinar" | "caso"; contrato: string; modo?: 
 const ICONE_PASSO = {
   SEM_PROPOSTA: "maleta", PROPOSTA_RASCUNHO: "maleta", PROPOSTA_ANDAMENTO: "conversas", PROPOSTA_ACEITA: "pena",
   CONTRATO_ELABORACAO: "check", CONTRATO_SEM_CASO: "balanca", CASO: "balanca",
-  FECHAMENTO: "cadeado", CONTRATO_ATIVO: "pena", ATENDIDO: "maleta",
+  FECHAMENTO: "cadeado", CONTRATO_ATIVO: "pena", ATENDIDO: "maleta", DOCUMENTOS: "enviar",
 } as const;
 
 /** O botão do próximo passo; null quando a pessoa não pode dar o passo. */
@@ -116,9 +117,47 @@ export function TrilhaCliente({ feitos, semCaso = false }: { feitos: number; sem
   );
 }
 
+/** "Juntar os documentos" (EX-18, decisão 46): "3 de 6", a barra (enfeite) e o que falta. */
+function JuntarDocumentos({ passo }: { passo: PassoCliente }) {
+  const i = passo.item;
+  const total = i?.total ?? 0;
+  const chegaram = i?.chegaram ?? 0;
+  return (
+    <>
+      <p className="jf-dcont"><b>{chegaram} de {total}</b><span>chegaram para começar {i?.nome ?? "o caso"}</span></p>
+      <ol className="jf-dbarra" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${Math.max(total, 1)}, 1fr)` }}>
+        {Array.from({ length: total }, (_, n) => <li key={n} className={n < chegaram ? "ok" : undefined} />)}
+      </ol>
+      {i?.faltam?.length ? (
+        <>
+          <p className="cl-oque" style={{ marginTop: 6 }}><b>Faltam:</b></p>
+          <ul className="jf-dfalta">{i.faltam.map((d) => <li key={d.id}>{d.descricao}</li>)}</ul>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/** Quem recebeu a lista e o lembrete automático, embaixo do "Juntar os documentos". */
+function AvisoDaLista({ passo }: { passo: PassoCliente }) {
+  const a = passo.item?.aviso;
+  const para = a?.para ? primeiroNome(a.para) : null;
+  return (
+    <p className="jf-quem">
+      <Icone nome="relogio" className="ico" />
+      <span>
+        {a && para ? `${para} recebeu a lista em ${dia(a.em)} pelo WhatsApp. ` : null}
+        Enquanto faltar algo, a automação “Documento pendente”, se estiver ligada, lembra de novo. Os pessoais que chegarem vão para a ficha.
+      </span>
+    </p>
+  );
+}
+
 /** O âmbar do topo: o próximo passo e, numa linha de baixo, o próximo contato (decisões 1 e 2). */
-export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJanela }: {
+export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJanela, escritorio = "" }: {
   f: FichaCliente;
+  /** O nome do escritório, para o texto do "Pedir de novo" (EX-18). */
+  escritorio?: string;
   passo: PassoCliente;
   comercial: boolean;
   hoje: string;
@@ -135,13 +174,20 @@ export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJ
       Registrar atendimento
     </button>
   ) : null;
+  const [pedir, setPedir] = useState(false);
   const fecha = passo.tipo === "FECHAMENTO" || passo.tipo === "ATENDIDO";
   const casoId = fecha ? passo.item?.caso?.id ?? null : null;
   // Decisão 18: no "Cliente atendido", "Gerar proposta" é secundário e "Ver o caso" fica ao lado.
   const principal = passo.tipo === "ATENDIDO"
     ? (passo.pode ? <BotaoPasso passo={passo} cliente={f.id} secundario aoJanela={aoJanela} /> : registrar(true))
     : passo.pode ? <BotaoPasso passo={passo} cliente={f.id} aoJanela={aoJanela} /> : registrar(false);
-  const extra = passo.pode && passo.tipo === "PROPOSTA_ANDAMENTO" && passo.item?.id ? (
+  const extra = passo.tipo === "DOCUMENTOS" && passo.item?.faltam?.length ? (
+    // Decisão 46: "Pedir de novo" abre a conversa com o texto pronto do que falta.
+    <button className="btn btn-sec" type="button" onClick={() => setPedir(true)}>
+      <Icone nome="whats" className="ico" />
+      Pedir de novo
+    </button>
+  ) : passo.pode && passo.tipo === "PROPOSTA_ANDAMENTO" && passo.item?.id ? (
     <a className="btn btn-sec" href={ROTAS_PASSO.proposta(passo.item.id)}>
       <Icone nome="olho" className="ico" />
       Ver a proposta
@@ -160,7 +206,7 @@ export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJ
       </p>
       <p className="grande" style={{ fontSize: 30 }}>{t.titulo}</p>
       {fecha ? null : <TrilhaCliente feitos={PASSOS_FEITOS[passo.tipo]} semCaso={passo.tipo === "CONTRATO_ATIVO"} />}
-      <p className="cl-oque">{t.oque}</p>
+      {passo.tipo === "DOCUMENTOS" ? <JuntarDocumentos passo={passo} /> : <p className="cl-oque">{t.oque}</p>}
       {fecha ? <ListaFechamento passo={passo} nomeCliente={f.nome} /> : null}
       {t.semAcao ? (
         <p className="fl-semacao">
@@ -173,6 +219,10 @@ export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJ
           {principal}
           {extra}
         </div>
+      ) : null}
+      {passo.tipo === "DOCUMENTOS" ? <AvisoDaLista passo={passo} /> : null}
+      {pedir ? (
+        <JanelaPedirPelaConversa f={f} escritorio={escritorio} documentos={(passo.item?.faltam ?? []).map((d) => d.descricao)} aoFechar={() => setPedir(false)} />
       ) : null}
       {passo.tipo === "FECHAMENTO" && passo.pode ? (
         <p className="jf-quem">
