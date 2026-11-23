@@ -561,6 +561,106 @@ Deno.test("PT-21: vínculo revogado para na chamada seguinte", async () => {
   assertEquals((await erro(await m.pedir("/v1/escritorio", { cookie }))).codigo, "FORBIDDEN");
 });
 
+// F3.136 (PT-27): o acesso e o escritório da sessão numa consulta só, ao mesmo tempo que o Auth.
+async function comEscritorio(m: ReturnType<typeof montar>) {
+  const cookie = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR }));
+  await m.pedir("/v1/sessao/escritorio", { metodo: "PUT", corpo: { escritorioId: AURORA }, cookie });
+  m.chamadas.length = 0;
+  return cookie;
+}
+const doBanco = (m: ReturnType<typeof montar>) => m.chamadas.map((c) => c.funcao).filter((f) => f !== "registrar_acesso");
+
+Deno.test("F3.136: a tela pede ao banco o acesso e o escritório numa consulta só", async () => {
+  const m = montar();
+  const cookie = await comEscritorio(m);
+  assertEquals((await m.pedir("/v1/escritorio/advogados", { cookie })).status, 200);
+  assertEquals(doBanco(m), ["acesso_portal_sessao", "portal_escritorio_advogados"]);
+  const ctx = m.chamadas.find((c) => c.funcao === "acesso_portal_sessao")!;
+  assertEquals(ctx.args.p_pessoa, ANA);
+  assertEquals(typeof ctx.args.p_sessao, "string");
+});
+
+Deno.test("F3.136: sem escritório escolhido, responde ESCRITORIO_REQUIRED sem perguntar de novo ao banco", async () => {
+  const m = montar();
+  const cookie = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR }));
+  m.chamadas.length = 0;
+  assertEquals((await erro(await m.pedir("/v1/escritorio/advogados", { cookie }))).codigo, "ESCRITORIO_REQUIRED");
+  assertEquals(doBanco(m), ["acesso_portal_sessao"]);
+});
+
+Deno.test("F3.136: /v1/sessao usa o escritório que veio com o acesso", async () => {
+  const m = montar();
+  const cookie = await comEscritorio(m);
+  assertEquals(((await (await m.pedir("/v1/sessao", { cookie })).json()) as { escritorioAtual: string }).escritorioAtual, AURORA);
+  assertEquals(doBanco(m), ["acesso_portal_sessao", "meus_escritorios"]);
+});
+
+Deno.test("F3.136: sem a migration 0880 no banco, volta às duas consultas de antes", async () => {
+  const m = montar();
+  const cookie = await comEscritorio(m);
+  const rpc = m.banco.rpc.bind(m.banco);
+  m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) => (f === "acesso_portal_sessao" ? erroBancoAsync<T>("PGRST202") : rpc<T>(f, a));
+  assertEquals((await m.pedir("/v1/escritorio/advogados", { cookie })).status, 200);
+  assertEquals(doBanco(m), ["acesso_portal", "escritorio_da_sessao", "portal_escritorio_advogados"]);
+  m.vinculos.clear();
+  assertEquals((await erro(await m.pedir("/v1/escritorio/advogados", { cookie }))).codigo, "FORBIDDEN");
+});
+
+Deno.test("F3.136: o banco responder não basta; sem o Auth aceitar o token, não entra", async () => {
+  const m = montar();
+  const cookie = await comEscritorio(m);
+  m.tokens.clear();
+  const r = await m.pedir("/v1/escritorio/advogados", { cookie: cookie.replace(/=v1\..*$/, "=" + cookieForjado()) });
+  assertEquals((await erro(r)).codigo, "UNAUTHORIZED");
+});
+
+Deno.test("F3.136: a moldura confere o login uma vez só (antes, /v1/escritorio conferia duas)", async () => {
+  const m = montar();
+  const cookie = await comEscritorio(m);
+  assertEquals((await m.pedir("/v1/escritorio", { cookie })).status, 200);
+  assertEquals(doBanco(m).sort(), ["acesso_portal_sessao", "meus_escritorios", "portal_cobranca", "portal_escritorio"]);
+});
+
+Deno.test("F3.136: token vencido renova e usa a consulta feita junto (mesma pessoa e mesma sessão)", async () => {
+  const m = montar();
+  const cookie = await comEscritorio(m);
+  for (const k of [...m.tokens.keys()]) m.tokens.delete(k);
+  const r = await m.pedir("/v1/escritorio/advogados", { cookie });
+  assertEquals(r.status, 200);
+  assert(cookieDe(r).startsWith("__Host-portal"), "o cookie novo é gravado");
+  assertEquals(doBanco(m), ["acesso_portal_sessao", "portal_escritorio_advogados"]);
+});
+
+Deno.test("F3.136: na moldura, escritório fora da lista responde ESCRITORIO_REQUIRED mesmo se a ficha falhar antes", async () => {
+  const m = montar();
+  const cookie = await comEscritorio(m);
+  const rpc = m.banco.rpc.bind(m.banco);
+  m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) => {
+    if (f === "portal_escritorio") return erroBancoAsync<T>("TC401");
+    if (f === "meus_escritorios") return new Promise<T>((ok) => setTimeout(() => ok([] as T), 5));
+    return rpc<T>(f, a);
+  };
+  assertEquals((await erro(await m.pedir("/v1/escritorio", { cookie }))).codigo, "ESCRITORIO_REQUIRED");
+  m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) => (f === "portal_escritorio" ? erroBancoAsync<T>("TC401") : rpc<T>(f, a));
+  assertEquals((await erro(await m.pedir("/v1/escritorio", { cookie }))).codigo, "FORBIDDEN");
+});
+
+function erroBancoAsync<T>(codigo: string): Promise<T> {
+  try {
+    erroBanco(codigo);
+  } catch (e) {
+    return Promise.reject(e);
+  }
+  return Promise.reject(new Error("inalcançável"));
+}
+
+/** Cookie com um token de formato válido, de outra sessão, que o Auth não conhece. */
+function cookieForjado(): string {
+  const b64 = (s: string) => btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const token = `${b64('{"alg":"none"}')}.${b64(JSON.stringify({ sub: ANA, session_id: crypto.randomUUID(), aal: "aal1" }))}.x`;
+  return `v1.${b64(JSON.stringify({ a: token, r: "refresh-que-nao-existe" }))}`;
+}
+
 Deno.test("o cookie do Console não abre o Portal", async () => {
   const m = montar();
   const deLa = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR })).replace("__Host-portal", "__Host-console");
