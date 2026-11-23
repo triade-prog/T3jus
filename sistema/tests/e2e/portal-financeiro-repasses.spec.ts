@@ -349,18 +349,60 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(page.getByRole("region", { name: "Fechamento do caso" }).getByRole("button", { name: "Encerrar o caso no financeiro" })).toHaveCount(0);
     await page.getByRole("button", { name: "Encerrar o caso no financeiro" }).click();
     const j = page.getByRole("dialog", { name: "Encerrar o caso no financeiro" });
-    await expect(j.getByRole("checkbox", { name: /Encerrar também os contratos ligados/ })).toBeChecked();
+    await expect(j.getByRole("checkbox", { name: /Encerrar também este contrato/ })).toBeChecked();
     await expect(j).toContainText("C-2025-047");
     await expect(j).toContainText(`Motivo que fica no contrato: “Caso ${CASO.nome} encerrado`);
     await semViolacoes(page);
     await j.getByRole("button", { name: "Encerrar o caso e o contrato" }).click();
     await expect(j.getByText("Nada foi encerrado.")).toBeVisible();
-    await expect(j).toContainText("Um dos contratos mudou agora há pouco.");
+    await expect(j).toContainText("O contrato C-2025-047 mudou agora há pouco.");
     await j.getByRole("button", { name: "Encerrar o caso e o contrato" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Caso e contrato encerrados." })).toBeVisible();
     const corpos = pedidos.filter((p) => p.metodo === "POST" && p.caminho.endsWith("/encerrar")).map((p) => p.corpo);
     expect(corpos.at(-1)).toEqual({ contratos: [{ id: CT, versao: 6 }] });
     await expect(page.getByRole("link", { name: /Ver a ficha de/ })).toBeVisible();
+  });
+
+  test("F3.132, decisão 10: quem não encerra contratos vê a seção sem caixa, com quem encerra, e encerra só o caso", async ({ page }) => {
+    const ligado = { id: "c7000000-0000-4000-8000-000000000047", numero: "C-2025-047", objeto: "Pensão por morte", versao: 6, cliente: { id: BEN.id, nome: BEN.nome } };
+    const ja = { id: "c7000000-0000-4000-8000-000000000048", numero: "C-2025-048", cliente: { id: BEN.id, nome: BEN.nome }, encerradoEm: `${dia(-6)}T12:30:00Z`, encerradoPor: { id: "f", nome: "Felipe Matos" } };
+    const pronto = { ...ACERTO, pendencias: [], falta: 0, faltaPagar: 0, contratosLigados: [ligado], contratosJaEncerrados: [ja], podeEncerrarContratos: false,
+      quemContratos: ["Marina Ribeiro", "Felipe Matos"], motivoContratos: "Caso encerrado." };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: { ...FICHA, acerto: pronto } },
+      [`POST /v1/escritorio/financeiro/casos/${CASO.id}/encerrar`]: { corpo: { ...pronto, fechado: { em: `${dia(0)}T13:00:00Z`, por: DIEGO }, contratosEncerrados: [] } },
+    });
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    await page.getByRole("button", { name: "Encerrar o caso no financeiro" }).first().click();
+    const j = page.getByRole("dialog", { name: "Encerrar o caso no financeiro" });
+    const grupo = j.getByRole("group", { name: "Contratos ligados ao caso" });
+    await expect(grupo).toContainText("C-2025-047 · Benedito Souza Lima");
+    await expect(grupo).toContainText("O C-2025-047 fica aberto. Quem encerra é a área Contratos (Marina e Felipe), no passo “Encerrar o contrato” da ficha de Benedito.");
+    await expect(grupo).toContainText(`Já encerrado em ${ddmm(-6)}, por Felipe, em Contratos · fica como está`);
+    await expect(j.getByRole("checkbox")).toHaveCount(0);
+    await expect(j).not.toContainText("Motivo que fica no contrato");
+    await expect(j.getByRole("button", { name: "Encerrar o caso", exact: true })).toBeFocused();
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Encerrar o caso", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Caso encerrado no financeiro." })).toBeVisible();
+    expect(pedidos.filter((p) => p.metodo === "POST" && p.caminho.endsWith("/encerrar")).at(-1)?.corpo).toEqual({});
+  });
+
+  test("F3.132, decisão 12: se o caso já foi encerrado pelo outro lado, a janela fecha e a ficha diz por quem", async ({ page }) => {
+    const pronto = { ...ACERTO, pendencias: [], falta: 0, faltaPagar: 0 };
+    const fechado = { ...pronto, fechado: { em: `${dia(0)}T13:05:00Z`, por: DIEGO } };
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: [{ corpo: { ...FICHA, acerto: pronto } }, { corpo: { ...FICHA, acerto: fechado } }],
+      [`POST /v1/escritorio/financeiro/casos/${CASO.id}/encerrar`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "CASO_JA_ENCERRADO" } } } },
+    });
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    await page.getByRole("button", { name: "Encerrar o caso no financeiro" }).first().click();
+    await page.getByRole("dialog", { name: "Encerrar o caso no financeiro" }).getByRole("button", { name: "Encerrar o caso" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByRole("status").filter({ hasText: "Este caso já foi encerrado no financeiro por Diego Almeida, às 10h05." })).toBeVisible();
+    await semViolacoes(page);
   });
 
   test("EX-17: desmarcado, encerra só o caso", async ({ page }) => {
@@ -374,7 +416,7 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await page.goto(`${P}/financeiro/repasses/${id(1)}`);
     await page.getByRole("button", { name: "Encerrar o caso no financeiro" }).first().click();
     const j = page.getByRole("dialog", { name: "Encerrar o caso no financeiro" });
-    await j.getByRole("checkbox", { name: /Encerrar também os contratos ligados/ }).uncheck();
+    await j.getByRole("checkbox", { name: /Encerrar também este contrato/ }).uncheck();
     await expect(j).toContainText("O contrato continua ativo");
     await j.getByRole("button", { name: "Encerrar o caso", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Caso encerrado no financeiro." })).toBeVisible();
