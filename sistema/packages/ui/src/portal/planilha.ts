@@ -4,8 +4,8 @@
 // .zip vai sem compressão (o formato aceita), com o CRC-32 de cada arquivo.
 
 import {
-  CATEGORIAS_SAIDA, FORMAS_PAGAMENTO, PARA_DESTINACAO, TIPOS_HONORARIO, TIPOS_LEVANTAMENTO,
-  type DadosExportacao, type FormatoExportacao,
+  CATEGORIAS_SAIDA, CREDORES_EMPRESTIMO, FORMAS_PAGAMENTO, PARA_DESTINACAO, TIPOS_HONORARIO, TIPOS_LEVANTAMENTO,
+  type DadosExportacao, type EmprestimosExportacao, type FormatoExportacao,
 } from "@t3jus/domain";
 
 // ------------------------------------------------------------------------------------- .zip
@@ -160,12 +160,75 @@ const SITUACAO = { FEITO: "Feito", DISPENSADO: "Dispensado", PENDENTE: "Pendente
 export type SemNota = { dia: string; descricao: string; valor: number }[];
 const chaveDespesa = (x: { dia: string; descricao: string; valor: number }) => `${x.dia}|${x.descricao}|${x.valor}`;
 
+// ------------------------------------------------------------------------- empréstimos (F3.51)
+
+/** A aba Empréstimos aparece com empréstimo recebido ou parcela paga no mês, ou algum ativo no fim dele. */
+export function temEmprestimos(e: EmprestimosExportacao | undefined): e is EmprestimosExportacao {
+  return !!e && (e.recebidos.length > 0 || e.parcelas.length > 0 || e.situacao.length > 0);
+}
+
+const reaisTexto = (c: number) =>
+  `R$ ${(c / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const parcelaTexto = (p: EmprestimosExportacao["parcelas"][number]) =>
+  p.devolucao ? "Devolução" : p.total ? `${p.parcela}/${p.total}` : String(p.parcela ?? "");
+
+/** Encerrado com R$ X não devolvido, ou com N parcelas canceladas (S-N3), e o selo de anterior ao T3jus. */
+function situacaoTexto(x: EmprestimosExportacao["situacao"][number]): string {
+  const partes: string[] = [];
+  if (x.situacao === "ENCERRADO" && x.naoDevolvido) partes.push(`Encerrado com ${reaisTexto(x.naoDevolvido)} não devolvido`);
+  else if (x.situacao === "ENCERRADO" && x.canceladas) {
+    partes.push(`Encerrado com ${x.canceladas.n} ${x.canceladas.n === 1 ? "parcela cancelada" : "parcelas canceladas"} (${reaisTexto(x.canceladas.valor)})`);
+  } else partes.push({ ATIVO: "Ativo", QUITADO: "Quitado", ENCERRADO: "Encerrado", CANCELADO: "Lançado errado" }[x.situacao]);
+  if (x.anteriorAoT3jus) partes.push("anterior ao T3jus");
+  return partes.join(" · ");
+}
+
+/** A aba Empréstimos, em três blocos: recebidos, pagos e a situação no último dia do mês (C4). */
+function abaEmprestimos(e: EmprestimosExportacao, mes: string): Aba {
+  const fim = e.situacao[0]?.dia ?? null;
+  const linhas: Celula[][] = [
+    ["Empréstimos · à parte: entram no saldo do caixa, mas não são receita do escritório"],
+    [null],
+    ["Recebidos no mês"],
+    ["Data", "De quem", "Nome", "Para que", "Forma", "Valor que entrou", "Valor do contrato"],
+    ...e.recebidos.map((r) => [
+      dia(r.dia), CREDORES_EMPRESTIMO[r.credorTipo], r.credor, r.finalidade, r.forma ? FORMAS_PAGAMENTO[r.forma] : null,
+      { reais: r.valor }, r.valorContrato !== null ? { reais: r.valorContrato } : null,
+    ] as Celula[]),
+    ...(e.recebidos.length ? [] : [["Nenhum empréstimo entrou no mês."]] as Celula[][]),
+    [null],
+    ["Parcelas e devoluções pagas no mês (principal e juros)"],
+    ["Pago em", "Vencimento", "Empréstimo", "Parcela", "Forma", "Valor", "Comprovante"],
+    ...e.parcelas.map((p) => [
+      dia(p.pagoEm), dia(p.vencimento), `${p.credor} (${CREDORES_EMPRESTIMO[p.credorTipo]})`, parcelaTexto(p),
+      p.forma ? FORMAS_PAGAMENTO[p.forma] : null, { reais: p.valor }, p.comprovante ? "Anexado" : "Falta",
+    ] as Celula[]),
+    ...(e.parcelas.length ? [] : [["Nenhuma parcela paga no mês."]] as Celula[][]),
+    [null],
+    [`Situação em ${fim ? dia(fim) : `fim de ${nomeMesAno(mes)}`}`],
+    ["Empréstimo", "Entrou em", "Valor que entrou", "Valor do contrato", "Total das parcelas", "Custo do empréstimo",
+      "Pago antes do T3jus (estimado)", "Pago no T3jus", "Falta pagar", "Situação"],
+    ...e.situacao.map((x) => [
+      `${x.credor} (${CREDORES_EMPRESTIMO[x.credorTipo]})${x.finalidade ? ` · ${x.finalidade}` : ""}`, dia(x.recebidoEm), { reais: x.valor },
+      x.valorContrato !== null ? { reais: x.valorContrato } : null,
+      x.totalParcelas !== null ? { reais: x.totalParcelas } : null, { reais: x.custo },
+      { reais: x.pagoAntes }, { reais: x.pagoNoT3jus }, { reais: x.faltaPagar }, situacaoTexto(x),
+    ] as Celula[]),
+    [null],
+    ["O custo do empréstimo é o total das parcelas menos o que entrou na conta: inclui juros, IOF e tarifas."],
+    ["Falta pagar inclui os juros das parcelas futuras; o saldo devedor para quitar é o do extrato do banco."],
+  ];
+  return { nome: "Empréstimos", larguras: [40, 12, 18, 18, 18, 18, 20, 16, 16, 40], linhas };
+}
+
 /** As abas da planilha do contador, a partir dos dados do servidor. Com semNota, a aba Despesas marca a falta. */
 export function abasContador(d: DadosExportacao, semNota?: SemNota): Aba[] {
   const falta = semNota ? new Set(semNota.map(chaveDespesa)) : null;
   const receita = d.recebimentos.reduce((s, r) => s + r.valor + r.multaJuros, 0);
   const despesa = d.despesas.reduce((s, x) => s + x.valor, 0);
   const terc = d.terceiros.filter((t) => t.para !== "HONORARIOS" && t.para !== "REEMBOLSO");
+  const emp = temEmprestimos(d.emprestimos) ? d.emprestimos : null;
   return [
     {
       nome: "Resumo",
@@ -175,12 +238,19 @@ export function abasContador(d: DadosExportacao, semNota?: SemNota): Aba[] {
         ["Recebimentos do escritório", { reais: receita }],
         ["Despesas pagas", { reais: despesa }],
         ["Resultado do mês", { reais: receita - despesa }],
+        ...(emp ? [
+          ["Empréstimos recebidos (não é receita)", { reais: emp.recebidos.reduce((s, r) => s + r.valor, 0) }],
+          ["Parcelas de empréstimo pagas (principal e juros)", { reais: emp.parcelas.reduce((s, p) => s + p.valor, 0) }],
+        ] as Aba["linhas"] : []),
         ...(d.saldoInicio !== undefined && d.saldoFim !== undefined ? [
           ["Saldo do caixa do escritório no começo do mês", { reais: d.saldoInicio }],
           ["Saldo do caixa do escritório no fim do mês", { reais: d.saldoFim }],
         ] as Aba["linhas"] : []),
         [null, null],
         ["Valores de terceiros estão na aba Terceiros. Não são receita do escritório.", null],
+        ...(emp ? [
+          ["O resultado não inclui os juros e encargos dos empréstimos. As parcelas estão na aba Empréstimos, com o custo total de cada um.", null],
+        ] as Aba["linhas"] : []),
         ["Gerado pelo T3jus, pelo dia em que o dinheiro entrou ou saiu.", null],
       ],
     },
@@ -218,6 +288,7 @@ export function abasContador(d: DadosExportacao, semNota?: SemNota): Aba[] {
         ]),
       ],
     },
+    ...(emp ? [abaEmprestimos(emp, d.mes)] : []),
   ];
 }
 
@@ -238,6 +309,12 @@ export function csvContador(d: DadosExportacao, semNota?: SemNota): string {
     ...d.terceiros.filter((t) => t.para !== "HONORARIOS" && t.para !== "REEMBOLSO").map((t) => [
       "Terceiros (não é receita)", dia(t.feitoEm ?? t.entrouEm), `${TIPOS_LEVANTAMENTO[t.tipo]} · ${t.caso}`, t.nome, PARA_DESTINACAO[t.para], null,
       valor(t.valor), SITUACAO[t.situacao]]),
+    ...(d.emprestimos?.recebidos ?? []).map((r) => [
+      "Empréstimo recebido (não é receita)", dia(r.dia), r.finalidade ?? "Empréstimo", r.credor, CREDORES_EMPRESTIMO[r.credorTipo],
+      r.forma ? FORMAS_PAGAMENTO[r.forma] : null, valor(r.valor), r.valorContrato !== null ? `Valor do contrato ${valor(r.valorContrato)}` : null]),
+    ...(d.emprestimos?.parcelas ?? []).map((p) => [
+      "Parcela de empréstimo", dia(p.pagoEm), p.devolucao ? "Devolução" : `Parcela ${parcelaTexto(p)}`, p.credor, CATEGORIAS_SAIDA.EMPRESTIMOS,
+      p.forma ? FORMAS_PAGAMENTO[p.forma] : null, valor(p.valor), p.comprovante ? "Comprovante anexado" : "Falta o comprovante"]),
   ];
   return "﻿" + linhas.map((l) => l.map(campo).join(";")).join("\r\n") + "\r\n";
 }
