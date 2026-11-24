@@ -1,0 +1,11 @@
+{
+  "id": "P11",
+  "texto": "Aplicar no Supabase a migration 0960 (termo de tutela, F3.140) e publicar a api-portal da main, com a rota do termo de tutela",
+  "refs": [
+    "AP-01",
+    "CH-08"
+  ],
+  "status": "pendente",
+  "ordem": 110,
+  "nota": "A 0960 precisa da 0930 (termo de curatela), da 0830 e da 0853, já no ar; não precisa da 0970 (P10) e pode ir antes ou depois dela. Se a 0970 for depois, aplicar a da main, que já deixa o termo de tutela fora da lista de documentos. Ordem: aplicar a 0960 e só então publicar a api-portal (a rota nova chama portal_cliente_termo_tutela_iniciar). Antes, conferir com list_migrations se as anteriores já estão no ar."
+}

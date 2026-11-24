@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { faltasDoResponsavel, marcadosDoModeloDocumento, montarValoresDocumento, type Anexo, type ClienteDoDocumento, type DadosDocumentos, type DocumentosDoContrato, type PreviaDocumentos } from "@t3jus/domain";
 import {
   avisoDoMenor, avisoFaltaQuemAssina, avisoFez18, baixarNoCabecalho, botaoGerar, casoDoMenor, errosDocumentos, FALTA_DE_QUEM_ASSINA, faltasDeQuemAssina, faltasDoProprioCliente,
-  formInicialDocumentos, fraseDaFaixaGerar, fraseVaoSair, linhaFaltaNoQuadro, pedidoDocumentos, problemaDoAssinado, problemaDosAssinados, quantosDocumentos, seloAssinado, tituloFaltas,
+  formInicialDocumentos, fraseDaFaixaGerar, fraseDoTermoDeTutela, fraseVaoSair, linhaFaltaNoQuadro, pedidoDocumentos, problemaDoAssinado, problemaDosAssinados, quantosDocumentos, seloAssinado, tituloFaltas,
 } from "./procuracoes.ts";
 
 const insc = (id: string) => ({ id, uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" }) as const;
@@ -263,6 +263,47 @@ describe("Gerar documentos do menor (F3.142)", () => {
     expect(fraseDaFaixaGerar(falta, HOJE, null)).toBe("Algum dado sai marcado, para completar.");
     // Fora do menor, como antes.
     expect(fraseDaFaixaGerar(pedro({ capacidade: "PLENA" }), HOJE, null)).toBe("Algum dado sai marcado, para completar.");
+  });
+
+  // F3.140: com tutora ou tutor, a frase do termo de tutela no fim do aviso e da faixa (gerar-tutela, gerar-tutela-falta).
+  const davi = (extra: Partial<ClienteDoDocumento> = {}) => pedro({ nome: "Davi Torres Lima", nascimento: "2015-05-02", rlPapel: "TUTORA", rlNome: "Sônia Torres Lima", ...extra });
+  const COM = "Junte uma cópia do termo de tutela à procuração: ele está na ficha, para baixar.";
+  const SEM = "Junte uma cópia do termo de tutela à procuração.";
+
+  it("F3.140 gerar-tutela: o aviso do representado termina com o termo, com e sem termo na ficha", () => {
+    expect(avisoDoMenor(davi(), HOJE, 3, true)).toEqual({
+      titulo: "Davi tem 11 anos hoje: é representado(a).",
+      texto: `Só Sônia assina, em nome de Davi, os três documentos. Em 02/05/2031, aos 16 anos, Davi passa a ser assistido(a), e os dois assinam. O T3jus faz a conta pela data de nascimento, no dia de gerar. ${COM}`,
+    });
+    expect(avisoDoMenor(davi(), HOJE, 3, false)!.texto).toMatch(new RegExp(`no dia de gerar\\. ${SEM.replace(".", "\\.")}$`));
+    // O assistido com tutor (NOTAS, item 5).
+    expect(avisoDoMenor(davi({ nascimento: "2010-01-10", rlPapel: "TUTOR", rlNome: "Dario Lima" }), HOJE, 3, true)!.texto)
+      .toBe(`Os dois assinam os três documentos: Davi e o tutor, Dario, que o(a) assiste. Em 10/01/2028, aos 18 anos, Davi passa a assinar sozinho(a). ${COM}`);
+    // Com mãe ou pai, nada muda, mesmo que viesse um termo.
+    expect(avisoDoMenor(pedro(), HOJE, 3, true)!.texto).not.toMatch(/tutela/);
+    expect(fraseDoTermoDeTutela(pedro(), true)).toBe("");
+  });
+
+  it("F3.140 gerar-tutela-falta: o aviso de atenção termina com o termo", () => {
+    const falta = davi({ rlDocumento: null, rlRg: null });
+    expect(avisoFaltaQuemAssina(falta, 3, true)).toEqual({
+      titulo: "Faltam 2 dados de quem assina por Davi: o CPF e o RG de Sônia.",
+      texto: `Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes. ${COM}`,
+    });
+    expect(avisoFaltaQuemAssina(falta, 3, false)!.texto).toMatch(/Ou complete a ficha antes\. Junte uma cópia do termo de tutela à procuração\.$/);
+    expect(avisoFaltaQuemAssina(pedro({ rlDocumento: null }), 3, true)!.texto).not.toMatch(/tutela/);
+  });
+
+  it("F3.140: a faixa leva sempre o termo de tutela, com ou sem “Em todos”", () => {
+    expect(fraseDaFaixaGerar(davi(), HOJE, previa(davi(), [CLIENTE, CLIENTE, CLIENTE])))
+      .toBe("Nenhum dado sai marcado. Em todos, Sônia assina por Davi. Junte o termo de tutela à procuração.");
+    const falta = davi({ rlDocumento: null, rlRg: null });
+    expect(fraseDaFaixaGerar(falta, HOJE, previa(falta, [CLIENTE, CLIENTE, CLIENTE])))
+      .toBe("2 dados saem marcados em cada um: o CPF e o RG de Sônia. Junte o termo de tutela à procuração.");
+    const assist = davi({ nascimento: "2010-01-10", rlPapel: "TUTOR", rlNome: "Dario Lima" });
+    expect(fraseDaFaixaGerar(assist, HOJE, null)).toBe("Nenhum dado sai marcado. Em todos, Davi e Dario assinam. Junte o termo de tutela à procuração.");
+    // Aos 18, nada de termo (gerar-fez-18 não muda).
+    expect(fraseDaFaixaGerar(rafaela({ estadoCivil: "SOLTEIRO", profissao: "atendente" }), HOJE, null)).not.toMatch(/tutela/);
   });
 
   it("sem data de nascimento ou sem quem assina: nenhum caso do menor, sem erro", () => {

@@ -1,7 +1,8 @@
 // Documentos para começar (AP-08, EX-18), desenho aprovado em
 // docs/design/aprovadas/portal-jornada-fechamento (grupo 9): os documentos pessoais na ficha do
 // cliente e a lista por área. As regras estão no banco (0853); aqui o esquema confere a forma.
-// O termo de curatela (F3.118, 0930) fica na mesma tabela, mas fora de Documentos pessoais.
+// Os termos de curatela (F3.118, 0930) e de tutela (F3.140, 0960) ficam na mesma tabela, mas fora de
+// Documentos pessoais.
 
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
@@ -21,8 +22,9 @@ export const TIPOS_DOCUMENTO_PESSOAL = {
 } as const;
 export type TipoDocumentoPessoal = keyof typeof TIPOS_DOCUMENTO_PESSOAL;
 
-/** Fora de `TIPOS_DOCUMENTO_PESSOAL`: não aparece em Documentos pessoais (F3.118). */
+/** Fora de `TIPOS_DOCUMENTO_PESSOAL`: não aparecem em Documentos pessoais (F3.118, F3.140). */
 export const TIPO_TERMO_CURATELA = "TERMO_CURATELA" as const;
+export const TIPO_TERMO_TUTELA = "TERMO_TUTELA" as const;
 const TIPOS = Object.keys(TIPOS_DOCUMENTO_PESSOAL) as [TipoDocumentoPessoal, ...TipoDocumentoPessoal[]];
 
 /** As áreas que têm lista (Outra não tem). */
@@ -45,10 +47,10 @@ export interface DocumentoPessoal {
   anteriores: number;
 }
 
-/** O termo de curatela em uso, na ficha e em Gerar documentos (F3.118). */
-export interface TermoCuratela {
+/** O termo em uso, de curatela (F3.118) ou de tutela (F3.140), na ficha e em Gerar documentos. */
+export interface TermoResponsavel {
   id: string;
-  tipo: typeof TIPO_TERMO_CURATELA;
+  tipo: typeof TIPO_TERMO_CURATELA | typeof TIPO_TERMO_TUTELA;
   nome: string;
   arquivoTipo: TipoDocumento;
   tamanho: number;
@@ -97,11 +99,11 @@ export const iniciarDocumentoPessoalSchema = z.object({
 export type IniciarDocumentoPessoal = z.infer<typeof iniciarDocumentoPessoalSchema>;
 
 /**
- * O envio do termo de curatela: um arquivo só (PDF, JPG ou PNG, até 10 MB). O tipo, o cliente e o
- * escritório não vêm do navegador; o que vier a mais é descartado.
+ * O envio do termo de curatela ou de tutela: um arquivo só (PDF, JPG ou PNG, até 10 MB). O tipo vem
+ * da rota; o cliente e o escritório não vêm do navegador; o que vier a mais é descartado.
  */
-export const iniciarTermoCuratelaSchema = z.object({ nome: nomeArquivoSchema, arquivoTipo: arquivoTipoSchema, tamanho: tamanhoSchema });
-export type IniciarTermoCuratela = z.infer<typeof iniciarTermoCuratelaSchema>;
+export const iniciarTermoSchema = z.object({ nome: nomeArquivoSchema, arquivoTipo: arquivoTipoSchema, tamanho: tamanhoSchema });
+export type IniciarTermo = z.infer<typeof iniciarTermoSchema>;
 
 /** O nome que a equipe vê: a descrição, se houver, senão o tipo. */
 export function nomeDoDocumentoPessoal(d: Pick<DocumentoPessoal, "tipo" | "descricao">): string {

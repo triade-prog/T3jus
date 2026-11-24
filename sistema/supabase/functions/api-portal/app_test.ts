@@ -381,7 +381,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { dias: a.p_dias, atual: 90, totalComComprovante: 41, vencidosAgora: 3, vencidosCom: 7, passamAQtd: 4, passamA: [], voltamAEmDiaQtd: 0, voltamAEmDia: [], listasComFrase: 4, itensComFrase: 4 };
     },
     portal_cliente_termo_iniciar: () => TERMO,
-    portal_documento_dados: (a) => ({ contrato: { id: a.p_contrato }, termoCuratela: { id: TERMO, tipo: "TERMO_CURATELA", nome: "termo-curatela.pdf", anteriores: 0 } }),
+    portal_cliente_termo_tutela_iniciar: () => TERMO,
+    portal_documento_dados: (a) => ({ contrato: { id: a.p_contrato }, termoCuratela: { id: TERMO, tipo: "TERMO_CURATELA", nome: "termo-curatela.pdf", anteriores: 0 },
+      termoTutela: { id: TERMO, tipo: "TERMO_TUTELA", nome: "termo-tutela.pdf", anteriores: 1 } }),
     portal_cliente_documentos_previa: (a) => ({ area: a.p_area, itens: [], cliente: null, contato: null, whatsappLigado: false, modelo: null, escritorio: "Aurora", podeConferir: true }),
     portal_juridico_documento_inicio_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, ...(a.p_dados as object) }),
     portal_juridico_documento_inicio_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
@@ -2163,6 +2165,34 @@ Deno.test("F3.118 / AP-01: termo de curatela em duas etapas, no escritório da s
   // Gerar documentos recebe o termo como veio do banco.
   const dados = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos-dados`, { cookie })).json();
   assertEquals(dados.termoCuratela.id, TERMO);
+  assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_") || c.funcao === "portal_documento_dados").every((c) => c.args.p_escritorio === AURORA));
+});
+
+Deno.test("F3.140 / AP-01: termo de tutela em duas etapas, no escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { nome: "termo-tutela.pdf", arquivoTipo: "application/pdf", tamanho: 2400 };
+  // O escritório e o tipo vindos do navegador são descartados: vale o da sessão, e o tipo é o da rota.
+  const ini = await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-tutela`, { corpo: { ...corpo, escritorioId: BELA_VISTA, tipo: "TERMO_CURATELA" }, cookie });
+  assertEquals(ini.status, 201);
+  const ida = await ini.json();
+  assertEquals(ida.id, TERMO);
+  assertMatch(ida.enderecoDeEnvio, new RegExp(`/${AURORA}/${TERMO}\\?`));
+  assertEquals(m.storage.pedidosDeEnvio, [`${AURORA}/${TERMO}`]);
+  const chamada = m.chamadas.find((c) => c.funcao === "portal_cliente_termo_tutela_iniciar")!;
+  assertEquals([chamada.args.p_escritorio, chamada.args.p_cliente, chamada.args.p_dados], [AURORA, ANA, corpo]);
+  assert(!m.chamadas.some((c) => c.funcao === "portal_cliente_termo_iniciar"), "a rota da tutela não chama a da curatela");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-tutela`, { corpo: { ...corpo, tamanho: 10485761 }, cookie }))).detalhes?.campos, ["tamanho"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-tutela`, { corpo: { ...corpo, arquivoTipo: "application/msword" }, cookie }))).detalhes?.campos, ["arquivoTipo"]);
+  assertEquals((await m.pedir("/v1/escritorio/clientes/nao-e-id/termo-tutela", { corpo, cookie })).status, 404);
+  // Concluir e abrir são as rotas de Documentos pessoais, pelo id.
+  m.storage.guardados.set(`${AURORA}/${TERMO}`, { tamanho: 2400, tipo: "application/pdf" });
+  assertEquals((await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/concluir`, { corpo: {}, cookie })).status, 200);
+  const abrir = await (await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/abrir`, { corpo: {}, cookie })).json();
+  assertMatch(abrir.url, /^https:\/\/storage\.exemplo\/ler\//);
+  // Gerar documentos recebe o termo de tutela como veio do banco.
+  const dados = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos-dados`, { cookie })).json();
+  assertEquals([dados.termoTutela.id, dados.termoTutela.tipo, dados.termoTutela.anteriores], [TERMO, "TERMO_TUTELA", 1]);
   assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_") || c.funcao === "portal_documento_dados").every((c) => c.args.p_escritorio === AURORA));
 });
 

@@ -1,6 +1,6 @@
 {
   "id": "F3.141",
-  "texto": "Exclusão a pedido do titular: tirar do arquivo privado os documentos pessoais, o termo de curatela e os .docx das propostas do cliente e limpar o nome do arquivo",
+  "texto": "Exclusão a pedido do titular: tirar do arquivo privado os documentos pessoais, os termos de curatela e de tutela e os .docx das propostas do cliente, limpar o nome do arquivo e fazer abrir recusar documento de cliente excluído",
   "peca": "S2",
   "refs": [
     "PT-11",

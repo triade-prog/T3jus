@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { TIPO_TERMO_CURATELA } from "@t3jus/domain";
+import { TIPO_TERMO_CURATELA, TIPO_TERMO_TUTELA } from "@t3jus/domain";
 import { rascunhoVazio, TIPOS_NO_SELETOR } from "./clientes.ts";
+import { tipoDoTermoDoPainel, type TermoAoSalvar } from "./FormCliente.tsx";
 import {
   casoDoTermoQueFalhou, codigoDoErroDoTermo, descricaoArquivoTermo, erroDoCodigoDoTermo, fichaMudou, fraseDoTermoQueFalhou, metaTermoNaFicha,
+  tipoDoTermoNoEndereco,
 } from "./termoCuratela.ts";
 
 describe("F3.118: a linha do arquivo do termo, sem as páginas", () => {
@@ -44,8 +46,9 @@ describe("M7: salvar só com o termo novo não diz que a ficha mudou", () => {
 });
 
 describe("M8: os seletores de Documentos pessoais não oferecem o termo", () => {
-  it("TIPOS_NO_SELETOR não tem TERMO_CURATELA", () => {
+  it("TIPOS_NO_SELETOR não tem TERMO_CURATELA nem TERMO_TUTELA", () => {
     expect(TIPOS_NO_SELETOR).not.toContain(TIPO_TERMO_CURATELA);
+    expect(TIPOS_NO_SELETOR).not.toContain(TIPO_TERMO_TUTELA);
     expect(TIPOS_NO_SELETOR).toContain("RG_CPF");
   });
 });
@@ -84,5 +87,63 @@ describe("F3.118: o termo que não foi guardado, frase fixa por caso (NOTAS, ite
     const f = fraseDoTermoQueFalhou({ codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_NAO_CURATELA" } }, "Ana");
     expect(f).toBe("O termo de curatela não foi guardado: Ana não está mais sob curatela na ficha.");
     expect(fraseDoTermoQueFalhou({ codigo: "VALIDATION_ERROR" }, "Ana")).not.toMatch(/Confira os campos/);
+  });
+});
+
+describe("F3.140: o termo de tutela que não foi guardado, frase fixa por caso (NOTAS, item 3)", () => {
+  const MANDE = " Mande de novo em “Mudar”, na folha Quem assina por Davi.";
+  const tabela: [string, ReturnType<typeof casoDoTermoQueFalhou>, string][] = [
+    ["VALIDATION_ERROR", "ARQUIVO", `O termo de tutela não foi guardado: o arquivo precisa ser PDF ou foto, até 10 MB.${MANDE}`],
+    ["ARQUIVO_NAO_CHEGOU", "CONEXAO", `O termo de tutela não foi guardado: não deu para falar com o T3jus.${MANDE}`],
+    ["UPSTREAM_UNAVAILABLE", "CONEXAO", `O termo de tutela não foi guardado: não deu para falar com o T3jus.${MANDE}`],
+    ["CLIENTE_NAO_TUTELA", "NAO_TUTELA", "O termo de tutela não foi guardado: hoje, na ficha, ninguém assina por Davi como tutora ou tutor."],
+    ["UNAUTHORIZED", "SESSAO", "O termo de tutela não foi guardado: sua sessão terminou. Entre de novo para enviar o termo."],
+    ["FORBIDDEN", "PERMISSAO", "O termo de tutela não foi guardado: o seu acesso não permite enviar o termo. Fale com quem cuida dos acessos."],
+    ["INTERNAL_ERROR", "OUTRO", `O termo de tutela não foi guardado: algo deu errado do nosso lado.${MANDE}`],
+  ];
+  it.each(tabela)("%s → %s", (codigo, caso, frase) => {
+    const erro = erroDoCodigoDoTermo(codigo);
+    expect(casoDoTermoQueFalhou(erro)).toBe(caso);
+    expect(fraseDoTermoQueFalhou(erro, "Davi", "TUTELA")).toBe(frase);
+  });
+
+  it("as frases da curatela não mudam (o tipo padrão é a curatela)", () => {
+    const e = erroDoCodigoDoTermo("UPSTREAM_UNAVAILABLE");
+    expect(fraseDoTermoQueFalhou(e, "Sebastião")).toBe(fraseDoTermoQueFalhou(e, "Sebastião", "CURATELA"));
+    expect(fraseDoTermoQueFalhou(e, "Sebastião")).toMatch(/^O termo de curatela não foi guardado/);
+  });
+
+  it("I4: o tipo do termo no endereço é lido por lista fechada; fora dela, a curatela", () => {
+    expect(tipoDoTermoNoEndereco("TUTELA")).toBe("TUTELA");
+    expect(tipoDoTermoNoEndereco("CURATELA")).toBe("CURATELA");
+    expect(tipoDoTermoNoEndereco("tutela")).toBe("CURATELA");
+    expect(tipoDoTermoNoEndereco("<script>")).toBe("CURATELA");
+    expect(tipoDoTermoNoEndereco(null)).toBe("CURATELA");
+    expect(erroDoCodigoDoTermo("CLIENTE_NAO_TUTELA")).toEqual({ codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_NAO_TUTELA" } });
+  });
+
+  it("I4: o resultado de salvar leva o tipo do termo que o formulário tentou mandar", () => {
+    const caiu: TermoAoSalvar = { tipo: "TUTELA", erro: { codigo: "UPSTREAM_UNAVAILABLE" } };
+    const subiu: TermoAoSalvar = { tipo: "TUTELA", enviado: true };
+    expect(caiu && "erro" in caiu ? fraseDoTermoQueFalhou(caiu.erro, "Davi", caiu.tipo) : null).toMatch(/^O termo de tutela não foi guardado/);
+    expect(subiu && "erro" in subiu).toBe(false);
+  });
+});
+
+describe("F3.140: que termo o painel de quem assina pede", () => {
+  const HOJE = "2026-11-23";
+  const base = { ...rascunhoVazio("PF"), capacidade: "MENOR" as const, nascimento: "02/05/2015" };
+  it("o menor com tutora ou tutor pede o de tutela; com mãe ou pai, nenhum", () => {
+    expect(tipoDoTermoDoPainel({ ...base, rlPapel: "TUTORA" }, HOJE)).toBe("TUTELA");
+    expect(tipoDoTermoDoPainel({ ...base, rlPapel: "TUTOR" }, HOJE)).toBe("TUTELA");
+    expect(tipoDoTermoDoPainel({ ...base, rlPapel: "MAE" }, HOJE)).toBeNull();
+    expect(tipoDoTermoDoPainel({ ...base, rlPapel: "PAI" }, HOJE)).toBeNull();
+    expect(tipoDoTermoDoPainel({ ...base, rlPapel: "" }, HOJE)).toBeNull();
+  });
+  it("com 18 anos pela data, nenhum; a curatela pede o de curatela; a empresa, nenhum", () => {
+    expect(tipoDoTermoDoPainel({ ...base, rlPapel: "TUTORA", nascimento: "23/11/2008" }, HOJE)).toBeNull();
+    expect(tipoDoTermoDoPainel({ ...base, rlPapel: "TUTORA", nascimento: "24/11/2008" }, HOJE)).toBe("TUTELA");
+    expect(tipoDoTermoDoPainel({ ...base, capacidade: "CURATELA", rlPapel: "CURADORA" }, HOJE)).toBe("CURATELA");
+    expect(tipoDoTermoDoPainel({ ...base, tipo: "PJ", rlPapel: "TUTORA" }, HOJE)).toBeNull();
   });
 });

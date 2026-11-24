@@ -8,7 +8,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   CAPACIDADES, ESTADOS_CIVIS, hojeBrasilia, MODOS_CURATELA, ORIGENS, PAPEIS_CURATELA, PAPEIS_MENOR, situacaoNoDia, UFS, type Capacidade,
-  type PossivelDuplicado, type TermoCuratela, type TipoCliente,
+  type PossivelDuplicado, type TermoResponsavel, type TipoCliente,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -21,7 +21,7 @@ import {
   type ErrosCliente, type RascunhoCliente,
 } from "./clientes.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
-import { descricaoArquivoTermo, enviarTermoCuratela, fichaMudou } from "./termoCuratela.ts";
+import { descricaoArquivoTermo, enviarTermo, fichaMudou, type TipoTermo } from "./termoCuratela.ts";
 
 type CampoTexto = Exclude<keyof RascunhoCliente, "tipo" | "contatos" | "principal" | "rlMoraJunto">;
 const PROC = "procuração";
@@ -42,13 +42,31 @@ export interface Conflito {
 /** O cadastro aberto pela conversa (AP-07, decisão 30): o nome e o telefone vêm dela. */
 export interface CadastroDaConversa { id: string; telefone: string; nome: string | null }
 
-/** Depois de salvar: o termo subiu, caiu (com o erro) ou não havia termo para mandar (F3.118). */
-export type TermoAoSalvar = "ENVIADO" | { erro: ErroApi } | null;
+/**
+ * Depois de salvar: o termo subiu, caiu (com o erro) ou não havia termo para mandar (F3.118). O
+ * formulário sabe que termo tentou mandar, e o tipo vai junto (F3.140, revisão I4).
+ */
+export type TermoAoSalvar = { tipo: TipoTermo; enviado: true } | { tipo: TipoTermo; erro: ErroApi } | null;
 export interface Salvo { id: string; versao: number; nome: string; termo: TermoAoSalvar; fichaMudou: boolean }
+/** O arquivo do termo escolhido é de um tipo: o de curatela não sobe como de tutela, nem o contrário. */
+export interface TermoEscolhido { tipo: TipoTermo; arquivo: File }
 
 const ACEITOS_TERMO = "application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png";
 
-export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, daConversa, termoAtual = null, termoInicial = null, aoSalvo, aoCancelar,
+/**
+ * Que termo o painel de quem assina pede: o de curatela na curatela; o de tutela no menor com tutora
+ * ou tutor que, pela conta do dia, ainda não fez 18 anos (F3.140); nenhum nos outros casos.
+ */
+export function tipoDoTermoDoPainel(r: Pick<RascunhoCliente, "tipo" | "capacidade" | "rlPapel" | "nascimento">, hoje: string): TipoTermo | null {
+  if (r.tipo !== "PF") return null;
+  if (r.capacidade === "CURATELA") return "CURATELA";
+  if (r.capacidade !== "MENOR" || (r.rlPapel !== "TUTORA" && r.rlPapel !== "TUTOR")) return null;
+  const sit = situacaoNoDia("MENOR", lerData(r.nascimento), hoje);
+  return sit.situacao === "FEZ_18" ? null : "TUTELA";
+}
+
+export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, daConversa, termoCuratela = null, termoTutela = null, termoInicial = null,
+  aoSalvo, aoCancelar,
   aoConflito, aoFicarComSalva }: {
   modo: "novo" | "editar";
   daConversa?: CadastroDaConversa | null;
@@ -57,14 +75,16 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
   versao?: number;
   idCliente?: string;
   conflito?: Conflito | null;
-  /** O termo de curatela em uso (editar). */
-  termoAtual?: TermoCuratela | null;
-  /** O arquivo do termo escolhido antes de um conflito de versão, para não se perder. */
-  termoInicial?: File | null;
+  /** O termo de curatela em uso (editar): só no painel da curatela. */
+  termoCuratela?: TermoResponsavel | null;
+  /** O termo de tutela em uso (editar): só no painel do menor com tutora ou tutor (revisão, I5). */
+  termoTutela?: TermoResponsavel | null;
+  /** O arquivo do termo escolhido antes de um conflito de versão, com o tipo, para não se perder. */
+  termoInicial?: TermoEscolhido | null;
   aoSalvo: (r: Salvo) => void;
   aoCancelar: () => void;
   /** Editar: a versão lida ficou velha. Quem chama recarrega a ficha e compara. */
-  aoConflito?: (meu: RascunhoCliente, termo: File | null) => void;
+  aoConflito?: (meu: RascunhoCliente, termo: TermoEscolhido | null) => void;
   aoFicarComSalva?: () => void;
 }) {
   const ids = useId();
@@ -73,7 +93,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
   const [erros, setErros] = useState<ErrosCliente>({});
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [salvando, setSalvando] = useState(false);
-  const [termo, setTermo] = useState<File | null>(termoInicial);
+  const [termo, setTermo] = useState<TermoEscolhido | null>(termoInicial);
   const [erroTermo, setErroTermo] = useState<string | null>(null);
   const termoInput = useRef<HTMLInputElement>(null);
   const [qualAberta, setQualAberta] = useState(modo === "editar");
@@ -94,6 +114,8 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
 
   const mudar = (k: CampoTexto, v: string) => {
     setR((x) => ({ ...x, [k]: v }));
+    // Tirar o papel de Tutora ou Tutor apaga o arquivo escolhido; trocar entre os dois o mantém (F3.140).
+    if (k === "rlPapel" && v !== "TUTORA" && v !== "TUTOR") setTermo((t) => (t?.tipo === "TUTELA" ? null : t));
     // Com os dígitos certos, o erro do documento some na hora e aparece "Dígitos conferidos".
     if (k === "documento" && erros.documento && documentoConfere(r.tipo, v)) setErros(({ documento: _d, ...resto }) => resto);
     if (k === "rlDocumento" && erros.rlDocumento && documentoConfere("PF", v)) setErros(({ rlDocumento: _d, ...resto }) => resto);
@@ -136,11 +158,13 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
       ? await chamarPortal<{ id: string; versao: number }>("/v1/escritorio/clientes", { corpo: daConversa ? { ...v.corpo, conversaId: daConversa.id } : v.corpo })
       : await chamarPortal<{ id: string; versao: number }>(`/v1/escritorio/clientes/${idCliente}`, { metodo: "PUT", corpo: { ...v.corpo, versao } });
     if (resp.ok) {
-      // O termo sobe depois de a ficha salvar, só se ela ficou sob curatela; o botão segue em "Salvando…".
+      // O termo sobe depois de a ficha salvar, só o do tipo que o painel pede (a curatela, ou o menor
+      // com tutora ou tutor); o botão segue em "Salvando…".
       let t: TermoAoSalvar = null;
-      if (pf && r.capacidade === "CURATELA" && termo) {
-        const envio = await enviarTermoCuratela(resp.dados.id, termo);
-        t = envio.ok ? "ENVIADO" : { erro: envio.erro };
+      const tipo = tipoDoTermoDoPainel(r, hojeBrasilia());
+      if (tipo && termo?.tipo === tipo) {
+        const envio = await enviarTermo(tipo, resp.dados.id, termo.arquivo);
+        t = envio.ok ? { tipo, enviado: true } : { tipo, erro: envio.erro };
       }
       setSalvando(false);
       return aoSalvo({ ...resp.dados, nome: v.corpo.nome, termo: t, fichaMudou: novo || !!conflito || fichaMudou(inicial, pronto) });
@@ -275,6 +299,11 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
   const menorDe16 = menor && (sit?.idade === null || sit?.idade === undefined || sit.idade < 16);
   const mudarCap = (v: Capacidade) => {
     setR((x) => ({ ...x, capacidade: v, rlPapel: "" }));
+    // Mudar a capacidade apaga o arquivo escolhido: ele é de um tipo (F3.140).
+    if (v !== cap) {
+      setTermo(null);
+      setErroTermo(null);
+    }
     setErros(({ nascimento: _n, rlNome: _r, rlPapel: _p, rlDocumento: _d, ...resto }) => resto);
   };
   const rlDocOk = r.rlDocumento.trim() && !erros.rlDocumento && documentoConfere("PF", r.rlDocumento);
@@ -329,48 +358,55 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
       )}
     </>
   );
-  // O arquivo do termo (F3.118): um só, PDF ou foto, conferido na hora em que é escolhido. O erro
-  // fica preso ao grupo e não entra no resumo do alto, porque não trava o salvar.
-  const temTermo = !!(termo || termoAtual);
-  const arquivoDoTermo = (
-    <div className="c6">
-      <div className={`rl-arq${temTermo ? " rl-tem" : ""}`} role="group" aria-labelledby={`${ids}-termo-r`} aria-describedby={descritoPor(erroTermo && `${ids}-termo-er`)}>
-        <span className="rl-ic" aria-hidden="true">
-          <Icone nome="doc" className="ico" />
-        </span>
-        {termo ? (
-          <div>
-            <strong id={`${ids}-termo-r`}>{termo.name}</strong>
-            <small>{descricaoArquivoTermo(termo.name, termo.type, termo.size)}</small>
-          </div>
-        ) : termoAtual ? (
-          <div>
-            <strong id={`${ids}-termo-r`}>{termoAtual.nome}</strong>
-            <small>{descricaoArquivoTermo(termoAtual.nome, termoAtual.arquivoTipo, termoAtual.tamanho)}</small>
-          </div>
-        ) : (
-          <div>
-            <strong id={`${ids}-termo-r`}>Termo de curatela <span className="opcional">(opcional)</span></strong>
-            <small>PDF ou foto, até 10 MB. Fica guardado na ficha, só para o escritório.</small>
-          </div>
-        )}
-        <button className="btn btn-sec btn-compacto" type="button" onClick={() => termoInput.current?.click()} data-erro={erroTermo ? "" : undefined}>
-          <Icone nome={temTermo ? "trocar" : "mais"} className="ico ico-s" />
-          {temTermo ? "Trocar arquivo: termo de curatela" : "Escolher arquivo: termo de curatela"}
-        </button>
+  // O arquivo do termo (F3.118, F3.140): um só, PDF ou foto, conferido na hora em que é escolhido. O
+  // erro fica preso ao grupo e não entra no resumo do alto, porque não trava o salvar. Cada painel
+  // mostra só o termo do seu tipo (revisão, I5).
+  const tipoPainel = tipoDoTermoDoPainel(r, hoje);
+  const arquivoDoTermo = (tipo: TipoTermo) => {
+    const nomeTermo = tipo === "TUTELA" ? "termo de tutela" : "termo de curatela";
+    const escolhido = termo?.tipo === tipo ? termo.arquivo : null;
+    const atual = tipo === "TUTELA" ? termoTutela : termoCuratela;
+    const temTermo = !!(escolhido || atual);
+    return (
+      <div className="c6">
+        <div className={`rl-arq${temTermo ? " rl-tem" : ""}`} role="group" aria-labelledby={`${ids}-termo-r`} aria-describedby={descritoPor(erroTermo && `${ids}-termo-er`)}>
+          <span className="rl-ic" aria-hidden="true">
+            <Icone nome="doc" className="ico" />
+          </span>
+          {escolhido ? (
+            <div>
+              <strong id={`${ids}-termo-r`}>{escolhido.name}</strong>
+              <small>{descricaoArquivoTermo(escolhido.name, escolhido.type, escolhido.size)}</small>
+            </div>
+          ) : atual ? (
+            <div>
+              <strong id={`${ids}-termo-r`}>{atual.nome}</strong>
+              <small>{descricaoArquivoTermo(atual.nome, atual.arquivoTipo, atual.tamanho)}</small>
+            </div>
+          ) : (
+            <div>
+              <strong id={`${ids}-termo-r`}>{tipo === "TUTELA" ? "Termo de tutela" : "Termo de curatela"} <span className="opcional">(opcional)</span></strong>
+              <small>PDF ou foto, até 10 MB. Fica guardado na ficha, só para o escritório.</small>
+            </div>
+          )}
+          <button className="btn btn-sec btn-compacto" type="button" onClick={() => termoInput.current?.click()} data-erro={erroTermo ? "" : undefined}>
+            <Icone nome={temTermo ? "trocar" : "mais"} className="ico ico-s" />
+            {temTermo ? `Trocar arquivo: ${nomeTermo}` : `Escolher arquivo: ${nomeTermo}`}
+          </button>
+        </div>
+        <input ref={termoInput} type="file" accept={ACEITOS_TERMO} className="sr" tabIndex={-1} aria-hidden="true"
+          onChange={(e) => {
+            const a = e.target.files?.[0];
+            e.target.value = "";
+            if (!a) return;
+            const p = problemaDoArquivo(a.name, a.type, a.size);
+            setErroTermo(p);
+            if (!p) setTermo({ tipo, arquivo: a });
+          }} />
+        {erroTermo ? <ErroCampo id={`${ids}-termo-er`}>{erroTermo}</ErroCampo> : null}
       </div>
-      <input ref={termoInput} type="file" accept={ACEITOS_TERMO} className="sr" tabIndex={-1} aria-hidden="true"
-        onChange={(e) => {
-          const a = e.target.files?.[0];
-          e.target.value = "";
-          if (!a) return;
-          const p = problemaDoArquivo(a.name, a.type, a.size);
-          setErroTermo(p);
-          if (!p) setTermo(a);
-        }} />
-      {erroTermo ? <ErroCampo id={`${ids}-termo-er`}>{erroTermo}</ErroCampo> : null}
-    </div>
-  );
+    );
+  };
   const quemAssina = (
     <>
       <div className="cl-sec">
@@ -409,6 +445,15 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           </div>
           {selecao("rlPapel", "É", PAPEIS_MENOR, { classe: "c2", uso: true, ajuda: "Tutor é quem o juiz nomeou." })}
           {dadosDeQuemAssina}
+          {tipoPainel === "TUTELA" ? (
+            <>
+              <div className="rl-sub">
+                <h4>O termo de tutela</h4>
+                <small>O papel que mostra quem é a tutora ou o tutor. Vai junto com a procuração. Não pedimos o motivo da tutela nem documentos dos pais.</small>
+              </div>
+              {arquivoDoTermo("TUTELA")}
+            </>
+          ) : null}
         </div>
       ) : cap === "CURATELA" ? (
         <div className="rl-painel" role="group" aria-label="Sob curatela: quem assina e o termo">
@@ -447,7 +492,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           </fieldset>
           {campo("curProcesso", "Número do processo da curatela", { classe: "c3", uso: true, opcional: true, modo: "numeric" })}
           {campo("curVara", "Vara e comarca", { classe: "c6", uso: true, opcional: true })}
-          {arquivoDoTermo}
+          {arquivoDoTermo("CURATELA")}
         </div>
       ) : null}
     </>

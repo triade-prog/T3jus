@@ -269,7 +269,19 @@ function papelComArtigo(c: ClienteDoDocumento): string {
 }
 
 /** O aviso do representado e do assistido, sem falta de quem assina (gerar-representado, gerar-assistido). */
-export function avisoDoMenor(c: ClienteDoDocumento, hoje: string, docs: number): { titulo: string; texto: string } | null {
+/** Quem assina pelo menor é tutora ou tutor (F3.140): o aviso e a faixa lembram de juntar o termo de tutela. */
+export const assinaTutela = (c: Pick<ClienteDoDocumento, "rlPapel">) => c.rlPapel === "TUTORA" || c.rlPapel === "TUTOR";
+
+/**
+ * A frase do termo de tutela no fim do aviso do menor (F3.140, docs/design/aprovadas/portal-termo-tutela,
+ * item 5): com o termo na ficha, diz que está lá para baixar; sem ele, só lembra de juntar.
+ */
+export function fraseDoTermoDeTutela(c: Pick<ClienteDoDocumento, "rlPapel">, temTermo: boolean): string {
+  if (!assinaTutela(c)) return "";
+  return temTermo ? " Junte uma cópia do termo de tutela à procuração: ele está na ficha, para baixar." : " Junte uma cópia do termo de tutela à procuração.";
+}
+
+export function avisoDoMenor(c: ClienteDoDocumento, hoje: string, docs: number, temTermo = false): { titulo: string; texto: string } | null {
   const caso = casoDoMenor(c, hoje);
   if (caso !== "REPRESENTADO" && caso !== "ASSISTIDO") return null;
   const p = primeiroNome(c.nome);
@@ -278,17 +290,17 @@ export function avisoDoMenor(c: ClienteDoDocumento, hoje: string, docs: number):
   if (caso === "REPRESENTADO") {
     return {
       titulo: `${p} tem ${idade} anos hoje: é representado(a).`,
-      texto: `Só ${r} assina, em nome de ${p}, ${quantosDocumentos(docs)}. Em ${dataBr(aniversario(c.nascimento!, 16))}, aos 16 anos, ${p} passa a ser assistido(a), e os dois assinam. O T3jus faz a conta pela data de nascimento, no dia de gerar.`,
+      texto: `Só ${r} assina, em nome de ${p}, ${quantosDocumentos(docs)}. Em ${dataBr(aniversario(c.nascimento!, 16))}, aos 16 anos, ${p} passa a ser assistido(a), e os dois assinam. O T3jus faz a conta pela data de nascimento, no dia de gerar.${fraseDoTermoDeTutela(c, temTermo)}`,
     };
   }
   return {
     titulo: `${p} tem ${idade} anos hoje: é assistido(a).`,
-    texto: `Os dois assinam ${quantosDocumentos(docs)}: ${p} e ${papelComArtigo(c)}, ${r}, que o(a) assiste. Em ${dataBr(aniversario(c.nascimento!, 18))}, aos 18 anos, ${p} passa a assinar sozinho(a).`,
+    texto: `Os dois assinam ${quantosDocumentos(docs)}: ${p} e ${papelComArtigo(c)}, ${r}, que o(a) assiste. Em ${dataBr(aniversario(c.nascimento!, 18))}, aos 18 anos, ${p} passa a assinar sozinho(a).${fraseDoTermoDeTutela(c, temTermo)}`,
   };
 }
 
 /** O aviso quando falta dado de quem assina (gerar-falta). Sem a parte das marcas quando nenhuma sai no .docx. */
-export function avisoFaltaQuemAssina(c: ClienteDoDocumento, docs: number): { titulo: string; texto: string } | null {
+export function avisoFaltaQuemAssina(c: ClienteDoDocumento, docs: number, temTermo = false): { titulo: string; texto: string } | null {
   const f = faltasDeQuemAssina(c);
   if (!f.length) return null;
   const p = primeiroNome(c.nome);
@@ -298,9 +310,9 @@ export function avisoFaltaQuemAssina(c: ClienteDoDocumento, docs: number): { tit
   const sai = `${quantosDocumentos(docs)} ${docs === 1 ? "sai" : "saem"}`;
   return {
     titulo: f.length === 1 ? `Falta 1 dado de quem assina por ${p}: ${lista}.` : `Faltam ${f.length} dados de quem assina por ${p}: ${lista}.`,
-    texto: marcas.length
+    texto: (marcas.length
       ? `Dá para gerar assim: ${sai} com ${juntar(marcas)}, para preencher à mão ou no Word. Ou complete a ficha antes.`
-      : "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes.",
+      : "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes.") + fraseDoTermoDeTutela(c, temTermo),
   };
 }
 
@@ -344,7 +356,8 @@ const marcadoDoCliente = (f: string, nome: string) => {
  * A frase da faixa do botão (decisão 26): a do servidor (ou a de reserva, sem prévia) e, no menor,
  * a lista do que sai marcado e "Em todos, Joana assina por Pedro." A lista só sai quando cada
  * documento da prévia não tem marcado ou tem exatamente os do cliente, e nunca com a qualificação
- * de quem assina, que não deixa marca no .docx.
+ * de quem assina, que não deixa marca no .docx. Com tutora ou tutor, termina com "Junte o termo de
+ * tutela à procuração.", com ou sem "Em todos…" (F3.140, revisão B1).
  */
 export function fraseDaFaixaGerar(c: ClienteDoDocumento, hoje: string, prev: PreviaDocumentos | null): string {
   const faltas = faltasNoDocumento(c, hoje);
@@ -361,10 +374,12 @@ export function fraseDaFaixaGerar(c: ClienteDoDocumento, hoje: string, prev: Pre
     if (caso === "FEZ_18") frase = `${base.slice(0, -1)}: ${juntar(faltas)} de ${primeiroNome(c.nome)}.`;
     else if (rl.length === faltas.length && rl.every((x) => x.marca)) frase = `${base.slice(0, -1)}: ${juntar(rl.map((x) => x.curta))} de ${primeiroNome(c.rlNome!)}.`;
   }
-  if (caso === "FEZ_18" || rl.length) return frase;
+  if (caso === "FEZ_18") return frase;
+  const termo = (caso === "REPRESENTADO" || caso === "ASSISTIDO") && assinaTutela(c) ? " Junte o termo de tutela à procuração." : "";
+  if (rl.length) return `${frase}${termo}`;
   const p = primeiroNome(c.nome);
   const r = primeiroNome(c.rlNome!);
-  return `${frase} ${caso === "REPRESENTADO" ? `Em todos, ${r} assina por ${p}.` : `Em todos, ${p} e ${r} assinam.`}`;
+  return `${frase} ${caso === "REPRESENTADO" ? `Em todos, ${r} assina por ${p}.` : `Em todos, ${p} e ${r} assinam.`}${termo}`;
 }
 
 // ------------------------------------------------------------- Baixar o contrato no cabeçalho (D29)
