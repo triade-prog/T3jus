@@ -126,7 +126,10 @@ const atraso = (venc: string, hoje: string) => {
   return d > 0 ? `venceu em ${diaCurto(venc)} · ${d} ${d === 1 ? "dia" : "dias"} de atraso` : `vence em ${diaCurto(venc)}`;
 };
 const espera = (p: PendenciaCaso, hoje: string) => p.tipo === "PARCELA" && !!p.vencimento && p.vencimento >= hoje;
-const linkContrato = (id: string, casoId: string) => `${ROTAS_FINANCEIRO.contrato(id)}#t-fecha-${casoId}`;
+/** A folha "Fechamento do caso" na ficha do contrato (o título dela recebe o foco pelo hash). O sino usa
+ *  o mesmo link no aviso de caso pronto para encerrar (F3.147). */
+export const linkFechamentoContrato = (id: string, casoId: string) => `${ROTAS_FINANCEIRO.contrato(id)}#t-fecha-${casoId}`;
+const linkContrato = linkFechamentoContrato;
 const contratoDe = (a: AcertoCaso, id: string | undefined) => (id ? a.contratos?.find((c) => c.id === id) : undefined);
 const nomeDaPendencia = (p: PendenciaCaso) => (p.exito ? `Êxito de ${primeiroNome(p.cliente ?? "")}` : parcelaCurta(p.descricao ?? p.nome));
 
