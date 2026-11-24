@@ -4,10 +4,11 @@
   "peca": "S4",
   "refs": [
     "FI-24",
+    "FI-25",
     "FI-08",
     "EX-16"
   ],
   "status": "pendente",
   "ordem": 1121,
-  "proximo": "Desenhar a baixa com motivo na ficha do contrato (pergunta 2 do D31, aprovada sem desenho)"
+  "proximo": "Programar a baixa sem receber pelo desenho aprovado (D35): migration 1010_baixa_parcela, funções de baixa e desfazer, régua de WhatsApp, Contratos, sino e telas"
 }
