@@ -16,7 +16,8 @@ import type { TermoResponsavel } from "./documentos_pessoais.ts";
 import { ESTADOS_CIVIS, formatarDocumento, type EstadoCivil } from "./clientes.ts";
 import { CAMPO_DOCX, type ParagrafoDocx } from "./docx.ts";
 import { dataBr, dividirParcelas, percentual, reais, resumoParcelas, somarMeses, type Condicao } from "./honorarios.ts";
-import { formatarCnj } from "./juridico.ts";
+import { AREAS_DIREITO, formatarCnj, type AreaDireito } from "./juridico.ts";
+import type { SugestaoDocumentos } from "./documentos_area.ts";
 import { cidadeDataPadrao, enderecoDoCliente, NOMES_CAMPOS, rgDoCliente, valorPorExtenso, type ParagrafoPrevia, montarPrevia } from "./peticoes.ts";
 import { fraseOab, type InscricaoOab } from "./portal.ts";
 import { faltasDoAdvogado, qualificacaoDoAdvogado, ROTULO_FALTA_ADVOGADO, type DadoQueConta, type DadosDocumentoPessoa } from "./dados_advogado.ts";
@@ -403,6 +404,8 @@ export interface DadosDocumentos {
   termoCuratela?: TermoResponsavel | null;
   /** O termo de tutela do menor com tutora ou tutor, para "Baixar o termo" (F3.140); nulo nos outros casos e aos 18. */
   termoTutela?: TermoResponsavel | null;
+  /** A área e as listas de Documentos por área (CH-14, F3.171); ausente em API antiga. */
+  sugestao?: SugestaoDocumentos | null;
 }
 
 // ------------------------------------------------------------------------------- valores
@@ -556,6 +559,8 @@ export interface EscolhasDocumentos {
   poderes: PoderEspecial[];
   outroPoder?: string | null;
   cidadeData: string;
+  /** CH-14: a área escolhida em Gerar, só quando ela fica no contrato (em elaboração, sem área e sem caso). */
+  area?: AreaDireito | null;
 }
 
 export interface ValoresDocumento {
@@ -750,6 +755,8 @@ export const escolhasDocumentosSchema = z.object({
   poderes: z.array(z.enum(CODIGOS_PODERES as [PoderEspecial, ...PoderEspecial[]])).max(CODIGOS_PODERES.length),
   outroPoder: z.string().max(300).nullish(),
   cidadeData: z.string().max(120),
+  // CH-14: sem isto, o zod tiraria a área do pedido. A prévia a ignora; só a geração a usa.
+  area: z.enum(Object.keys(AREAS_DIREITO) as [AreaDireito, ...AreaDireito[]]).nullish(),
 });
 export type PedidoDocumentos = z.input<typeof escolhasDocumentosSchema>;
 
@@ -890,4 +897,6 @@ export interface ResultadoDocumentos {
   geracaoId: string;
   documentos: { id: string; tipo: TipoDocumentoContrato; nome: string; arquivo: string; numero: number; marcados: string[] }[];
   usado: UsadoNaGeracao;
+  /** A área que ficou no contrato nesta geração (CH-14); nula quando nada foi gravado. */
+  areaGravada?: AreaDireito | null;
 }

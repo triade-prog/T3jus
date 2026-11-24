@@ -597,3 +597,275 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     await expect(page.getByText("assinado-papel.jpg · anexado em 20/11/2026")).toBeVisible();
   });
 });
+
+// ------------------------------------------------------------------------------- CH-14
+// Documentos por área (F3.170, F3.171), desenho aprovado em docs/design/aprovadas/portal-documentos-por-area (D36).
+test.describe("Documentos por área (CH-14)", () => {
+  const RES = "d8000000-0000-4000-8000-000000000011";
+  const REQ = "d8000000-0000-4000-8000-000000000012";
+  const R = `OUTRO:${RES}`;
+  const I = `OUTRO:${REQ}`;
+  const TRES = ["CONTRATO", "PROCURACAO", "HIPOSSUFICIENCIA"];
+  const AREAS = ["PREVIDENCIARIO", "TRABALHISTA", "CIVEL", "CONSUMIDOR", "FAMILIA", "SAUDE", "TRIBUTARIO", "OUTRA"];
+  const outroModelo = (id: string, nome: string, usos: number) => ({
+    id, padrao: false, tipo: "OUTRO", nome, versao: 1, versaoId: `${id.slice(0, -2)}99`, campos: ["CLIENTE_QUALIFICACAO"], desconhecidos: [], enviadoPor: MARINA,
+    atualizadoEm: "2026-11-10T12:00:00Z", usos, linhaVersao: 1, emRevisao: false, anteriores: [],
+  });
+  const MODELOS_DA = { ...MODELOS, modelos: [...MODELOS.modelos, outroModelo(RES, "Declaração de residência", 6), outroModelo(REQ, "Requerimento ao INSS", 0)] };
+  const linhaArea = (area: string, extra: Record<string, unknown> = {}) => ({
+    area, documentos: TRES, sugestao: TRES, igualSugestao: true, salva: false, versao: null, atualizadoPor: null, atualizadoEm: null, ...extra,
+  });
+  const mudada = { salva: true, versao: 1, atualizadoPor: MARINA, atualizadoEm: "2026-11-10T13:00:00Z", igualSugestao: false };
+  const POR_AREA = {
+    podeEditar: true, leitura: null,
+    areas: AREAS.map((a) => a === "PREVIDENCIARIO" || a === "TRABALHISTA" ? linhaArea(a, { ...mudada, documentos: [...TRES, R] })
+      : a === "OUTRA" ? linhaArea(a, { ...mudada, documentos: [], atualizadoPor: FELIPE }) : linhaArea(a)),
+    modelos: [
+      { chave: "CONTRATO", tipo: "CONTRATO", nome: "Contrato de honorários", doEscritorio: true, numero: 2, enviadoEm: "2026-11-10T12:00:00Z" },
+      { chave: "PROCURACAO", tipo: "PROCURACAO", nome: "Procuração", doEscritorio: false, numero: null, enviadoEm: null },
+      { chave: "HIPOSSUFICIENCIA", tipo: "HIPOSSUFICIENCIA", nome: "Declaração de hipossuficiência", doEscritorio: false, numero: null, enviadoEm: null },
+      { chave: R, tipo: "OUTRO", nome: "Declaração de residência", doEscritorio: true, numero: 1, enviadoEm: "2026-11-10T12:00:00Z" },
+      { chave: I, tipo: "OUTRO", nome: "Requerimento ao INSS", doEscritorio: true, numero: 1, enviadoEm: "2026-11-20T12:00:00Z" },
+    ],
+  };
+  const comunsDa = () => ({ ...comuns(), "GET /v1/escritorio/documentos/modelos": { corpo: MODELOS_DA } });
+
+  test("a folha: as 8 áreas, mudar Previdenciário, salvar e o foco de volta no Mudar", async ({ page }) => {
+    const salva = linhaArea("PREVIDENCIARIO", { ...mudada, versao: 2, documentos: [...TRES, R, I], atualizadoEm: "2026-11-21T18:20:00Z" });
+    const pedidos = await simular(page, {
+      ...comunsDa(),
+      "GET /v1/escritorio/documentos/por-area": { corpo: POR_AREA },
+      "PUT /v1/escritorio/documentos/por-area/PREVIDENCIARIO": { corpo: salva },
+    });
+    await page.goto(`${P}/contratos/modelos/modelos`);
+    const folha = page.locator("#da");
+    await expect(folha.getByRole("heading", { level: 2, name: "Documentos por área" })).toBeVisible();
+    await expect(folha.getByRole("link", { name: "Jurídico › Documentos para começar" })).toHaveAttribute("href", "/juridico/casos/documentos");
+    await expect(folha.locator(".da-lista > li")).toHaveCount(8);
+    await expect(folha.getByText("Sugestão do T3jus", { exact: true })).toHaveCount(5);
+    await expect(folha.getByText("Do escritório", { exact: true })).toHaveCount(3);
+    await expect(folha.getByText("Contrato de honorários, procuração, declaração de hipossuficiência e declaração de residência")).toHaveCount(2);
+    await expect(folha.getByText("Nenhum documento. Nada vem marcado; quem gera escolhe.")).toBeVisible();
+    await expect(folha.getByText("Mudada por Felipe Matos em 10/11/2026")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Arquivar\s?declaração de residência$/ })).toBeVisible();
+    await semViolacoes(page);
+
+    await folha.getByRole("button", { name: /^Mudar\s?os documentos de Previdenciário$/ }).click();
+    const grupo = folha.getByRole("group", { name: "Previdenciário" });
+    await expect(grupo.getByRole("checkbox", { name: /^Contrato de honorários/ })).toBeFocused();
+    await expect(grupo.getByRole("group", { name: "O que vem marcado em Gerar documentos, nos contratos de previdenciário" })).toBeVisible();
+    await expect(grupo.getByText("Padrão do T3jus · para empresa, sai a versão de pessoa jurídica")).toBeVisible();
+    await expect(grupo.getByRole("checkbox", { name: /^Declaração de residência/ })).toBeChecked();
+    await expect(grupo.getByRole("checkbox", { name: /^Requerimento ao INSS/ })).not.toBeChecked();
+    await semViolacoes(page);
+    await grupo.getByRole("checkbox", { name: /^Requerimento ao INSS/ }).check();
+    await grupo.getByRole("button", { name: "Salvar Previdenciário" }).click();
+    await expect(folha.getByText("Previdenciário salvo.")).toBeVisible();
+    await expect(folha.getByText(/vêm marcados o contrato de honorários, a procuração, a declaração de hipossuficiência, a declaração de residência e o requerimento ao INSS\./)).toBeVisible();
+    await expect(folha.getByRole("button", { name: /^Mudar\s?os documentos de Previdenciário$/ })).toBeFocused();
+    const put = pedidos.find((p) => p.metodo === "PUT")!;
+    expect(put.caminho).toBe("/v1/escritorio/documentos/por-area/PREVIDENCIARIO");
+    expect(put.corpo).toEqual({ versao: 1, documentos: [...TRES, R, I] });
+    await semViolacoes(page);
+  });
+
+  test("conflito com quem salvou antes, salvar a minha versão, e erro ao salvar sem perder nada", async ({ page }) => {
+    const deDiego = linhaArea("TRABALHISTA", { ...mudada, versao: 2, documentos: TRES, atualizadoPor: DIEGO, atualizadoEm: "2026-11-21T18:18:00Z" });
+    const pedidos = await simular(page, {
+      ...comunsDa(),
+      "GET /v1/escritorio/documentos/por-area": [{ corpo: POR_AREA }, { corpo: { ...POR_AREA, areas: POR_AREA.areas.map((l) => (l.area === "TRABALHISTA" ? deDiego : l)) } }],
+      "PUT /v1/escritorio/documentos/por-area/TRABALHISTA": [
+        { status: 409, corpo: { erro: { codigo: "VERSION_CONFLICT", mensagem: "x", detalhes: { versao: 1, atual: 2 } } } },
+        { corpo: { ...deDiego, versao: 3, documentos: [...TRES, R, I], atualizadoPor: MARINA } },
+      ],
+      "PUT /v1/escritorio/documentos/por-area/CIVEL": { status: 500, corpo: { erro: { codigo: "INTERNAL_ERROR", mensagem: "x" } } },
+    });
+    await page.goto(`${P}/contratos/modelos/modelos`);
+    const folha = page.locator("#da");
+    await folha.getByRole("button", { name: /^Mudar\s?os documentos de Trabalhista$/ }).click();
+    const grupo = folha.getByRole("group", { name: "Trabalhista" });
+    await grupo.getByRole("checkbox", { name: /^Requerimento ao INSS/ }).check();
+    await grupo.getByRole("button", { name: "Salvar Trabalhista" }).click();
+    const aviso = grupo.locator(".aviso-urgencia");
+    await expect(aviso).toBeFocused();
+    await expect(aviso).toContainText("Diego Almeida mudou Trabalhista às 15h18, enquanto você editava.");
+    await expect(aviso).toContainText("Diego tirou a declaração de residência.");
+    await expect(aviso.getByRole("row")).toHaveCount(3);
+    await expect(grupo.getByRole("checkbox", { name: /^Requerimento ao INSS/ })).toBeChecked();
+    await semViolacoes(page);
+    await aviso.getByRole("button", { name: "Salvar a minha versão" }).click();
+    await expect(folha.getByText("Trabalhista salvo.")).toBeVisible();
+    const puts = pedidos.filter((p) => p.metodo === "PUT");
+    expect(puts.map((p) => (p.corpo as { versao: number }).versao)).toEqual([1, 2]);
+
+    await folha.getByRole("button", { name: /^Mudar\s?os documentos de Cível$/ }).click();
+    const civel = folha.getByRole("group", { name: "Cível" });
+    await civel.getByRole("checkbox", { name: /^Declaração de residência/ }).check();
+    await civel.getByRole("button", { name: "Salvar Cível" }).click();
+    await expect(civel.locator(".aviso-urgencia")).toBeFocused();
+    await expect(civel.locator(".aviso-urgencia")).toContainText("Cível não foi salvo. Nada mudou.");
+    await expect(civel.getByText("O T3jus não respondeu a tempo. O que você marcou continua aqui: salve de novo em instantes.")).toBeVisible();
+    await expect(civel.getByRole("checkbox", { name: /^Declaração de residência/ })).toBeChecked();
+    await semViolacoes(page);
+    await civel.getByRole("button", { name: "Cancelar" }).click();
+    await expect(folha.getByRole("button", { name: /^Mudar\s?os documentos de Cível$/ })).toBeFocused();
+  });
+
+  test("só para consulta: a folha para ler; erro ao carregar com Tentar de novo", async ({ page }) => {
+    await simular(page, {
+      ...comunsDa(),
+      "GET /v1/escritorio/documentos/por-area": [
+        { status: 500, corpo: { erro: { codigo: "INTERNAL_ERROR", mensagem: "x" } } },
+        { corpo: { ...POR_AREA, podeEditar: false, leitura: "SO_CONSULTA" } },
+      ],
+    });
+    await page.goto(`${P}/contratos/modelos/modelos`);
+    const folha = page.locator("#da");
+    await expect(folha.getByText("Não deu para carregar os documentos por área.")).toBeVisible();
+    await expect(folha.getByText(/Os modelos acima continuam valendo\./)).toBeVisible();
+    await semViolacoes(page);
+    await folha.getByRole("button", { name: "Tentar de novo" }).click();
+    await expect(folha.getByText("O Portal está só para consulta.")).toBeVisible();
+    await expect(folha.locator(".da-lista > li")).toHaveCount(8);
+    await expect(folha.getByRole("button", { name: /^Mudar/ })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("arquivar um modelo que vem marcado em 2 áreas; enviar outro documento leva a Documentos por área", async ({ page }) => {
+    const NOVO = "d8000000-0000-4000-8000-000000000013";
+    const docx = Buffer.from(await criarDocx([{ texto: "[CLIENTE_QUALIFICACAO]" }]));
+    const pedidos = await simular(page, {
+      ...comunsDa(),
+      "GET /v1/escritorio/documentos/por-area": { corpo: POR_AREA },
+      [`POST /v1/escritorio/documentos/modelos/${RES}/arquivar`]: { corpo: { id: RES, arquivado: true } },
+      "POST /v1/escritorio/documentos/modelos/conferir": { corpo: { campos: ["CLIENTE_QUALIFICACAO"], desconhecidos: [], faltaEsperado: null, semCampos: false, paragrafos: 1 } },
+      "POST /v1/escritorio/documentos/modelos": { status: 201, corpo: { modelo: outroModelo(NOVO, "Substabelecimento", 0), conferencia: {} } },
+    });
+    await page.goto(`${P}/contratos/modelos/modelos`);
+    await page.getByRole("button", { name: /^Arquivar\s?declaração de residência$/ }).click();
+    const janela = page.getByRole("alertdialog", { name: "Arquivar a declaração de residência?" });
+    await expect(janela.getByText("Ela sai de Gerar documentos. Os documentos já gerados com ela continuam como estavam, para baixar.")).toBeVisible();
+    await expect(janela.getByText("Ela também deixa de vir marcada em Previdenciário e Trabalhista.")).toBeVisible();
+    await expect(janela.getByLabel("Motivo")).toBeFocused();
+    await semViolacoes(page);
+    await janela.getByRole("button", { name: "Arquivar o modelo" }).click();
+    await expect(janela.getByText("Escreva o motivo.")).toBeVisible();
+    await janela.getByLabel("Motivo").fill("O escritório passou a usar outro texto.");
+    await janela.getByRole("button", { name: "Arquivar o modelo" }).click();
+    await expect(page.getByText("Modelo arquivado")).toBeVisible();
+    expect(pedidos.find((p) => p.caminho.endsWith("/arquivar"))!.corpo).toEqual({ versao: 1, motivo: "O escritório passou a usar outro texto." });
+
+    await page.getByRole("button", { name: "Enviar outro modelo" }).click();
+    const envio = page.getByRole("dialog", { name: "Enviar modelo" });
+    await envio.getByLabel("Documento").selectOption("OUTRO");
+    const nome = envio.getByLabel(/^Nome/);
+    if (await nome.count()) await nome.fill("Substabelecimento");
+    await envio.locator('input[type="file"]').setInputFiles({ name: "substabelecimento.docx", mimeType: "application/octet-stream", buffer: docx });
+    await expect(envio.getByText(/Conferimos o arquivo/)).toBeVisible();
+    await envio.getByRole("button", { name: "Salvar modelo" }).click();
+    const aviso = page.locator(".aviso-sucesso", { hasText: "Substabelecimento salvo." });
+    await expect(aviso).toBeFocused();
+    await expect(aviso).toContainText("Ele já aparece em Gerar documentos, desmarcado.");
+    await expect(aviso.getByRole("link", { name: "Ir para Documentos por área" })).toHaveAttribute("href", "#da");
+    await semViolacoes(page);
+  });
+
+  const DADOS_DA = {
+    ...DADOS,
+    modelos: [...DADOS.modelos, { tipo: "OUTRO", modeloId: RES, nome: "Declaração de residência", numero: 1, padrao: null, emRevisao: false },
+      { tipo: "OUTRO", modeloId: REQ, nome: "Requerimento ao INSS", numero: 1, padrao: null, emRevisao: false }],
+  };
+  const PORAREA = Object.fromEntries(AREAS.map((a) => [a, a === "PREVIDENCIARIO" ? [...TRES, R, I] : a === "OUTRA" ? [] : TRES]));
+  const sugestao = (extra: Record<string, unknown> = {}) => ({
+    area: "OUTRA", origem: null, casoNome: null, contratoArea: null, areasDosCasos: [], porArea: PORAREA, salvas: ["PREVIDENCIARIO", "OUTRA"],
+    entraramDepois: {}, gravaNoContrato: true, ...extra,
+  });
+
+  test("Gerar: sem área, escolher Família marca a lista, a área vai ao contrato e o resultado diz que ficou", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${CT}/documentos-dados`]: { corpo: { ...DADOS_DA, sugestao: sugestao() } },
+      [`POST /v1/escritorio/contratos/${CT}/documentos/previa`]: { corpo: PREVIA },
+      [`POST /v1/escritorio/contratos/${CT}/documentos`]: { status: 201, corpo: { ...RESULTADO, areaGravada: "FAMILIA" } },
+    });
+    await page.goto(`${P}/contratos/modelos/gerar?contrato=${CT}`);
+    const area = page.getByLabel("Sugestão para");
+    await expect(area).toHaveValue("OUTRA");
+    await expect(area).toHaveAccessibleDescription("O contrato C-2026-033 ainda não tem área e não tem caso. A área que você escolher fica nele ao gerar.");
+    await expect(page.getByText("Para contrato sem área, o escritório não marca nenhum documento. Escolha a área acima, ou marque os que vão sair.")).toBeVisible();
+    for (const n of ["Contrato de honorários", "Procuração", "Declaração de hipossuficiência"]) await expect(page.getByRole("checkbox", { name: new RegExp(`^${n}`) })).not.toBeChecked();
+    await semViolacoes(page);
+
+    // O foco fica no seletor ao trocar a área.
+    await area.focus();
+    await area.selectOption("FAMILIA");
+    await expect(area).toBeFocused();
+    await expect(page.getByRole("status").filter({ hasText: "A sugestão mudou para Família: vêm marcados o contrato, a procuração e a declaração de hipossuficiência." })).toBeVisible();
+    for (const n of ["Contrato de honorários", "Procuração", "Declaração de hipossuficiência"]) {
+      await expect(page.getByRole("checkbox", { name: new RegExp(`^${n}\\s?sugerido`) })).toBeChecked();
+    }
+    await expect(page.locator(".da-tag")).toHaveCount(3);
+    await expect(page.getByText("A área Família fica no contrato C-2026-033.")).toBeVisible();
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Gerar 3 documentos" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Documentos gerados" })).toBeVisible();
+    await expect(page.getByText("A área Família ficou no contrato C-2026-033.")).toBeVisible();
+    await expect(page.getByText("Família, escolhida aqui · ficou no contrato")).toBeVisible();
+    const corpo = pedidos.find((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/contratos/${CT}/documentos`)!.corpo as Record<string, unknown>;
+    expect(corpo.area).toBe("FAMILIA");
+    expect((corpo.documentos as unknown[]).length).toBe(3);
+    await semViolacoes(page);
+  });
+
+  test("Gerar: tendo mexido numa caixa, trocar a área não muda nada e oferece Usar a sugestão", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${CT}/documentos-dados`]: { corpo: { ...DADOS_DA, sugestao: sugestao() } },
+      [`POST /v1/escritorio/contratos/${CT}/documentos/previa`]: { corpo: PREVIA },
+    });
+    await page.goto(`${P}/contratos/modelos/gerar?contrato=${CT}`);
+    await page.getByRole("checkbox", { name: /^Procuração/ }).check();
+    const area = page.getByLabel("Sugestão para");
+    await area.selectOption("FAMILIA");
+    await expect(page.getByRole("checkbox", { name: /^Contrato de honorários/ })).not.toBeChecked();
+    await expect(page.getByText("A sugestão de Família é: contrato de honorários, procuração e declaração de hipossuficiência.")).toBeVisible();
+    await expect(page.getByText("Você já tinha marcado à mão, então nada mudou sozinho.")).toBeVisible();
+    await semViolacoes(page);
+    await page.getByRole("button", { name: /^Usar a sugestão\s?de Família$/ }).click();
+    for (const n of ["Contrato de honorários", "Procuração", "Declaração de hipossuficiência"]) await expect(page.getByRole("checkbox", { name: new RegExp(`^${n}`) })).toBeChecked();
+    await expect(area).toBeFocused();
+  });
+
+  test("Gerar de novo: a área do contrato, as escolhas da última vez e Marcar o que entrou depois", async ({ page }) => {
+    const ultima = { geracaoId: GER, em: "2026-11-21T18:10:00Z", por: MARINA, documentos: [{ tipo: "CONTRATO", modeloId: null }, { tipo: "PROCURACAO", modeloId: null }, { tipo: "HIPOSSUFICIENCIA", modeloId: null }, { tipo: "OUTRO", modeloId: RES }],
+      outorgados: [{ pessoaId: MARINA.id, inscricoes: [OAB_MA.id] }], poderes: ["ACORDO"], outroPoder: null, cidadeData: "São Paulo, 21 de novembro de 2026" };
+    const atuais = [{ chave: "CONTRATO", tipo: "CONTRATO", modeloId: null, numero: 1, geradoEm: "2026-11-21T18:10:00Z", assinado: false }];
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/contratos/${CT}/documentos-dados`]: { corpo: { ...DADOS_DA, ultima, atuais, sugestao: sugestao({
+        area: "PREVIDENCIARIO", origem: "CONTRATO", contratoArea: "PREVIDENCIARIO", gravaNoContrato: false,
+        entraramDepois: { PREVIDENCIARIO: [{ chave: I, em: "2026-11-21T18:20:00Z" }] } }) } },
+      [`POST /v1/escritorio/contratos/${CT}/documentos/previa`]: { corpo: PREVIA },
+    });
+    await page.goto(`${P}/contratos/modelos/gerar?contrato=${CT}`);
+    const area = page.getByLabel("Sugestão para");
+    await expect(area).toHaveValue("PREVIDENCIARIO");
+    await expect(area).toHaveAccessibleDescription("a área do contrato C-2026-033");
+    await expect(page.getByText("Vieram as escolhas da versão 1, e não a lista da área. Mude o que precisar antes de gerar.")).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: /^Declaração de residência/ })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: /^Requerimento ao INSS/ })).not.toBeChecked();
+    await expect(page.getByText("Previdenciário também tem: requerimento ao INSS.")).toBeVisible();
+    await expect(page.getByText(/A área .* fica no contrato/)).toHaveCount(0);
+    await semViolacoes(page);
+    await page.getByRole("button", { name: /^Marcar\s?requerimento ao INSS$/ }).click();
+    await expect(page.getByRole("checkbox", { name: /^Requerimento ao INSS/ })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: /^Requerimento ao INSS/ })).toBeFocused();
+    await expect(page.getByText("Previdenciário também tem: requerimento ao INSS.")).toHaveCount(0);
+  });
+
+  test("EX-18: Documentos para começar aponta para Documentos por área", async ({ page }) => {
+    await simular(page, comuns());
+    await page.goto(`${P}/juridico/casos/documentos`);
+    await expect(page.getByRole("link", { name: "Contratos › Modelos de documento › Documentos por área" })).toHaveAttribute("href", "/contratos/modelos/modelos#da");
+  });
+});

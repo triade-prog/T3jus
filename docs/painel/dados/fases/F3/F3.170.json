@@ -1,0 +1,12 @@
+{
+  "id": "F3.170",
+  "texto": "Documentos por área, servidor e configuração (CH-14): a tabela documentos_por_area por escritório e área, com a sugestão do T3jus até o escritório mudar, as rotas da api-portal e a folha \"Documentos por área\" em Modelos de documento, com o arquivar dos outros documentos e o aviso depois de enviar um",
+  "peca": "S2",
+  "refs": [
+    "CH-14"
+  ],
+  "status": "feito",
+  "ordem": 1260,
+  "evidencia": "Migration 1070_documentos_por_area.sql (tabela com escritorio_id e proteger_tabela_escritorio, versão e conflito, sem apagar, linha no inventário; portal_documentos_por_area e portal_documentos_por_area_salvar com contratos.editar; on conflict do nothing na primeira gravação; OUTRO só de modelo ativo do escritório da sessão; histórico documento.area_salva), pgTAP 139_documentos_por_area_test.sql (58: isolamento, permissão, só consulta, validação, ordem, conflito, modelo arquivado sai da lista) e 008 com a tabela nova; rotas GET e PUT /v1/escritorio/documentos/por-area (3 testes Deno \"CH-14\"); packages/domain/src/documentos_area.ts (6 testes Vitest); tela DocumentosPorArea.tsx e documentosPorArea.ts (5 testes Vitest), janela de arquivar, aviso de outro documento enviado e a frase cruzada da EX-18; e2e \"Documentos por área (CH-14)\" em tests/e2e/portal-procuracoes.spec.ts (folha, conflito, erro, só consulta, arquivar e enviar, EX-18) com axe, no computador e no celular",
+  "proximo": "Aplicar a 1070 e publicar a api-portal e o Portal, com o ok da Carol"
+}

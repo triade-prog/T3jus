@@ -25,6 +25,7 @@ import { chamarPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
 import { FolhaPrazoComprovante, type PrazoSalvo } from "./PrazoComprovante.tsx";
 import { textoMudado, textoSalvo } from "./prazoComprovante.ts";
+import { ROTAS_DOCUMENTOS } from "./procuracoes.ts";
 
 type Feito = { titulo: string; texto: string };
 const TIPOS = TIPOS_NO_SELETOR;
@@ -184,7 +185,10 @@ function Conteudo() {
         <p className="sobretitulo">Jurídico{dono === null ? "" : dono ? " · só a sócia dona edita" : " · você vê; quem edita é a sócia dona"}</p>
         <h1>Documentos para começar</h1>
         <span className="fio" aria-hidden="true" />
-        <p className="lede">O que cada área pede ao cliente para o processo começar. Fica ao lado de Etapas do escritório.</p>
+        <p className="lede">
+          O que cada área pede ao cliente para o processo começar. Fica ao lado de Etapas do escritório. O que vem marcado em Gerar documentos fica em{" "}
+          <a href={`${ROTAS_DOCUMENTOS.modelos}#da`}>Contratos › Modelos de documento › Documentos por área</a>.
+        </p>
       </div>
     </div>
   );
