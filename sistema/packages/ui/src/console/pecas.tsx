@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { Icone, type NomeIcone } from "../Icone.tsx";
+import { pararVigiaDoFoco, pistaDoFoco, vigiarFoco, type PistaDoFoco } from "./foco.ts";
 
 export type TomAviso = "urgencia" | "atencao" | "sucesso" | "info";
 
@@ -93,7 +94,8 @@ export function Carregando({ rotulo, linhas = 3 }: { rotulo: string; linhas?: nu
 }
 
 /**
- * Janela (dialog com showModal): o foco fica preso, Esc fecha e o foco volta a quem abriu.
+ * Janela (dialog com showModal): o foco fica preso, Esc fecha e o foco volta a quem abriu. Se quem abriu
+ * sumiu ou a janela fecha sem o evento close (Cancelar, X, desmontada), foco.ts acha o lugar (F3.165).
  * O formulário da janela é o `aoEnviar`; o rodapé recebe os botões.
  */
 export function Janela({ id, aberta, aoFechar, titulo, sobretitulo, descricao, alerta, aoEnviar, children, pe, classe }: {
@@ -112,13 +114,25 @@ export function Janela({ id, aberta, aoFechar, titulo, sobretitulo, descricao, a
   pe: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const pista = useRef<PistaDoFoco | null>(null);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (aberta && !d.open) {
+    if (!aberta) {
+      if (d.open) d.close();
+      return;
+    }
+    if (!d.open) {
+      // F3.165: a pista de quem abriu é guardada antes do showModal(); depois dele, o foco já está na janela.
+      pista.current = pistaDoFoco(document.activeElement);
       d.showModal();
       d.querySelector<HTMLElement>("[data-foco]")?.focus();
-    } else if (!aberta && d.open) d.close();
+    } else pararVigiaDoFoco(); // o efeito rodou de novo com a janela aberta (modo de desenvolvimento)
+    const p = pista.current;
+    // Roda quando aberta vira falso e quando a janela é desmontada, com ou sem o evento close.
+    return () => {
+      if (p) vigiarFoco(p);
+    };
   }, [aberta]);
   return (
     <dialog ref={ref} className={classe ? `janela ${classe}` : "janela"} id={id} aria-labelledby={`${id}-t`} aria-describedby={descricao}

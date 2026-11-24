@@ -5,7 +5,8 @@
   "refs": [
     "PT-10"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1220,
-  "proximo": "Medir os alvos de toque das ações das tabelas e propor o ajuste à especialista de frontend e à Carol"
+  "nota": "Plano aprovado pela Carol em 24/11/2026, 11h48 (Brasília), opção \"Aprovar como está\" (docs/design/aprovadas/portal-tabelas-toque/). O teste com leitor de tela de verdade (VoiceOver pelo roteiro e NVDA) ficou no F3.168; o compacto de 36 px no celular fora das tabelas, no F3.169. Se o VoiceOver achar falha, a correção cita F3.165 e o roteiro roda de novo.",
+  "evidencia": "(a) Regra F3.165 no fim do bloco \"Tabelas do Portal\" do portal.css: área de toque invisível de 44 x 44 px (::after) nos links e botões de td e de .cartoes/.cb-cartoes.so-cel, fora de dialog, .c-nome e .sem-area; no celular, o .btn-compacto dessas tabelas e listas com 44 px visíveis. Saíram .cl-tab .esc a::after e .fl-tab .fl-num a::after. (c) Retorno de foco no Janela (console/pecas.tsx) com console/foco.ts: a pista de quem abriu é guardada antes do showModal() e a vigia de 3 s roda quando aberta vira falso ou na desmontagem (ordem: o botão, o equivalente da linha, a linha, a linha que ficou no lugar, o título ou o h1); o voltarFoco e o estado abriu de Financeiro.tsx saíram. Equipe: as duas tabelas com nome (\"Pessoas da equipe\" e \"Pessoas retiradas\"). Regra \"Tabela nova no Portal\" do sistema/README.md com o item 8. Testes: e2e portal-tabelas-toque.spec.ts (novo: 45 telas a 800/1024/1280/1440 e 390/320, alturas a 1024 e 1280 iguais às gravadas, Agenda, compactos, 11 casos de foco inclusive Cancelar, X, GET atrasado em 600 ms e tabela vazia, nomes) e o caso das duas janelas em portal-fechamento-contrato.spec.ts; 133 passaram. portal-tabelas.spec.ts: 157 passaram. Suíte e2e inteira: 1317 passaram; falharam portal-peticoes.spec.ts:144 (navegação abortada sob carga, passou 5 de 5 ao repetir) e portal-conversas.spec.ts:164 (F3.164, falha 3 de 15 também na main). Vitest 581 passaram; lint sem erro."
 }

@@ -31,7 +31,7 @@ create temp sequence tel;
 create function pg_temp.fim() returns void language plpgsql as $$
 begin
   set constraints all immediate;
-  set constraints caso_pronto_fim, caso_pronto_fim_mudou, caso_pronto_fim_saiu, destinacoes_fecham deferred;
+  set constraints caso_pronto_fim, caso_pronto_fim_mudou, caso_pronto_fim_saiu, destinacoes_fecham, caso_fechou_fim deferred;
 end $$;
 create function pg_temp.cliente(p_nome text) returns uuid language sql as $$
   select (portal_cliente_cadastrar(ids.socia, ids.rm, jsonb_build_object('tipo', 'PF', 'nome', p_nome, 'origem', 'GOOGLE',
@@ -107,7 +107,8 @@ create function pg_temp.periodos(p_caso uuid) returns text language sql as $$
   select coalesce(string_agg(motivo || ':' || coalesce(saiu_por, 'ABERTO'), ' ' order by ordem), '') from casos_prontos_fechar where caso_id = p_caso
 $$;
 create function pg_temp.falhas() returns bigint language sql as $$
-  select count(*) from historico where acao in ('financeiro.caso_pronto_falhou', 'financeiro.caso_pronto_fora_sem_levantamento')
+  select count(*) from historico where acao in ('financeiro.caso_pronto_falhou', 'financeiro.caso_pronto_fora_sem_levantamento',
+                                              'financeiro.caso_fechou_falhou')
 $$;
 create function pg_temp.acertos() returns bigint language sql as $$
   select coalesce(pg_stat_get_xact_function_calls('caso_acerto(uuid,uuid)'::regprocedure), 0)
@@ -153,7 +154,8 @@ select is((select pg_temp.periodos(a) from cs), 'PAGAMENTO:ENCERRADO', 'EX-17: e
 select is((select pg_temp.aviso(a, bianca) -> 'agora' -> 'encerrado' -> 'por' ->> 'nome' from cs, ids), 'Marina Ribeiro',
   'o aviso da Bianca mostra "Agora": encerrado por Marina');
 select is((select (pg_temp.aviso(a, bianca) ->> 'lido')::boolean from cs, ids), false, 'resposta 4: encerrar não marca o aviso dos outros como lido');
-select is((select count(*) from avisos_sino s, cs where s.origem_id = cs.a), 2::bigint, 'encerrar não manda aviso novo');
+select is((select count(*) from avisos_sino s, cs where s.origem_id = cs.a and s.tipo = 'CASO_PRONTO_FECHAR'), 2::bigint,
+  'encerrar não manda aviso novo de caso pronto (o de caso encerrado é o F3.150, no pgTAP 137)');
 
 -- ---------------------------------------------------------------------------------------
 -- 2. A parcela a vencer segura; a rotina não avisa; o pagamento dela avisa.
@@ -442,7 +444,7 @@ select portal_financeiro_receber_registrar_recibo(:'diego', :'rm', :'parcela',
   jsonb_build_object('valor', 90000, 'recebidoEm', :'hoje', 'forma', 'PIX')) is not null;
 set constraints all immediate;
 reset role;
-set constraints caso_pronto_fim, caso_pronto_fim_mudou, caso_pronto_fim_saiu, destinacoes_fecham deferred;
+set constraints caso_pronto_fim, caso_pronto_fim_mudou, caso_pronto_fim_saiu, destinacoes_fecham, caso_fechou_fim deferred;
 select is((select pg_temp.periodos(caso) || ' ' || pg_temp.avisados(caso)::text from r), 'PAGAMENTO:ABERTO {"Bianca Torres","Marina Ribeiro"}',
   'o commit pela API como service_role abre o período e avisa');
 
@@ -534,10 +536,9 @@ select is((select jsonb_path_query_array(portal_financeiro_contrato_fechamentos(
   (select jsonb_build_array(k2) from f), 'a folha do contrato mostra o importado encerrado com levantamento e não o sem levantamento');
 
 -- ---------------------------------------------------------------------------------------
--- 21. O check do sino: os 25 tipos de TipoAvisoSino (avisos.ts) mais o novo.
-select is((select array_agg(x order by x) from (select unnest(regexp_matches(pg_get_constraintdef(oid), '''([A-Z0-9_]+)''', 'g')) x
-             from pg_constraint where conrelid = 'avisos_sino'::regclass and conname = 'avisos_sino_tipo_check') t),
-  (select array_agg(x order by x) from unnest(array[
+-- 21. O check do sino: contém os 25 tipos de TipoAvisoSino (avisos.ts) mais o CASO_PRONTO_FECHAR. A lista
+-- exata fica no teste do tipo mais novo (137, F3.150).
+select ok(array[
     'CONVERSA_IA', 'CONVERSA_ASSUMIDA', 'CONVERSA_PASSADA', 'AUTOMACAO_SUGESTAO',
     'MODELO_APROVADO', 'MODELO_RECUSADO', 'PRAZO_2_DIAS',
     'PETICAO_REVISAR', 'PETICAO_DECIDIDA', 'PETICAO_PASSADA',
@@ -545,11 +546,13 @@ select is((select array_agg(x order by x) from (select unnest(regexp_matches(pg_
     'REPASSE_PASSADO', 'REPASSE_ATRASADO', 'REPASSE_PROXIMA_ACAO',
     'EXPORTAR_CONTADOR', 'DOCUMENTO_CHEGOU', 'CARNE_DESATUALIZADO', 'PEDIDO_CHAVE_PIX',
     'EXITO_VALOR_MUDOU', 'EXITO_NAO_COBRADO', 'CASO_ABERTO_NA_ASSINATURA', 'CLIENTE_FEZ_18',
-    'DOCUMENTOS_INICIO_CHEGARAM', 'CASO_PRONTO_FECHAR']) x),
-  'o check do sino tem os 25 tipos do domain mais CASO_PRONTO_FECHAR');
+    'DOCUMENTOS_INICIO_CHEGARAM', 'CASO_PRONTO_FECHAR']
+  <@ (select array_agg(x) from (select unnest(regexp_matches(pg_get_constraintdef(oid), '''([A-Z0-9_]+)''', 'g')) x
+        from pg_constraint where conrelid = 'avisos_sino'::regclass and conname = 'avisos_sino_tipo_check') t),
+  'o check do sino contém os 25 tipos do domain mais CASO_PRONTO_FECHAR');
 
 -- Nenhum cenário deixou erro nem saída do escopo sem levantamento no histórico.
-select is(pg_temp.falhas(), 0::bigint, 'nenhum financeiro.caso_pronto_falhou nem caso_pronto_fora_sem_levantamento');
+select is(pg_temp.falhas(), 0::bigint, 'nenhum financeiro.caso_pronto_falhou, caso_pronto_fora_sem_levantamento nem caso_fechou_falhou');
 
 select * from finish();
 rollback;

@@ -1,0 +1,11 @@
+{
+  "id": "F3.168",
+  "texto": "Leitor de tela de verdade nas tabelas do Portal (sobra do F3.165): a Carol roda no iPhone o roteiro de VoiceOver do plano (docs/design/aprovadas/portal-tabelas-toque/PLANO.md, seção b, passos 1 a 5) na versão publicada, e alguém com Windows roda os mesmos passos com NVDA no Chrome (Ctrl + Alt + setas nas células no passo 2)",
+  "peca": "S2",
+  "refs": [
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 1260,
+  "proximo": "Carol rodar o roteiro de VoiceOver na versão publicada e mandar as anotações; se algo falhar, anotar aqui o passo e o que ela ouviu e corrigir num commit que cita F3.165"
+}

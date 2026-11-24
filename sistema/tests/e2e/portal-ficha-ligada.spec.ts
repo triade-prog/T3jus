@@ -306,6 +306,8 @@ test.describe("Jornada do cliente: o fechamento e o contrato sem caso", () => {
     await page.goto(`${P}/clientes/${cid(1)}`);
     const ambar = page.getByRole("region", { name: "Próximo passo · fechamento" });
     await expect(ambar).toContainText("Quem faz: a área Financeiro, que não está liberada para você. Marina e Diego.");
+    // F3.150 (pergunta 5): a promessa do aviso no sino.
+    await expect(ambar).toContainText("Quando o caso for encerrado no financeiro, quem é responsável por ele fica sabendo pelo sino.");
     await expect(ambar).toContainText("Falta pagar terceiros");
     await expect(ambar.getByRole("link", { name: "Ver o acerto" })).toHaveCount(0);
     await expect(ambar.getByRole("link", { name: "Ver o caso" })).toHaveAttribute("href", `/juridico/casos/${CASO}`);
