@@ -1,6 +1,8 @@
 # Clientes: termo de tutela · notas
 
-**Proposta para a Carol aprovar.** Item F3.140 do painel (termo de tutela como anexo na ficha do menor quando quem assina é tutora ou tutor; refs AP-01 e CH-08). Textos do plano `planos/F3.140-termo-tutela.md` (seção 3, com os ajustes da seção 9, que valem por cima). Em Gerar documentos, os textos partem do plano do F3.142 (seção 9, B1).
+**Aprovado pela Carol em 24/11/2026 às 0h06 (Bahia)** ("ok"). Pergunta 1: sim, aos 18 anos o termo fica à vista em “Quem assinava com …”, só para baixar (estado `ficha-quem-assinava-termo`).
+
+Item F3.140 do painel (termo de tutela como anexo na ficha do menor quando quem assina é tutora ou tutor; refs AP-01 e CH-08). Textos do plano `planos/F3.140-termo-tutela.md` (seção 3, com os ajustes da seção 9, que valem por cima). Em Gerar documentos, os textos partem do plano do F3.142 (seção 9, B1).
 
 Parte dos desenhos aprovados em `docs/design/aprovadas/portal-responsavel-legal` (D25) e `docs/design/aprovadas/portal-termo-curatela` e não muda nada deles. As peças são as mesmas: a linha do arquivo (`rl-arq`), o botão **Baixar o termo**, o aviso do termo não guardado e o erro ao baixar.
 
@@ -17,7 +19,7 @@ Abra o `index.html` e use o botão **Estados**. Capturas em computador (1440 px)
 | `gerar-tutela` | Gerar documentos de Davi: o quadro com a linha **Termo de tutela na ficha**, o aviso do representado (F3.142) com a frase do termo e **Baixar o termo**, e a frase do termo na faixa do botão. |
 | `gerar-tutela-falta` | O mesmo, com o CPF e o RG de Sônia faltando: o quadro tracejado com a falta e depois a linha do termo, o aviso de atenção com **Completar na ficha** e **Baixar o termo**, e a faixa sem “Em todos” e com a frase do termo. |
 | `fez-18-janela-tutela` | A janela dos 18 anos de Rafaela, com a frase a mais **“O termo de tutela também fica guardado.”** |
-| `ficha-quem-assinava-termo` | **Depende da pergunta 1 da Carol.** Ficha de Rafaela depois de “Salvar: Rafaela assina por si”: em **Quem assinava com Rafaela**, a linha do termo, só para baixar e sem o lembrete de juntar. A recomendação é sim. |
+| `ficha-quem-assinava-termo` | **Pergunta 1: sim (Carol, 24/11/2026).** Ficha de Rafaela depois de “Salvar: Rafaela assina por si”: em **Quem assinava com Rafaela**, a linha do termo, só para baixar e sem o lembrete de juntar. A recomendação é sim. |
 
 **Marca de desenho.** A nota tracejada no alto de cada captura, o contorno tracejado com o selo **“Novo”** e o sublinhado tracejado nas frases novas mostram o que muda em relação ao aprovado. **Nada disso vai para o produto.**
 
@@ -86,7 +88,7 @@ A mesma peça de `ficha-baixar-erro` da curatela, logo abaixo da linha do termo 
 
 ### 5. Gerar documentos (sobre o aviso do menor do F3.142)
 
-Os textos partem sempre das frases do F3.142, conferidas no PR #157 (ainda não mesclado): `avisoDoMenor`, `avisoFaltaQuemAssina`, `linhaFaltaNoQuadro` e a faixa `fraseDaFaixaGerar`, em `sistema/packages/ui/src/portal/procuracoes.ts`. A frase do termo vai **no fim** do texto do aviso que estiver na tela, e **Baixar o termo** vai nas ações dele, ao lado de “Completar na ficha” (`Procuracoes.tsx`). Na faixa, “Junte o termo de tutela à procuração.” entra depois do que `fraseDaFaixaGerar` devolve e antes de “Cada geração fica registrada, com quem gerou e quando.”
+Os textos partem sempre das frases do F3.142, conferidas no PR #157: `avisoDoMenor`, `avisoFaltaQuemAssina`, `linhaFaltaNoQuadro` e a faixa `fraseDaFaixaGerar`, em `sistema/packages/ui/src/portal/procuracoes.ts`. A frase do termo vai **no fim** do texto do aviso que estiver na tela, e **Baixar o termo** vai nas ações dele, ao lado de “Completar na ficha” (`Procuracoes.tsx`). Na faixa, “Junte o termo de tutela à procuração.” entra depois do que `fraseDaFaixaGerar` devolve e antes de “Cada geração fica registrada, com quem gerou e quando.”
 
 **`gerar-tutela`** (Davi, 11 anos; 3 documentos):
 
@@ -137,5 +139,5 @@ Com 18 anos (`gerar-fez-18` do D25), nada de termo: o aprovado não muda. O text
 
 ## Para decidir
 
-1. **Aos 18 anos, o termo de tutela fica à vista em “Quem assinava com Rafaela”, para baixar, ou só guardado, sem aparecer?** (pergunta 1 do plano) **Recomendo à vista, só para baixar, sem o lembrete de juntar** (estado `ficha-quem-assinava-termo`). A tutela acabou, mas o termo prova que a procuração e o contrato assinados pela tutora valeram, e o caso costuma seguir depois dos 18. Fica com a mesma proteção, e cada abertura vai ao histórico. Com “só guardado”, o estado sai e nada mais muda.
+1. **Aos 18 anos, o termo de tutela fica à vista em “Quem assinava com Rafaela”, para baixar, ou só guardado, sem aparecer?** (pergunta 1 do plano) **Recomendo à vista, só para baixar, sem o lembrete de juntar** (estado `ficha-quem-assinava-termo`). A tutela acabou, mas o termo prova que a procuração e o contrato assinados pela tutora valeram, e o caso costuma seguir depois dos 18. Fica com a mesma proteção, e cada abertura vai ao histórico. Com “só guardado”, o estado sai e nada mais muda. **Decidido: sim, à vista, só para baixar (Carol, 24/11/2026).**
 2. O texto do inventário com o termo de tutela (pergunta 2 do plano) não é tela e não está neste desenho; segue no plano.

@@ -3,16 +3,18 @@
 // leitura, como no desenho aprovado em docs/design/aprovadas/portal-responsavel-legal: a folha
 // "Quem assina por…", a linha do tempo do menor, a faixa e a janela dos 18 anos (pergunta 3) e a
 // folha "Quem assinava com…", que fica guardada depois. A conta de quem assina vem do servidor,
-// feita com a data de hoje. O termo de curatela (F3.118) aparece na folha para baixar.
+// feita com a data de hoje. O termo de curatela (F3.118) e o de tutela (F3.140, desenho aprovado em
+// docs/design/aprovadas/portal-termo-tutela) aparecem na folha para baixar; aos 18 anos, o de tutela
+// fica em "Quem assinava com…", só para baixar (pergunta 1).
 
 import { useId, useRef, useState, type ReactNode } from "react";
-import { ESTADOS_CIVIS, formatarDocumento, PAPEIS_RESPONSAVEL, type FichaCliente } from "@t3jus/domain";
+import { ESTADOS_CIVIS, formatarDocumento, PAPEIS_RESPONSAVEL, type FichaCliente, type TermoResponsavel } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, descritoPor, ErroCampo, Janela } from "../console/pecas.tsx";
 import { dataBr } from "./clientes.ts";
 import { chamarPortal } from "./Moldura.tsx";
-import { baixarTermoCuratela, metaTermoNaFicha } from "./termoCuratela.ts";
+import { baixarTermo, metaTermoNaFicha } from "./termoCuratela.ts";
 
 const primeiroNome = (n: string) => n.trim().split(/\s+/)[0] ?? n;
 const iniciais = (n: string) => n.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
@@ -91,7 +93,7 @@ export function BaixarTermo({ id, compacto = false, children }: {
   async function baixar() {
     setFalha(null);
     setBaixando(true);
-    const r = await baixarTermoCuratela(id);
+    const r = await baixarTermo(id);
     setBaixando(false);
     if (!r.ok) setFalha({ erro: r.erro, vez: ++vez.current });
   }
@@ -114,14 +116,42 @@ export function BaixarTermo({ id, compacto = false, children }: {
   return <>{children(botao, erro)}</>;
 }
 
+/** A linha do termo guardado na ficha, com "Baixar o termo" e o erro logo abaixo (F3.118, F3.140). */
+function LinhaTermoNaFicha({ termo }: { termo: TermoResponsavel }) {
+  const id = useId();
+  return (
+    <BaixarTermo id={termo.id} compacto>
+      {(botao, erro) => (
+        <div className="rl-termo-ficha">
+          <div className="rl-arq rl-tem" role="group" aria-labelledby={`${id}-t`}>
+            <span className="rl-ic" aria-hidden="true">
+              <Icone nome="doc" className="ico" />
+            </span>
+            <div>
+              <strong id={`${id}-t`}>{termo.tipo === "TERMO_TUTELA" ? "Termo de tutela" : "Termo de curatela"}</strong>
+              <small>{metaTermoNaFicha(termo)}</small>
+            </div>
+            {botao}
+          </div>
+          {erro}
+        </div>
+      )}
+    </BaixarTermo>
+  );
+}
+
+/** Quem assina pelo menor é tutora ou tutor (F3.140). */
+export const ehTutela = (papel: FichaCliente["rlPapel"] | null | undefined) => papel === "TUTORA" || papel === "TUTOR";
+
 /** "Quem assina por Pedro": o responsável, com a qualificação e a regra do dia. */
 export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
-  const idTermo = useId();
   const a = f.assina;
   if (!a || a.situacao === "PROPRIO" || a.situacao === "FEZ_18" || !f.rlNome) return null;
   const pn = primeiroNome(f.nome);
   const curatela = a.situacao === "CURATELA";
-  const termo = f.termoCuratela;
+  // O termo do painel certo (revisão, I5): o de curatela na curatela, o de tutela no menor com tutora ou tutor.
+  const tutela = !curatela && ehTutela(f.rlPapel);
+  const termo = curatela ? f.termoCuratela : tutela ? f.termoTutela : null;
   const papel = f.rlPapel ? PAPEIS_RESPONSAVEL[f.rlPapel] : "Responsável";
   const assiste = a.situacao === "ASSISTIDO" || (curatela && a.modo === "ASSISTE");
   const selo = curatela ? `${assiste ? "Assiste" : "Representa"} · como diz o termo`
@@ -141,7 +171,7 @@ export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: (
   return (
     <Folha titulo={`Quem assina por ${pn}`}
       sub={curatela ? `${papel} nomeada pelo juiz. Vai na procuração e no contrato, e assina por ${pn}.`.replace("Curador nomeada", "Curador nomeado")
-        : `Responsável legal. Vai na procuração e no contrato, e assina ${assiste ? `com ${pn}` : `por ${pn}`}.`}
+        : `${tutela ? `${papel} de ${pn}.` : "Responsável legal."} Vai na procuração e no contrato, e assina ${assiste ? `com ${pn}` : `por ${pn}`}.`}
       acoes={aoEditar ? (
         <button data-muda className="btn btn-sec" type="button" onClick={aoEditar} aria-label={`Mudar quem assina por ${pn}`}>
           <Icone nome="lapis" className="ico" />
@@ -166,25 +196,7 @@ export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: (
         {curatela ? item("Processo da curatela", f.curProcesso ? <span className="num">{f.curProcesso}</span> : null, false, false) : null}
         {curatela ? item("Vara", f.curVara ?? null, false, false) : null}
       </dl>
-      {curatela && termo ? (
-        <BaixarTermo id={termo.id} compacto>
-          {(botao, erro) => (
-            <div className="rl-termo-ficha">
-              <div className="rl-arq rl-tem" role="group" aria-labelledby={`${idTermo}-t`}>
-                <span className="rl-ic" aria-hidden="true">
-                  <Icone nome="doc" className="ico" />
-                </span>
-                <div>
-                  <strong id={`${idTermo}-t`}>Termo de curatela</strong>
-                  <small>{metaTermoNaFicha(termo)}</small>
-                </div>
-                {botao}
-              </div>
-              {erro}
-            </div>
-          )}
-        </BaixarTermo>
-      ) : null}
+      {termo ? <LinhaTermoNaFicha termo={termo} /> : null}
       {a.situacao === "REPRESENTADO" && a.faz16 ? (
         <p className="rl-regra">
           <Icone nome="relogio" className="ico" />
@@ -204,6 +216,12 @@ export function FolhaQuemAssina({ f, aoEditar }: { f: FichaCliente; aoEditar?: (
         <p className="rl-regra">
           <Icone nome="doc" className="ico" />
           <span>Ao gerar, lembre de juntar o termo de curatela à procuração.</span>
+        </p>
+      ) : null}
+      {tutela ? (
+        <p className="rl-regra">
+          <Icone nome="doc" className="ico" />
+          <span>Ao gerar, lembre de juntar o termo de tutela à procuração.</span>
         </p>
       ) : null}
     </Folha>
@@ -305,6 +323,7 @@ export function FolhaQuemAssinava({ f }: { f: FichaCliente }) {
           <dd>{q.contratos.length ? `Documentos do contrato ${q.contratos.join(", ")}` : "Nenhum documento gerado no T3jus"}</dd>
         </div>
       </dl>
+      {q.termo ? <LinhaTermoNaFicha termo={q.termo} /> : null}
     </Folha>
   );
 }
@@ -390,7 +409,10 @@ export function JanelaAssinaPorSi({ aberta, f, aoFechar, aoFeito, aoConflito }: 
       </div>
       <p className="pt-comuns">
         <Icone nome="historico" className="ico" />
-        <span>{quem} sai de “Quem assina” e fica na ficha, com a data. Nada é apagado. Os documentos gerados antes continuam como estavam.</span>
+        <span>
+          {quem} sai de “Quem assina” e fica na ficha, com a data. Nada é apagado.{f.termoTutela ? " O termo de tutela também fica guardado." : ""} Os documentos
+          gerados antes continuam como estavam.
+        </span>
       </p>
       <p className="ajuda">Se {pn} não pode assinar sozinho(a) por outro motivo, não salve aqui: edite a ficha e marque “Não: está sob curatela”.</p>
     </Janela>

@@ -13,7 +13,7 @@ import qrcode from "qrcode-generator";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   brCodePix, chavePixParaLer, dataBr, hojeBrasilia, LIMITE_CIDADE, LIMITE_INSTRUCOES, LIMITE_RECEBEDOR, normalizarChavePix, pixDaParcela,
-  camposDoEscritorioNaCapa, fraseOabSociedade, identificacaoDoCarne, razaoLonga, reais, subMarcaAdvocacia, telefoneBr, textoPix, TIPOS_CHAVE_PIX, timbradoDoEscritorio, txidParcela,
+  camposDoEscritorioNaCapa, identificacaoDoCarne, razaoLonga, razaoSocialEmBranco, reais, subMarcaAdvocacia, telefoneBr, textoPix, TIPOS_CHAVE_PIX, timbradoDoEscritorio, txidParcela,
   type AreaCarne, type CarneGerado, type CarneParaImprimir, type FormatoCarne, type MudancaCarne, type OpcoesCarne, type ParcelaParaCarne, type PdfDoCarne, type PedidoChavePix, type PreviaEnvioCarne, type EnvioCarne,
   type RecebimentoEscritorio, type RecebimentoSalvo, type TipoChavePix,
 } from "@t3jus/domain";
@@ -28,7 +28,7 @@ import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { chamarPortal, MolduraPortal, useEscritorioPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { BarraEscritorio, ROTAS_ESCRITORIO } from "./WhatsApp.tsx";
 import { Pedacos } from "./Recibo.tsx";
-import { JanelaRemoverLogo, LogoNoDocumento, MarcaParaLer, MarcaTimbrado, type DadosTimbrado, type EstadoMarca } from "./MarcaTimbrado.tsx";
+import { JanelaRemoverLogo, LinhaRazaoSocial, LogoNoDocumento, MarcaParaLer, MarcaTimbrado, type DadosTimbrado, type EstadoMarca } from "./MarcaTimbrado.tsx";
 
 /** A página do carnê para imprimir. `imprimir` abre a impressão assim que a folha carrega. */
 export function rotaCarne(id: string, area: AreaCarne, imprimir = false): string {
@@ -785,6 +785,9 @@ function JanelaCarne({ o, area, escritorio, aoFechar, aoFeito }: {
   const r = o.recebimento;
   const comPix = !!(r.pixTipo && r.pixChave);
   const dona = o.socioDono?.nome ?? "a sócia dona";
+  // F3.146 (D2): a razão social em branco, avisada só na tela; o carnê sai com o nome curto.
+  const tim = o.timbrado ?? escritorio.documentos;
+  const motivoRazao = tim ? razaoSocialEmBranco(tim) : null;
   const chaves = escolhidas.map((p) => p.id).join();
   const previa = useMemo(() => {
     const ps = o.parcelas.filter((p) => chaves.split(",").includes(p.id));
@@ -864,6 +867,7 @@ function JanelaCarne({ o, area, escritorio, aoFechar, aoFeito }: {
             ) : null}
           </Aviso>
         ) : null}
+        {motivoRazao ? <LinhaRazaoSocial motivo={motivoRazao} papel="O carnê" nomeCurto={escritorio.nome} dono={o.dono} dona={dona} /> : null}
         <div className="cn-j">
           <div className="cn-j-op">
             <fieldset className="fi-grupo-op">
@@ -1021,11 +1025,15 @@ function OndeAparece({ r }: { r: RecebimentoEscritorio }) {
   );
 }
 
-/** O que a marca e o timbrado usam do escritório. */
-function dadosTimbrado(e: EscritorioPortal, oab: string | null): DadosTimbrado {
-  const cnpj = e.cnpj ? e.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : null;
-  const local = [e.endereco, [e.cidade, e.uf].filter(Boolean).join(", ")].filter(Boolean).join(" · ") || null;
-  return { nome: e.nome, cnpj, oab, local };
+/** O escritório como vai no papel, para a prévia de Marca e timbrado (F3.146): o timbrado de hoje
+ *  de portal_recebimento (migration 1000; só para Financeiro, Contratos e a sócia dona) ou, sem ele,
+ *  os dados do escritório da sessão. Sem sociedade, sem o timbrado, quem não é a dona não tem o nome
+ *  completo nem a OAB da sócia dona (`semDona`). */
+function dadosTimbrado(e: EscritorioPortal, r: RecebimentoEscritorio): DadosTimbrado {
+  if (r.timbrado) return { ...r.timbrado, nome: e.nome, semDona: false };
+  const d = e.documentos;
+  if (d) return { ...d, nome: e.nome, contatos: e.contatos, whatsapp: null, semDona: !e.dono };
+  return { nome: e.nome, cnpj: e.cnpj, endereco: e.endereco, cidade: e.cidade, uf: e.uf, oab: e.oabSociedade ?? null, contatos: e.contatos, whatsapp: null, semDona: !e.dono };
 }
 
 function estadoDaMarca(r: RecebimentoEscritorio): EstadoMarca {
@@ -1053,7 +1061,7 @@ function SoLeitura({ r, escritorio }: { r: RecebimentoEscritorio; escritorio: Es
             <div><dt>Nome do recebedor</dt><dd>{r.recebedor ?? "—"}</dd></div>
             <div><dt>Cidade</dt><dd>{r.cidade ?? "—"}</dd></div>
             <div><dt>Instruções de pagamento</dt><dd style={{ fontWeight: 400 }}>{r.instrucoes ?? "—"}</dd></div>
-            <MarcaParaLer e={estadoDaMarca(r)} d={dadosTimbrado(escritorio, r.oab ?? null)}
+            <MarcaParaLer e={estadoDaMarca(r)} d={dadosTimbrado(escritorio, r)}
               desde={r.marca === "LOGO" && r.atualizadoEm ? diaCurto(diaDoInstante(r.atualizadoEm)) : null} />
           </dl>
           {tem ? <TesteDoPix tipo={r.pixTipo!} chave={r.pixChave!} recebedor={r.recebedor ?? ""} cidade={r.cidade ?? ""} /> : null}
@@ -1247,7 +1255,7 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
           </div>
         </div>
       </section>
-      <MarcaTimbrado e={marca} mudar={mudarMarca} d={dadosTimbrado(escritorio, fraseOabSociedade(marca.oabUf, marca.oabNumero))}
+      <MarcaTimbrado e={marca} mudar={mudarMarca} d={dadosTimbrado(escritorio, r)}
         salvoEm={salvoEm} erroMarca={erroMarca} naoSalvo={naoSalvo} aoRemover={() => setRemover(true)} />
       <div className="form-pe">
         <span className="esq-pe">Cada mudança fica no histórico do escritório. Os carnês novos já saem com ela.</span>

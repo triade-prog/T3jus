@@ -174,6 +174,9 @@ export interface RecebimentoEscritorio {
   oabUf?: string | null;
   oabNumero?: string | null;
   oab?: string | null;
+  /** O timbrado do dia, para a prévia de Marca e timbrado (F3.146, migration 1000): só para quem
+   *  tem Financeiro ou Contratos, ou é a sócia dona; para os outros, nulo. */
+  timbrado?: EscritorioNoPapel | null;
 }
 
 export interface RecebimentoSalvo {

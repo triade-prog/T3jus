@@ -1,0 +1,11 @@
+{
+  "data": "24/11/2026",
+  "inicio": "00:07",
+  "fim": "00:50",
+  "texto": "Termo de tutela na ficha do menor com tutora ou tutor: enviar o PDF no cadastro e na ficha, o lembrete na folha de quem assina, o termo em “Quem assinava” aos 18 e “Baixar o termo” em Gerar documentos, pela migration 0960 e pela rota nova da api-portal; aplicar e publicar fica no P11.",
+  "refs": [
+    "F3.140",
+    "AP-01",
+    "CH-08"
+  ]
+}

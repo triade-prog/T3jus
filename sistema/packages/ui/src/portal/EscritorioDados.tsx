@@ -7,7 +7,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
-  conferirFormEscritorio, dadosDoForm, dadosQueContamEscritorio, faltasDoEscritorio, formDoEscritorio, linhaDaSede, linhasTimbrado,
+  conferirFormEscritorio, dadosDoForm, dadosQueContamEscritorio, faltasDoEscritorio, formDoEscritorio, linhaDaSede, timbradoDoEscritorio,
   listaFaltasEscritorio, qualificacaoDoEscritorio, telefoneNoTexto, TEXTO_ERRO_ESCRITORIO, TIPOS_ESCRITORIO, UFS,
   type CampoEscritorio, type DadoQueConta, type DadosDocumentoPessoa, type DadosEscritorioDocumentos, type EnderecoEscritorio, type FormEscritorio,
   type InscricaoOab, type TipoEscritorio,
@@ -17,6 +17,7 @@ import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro } from "
 import { formatarCnpj } from "../console/ficha.ts";
 import { chamarPortal, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
 import { ROTAS_ESCRITORIO } from "./WhatsApp.tsx";
+import { Pedacos } from "./Recibo.tsx";
 
 const plural = (n: number, s: string, p: string) => (n === 1 ? s : p);
 const MARCA = /(\[[^[\]]{1,80}: (?:falta|confira)\])/;
@@ -532,7 +533,10 @@ function cepMascara(v: string): string {
 function Previa({ d }: { d: DadosEscritorioDocumentos }) {
   const f = faltasDoEscritorio(d);
   const tot = dadosQueContamEscritorio(d).length;
-  const [l1, ...resto] = linhasTimbrado(d);
+  // As 4 linhas do timbrado aprovado (bloco ed-tim de escritorio-dados-documentos; F3.146).
+  const t = timbradoDoEscritorio(d);
+  const l1 = t.nome;
+  const resto = [t.documento, t.sede, t.contato].filter((l) => l.length);
   return (
     <section className="folha" aria-labelledby="t-prev">
       <div className="folha-cab" style={{ paddingBottom: 10 }}>
@@ -554,7 +558,7 @@ function Previa({ d }: { d: DadosEscritorioDocumentos }) {
         <p className="ed-tim-rot">Timbrado do recibo e do carnê</p>
         <div className="ed-tim">
           <strong>{l1}</strong>
-          {resto.map((x) => <span key={x}>{x}</span>)}
+          {resto.map((x, i) => <span key={i}><Pedacos l={x} classe="cd-nw" /></span>)}
         </div>
         <p className="cd-conta-prev">
           <b>{tot - f.length} de {tot} dados.</b> {f.length ? `${plural(f.length, "Falta", "Faltam")}: ${listaFaltasEscritorio(f)}. Dá para salvar assim.` : "O escritório sai completo."}

@@ -265,6 +265,13 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     portal_financeiro_cobranca_anotar: () => ({ id: CLIENTE }),
     portal_recibo: (a) => ({ ...RECIBO_TESTE, pagamentoId: a.p_pagamento }),
+    // F3.146 (migration 1000): o timbrado do dia, só para a rota do .docx da proposta.
+    portal_proposta_timbrado: () => ({
+      comTimbrado: true, nome: "Aurora Advocacia", tipo: "SOCIEDADE", razaoSocial: "AURORA SOCIEDADE DE ADVOGADOS", cnpj: "11222333000181",
+      oab: "OAB/SP 31.874", cep: "01310100", logradouro: "Av. Paulista", numero: "2.100", complemento: null, bairro: "Bela Vista",
+      cidade: "São Paulo", uf: "SP", endereco: "Av. Paulista, 2.100, Bela Vista", enderecoConfira: false, telefone: "1130517720",
+      email: "contato@aurora.adv.br", site: null, contatos: [], whatsapp: null, dona: null,
+    }),
     portal_recebimento_marca: () => (opcoes.logo
       ? { tipo: "LOGO", logoId: LOGO_TESTE, largura: 1200, altura: 300, jeito: "SO_LOGO", cor: "ARQUIVO", oab: "OAB/BA 1.234" }
       : { tipo: "LETRA" }),
@@ -374,7 +381,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       return { dias: a.p_dias, atual: 90, totalComComprovante: 41, vencidosAgora: 3, vencidosCom: 7, passamAQtd: 4, passamA: [], voltamAEmDiaQtd: 0, voltamAEmDia: [], listasComFrase: 4, itensComFrase: 4 };
     },
     portal_cliente_termo_iniciar: () => TERMO,
-    portal_documento_dados: (a) => ({ contrato: { id: a.p_contrato }, termoCuratela: { id: TERMO, tipo: "TERMO_CURATELA", nome: "termo-curatela.pdf", anteriores: 0 } }),
+    portal_cliente_termo_tutela_iniciar: () => TERMO,
+    portal_documento_dados: (a) => ({ contrato: { id: a.p_contrato }, termoCuratela: { id: TERMO, tipo: "TERMO_CURATELA", nome: "termo-curatela.pdf", anteriores: 0 },
+      termoTutela: { id: TERMO, tipo: "TERMO_TUTELA", nome: "termo-tutela.pdf", anteriores: 1 } }),
     portal_cliente_documentos_previa: (a) => ({ area: a.p_area, itens: [], cliente: null, contato: null, whatsappLigado: false, modelo: null, escritorio: "Aurora", podeConferir: true }),
     portal_juridico_documento_inicio_salvar: (a) => ({ id: a.p_id ?? CLIENTE, versao: a.p_versao ? Number(a.p_versao) + 1 : 1, ...(a.p_dados as object) }),
     portal_juridico_documento_inicio_mover: (a) => [{ id: a.p_id, direcao: a.p_direcao }],
@@ -442,7 +451,10 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     }),
     portal_cliente_sem_avisos: (a) => ({ dados: a.p_dados }),
     portal_cliente_avisos: (a) => ({ cliente: a.p_cliente }),
-    portal_avisos: () => ({ novos: 1, total: 1, itens: [] }),
+    // F3.147: o aviso de caso pronto vem com o "agora" calculado no banco, e a rota só repassa.
+    portal_avisos: () => ({ novos: 1, total: 1, itens: [{ id: "a1", tipo: "CASO_PRONTO_FECHAR", origem: "casos", origemId: "c1", em: "2026-11-17T14:05:00+00:00",
+      lido: false, dados: { caso: "Carvalho x Construtora Lume", contrato: "C-2026-012", parcelas: 7, motivo: "PAGAMENTO" },
+      agora: { encerrado: { em: "2026-11-18T13:05:00+00:00", por: { id: "m", nome: "Marina Ribeiro" } } } }] }),
     portal_aviso_lido: (a) => ({ id: a.p_id }),
     portal_avisos_lidos: (a) => ({ ate: a.p_ate }),
     portal_ia_salvar: (a) => {
@@ -1502,10 +1514,18 @@ Deno.test("AP-05: baixar a proposta em .docx no timbrado, na pasta do escritóri
   assert(texto.includes("Recurso, se negado."));
   assert(texto.some((t) => t.startsWith("Parcelado: R$ 3.000,00 em 3 parcelas")));
   assert(texto.includes("Esta proposta vale até 30/11/2026."));
+  // F3.146: o cabeçalho com as 4 linhas do timbrado do dia (portal_proposta_timbrado), sem [falta].
+  const bytes = m.storage.bytes.get(caminho)!;
+  const cab = await abrirTexto(bytes, lerZip(bytes).get("word/header1.xml")!);
+  assertEquals(cab.match(/<w:p>/g)?.length, 4);
+  assertMatch(cab, />AURORA SOCIEDADE DE ADVOGADOS</);
+  assertMatch(cab, /CNPJ\u00a011\.222\.333\/0001<\/w:t><w:noBreakHyphen\/>/);
+  assertEquals(/falta|confira/.test(cab), false);
+  assert(m.chamadas.some((c) => c.funcao === "portal_proposta_timbrado" && c.args.p_escritorio === AURORA));
   assertEquals((await m.pedir("/v1/escritorio/propostas/nao-e-id/docx", { corpo: {}, cookie })).status, 404);
 });
 
-Deno.test("F3.92: com o logo do escritório, a proposta em Word leva o logo no cabeçalho, no lugar do nome", async () => {
+Deno.test("F3.92 e F3.146: com o logo do escritório, a proposta em Word leva o logo em cima das 4 linhas", async () => {
   const m = montar({ logo: true });
   m.storage.bytes.set(`${AURORA}/logos/${LOGO_TESTE}.png`, new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]));
   const cookie = await noEscritorio(m);
@@ -1515,9 +1535,14 @@ Deno.test("F3.92: com o logo do escritório, a proposta em Word leva o logo no c
   assertEquals((await abrirEntrada(bytes, docx.get("word/media/logo.png")!)).length, 11);
   const cab = await abrirTexto(bytes, docx.get("word/header1.xml")!);
   assertMatch(cab, /r:embed="rIdLogo"/);
-  // 1200 × 300 px cabe em 72 × 18 mm (a altura manda).
-  assertMatch(cab, /cx="2592000" cy="648000"/);
-  assertMatch(cab, /OAB\/BA 1\.234/);
+  // 1200 × 300 px cabe em 48 × 12 mm (a caixa do .docx é de 92 × 12 mm, decisão 16; a altura manda).
+  assertMatch(cab, /cx="1728000" cy="432000"/);
+  assertMatch(cab, /descr="Aurora Advocacia"/);
+  // A OAB é a de Dados do escritório, não a da marca (decisão 21).
+  assertMatch(cab, /OAB\/SP\u00a031\.874/);
+  assertEquals(/OAB\/BA.1\.234/.test(cab), false);
+  // Só o logo: a razão social (diferente do nome curto) vai embaixo; o nome curto não se repete em texto.
+  assertMatch(cab, />AURORA SOCIEDADE DE ADVOGADOS</);
   assertEquals(cab.includes(">Aurora Advocacia<"), false);
   // Sem logo, o cabeçalho segue com o nome em letra.
   const sem = montar();
@@ -1783,7 +1808,10 @@ Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sa
   assertEquals((await (await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { cookie })).json()).cliente, CLIENTE);
   assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "TODOS", origem: "FICHA", canal: "FAX" }, cookie }))).detalhes?.campos, ["canal"]);
   assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/sem-avisos`, { corpo: { tipo: "TODOS", origem: "FICHA", pedidoEm: "03/11/2026" }, cookie }))).detalhes?.campos, ["pedidoEm"]);
-  assertEquals((await (await m.pedir("/v1/escritorio/avisos", { cookie })).json()).novos, 1);
+  const avisos = await (await m.pedir("/v1/escritorio/avisos", { cookie })).json();
+  assertEquals(avisos.novos, 1);
+  assertEquals(avisos.itens[0].tipo, "CASO_PRONTO_FECHAR");
+  assertEquals(avisos.itens[0].agora, { encerrado: { em: "2026-11-18T13:05:00+00:00", por: { id: "m", nome: "Marina Ribeiro" } } });
   assertEquals((await (await m.pedir(`/v1/escritorio/avisos/${CLIENTE}/lido`, { corpo: {}, cookie })).json()).id, CLIENTE);
   assertEquals((await (await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "2026-11-18T10:04:00.123456+00:00" }, cookie })).json()).ate, "2026-11-18T10:04:00.123456+00:00");
   assertEquals((await erro(await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "ontem" }, cookie }))).detalhes?.campos, ["ate"]);
@@ -2137,6 +2165,34 @@ Deno.test("F3.118 / AP-01: termo de curatela em duas etapas, no escritório da s
   // Gerar documentos recebe o termo como veio do banco.
   const dados = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos-dados`, { cookie })).json();
   assertEquals(dados.termoCuratela.id, TERMO);
+  assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_") || c.funcao === "portal_documento_dados").every((c) => c.args.p_escritorio === AURORA));
+});
+
+Deno.test("F3.140 / AP-01: termo de tutela em duas etapas, no escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { nome: "termo-tutela.pdf", arquivoTipo: "application/pdf", tamanho: 2400 };
+  // O escritório e o tipo vindos do navegador são descartados: vale o da sessão, e o tipo é o da rota.
+  const ini = await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-tutela`, { corpo: { ...corpo, escritorioId: BELA_VISTA, tipo: "TERMO_CURATELA" }, cookie });
+  assertEquals(ini.status, 201);
+  const ida = await ini.json();
+  assertEquals(ida.id, TERMO);
+  assertMatch(ida.enderecoDeEnvio, new RegExp(`/${AURORA}/${TERMO}\\?`));
+  assertEquals(m.storage.pedidosDeEnvio, [`${AURORA}/${TERMO}`]);
+  const chamada = m.chamadas.find((c) => c.funcao === "portal_cliente_termo_tutela_iniciar")!;
+  assertEquals([chamada.args.p_escritorio, chamada.args.p_cliente, chamada.args.p_dados], [AURORA, ANA, corpo]);
+  assert(!m.chamadas.some((c) => c.funcao === "portal_cliente_termo_iniciar"), "a rota da tutela não chama a da curatela");
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-tutela`, { corpo: { ...corpo, tamanho: 10485761 }, cookie }))).detalhes?.campos, ["tamanho"]);
+  assertEquals((await erro(await m.pedir(`/v1/escritorio/clientes/${ANA}/termo-tutela`, { corpo: { ...corpo, arquivoTipo: "application/msword" }, cookie }))).detalhes?.campos, ["arquivoTipo"]);
+  assertEquals((await m.pedir("/v1/escritorio/clientes/nao-e-id/termo-tutela", { corpo, cookie })).status, 404);
+  // Concluir e abrir são as rotas de Documentos pessoais, pelo id.
+  m.storage.guardados.set(`${AURORA}/${TERMO}`, { tamanho: 2400, tipo: "application/pdf" });
+  assertEquals((await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/concluir`, { corpo: {}, cookie })).status, 200);
+  const abrir = await (await m.pedir(`/v1/escritorio/clientes/documentos/${TERMO}/abrir`, { corpo: {}, cookie })).json();
+  assertMatch(abrir.url, /^https:\/\/storage\.exemplo\/ler\//);
+  // Gerar documentos recebe o termo de tutela como veio do banco.
+  const dados = await (await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos-dados`, { cookie })).json();
+  assertEquals([dados.termoTutela.id, dados.termoTutela.tipo, dados.termoTutela.anteriores], [TERMO, "TERMO_TUTELA", 1]);
   assert(m.chamadas.filter((c) => c.funcao.startsWith("portal_cliente_") || c.funcao === "portal_documento_dados").every((c) => c.args.p_escritorio === AURORA));
 });
 

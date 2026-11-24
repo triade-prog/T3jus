@@ -6,7 +6,7 @@
 // foco, a janela de anexar os assinados (anexar o contrato é registrar a assinatura) e a aba
 // Documentos da ficha do contrato. Sem IA: o texto é o do modelo e o T3jus só troca os campos.
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   type Anexo, CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, PAPEIS_RESPONSAVEL, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
@@ -33,7 +33,7 @@ import { MolduraArea } from "./MolduraArea.tsx";
 import { CabPeticoes, LegendaPrevia, Papel, SeloDados, useBaixar } from "./Peticoes.tsx";
 import { contar, erroDoArquivo, Quando, quando, tamanhoArquivo } from "./peticoes.ts";
 import {
-  API_DOCUMENTOS, avisoDoMenor, avisoFaltaQuemAssina, avisoFez18, baixarNoCabecalho, botaoGerar, casoDoMenor, chaveModelo, chavesAssinadas, ERROS_DOCUMENTO,
+  API_DOCUMENTOS, assinaTutela, avisoDoMenor, avisoFaltaQuemAssina, avisoFez18, baixarNoCabecalho, botaoGerar, casoDoMenor, chaveModelo, chavesAssinadas, ERROS_DOCUMENTO,
   errosDocumentos, faltasDeQuemAssina, faltasDoProprioCliente, formInicialDocumentos, fraseDaFaixaGerar, fraseNoDocumentoOutorgados, fraseVaoSair, juntar,
   linhaFaltaNoQuadro, nomeCurto, origemModelo, PODERES_TELA, pedidoDocumentos, problemaDosAssinados, quantosDocumentos, RESUMO_ERRO_DOCUMENTO, ROTAS_DOCUMENTOS,
   rotuloAssinado, seloAba, seloAssinado, tituloFaltas, type FormDocumentos,
@@ -904,6 +904,8 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   // O menor no dia (F3.142): o aviso genérico fica só com as faltas do próprio cliente, e some aos 18.
   const menor = casoDoMenor(cli, dados.hoje);
   const faltasRl = menor === "REPRESENTADO" || menor === "ASSISTIDO" ? faltasDeQuemAssina(cli) : [];
+  // O termo de tutela só vale para o menor representado ou assistido com tutora ou tutor (F3.140); o servidor já confere.
+  const termoTutela = (menor === "REPRESENTADO" || menor === "ASSISTIDO") && assinaTutela(cli) ? dados.termoTutela ?? null : null;
   const faltasAviso = menor === "FEZ_18" ? [] : menor ? faltasDoProprioCliente(cli, dados.hoje) : faltas;
   const faltasAdv = dados.advogados
     .filter((a) => form_.outorgados[a.pessoaId]?.length)
@@ -1033,30 +1035,42 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                       <small>{[cli.rlPapel ? PAPEIS_RESPONSAVEL[cli.rlPapel] : null, cli.rlDocumento ? `CPF ${formatarDocumento(cli.rlDocumento)}` : null].filter(Boolean).join(" · ") || "Papel e CPF não cadastrados"}</small>
                       {faltasRl.length ? <small>{linhaFaltaNoQuadro(cli)}</small> : null}
                       {curatela && dados.termoCuratela ? <small>Termo de curatela na ficha{cli.curProcesso ? ` · processo ${cli.curProcesso}` : ""}</small> : null}
+                      {termoTutela ? <small>Termo de tutela na ficha</small> : null}
                     </span>
                     <span className="selo selo-implant">{rotuloQuemAssina(quem)}</span>
                     <a className="pe-completar" style={{ marginLeft: "auto" }} href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener">Mudar na ficha<span className="sr"> (abre numa aba nova)</span></a>
                   </div>
                 </div>
               ) : null}
-              {menor === "REPRESENTADO" || menor === "ASSISTIDO" ? (
-                <div className="c6">
-                  {faltasRl.length ? (() => {
-                    // gerar-falta: o aviso em atenção no lugar do aviso do dia.
-                    const a = avisoFaltaQuemAssina(cli, docsPedido.length)!;
-                    return (
-                      <Aviso tom="atencao" icone="pena" titulo={a.titulo}
-                        acoes={<a className="btn btn-sec" href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />Completar na ficha<span className="sr"> (abre numa aba nova)</span></a>}>
-                        {a.texto}
-                      </Aviso>
-                    );
-                  })() : (() => {
-                    // gerar-representado e gerar-assistido: a conta do dia.
-                    const a = avisoDoMenor(cli, dados.hoje, docsPedido.length)!;
-                    return <Aviso tom="info" icone="pessoas" titulo={a.titulo}>{a.texto}</Aviso>;
-                  })()}
-                </div>
-              ) : null}
+              {menor === "REPRESENTADO" || menor === "ASSISTIDO" ? (() => {
+                // gerar-falta (o aviso em atenção no lugar do aviso do dia), gerar-representado e
+                // gerar-assistido; com tutora ou tutor, a frase do termo e "Baixar o termo" depois de
+                // "Completar na ficha" (F3.140, gerar-tutela e gerar-tutela-falta). O erro ao baixar
+                // vem logo abaixo do aviso, como na curatela.
+                const completar = <a className="btn btn-sec" href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />Completar na ficha<span className="sr"> (abre numa aba nova)</span></a>;
+                const aviso = (baixar: ReactNode) => {
+                  if (faltasRl.length) {
+                    const a = avisoFaltaQuemAssina(cli, docsPedido.length, !!termoTutela)!;
+                    return <Aviso tom="atencao" icone="pena" titulo={a.titulo} acoes={<>{completar}{baixar}</>}>{a.texto}</Aviso>;
+                  }
+                  const a = avisoDoMenor(cli, dados.hoje, docsPedido.length, !!termoTutela)!;
+                  return <Aviso tom="info" icone="pessoas" titulo={a.titulo} acoes={baixar ?? undefined}>{a.texto}</Aviso>;
+                };
+                return (
+                  <div className="c6">
+                    {termoTutela ? (
+                      <BaixarTermo id={termoTutela.id}>
+                        {(botao, erro) => (
+                          <>
+                            {aviso(botao)}
+                            {erro}
+                          </>
+                        )}
+                      </BaixarTermo>
+                    ) : aviso(null)}
+                  </div>
+                );
+              })() : null}
               {curatela ? (
                 // O estado gerar-curatela do desenho aprovado (decisões 23 e 26; F3.118).
                 <div className="c6">

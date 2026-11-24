@@ -429,9 +429,11 @@ function QuemCuida({ e }: { e: EscritorioPortal }) {
 export function EscritorioDoPortal() {
   const { escritorio: e, erro, recarregar } = useEscritorioPortal();
   const abrirExportar = useRef<(() => void) | null>(null);
-  const [modo, setModo] = useState<"ver" | "editar">("ver");
+  // "Completar em Escritório › Dados do escritório" (?editar=1, linha de aviso da razão social, F3.146) abre no editar.
+  const [modo, setModo] = useState<"ver" | "editar">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("editar") === "1" ? "editar" : "ver");
   const [feito, setFeito] = useState<Feito | null>(null);
-  const trilha = modo === "editar" ? [{ nome: "Escritório", href: ROTAS_PORTAL.escritorio }, { nome: "Dados do escritório" }, { nome: "Editar" }] : [{ nome: "Escritório" }];
+  const trilha = modo === "editar" && !!e?.dono ? [{ nome: "Escritório", href: ROTAS_PORTAL.escritorio }, { nome: "Dados do escritório" }, { nome: "Editar" }] : [{ nome: "Escritório" }];
   const d = e ? documentosDe(e) : null;
   const pode = !!e?.dono && !soConsulta(e);
   const nomeDona = d?.dona?.nome ?? e?.socios[0] ?? "a sócia dona";

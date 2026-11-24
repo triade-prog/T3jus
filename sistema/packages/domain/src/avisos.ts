@@ -73,7 +73,10 @@ export type TipoAvisoSino =
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
   | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
   | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18"
-  | "DOCUMENTOS_INICIO_CHEGARAM";
+  | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR";
+
+/** O que deixou o caso pronto para encerrar no financeiro (F3.147; EX-16, EX-17). */
+export type MotivoCasoPronto = "PAGAMENTO" | "REEMBOLSO" | "EXITO" | "CONTRATO_ENCERRADO" | "CASO_ENCERRADO" | "OUTRO_CASO" | "ROTINA";
 
 export interface AvisoSino {
   id: string;
@@ -101,11 +104,29 @@ export interface AvisoSino {
     calculado?: number; explicacao?: string;
     /** O cliente menor que fez 18 anos (F3.98): o dia (dd/mm/aaaa); "quem" é quem assinava, com o papel. */
     em?: string;
+    /** Caso pronto para encerrar no financeiro (F3.147): os clientes (até dois, na ordem do caso) e quantos
+     *  sobram, o contrato do link (o de menor número), quantas parcelas, se é de novo, o período e o que
+     *  deixou o caso pronto (motivo, êxito, reembolso, contrato encerrado, outro caso e o contrato que segue).
+     *  Nenhum valor em reais (PT-02). */
+    clientes?: string[]; maisClientes?: number; contratoId?: string; parcelas?: number; denovo?: boolean; periodoId?: string;
+    exito?: "NAO_COBRADO" | "PAGO"; reembolso?: string; contratoEncerrado?: string; outroCaso?: string; contratoSegue?: string;
   };
   origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios" | "casos" | "clientes";
   origemId: string;
   em: string;
   lido: boolean;
+  /** Caso pronto para encerrar (F3.147): o que aconteceu com o caso depois do aviso. Sem ele, o caso
+   *  continua pronto. */
+  agora?: AgoraCasoPronto;
+}
+
+/** O "agora" do aviso de caso pronto: encerrado no financeiro, aviso antigo (há um mais novo para a
+ *  mesma pessoa), voltou a ter pendência ou fecha no repasse (entrou RPV ou alvará). */
+export interface AgoraCasoPronto {
+  encerrado?: { em: string; por: { id: string; nome: string } | null };
+  depois?: true;
+  pendente?: true;
+  fora?: true;
 }
 
 /** GET /v1/escritorio/avisos: os últimos 30 dias, os mais novos primeiro. */
@@ -118,3 +139,26 @@ export interface ListaAvisosSino {
 }
 
 export const avisosLidosSchema = z.object({ ate: z.string().datetime({ offset: true }) });
+
+// ------------------------------------------------------------------ Caso pronto para encerrar (F3.147)
+
+const FUSO_AVISOS = "America/Sao_Paulo";
+const diaAvisos = (d: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: FUSO_AVISOS, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+
+/** Quando o caso foi encerrado no financeiro, na linha "Agora:" do aviso: "hoje, às 10h05".
+ *  [C1, provisório, à espera do ok da Carol] O desenho aprovado só mostra "hoje"; fora de hoje, o texto
+ *  segue o rótulo do próprio sino: "ontem, às 10h05" e "em 16/11, às 10h05". Se a Carol pedir outra
+ *  forma, muda só esta função (e o teste dela). */
+export function quandoEncerrouNoFinanceiro(iso: string, agora: Date = new Date()): string {
+  const d = new Date(iso);
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO_AVISOS, hour: "numeric", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(d).map((x) => [x.type, x.value]),
+  );
+  const hora = `${Number(p.hour)}h${p.minute}`;
+  const dia = diaAvisos(d);
+  if (dia === diaAvisos(agora)) return `hoje, às ${hora}`;
+  if (dia === diaAvisos(new Date(agora.getTime() - 86_400_000))) return `ontem, às ${hora}`;
+  return `em ${dia.slice(8, 10)}/${dia.slice(5, 7)}, às ${hora}`;
+}

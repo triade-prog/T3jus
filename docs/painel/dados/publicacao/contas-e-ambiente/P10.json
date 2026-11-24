@@ -4,7 +4,8 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 100,
-  "nota": "A ordem importa e a 0971 não tem volta: 1) aplicar a 0970 (estrutura e gatilhos); 2) rodar a consulta só de leitura contagem-antes-0971.sql e mostrar à Carol; 3) com o ok dela, aplicar a 0971; 4) conferir a fila (select escritorio, count(*), bool_and(caminho like escritorio::text || '/%') from arquivos_apagar group by 1); 5) publicar a api-console, que é quem apaga. Com a 0970 e a api-console antiga, a fila só espera; com a api-console nova e o banco antigo, o passo dos arquivos devolve 0. Antes de aplicar, conferir com list_migrations se as anteriores (até a 0950) já estão no ar."
+  "nota": "A ordem importa e a 0971 não tem volta: 1) aplicar a 0970 (estrutura e gatilhos); 2) rodar a consulta só de leitura contagem-antes-0971.sql e mostrar à Carol; 3) com o ok dela, aplicar a 0971; 4) conferir a fila (select escritorio, count(*), bool_and(caminho like escritorio::text || '/%') from arquivos_apagar group by 1); 5) publicar a api-console, que é quem apaga. Com a 0970 e a api-console antiga, a fila só espera; com a api-console nova e o banco antigo, o passo dos arquivos devolve 0. Antes de aplicar, conferir com list_migrations se as anteriores (até a 0950) já estão no ar.",
+  "evidencia": "Migration 0970 aplicada no Supabase em 24/11/2026, 0h05 (Bahia), com o ok da Carol (cartão de decisão); a contagem só de leitura deu 0 cliente excluído, 0 documento e 0 caminho de .docx. Migration 0971 aplicada em 24/11/2026, 0h07 (Bahia), com o ok da Carol; a fila arquivos_apagar ficou vazia. api-console v17 publicada no 047483e (main com o #159) em 24/11/2026, 0h10 (Bahia), com o repositório público; saude 200 por console.t3jus.pro."
 }

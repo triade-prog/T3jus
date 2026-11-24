@@ -1,6 +1,6 @@
 {
   "id": "F3.141",
-  "texto": "Exclusão a pedido do titular: tirar do arquivo privado os documentos pessoais, o termo de curatela e os .docx das propostas do cliente e limpar o nome do arquivo",
+  "texto": "Exclusão a pedido do titular: tirar do arquivo privado os documentos pessoais, os termos de curatela e de tutela e os .docx das propostas do cliente, limpar o nome do arquivo e fazer abrir recusar documento de cliente excluído",
   "peca": "S2",
   "refs": [
     "PT-11",
@@ -10,6 +10,5 @@
   "status": "feito",
   "ordem": 1170,
   "nota": "Decisões a confirmar com a Carol antes do merge: os dois textos novos de no_fim do inventário (cliente_documentos e propostas), gravados como APROVADO como na 0170 e na 0930, e a inclusão dos .docx das propostas (recomendação do plano e da revisão). O tipo TERMO_CURATELA continua na linha apagada, sem nome e ligado a cliente anonimizado (revisão, M3); se a Carol preferir, a linha pode passar a OUTRO. As linhas concluídas da fila ficam (não são dado pessoal; o inventário diz). Ficaram para itens próprios: a janela de exclusão (F3.155), os anexos fiscais (F3.156), as conversas do WhatsApp (F3.157), as linhas de importação e o desfazer (F3.158) e o serviço da proposta (F3.159).",
-  "evidencia": "Migrations 0970_exclusao_arquivos.sql (fila arquivos_apagar, apagado_em em cliente_documentos, gatilhos z_cliente_excluido_arquivos e cliente_documento_nasce, guarda recriada por to_jsonb, leituras que recusam o apagado, rotina com trava e evento único) e 0971_exclusao_arquivos_antigos.sql (os já excluídos, por função testada); api-console: a rota /v1/rotina/arquivos-da-guarda apaga também os arquivos um a um (_shared/guarda.ts, apagarObjetos e caminhoValido). Testes: pgTAP 133_exclusao_arquivos_test.sql (74) e 126 ajustado (46), concorrência exclusao-anexo-simultaneo.sh (duas conexões), Deno guarda_test.ts (13); pnpm test:db (111 arquivos, 3130 testes, e as duas concorrências) e pnpm test:deno (315) verdes em 23/11/2026.",
-  "proximo": "Publicar (P10): aplicar a 0970 no Supabase, rodar a contagem só de leitura, aplicar a 0971 com o ok da Carol, conferir a fila e só então publicar a api-console"
+  "evidencia": "Migrations 0970_exclusao_arquivos.sql (fila arquivos_apagar, apagado_em em cliente_documentos, gatilhos z_cliente_excluido_arquivos e cliente_documento_nasce, guarda recriada por to_jsonb, leituras que recusam o apagado, rotina com trava e evento único) e 0971_exclusao_arquivos_antigos.sql (os já excluídos, por função testada); api-console: a rota /v1/rotina/arquivos-da-guarda apaga também os arquivos um a um (_shared/guarda.ts, apagarObjetos e caminhoValido). Testes: pgTAP 133_exclusao_arquivos_test.sql (74) e 126 ajustado (46), concorrência exclusao-anexo-simultaneo.sh (duas conexões), Deno guarda_test.ts (13); pnpm test:db (111 arquivos, 3130 testes, e as duas concorrências) e pnpm test:deno (315) verdes em 23/11/2026."
 }

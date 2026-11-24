@@ -10,10 +10,12 @@
 // - O termo de curatela (F3.118, 0930_termo_curatela.sql): guardado como documento do cliente, fora
 //   da lista de Documentos pessoais, só de pessoa física sob curatela. Só iniciar tem rota própria;
 //   concluir e abrir são as de Documentos pessoais, pelo id.
+// - O termo de tutela (F3.140, 0960_termo_tutela.sql): o mesmo caminho, só do menor com tutora ou
+//   tutor, representado ou assistido no dia. A rota diz o tipo; o navegador nunca o manda.
 
 import type { Context, Hono } from "hono";
 import {
-  documentoInicioSchema, ErroDominio, moverDocumentoInicioSchema, iniciarDocumentoPessoalSchema, iniciarTermoCuratelaSchema, prazoComprovanteSchema, sugestaoDocumentosInicioSchema, tirarDocumentoInicioSchema,
+  documentoInicioSchema, ErroDominio, moverDocumentoInicioSchema, iniciarDocumentoPessoalSchema, iniciarTermoSchema, prazoComprovanteSchema, sugestaoDocumentosInicioSchema, tirarDocumentoInicioSchema,
   AREAS_DIREITO, type DocumentoInicio, type DocumentoPessoal, type DocumentosInicio, type DocumentosPessoais, type PrazoComprovanteSalvo,
   type PreviaDocumentosInicio, type PreviaPrazoComprovante,
 } from "@t3jus/domain";
@@ -47,8 +49,15 @@ export function rotasDocumentosPessoais(app: Hono<VarsPortal>, deps: DepsPortal)
   // O termo de curatela: registra o envio e devolve o endereço de uso único. O caminho no Storage é
   // <escritório da sessão>/<id>, montado aqui.
   app.post("/v1/escritorio/clientes/:id/termo-curatela", async (c) => {
-    const d = await lerCorpo(c, iniciarTermoCuratelaSchema);
+    const d = await lerCorpo(c, iniciarTermoSchema);
     const doc = await deps.banco.rpc<string>("portal_cliente_termo_iniciar", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d });
+    return c.json({ id: doc, enderecoDeEnvio: await deps.arquivos.enderecoDeEnvio(`${c.get("escritorioId")}/${doc}`) }, 201);
+  });
+
+  // O termo de tutela (F3.140): como o de curatela, só para o menor com tutora ou tutor.
+  app.post("/v1/escritorio/clientes/:id/termo-tutela", async (c) => {
+    const d = await lerCorpo(c, iniciarTermoSchema);
+    const doc = await deps.banco.rpc<string>("portal_cliente_termo_tutela_iniciar", { ...quem(c), p_cliente: idDaRota(c, "id"), p_dados: d });
     return c.json({ id: doc, enderecoDeEnvio: await deps.arquivos.enderecoDeEnvio(`${c.get("escritorioId")}/${doc}`) }, 201);
   });
 

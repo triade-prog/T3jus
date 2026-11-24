@@ -46,8 +46,13 @@ export function telefoneFmt(t: string): string {
   return t;
 }
 
-/** As linhas do timbrado: o nome; CNPJ e endereço; telefone e e-mail. Só o que existe. */
-export function linhasTimbrado(e: EscritorioDoTimbrado): string[] {
+/**
+ * O timbrado de 3 linhas de antes do F3.146 (o nome; CNPJ, OAB e endereço; telefone e e-mail). Serve
+ * SÓ ao recibo emitido antes da 0890 (a cópia sem `comTimbrado`), que precisa sair como saiu (PT-03).
+ * Papel novo usa `timbradoDoEscritorio` e `timbradoDoDocx` (timbrado.ts). O nome mudou para ninguém
+ * voltar a usá-la no .docx.
+ */
+export function linhasDoReciboAntigo(e: EscritorioDoTimbrado): string[] {
   const cep = (e.cep ?? "").replace(/\D/g, "");
   const lugar = [e.endereco?.trim(), [e.cidade?.trim(), e.uf].filter(Boolean).join("/"), cep.length === 8 ? `CEP ${cep.slice(0, 5)}-${cep.slice(5)}` : ""]
     .filter(Boolean).join(" · ");

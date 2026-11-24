@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, reais, TIPOS_COBRANCA,
+  cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, razaoSocialEmBranco, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
   type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido, type ContaPagar, CATEGORIAS_SAIDA,
   type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type FechamentoNoContrato,
@@ -35,6 +35,7 @@ import {
 } from "./FechamentoCaso.tsx";
 import { chamarPortal, type EscritorioPortal } from "./Moldura.tsx";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { LinhaRazaoSocial } from "./MarcaTimbrado.tsx";
 
 type Feito = { titulo: string; texto: string; acoes?: ReactNode };
 type Pessoa = { id: string; nome: string };
@@ -304,7 +305,7 @@ function ReceberConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
         </p>
       </section>
       {registrar ? (
-        <JanelaRegistrar parcela={registrar === "escolher" ? null : registrar} whatsapp={!!escritorio.whatsappLigado} aoFechar={() => setRegistrar(null)}
+        <JanelaRegistrar parcela={registrar === "escolher" ? null : registrar} whatsapp={!!escritorio.whatsappLigado} escritorio={escritorio} aoFechar={() => setRegistrar(null)}
           aoFeito={(f) => { setRegistrar(null); setFeito(f); recarregar(); }} />
       ) : null}
       {janelasExito}
@@ -341,8 +342,8 @@ export function LinkRecibo({ pagamento, numero, botao, area = "financeiro", chil
   );
 }
 
-function JanelaRegistrar({ parcela, whatsapp, aoFechar, aoFeito }: {
-  parcela: ParcelaLinha | null; whatsapp: boolean; aoFechar: () => void; aoFeito: (f: Feito) => void;
+function JanelaRegistrar({ parcela, whatsapp, escritorio, aoFechar, aoFeito }: {
+  parcela: ParcelaLinha | null; whatsapp: boolean; escritorio: EscritorioPortal; aoFechar: () => void; aoFeito: (f: Feito) => void;
 }) {
   const hoje = hojeBrasilia();
   const [escolhida, setEscolhida] = useState<ParcelaLinha | null>(parcela);
@@ -354,6 +355,8 @@ function JanelaRegistrar({ parcela, whatsapp, aoFechar, aoFeito }: {
   const [recibo, setRecibo] = useState(true);
   // F3.19: com o WhatsApp do escritório ligado, o recibo vai pelo WhatsApp, marcado por padrão.
   const [mandar, setMandar] = useState(true);
+  // F3.146 (D3): a razão social em branco, avisada só na tela, quando o recibo vai ser gerado.
+  const motivoRazao = escritorio.documentos ? razaoSocialEmBranco(escritorio.documentos) : null;
   const [pagou, setPagou] = useState<"CLIENTE" | "CONTATO" | "OUTRO">("CLIENTE");
   const [pagNome, setPagNome] = useState("");
   const [pagDoc, setPagDoc] = useState("");
@@ -663,6 +666,10 @@ function JanelaRegistrar({ parcela, whatsapp, aoFechar, aoFeito }: {
               <small>Vai em PDF para o contato principal do cliente, pelo número do escritório.</small>
             </span>
           </label>
+        ) : null}
+        {recibo && motivoRazao ? (
+          <LinhaRazaoSocial motivo={motivoRazao} papel="O recibo" nomeCurto={escritorio.nome} dono={escritorio.dono}
+            dona={escritorio.documentos?.dona?.nome ?? escritorio.socios[0] ?? "a sócia dona"} />
         ) : null}
       </div>
     </Janela>
@@ -1208,7 +1215,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
         </aside>
       </div>
       {registrar ? (
-        <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} aoFechar={() => { setRegistrar(null); if (abriu) voltarFoco(); }}
+        <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} escritorio={escritorio} aoFechar={() => { setRegistrar(null); if (abriu) voltarFoco(); }}
           aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); if (abriu) voltarFoco(); }} />
       ) : null}
       {fechar ? (

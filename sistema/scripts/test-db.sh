@@ -37,3 +37,6 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-anexo-si
 
 # Dispensar, trazer de volta e o contrato novo do mesmo cliente ao mesmo tempo (F3.145, VA-05).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/dispensar-contrato.sh"
+
+# O aviso de caso pronto com duas conexões como service_role e commit de verdade (F3.147, EX-16).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/caso-pronto-simultaneo.sh"

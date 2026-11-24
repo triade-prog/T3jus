@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   analisarLogo, contrasteComPapel, contrasteLegivel, formatoDoLogo, fraseOabSociedade, jeitoPadrao, lerPng, pngEmUmaCor, svgInseguro,
 } from "./logo.ts";
-import { linhasTimbrado } from "./proposta_docx.ts";
+import { linhasDoReciboAntigo } from "./proposta_docx.ts";
 
 /** Uma imagem RGBA transparente com um retângulo pintado. */
 function imagem(largura: number, altura: number, ret: { x: number; y: number; l: number; a: number; cor: [number, number, number] }[]) {
@@ -120,7 +120,7 @@ describe("logo do escritório (F3.81)", () => {
   it("pergunta 5: o registro da sociedade na OAB vai depois do CNPJ no timbrado", () => {
     expect(fraseOabSociedade("sp", "31874")).toBe("OAB/SP 31.874");
     expect(fraseOabSociedade("SP", null)).toBeNull();
-    expect(linhasTimbrado({ nome: "Ribeiro & Matos", cnpj: "41276839000134", oab: "OAB/SP 31.874", endereco: null, cidade: "São Paulo", uf: "SP" }))
+    expect(linhasDoReciboAntigo({ nome: "Ribeiro & Matos", cnpj: "41276839000134", oab: "OAB/SP 31.874", endereco: null, cidade: "São Paulo", uf: "SP" }))
       .toEqual(["Ribeiro & Matos", "CNPJ 41.276.839/0001-34 · OAB/SP 31.874 · São Paulo/SP"]);
   });
 });

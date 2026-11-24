@@ -7,13 +7,15 @@
 // só no sino (sem e-mail), 30 dias, sem desligar tipos, abrir marca lido.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { MOTIVOS_NAO_COBRAR, reais, type AvisoSino, type ListaAvisosSino, type MotivoNaoCobrar } from "@t3jus/domain";
+import { MOTIVOS_NAO_COBRAR, quandoEncerrouNoFinanceiro, reais, type AvisoSino, type ListaAvisosSino, type MotivoNaoCobrar } from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Aviso, Estado } from "../console/pecas.tsx";
 import { hora } from "../console/tempo.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 import { valorDaProposta } from "./comercial.ts";
+import { juntarComE } from "./clientes.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
+import { linkFechamentoContrato } from "./fechamento.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 
 const FUSO = "America/Sao_Paulo";
@@ -35,8 +37,86 @@ export function rotuloDia(iso: string, agora = new Date()): string {
 /** "a petição “Recurso ordinário”" (sem artigo do modelo, que pode ser masculino ou feminino). */
 const minuscula = (m?: string) => (m ? `a petição “${m}”` : "a petição");
 
-/** O que cada aviso diz: ícone, título, detalhe, destino e selo. */
-export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactNode; detalhe: ReactNode; onde: string; href: string; selo?: { tom: string; texto: string } } {
+// ------------------------------------------------------------------ Caso pronto para encerrar (F3.147)
+// Desenho aprovado em docs/design/aprovadas/portal-sino-caso-encerrado (NOTAS.md, os textos exatos).
+// Nenhum valor em reais (PT-02): o aviso diz quantas parcelas, quem fez e o que aconteceu.
+
+type DadosAviso = AvisoSino["dados"];
+type Selo = { tom: string; texto: string };
+
+/** Os clientes do caso: "A", "A e B" ou "A, B e mais N clientes". */
+export function nomesClientes(d: DadosAviso): string {
+  const nomes = d.clientes?.length ? d.clientes : [d.cliente ?? "o cliente"];
+  const mais = d.maisClientes ?? 0;
+  if (mais > 0) return `${nomes.join(", ")} e mais ${mais} ${mais === 1 ? "cliente" : "clientes"}`;
+  return juntarComE(nomes);
+}
+
+/** "As 7 parcelas de A e B foram pagas." (uma parcela só: "A parcela de A foi paga."). */
+const parcelasPagas = (n: number | undefined, clientes: string) =>
+  n === 1 ? `A parcela de ${clientes} foi paga.` : `As ${n ?? 0} parcelas de ${clientes} foram pagas.`;
+const parcelasJaPagas = (n: number | undefined) =>
+  !n ? "" : n === 1 ? " A parcela já estava paga." : ` As ${n} parcelas já estavam pagas.`;
+
+/** O que deixou o caso pronto, sem o "Confira o acerto e encerre.". */
+export function fraseCasoPronto(d: DadosAviso): string {
+  const quem = d.quem;
+  const cl = nomesClientes(d);
+  const nada = `nada falta receber de ${cl}.`;
+  if (!quem || d.motivo === "ROTINA") return `Nada falta receber de ${cl}.`;
+  switch (d.motivo) {
+    case "PAGAMENTO":
+      return `${quem} registrou a última parcela. ${parcelasPagas(d.parcelas, cl)}`;
+    case "REEMBOLSO":
+      return d.denovo && d.reembolso
+        ? `${quem} marcou o reembolso da ${d.reembolso.toLowerCase()}, e a pendência que tinha voltado foi resolvida.`
+        : `${quem} marcou o último reembolso, e ${nada}`;
+    case "EXITO":
+      return d.exito === "PAGO"
+        ? `${quem} registrou o pagamento do êxito de ${cl}.`
+        : `${quem} marcou o êxito de ${cl} como não cobrado.${parcelasJaPagas(d.parcelas)}`;
+    case "CONTRATO_ENCERRADO":
+      return `${quem} encerrou o ${d.contratoEncerrado ?? d.contrato ?? "contrato"}, e as parcelas que faltavam foram canceladas.`;
+    case "CASO_ENCERRADO":
+      return `${quem} encerrou o caso, e ${nada}`;
+    case "OUTRO_CASO":
+      return `${quem} ligou o ${d.contratoSegue ?? "contrato"} ao caso ${d.outroCaso ?? "em andamento"}, em andamento. As parcelas que faltam seguem com ele, e ${nada}`;
+    default:
+      return `Nada falta receber de ${cl}.`;
+  }
+}
+
+/** O estado de agora do aviso: o selo, o destino, a linha "Agora:" e o trecho para o leitor de tela.
+ *  Sem "agora", o caso continua pronto (null). */
+export function agoraCasoPronto(a: AvisoSino, agora: Date = new Date()): { selo: Selo; onde: string; linha: string; paraLeitor: string } | null {
+  const x = a.agora;
+  const no = a.dados.contrato ? ` no ${a.dados.contrato}` : "";
+  if (x?.encerrado) {
+    return {
+      selo: { tom: "neutro", texto: "Encerrado" }, onde: `Ver o fechamento${no}`, paraLeitor: ". Agora: encerrado.",
+      linha: `${x.encerrado.por?.nome ?? "Alguém da equipe"} encerrou no financeiro ${quandoEncerrouNoFinanceiro(x.encerrado.em, agora)}.`,
+    };
+  }
+  if (x?.depois) {
+    return { selo: { tom: "neutro", texto: "Aviso antigo" }, onde: `Ver o acerto${no}`, paraLeitor: ". Agora: aviso antigo, há um mais novo.",
+      linha: "o caso ficou pronto de novo; veja o aviso mais novo." };
+  }
+  if (x?.pendente) {
+    return { selo: { tom: "atencao", texto: "Voltou a ter pendência" }, onde: `Ver o acerto${no}`, paraLeitor: ". Agora: voltou a ter pendência.",
+      linha: "depois deste aviso, o acerto voltou a ter pendência." };
+  }
+  if (x?.fora) {
+    return { selo: { tom: "neutro", texto: "Fecha no repasse" }, onde: `Ver o fechamento${no}`, paraLeitor: ". Agora: fecha no repasse.",
+      linha: "entrou RPV ou alvará neste caso, e o fechamento passou para a ficha do repasse." };
+  }
+  return null;
+}
+
+/** O que cada aviso diz: ícone, título, detalhe, destino e selo; no caso pronto, também a linha
+ *  "Agora:" e o trecho para o leitor de tela. */
+export function descreverAviso(a: AvisoSino, agora: Date = new Date()): {
+  icone: NomeIcone; titulo: ReactNode; detalhe: ReactNode; onde: string; href: string; selo?: Selo; agora?: string; paraLeitor?: string;
+} {
   const d = a.dados;
   const conversa = `/conversas?c=${a.origemId}`;
   const automacao = `/conversas/automacoes?a=${a.origemId}`;
@@ -213,6 +293,20 @@ export function descreverAviso(a: AvisoSino): { icone: NomeIcone; titulo: ReactN
         detalhe: `${d.quem ? `${d.quem} assinava pelo cliente. ` : ""}Atualize a ficha e, no caso em andamento, colha uma procuração nova, assinada só pelo cliente.`,
         onde: "Abrir a ficha", href: `${ROTAS_PORTAL.clientes}/${a.origemId}`, selo: { tom: "atencao", texto: "Fez 18" },
       };
+    case "CASO_PRONTO_FECHAR": {
+      // EX-16, EX-17: o aviso não muda; o "Agora:" conta o que aconteceu depois. Abrir não marca
+      // os avisos dos outros (resposta 4).
+      const frase = fraseCasoPronto(d);
+      const x = agoraCasoPronto(a, agora);
+      return {
+        icone: "cadeado", titulo: <>O caso <b>{d.caso}</b> ficou pronto{d.denovo ? " de novo" : ""} para encerrar no financeiro</>,
+        detalhe: x ? frase : `${frase} Confira o acerto e encerre.`,
+        onde: x?.onde ?? `Ver o acerto${d.contrato ? ` no ${d.contrato}` : ""}`,
+        href: d.contratoId ? linkFechamentoContrato(d.contratoId, a.origemId) : ROTAS_JURIDICO.caso(a.origemId),
+        selo: x?.selo ?? { tom: "ok", texto: "Pronto" },
+        ...(x ? { agora: x.linha, paraLeitor: x.paraLeitor } : {}),
+      };
+    }
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,
@@ -357,9 +451,11 @@ export function PainelSino({ sino, aberto, aoFechar }: {
                     <a className="si-link" href={x.href} onClick={(e) => void abrirAviso(e, a)}>
                       {a.lido ? null : <span className="sr">Novo: </span>}
                       {x.titulo}
+                      {x.paraLeitor ? <span className="sr">{x.paraLeitor}</span> : null}
                     </a>
                   </p>
                   <p className="si-det">{x.detalhe}</p>
+                  {x.agora ? <p className="si-det"><b className="si-agora">Agora:</b> {x.agora}</p> : null}
                   <p className="si-meta">
                     {a.lido ? null : <span className="si-nv">Novo</span>}
                     {x.selo ? <span className={`selo selo-${x.selo.tom}`}>{x.selo.texto}</span> : null}

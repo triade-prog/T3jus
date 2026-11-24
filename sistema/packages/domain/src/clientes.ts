@@ -5,7 +5,7 @@
 // atendimento não se edita nem se apaga; a lista de origens é fixa.
 
 import type { ContagensCliente, NoEscritorio, PassoCliente } from "./ficha_ligada.ts";
-import type { TermoCuratela } from "./documentos_pessoais.ts";
+import type { TermoResponsavel } from "./documentos_pessoais.ts";
 import { z } from "zod";
 import { normalizarTelefone, cnpjValido, UFS } from "./console.ts";
 
@@ -461,9 +461,16 @@ export interface FichaCliente {
   /** Quantos dados a procuração pede para este cliente (segue quem assina). */
   totalQualificacao?: number;
   /** Quem assinava pelo cliente antes dos 18 (a folha "Quem assinava com..."). */
-  quemAssinava?: { papel: "MAE" | "PAI" | "TUTORA" | "TUTOR"; nome: string | null; documento: string | null; ate: string; contratos: string[] } | null;
+  quemAssinava?: { papel: "MAE" | "PAI" | "TUTORA" | "TUTOR"; nome: string | null; documento: string | null; ate: string; contratos: string[];
+    /** O termo de tutela guardado, só para baixar, quando quem assinava era tutora ou tutor (F3.140, pergunta 1). */
+    termo?: TermoResponsavel | null } | null;
   /** O termo de curatela em uso (F3.118): só de pessoa física sob curatela, nem arquivada nem excluída. */
-  termoCuratela?: TermoCuratela | null;
+  termoCuratela?: TermoResponsavel | null;
+  /**
+   * O termo de tutela em uso (F3.140): só do menor com tutora ou tutor, nem arquivado nem excluído.
+   * No dia dos 18 (FEZ_18), o termo guardado, para a janela dizer que ele fica.
+   */
+  termoTutela?: TermoResponsavel | null;
   situacao: SituacaoCliente;
   inativadoEm: string | null;
   motivoInativacao: string | null;

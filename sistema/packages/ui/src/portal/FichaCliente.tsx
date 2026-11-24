@@ -24,8 +24,8 @@ import {
 import { agruparEventosPorDia, primeiroNome } from "./equipe.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 import { FolhaDocumentosPessoais } from "./DocumentosPessoais.tsx";
-import { FormularioCliente, type Conflito } from "./FormCliente.tsx";
-import { erroDoCodigoDoTermo, fraseDoTermoQueFalhou } from "./termoCuratela.ts";
+import { FormularioCliente, type Conflito, type TermoEscolhido } from "./FormCliente.tsx";
+import { erroDoCodigoDoTermo, fraseDoTermoQueFalhou, tipoDoTermoNoEndereco } from "./termoCuratela.ts";
 import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { FolhaSistemaAntigo } from "./ImportacaoFinanceiro.tsx";
@@ -737,10 +737,12 @@ const ExplicaEditar = () => {
 
 // ------------------------------------------------------------------------- a página
 
-export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado = false, termo = null }: {
+export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado = false, termo = null, termoTipo = null }: {
   id: string; aba: AbaCliente; editarAoAbrir?: boolean; cadastrado?: boolean;
-  /** O código do erro do termo de curatela que não subiu depois do cadastro (F3.118). */
+  /** O código do erro do termo que não subiu depois do cadastro (F3.118). */
   termo?: string | null;
+  /** De que termo era o erro (?termoTipo=TUTELA, F3.140); ausente ou fora da lista, a curatela. */
+  termoTipo?: string | null;
 }) {
   const { escritorio, erro: erroEscritorio, recarregar: recarregarEscritorio } = useEscritorioPortal();
   const [f, setF] = useState<FichaCliente | null>(null);
@@ -751,7 +753,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const [editando, setEditando] = useState(editarAoAbrir);
   const [conflito, setConflito] = useState<Conflito | null>(null);
   const [meu, setMeu] = useState<RascunhoCliente | null>(null);
-  const [meuTermo, setMeuTermo] = useState<File | null>(null);
+  const [meuTermo, setMeuTermo] = useState<TermoEscolhido | null>(null);
   const [janela, setJanela] = useState<"registrar" | "inativar" | "reativar" | "pedir" | "excluir" | "recusar" | "por-si" | null>(null);
   const [abertura, setAbertura] = useState(0);
   const [feito, setFeito] = useState<Feito | null>(null);
@@ -809,7 +811,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     // O termo que não foi guardado (F3.118): o mesmo aviso, no tom de atenção, com a frase do caso.
     const nome = f.nome;
     void Promise.resolve().then(() => setFeito(termo ? {
-      titulo: `${nome} cadastrado.`, texto: fraseDoTermoQueFalhou(erroDoCodigoDoTermo(termo), primeiroNome(nome)), tom: "atencao",
+      titulo: `${nome} cadastrado.`, texto: fraseDoTermoQueFalhou(erroDoCodigoDoTermo(termo), primeiroNome(nome), tipoDoTermoNoEndereco(termoTipo)), tom: "atencao",
     } : {
       titulo: `${nome} cadastrado.`,
       texto: "A ficha está pronta para usar. A qualificação pode ficar para quando for preparar a procuração.",
@@ -817,8 +819,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     const u = new URL(window.location.href);
     u.searchParams.delete("cadastrado");
     u.searchParams.delete("termo");
+    u.searchParams.delete("termoTipo");
     window.history.replaceState(null, "", u);
-  }, [cadastrado, termo, f]);
+  }, [cadastrado, termo, termoTipo, f]);
 
   const abrir = (j: typeof janela) => {
     setFeito(null);
@@ -852,7 +855,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     if (depois) await depois();
   }
 
-  async function aoConflitoEditar(rascunho: RascunhoCliente, arquivo: File | null) {
+  async function aoConflitoEditar(rascunho: RascunhoCliente, arquivo: TermoEscolhido | null) {
     const novo = await carregar();
     if (!novo) return;
     setMeu(rascunho);
@@ -1138,7 +1141,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
       <Grade
         principal={
           <FormularioCliente key={conflito ? `c-${f.versao}` : "e"} modo="editar" inicial={meu ?? rascunhoDaFicha(f)} comercial={comercial} versao={f.versao}
-            idCliente={f.id} conflito={conflito} termoAtual={f.termoCuratela ?? null} termoInicial={meuTermo}
+            idCliente={f.id} conflito={conflito} termoCuratela={f.termoCuratela ?? null} termoTutela={f.termoTutela ?? null} termoInicial={meuTermo}
             aoSalvo={(r) => {
               // Mesmo com o termo que não subiu, sai do formulário: a versão mudou com o PUT.
               setEditando(false);
@@ -1146,11 +1149,11 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
               setMeu(null);
               setMeuTermo(null);
               const historico = "A mudança ficou no histórico, com seu nome e os campos alterados.";
-              const guardado = "O termo de curatela ficou guardado na ficha.";
-              void concluir(r.termo && r.termo !== "ENVIADO"
-                // O termo que não foi guardado (F3.118): no tom de atenção, com a frase do caso.
-                ? { titulo: "Ficha salva.", texto: fraseDoTermoQueFalhou(r.termo.erro, primeiroNome(r.nome)), tom: "atencao" }
-                : { titulo: "Ficha salva.", texto: r.termo === "ENVIADO" ? (r.fichaMudou ? `${historico} ${guardado}` : guardado) : historico });
+              const guardado = `O termo de ${r.termo?.tipo === "TUTELA" ? "tutela" : "curatela"} ficou guardado na ficha.`;
+              void concluir(r.termo && "erro" in r.termo
+                // O termo que não foi guardado (F3.118, F3.140): no tom de atenção, com a frase do caso e do tipo.
+                ? { titulo: "Ficha salva.", texto: fraseDoTermoQueFalhou(r.termo.erro, primeiroNome(r.nome), r.termo.tipo), tom: "atencao" }
+                : { titulo: "Ficha salva.", texto: r.termo ? (r.fichaMudou ? `${historico} ${guardado}` : guardado) : historico });
             }}
             aoCancelar={() => { setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }}
             aoConflito={(x, t) => void aoConflitoEditar(x, t)}
