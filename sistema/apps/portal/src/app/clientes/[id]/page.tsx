@@ -20,6 +20,7 @@ export default async function Pagina({ params, searchParams }: {
   const q = await searchParams;
   return (
     <FichaClientePortal id={id.toLowerCase()} aba={ABAS.find((a) => a === q.aba) ?? "ficha"} editarAoAbrir={q.editar === "1"}
-      cadastrado={q.cadastrado === "1"} termo={typeof q.termo === "string" ? q.termo : null} />
+      cadastrado={q.cadastrado === "1"} termo={typeof q.termo === "string" ? q.termo : null}
+      termoTipo={typeof q.termoTipo === "string" ? q.termoTipo : null} />
   );
 }

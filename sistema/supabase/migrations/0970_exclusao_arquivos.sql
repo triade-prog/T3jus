@@ -28,7 +28,7 @@
 --   cliente_documento_guarda .................. 0853 (nunca recriada depois)
 --   portal_cliente_documento_abrir ............ 0853
 --   portal_cliente_documento_para_concluir .... 0853
---   cliente_documentos_em_uso ................. 0930 (com o filtro do termo)
+--   cliente_documentos_em_uso ................. 0930 (com o filtro do termo; o termo de tutela da 0960 também fica fora)
 --   cliente_termo_em_uso ...................... 0930
 --   guarda_arquivos_chamar .................... 0540
 -- portal_cliente_documento_concluir (0930, com o ramo do termo) não é recriada: o gatilho de guarda
@@ -364,14 +364,15 @@ begin
   end if;
 end $$;
 
--- Corpo da 0930 (com o filtro do termo), sem o apagado.
+-- Corpo da 0930 (com o filtro do termo), sem o apagado. Também sem o termo de tutela (F3.140, 0960):
+-- a 0960 vem antes pelo nome e recria esta função; a lista literal vale com ou sem a 0960 aplicada.
 create or replace function cliente_documentos_em_uso(p_escritorio uuid, p_cliente uuid) returns setof cliente_documentos
 language sql stable
 set search_path = public
 as $$
   select * from cliente_documentos
    where escritorio_id = p_escritorio and cliente_id = p_cliente and situacao = 'PRONTO' and substituido_por is null
-     and tipo <> 'TERMO_CURATELA' and apagado_em is null
+     and tipo not in ('TERMO_CURATELA', 'TERMO_TUTELA') and apagado_em is null
 $$;
 
 -- Corpo da 0930, sem o apagado.

@@ -58,10 +58,10 @@ export function NovoClientePortal() {
             <div className="cl-col">
               {/* A origem é da área Comercial; o servidor ignora o campo de quem não a tem. */}
               <FormularioCliente modo="novo" inicial={inicial} comercial={escritorio.areas.includes("COMERCIAL")} daConversa={conversa}
-                aoSalvo={(r) => irPara(r.termo && r.termo !== "ENVIADO"
+                aoSalvo={(r) => irPara(r.termo && "erro" in r.termo
                   // O cliente já existe: com o termo que não subiu, vai para a ficha (mesmo vindo da conversa),
-                  // para o próximo clique não cadastrar de novo. O código do erro vai junto.
-                  ? `${ROTAS_PORTAL.clientes}/${r.id}?cadastrado=1&termo=${codigoDoErroDoTermo(r.termo.erro)}`
+                  // para o próximo clique não cadastrar de novo. O código do erro vai junto, e o tipo, na tutela (F3.140).
+                  ? `${ROTAS_PORTAL.clientes}/${r.id}?cadastrado=1&termo=${codigoDoErroDoTermo(r.termo.erro)}${r.termo.tipo === "TUTELA" ? "&termoTipo=TUTELA" : ""}`
                   : conversa ? `${voltar}&cadastrado=1` : `${ROTAS_PORTAL.clientes}/${r.id}?cadastrado=1`)}
                 aoCancelar={() => irPara(voltar)} />
             </div>
