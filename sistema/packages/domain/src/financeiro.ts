@@ -30,7 +30,8 @@ export type MostrarReceber = (typeof MOSTRAR_RECEBER)[number];
 export const TIPOS_COBRANCA = { LIGACAO: "Ligação", MENSAGEM: "Mensagem", ANOTACAO: "Anotação" } as const;
 export type TipoCobranca = keyof typeof TIPOS_COBRANCA;
 
-export type SituacaoParcela = "A_VENCER" | "VENCIDA" | "PARCIAL" | "PAGA" | "CANCELADA";
+/** BAIXADA: a parcela vencida que saiu de Em atraso sem receber, com motivo (F3.139, FI-24). */
+export type SituacaoParcela = "A_VENCER" | "VENCIDA" | "PARCIAL" | "PAGA" | "CANCELADA" | "BAIXADA";
 
 const txt = (max: number) => z.string().max(max).nullish();
 
@@ -103,6 +104,98 @@ export interface ParcelaLinha {
   reembolso?: ReembolsoDaParcela | null;
   /** A baixa pela divisão do alvará (F3.94): de qual levantamento e quanto. */
   baixaAlvara?: { tipo: TipoLevantamento; entrouEm: string; valor: number; levantamentoId: string }[] | null;
+  /** A baixa sem receber em vigor (F3.139). Sem a 1010, não vem. */
+  baixa?: BaixaSemReceber | null;
+  /** O último desfazer, quando a parcela voltou para Em atraso. */
+  baixaDesfeita?: { por: PessoaRef; em: string; explicacao: string } | null;
+}
+
+// ------------------------------------------------------------------ Baixa sem receber (F3.139: FI-24, FI-25)
+// 1010_baixa_parcela.sql. No T3jus "baixa" sozinha quer dizer recebido (FI-02): todo texto
+// diz "sem receber".
+
+/** Por que a parcela sai de Em atraso sem receber. */
+export const MOTIVOS_BAIXA = {
+  PERDOADA: "Perdoada",
+  INADIMPLENCIA: "Inadimplência",
+  RENEGOCIADA: "Renegociada",
+} as const;
+export type MotivoBaixa = keyof typeof MOTIVOS_BAIXA;
+
+export interface BaixaSemReceber {
+  id: string;
+  motivo: MotivoBaixa;
+  explicacao: string;
+  /** O que faltava na parcela, em centavos. */
+  valor: number;
+  recebidoAntes: number;
+  por: PessoaRef;
+  em: string;
+  /** O reembolso das custas que teve baixa junto (pergunta 4). */
+  reembolsos: { contaId: string; descricao: string; valor: number; categoria: string }[];
+  desfeita: { por: PessoaRef; em: string; explicacao: string } | null;
+}
+
+/** Uma conta de reembolso que hoje volta com a parcela, e a parcela em que iria sem ela. */
+export interface CustasDaParcela {
+  contaId: string;
+  descricao: string;
+  categoria: string;
+  valor: number;
+  depois: { id: string; descricao: string; vencimento: string; valor: number; contrato: { id: string; numero: string } } | null;
+}
+
+/** Um caso encerrado ligado ao contrato da parcela, no momento da janela. */
+export interface CasoDaBaixa {
+  id: string;
+  nome: string;
+  /** Pronto para encerrar no financeiro (sem pendência e sem fechamento). */
+  pronto: boolean;
+  /** A parcela é uma das pendências do acerto dele. */
+  espera: boolean;
+  fechado: { em: string; por: PessoaRef } | null;
+}
+
+/** O que a janela mostra antes de dar ou desfazer a baixa, calculado no servidor. */
+export interface PreviaBaixa {
+  parcela: ParcelaLinha;
+  recebido: number;
+  falta: number;
+  diasAtraso: number;
+  contrato: { id: string; numero: string; situacao: SituacaoContrato };
+  recibos: { ano: number; numero: number }[];
+  custas: CustasDaParcela[];
+  custasVoltam: { contaId: string; descricao: string; categoria: string; valor: number }[];
+  casos: CasoDaBaixa[];
+  podeRenegociar: boolean;
+  temContratos: boolean;
+  quemContratos: PessoaRef[];
+  proximaAcaoCom: PessoaRef;
+  condicoesMudaramEm: string | null;
+}
+
+export const baixarParcelaSchema = z.object({
+  motivo: txt(20),
+  explicacao: txt(1000),
+  /** O que faltava na parcela quando a janela abriu: o servidor confere (PARCELA_MUDOU). */
+  falta: z.number().int().nullish(),
+  /** Dar baixa também no reembolso das custas que ficariam sem parcela (pergunta 4). */
+  reembolso: z.boolean().default(false),
+});
+export type BaixarParcela = z.input<typeof baixarParcelaSchema>;
+
+export const desfazerBaixaSchema = z.object({ explicacao: txt(1000) });
+export type DesfazerBaixa = z.input<typeof desfazerBaixaSchema>;
+
+export interface BaixaFeita extends ParcelaLinha {
+  casos: CasoDaBaixa[];
+  reembolsosBaixados?: number;
+  repetida?: boolean;
+}
+
+export interface BaixaDesfeita extends ParcelaLinha {
+  casos: CasoDaBaixa[];
+  proximaAcao: { com: PessoaRef; data: string; cliente: string };
 }
 
 export interface ExitoDaParcela {
@@ -207,7 +300,8 @@ export interface ParcelasContrato {
   cliente: { id: string; nome: string };
   responsavel: PessoaRef;
   condicoes: Condicao[];
-  totais: { contratado: number; recebido: number; atraso: number; aVencer: number };
+  /** baixado e renegociado: o que teve baixa sem receber (F3.139); sem a 1010, não vêm. */
+  totais: { contratado: number; recebido: number; atraso: number; aVencer: number; baixado?: number; renegociado?: number };
   aguardandoBase: number;
   parcelas: ParcelaDoContrato[];
   /** O que o escritório adiantou nos casos do contrato (F3.23). */
@@ -713,8 +807,15 @@ export interface AcertoCaso {
   entrou: number;
   destinadoPago: number;
   faltaPagar: number;
-  parcelas: { total: number; pagas: number; ultima: string | null; falta: number };
+  parcelas: { total: number; pagas: number; ultima: string | null; falta: number; baixadas?: number };
   prestacoesPendentes: number;
+  /** O que teve baixa sem receber no caso (F3.139; FI-08): a renegociada fica fora do valor. Sem a 1010, não vem. */
+  baixado?: {
+    valor: number;
+    renegociado: number;
+    parcelas: { parcelaId: string; descricao: string; cliente: string; contratoId: string; motivo: MotivoBaixa; valor: number; por: PessoaRef; em: string }[];
+    reembolsos: { contaId: string; descricao: string; categoria: string; valor: number }[];
+  };
   pendencias: PendenciaCaso[];
   falta: number;
   fechado: { em: string; por: { id: string; nome: string } } | null;

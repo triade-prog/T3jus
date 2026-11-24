@@ -545,8 +545,10 @@ select is((select array_agg(x order by x) from (select unnest(regexp_matches(pg_
     'REPASSE_PASSADO', 'REPASSE_ATRASADO', 'REPASSE_PROXIMA_ACAO',
     'EXPORTAR_CONTADOR', 'DOCUMENTO_CHEGOU', 'CARNE_DESATUALIZADO', 'PEDIDO_CHAVE_PIX',
     'EXITO_VALOR_MUDOU', 'EXITO_NAO_COBRADO', 'CASO_ABERTO_NA_ASSINATURA', 'CLIENTE_FEZ_18',
-    'DOCUMENTOS_INICIO_CHEGARAM', 'CASO_PRONTO_FECHAR']) x),
-  'o check do sino tem os 25 tipos do domain mais CASO_PRONTO_FECHAR');
+    'DOCUMENTOS_INICIO_CHEGARAM', 'CASO_PRONTO_FECHAR',
+    -- F3.139 (1010): o aviso a Contratos da baixa renegociada.
+    'BAIXA_RENEGOCIADA']) x),
+  'o check do sino tem os 25 tipos do domain mais CASO_PRONTO_FECHAR e BAIXA_RENEGOCIADA');
 
 -- Nenhum cenário deixou erro nem saída do escopo sem levantamento no histórico.
 select is(pg_temp.falhas(), 0::bigint, 'nenhum financeiro.caso_pronto_falhou nem caso_pronto_fora_sem_levantamento');

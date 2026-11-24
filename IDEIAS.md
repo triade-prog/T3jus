@@ -60,7 +60,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | FI-05 | Registro e acompanhamento de repasses ao cliente, ao perito e ao escritório parceiro | [V1] |
 | FI-06 | Separação entre dinheiro próprio e valores de terceiros | [V1] |
 | FI-07 | Despesa adiantada pelo escritório (custas, sucumbência) vira valor a reembolsar, por cliente e por caso | [V1] |
-| FI-08 | Fechamento financeiro do caso: só encerra com tudo recebido e tudo repassado; o caso mostra quanto entrou, quanto foi repassado e quanto falta destinar | [V1] |
+| FI-08 | Fechamento financeiro do caso: só encerra com tudo recebido ou baixado com motivo, e tudo repassado; o caso mostra quanto entrou, quanto foi repassado e quanto falta destinar | [V1] |
 | FI-09 | Previsão de caixa, prevista contra realizada, incluindo precatórios e RPVs com data estimada | [V1] |
 | FI-10 | Aprovação de pagamentos pelo sócio (lista da semana) e separação entre quem lança e quem paga; pedidos urgentes do dia (como custas) entram na mesma aprovação | [VAL] |
 | FI-11 | Divisão de honorários entre sócios ou advogados por caso, conforme a participação de cada um na data de entrada do caso, com adiantamento e acerto | [VAL] |

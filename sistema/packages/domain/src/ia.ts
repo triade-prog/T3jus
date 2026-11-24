@@ -51,6 +51,8 @@ export interface ContextoIa {
     casos?: { nome: string; etapa: string; desde: string; texto: string; quemEscreveu: string | null; responsavel: string | null }[];
     compromissos?: { titulo: string; tipo: string; inicio: string; modalidade: string; local: string | null; link: string | null }[];
     parcelas?: { descricao: string; vencimento: string; valor: number; falta: number; situacao: string }[];
+    /** Parcelas com baixa sem receber (F3.139, pergunta 5): só quantas, sem valor nem motivo. */
+    parcelasComEquipe?: number;
     documentos?: { descricao: string; pedidoEm: string }[];
   };
 }
@@ -213,7 +215,11 @@ export function instrucoesIa(ctx: ContextoIa, opcoes: { notaIa?: string | null }
     : "Compromissos marcados: nenhum.");
   if (d.parcelas) blocos.push(d.parcelas.length
     ? `Parcelas em aberto (fonte "Financeiro"):\n${d.parcelas.map((p) => `- ${p.descricao}: vence em ${p.vencimento}, ${reais(p.valor)}${p.falta !== p.valor ? `, faltam ${reais(p.falta)}` : ""}, ${p.situacao === "VENCIDA" ? "vencida" : p.situacao === "PARCIAL" ? "paga em parte" : "a vencer"}.`).join("\n")}\nO link de pagamento ainda não está disponível no T3jus: se pedirem segunda via, passe para uma pessoa.`
-    : "Parcelas em aberto: nenhuma.");
+    : d.parcelasComEquipe ? "Parcelas em aberto para cobrar: nenhuma." : "Parcelas em aberto: nenhuma.");
+  // F3.139 (pergunta 5): a parcela com baixa sem receber é assunto da equipe. A IA não sabe o valor
+  // nem o motivo, não diz que nada está em aberto e passa para uma pessoa se o cliente perguntar.
+  if (d.parcelasComEquipe) blocos.push(
+    `Há ${d.parcelasComEquipe === 1 ? "uma parcela que é assunto da equipe" : `${d.parcelasComEquipe} parcelas que são assunto da equipe`} (fonte "Financeiro"). Não fale dela por conta própria e não diga que nada está em aberto ou que o cliente não deve nada. Se o cliente perguntar se deve algo ou sobre essa parcela, passe para uma pessoa com o motivo NAO_SOUBE.`);
   if (d.documentos) blocos.push(d.documentos.length
     ? `Documentos que o escritório pediu e ainda não chegaram (fonte "Jurídico"):\n${d.documentos.map((x) => `- ${x.descricao} (pedido em ${x.pedidoEm}).`).join("\n")}`
     : "Documentos pedidos: nenhum pendente.");

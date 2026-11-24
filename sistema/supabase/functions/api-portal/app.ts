@@ -56,6 +56,7 @@ import { logoDoRecibo, nomeDoPdfRecibo, pdfDoRecibo } from "./recibo_pdf.ts";
 import { rotasContratosOab } from "./contratos_oab.ts";
 import { rotasPropostaDocx } from "./proposta_docx.ts";
 import { rotasPagoAntesLogo } from "./pago_antes_logo.ts";
+import { rotasBaixaParcela } from "./baixa_parcela.ts";
 import { planejarResposta } from "../_shared/atendimento.ts";
 import { montarSugestao } from "../_shared/montar_fluxo.ts";
 import type { Cerebro } from "../_shared/ia.ts";
@@ -1705,6 +1706,7 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   rotasContratosOab(app, deps);
   rotasPropostaDocx(app, deps);
   rotasPagoAntesLogo(app, deps);
+  rotasBaixaParcela(app, deps);
 
   return app;
 }

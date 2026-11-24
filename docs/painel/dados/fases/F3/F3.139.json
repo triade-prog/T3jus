@@ -8,7 +8,8 @@
     "FI-08",
     "EX-16"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 1121,
-  "proximo": "Programar a baixa sem receber pelo desenho aprovado (D35): migration 1010_baixa_parcela, funções de baixa e desfazer, régua de WhatsApp, Contratos, sino e telas"
+  "proximo": "Telas da baixa sem receber (D35): a janela e o desfazer na ficha do contrato em A receber, a coluna \"Recibo e ações\", o atalho na janela de pendência, Contratos sem o Financeiro e o carnê",
+  "nota": "Servidor pronto (migration 1010, api-portal, sino, régua, IA); as telas vêm no commit seguinte, no mesmo branch."
 }

@@ -221,12 +221,13 @@ export interface ParcelaParaCarne {
   total: number;
   vencimento: string;
   valor: number;
-  situacao: "A_VENCER" | "VENCIDA" | "PARCIAL" | "PAGA" | "CANCELADA";
+  situacao: "A_VENCER" | "VENCIDA" | "PARCIAL" | "PAGA" | "CANCELADA" | "BAIXADA";
   pagaEm: string | null;
 }
 
 export interface MudancaCarne {
-  tipo: "CANCELADA" | "VENCIMENTO" | "VALOR" | "CHAVE_PIX";
+  /** BAIXADA e BAIXA_DESFEITA: baixa sem receber e o desfazer (F3.139, nota 7). */
+  tipo: "CANCELADA" | "BAIXADA" | "BAIXA_DESFEITA" | "VENCIMENTO" | "VALOR" | "CHAVE_PIX";
   parcela: string | null;
   era: string | null;
   agora: string | null;
