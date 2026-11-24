@@ -171,6 +171,19 @@ test.describe("Fechamento do caso na ficha do contrato (F3.132: EX-16, EX-17, FI
     await expect(folha(page).getByRole("button", { name: "Encerrar o caso no financeiro" })).toBeFocused();
   });
 
+  test("F3.165: duas janelas seguidas (o fechamento abre o Registrar e some); Esc no Registrar devolve o foco ao botão que abriu o fechamento", async ({ page }) => {
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/contratos/${CT_N}`]: { corpo: FICHA_N } });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT_N}`);
+    await folha(page).getByRole("button", { name: "Encerrar o caso no financeiro" }).click();
+    const j = page.getByRole("alertdialog", { name: "Ainda não dá para encerrar" });
+    await j.getByRole("button", { name: "Registrar recebimento da parcela 6/6" }).click();
+    const r = page.getByRole("dialog", { name: "Registrar recebimento" });
+    await expect(r).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(r).toBeHidden();
+    await expect(folha(page).getByRole("button", { name: "Encerrar o caso no financeiro" })).toBeFocused();
+  });
+
   test("estados 7 e 8 (EX-17): tudo recebido, Encerrar sobe ao âmbar e encerra o caso e o contrato juntos", async ({ page }) => {
     const fechado = { ...PRONTO, fechado: { em: em(0, "16:20"), por: MARINA }, contratosEncerrados: [ctrN] };
     const pedidos = await simular(page, {

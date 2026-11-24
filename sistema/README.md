@@ -222,6 +222,9 @@ Decisões da Carol de 23/11/2026: quando a tabela não cabe, saem as colunas sec
 5. Toda `td`, menos a primeira e a de ação, tem `data-r` (o rótulo do cartão do celular).
 6. Se a tela tem coluna lateral, ela fica ao lado por padrão. Para ela descer abaixo de 1360 px, ponha `pt-desce` na grade, e só se a coluna lateral não tiver alerta, botão principal nem algo que a pessoa precisa ver para agir.
 7. Ponha a tela em `tests/e2e/portal-tabelas-telas.json` (endereço e respostas da API) e a grade marcada, se houver, na lista `DESCEM` do `portal-tabelas.spec.ts`.
+8. Alvos de toque (F3.165): a área de 44 × 44 px dos links e botões das células (e das listas `.cartoes.so-cel` e `.cb-cartoes.so-cel`) vem da base, no fim do bloco "Tabelas do Portal" do `portal.css`; não ponha `::after` próprio. O alvo de célula não é `display:inline` (use `inline-block` ou `flex`), porque um link inline que quebra linha dá ao `::after` uma caixa errada. O botão repetido numa cópia `pt-sobe` leva o mesmo `aria-label` (ou o mesmo `data-acao`) do botão da coluna, para o foco achar o equivalente quando a janela fecha. Link que já cobre o cartão inteiro leva `.sem-area` (o `.c-nome` já fica de fora). O teste é o `portal-tabelas-toque.spec.ts`.
+
+O retorno de foco das janelas fica no `Janela` (`packages/ui/src/console/foco.ts`): quem abriu é guardado antes do `showModal()` e, quando a janela fecha de qualquer jeito, o foco volta ao botão que a abriu, ao equivalente da mesma linha, à linha, à linha que ficou no lugar ou ao título. A tela não precisa devolver o foco sozinha.
 
 ### Suporte de acesso do Console (F1.3, PT-23)
 

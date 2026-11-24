@@ -1,0 +1,11 @@
+{
+  "id": "F3.167",
+  "texto": "Botão compacto de 36 px no celular fora das tabelas do Portal e no Console: a linha 621 do console.css (min-height:36px) desfaz a 285 (min-height:var(--alvo) abaixo de 760 px). O F3.165 corrigiu só dentro das tabelas e das listas que as trocam",
+  "peca": "B5",
+  "refs": [
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 1250,
+  "proximo": "Desenhar com a especialista de frontend as telas afetadas (compacto com 44 px, padding de 16 px e fonte de corpo da linha 285) e levar à Carol"
+}
