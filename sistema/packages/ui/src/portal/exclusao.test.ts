@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ArquivosParaApagar, FichaCliente } from "@t3jus/domain";
-import { linhaArquivosParaApagar } from "./exclusao.ts";
+import type { ArquivosParaApagar, ArquivosQueFicam, FichaCliente } from "@t3jus/domain";
+import { despesasDoExcluido, linhaArquivosParaApagar, PE_GUARDA, SEM_DATA } from "./exclusao.ts";
 
 // F3.155: os textos do desenho aprovado (docs/design/aprovadas/portal-exclusao-arquivos, _fonte/f155.py).
 const UM = "o arquivo é apagado do T3jus. Fica só que existiu: tipo, tamanho e datas, sem o nome do arquivo.";
@@ -49,5 +49,71 @@ describe("linhaArquivosParaApagar (F3.155)", () => {
   it("o campo é opcional na ficha", () => {
     const semCampo: FichaCliente["arquivosParaApagar"] = undefined;
     expect(linhaArquivosParaApagar(semCampo)).toBeNull();
+  });
+});
+
+// F3.156: os textos do desenho aprovado (docs/design/aprovadas/portal-exclusao-despesas, _fonte/f156.py,
+// alternativa A), com os estados aprovados.
+const q = (despesas: number, comArquivo: number, arquivos: number, pastas: number, ate: string | null): ArquivosQueFicam =>
+  ({ despesas, comArquivo, arquivos, pastas, ate });
+const DESC_UM = "vira “Despesa adiantada a cliente excluído”. O valor, as datas e o reembolso continuam no Financeiro.";
+const DESC_VARIAS = "viram “Despesa adiantada a cliente excluído”. O valor, as datas e o reembolso continuam no Financeiro.";
+
+describe("despesasDoExcluido (F3.156)", () => {
+  it("sem despesa ou sem o campo (quem não é a dona): nada muda (o estado despesa-nenhuma)", () => {
+    const nada = { descricao: null, guarda: null, faixa: null };
+    expect(despesasDoExcluido(q(0, 0, 0, 0, null))).toEqual(nada);
+    expect(despesasDoExcluido(undefined)).toEqual(nada);
+    expect(despesasDoExcluido(null)).toEqual(nada);
+  });
+
+  it("uma despesa paga com a nota: a descrição, o quadro com a data e a faixa no singular (o estado despesa-paga-nota)", () => {
+    expect(despesasDoExcluido(q(1, 1, 1, 0, "2033-01-01"))).toEqual({
+      descricao: { texto: "A descrição da despesa adiantada", explicacao: DESC_UM },
+      guarda: {
+        arquivos: { texto: "O arquivo da despesa adiantada",
+          explicacao: "a nota, guia, boleto ou comprovante, com o nome trocado pelo tipo, como “Nota fiscal.pdf”. O T3jus apaga sozinho em 01/01/2033." },
+        pasta: null,
+      },
+      faixa: "Fora esse arquivo, nada aqui precisa ser guardado por lei.",
+    });
+  });
+
+  it("duas despesas, uma em aberto: sem data, com a regra, no plural (o estado despesa-em-aberto)", () => {
+    expect(despesasDoExcluido(q(2, 2, 2, 0, null))).toEqual({
+      descricao: { texto: "A descrição das 2 despesas adiantadas", explicacao: DESC_VARIAS },
+      guarda: {
+        arquivos: { texto: "Os 2 arquivos das 2 despesas adiantadas",
+          explicacao: `notas, guias, boletos ou comprovantes, com o nome trocado pelo tipo, como “Nota fiscal.pdf”. ${SEM_DATA}` },
+        pasta: null,
+      },
+      faixa: "Fora esses arquivos, nada aqui precisa ser guardado por lei.",
+    });
+    expect(SEM_DATA).toBe("Enquanto houver despesa em aberto, não há data: o T3jus apaga sozinho em 1º de janeiro do 7º ano depois do pagamento.");
+  });
+
+  it("dois arquivos de uma despesa e a pasta do contador (o estado despesa-pasta-contador)", () => {
+    const d = despesasDoExcluido(q(1, 1, 2, 1, "2033-01-01"));
+    expect(d.guarda!.arquivos.texto).toBe("Os 2 arquivos da despesa adiantada");
+    expect(d.guarda!.pasta).toEqual({ texto: "A pasta mandada ao contador",
+      explicacao: "fica como foi montada, com a descrição antiga no nome dos arquivos. A cópia do T3jus sai pela regra do mês da pasta; a que o contador recebeu fica fora do T3jus." });
+    expect(d.faixa).toBe("Fora esses arquivos, nada aqui precisa ser guardado por lei.");
+  });
+
+  it("um arquivo só, mas numa pasta: a faixa vai para o plural", () => {
+    expect(despesasDoExcluido(q(1, 1, 1, 1, "2033-01-01")).faixa).toBe("Fora esses arquivos, nada aqui precisa ser guardado por lei.");
+  });
+
+  it("várias pastas, no plural", () => {
+    expect(despesasDoExcluido(q(3, 2, 4, 2, "2034-01-01")).guarda!.pasta).toEqual({ texto: "As 2 pastas mandadas ao contador",
+      explicacao: "ficam como foram montadas, com a descrição antiga no nome dos arquivos. As cópias do T3jus saem pela regra do mês de cada pasta; as que o contador recebeu ficam fora do T3jus." });
+  });
+
+  it("despesa sem arquivo: só a linha da descrição, sem quadro e com a faixa aprovada (o estado despesa-sem-arquivo)", () => {
+    expect(despesasDoExcluido(q(1, 0, 0, 0, null))).toEqual({ descricao: { texto: "A descrição da despesa adiantada", explicacao: DESC_UM }, guarda: null, faixa: null });
+  });
+
+  it("o pé do quadro cita a obrigação fiscal", () => {
+    expect(PE_GUARDA).toBe("Ficam pela obrigação fiscal do escritório, que vale mesmo com o pedido do titular (LGPD, art. 16, I).");
   });
 });

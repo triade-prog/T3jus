@@ -1,12 +1,12 @@
 {
   "id": "F3.156",
-  "texto": "Anexos de conta a pagar ligada a cliente excluído (nota, guia e boleto da despesa reembolsável) e a pasta do contador que os contém: guardar pela obrigação fiscal ou apagar na exclusão a pedido do titular",
+  "texto": "Anexos de conta a pagar ligada a cliente excluído (nota, guia, boleto e comprovante da despesa adiantada) e a pasta do contador que os contém: guardar pela obrigação fiscal e apagar sozinho no fim do prazo, com a janela de exclusão dizendo isso (decisão da Carol)",
   "peca": "S4",
   "refs": [
-    "PT-11",
-    "FI-18"
+    "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1172,
-  "proximo": "Decidir com a Carol entre guardar (LGPD, art. 16, I; registrar no inventário de anexos) ou apagar pela fila arquivos_apagar da F3.141"
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-exclusao-despesas (Carol, 24/11/2026, 19h34, alternativa A). Migration 1092 (prazo_fiscal_anos; conta_guarda_fiscal_ate: 1º de janeiro de ano + 2 + 5 da data mais tarde, conta em aberto não vence; na exclusão, financeiro_apagar_do_excluido troca a descrição pelo texto fixo e o nome do arquivo pelo tipo, e o arquivo fica; conta_pagar_nasce recusa conta nova para o excluído e anexo_nasce dá o nome neutro, com FOR SHARE; guardiões de contas_pagar, anexos e exportacao_pastas; fila arquivos_apagar com PRAZO_FISCAL, cliente_id nulo e o .zip; prazo_fiscal_aplicar na aplicar_prazos, sem depender da 1093; leituras sem o apagado; arquivosQueFicam em portal_cliente; inventário de anexos, contas_pagar, exportacao_pastas e arquivos_apagar) e 1093 (só chama financeiro_preencher_excluidos, sem volta); api-console: caminhoValido com <esc>/exportacoes/<exportação>-<n>.zip; tela: despesasDoExcluido (packages/ui/src/portal/exclusao.ts) e ExclusaoCliente.tsx (a linha da descrição, o quadro \"O que a lei obriga a guardar\" e a frase da faixa). Testes em 24/11/2026: pgTAP 143_despesas_cliente_excluido_test.sql (79 testes) e 009 ajustado; concorrência exclusao-conta-simultanea.sh; pnpm test:db com 122 arquivos e 3768 testes, mais as 6 concorrências, tudo verde; pnpm test:deno 338 testes (4 novos em guarda_test.ts); pnpm test com 64 arquivos e 681 testes (8 novos em exclusao.test.ts); e2e tests/e2e/portal-exclusao.spec.ts com 34 testes (10 novos, os 5 estados aprovados no celular e no computador, com axe); pnpm lint sem erro; typecheck só com os 5 erros antigos de packages/ui.",
+  "nota": "O marco segue a revisão (G2): pago em 2026, sai em 01/01/2033 (CTN, art. 173, I e 195, parágrafo único; livro-caixa do RIR, artigo a conferir com o contador); a sociedade de advogados é sociedade simples, então o CC, art. 1.194 não é a base. A pasta do contador já montada fica como foi montada, com a descrição de então, e sai inteira no marco do mês dela; a cópia que o contador recebeu fica fora do T3jus. O limite que fica: lançamento ou fiscalização que estendem a prescrição (CTN, art. 174). A descrição livre da importação em historico_financeiro_anterior ficou para a F3.177. Publicação na P17; os textos novos do inventário precisam do ok da Carol antes do merge."
 }

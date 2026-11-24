@@ -1,0 +1,26 @@
+-- As despesas adiantadas dos clientes excluídos antes da 1092 (F3.156; PT-11), à parte da estrutura,
+-- como a 0971 e a 1091.
+--
+-- ATENÇÃO: isto não tem volta. Em cada despesa de cliente já EXCLUIDO, a descrição vira o texto fixo
+-- "Despesa adiantada a cliente excluído", e o nome de cada arquivo (nota, guia, boleto ou
+-- comprovante) vira o tipo ("Nota fiscal.pdf"). Os arquivos NÃO saem: ficam guardados pela
+-- obrigação fiscal e saem sozinhos no marco (1º de janeiro do 7º ano depois do ano da data mais
+-- tarde da conta; a conta em aberto não vence).
+--
+-- A rotina da noite seguinte à 1092 já apaga o que passou do marco, com ou sem esta 1093 (a rotina
+-- troca a descrição e o nome no mesmo passo; revisão, G1). Só aparece vencido o que tem pagamento
+-- lançado com data antiga: as importações gravam em historico_financeiro_anterior, nunca em
+-- contas_pagar (revisão, m1). A contagem só de leitura de antes da 1092 mostra quantos são.
+--
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P17):
+--   1. publicar a api-console com o caminho novo (<esc>/exportacoes/<exportação>-<n>.zip);
+--   2. rodar a contagem só de leitura (project-files t3jus/f3-156/contagem-antes-1092.sql) e mostrar
+--      à Carol, principalmente anexos_ja_vencidos;
+--   3. com o ok dela, aplicar a 1092;
+--   4. com o ok dela, aplicar esta 1093 e conferir que financeiro_preencher_excluidos() devolve {};
+--   5. publicar o Portal (a janela de exclusão com o quadro "O que a lei obriga a guardar").
+--
+-- A função é testada no pgTAP 143 e é idempotente: rodar de novo não muda nada. O resultado é a
+-- contagem por escritório ({escritório: {clientes, despesas, anexos}}).
+
+select financeiro_preencher_excluidos() as preenchidos;

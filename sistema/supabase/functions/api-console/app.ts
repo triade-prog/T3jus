@@ -205,8 +205,8 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return { pastas: pendentes.length, concluidas, apagados };
   }
 
-  // Os arquivos da exclusão a pedido do titular, pelos caminhos exatos da fila. Caminho fora dos dois
-  // formatos ou de outro bucket nunca vai ao Storage. Sem a 0970 no banco (a função não existe), o
+  // Os arquivos da exclusão a pedido do titular e do fim da guarda fiscal (F3.156), pelos caminhos
+  // exatos da fila. Caminho fora dos três formatos ou de outro bucket nunca vai ao Storage. Sem a 0970 no banco (a função não existe), o
   // passo só devolve 0; a falha de um passo não impede o outro.
   async function apagarObjetosDaExclusao(limpeza: LimpezaArquivos) {
     let fila: { id: string; bucket: string; caminho: string }[];

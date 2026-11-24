@@ -1,7 +1,8 @@
 // Fim da guarda (F0.15): a rota da rotina apaga as pastas que o banco pôs na fila e conta o
 // que fez; a limpeza do Storage nunca apaga fora da pasta do escritório.
 // Exclusão a pedido do titular (F3.141): a mesma rota apaga, depois das pastas, os arquivos um a
-// um da fila arquivos_apagar, só pelos caminhos exatos e só nos dois formatos.
+// um da fila arquivos_apagar, só pelos caminhos exatos e só nos três formatos (o .zip da pasta do
+// contador entra com o fim da guarda fiscal, F3.156).
 import { assertEquals, assertRejects } from "@std/assert";
 import { criarApiConsole } from "./app.ts";
 import { caminhoValido, storageLimpeza, type LimpezaArquivos } from "../_shared/guarda.ts";
@@ -223,4 +224,36 @@ Deno.test("PT-11: caminhoValido aceita só os dois formatos dentro da pasta de u
     `${CEDRO}/propostas/1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d.docx`, `x/${CEDRO}`, `${CEDRO}/../${CEDRO}`, `/${RG}`, `${RG}/x`,
     RG.toUpperCase(),
   ].map(caminhoValido), [false, false, false, false, false, false, false, false, false, false]);
+});
+
+// F3.156 (1092): o .zip da pasta do contador, no fim da guarda fiscal da despesa de cliente excluído.
+const ZIP = `${CEDRO}/exportacoes/2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e-1.zip`;
+
+Deno.test("PT-11 F3.156: caminhoValido aceita o .zip da pasta do contador, partes de 1 a 99", () => {
+  assertEquals([ZIP, ZIP.replace("-1.zip", "-50.zip"), ZIP.replace("-1.zip", "-99.zip")].map(caminhoValido), [true, true, true]);
+});
+
+Deno.test("PT-11 F3.156: caminhoValido recusa o .zip fora do formato", () => {
+  assertEquals([
+    ZIP.replace("-1.zip", "-0.zip"), ZIP.replace("-1.zip", "-100.zip"), ZIP.replace("-1.zip", "-01.zip"), `${CEDRO}/exportacoes/x.zip`,
+    `${CEDRO}/exportacoes/../${CEDRO}/exportacoes/2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e-1.zip`, ZIP.replace(".zip", ".ZIP"),
+    ZIP.replace("/exportacoes/", "/exportacao/"), `x/${ZIP}`, `${ZIP}/x`, ZIP.replace(".zip", ".zip.pdf"),
+  ].map(caminhoValido), [false, false, false, false, false, false, false, false, false, false]);
+});
+
+Deno.test("PT-11 F3.156: a rota apaga o .zip da fila junto com os outros arquivos e registra os ids", async () => {
+  const pedidos: string[][] = [];
+  const m = montar(limpezaFalsa((_, c) => (pedidos.push(c), Promise.resolve({ apagados: 2 }))), [], {
+    rotina_arquivos_apagar_pendentes: () => [{ id: "z1", bucket: "documentos-portal", caminho: ZIP }, { id: "a1", bucket: "documentos-portal", caminho: RG }],
+    rotina_arquivos_apagar_registrar: () => 2,
+  });
+  const r = await m.pedir("/v1/rotina/arquivos-da-guarda", { corpo: {} });
+  assertEquals(await r.json(), { pastas: 0, concluidas: 0, apagados: 0, objetos: 2, objetosApagados: 2 });
+  assertEquals(pedidos, [[ZIP, RG]]);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "rotina_arquivos_apagar_registrar").map((c) => c.args), [{ p_ids: ["z1", "a1"] }]);
+});
+
+Deno.test("PT-11 F3.156: o check arquivos_apagar_caminho da 1092 tem o mesmo formato do .zip", async () => {
+  const sql = await Deno.readTextFile(new URL("../../migrations/1092_despesas_cliente_excluido.sql", import.meta.url));
+  assertEquals(sql.includes("|exportacoes/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-[1-9][0-9]?\\.zip)$"), true);
 });

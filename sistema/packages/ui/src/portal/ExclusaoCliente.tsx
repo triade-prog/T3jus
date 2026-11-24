@@ -7,6 +7,9 @@
 // só se arquiva a pedido (decisão 5, F1.16, estado excluir-depois).
 // F3.155 (desenho portal-exclusao-arquivos, Carol 24/11/2026): "O que é apagado" cita os arquivos
 // do cliente, logo depois da qualificação, só quando há arquivo; "O que fica" não muda (alternativa A).
+// F3.156 (desenho portal-exclusao-despesas, Carol 24/11/2026, alternativa A): a descrição da despesa
+// adiantada em "O que é apagado"; o quadro à parte "O que a lei obriga a guardar" com os arquivos dela
+// e a pasta do contador; "O que fica, sem dado pessoal" não muda; muda só a frase em negrito da faixa.
 
 import { useId, useRef, useState } from "react";
 import { CANAIS_PEDIDO, nomeConfere, QUEM_PEDIU, type CanalPedido, type FichaCliente, type PedidoExclusao, type QuemPediu } from "@t3jus/domain";
@@ -16,7 +19,7 @@ import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela 
 import { dataLonga, hora } from "../console/tempo.ts";
 import { agoraBrasilia, dataBr, lerData } from "./clientes.ts";
 import { primeiroNome } from "./equipe.ts";
-import { linhaArquivosParaApagar } from "./exclusao.ts";
+import { despesasDoExcluido, linhaArquivosParaApagar, PE_GUARDA } from "./exclusao.ts";
 import type { Feito } from "./FichaCliente.tsx";
 import { chamarPortal } from "./Moldura.tsx";
 
@@ -344,6 +347,7 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
   const prox = f.proxContato;
   const n = f.atendimentos ?? 0;
   const arquivos = linhaArquivosParaApagar(f.arquivosParaApagar);
+  const despesas = despesasDoExcluido(f.arquivosQueFicam);
 
   async function enviar() {
     setErro(null);
@@ -425,6 +429,12 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
                   <small>{arquivos.explicacao}</small>
                 </li>
               ) : null}
+              {despesas.descricao ? (
+                <li>
+                  {despesas.descricao.texto}
+                  <small>{despesas.descricao.explicacao}</small>
+                </li>
+              ) : null}
               <li>
                 {contatos.length === 1 ? "O contato" : `Os ${contatos.length} contatos`}
                 <small>{contatos.map((x) => x.nome).join(", ")}, com telefones e e-mails</small>
@@ -469,10 +479,30 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
               ) : null}
             </ul>
           </div>
+          {despesas.guarda ? (
+            <div className="pd-lado pd-guarda">
+              <h3>
+                <Icone nome="cadeado" className="ico" />O que a lei obriga a guardar
+              </h3>
+              <ul>
+                <li>
+                  {despesas.guarda.arquivos.texto}
+                  <small>{despesas.guarda.arquivos.explicacao}</small>
+                </li>
+                {despesas.guarda.pasta ? (
+                  <li>
+                    {despesas.guarda.pasta.texto}
+                    <small>{despesas.guarda.pasta.explicacao}</small>
+                  </li>
+                ) : null}
+              </ul>
+              <p className="pd-arq-nota">{PE_GUARDA}</p>
+            </div>
+          ) : null}
           <p className="pt-comuns">
             <Icone nome="escudo" className="ico" />
             <span>
-              <b>Nada aqui precisa ser guardado por lei.</b> Este cliente não tem contrato nem processo no T3jus; quem tem um deles é atendido arquivando, sem
+              <b>{despesas.faixa ?? "Nada aqui precisa ser guardado por lei."}</b> Este cliente não tem contrato nem processo no T3jus; quem tem um deles é atendido arquivando, sem
               apagar. Documentos fora do T3jus (papel, e-mail, pastas) ficam com o escritório, que é o controlador.
             </span>
           </p>
