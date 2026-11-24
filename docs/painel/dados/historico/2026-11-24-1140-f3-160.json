@@ -1,0 +1,13 @@
+{
+  "data": "24/11/2026",
+  "inicio": "11:40",
+  "fim": "12:05",
+  "texto": "F3.160 feito: editar a ficha vindo de Gerar documentos na mesma aba, com Salvar e voltar, as escolhas guardadas na aba e o quadro de quem assina (D1, D2, D6 a D10 da Carol), sem migration e sem API. D3 virou o F3.166 e D4 com D5 o F3.167.",
+  "refs": [
+    "F3.160",
+    "F3.166",
+    "F3.167",
+    "AP-01",
+    "CH-08"
+  ]
+}

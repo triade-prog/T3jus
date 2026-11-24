@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 1065.5,
-  "proximo": "Desenhar e programar logo depois da F3.147, reusando o gatilho e a origem do aviso de caso pronto (seção 6.4 do plano em docs/design/aprovadas/portal-sino-caso-encerrado)"
+  "proximo": "Desenho aprovado (D34, docs/design/aprovadas/portal-sino-caso-fechou): escrever o plano de código, passar pela revisão e programar (migration 1020, pgTAP livre no dia; o teste 135 passa a filtrar o tipo CASO_PRONTO_FECHAR)"
 }

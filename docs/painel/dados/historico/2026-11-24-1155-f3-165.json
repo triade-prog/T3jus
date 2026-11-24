@@ -2,11 +2,11 @@
   "data": "24/11/2026",
   "inicio": "11:55",
   "fim": "12:25",
-  "texto": "Tabelas do Portal com área de toque de 44 px (no celular, o botão compacto das tabelas com 44 px visíveis), retorno de foco no Janela quando a janela fecha de qualquer jeito e nomes nas duas tabelas da Equipe. F3.165 feito; o leitor de tela de verdade (VoiceOver da Carol e NVDA) ficou no F3.166 e o compacto de 36 px fora das tabelas no F3.167, os dois pendentes. Sem migration.",
+  "texto": "Tabelas do Portal com área de toque de 44 px (no celular, o botão compacto das tabelas com 44 px visíveis), retorno de foco no Janela quando a janela fecha de qualquer jeito e nomes nas duas tabelas da Equipe. F3.165 feito; o leitor de tela de verdade (VoiceOver da Carol e NVDA) ficou no F3.168 e o compacto de 36 px fora das tabelas no F3.169, os dois pendentes. Sem migration.",
   "refs": [
     "F3.165",
-    "F3.166",
-    "F3.167",
+    "F3.168",
+    "F3.169",
     "PT-10"
   ]
 }

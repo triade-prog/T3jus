@@ -311,8 +311,8 @@ export function avisoFaltaQuemAssina(c: ClienteDoDocumento, docs: number, temTer
   return {
     titulo: f.length === 1 ? `Falta 1 dado de quem assina por ${p}: ${lista}.` : `Faltam ${f.length} dados de quem assina por ${p}: ${lista}.`,
     texto: (marcas.length
-      ? `Dá para gerar assim: ${sai} com ${juntar(marcas)}, para preencher à mão ou no Word. Ou complete a ficha antes.`
-      : "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes.") + fraseDoTermoDeTutela(c, temTermo),
+      ? `Dá para gerar assim: ${sai} com ${juntar(marcas)}, para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.`
+      : "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.") + fraseDoTermoDeTutela(c, temTermo),
   };
 }
 
@@ -341,7 +341,7 @@ export function avisoFez18(c: ClienteDoDocumento, hoje: string): { titulo: strin
     : tituloFaltas(faltas, c.nome);
   return {
     titulo,
-    texto: `${antes} ${quais} Dá para gerar assim: ${faltas.length === 1 ? "sai marcado" : "saem marcados"}, para completar no Word. Ou complete a ficha antes.`,
+    texto: `${antes} ${quais} Dá para gerar assim: ${faltas.length === 1 ? "sai marcado" : "saem marcados"}, para completar no Word. Ou complete a ficha antes: ao salvar, você volta para cá.`,
     temFalta: true,
   };
 }
@@ -416,4 +416,23 @@ export function baixarNoCabecalho(
   if (a) return { tipo: "assinado", anexoId: a.id, nome: a.nome, formato: formato(a.nome), qual: `${a.nome} · anexado em ${diaBrasilia(a.enviadoEm)}` };
   if (docs.podeGerar && situacao !== "ENCERRADO") return { tipo: "gerar" };
   return null;
+}
+
+// ------------------------------------------------------------- O quadro "Quem assina por…" (F3.160, D1 e D2)
+
+/**
+ * O nome e a linha do quadro de quem assina em Gerar. No assistido (D1), os dois nomes e a frase de
+ * quem assina e como, sem o selo "Assiste"; nos outros, o papel e o CPF com o selo de hoje. A linha
+ * termina sempre com "· da ficha do cliente" (D2). O CPF já vem formatado.
+ */
+export function quadroQuemAssina(c: ClienteDoDocumento, hoje: string, cpf: string | null): { nome: string; linha: string; selo: boolean } {
+  const papel = c.rlPapel ? PAPEIS_RESPONSAVEL[c.rlPapel] : null;
+  const doc = cpf ? `CPF ${cpf}` : null;
+  const fim = "da ficha do cliente";
+  if (casoDoMenor(c, hoje) === "ASSISTIDO" && c.rlNome?.trim()) {
+    const p = primeiroNome(c.nome);
+    const por = c.rlPapel ? `${papelFeminino(c.rlPapel) ? "pela" : "pelo"} ${PAPEIS_RESPONSAVEL[c.rlPapel].toLowerCase()}, ` : "";
+    return { nome: `${p} e ${c.rlNome.trim()}`, linha: [`${p} assina, assistido(a) ${por}${primeiroNome(c.rlNome)}`, doc, fim].filter(Boolean).join(" · "), selo: false };
+  }
+  return { nome: c.rlNome?.trim() || "Não cadastrado", linha: [papel, doc, fim].filter(Boolean).join(" · "), selo: true };
 }

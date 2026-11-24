@@ -500,6 +500,8 @@ export interface FichaCliente {
   arquivamento?: (PedidoExclusao & { em: string }) | null;
   /** Só para a dona: o contrato e o processo que fazem o pedido virar arquivamento (F1.16). */
   vinculosLgpd?: VinculosLgpd | null;
+  /** Só para a sócia dona, no cliente ativo ou inativo sem contrato nem processo (F3.155). Para quem não é a dona, o campo não vem. */
+  arquivosParaApagar?: ArquivosParaApagar;
   /** O próximo passo, as contagens das abas e o "No escritório" (F3.110). Não vêm no excluído nem no arquivado. */
   passo?: PassoCliente;
   contagens?: ContagensCliente;
@@ -509,6 +511,18 @@ export interface FichaCliente {
 export interface VinculosLgpd {
   contratos: { id: string; numero: string }[];
   processos: { id: string; nome: string; numeroCnj: string | null }[];
+}
+
+/** O que a exclusão a pedido do titular apaga (F3.155): só para a sócia dona, no cliente que ela pode excluir. */
+export interface ArquivosParaApagar {
+  /** Documentos pessoais prontos (com os substituídos, que ficam guardados), sem os termos. */
+  documentos: number;
+  /** Há termo de curatela (em uso ou guardado). */
+  curatela: boolean;
+  /** Há termo de tutela (em uso ou guardado). */
+  tutela: boolean;
+  /** Propostas do cliente: o servidor apaga todas as versões do Word de cada uma. */
+  propostas: number;
 }
 
 export interface Atendimento {
