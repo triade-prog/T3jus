@@ -40,3 +40,6 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/dispensar-contrat
 
 # O aviso de caso pronto com duas conexões como service_role e commit de verdade (F3.147, EX-16).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/caso-pronto-simultaneo.sh"
+
+# A divisão do levantamento pela API, como service_role, com commit de verdade (F3.163, FI-05).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/levantamento-pela-api.sh"

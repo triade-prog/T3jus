@@ -1,0 +1,10 @@
+{
+  "data": "24/11/2026",
+  "inicio": "16:13",
+  "fim": "16:40",
+  "texto": "A divisão do alvará em Repasses no commit pela API (F3.163): migration 1080 (destinacoes_fecham security definer, recusa fora do contexto do escritório), pgTAP 140 e o commit de verdade como service_role. Pendente P14: aplicar a 1080 com o ok da Carol.",
+  "refs": [
+    "F3.163",
+    "FI-05"
+  ]
+}

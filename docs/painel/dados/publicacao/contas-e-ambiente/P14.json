@@ -1,0 +1,10 @@
+{
+  "id": "P14",
+  "texto": "Aplicar no Supabase a migration 1080 (a conferência da divisão do levantamento no commit pela API, F3.163), com o ok da Carol",
+  "refs": [
+    "FI-05"
+  ],
+  "status": "pendente",
+  "ordem": 140,
+  "nota": "Não depende da 1020 (P13) nem da 1070 e pode entrar antes delas; antes, conferir com list_migrations o que já está no ar e anotar que o histórico do Supabase fica fora da ordem dos números. Não precisa publicar a api-portal. Depois, conferir só com leitura: destinacoes_fecham com prosecdef = true, dona dominio e proacl com service_role. Se der errado: alter function destinacoes_fecham() security invoker (volta ao estado de antes, em que o registro pela API falha)."
+}
