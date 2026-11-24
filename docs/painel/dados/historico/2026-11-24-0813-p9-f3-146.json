@@ -1,0 +1,11 @@
+{
+  "data": "24/11/2026",
+  "inicio": "08:13",
+  "fim": "08:30",
+  "texto": "Publicação do F3.146: migration 1000 aplicada, api-portal v39 no d2348c9 e Portal na Vercel no 0b5e837; o .docx sai com o timbrado de 4 linhas e as prévias e o aviso de razão social em branco estão no ar (P9 feito).",
+  "refs": [
+    "P9",
+    "F3.146",
+    "PA-07"
+  ]
+}
