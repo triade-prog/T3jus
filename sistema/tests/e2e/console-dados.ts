@@ -5,6 +5,13 @@ import AxeBuilder from "@axe-core/playwright";
 export const C = "http://localhost:3001";
 export const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 export const agora = Date.now();
+// Relógio fixo dos testes de tela (F3.164): uma terça às 15h de Brasília, longe das duas
+// meias-noites (UTC e Brasília) e dentro das datas fixas dos dados. fixarRelogio para o Date do
+// navegador nesse instante; com o Playwright, setTimeout e requestAnimationFrame continuam andando
+// no tempo real, mas Date.now fica parado (um cache "por 15 s" nunca vence dentro da página).
+// Chamar antes do primeiro goto, com test.beforeEach no arquivo.
+export const AGORA = new Date("2026-11-24T15:00:00-03:00");
+export async function fixarRelogio(page: Page, quando: Date = AGORA) { await page.clock.setFixedTime(quando); }
 export const h = (n: number) => new Date(agora - n * 3600e3).toISOString();
 export const d = (n: number) => h(n * 24);
 export const id = (n: number) => `e0000000-0000-4000-8000-00000000000${n}`;

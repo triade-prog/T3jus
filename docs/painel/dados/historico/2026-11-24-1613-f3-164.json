@@ -1,0 +1,12 @@
+{
+  "data": "24/11/2026",
+  "inicio": "16:13",
+  "fim": "18:33",
+  "texto": "Testes instáveis (F3.164), parte 1: a Importação roda com o relógio do navegador fixo e não quebra mais quando passa a data do prazo de desfazer (27/11 e 29/11); a varredura com o relógio da madrugada e do fim do mês achou 10 testes que falham pela hora ou por acaso e dois erros de tela, que viraram F3.175 (data da proposta em UTC) e F3.176 (foco depois de uma falha).",
+  "refs": [
+    "F3.164",
+    "F3.175",
+    "F3.176",
+    "PT-18"
+  ]
+}

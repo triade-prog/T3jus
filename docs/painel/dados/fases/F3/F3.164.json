@@ -1,11 +1,13 @@
 {
   "id": "F3.164",
-  "texto": "Testes do Portal que falham por acaso ou pela hora: Conversas \"Com você\" (portal-conversas.spec.ts:164, falha cerca de 1 em 7 também na main; troca a resposta simulada só depois de clicar em Assumir conversa) e o sino \"Ontem\" (portal-sino-avisos.spec.ts:165, falha entre 0h e 6h de Brasília)",
+  "texto": "Testes do Portal e do Console que falham por acaso ou pela hora (plano e revisão em t3jus/f3-164/): a Importação, cujo \"Desfazer\" some quando passa a data fixa do prazo (27/11 e 29/11); as corridas do Baixar seguido de outra página (Petições e Procurações) e da resposta trocada depois de Assumir conversa; e os rótulos Hoje, Ontem e \"hoje às\" que mudam de madrugada, perto da meia-noite e no fim do mês (sino, Conversas, avisos da conversa, Automações, WhatsApp e os arquivos que usam h() e d())",
   "peca": "B4",
   "refs": [
     "PT-18"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 1230,
-  "proximo": "Simular a resposta antes do clique no teste de Conversas e fixar o relógio do teste do sino"
+  "proximo": "PR 2: esperar o download antes do goto em Petições e Procurações e trocar a resposta antes de Assumir conversa",
+  "nota": "PR 1 (feito): relógio do navegador fixo em AGORA (24/11/2026, 15h de Brasília) com fixarRelogio de console-dados.ts nos dois arquivos da Importação. Faltam o PR 2 (as três corridas) e o PR 3 (relógio fixo nos demais arquivos, com a troca do agora de console-dados.ts e uma trava em Vitest). Os erros de tela achados viraram F3.175 e F3.176.",
+  "evidencia": "PR 1: portal-importacao.spec.ts e portal-importacao-sistemas.spec.ts com test.beforeEach(fixarRelogio): 120 passaram na hora real (--repeat-each 3) e 40 de 40 com o relógio do sistema em 28/11 15h, 15/01/2027 10h, 0h10 e 21h30 de Brasília (rodar-hora.sh, libfaketime). Antes, :281 falhava a partir de 27/11 e :414/:543 a partir de 29/11."
 }
