@@ -11,11 +11,11 @@
 
 import type { Context, Hono } from "hono";
 import {
-  arquivarModeloDocumentoSchema, CAMPOS_DOCUMENTO, camposDoPadraoDocumento, conferenciaModeloDocumento, conferirDocx, criarDocx,
+  arquivarModeloDocumentoSchema, areaDocumentosSchema, CAMPOS_DOCUMENTO, camposDoPadraoDocumento, conferenciaModeloDocumento, conferirDocx, criarDocx,
   enviarModeloDocumentoSchema, ErroDocx, ErroDominio, escolhasDocumentosSchema, escreverZip, filtroDocumentosSchema, LIMITE_MODELO_BYTES,
   marcadosDoModeloDocumento, MODELOS_PADRAO_DOCUMENTO, modeloPadraoDocumento, montarValoresDocumento, nomeArquivoDocumento, paragrafosPadraoDocumento,
   nomeDoPdf, nomeZipDocumentos, preencherDocx, previaDocumento, timbradoDoDocx, TIPO_DOCX,
-  type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ListaDocumentos, type ListaModelosDocumento,
+  salvarDocumentosAreaSchema, type DadosDocumentos, type DocumentosDoContrato, type DocumentosPorArea, type LinhaDocumentosPorArea, type EscolhasDocumentos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PadraoDocumento, type PreviaDocumento, type PreviaDocumentos, type ResultadoDocumentos,
   type TipoDocumentoContrato, type ValoresDocumento,
 } from "@t3jus/domain";
@@ -184,6 +184,21 @@ export function rotasDocumentos(app: Hono<VarsPortal>, deps: DepsPortal) {
   app.post("/v1/escritorio/documentos/modelos/:id/arquivar", async (c) => {
     const d = await lerCorpo(c, arquivarModeloDocumentoSchema);
     return c.json(await deps.banco.rpc("portal_documento_modelo_arquivar", { ...quem(c), p_modelo: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  // Documentos por área (CH-14, F3.170): o que vem marcado em Gerar documentos em cada área. O
+  // escritório vem da sessão; o banco confere quem muda, a versão e cada "OUTRO:" (1070).
+  app.get("/v1/escritorio/documentos/por-area", async (c) => {
+    return c.json(await deps.banco.rpc<DocumentosPorArea>("portal_documentos_por_area", quem(c)));
+  });
+
+  app.put("/v1/escritorio/documentos/por-area/:area", async (c) => {
+    const area = areaDocumentosSchema.safeParse((c.req.param("area") ?? "").toUpperCase());
+    if (!area.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["area"] });
+    const d = await lerCorpo(c, salvarDocumentosAreaSchema);
+    return c.json(await deps.banco.rpc<LinhaDocumentosPorArea>("portal_documentos_por_area_salvar", {
+      ...quem(c), p_area: area.data, p_versao: d.versao, p_documentos: d.documentos,
+    }));
   });
 
   // Baixar o modelo: o do escritório pelo Storage (a versão pedida ou a atual); o padrão é montado

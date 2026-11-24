@@ -11,6 +11,10 @@ import {
   limparEscolhasGuardadas, montarEscolhas, rotaFichaDeGerar, textoVeioDeGerar, tituloFichaSalva, VALIDADE_ESCOLHAS_MS, voltaParaGerar,
 } from "./voltaGerar.ts";
 import { rascunhoVazio, type RascunhoCliente } from "./clientes.ts";
+import {
+  ajudaDaArea, areaVaiAoContrato, fraseTrocaAplicada, linhaSugestaoDaArea, linhaTambemTem, origemDaArea, sugeridosDaArea, trocarArea,
+} from "./procuracoes.ts";
+import type { SugestaoDocumentos } from "@t3jus/domain";
 
 const insc = (id: string) => ({ id, uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" }) as const;
 const base = (extra: Partial<DadosDocumentos> = {}): DadosDocumentos => ({
@@ -382,12 +386,12 @@ describe("Editar a ficha vindo de Gerar documentos (F3.160)", () => {
 
   it("as escolhas guardadas voltam conferidas com os dados de agora", () => {
     expect(escolhasGuardadasValidas(guardado(), dados(), AGORA)).toEqual({
-      form: { docs: ["CONTRATO", "PROCURACAO"], outorgados: { m: ["i1"], l: ["i2"] }, poderes: ["ACORDO", "DESISTIR"], outroPoder: "requerer alvará", cidadeData: "São Paulo, 24 de novembro de 2026" },
+      form: { docs: ["CONTRATO", "PROCURACAO"], outorgados: { m: ["i1"], l: ["i2"] }, poderes: ["ACORDO", "DESISTIR"], outroPoder: "requerer alvará", cidadeData: "São Paulo, 24 de novembro de 2026", area: null, mexeu: false },
       aba: 1, foco: "volta-falta-rl",
     });
     // Advogado ou inscrição que sumiu, modelo que saiu e poder fora da lista não voltam.
     const g = guardado({ form: { docs: ["CONTRATO", "OUTRO:x"], outorgados: { m: ["i1", "i9"], z: ["i1"] }, poderes: ["ACORDO", "NADA"], outroPoder: "", cidadeData: "São Paulo, hoje" } });
-    expect(escolhasGuardadasValidas(g, dados(), AGORA)!.form).toEqual({ docs: ["CONTRATO"], outorgados: { m: ["i1"] }, poderes: ["ACORDO"], outroPoder: "", cidadeData: "São Paulo, hoje" });
+    expect(escolhasGuardadasValidas(g, dados(), AGORA)!.form).toEqual({ docs: ["CONTRATO"], outorgados: { m: ["i1"] }, poderes: ["ACORDO"], outroPoder: "", cidadeData: "São Paulo, hoje", area: null, mexeu: false });
   });
 
   it("o que ficou assinado depois sai; o assinado antes que a pessoa marcou de novo fica", () => {
@@ -520,5 +524,111 @@ describe("O quadro de quem assina em Gerar (F3.160, D1 e D2)", () => {
   it("o nome acessível de “Completar na ficha” diz o que falta e de quem", () => {
     expect(completarQuemAssina(c())).toBe(": RG de Joana");
     expect(completarQuemAssina(c({ rlDocumento: null }))).toBe(": CPF e RG de Joana");
+  });
+});
+
+describe("CH-14: Gerar documentos abre com os documentos da área", () => {
+  const RES = "11111111-1111-4111-8111-111111111111";
+  const REQ = "22222222-2222-4222-8222-222222222222";
+  const R = `OUTRO:${RES}`;
+  const I = `OUTRO:${REQ}`;
+  const outros = [
+    { tipo: "OUTRO" as const, modeloId: RES, nome: "Declaração de residência", numero: 1, padrao: null, emRevisao: false },
+    { tipo: "OUTRO" as const, modeloId: REQ, nome: "Requerimento ao INSS", numero: 1, padrao: null, emRevisao: false },
+  ];
+  const tres = ["CONTRATO", "PROCURACAO", "HIPOSSUFICIENCIA"];
+  const porArea = { PREVIDENCIARIO: [...tres, R, I], TRABALHISTA: [...tres, R], CIVEL: tres, CONSUMIDOR: tres, FAMILIA: tres, SAUDE: tres, TRIBUTARIO: tres, OUTRA: [] };
+  const sug = (extra: Partial<SugestaoDocumentos> = {}): SugestaoDocumentos => ({
+    area: "PREVIDENCIARIO", origem: "CONTRATO", casoNome: null, contratoArea: "PREVIDENCIARIO", areasDosCasos: [], porArea, salvas: ["PREVIDENCIARIO", "TRABALHISTA", "OUTRA"],
+    entraramDepois: {}, gravaNoContrato: false, ...extra,
+  });
+  const com = (s: SugestaoDocumentos, extra: Partial<DadosDocumentos> = {}) => base({ modelos: [...base().modelos, ...outros] as DadosDocumentos["modelos"], sugestao: s, ...extra });
+
+  it("a primeira geração marca a lista da área do contrato, com sugerido nas caixas", () => {
+    const d = com(sug());
+    const f = formInicialDocumentos(d);
+    expect(f.docs).toEqual([...tres, R, I]);
+    expect(f.area).toBe("PREVIDENCIARIO");
+    expect(f.mexeu).toBe(false);
+    expect([...sugeridosDaArea(d, "PREVIDENCIARIO")]).toEqual([...tres, R, I]);
+    expect(origemDaArea(d, f, false)).toBe("a área do contrato C-2026-033");
+    expect(ajudaDaArea(d, f, false)).toBe("Vêm marcados os documentos que o escritório escolheu para Previdenciário. Mude o que precisar antes de gerar; vale só para estes documentos.");
+    // Sem a sugestão (servidor antigo), os três de sempre.
+    expect(formInicialDocumentos(base()).docs).toEqual(tres);
+  });
+
+  it("a área do caso vem antes; o assinado não vem marcado", () => {
+    const d = com(sug({ area: "CIVEL", origem: "CASO", casoNome: "Cobrança de duplicatas" }), {
+      contrato: { id: "c", numero: "C-2026-020", objeto: "x", estado: "ATIVO", assinadoEm: "2026-09-02", versao: 2 },
+    });
+    const f = formInicialDocumentos(d);
+    expect(f.docs).toEqual(["PROCURACAO", "HIPOSSUFICIENCIA"]);
+    expect(origemDaArea(d, f, false)).toBe("a área do caso Cobrança de duplicatas");
+  });
+
+  it("sem área e sem caso: começa em Outra ou sem área, nada marcado, e a área escolhida vai ao contrato", () => {
+    const d = com(sug({ area: "OUTRA", origem: null, contratoArea: null, gravaNoContrato: true }));
+    const f = formInicialDocumentos(d);
+    expect(f.docs).toEqual([]);
+    expect(ajudaDaArea(d, f, false)).toBe("Para contrato sem área, o escritório não marca nenhum documento. Escolha a área acima, ou marque os que vão sair.");
+    expect(origemDaArea(d, f, false)).toBe("O contrato C-2026-033 ainda não tem área e não tem caso. A área que você escolher fica nele ao gerar.");
+    expect(areaVaiAoContrato(d, f)).toBe(false);
+    expect("area" in pedidoDocumentos(d, f)).toBe(false);
+    const t = trocarArea(d, f, "FAMILIA");
+    expect(t.aplicou).toBe(true);
+    expect(t.form.docs).toEqual(tres);
+    expect(fraseTrocaAplicada(d, "FAMILIA")).toBe("A sugestão mudou para Família: vêm marcados o contrato, a procuração e a declaração de hipossuficiência.");
+    expect(pedidoDocumentos(d, t.form).area).toBe("FAMILIA");
+    // Contrato com área ou já ativo: a área não vai.
+    expect(pedidoDocumentos(com(sug()), { ...t.form }).area).toBeUndefined();
+  });
+
+  it("trocar a área tendo mexido numa caixa não muda nada e oferece Usar a sugestão", () => {
+    const d = com(sug({ area: "OUTRA", origem: null, contratoArea: null, gravaNoContrato: true }));
+    const f = { ...formInicialDocumentos(d), docs: ["PROCURACAO"], mexeu: true };
+    const t = trocarArea(d, f, "FAMILIA");
+    expect(t.aplicou).toBe(false);
+    expect(t.form.docs).toEqual(["PROCURACAO"]);
+    expect(t.form.area).toBe("FAMILIA");
+    expect(linhaSugestaoDaArea(d, "FAMILIA")).toEqual({
+      titulo: "A sugestão de Família é: contrato de honorários, procuração e declaração de hipossuficiência.",
+      texto: "Você já tinha marcado à mão, então nada mudou sozinho.",
+    });
+  });
+
+  it("Gerar de novo: as escolhas da última vez; a linha também tem só com o que entrou depois", () => {
+    const ultima = { geracaoId: "g", em: "2026-11-24T18:10:00Z", por: { id: "m", nome: "Marina Ribeiro" }, documentos: [{ tipo: "CONTRATO" as const, modeloId: null }, { tipo: "PROCURACAO" as const, modeloId: null }, { tipo: "HIPOSSUFICIENCIA" as const, modeloId: null }, { tipo: "OUTRO" as const, modeloId: RES }],
+      outorgados: [{ pessoaId: "m", inscricoes: ["i1"] }], poderes: [], outroPoder: null, cidadeData: "x" };
+    const atuais = [{ chave: "CONTRATO", tipo: "CONTRATO" as const, modeloId: null, numero: 1, geradoEm: "2026-11-24T18:10:00Z", assinado: false }];
+    const d = com(sug({ entraramDepois: { PREVIDENCIARIO: [{ chave: I, em: "2026-11-24T18:20:00Z" }] } }), { ultima, atuais, hoje: "2026-11-24" });
+    const f = formInicialDocumentos(d);
+    expect(f.docs).toEqual([...tres, R]);
+    expect(f.mexeu).toBe(true);
+    expect(ajudaDaArea(d, f, false)).toBe("Vieram as escolhas da versão 1, e não a lista da área. Mude o que precisar antes de gerar.");
+    expect(linhaTambemTem(d, f)).toEqual({
+      titulo: "Previdenciário também tem: requerimento ao INSS.",
+      texto: "Entrou na lista do escritório hoje, às 15h20, depois da versão 1.",
+      chaves: [I], nomes: "requerimento ao INSS",
+    });
+    expect(linhaTambemTem(d, { ...f, docs: [...f.docs, I] })).toBeNull();
+    // Nada entrou depois: a linha não aparece (pergunta 5).
+    expect(linhaTambemTem(com(sug(), { ultima, atuais }), f)).toBeNull();
+  });
+
+  it("as escolhas guardadas voltam com a área e o mexeu; área fora da lista cai na sugestão", () => {
+    const AGORA_CH14 = Date.parse("2026-11-24T15:00:00Z");
+    const d = com(sug({ area: "OUTRA", origem: null, contratoArea: null, gravaNoContrato: true }));
+    const g = montarEscolhas(d, { ...formInicialDocumentos(d), docs: ["CONTRATO", "PROCURACAO"], area: "FAMILIA", mexeu: true }, 0, "volta-quadro", AGORA_CH14 - 60_000);
+    const v = escolhasGuardadasValidas(g, d, AGORA_CH14)!;
+    expect(v.form.area).toBe("FAMILIA");
+    expect(v.form.mexeu).toBe(true);
+    expect(origemDaArea(d, v.form, true)).toBe("Você escolheu. Fica no contrato C-2026-033 ao gerar.");
+    const ruim = escolhasGuardadasValidas({ ...g, form: { ...g.form, area: "PENAL", mexeu: "sim" } }, d, AGORA_CH14)!;
+    expect(ruim.form.area).toBe("OUTRA");
+    expect(ruim.form.mexeu).toBe(false);
+    // Escolhas guardadas antes da CH-14 (sem área) continuam valendo, com o v de sempre.
+    const antigo = { ...g, form: { docs: ["CONTRATO"], outorgados: { m: ["i1"] }, poderes: [], outroPoder: "", cidadeData: "São Paulo, hoje" } };
+    expect(g.v).toBe(1);
+    expect(escolhasGuardadasValidas(antigo, d, AGORA_CH14)!.form.area).toBe("OUTRA");
   });
 });

@@ -11,13 +11,15 @@
 // - clienteId: o id do cliente do contrato, para não restaurar se o contrato mudou de cliente;
 // - assinadas: as chaves dos documentos que já tinham o assinado ("CONTRATO", "PROCURACAO", "OUTRO:<id>");
 // - form: docs (as mesmas chaves), outorgados (ids de advogados e de inscrições), poderes (códigos),
-//   outroPoder (o texto livre que a pessoa escreveu para o documento) e cidadeData (a cidade do escritório e a data);
+//   outroPoder (o texto livre que a pessoa escreveu para o documento), cidadeData (a cidade do escritório e a data)
+//   e, desde a CH-14, area (a área do seletor "Sugestão para", da lista fixa) e mexeu (se a pessoa mexeu nas caixas).
+//   Os dois são opcionais e não sobem o v: sem eles, valem a área da sugestão e "não mexeu";
 // - aba: o número da aba da prévia;
 // - foco: o id fixo do link de onde a pessoa saiu.
 // Nenhum nome, CPF ou outro dado do cliente vai junto. As chaves t3jus.gerar.* saem ao ler, ao gerar,
 // em "Trocar contrato", ao sair da conta, na sessão vencida e ao trocar de escritório.
 
-import { CODIGOS_PODERES, situacaoNoDia, type ClienteDoDocumento, type DadosDocumentos, type PoderEspecial } from "@t3jus/domain";
+import { AREAS_DIREITO, CODIGOS_PODERES, situacaoNoDia, type AreaDireito, type ClienteDoDocumento, type DadosDocumentos, type PoderEspecial } from "@t3jus/domain";
 import { chaveModelo, chavesAssinadas, faltasDeQuemAssina, juntar, type FormDocumentos } from "./procuracoes.ts";
 import { lerData, type RascunhoCliente } from "./clientes.ts";
 
@@ -119,7 +121,15 @@ export function filtrarFormDocumentos(form: FormDocumentos, d: DadosDocumentos, 
     poderes: CODIGOS_PODERES.filter((p) => form.poderes.includes(p)),
     outroPoder: form.outroPoder,
     cidadeData: form.cidadeData,
+    // CH-14: a área só da lista fixa; sem ela (escolhas de antes), a da sugestão de agora.
+    area: areaValida(form.area) ?? d.sugestao?.area ?? null,
+    mexeu: form.mexeu === true,
   };
+}
+
+/** A área guardada, só se for uma da lista fixa (CH-14). */
+function areaValida(a: unknown): AreaDireito | null {
+  return typeof a === "string" && Object.hasOwn(AREAS_DIREITO, a) ? (a as AreaDireito) : null;
 }
 
 /** As escolhas guardadas, conferidas (revisão, ajustes 5 e 7). Qualquer coisa fora do formato: null. */
@@ -143,7 +153,11 @@ export function escolhasGuardadasValidas(bruto: unknown, d: DadosDocumentos, ago
   const outroPoder = texto(f.outroPoder, 300);
   const cidadeData = texto(f.cidadeData, 120);
   if (outroPoder === null || cidadeData === null) return null;
-  const form = filtrarFormDocumentos({ docs: f.docs as string[], outorgados, poderes: f.poderes as PoderEspecial[], outroPoder, cidadeData }, d, x.assinadas as string[]);
+  // CH-14: area e mexeu são opcionais; fora do formato, contam como ausentes (área da sugestão, não mexeu).
+  const form = filtrarFormDocumentos({
+    docs: f.docs as string[], outorgados, poderes: f.poderes as PoderEspecial[], outroPoder, cidadeData,
+    area: areaValida(f.area), mexeu: f.mexeu === true,
+  }, d, x.assinadas as string[]);
   const aba = typeof x.aba === "number" && Number.isInteger(x.aba) && x.aba >= 0 && x.aba < Math.max(1, form.docs.length) ? x.aba : 0;
   const foco = IDS_VOLTA.find((i) => i === x.foco) ?? null;
   return { form, aba, foco };

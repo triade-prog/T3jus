@@ -4,7 +4,7 @@
 // (0680_documentos_contrato.sql); aqui só o que a tela mostra.
 
 import {
-  aniversario, cidadeDataDocumento, CODIGOS_PODERES, dataBr, DOCUMENTOS_CONTRATO, faltasDoResponsavel, faltasNoDocumento, fraseOutorgados, idadeEm, tituloDaIdade,
+  aniversario, cidadeDataDocumento, faltaNaSugestao, marcadosDaArea, rotuloAreaDocumentos, type AreaDireito, CODIGOS_PODERES, dataBr, DOCUMENTOS_CONTRATO, faltasDoResponsavel, faltasNoDocumento, fraseOutorgados, idadeEm, tituloDaIdade,
   outorgadosEscolhidos, PAPEIS_RESPONSAVEL, papelFeminino, situacaoNoDia,
   type Anexo, type ClienteDoDocumento, type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ModeloEmUso, type PoderEspecial,
   type PreviaDocumentos, type TipoDocumentoContrato,
@@ -59,6 +59,10 @@ export interface FormDocumentos {
   poderes: PoderEspecial[];
   outroPoder: string;
   cidadeData: string;
+  /** A área do seletor "Sugestão para" (CH-14). Opcional: as escolhas guardadas antes dela continuam valendo. */
+  area?: AreaDireito | null;
+  /** A pessoa mexeu em alguma caixa de documento (CH-14, revisão, ajuste 8): trocar a área não muda nada sozinho. */
+  mexeu?: boolean;
 }
 
 /** O que já tem assinado na versão mais nova vem desmarcado; o contrato já assinado também (decisões 9 e 19). */
@@ -73,9 +77,11 @@ export function formInicialDocumentos(d: DadosDocumentos): FormDocumentos {
   const assinadas = chavesAssinadas(d);
   const disponiveis = d.modelos.map(chaveModelo);
   const ultima = d.ultima;
+  const s = d.sugestao ?? null;
+  // Gerar de novo: as escolhas da última vez (decisão 19). A primeira: a lista da área (CH-14), ou os três de sempre.
   const base = ultima
     ? ultima.documentos.map((x) => chaveModelo({ tipo: x.tipo, modeloId: x.modeloId }))
-    : d.modelos.filter((m) => m.tipo !== "OUTRO").map(chaveModelo);
+    : s ? marcadosDaArea(s.area, s, disponiveis, assinadas) : d.modelos.filter((m) => m.tipo !== "OUTRO").map(chaveModelo);
   const docs = base.filter((k) => disponiveis.includes(k) && !assinadas.has(k));
   const outorgados: Record<string, string[]> = {};
   if (ultima) {
@@ -94,6 +100,9 @@ export function formInicialDocumentos(d: DadosDocumentos): FormDocumentos {
     poderes: CODIGOS_PODERES.filter((p) => (ultima?.poderes ?? d.poderesIniciais).includes(p)),
     outroPoder: ultima?.outroPoder ?? "",
     cidadeData: cidadeDataDocumento(d.escritorio, d.hoje),
+    area: s?.area ?? null,
+    // Em Gerar de novo, as caixas vieram da última geração: trocar a área só oferece a sugestão.
+    mexeu: !!ultima,
   };
 }
 
@@ -105,6 +114,8 @@ export function pedidoDocumentos(d: DadosDocumentos, f: FormDocumentos): Escolha
     poderes: f.poderes,
     outroPoder: f.outroPoder.trim() || null,
     cidadeData: f.cidadeData.trim(),
+    // A área só vai quando fica no contrato (pergunta 2); o servidor confere de novo.
+    ...(areaVaiAoContrato(d, f) ? { area: f.area } : {}),
   };
 }
 
@@ -435,4 +446,131 @@ export function quadroQuemAssina(c: ClienteDoDocumento, hoje: string, cpf: strin
     return { nome: `${p} e ${c.rlNome.trim()}`, linha: [`${p} assina, assistido(a) ${por}${primeiroNome(c.rlNome)}`, doc, fim].filter(Boolean).join(" · "), selo: false };
   }
   return { nome: c.rlNome?.trim() || "Não cadastrado", linha: [papel, doc, fim].filter(Boolean).join(" · "), selo: true };
+}
+
+// ------------------------------------------------------------- Documentos marcados conforme a área (CH-14, F3.171)
+// Estados gerar-* do desenho aprovado em docs/design/aprovadas/portal-documentos-por-area (D36).
+
+/** A área escolhida vai ao contrato ao gerar: em elaboração, sem área e sem caso, e nunca "Outra ou sem área". */
+export function areaVaiAoContrato(d: DadosDocumentos, f: Pick<FormDocumentos, "area">): f is { area: AreaDireito } {
+  return !!d.sugestao?.gravaNoContrato && !!f.area && f.area !== "OUTRA";
+}
+
+/** "Previdenciário"; "contrato sem área" no meio da frase, para OUTRA. */
+const areaNaFrase = (a: AreaDireito) => (a === "OUTRA" ? "contrato sem área" : rotuloAreaDocumentos(a));
+
+/** As chaves da lista da área que existem hoje, na ordem dos modelos (as caixas com "sugerido"). */
+export function sugeridosDaArea(d: DadosDocumentos, area: AreaDireito | null | undefined): Set<string> {
+  const s = d.sugestao;
+  if (!s || !area) return new Set();
+  const lista = new Set(s.porArea[area] ?? []);
+  return new Set(d.modelos.map(chaveModelo).filter((k) => lista.has(k)));
+}
+
+/** O que a área marca agora, sem os já assinados (D4). */
+export function marcadosAgora(d: DadosDocumentos, area: AreaDireito): string[] {
+  return d.sugestao ? marcadosDaArea(area, d.sugestao, d.modelos.map(chaveModelo), chavesAssinadas(d)) : [];
+}
+
+/** O nome do documento na lista: "contrato de honorários", "procuração", "requerimento ao INSS". */
+function nomeNaLista(d: DadosDocumentos, k: string): string {
+  if (k === "CONTRATO") return "contrato de honorários";
+  if (k === "PROCURACAO") return "procuração";
+  if (k === "HIPOSSUFICIENCIA") return "declaração de hipossuficiência";
+  const nome = d.modelos.find((m) => chaveModelo(m) === k)?.nome ?? DOCUMENTOS_CONTRATO.OUTRO;
+  return nome.charAt(0).toLowerCase() + nome.slice(1);
+}
+
+/** "o contrato, a procuração e a declaração de hipossuficiência" (o aviso de troca de área). */
+function comArtigo(d: DadosDocumentos, k: string): string {
+  if (k === "CONTRATO") return "o contrato";
+  if (k === "PROCURACAO") return "a procuração";
+  if (k === "HIPOSSUFICIENCIA") return "a declaração de hipossuficiência";
+  return nomeNaLista(d, k);
+}
+
+/**
+ * A troca de área no seletor (revisão, ajuste 8): sem caixa mexida, a lista nova entra e o aviso de
+ * status diz o que veio; com caixa mexida, nada muda e a tela oferece "Usar a sugestão".
+ */
+export function trocarArea(d: DadosDocumentos, f: FormDocumentos, area: AreaDireito): { form: FormDocumentos; aplicou: boolean } {
+  if (f.mexeu) return { form: { ...f, area }, aplicou: false };
+  return { form: { ...f, area, docs: marcadosAgora(d, area), mexeu: false }, aplicou: true };
+}
+
+/** "A sugestão mudou para Família: vêm marcados o contrato, a procuração e a declaração de hipossuficiência." */
+export function fraseTrocaAplicada(d: DadosDocumentos, area: AreaDireito): string {
+  const ks = marcadosAgora(d, area);
+  const a = `A sugestão mudou para ${rotuloAreaDocumentos(area)}`;
+  if (!ks.length) return `${a}: nada vem marcado. Marque os que vão sair.`;
+  return `${a}: ${ks.length === 1 ? "vem marcado" : "vêm marcados"} ${juntar(ks.map((k) => comArtigo(d, k)))}.`;
+}
+
+/** A linha com "Usar a sugestão" depois de trocar a área tendo mexido (ou em Gerar de novo). */
+export function linhaSugestaoDaArea(d: DadosDocumentos, area: AreaDireito): { titulo: string; texto: string } {
+  const ks = marcadosAgora(d, area);
+  const lista = ks.length ? juntar(ks.map((k) => nomeNaLista(d, k))) : "nenhum documento";
+  return {
+    titulo: `A sugestão de ${rotuloAreaDocumentos(area)} é: ${lista}.`,
+    texto: d.ultima ? "Vieram as escolhas da última geração, então nada mudou sozinho." : "Você já tinha marcado à mão, então nada mudou sozinho.",
+  };
+}
+
+const horaBr = (em: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(em)).replace(":", "h");
+const diaBrasilia2 = (em: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(em));
+
+/** "hoje, às 15h20" ou "em 20/11, às 9h05". */
+export function quandoNaLista(em: string, hoje: string): string {
+  const dia = diaBrasilia2(em);
+  return dia === hoje ? `hoje, às ${horaBr(em)}` : `em ${dia.slice(8, 10)}/${dia.slice(5, 7)}, às ${horaBr(em)}`;
+}
+
+/** "Previdenciário também tem: requerimento ao INSS." em Gerar de novo (pergunta 5), ou null. */
+export function linhaTambemTem(d: DadosDocumentos, f: FormDocumentos): { titulo: string; texto: string; chaves: string[]; nomes: string } | null {
+  const s = d.sugestao;
+  if (!s || !d.ultima || !f.area) return null;
+  const falta = faltaNaSugestao(f.area, s, f.docs, d.modelos.map(chaveModelo), chavesAssinadas(d));
+  if (!falta.length) return null;
+  const nomes = juntar(falta.map((x) => nomeNaLista(d, x.chave)));
+  const em = falta.map((x) => x.em).sort().at(-1)!;
+  const versao = d.atuais.length ? Math.max(...d.atuais.map((a) => a.numero)) : null;
+  const depois = versao ? `depois da versão ${versao}` : "depois da última geração";
+  return {
+    titulo: `${rotuloAreaDocumentos(f.area)} também tem: ${nomes}.`,
+    texto: `${falta.length === 1 ? "Entrou" : "Entraram"} na lista do escritório ${quandoNaLista(em, d.hoje)}, ${depois}.`,
+    chaves: falta.map((x) => x.chave),
+    nomes,
+  };
+}
+
+/** De onde veio a área, ao lado do seletor (D2, revisão, ajuste 7). */
+export function origemDaArea(d: DadosDocumentos, f: FormDocumentos, restaurou: boolean): string {
+  const s = d.sugestao;
+  const n = d.contrato.numero;
+  if (!s || !f.area) return "";
+  const escolheu = f.area !== s.area;
+  if (s.gravaNoContrato) {
+    if (restaurou && f.area !== "OUTRA") return `Você escolheu. Fica no contrato ${n} ao gerar.`;
+    return `O contrato ${n} ainda não tem área e não tem caso. A área que você escolher fica nele ao gerar.`;
+  }
+  if (s.origem === "CASO") return escolheu ? `Você escolheu. A área do caso ${s.casoNome ?? ""} é ${rotuloAreaDocumentos(s.area)}.` : `a área do caso ${s.casoNome ?? ""}`;
+  if (s.origem === "CONTRATO") return escolheu ? `Você escolheu. A área do contrato ${n} é ${rotuloAreaDocumentos(s.area)}.` : `a área do contrato ${n}`;
+  return escolheu ? "Você escolheu. Vale só para estes documentos." : `O contrato ${n} não tem área.`;
+}
+
+/** A frase embaixo do seletor. */
+export function ajudaDaArea(d: DadosDocumentos, f: FormDocumentos, restaurou: boolean): string {
+  if (!f.area) return "";
+  if (d.ultima && !restaurou) {
+    const v = d.atuais.length ? Math.max(...d.atuais.map((a) => a.numero)) : null;
+    return `Vieram as escolhas da ${v ? `versão ${v}` : "última geração"}, e não a lista da área. Mude o que precisar antes de gerar.`;
+  }
+  if (!marcadosAgora(d, f.area).length && !(d.sugestao?.porArea[f.area] ?? []).length) {
+    return f.area === "OUTRA"
+      ? "Para contrato sem área, o escritório não marca nenhum documento. Escolha a área acima, ou marque os que vão sair."
+      : `Para ${rotuloAreaDocumentos(f.area)}, o escritório não marca nenhum documento. Escolha os que vão sair.`;
+  }
+  return f.area === "OUTRA"
+    ? "Vêm marcados os documentos que o escritório escolheu para contrato sem área. Mude o que precisar antes de gerar."
+    : `Vêm marcados os documentos que o escritório escolheu para ${areaNaFrase(f.area)}. Mude o que precisar antes de gerar; vale só para estes documentos.`;
 }

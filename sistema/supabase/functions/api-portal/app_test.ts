@@ -528,6 +528,12 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
       };
     },
     portal_documento_gravar: (a) => ({ geracaoId: (a.p_resultado as { geracaoId: string }).geracaoId, documentos: (a.p_resultado as { documentos: unknown[] }).documentos }),
+    // CH-14: Documentos por área. Versão 3 já salva em Previdenciário; outra versão é conflito.
+    portal_documentos_por_area: () => ({ podeEditar: true, leitura: null, areas: [], modelos: [] }),
+    portal_documentos_por_area_salvar: (a) => {
+      if (a.p_versao === 2) erroBanco("TC409", { versao: 3, atual: { id: "x", versao: 3, documentos: ["CONTRATO"] } });
+      return { area: a.p_area, documentos: a.p_documentos, versao: Number(a.p_versao ?? 0) + 1, salva: true };
+    },
     portal_documento_modelos: () => ({
       modelos: [{ id: MODELO_DOC, padrao: false, tipo: "PROCURACAO", nome: "Procuração do escritório", versao: 2, versaoId: VERSAO_MODELO_DOC, campos: [], desconhecidos: [],
         enviadoPor: { id: ANA, nome: "Ana" }, atualizadoEm: "2026-11-21T10:00:00-03:00", usos: 4, linhaVersao: 2, emRevisao: false, anteriores: [] }],
@@ -2405,6 +2411,49 @@ Deno.test("F3.16: o modelo do escritório é baixado do Storage e preenchido; a 
   const res = m.chamadas.find((c) => c.funcao === "portal_documento_gravar")!.args.p_resultado as { documentos: { id: string }[] };
   const feito = await paragrafosDocx(m.storage.bytes.get(`${AURORA}/documentos/${res.documentos[1]!.id}.docx`)!);
   assertEquals(feito, ["Outorgante: BENEDITO SOUZA LIMA, com os poderes especiais para receber e dar quitação."]);
+});
+
+Deno.test("CH-14: Documentos por área lê e salva pelo escritório da sessão; área e chaves fora do formato são recusadas", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const l = await m.pedir("/v1/escritorio/documentos/por-area", { cookie });
+  assertEquals(l.status, 200);
+  assertEquals(m.chamadas.find((c) => c.funcao === "portal_documentos_por_area")!.args.p_escritorio, AURORA);
+  const outro = `OUTRO:${MODELO_DOC}`;
+  const r = await m.pedir("/v1/escritorio/documentos/por-area/previdenciario", { metodo: "PUT", corpo: { versao: null, documentos: ["CONTRATO", outro] }, cookie });
+  assertEquals(r.status, 200);
+  const a = m.chamadas.find((c) => c.funcao === "portal_documentos_por_area_salvar")!.args;
+  assertEquals([a.p_escritorio, a.p_area, a.p_versao, a.p_documentos], [AURORA, "PREVIDENCIARIO", null, ["CONTRATO", outro]]);
+  const ruim = await m.pedir("/v1/escritorio/documentos/por-area/ADMINISTRATIVO", { metodo: "PUT", corpo: { versao: null, documentos: [] }, cookie });
+  assertEquals(ruim.status, 400);
+  assertEquals((await ruim.json()).erro.detalhes.campos, ["area"]);
+  const chave = await m.pedir("/v1/escritorio/documentos/por-area/CIVEL", { metodo: "PUT", corpo: { versao: 1, documentos: ["CONTRATO", "OUTRO:xyz"] }, cookie });
+  assertEquals(chave.status, 400);
+  const muitas = await m.pedir("/v1/escritorio/documentos/por-area/CIVEL", {
+    metodo: "PUT", corpo: { versao: 1, documentos: Array.from({ length: 13 }, () => "CONTRATO") }, cookie });
+  assertEquals(muitas.status, 400);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_documentos_por_area_salvar").length, 1);
+});
+
+Deno.test("CH-14: o conflito de versão de Documentos por área chega à tela com a versão salva", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir("/v1/escritorio/documentos/por-area/TRABALHISTA", { metodo: "PUT", corpo: { versao: 2, documentos: ["CONTRATO"] }, cookie });
+  assertEquals(r.status, 409);
+  const j = await r.json();
+  assertEquals(j.erro.codigo, "VERSION_CONFLICT");
+  assertEquals(j.erro.detalhes.versao, 3);
+});
+
+Deno.test("CH-14: a área escolhida em Gerar chega a portal_documento_gravar; área fora da lista é recusada", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const r = await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos`, { corpo: { ...PEDIDO_DOCUMENTOS, area: "FAMILIA" }, cookie });
+  assertEquals(r.status, 201);
+  assertEquals((m.chamadas.find((c) => c.funcao === "portal_documento_gravar")!.args.p_pedido as { area: string }).area, "FAMILIA");
+  const ruim = await m.pedir(`/v1/escritorio/contratos/${CLIENTE}/documentos`, { corpo: { ...PEDIDO_DOCUMENTOS, area: "XYZ" }, cookie });
+  assertEquals(ruim.status, 400);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_documento_gravar").length, 1);
 });
 
 Deno.test("F3.16: a lista de modelos põe o padrão só onde o escritório não tem o seu", async () => {

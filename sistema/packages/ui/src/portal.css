@@ -6320,6 +6320,80 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 /* No código: a lista do Jurídico usa jr-; o grupo de opções com erro da janela do resultado usa a mesma marca. */
 .jr-fs.il-fs-erro{padding:10px 12px;border-radius:var(--raio);box-shadow:inset 3px 0 0 var(--vinho-3);background:#FCF6F2}
 
+/* ==========================================================================
+   CH-14 (F3.170, F3.171; desenho D36) · documentos marcados conforme a área (prefixo da-). Só tokens e pares aprovados.
+   ========================================================================== */
+/* Gerar documentos: o seletor da área, o "sugerido" e as linhas de sugestão */
+.da-sug{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 2px}
+.da-sug label{font-weight:500;font-size:14px}
+.da-sug select.entrada{width:auto;min-width:230px;max-width:100%;height:44px}
+.da-de{margin:0;font-size:13px;color:var(--texto-2);flex:1 1 220px;min-width:0}
+.da-aj{margin:2px 0 6px;font-size:13px;color:var(--texto-2);line-height:1.5}
+.da-tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;margin-left:8px;border-radius:10px;background:var(--sal-2);color:var(--vinho);
+  font-size:11px;font-weight:600;letter-spacing:.02em;vertical-align:1px;white-space:nowrap}
+.da-linha{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:2px 0 4px;padding:12px 14px;border-radius:var(--raio);background:var(--ambar-3);
+  color:var(--tinta);font-size:13px;line-height:1.5}
+.da-linha p{margin:0;flex:1 1 260px;min-width:0}
+.da-linha b{font-weight:600}
+.da-linha .btn{flex:none}
+.da-status{display:flex;gap:10px;align-items:flex-start;margin:2px 0 4px;padding:10px 14px;border-radius:var(--raio);background:var(--sal-2);color:var(--tinta);font-size:13px;line-height:1.5}
+.da-status .ico{flex:none;color:var(--vinho);margin-top:2px}
+.da-status p{margin:0}
+.da-pe-area{display:flex;gap:8px;align-items:flex-start;margin-top:6px;color:var(--tinta)}
+.da-pe-area .ico{flex:none;color:var(--vinho);margin-top:2px}
+/* Modelos de documento: a folha "Documentos por área" */
+.da-folha .sub a{color:var(--vinho);font-weight:500}
+.da-lista{list-style:none;margin:0;padding:0 24px 8px}
+.da-lista>li{display:grid;grid-template-columns:210px minmax(0,1fr) auto;gap:6px 20px;align-items:center;padding:14px 0;border-top:1px solid var(--divisor)}
+.da-lista>li:first-child{border-top:0;padding-top:4px}
+.da-nome strong{display:block;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);line-height:1.25}
+.da-nome .selo{margin-top:6px}
+.da-docs p{margin:0;font-size:14px;line-height:1.5}
+.da-docs small{display:block;margin-top:2px;font-size:12.5px;color:var(--texto-2)}
+.da-docs .da-nenhum{color:var(--texto-2)}
+.da-lista>li.da-aberta{grid-template-columns:minmax(0,1fr);padding:16px 0}
+.da-edit{display:grid;gap:14px;padding:18px 18px 16px;border:1.5px solid var(--vinho-4);border-radius:var(--raio);background:var(--papel)}
+.da-edit-cab{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.da-edit-cab h3{margin:0;font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho)}
+.da-edit-cab p{margin:0;font-size:13px;color:var(--texto-2)}
+.da-edit fieldset{border:0;margin:0;padding:0;min-width:0}
+.da-ops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.da-edit legend{font-weight:500;margin:0 0 8px;padding:0}
+.da-edit .opcao{margin:0}
+.da-edit .aviso{margin:0}
+.da-edit-pe{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:12px;border-top:1px solid var(--divisor)}
+.da-edit-pe .da-volta{margin-right:auto}
+.da-edit-pe .da-pe-status{font-size:12.5px;color:var(--texto-2);margin-right:auto}
+.da-folha .hn-pe{margin:0 24px 18px}
+.da-folha>.aviso,.da-folha>.da-topo{margin:0 24px 16px}
+.da-quem{display:flex;gap:10px;align-items:flex-start;margin:0 24px 16px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.da-quem .ico{flex:none;color:var(--vinho);margin-top:2px}
+.da-quem p{margin:0}
+.da-folha .estado{margin:0 24px 20px}
+.pr-mods .pr-mod .pe-bts{flex-wrap:wrap}
+/* Documentos para começar (EX-18): a frase cruzada do lede, sublinhada (o link não depende só da cor) */
+.pt-cab .lede a{color:var(--vinho);font-weight:500;text-decoration:underline;text-underline-offset:2px}
+/* Prévia: modelo do escritório */
+.da-papel-nota{font-size:12px}
+@media (max-width:760px){
+  .da-sug{flex-direction:column;align-items:stretch}
+  .da-sug select.entrada{width:100%;min-width:0}
+  .da-de{flex:none}
+  .da-linha .btn{width:100%;justify-content:center}
+  .da-lista{padding:0 16px 8px}
+  .da-lista>li{grid-template-columns:minmax(0,1fr);gap:8px}
+  .da-lista>li .da-ac .btn{width:100%;justify-content:center;min-height:44px}
+  .da-edit{padding:14px}
+  .da-ops{grid-template-columns:minmax(0,1fr)}
+  .da-edit-pe{flex-direction:column;align-items:stretch}
+  .da-edit-pe .btn{width:100%;justify-content:center;min-height:44px;white-space:normal;height:auto}
+  .da-edit-pe .da-volta,.da-edit-pe .da-pe-status{margin-right:0}
+  .da-folha .hn-pe,.da-folha>.aviso,.da-folha>.da-topo,.da-quem,.da-folha .estado{margin-left:16px;margin-right:16px}
+  .da-edit .aviso .aviso-acoes .btn{white-space:normal;text-align:center;height:auto;min-height:44px;padding-top:8px;padding-bottom:8px;width:100%;justify-content:center}
+  .da-edit .comparar{width:100%;table-layout:fixed}
+  .da-edit .comparar th,.da-edit .comparar td{overflow-wrap:anywhere;white-space:normal;padding-left:6px;padding-right:6px}
+}
+
 /* ==== Tabelas do Portal (F3.124): base própria ====
    O Portal herda da carteira do Console (.co-carteira) a tabela em layout fixo, o cabeçalho sem
    quebra, a 1ª coluna com 250/210 px e, no tablet, os cartões da carteira. Aqui o encaixe passa a
