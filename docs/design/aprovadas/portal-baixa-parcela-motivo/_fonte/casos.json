@@ -1,0 +1,102 @@
+[
+ {
+  "nome": "bx-ficha",
+  "url": "index.html?estado=bx-ficha",
+  "rotulo": "Contrato de Noemi: “Dar baixa sem receber” na parcela vencida"
+ },
+ {
+  "nome": "bx-parcial",
+  "url": "index.html?estado=bx-parcial",
+  "rotulo": "Sebastião: a parcela paga em parte, antes da baixa"
+ },
+ {
+  "nome": "bx-janela",
+  "url": "index.html?estado=bx-janela",
+  "rotulo": "A janela: o que vai acontecer, o motivo e a explicação"
+ },
+ {
+  "nome": "bx-erros",
+  "url": "index.html?estado=bx-erros",
+  "rotulo": "Sem motivo e sem explicação: os erros"
+ },
+ {
+  "nome": "bx-enviando",
+  "url": "index.html?estado=bx-enviando",
+  "rotulo": "Enviando: “Dando baixa sem receber…”"
+ },
+ {
+  "nome": "bx-renegociada",
+  "url": "index.html?estado=bx-renegociada",
+  "rotulo": "Diego: renegociada, com o que foi combinado"
+ },
+ {
+  "nome": "bx-falha",
+  "url": "index.html?estado=bx-falha",
+  "rotulo": "Falha do servidor: nada mudou"
+ },
+ {
+  "nome": "bx-conflito",
+  "url": "index.html?estado=bx-conflito",
+  "rotulo": "Diego registrou um recebimento com a janela aberta"
+ },
+ {
+  "nome": "bx-feita",
+  "url": "index.html?estado=bx-feita",
+  "rotulo": "Depois da baixa: a linha, o quinto número e as custas que faltam"
+ },
+ {
+  "nome": "bx-pronto",
+  "url": "index.html?estado=bx-pronto",
+  "rotulo": "Com as custas junto: o caso fica pronto para encerrar"
+ },
+ {
+  "nome": "bx-encerrar",
+  "url": "index.html?estado=bx-encerrar",
+  "rotulo": "Encerrar: recebido no caso e baixado sem receber"
+ },
+ {
+  "nome": "bx-pendencia",
+  "url": "index.html?estado=bx-pendencia",
+  "rotulo": "“Ainda não dá para encerrar”: o texto novo e o atalho"
+ },
+ {
+  "nome": "bx-desfazer",
+  "url": "index.html?estado=bx-desfazer",
+  "rotulo": "Desfazer a baixa sem receber: quem, quando e a próxima ação"
+ },
+ {
+  "nome": "bx-desfazer-renegociada",
+  "url": "index.html?estado=bx-desfazer-renegociada",
+  "rotulo": "Desfazer a renegociada: o aviso da cobrança em dobro"
+ },
+ {
+  "nome": "bx-desfazer-encerrado",
+  "url": "index.html?estado=bx-desfazer-encerrado",
+  "rotulo": "Desfazer com o caso já encerrado no financeiro"
+ },
+ {
+  "nome": "bx-desfeita",
+  "url": "index.html?estado=bx-desfeita",
+  "rotulo": "Desfeita: a parcela volta para Em atraso, com a próxima ação"
+ },
+ {
+  "nome": "bx-contratos",
+  "url": "index.html?estado=bx-contratos",
+  "rotulo": "Contratos › Recebimentos: o selo, com o motivo"
+ },
+ {
+  "nome": "bx-sem-financeiro",
+  "url": "index.html?estado=bx-sem-financeiro",
+  "rotulo": "Felipe (sem Financeiro): a linha neutra, sem o motivo"
+ },
+ {
+  "nome": "bx-sino",
+  "url": "index.html?estado=bx-sino",
+  "rotulo": "Sino do Diego: o caso ficou pronto pela baixa"
+ },
+ {
+  "nome": "bx-sino-contratos",
+  "url": "index.html?estado=bx-sino-contratos",
+  "rotulo": "Sino do Felipe: a condição nova a registrar (pergunta 3)"
+ }
+]
