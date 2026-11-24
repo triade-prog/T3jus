@@ -1206,7 +1206,15 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           ) : (
             <>
               <Dados f={f} aoEditar={editar} />
-              {!arquivado ? <FolhaDocumentosPessoais f={f} escritorio={escritorio.nome} aoFeito={(x) => setFeito(x)} /> : null}
+              {!arquivado ? <FolhaDocumentosPessoais
+                  f={f}
+                  escritorio={escritorio.nome}
+                  aoFeito={(x) => {
+                    setFeito(x);
+                    // F3.155: a dona recarrega a ficha, para a janela de exclusão contar o documento novo.
+                    if (f.dono) void carregar();
+                  }}
+                /> : null}
               {f.tipo === "PF" ? (
                 <>
                   <FolhaQuemAssina f={f} aoEditar={editar} />

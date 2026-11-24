@@ -5,7 +5,8 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1171,
-  "proximo": "Desenhar com o agente de frontend a linha nova de \"O que é apagado\" (ExclusaoCliente.tsx; sugestão no plano da F3.141, seção 6) e o campo arquivosParaApagar da ficha, levar à Carol e só então programar"
+  "nota": "Propostas: conta todas as do cliente, como a fila da 0970 (o banco não sabe se o Word foi gerado; decisão 6 do desenho). Documentos: os prontos e não apagados, com os substituídos (o número pode passar o da folha \"Documentos pessoais\", de propósito); os ENVIANDO não contam, mas a fila os apaga. Termos: booleano por tipo, em uso ou guardado. Aplicar a 1030 no Supabase e publicar o Portal é o P12.",
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-exclusao-arquivos (Carol, 24/11/2026). Migration 1030 (cliente_arquivos_para_apagar e portal_cliente recriada a partir da 0960, com arquivosParaApagar só para a sócia dona no cliente ativo ou inativo sem contrato nem processo); tela: linhaArquivosParaApagar (packages/ui/src/portal/exclusao.ts) e a linha em ExclusaoCliente.tsx logo depois da qualificação; FichaCliente.tsx recarrega a ficha da dona ao anexar documento pessoal. Testes em 24/11/2026: pgTAP 138_exclusao_arquivos_contagem_test.sql (28 testes; pnpm test:db com 116 arquivos e 3435 testes, mais as 4 concorrências, tudo verde); vitest exclusao.test.ts (8 testes; pnpm test com 61 arquivos e 589 testes); e2e tests/e2e/portal-exclusao.spec.ts (24 testes, 8 novos, celular e computador, com axe) e regressões portal-clientes, portal-documentos-pessoais e portal-responsavel-legal (120 testes); pnpm test:deno 330 testes; pnpm lint sem erro."
 }
