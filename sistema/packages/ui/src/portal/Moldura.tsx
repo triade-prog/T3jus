@@ -16,6 +16,7 @@ import { ICONE_AREA, ORDEM_AREAS, rotaArea, SECOES_AREA } from "./areas.ts";
 import type { CobrancaPortal } from "./PlanoFaturas.tsx";
 import { BotaoSino, PainelSino, useSino } from "./Sino.tsx";
 import { usePrioridadesDeColuna } from "./prioridades.ts";
+import { limparEscolhasGuardadas } from "./voltaGerar.ts";
 
 /** O escritório da sessão, como GET /v1/escritorio devolve. */
 export interface EscritorioPortal {
@@ -155,12 +156,24 @@ function ir(destino: string) {
 export const irPara = ir;
 
 /**
+ * Como irPara, mas no lugar da entrada atual do histórico (F3.160): depois de "Salvar e voltar" para
+ * Gerar documentos, o "voltar" do navegador não reabre o formulário com a versão velha.
+ */
+export function substituirPor(destino: string) {
+  window.location.replace(destino);
+}
+
+/**
  * Chamada do Portal: sessão vencida (401) volta para entrar; sem escritório escolhido na
  * sessão, vai para a escolha. O resto segue para a tela tratar.
  */
 export async function chamarPortal<T>(caminho: string, opcoes?: Parameters<typeof chamarApi>[1]) {
   const r = await chamarApi<T>(caminho, opcoes);
-  if (!r.ok && r.status === 401) ir("/entrar");
+  if (!r.ok && r.status === 401) {
+    // A próxima pessoa pode entrar na mesma aba: as escolhas guardadas de Gerar saem (F3.160).
+    limparEscolhasGuardadas();
+    ir("/entrar");
+  }
   if (!r.ok && r.erro.codigo === "ESCRITORIO_REQUIRED") ir(ROTAS_PORTAL.escolher);
   return r;
 }
@@ -322,6 +335,7 @@ export function MolduraPortal({
   async function sair() {
     setSaindo(true);
     await chamarApi("/v1/auth/sair", { corpo: {} });
+    limparEscolhasGuardadas();
     ir("/entrar");
   }
 
@@ -532,7 +546,7 @@ export function MolduraPortal({
               </a>
             </li>
             <li>
-              <a className="pt-mi" href={ROTAS_PORTAL.escolher}>
+              <a className="pt-mi" href={ROTAS_PORTAL.escolher} onClick={() => limparEscolhasGuardadas()}>
                 <Icone nome="trocar" className="ico" />
                 Trocar de escritório
                 <Icone nome="dir" className="ico ico-s pt-ir" />
