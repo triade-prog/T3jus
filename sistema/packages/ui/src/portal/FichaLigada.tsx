@@ -200,7 +200,7 @@ export function DirPasso({ f, passo, comercial, hoje, editando, aoRegistrar, aoJ
     </a>
   ) : null;
   return (
-    <section className="dir campo-ambar fl-passo" aria-labelledby="cl-t-passo">
+    <section className={`dir campo-ambar fl-passo${passo.tipo === "FECHAMENTO" ? " fl-fecha" : ""}`} aria-labelledby="cl-t-passo">
       <p className="sobretitulo" id="cl-t-passo">
         {t.sobre}
       </p>

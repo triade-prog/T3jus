@@ -67,7 +67,12 @@ describe("Jornada do cliente: o fechamento, o contrato sem caso e o fim (EX-16, 
   it("sem a área do passo: quem faz, sem valores (decisão 16)", () => {
     const semValor = { ...fin, valor: null, pendentes: null };
     const p = fecha([{ ...exito, feito: true }, semValor, ctr], { pode: false, quemPode: ["Marina Ribeiro", "Diego Almeida", "Bianca Lopes"] });
-    expect(textoPasso(p, "Antônia").semAcao).toBe("Quem faz: a área Financeiro, que não está liberada para você. Marina, Diego e Bianca.");
+    expect(textoPasso(p, "Antônia").semAcao).toBe(
+      "Quem faz: a área Financeiro, que não está liberada para você. Marina, Diego e Bianca. Quando o caso for encerrado no financeiro, quem é responsável por ele fica sabendo pelo sino.");
+    // F3.150: no passo da área Contratos, o caso já foi encerrado no financeiro; a frase do aviso não entra.
+    const pc = fecha([{ ...exito, feito: true }, { ...fin, feito: true, em: "2026-11-17T12:00:00Z", valor: null }, ctr],
+      { pode: false, area: "CONTRATOS", quemPode: ["Felipe Matos"] });
+    expect(textoPasso(pc, "Antônia").semAcao).toBe("Quem faz: a área Contratos, que não está liberada para você. Felipe.");
     expect(detalheDoPassoFechamento(semValor, [semValor])).toBe("Falta pagar terceiros");
   });
   it("contrato ativo sem caso e cliente atendido", () => {
