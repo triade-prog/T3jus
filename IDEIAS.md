@@ -48,6 +48,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CH-11 | Toda assinatura passa pela mesma pergunta do caso, inclusive ao anexar o contrato assinado; a lista de Contratos e o Jurídico mostram os contratos assinados que ficaram sem caso (Carol pediu em 22/11/2026) | [V1] |
 | CH-12 | Na assinatura, se o cliente já tem um caso em andamento sem contrato, a sugestão é juntar o contrato a esse caso, para o mesmo processo não virar dois casos (Carol pediu em 22/11/2026) | [V1] |
 | CH-13 | Contrato ativo sem caso (consultoria, mensal) aparece como contrato ativo na ficha do cliente, sem pedir proposta nova, e pode ganhar um caso depois (Carol pediu em 22/11/2026) | [V1] |
+| CH-14 | Gerar documentos já indica quais documentos gerar conforme o tipo de processo: o escritório define, para cada tipo, quais documentos (contrato, procuração, declaração e os modelos próprios) vêm marcados, e a tela abre com eles marcados, podendo mudar antes de gerar (Carol pediu em 24/11/2026) | [V1] |
 
 ## 4. Financeiro e repasses
 
@@ -206,7 +207,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 |---|---|
 | 1. Painel do dia | 7 |
 | 2. Atendimento e propostas | 8 |
-| 3. Contratos e honorários | 13 |
+| 3. Contratos e honorários | 14 |
 | 4. Financeiro e repasses | 24 |
 | 5. Execução jurídica | 18 |
 | 6. Indicadores | 15 |
@@ -215,4 +216,4 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | 9. Site comercial e entrada de clientes | 6 |
 | 10. Console T3jus | 6 |
 | 11. Portal do advogado | 7 |
-| **Total** | **139** |
+| **Total** | **140** |
