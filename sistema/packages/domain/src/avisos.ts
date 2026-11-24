@@ -73,7 +73,12 @@ export type TipoAvisoSino =
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
   | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
   | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18"
-  | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR";
+  | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR" | "CASO_ENCERRADO_FINANCEIRO";
+
+/** Quem recebe o aviso de caso encerrado no financeiro (F3.150): quem encerra contratos ou a responsável. */
+export type PapelCasoFechou = "CONTRATOS" | "RESPONSAVEL";
+/** Um contrato citado no aviso de caso encerrado no financeiro (F3.150), sem valor (PT-02). */
+export interface ContratoNoAviso { id?: string; numero: string; cliente?: string; clienteId?: string; outroCaso?: string }
 
 /** O que deixou o caso pronto para encerrar no financeiro (F3.147; EX-16, EX-17). */
 export type MotivoCasoPronto = "PAGAMENTO" | "REEMBOLSO" | "EXITO" | "CONTRATO_ENCERRADO" | "CASO_ENCERRADO" | "OUTRO_CASO" | "ROTINA";
@@ -110,6 +115,11 @@ export interface AvisoSino {
      *  Nenhum valor em reais (PT-02). */
     clientes?: string[]; maisClientes?: number; contratoId?: string; parcelas?: number; denovo?: boolean; periodoId?: string;
     exito?: "NAO_COBRADO" | "PAGO"; reembolso?: string; contratoEncerrado?: string; outroCaso?: string; contratoSegue?: string;
+    /** Caso encerrado no financeiro (F3.150): o papel de quem recebe, o primeiro cliente do caso, os
+     *  contratos que ficaram abertos, os encerrados junto, os que já estavam encerrados, os que seguem
+     *  com outro caso e, para a responsável com contrato aberto, quem encerra contratos. Sem valor (PT-02). */
+    papel?: PapelCasoFechou; clienteId?: string; abertos?: ContratoNoAviso[]; juntos?: ContratoNoAviso[]; jaEncerrados?: ContratoNoAviso[];
+    seguem?: ContratoNoAviso[]; quemContratos?: string[];
   };
   origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios" | "casos" | "clientes";
   origemId: string;
@@ -118,6 +128,22 @@ export interface AvisoSino {
   /** Caso pronto para encerrar (F3.147): o que aconteceu com o caso depois do aviso. Sem ele, o caso
    *  continua pronto. */
   agora?: AgoraCasoPronto;
+  /** Caso encerrado no financeiro (F3.150): o que aconteceu com os contratos abertos depois do aviso.
+   *  Sem ele, nada mudou. */
+  agoraFechou?: AgoraCasoFechou;
+}
+
+type QuemEncerrou = { id: string; nome: string } | null;
+/** O "agora" do aviso de caso encerrado no financeiro (F3.150). Quando existe, `abertos` traz todos os
+ *  contratos que continuam ativos sem outro caso (ausente quando nenhum sobrou); `saiu`, os encerrados
+ *  depois do aviso; `seguem`, os que passaram a seguir com outro caso; `encerrados`, só quando todos os
+ *  abertos do aviso foram encerrados (`por` null quando foram pessoas diferentes). `voce` vem do
+ *  servidor: a sessão do Portal não tem o id da pessoa. */
+export interface AgoraCasoFechou {
+  abertos?: { id: string; numero: string }[];
+  saiu?: { numero: string; em: string; por: QuemEncerrou; voce?: boolean }[];
+  seguem?: { id: string; numero: string; outroCaso: string }[];
+  encerrados?: { em: string; por: QuemEncerrou; voce?: boolean };
 }
 
 /** O "agora" do aviso de caso pronto: encerrado no financeiro, aviso antigo (há um mais novo para a
@@ -157,8 +183,14 @@ export function quandoEncerrouNoFinanceiro(iso: string, agora: Date = new Date()
       .formatToParts(d).map((x) => [x.type, x.value]),
   );
   const hora = `${Number(p.hour)}h${p.minute}`;
-  const dia = diaAvisos(d);
-  if (dia === diaAvisos(agora)) return `hoje, às ${hora}`;
-  if (dia === diaAvisos(new Date(agora.getTime() - 86_400_000))) return `ontem, às ${hora}`;
-  return `em ${dia.slice(8, 10)}/${dia.slice(5, 7)}, às ${hora}`;
+  return `${quandoDia(iso, agora)}, às ${hora}`;
+}
+
+/** O dia, no fuso de Brasília: "hoje", "ontem" ou "em 19/11" (F3.150, a linha "Agora:" do aviso de
+ *  caso encerrado no financeiro; também o dia de quandoEncerrouNoFinanceiro). */
+export function quandoDia(iso: string, agora: Date = new Date()): string {
+  const dia = diaAvisos(new Date(iso));
+  if (dia === diaAvisos(agora)) return "hoje";
+  if (dia === diaAvisos(new Date(agora.getTime() - 86_400_000))) return "ontem";
+  return `em ${dia.slice(8, 10)}/${dia.slice(5, 7)}`;
 }

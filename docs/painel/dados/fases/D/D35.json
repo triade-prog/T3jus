@@ -1,0 +1,14 @@
+{
+  "id": "D35",
+  "texto": "Desenho da baixa sem receber de parcela vencida, com motivo (perdoada, inadimplência ou renegociada), na ficha do contrato em Financeiro › A receber: a janela, o desfazer, o que muda no fechamento do caso, em Contratos, no sino e na régua de cobrança",
+  "peca": "S4",
+  "refs": [
+    "FI-24",
+    "FI-25",
+    "FI-08",
+    "EX-16"
+  ],
+  "status": "feito",
+  "ordem": 85,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-baixa-parcela-motivo/ (20 estados, computador e celular, axe sem violação), com plano escrito por uma especialista e revisado por outro (PLANO.md v2 e REVISAO.md, 21 notas) e desenho revisado por uma terceira especialista (REVISAO-DESENHO.md, 23 notas), aprovado pela Carol em 24/11/2026 às 15h14 (Bahia) com as recomendações das 6 perguntas"
+}
