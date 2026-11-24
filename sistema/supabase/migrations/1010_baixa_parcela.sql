@@ -497,7 +497,10 @@ create unique index recebimentos_previstos_correcao on recebimentos_previstos (c
 select t1010_trocar('portal_pago_antes_nao_paga(uuid,uuid,uuid,uuid,jsonb)',
   $q$where corrige_pago_antes_id = r.id and cancelado_em is null;$q$,
   $q$where corrige_pago_antes_id = r.id and (cancelado_em is null or baixa_id is not null);$q$);
-select t1010_trocar('portal_contrato_sem_caso(uuid,uuid,uuid)',
+-- A função com "corrigida" (0600) se chama portal_contrato_sem_caso quando a 0740 roda antes da
+-- 0750 e portal_contrato_sem_situacao quando roda depois (como em produção): vale a que tiver o trecho.
+select t1010_trocar((select p.oid::regprocedure from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public' and p.prosrc like '%n.corrige_pago_antes_id = r.id and n.cancelado_em is null)%'),
   $q$n.corrige_pago_antes_id = r.id and n.cancelado_em is null)$q$,
   $q$n.corrige_pago_antes_id = r.id and (n.cancelado_em is null or n.baixa_id is not null))$q$);
 
