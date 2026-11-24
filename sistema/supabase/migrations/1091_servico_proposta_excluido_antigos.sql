@@ -1,0 +1,22 @@
+-- O serviço das propostas dos clientes excluídos antes da 1090 (F3.159; PT-11), à parte da estrutura,
+-- como a 0971.
+--
+-- ATENÇÃO: isto não tem volta. Em cada proposta de cliente já EXCLUIDO, o serviço vira o texto fixo
+-- "Serviço apagado a pedido do titular" (e o escopo, se ainda houver, sai), e o .docx da última
+-- versão de antes da troca volta à fila arquivos_apagar, que a api-console apaga do Storage.
+--
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P15):
+--   1. conferir com list_migrations que a 0970, a 0971 e a 1030 estão no ar;
+--   2. aplicar a 1090 (daqui em diante, toda exclusão troca o serviço);
+--   3. rodar a contagem só de leitura (project-files t3jus/f3-156/contagem-antes-1091.sql) e mostrar
+--      à Carol;
+--   4. com o ok dela, aplicar esta 1091;
+--   5. conferir que a contagem dá servicos_a_trocar = 0 e que as linhas reabertas estão na fila:
+--        select escritorio, count(*) from arquivos_apagar
+--         where concluido_em is null and caminho ~ '/propostas/' group by 1;
+-- Não há função a publicar: a api-console de hoje já apaga <esc>/propostas/<id>-v<n>.docx.
+--
+-- A função é testada no pgTAP 141 e é idempotente: rodar de novo não muda nada. O resultado é a
+-- contagem por escritório ({escritório: {propostas, docxReabertos}}).
+
+select propostas_servico_preencher_excluidos() as preenchidos;

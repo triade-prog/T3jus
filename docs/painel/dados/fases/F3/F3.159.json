@@ -1,11 +1,12 @@
 {
   "id": "F3.159",
-  "texto": "Serviço da proposta do cliente excluído: o texto livre (até 160 letras) pode trazer nome, e hoje só o escopo é limpo na exclusão",
+  "texto": "Serviço da proposta do cliente excluído: na exclusão, o serviço (texto livre, até 160 letras, que pode trazer nome) vira o texto fixo \"Serviço apagado a pedido do titular\", também nas propostas dos clientes já excluídos (decisão da Carol)",
   "peca": "S2",
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1175,
-  "proximo": "Decidir com a Carol se o serviço da proposta do excluído vira um texto neutro na exclusão (revisão da F3.141, M6)"
+  "evidencia": "Migrations 1090 (servico_apagado_texto; comercial_apagar_do_excluido troca o serviço no mesmo UPDATE do escopo, a versão sobe uma vez; propostas_servico_preencher_excluidos reabre na fila o .docx da última versão de antes da troca; inventário de propostas) e 1091 (só chama o preenchimento, sem volta); pgTAP 141 (40: texto fixo, versão +1 com e sem escopo, série da fila até a versão final, outro cliente e outro escritório intactos, lista, ficha e pedidos de contrato com o texto fixo, edição recusada em clienteId, preenchimento com reabertura (controle_versao desligado só no teste), entrada da linha que faltava, idempotência, marcas, o segundo cliente.arquivos_apagados sem dado pessoal, inventário e histórico sem o serviço); Vitest PT-11 F3.159 em proposta_docx.test.ts (o Word do excluído sem o nome e sem o serviço antigo); pnpm test:db em 24/11/2026: 119 arquivos, 3600 testes, todos verdes, com os quatro de concorrência; pnpm test: 653 Vitest",
+  "nota": "O Word da versão final dos já excluídos volta à fila porque o banco não sabe se ele foi baixado depois de a fila concluir; ao concluir, o cliente.arquivos_apagados sai de novo. A cópia do serviço e do nome no sino (avisos_sino.dados) fica para a F3.172. Publicação na P15"
 }
