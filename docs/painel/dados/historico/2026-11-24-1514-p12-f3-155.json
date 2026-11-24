@@ -1,0 +1,10 @@
+{
+  "data": "24/11/2026",
+  "inicio": "15:14",
+  "fim": "15:35",
+  "texto": "Publicação P12 feita: migration 1030 aplicada no Supabase com o ok da Carol e Portal no ar pela main 31e04b4. A janela de exclusão já mostra os arquivos do cliente em 'O que é apagado' (F3.155).",
+  "refs": [
+    "F3.155",
+    "PT-11"
+  ]
+}

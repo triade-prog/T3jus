@@ -4,7 +4,8 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 120,
-  "nota": "A 1030 precisa da 0960 (tipo_termo_responsavel) e da 0970 (apagado_em), já no ar pelo P10 e pelo P11; antes de aplicar, conferir com list_migrations. A ordem entre aplicar a 1030 e publicar o Portal é livre: sem a migration, a chave não vem e a linha não aparece; sem o Portal novo, a chave é ignorada. A api-portal não muda. As migrations do sino (1020-1029) podem ser aplicadas depois da 1030 sem conflito, porque não mexem em portal_cliente; conferir de novo quando forem escritas."
+  "nota": "A 1030 precisa da 0960 (tipo_termo_responsavel) e da 0970 (apagado_em), já no ar pelo P10 e pelo P11; antes de aplicar, conferir com list_migrations. A ordem entre aplicar a 1030 e publicar o Portal é livre: sem a migration, a chave não vem e a linha não aparece; sem o Portal novo, a chave é ignorada. A api-portal não muda. As migrations do sino (1020-1029) podem ser aplicadas depois da 1030 sem conflito, porque não mexem em portal_cliente; conferir de novo quando forem escritas.",
+  "evidencia": "Migration 1030 aplicada no Supabase em 24/11/2026, 15h14 (Bahia), com o ok da Carol (cartão de decisão), com o conteúdo direto; conferido no banco que cliente_arquivos_para_apagar existe sem security definer e sem execute para o service_role, e que portal_cliente traz arquivosParaApagar. Portal publicado pela Vercel na produção da main 31e04b4 (inclui o #171), READY em 24/11/2026."
 }
