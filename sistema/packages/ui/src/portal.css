@@ -222,8 +222,7 @@
 .cl-tab td{vertical-align:middle}
 .cl-tab .esc>div{min-width:0}
 .cl-tab .esc a{position:relative;display:inline-block;margin:0;overflow-wrap:anywhere}
-/* Área de toque de 44px sem empurrar a linha: nome longo quebra em duas linhas sem cobrir o tipo. */
-.cl-tab .esc a::after{content:"";position:absolute;inset:-10px -4px -6px}
+/* A área de toque de 44 px do link vem da regra F3.165, no fim do bloco "Tabelas do Portal". */
 .cl-tab .esc small{margin-top:0}
 .cl-ct strong{display:block;font-weight:500;font-size:14px}
 .cl-ct small{display:block;font-size:12px;color:var(--texto-2)}
@@ -5297,7 +5296,6 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 /* Tabelas das abas novas */
 .fl-tab td{vertical-align:middle}
 .fl-tab .fl-num a{position:relative;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);text-decoration:none;display:inline-block;overflow-wrap:anywhere;line-height:1.25}
-.fl-tab .fl-num a::after{content:"";position:absolute;inset:-10px -4px -6px}
 .fl-tab .fl-num a:hover{text-decoration:underline}
 .fl-tab small,.fl-c small{display:block;font-size:12px;color:var(--texto-2);line-height:1.4}
 .fl-tab b{font-weight:500}
@@ -7255,4 +7253,19 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
     .pt .folha>.so-pc:has(>table[data-cartoes="360"]){display:none!important}
     .pt .folha>.so-pc:has(>table[data-cartoes="360"])~:is(ul,ol).so-cel{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));padding:0 24px 20px}
   }
+}
+
+/* F3.165 · Alvos de toque de 44 px nas tabelas do Portal.
+   Vale só para as células de tabela da folha e para as listas que trocam a tabela no celular
+   (.cartoes.so-cel e .cb-cartoes.so-cel). Fica de fora: o que está dentro de janela (dialog), o link que já
+   cobre o cartão inteiro (.c-nome) e qualquer alvo marcado com .sem-area.
+   Computador: o desenho fica igual. Botões ganham uma área de toque invisível de pelo menos 44 x 44 px,
+   centrada neles; links ganham a mesma área crescendo para cima (só 4 px para baixo), para não cobrir o
+   texto que se copia logo abaixo (número do processo, e-mail). A linha não cresce.
+   Celular: o botão compacto dessas tabelas e listas passa a ter 44 px de altura visível. */
+.pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) :is(a[href],button):not(.c-nome,.sem-area,dialog *){position:relative}
+.pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) :is(a[href],button):not(.c-nome,.sem-area,dialog *)::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+.pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) a[href]:not(.btn,.c-nome,.sem-area,dialog *)::after{top:auto;bottom:-4px;height:max(calc(100% + 4px),44px);transform:translateX(-50%)}
+@media (max-width:760px){
+  .pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) .btn-compacto:not(dialog *){min-height:44px}
 }
