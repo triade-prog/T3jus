@@ -4,7 +4,7 @@
 // docs/design/aprovadas/portal-fechamento-sem-levantamento (decisões 8 a 10).
 
 import {
-  dataBr, FORMAS_PAGAMENTO, PARA_DESTINACAO, reais, type AcertoCaso, type EventoDeOrigem, type ParcelasContrato, type PendenciaCaso,
+  dataBr, FORMAS_PAGAMENTO, MOTIVOS_BAIXA, PARA_DESTINACAO, reais, type AcertoCaso, type EventoDeOrigem, type ParcelasContrato, type PendenciaCaso,
 } from "@t3jus/domain";
 import { diaCurto } from "./agenda.ts";
 import { juntarComE } from "./clientes.ts";
@@ -17,7 +17,24 @@ import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 export type Atalho =
   | { tipo: "registrar"; parcelaId: string; rotulo: string }
   | { tipo: "link"; href: string; rotulo: string }
-  | { tipo: "repasse"; destinacaoId: string; rotulo: string };
+  | { tipo: "repasse"; destinacaoId: string; rotulo: string }
+  /** F3.139: "Dar baixa sem receber", o atalho secundário da parcela vencida deste contrato. */
+  | { tipo: "baixar"; parcelaId: string; rotulo: string };
+
+/** F3.139 (decisão 2): ao lado de "Registrar recebimento", o atalho secundário "Dar baixa sem
+ *  receber", só na parcela vencida da ficha aberta e para quem pode dar baixa. */
+export function atalhoBaixar(a: Atalho | null, lista: PendenciaCaso[], hoje: string, pode: boolean): Atalho | null {
+  if (!pode || a?.tipo !== "registrar") return null;
+  const p = lista.find((x) => x.tipo === "PARCELA" && x.parcelaId === a.parcelaId);
+  if (!p || !p.vencimento || p.vencimento >= hoje) return null;
+  return { tipo: "baixar", parcelaId: a.parcelaId, rotulo: "Dar baixa sem receber" };
+}
+
+/** As custas que vão junto com a parcela, entre as pendências (para a ajuda da janela). */
+export function custasDaParcela(lista: PendenciaCaso[], parcelaId: string | undefined): number {
+  if (!parcelaId) return 0;
+  return lista.filter((x) => x.tipo === "REEMBOLSO" && x.parcela?.id === parcelaId).reduce((t, x) => t + (x.valor ?? 0), 0);
+}
 
 /** Se o caso teve levantamento. Sem o campo (API de antes), vale o que entrou. */
 export function comLevantamento(a: Pick<AcertoCaso, "comLevantamento" | "entrou">): boolean {
@@ -35,14 +52,31 @@ export function botaoEncerrar(n: number, junto: boolean): string {
   return n === 1 ? "Encerrar o caso e o contrato" : "Encerrar o caso e os contratos";
 }
 
-/** "tudo recebido e repassado" só com levantamento; sem ele, "tudo recebido". */
-export function textoEncerrado(a: Pick<AcertoCaso, "comLevantamento" | "entrou">): string {
-  return comLevantamento(a) ? "tudo recebido e repassado" : "tudo recebido";
+/** FI-08 (F3.139): houve baixa sem receber no caso, de parcela ou de reembolso. */
+export function temBaixa(a: Pick<AcertoCaso, "baixado">): boolean {
+  return !!a.baixado && (a.baixado.parcelas.length > 0 || a.baixado.reembolsos.length > 0);
 }
 
-/** Nota 1 da segunda leitura: o texto de ajuda da parcela, igual para quem vê. */
-export function textoAjudaPendencia(cliente: string): string {
-  return `Se ${primeiroNome(cliente)} não vai pagar, ainda não dá para dar baixa na parcela sem receber: anote a cobrança, e o caso segue “acerto pendente” até a parcela ser paga.`;
+/** "tudo recebido e repassado" só com levantamento; sem ele, "tudo recebido". Com baixa sem receber
+ *  no caso (FI-08, F3.139), "tudo recebido ou baixado com motivo". */
+export function textoEncerrado(a: Pick<AcertoCaso, "comLevantamento" | "entrou" | "baixado">): string {
+  const recebido = temBaixa(a) ? "tudo recebido ou baixado com motivo" : "tudo recebido";
+  return comLevantamento(a) ? `${recebido} e repassado` : recebido;
+}
+
+/** A regra da janela de pendência (FI-08): "só encerra com tudo recebido ou baixado com motivo". */
+export function textoRegraEncerrar(lev: boolean): string {
+  return lev
+    ? "O financeiro do caso só encerra com tudo recebido ou baixado com motivo, e tudo repassado."
+    : "O financeiro do caso só encerra com tudo recebido ou baixado com motivo.";
+}
+
+/** Nota 1 da segunda leitura, refeita no F3.139: o texto de ajuda da parcela, igual para quem vê.
+ *  Com custas que vão junto com a parcela, diz que elas só saem se marcadas na mesma janela. */
+export function textoAjudaPendencia(cliente: string, custas?: number | null): string {
+  const nome = primeiroNome(cliente);
+  return `Se ${nome} não vai pagar, você pode dar baixa na parcela sem receber, com o motivo. Ela sai de Em atraso, fica no contrato, e o caso deixa de esperar por ela.${
+    custas ? ` As custas de ${reais(custas)} saem junto só se você marcar isso na mesma janela.` : ""}`;
 }
 
 /** O texto aprovado da ficha do repasse, quando há repasse pendente. */
@@ -116,6 +150,13 @@ export function parcelaCurta(descricao: string): string {
   return descricao.replace(/(\d+) de (\d+)/, "$1/$2");
 }
 
+/** "Parcela 6 de 6" vira "parcela 6/6"; "Fixo" vira "parcela fixo" (F3.139). */
+export function nomeDaParcela(descricao: string): string {
+  const c = parcelaCurta(descricao);
+  const m = c.charAt(0).toLowerCase() + c.slice(1);
+  return /\d+\/\d+/.test(c) ? m : `parcela ${m}`;
+}
+
 /** Uma linha do quadro: feito (check), falta (alerta) ou espera (relógio), cada uma dita também em texto. */
 export type ItemQuadro = { tom: "ok" | "falta" | "espera"; forte?: string; texto?: string; sub?: string; ir?: { rotulo: string; href: string } };
 export type GrupoQuadro = { titulo: string; itens: ItemQuadro[] };
@@ -182,6 +223,13 @@ export function gruposDoQuadro(a: AcertoCaso, ctx: ContextoQuadro): GrupoQuadro[
       itens.push({ tom: "ok", texto: `${c.parcelas.pagas} de ${c.parcelas.total} parcelas recebidas · ${R(c.recebido)}`,
         sub: c.parcelas.pagas === c.parcelas.total && c.ultimaRecebidaEm ? `a última em ${diaCurto(c.ultimaRecebidaEm)}${encerrado}` : undefined });
     }
+    // F3.139 (FI-08): a parcela com baixa sem receber fecha como as outras, com o motivo e quem.
+    for (const b of (a.baixado?.parcelas ?? []).filter((x) => x.contratoId === c.id)) {
+      const txt = `${parcelaCurta(b.descricao).toLowerCase()} baixada sem receber (${MOTIVOS_BAIXA[b.motivo].toLowerCase()}), por ${primeiroNome(b.por.nome)} em ${dia(b.em)}`;
+      const ult = itens[itens.length - 1];
+      if (ult && !ult.sub && ult.tom === "ok") ult.sub = txt;
+      else itens.push({ tom: "ok", texto: txt.charAt(0).toUpperCase() + txt.slice(1) });
+    }
     const atrasado = pend.some((p) => !espera(p, hoje));
     for (const p of pend.filter((x) => x.contratoId === c.id)) {
       if (p.tipo === "PARCELA_SEM_VALOR") {
@@ -229,7 +277,11 @@ export function gruposDoQuadro(a: AcertoCaso, ctx: ContextoQuadro): GrupoQuadro[
       : "a reembolsar, em A pagar";
     return { tom: p.parcela && p.parcela.vencimento >= hoje ? "espera" : "falta", forte: `${p.nome}:`, texto: `falta o reembolso de ${R(p.valor ?? 0)}`, sub: junto };
   });
-  if (!reemb.length) adi.push(r.adiantado ? { tom: "ok", texto: `Adiantado reembolsado · ${R(r.reembolsado)}` } : { tom: "ok", texto: "Nada adiantado neste caso" });
+  // F3.139 (FI-25): o reembolso que teve baixa sem receber junto com a parcela.
+  const reembBaixados = a.baixado?.reembolsos ?? [];
+  for (const b of reembBaixados) adi.push({ tom: "ok", texto: `${b.descricao}: reembolso baixado sem receber · ${R(b.valor)}` });
+  if (!reemb.length && !reembBaixados.length) adi.push(r.adiantado ? { tom: "ok", texto: `Adiantado reembolsado · ${R(r.reembolsado)}` } : { tom: "ok", texto: "Nada adiantado neste caso" });
+  else if (!reemb.length && r.reembolsado) adi.push({ tom: "ok", texto: `Adiantado reembolsado · ${R(r.reembolsado)}` });
   grupos.push({ titulo: "Adiantado pelo escritório no caso", itens: adi });
   // 5. Terceiros.
   if (!comLevantamento(a)) {
@@ -256,10 +308,13 @@ export type NumerosFechamento = {
 export function numerosDoFechamento(a: AcertoCaso): NumerosFechamento {
   const r = a.reembolsos ?? { adiantado: 0, reembolsado: 0 };
   const recebido = a.recebidoNoCaso ?? 0;
-  const reembolsoTxt = !r.adiantado ? "nada adiantado" : r.reembolsado < r.adiantado ? `de ${R(r.adiantado)} adiantados` : "tudo reembolsado";
+  const custasBaixadas = (a.baixado?.reembolsos ?? []).reduce((t, x) => t + x.valor, 0);
+  const reembolsoTxt = !r.adiantado ? "nada adiantado"
+    : custasBaixadas && !a.pendencias.some((p) => p.tipo === "REEMBOLSO") ? `as custas de ${R(custasBaixadas)} tiveram baixa sem receber`
+    : r.reembolsado < r.adiantado ? `de ${R(r.adiantado)} adiantados` : "tudo reembolsado";
   const base = { recebido, contratos: a.contratosNoRecebido ?? a.contratos?.length ?? 0, reembolsado: r.reembolsado, reembolsoTxt, falta: a.falta };
   if (!a.pendencias.length) {
-    const txt = comLevantamento(a) ? "tudo recebido e repassado" : r.adiantado ? "tudo recebido e reembolsado" : recebido ? "tudo recebido" : "nada a receber";
+    const txt = temBaixa(a) ? textoEncerrado(a) : comLevantamento(a) ? "tudo recebido e repassado" : r.adiantado ? "tudo recebido e reembolsado" : recebido ? "tudo recebido" : "nada a receber";
     return { ...base, falta: 0, faltaTxt: txt, tom: "nada" };
   }
   if (a.aVencer) return { ...base, faltaTxt: `a vencer em ${diaCurto(a.aVencer.vencimento)} · nada em atraso`, tom: "espera" };
@@ -383,6 +438,18 @@ export function textoOrigem(e: EventoDeOrigem, caso: string): { fez: string; det
       const forma = s("forma") in FORMAS_PAGAMENTO ? FORMAS_PAGAMENTO[s("forma") as keyof typeof FORMAS_PAGAMENTO] : "";
       return { fez: "registrou o recebimento", detalhe: [parcelaCurta(s("parcela")), [valor, forma ? `por ${forma}` : ""].filter(Boolean).join(" ")].filter(Boolean).join(" · ") };
     }
+    // F3.139, revisão nota 5: a baixa sem receber e o desfazer, como no desenho.
+    case "financeiro.parcela_baixada": {
+      const motivo = MOTIVOS_BAIXA[s("motivo") as keyof typeof MOTIVOS_BAIXA] ?? "";
+      const reemb = typeof d.reembolsos === "number" ? d.reembolsos : 0;
+      const abertas = typeof d.custasAReembolsar === "number" ? d.custasAReembolsar : 0;
+      const custas = reemb > 0 ? "o reembolso das custas teve baixa junto" : abertas > 0 ? "as custas ficaram a reembolsar, em A pagar" : "";
+      return { fez: `deu baixa sem receber na ${s("parcela") ? nomeDaParcela(s("parcela")) : "parcela"}`,
+        detalhe: [motivo, valor].filter(Boolean).join(" · ") + (custas ? `; ${custas}` : "") };
+    }
+    case "financeiro.parcela_baixa_desfeita":
+      return { fez: `desfez a baixa sem receber da ${s("parcela") ? nomeDaParcela(s("parcela")) : "parcela"}`,
+        detalhe: [s("explicacao") ? `“${s("explicacao")}”` : "", s("com") ? `próxima ação com ${s("com")}` : ""].filter(Boolean).join(" · ") };
     default:
       return { fez: "registrou uma mudança", detalhe: caso };
   }

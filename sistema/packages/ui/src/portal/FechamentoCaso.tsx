@@ -14,7 +14,7 @@ import { Aviso, Janela } from "../console/pecas.tsx";
 import { contar, diaCurto } from "./agenda.ts";
 import { juntarComE } from "./clientes.ts";
 import {
-  AJUDA_REPASSE, botaoEncerrar, comLevantamento, detalheDaPendencia, primeiroAtalho, rotuloEncerrarJunto, textoAjudaPendencia, textoEncerrado,
+  AJUDA_REPASSE, atalhoBaixar, botaoEncerrar, custasDaParcela, textoRegraEncerrar, comLevantamento, detalheDaPendencia, primeiroAtalho, rotuloEncerrarJunto, textoAjudaPendencia, textoEncerrado,
   textoJaEncerrado, textoQuemEncerraContratos, tituloPendencias, type Atalho,
   dia, gruposDoQuadro, idDaFolha, linhaJuridico, linhaPronto, numerosDoFechamento, resumoFechado, subDoCaso, textoOrigem, type ItemQuadro,
 } from "./fechamento.ts";
@@ -91,7 +91,7 @@ function BotaoAtalho({ a, aoAtalho }: { a: Atalho; aoAtalho: (a: Atalho) => void
  */
 export function JanelaFechamento({
   casoId, acerto, descricao, descricaoPronta, voltar, atalho, aoAtalho, aoFechar, aoFeito, aoJaEncerrado, linha = linhaDoRepasse, ajuda, nomeCaso,
-  noContrato = false, resumo,
+  noContrato = false, resumo, baixar,
 }: {
   casoId: string;
   acerto: AcertoCaso;
@@ -113,6 +113,8 @@ export function JanelaFechamento({
   noContrato?: boolean;
   /** O resumo do caso pronto (estado 8): Recebido no caso, Reembolsado, Falta. */
   resumo?: ReactNode;
+  /** F3.139: a data de hoje, quando quem vê pode dar baixa sem receber (ficha do contrato). */
+  baixar?: { hoje: string };
 }) {
   const [pend, setPend] = useState<{ lista: PendenciaCaso[]; falta: number }>({ lista: acerto.pendencias, falta: acerto.falta });
   const [falha, setFalha] = useState<string | null>(null);
@@ -157,6 +159,7 @@ export function JanelaFechamento({
 
   if (pend.lista.length) {
     const a = primeiroAtalho(pend.lista, atalho);
+    const b = atalhoBaixar(a, pend.lista, baixar?.hoje ?? "", !!baixar);
     const repasse = pend.lista.some((x) => x.tipo === "REPASSE");
     const parcela = pend.lista.find((x) => x.tipo === "PARCELA");
     const cliente = parcela ? (parcela.cliente ?? parcela.nome.split(" · ")[0]!) : null;
@@ -171,13 +174,18 @@ export function JanelaFechamento({
         pe={
           <>
             <button className="btn btn-sec" type="button" onClick={aoFechar} data-foco="">{voltar}</button>
+            {b ? (
+              <button className="btn btn-sec" type="button" onClick={() => aoAtalho(b)}>
+                <Icone nome="moeda" className="ico" />{b.rotulo}
+              </button>
+            ) : null}
             {a ? <BotaoAtalho a={a} aoAtalho={aoAtalho} /> : null}
           </>
         }>
         <div style={{ display: "grid", gap: 16 }}>
           <p id="j-enc-d">{descricao}</p>
           <Aviso tom="urgencia" titulo={aVencer ? titulo.replace(/\.$/, ", a vencer.") : titulo}>
-            {lev ? "O financeiro do caso só encerra com tudo recebido e tudo repassado." : "O financeiro do caso só encerra com tudo recebido."}
+            {textoRegraEncerrar(lev)}
             {pend.falta ? ` Faltam ${reais(pend.falta)}.` : ""}
           </Aviso>
           <ul className="fi-check">
@@ -186,7 +194,7 @@ export function JanelaFechamento({
           <Aviso tom="info" icone="ajuda">
             Registre o que falta e o caso fica pronto para encerrar.
             {repasse || (lev && !cliente) ? ` ${AJUDA_REPASSE}` : ""}
-            {outra ? ` ${outra}` : cliente ? ` ${textoAjudaPendencia(cliente)}` : ""}
+            {outra ? ` ${outra}` : cliente ? ` ${textoAjudaPendencia(cliente, custasDaParcela(pend.lista, parcela?.parcelaId))}` : ""}
           </Aviso>
         </div>
       </Janela>

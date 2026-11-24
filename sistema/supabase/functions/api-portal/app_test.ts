@@ -558,6 +558,9 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_peticao_versao_gravar: (a) => ({ id: a.p_id, situacao: "REVISAO", versao: 2, arquivo: (a.p_resultado as { arquivo: string }).arquivo }),
     portal_pago_antes_nao_paga: (a) => ({ id: CLIENTE, contratoId: a.p_contrato, eraPagoAntes: true, vencimento: "2026-12-10" }),
     portal_pago_antes_foi_paga: (a) => ({ id: a.p_recebimento, contratoId: CLIENTE }),
+    portal_financeiro_parcela_baixa_previa: (a) => ({ parcela: { id: a.p_parcela }, falta: 50000, custas: [], casos: [] }),
+    portal_financeiro_parcela_baixar: (a) => ({ id: a.p_parcela, situacao: "BAIXADA", casos: [], reembolsosBaixados: 0 }),
+    portal_financeiro_parcela_baixa_desfazer: (a) => ({ id: a.p_parcela, situacao: "VENCIDA", proximaAcao: { com: { id: CLIENTE, nome: "Diego Almeida" }, data: "2026-11-25", cliente: "Sebastião Lopes" }, casos: [] }),
     portal_recebimento_logo_registrar: (a) => ({ ...(a.p_dados as object), enviadoEm: "2026-11-21T10:00:00-03:00" }),
     portal_recebimento_logo_arquivo: (a) => `${a.p_escritorio}/logos/${a.p_logo}.png`,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 10 }),
@@ -2866,6 +2869,33 @@ Deno.test("F3.84, VA-05: \"Não foi paga\" e \"Foi paga, sim\" vão ao banco com
   const f = await m.pedir(`/v1/escritorio/recebimentos/${CLIENTE}/foi-paga`, { cookie, corpo: { motivo: "Achei o comprovante" } });
   assertEquals((await f.json()).contratoId, CLIENTE);
   assertEquals(m.chamadas.find((c) => c.funcao === "portal_pago_antes_foi_paga")!.args.p_dados, { motivo: "Achei o comprovante" });
+});
+
+Deno.test("F3.139, FI-24: dar baixa sem receber, a prévia e o desfazer vão ao banco com o escritório da sessão", async () => {
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const base = `/v1/escritorio/financeiro/parcelas/${VERSAO_PET.toUpperCase()}/baixa`;
+  const p = await m.pedir(base, { cookie });
+  assertEquals(p.status, 200);
+  const ap = m.chamadas.find((c) => c.funcao === "portal_financeiro_parcela_baixa_previa")!.args;
+  assertEquals([ap.p_escritorio, ap.p_parcela], [AURORA, VERSAO_PET]);
+  const r = await m.pedir(base, { cookie, corpo: { motivo: "PERDOADA", explicacao: "A sócia perdoou a parcela", falta: 50000, escritorio: CLIENTE } });
+  assertEquals(r.status, 201);
+  const a = m.chamadas.find((c) => c.funcao === "portal_financeiro_parcela_baixar")!.args;
+  assertEquals([a.p_escritorio, a.p_parcela], [AURORA, VERSAO_PET]);
+  // O escritório vem da sessão; o corpo só leva o motivo, a explicação, o que faltava e as custas.
+  assertEquals(a.p_dados, { motivo: "PERDOADA", explicacao: "A sócia perdoou a parcela", falta: 50000, reembolso: false });
+  // O motivo e a explicação o banco confere (campos); valor quebrado nem chega ao banco.
+  for (const corpo of [{ motivo: "PERDOADA", explicacao: "abc", falta: 1.5 }, { motivo: "PERDOADA", explicacao: "abc", reembolso: "sim" }]) {
+    assertEquals((await erro(await m.pedir(base, { cookie, corpo }))).codigo, "VALIDATION_ERROR");
+  }
+  assertEquals(m.chamadas.filter((c) => c.funcao === "portal_financeiro_parcela_baixar").length, 1);
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/parcelas/nao-e-id/baixa", { cookie, corpo: { motivo: "PERDOADA", explicacao: "abc", falta: 1 } }))).codigo, "NOT_FOUND");
+  const d = await m.pedir(`${base}/desfazer`, { cookie, corpo: { explicacao: "Ele pagou, afinal" } });
+  assertEquals(d.status, 200);
+  assertEquals((await d.json()).proximaAcao.com.nome, "Diego Almeida");
+  const ad = m.chamadas.find((c) => c.funcao === "portal_financeiro_parcela_baixa_desfazer")!.args;
+  assertEquals([ad.p_escritorio, ad.p_parcela, ad.p_dados], [AURORA, VERSAO_PET, { explicacao: "Ele pagou, afinal" }]);
 });
 
 Deno.test("F3.44: a prestação de contas pelo WhatsApp leva o texto montado do registro, o mesmo da prévia", async () => {

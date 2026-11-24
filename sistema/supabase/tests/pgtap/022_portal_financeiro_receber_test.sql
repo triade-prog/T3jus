@@ -97,7 +97,7 @@ select is((select portal_financeiro_receber_registrar(diego, rm, p1.id, jsonb_bu
 select is((teste.erro($$ select portal_financeiro_receber_registrar(diego, rm, p1.id, jsonb_build_object('valor', 100, 'recebidoEm', '2026-12-05', 'forma', 'PIX')) from ids, p1 $$)) -> 'detalhe' ->> 'motivo',
   'PARCELA_JA_PAGA', 'parcela paga não recebe mais');
 select is((select portal_financeiro_contrato(diego, rm, ct.hel) -> 'totais' from ids, ct),
-  '{"atraso": 0, "aVencer": 170000, "recebido": 85000, "contratado": 255000}'::jsonb, 'FI-02: totais da ficha de parcelas');
+  '{"atraso": 0, "aVencer": 170000, "baixado": 0, "recebido": 85000, "contratado": 255000, "renegociado": 0}'::jsonb, 'FI-02: totais da ficha de parcelas');
 select is((select portal_financeiro_receber(diego, rm, 'RECEBIDO_MES') -> 'totais' -> 'recebidoMes' from ids), '{"n": 1, "valor": 85000}'::jsonb,
   'FI-02: recebido no mês conta pelo dia em que entrou, sem multa e juros');
 select is((teste.erro($$ delete from pagamentos_recebidos $$)) ->> 'codigo', 'TC023', 'PT-03: recebimento não se apaga');

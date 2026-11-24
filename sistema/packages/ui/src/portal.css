@@ -1519,11 +1519,13 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 
 /* Ficha: totais do contrato */
 .fi-quatro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--divisor)}
+.fi-quatro:has(>div:nth-child(5)){grid-template-columns:repeat(5,minmax(0,1fr))}
 .fi-quatro div{padding:14px 24px;border-left:1px solid var(--divisor)}
 .fi-quatro div:first-child{border-left:0}
 .fi-quatro dt{font-size:12px;color:var(--texto-2)}
 .fi-quatro dd{margin:2px 0 0;font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--vinho);font-variant-numeric:lining-nums tabular-nums}
 .fi-quatro dd.urg{color:var(--vinho-3)}
+.fi-quatro dd.fi-motivo{font-family:inherit;font-size:12px;color:var(--texto-2);font-weight:400}
 .fi-quatro{margin:0}
 
 /* Cobrança (FI-04) e Pix (FI-17) */
@@ -1718,6 +1720,9 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 .fi-tab .fi-grupo th{text-align:left}
 .fi-tab tr.fi-cancelada td{color:var(--texto-2)}
 .fi-tab tr.fi-cancelada .num{text-decoration:line-through}
+/* F3.139: a parcela com baixa sem receber fica na tabela, sem o tom de atraso e sem riscar. */
+.fi-tab tr.fi-baixada td{color:var(--texto-2)}
+.fi-docs .fi-bx{min-height:44px;margin-top:4px;gap:6px;white-space:normal;text-align:left;max-width:100%;height:auto}
 .fi-tab .fi-acao .btn{white-space:nowrap}
 .fi-quem a{min-height:44px}
 .fi-vazio-num{font-size:12px;color:var(--texto-2)}
@@ -1738,6 +1743,7 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
   .hn-tab.fi-tab tr.fi-pago td{background:transparent}
   .hn-tab.fi-tab .fi-sit,.hn-tab.fi-tab .fi-forma{justify-items:end;text-align:right}
   .hn-tab.fi-tab .fi-docs{align-items:flex-end}
+  .hn-tab.fi-tab .fi-docs .fi-bx{width:100%;justify-content:center}
   .fi-cob-sem{padding:0 16px 16px}
   .fi .hn-ferr>select.entrada{flex:1 1 100%}
 }

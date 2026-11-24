@@ -1,7 +1,7 @@
 // A capa do carnê (FI-23): quantas faixas ela ocupa e quantas folhas A4 o carnê tem. O teste de
 // ponta a ponta (tests/e2e/portal-carne-capa.spec.ts) confere na folha que nada passa da faixa.
 import { describe, expect, it } from "vitest";
-import { blocosDaCapa, folhasDoCarne } from "./Carne.tsx";
+import { blocosDaCapa, folhasDoCarne, textoMudanca } from "./Carne.tsx";
 
 const ps = (n: number, vencidas = 0) => Array.from({ length: n }, (_, i) => ({ semValor: i < vencidas }));
 
@@ -34,5 +34,13 @@ describe("folhasDoCarne", () => {
   });
   it("1 por folha não tem capa", () => {
     expect(folhasDoCarne(ps(12), "UM", true)).toBe(12);
+  });
+});
+
+describe("F3.139 (nota 7): o carnê já emitido e a baixa sem receber", () => {
+  it("diz que a parcela teve baixa sem receber e, no desfazer, que voltou para A receber", () => {
+    expect(textoMudanca({ tipo: "BAIXADA", parcela: "Parcela 6 de 6" } as never)).toBe("a parcela 6 de 6 teve baixa sem receber");
+    expect(textoMudanca({ tipo: "BAIXA_DESFEITA", parcela: "Parcela 6 de 6" } as never)).toBe("a parcela 6 de 6 voltou para A receber");
+    expect(textoMudanca({ tipo: "CANCELADA", parcela: "Parcela 6 de 6" } as never)).toBe("a parcela 6 de 6 foi cancelada");
   });
 });

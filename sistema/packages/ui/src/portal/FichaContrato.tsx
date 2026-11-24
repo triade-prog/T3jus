@@ -28,6 +28,7 @@ import { tamanhoLegivel } from "../console/documentos.ts";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { ROTAS_FINANCEIRO, seloParcela } from "./financeiro.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { ambarBaixaNoContrato, geraComBaixas, notaDaBaixa } from "./baixa.ts";
 import { HistoricoRecebimentos, JanelaFoiPaga, JanelaNaoPaga, textoAtraso } from "./NaoPaga.tsx";
 import { BaixarContratoNoCabecalho, DocumentosDaFicha, feitoDosAssinados, JanelaAssinados, proximoDosDocumentos } from "./Procuracoes.tsx";
 
@@ -38,16 +39,27 @@ const fuso = { timeZone: "America/Sao_Paulo" } as const;
 const diaDoInstante = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
 const horaDoInstante = (em: string) => new Intl.DateTimeFormat("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit" }).format(new Date(em)).replace(":", "h");
 
+/** F3.139: a parcela com baixa sem receber continua na programação do contrato (conta no "x de 6"). */
+const naProgramacao = (r: RecebimentoPrevisto) => !r.cancelado || !!r.baixa || !!r.foraDaCobranca;
+/** Revisão, nota 6: com Financeiro, "Inadimplência · por Marina Ribeiro em 18/11"; sem ele, só
+ *  "Fora da cobrança, por decisão do Financeiro." (pergunta 2). A explicação vai em outra linha. */
+export function notaForaDaCobranca(r: Pick<RecebimentoPrevisto, "baixa" | "foraDaCobranca">): string | null {
+  if (r.baixa) return notaDaBaixa({ ...r.baixa, recebidoAntes: 0 });
+  return r.foraDaCobranca ? "Fora da cobrança, por decisão do Financeiro." : null;
+}
+
 /** A frase "Gera:" de cada condição na ficha do contrato. */
 function geraNoContrato(f: FichaContrato) {
   return (c: FichaContrato["condicoes"][number]): string => {
-    const n = f.recebimentos.filter((r) => r.tipo === c.tipo && !r.cancelado).length;
+    const n = f.recebimentos.filter((r) => r.tipo === c.tipo && naProgramacao(r)).length;
     const assinado = f.situacao !== "ELABORACAO";
     switch (c.tipo) {
       case "FIXO":
       case "PARCELADO":
       case "MENSAL":
-        return assinado ? `${n === 1 ? "1 recebimento programado" : `${n} recebimentos programados`}.` : "Vira recebimento programado quando a assinatura for registrada.";
+        return assinado
+          ? geraComBaixas(n, f.recebimentos.filter((r) => r.tipo === c.tipo && r.baixa).length)
+          : "Vira recebimento programado quando a assinatura for registrada.";
       case "EXITO":
         return "Quando o caso chegar à etapa, quem marca informa o valor e o Financeiro é avisado.";
       case "SUCUMBENCIA":
@@ -123,6 +135,25 @@ function Dir({ f, aoAssinar, docs, aoAnexarDocs }: { f: FichaContrato; aoAssinar
     );
   }
   const p = f.proximo;
+  // Revisão, nota 6 (estado 17): nada à frente e uma parcela com baixa sem receber; quem tem o Financeiro vai até ela.
+  const semAberto = f.recebimentos.every((r) => r.baixa || r.cancelado || r.foraDaCobranca || r.situacao === "PAGA");
+  const baixada = !p && f.financeiro && semAberto ? f.recebimentos.filter((r) => r.baixa).at(-1) : undefined;
+  if (baixada?.baixa) {
+    return (
+      <section className="dir campo-ambar" aria-labelledby="t-pr">
+        <p className="sobretitulo" id="t-pr">Próximo recebimento</p>
+        <div className="hn-dir-linha">
+          <p className="grande">Nenhum</p>
+          <Selo tom="ok" icone="check">Nada em aberto</Selo>
+        </div>
+        <p className="hn-oque"><b>{ambarBaixaNoContrato({ descricao: baixada.descricao, baixa: baixada.baixa })}</b><br />no Financeiro, em A receber</p>
+        <a className="btn btn-pri" href={ROTAS_FINANCEIRO.contrato(f.id)}>
+          <Icone nome="carteira" className="ico" />
+          Ver no Financeiro
+        </a>
+      </section>
+    );
+  }
   return (
     <section className="dir campo-ambar" aria-labelledby="t-pr">
       <p className="sobretitulo" id="t-pr">Próximo recebimento</p>
@@ -350,7 +381,7 @@ function Recebimentos({ f, hoje, dono, aoNaoPaga, aoFoiPaga }: {
         </>
       )}
       {f.financeiro ? (
-        <p className="hn-pe"><Icone nome="carteira" className="ico" /><span>É a mesma programação que o Financeiro vai ver em A receber. Pagamentos, atrasos e baixas se registram lá.</span></p>
+        <p className="hn-pe"><Icone nome="carteira" className="ico" /><span>É a mesma programação que o Financeiro vai ver em A receber. Pagamentos, atrasos e baixas sem receber são registrados lá.</span></p>
       ) : (
         <p className="hn-pe"><Icone nome="cadeado" className="ico" /><span>Se cada recebimento foi pago ou está em atraso fica no Financeiro, que não está liberado para você.{dono ? ` Quem libera é ${dono}, sócio dono.` : ""}</span></p>
       )}
@@ -376,7 +407,7 @@ function PagoAntes({ f, pagas, soma, hoje, aoNaoPaga }: { f: FichaContrato; paga
   const mostrar = todas ? recentes : recentes.slice(0, PAGAS_DE_CARA);
   const outras = recentes.length - mostrar.length;
   const imp = f.importacao;
-  const doTipo = (t: RecebimentoPrevisto["tipo"]) => f.recebimentos.filter((r) => r.tipo === t && (r.pagoAntes || !r.cancelado)).length;
+  const doTipo = (t: RecebimentoPrevisto["tipo"]) => f.recebimentos.filter((r) => r.tipo === t && (r.pagoAntes || naProgramacao(r))).length;
   const total = doTipo(pagas[0]!.tipo);
   const podeDesfazer = imp && !imp.desfeita && imp.desfazerAte && imp.desfazerAte.slice(0, 10) >= hoje;
   const botao = !!f.podeMarcarNaoPaga;
@@ -491,6 +522,7 @@ function PagoAntes({ f, pagas, soma, hoje, aoNaoPaga }: { f: FichaContrato; paga
 /** A situação da parcela em A receber; a de valor ainda a definir espera a etapa do caso. */
 function SituacaoRecebimento({ r, hoje }: { r: RecebimentoPrevisto; hoje: string }) {
   if (r.valor === null && !r.cancelado) return <Selo tom="neutro" icone="relogio">Esperando a etapa</Selo>;
+  if (r.foraDaCobranca) return <Selo tom="neutro">Fora da cobrança</Selo>;
   if (!r.situacao) return null;
   const s = seloParcela({ situacao: r.situacao, vencimento: r.vencimento, falta: r.falta ?? 0, pagaEm: r.pagaEm ?? null }, hoje);
   return <Selo tom={s.tom} icone={s.icone}>{s.texto}</Selo>;
@@ -503,7 +535,7 @@ function LinhaRecebimento({ r, f, hoje, aoFoiPaga, comSituacao }: {
   const era = r.eraPagoAntes && !r.cancelado;
   const atraso = era && r.podeVoltar ? textoAtraso(r.vencimento, hoje) : null;
   return (
-    <tr className={r.cancelado ? "ct-cancelado" : undefined}>
+    <tr className={r.cancelado && !r.baixa ? "ct-cancelado" : undefined}>
       <td>
         <b className="num">{dataBr(r.vencimento)}</b>
         {atraso && atraso !== "Vence hoje" ? <><br /><Selo tom="urgente" icone="alerta">{atraso}</Selo></> : null}
@@ -520,7 +552,7 @@ function LinhaRecebimento({ r, f, hoje, aoFoiPaga, comSituacao }: {
             ) : null}
           </span>
         ) : r.descricao}
-        {r.cancelado ? <><br /><small>Cancelado: {r.cancelado.motivo}</small></> : null}
+        {notaForaDaCobranca(r) ? <><br /><small>{notaForaDaCobranca(r)}</small>{r.baixa ? <><br /><small>{r.baixa.explicacao}</small></> : null}</> : r.cancelado ? <><br /><small>Cancelado: {r.cancelado.motivo}</small></> : null}
         {r.base ? <><br /><small>Base de {reais(r.base.valor)}, informada por {r.base.por.nome}</small></> : null}
       </td>
       <td data-r="Condição">{c ? <SeloTipo c={c} curto /> : null}</td>
@@ -673,7 +705,7 @@ function FichaConteudo({ id, aba, escritorio, aoNumero }: { id: string; aba: Aba
   if (!f) return <Carregando rotulo="Carregando o contrato…" linhas={4} />;
   const ficha = f;
   const s = SELO_CONTRATO[f.situacao];
-  const vivos = f.recebimentos.filter((r) => !r.cancelado).length;
+  const vivos = f.recebimentos.filter(naProgramacao).length;
   const mudar = f.situacao !== "ENCERRADO" ? (
     <a data-muda className="btn btn-sec" href={ROTAS_CONTRATOS.mudar(f.id)}>
       <Icone nome="lapis" className="ico" />

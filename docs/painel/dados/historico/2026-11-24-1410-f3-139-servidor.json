@@ -1,0 +1,14 @@
+{
+  "data": "24/11/2026",
+  "inicio": "14:10",
+  "fim": "16:30",
+  "texto": "Baixa de parcela vencida sem receber no servidor (migration 1010): parcela_baixas com o motivo, a explicação, quem e quando; dar baixa e desfazer com prévia, as custas junto (FI-25), a recusa de conflito e a repetição tratada como sucesso; o acerto e o fechamento do caso passam a valer com tudo recebido ou baixado com motivo (FI-08); a régua não trata a baixa como Pagou; Contratos sem o Financeiro vê só Fora da cobrança; o aviso BAIXA_RENEGOCIADA; a IA trata a parcela como assunto da equipe; o relatório não reescreve o passado. pgTAP 142 e as rotas da api-portal. Aplicar a 1010 e publicar fica no P16.",
+  "refs": [
+    "F3.139",
+    "FI-24",
+    "FI-25",
+    "FI-08",
+    "EX-16",
+    "P16"
+  ]
+}

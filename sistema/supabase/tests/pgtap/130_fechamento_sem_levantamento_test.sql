@@ -173,7 +173,7 @@ select is((select p -> 'parcela' ->> 'id' from ac, jsonb_array_elements(a -> 'pe
 select is((select a -> 'aVencer' from ac), 'null'::jsonb, 'pergunta 1: com a parcela vencida, não há "pronto depois de"');
 select is((select jsonb_build_array(a -> 'recebidoNoCaso', a -> 'contratosNoRecebido') from ac), '[650000, 2]'::jsonb,
   'FI-08: recebido no caso, R$ 6.500,00, de 2 contratos');
-select is((select a -> 'reembolsos' from ac), '{"adiantado": 41230, "reembolsado": 0}'::jsonb, 'FI-08: o adiantado, sem a conta cancelada');
+select is((select a -> 'reembolsos' from ac), '{"adiantado": 41230, "reembolsado": 0, "baixado": 0}'::jsonb, 'FI-08: o adiantado, sem a conta cancelada');
 select is((select jsonb_agg(jsonb_build_array(j ->> 'numero', j -> 'encerradoPor' ->> 'nome')) from ac, jsonb_array_elements(a -> 'contratosJaEncerrados') j),
   jsonb_build_array(jsonb_build_array((select numero from contratos, ct where id = ct.claudio), 'Felipe Matos')),
   'decisão 9: o contrato de Cláudio já encerrado, por Felipe');

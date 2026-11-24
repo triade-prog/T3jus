@@ -77,7 +77,7 @@ select portal_financeiro_receber_registrar(diego, rm, r.id, jsonb_build_object('
   from ids, ct, recebimentos_previstos r where r.contrato_id = ct.id;
 create temp table a1 as select portal_financeiro_caso_acerto(diego, rm, cs.id) a from ids, cs;
 select is((select a -> 'pendencias' -> 0 ->> 'nome' from a1), 'Dr. Rui Tavares', 'só o perito falta');
-select is((select a -> 'parcelas' from a1), '{"falta": 0, "pagas": 2, "total": 2, "ultima": "2026-12-20"}'::jsonb,
+select is((select a -> 'parcelas' from a1), '{"falta": 0, "pagas": 2, "total": 2, "ultima": "2026-12-20", "baixadas": 0}'::jsonb,
   'as parcelas do contrato todas recebidas, com a última');
 select ok((select (a -> 'pendencias') @> '[{"tipo": "REEMBOLSO"}]' from a1) is false, 'o reembolso feito no alvará não pende');
 

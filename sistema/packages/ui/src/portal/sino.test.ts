@@ -69,11 +69,48 @@ describe("F3.147: a frase de cada motivo (NOTAS.md)", () => {
     expect(fraseCasoPronto({ motivo: "PAGAMENTO", parcelas: 3, clientes: ["Paulo Henrique Dias"] })).toBe("Nada falta receber de Paulo Henrique Dias.");
   });
   it("PT-02: nenhuma frase tem valor em reais", () => {
-    const motivos = ["PAGAMENTO", "REEMBOLSO", "EXITO", "CONTRATO_ENCERRADO", "CASO_ENCERRADO", "OUTRO_CASO", "ROTINA"];
+    const motivos = ["PAGAMENTO", "REEMBOLSO", "EXITO", "BAIXA", "CONTRATO_ENCERRADO", "CASO_ENCERRADO", "OUTRO_CASO", "ROTINA"];
     for (const motivo of motivos) {
       const x = descreverAviso(aviso({ motivo, quem: "Diego Almeida", parcelas: 7, exito: "PAGO", denovo: true, reembolso: "Cópia do processo" }), AGORA);
       expect(`${String(x.detalhe)} ${x.onde}`).not.toMatch(/R\$|\d+,\d{2}/);
     }
+  });
+});
+
+describe("F3.139: baixa sem receber no sino", () => {
+  it("decisão 36: o caso pronto pela baixa diz quem deu baixa sem receber, em qual parcela e de quem", () => {
+    const x = descreverAviso(aviso({ motivo: "BAIXA", quem: "Marina Ribeiro", parcela: "Parcela 6 de 6", clienteParcela: "Noemi Bastos Carvalho" }), AGORA);
+    expect(x.detalhe).toBe("Marina Ribeiro deu baixa sem receber na parcela 6/6, e nada falta receber de Noemi Bastos Carvalho. Confira o acerto e encerre.");
+  });
+  it("pergunta 3b: Contratos recebe só o combinado e o contrato, sem valor do atraso nem motivo", () => {
+    const a: AvisoSino = {
+      id: "a2", tipo: "BAIXA_RENEGOCIADA", origem: "contratos", origemId: CT, em: "2026-11-18T11:40:00-03:00", lido: false,
+      dados: { quem: "Diego Almeida", cliente: "Sebastião Lopes", contrato: "C-2026-019", contratoId: CT, combinado: "Parcelado: 2 × R$ 250,00, em dezembro e janeiro" },
+    };
+    const x = descreverAviso(a, AGORA);
+    expect(x.detalhe).toBe("Diego Almeida combinou uma condição nova com Sebastião Lopes: Parcelado: 2 × R$ 250,00, em dezembro e janeiro. Mude as condições do C-2026-019.");
+    expect(x.onde).toBe("Abrir o C-2026-019 em Contratos");
+    expect(x.href).toBe(`/contratos/contratos/${CT}`);
+    expect(x.selo?.texto).toBe("Mudar as condições");
+    expect(String(x.detalhe)).not.toMatch(/atraso|Inadimpl|Perdoad/);
+  });
+  it("nota 7: o carnê desatualizado diz que a parcela teve baixa sem receber", () => {
+    const a: AvisoSino = {
+      id: "a3", tipo: "CARNE_DESATUALIZADO", origem: "contratos", origemId: CT, em: "2026-11-18T10:14:00-03:00", lido: false,
+      dados: { quem: "Marina Ribeiro", cliente: "Noemi Bastos Carvalho", motivo: "BAIXADA", parcela: "Parcela 6 de 6" },
+    };
+    expect(String(descreverAviso(a, AGORA).detalhe)).toContain("Marina Ribeiro deu baixa sem receber na parcela 6/6.");
+    expect(String(descreverAviso({ ...a, dados: { ...a.dados, motivo: "BAIXA_DESFEITA" } }, AGORA).detalhe)).toContain("Marina Ribeiro desfez a baixa sem receber da parcela 6/6, que voltou para A receber.");
+  });
+  it("revisão, nota 1 (PT-02): sem o Financeiro, o servidor não manda quem; o aviso não diz \"Alguém da equipe\"", () => {
+    const a: AvisoSino = {
+      id: "a4", tipo: "CARNE_DESATUALIZADO", origem: "contratos", origemId: CT, em: "2026-11-18T10:14:00-03:00", lido: false,
+      dados: { cliente: "Noemi Bastos Carvalho", motivo: "BAIXADA", parcela: "Parcela 6 de 6" },
+    };
+    const det = String(descreverAviso(a, AGORA).detalhe);
+    expect(det).toMatch(/^A parcela 6\/6 teve baixa sem receber\. O carnê ainda mostra o que era\./);
+    expect(det).not.toMatch(/Alguém|Marina/);
+    expect(String(descreverAviso({ ...a, dados: { ...a.dados, motivo: "BAIXA_DESFEITA" } }, AGORA).detalhe)).toMatch(/^A parcela 6\/6 voltou para A receber\./);
   });
 });
 

@@ -18,6 +18,7 @@ import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 import { valorDaProposta } from "./comercial.ts";
 import { juntarComE } from "./clientes.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
+import { nomeDaParcela } from "./baixa.ts";
 import { linkFechamentoContrato } from "./fechamento.ts";
 import { ROTAS_PASSO } from "./fichaLigada.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
@@ -79,6 +80,8 @@ export function fraseCasoPronto(d: DadosAviso): string {
       return d.exito === "PAGO"
         ? `${quem} registrou o pagamento do êxito de ${cl}.`
         : `${quem} marcou o êxito de ${cl} como não cobrado.${parcelasJaPagas(d.parcelas)}`;
+    case "BAIXA":
+      return `${quem} deu baixa sem receber na ${d.parcela ? nomeDaParcela(d.parcela) : "parcela"}, e nada falta receber de ${d.clienteParcela ?? cl}.`;
     case "CONTRATO_ENCERRADO":
       return `${quem} encerrou o ${d.contratoEncerrado ?? d.contrato ?? "contrato"}, e as parcelas que faltavam foram canceladas.`;
     case "CASO_ENCERRADO":
@@ -88,6 +91,14 @@ export function fraseCasoPronto(d: DadosAviso): string {
     default:
       return `Nada falta receber de ${cl}.`;
   }
+}
+
+/** Revisão do código, nota 1 (pergunta 2): sem o Financeiro, o aviso do carnê não diz quem deu ou
+ *  desfez a baixa sem receber; o servidor não manda "quem", e a frase fica sem autor. */
+export function baixaSemQuem(d: DadosAviso): string | null {
+  if (d.quem || (d.motivo !== "BAIXADA" && d.motivo !== "BAIXA_DESFEITA")) return null;
+  const p = d.parcela ? nomeDaParcela(d.parcela) : "parcela";
+  return d.motivo === "BAIXADA" ? `A ${p} teve baixa sem receber.` : `A ${p} voltou para A receber.`;
 }
 
 /** O estado de agora do aviso: o selo, o destino, a linha "Agora:" e o trecho para o leitor de tela.
@@ -432,11 +443,13 @@ export function descreverAviso(a: AvisoSino, agora: Date = new Date(), areas?: r
       // F3.80: a parcela ou a chave Pix mudou depois do carnê; gera-se de novo na folha "Carnê".
       const oQue = d.motivo === "CHAVE_PIX" ? "trocou a chave Pix do escritório"
         : d.motivo === "CANCELADA" ? `cancelou ${d.parcela ? `a ${d.parcela.toLowerCase()}` : "uma parcela"}`
+        : d.motivo === "BAIXADA" ? `deu baixa sem receber ${d.parcela ? `na ${nomeDaParcela(d.parcela)}` : "numa parcela"}`
+        : d.motivo === "BAIXA_DESFEITA" ? `desfez a baixa sem receber ${d.parcela ? `da ${nomeDaParcela(d.parcela)}` : "de uma parcela"}, que voltou para A receber`
         : d.motivo === "VENCIMENTO" ? `mudou o vencimento ${d.parcela ? `da ${d.parcela.toLowerCase()}` : "de uma parcela"}`
         : `mudou o valor ${d.parcela ? `da ${d.parcela.toLowerCase()}` : "de uma parcela"}`;
       return {
         icone: "carne", titulo: <>O carnê de <b>{d.cliente}</b>{d.contrato ? ` · ${d.contrato}` : ""} ficou desatualizado</>,
-        detalhe: `${d.quem ?? "Alguém da equipe"} ${oQue}. ${d.gerou ? "O carnê que você gerou" : "O carnê"}${d.gerado ? ` em ${diaDe(d.gerado).split("-").reverse().slice(0, 2).join("/")}` : ""} ainda mostra o que era. Gere de novo e entregue o novo ao cliente.`,
+        detalhe: `${baixaSemQuem(d) ?? `${d.quem ?? "Alguém da equipe"} ${oQue}.`} ${d.gerou ? "O carnê que você gerou" : "O carnê"}${d.gerado ? ` em ${diaDe(d.gerado).split("-").reverse().slice(0, 2).join("/")}` : ""} ainda mostra o que era. Gere de novo e entregue o novo ao cliente.`,
         onde: "Abrir o carnê", href: ROTAS_CONTRATOS.recebimentos(a.origemId), selo: { tom: "atencao", texto: "Desatualizado" },
       };
     }
@@ -507,6 +520,16 @@ export function descreverAviso(a: AvisoSino, agora: Date = new Date(), areas?: r
         numeros: true,
       };
     }
+    case "BAIXA_RENEGOCIADA":
+      // F3.139 (pergunta 3 da Carol): quem deu a baixa renegociada não tem Contratos. Só o combinado
+      // e o número do contrato; nada do atraso nem do motivo, que são do Financeiro.
+      return {
+        icone: "trocar", titulo: <>Condição nova a registrar no <b>{d.contrato}</b>{d.cliente ? `, de ${d.cliente}` : ""}</>,
+        detalhe: `${d.quem ?? "Alguém do Financeiro"} combinou uma condição nova com ${d.cliente ?? "o cliente"}: ${d.combinado ?? ""}${/[.!?]$/.test(d.combinado ?? "") ? "" : "."} Mude as condições do ${d.contrato ?? "contrato"}.`,
+        onde: `Abrir o ${d.contrato ?? "contrato"} em Contratos`,
+        href: ROTAS_CONTRATOS.contrato(d.contratoId ?? a.origemId),
+        selo: { tom: "atencao", texto: "Mudar as condições" },
+      };
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,

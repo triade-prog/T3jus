@@ -17,6 +17,8 @@ describe("Financeiro, A receber (FI-01 a FI-04)", () => {
   it("a situação da parcela em palavras", () => {
     const hoje = "2026-11-18"; // quarta
     expect(seloParcela({ situacao: "VENCIDA", vencimento: "2026-10-25", falta: 1, pagaEm: null }, hoje).texto).toBe("Vencida há 24 dias");
+    // F3.139 (nota 9): "baixa" sozinha quer dizer recebido; o selo diz "sem receber", em tom neutro.
+    expect(seloParcela({ situacao: "BAIXADA", vencimento: "2026-11-10", falta: 0, pagaEm: null }, hoje)).toEqual({ tom: "neutro", texto: "Baixa sem receber" });
     expect(seloParcela({ situacao: "A_VENCER", vencimento: "2026-11-19", falta: 1, pagaEm: null }, hoje).texto).toBe("Amanhã");
     expect(seloParcela({ situacao: "A_VENCER", vencimento: "2026-11-20", falta: 1, pagaEm: null }, hoje).texto).toBe("Sexta");
     expect(seloParcela({ situacao: "A_VENCER", vencimento: "2026-11-28", falta: 1, pagaEm: null }, hoje).texto).toBe("A vencer");

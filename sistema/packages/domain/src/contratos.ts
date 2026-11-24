@@ -82,6 +82,10 @@ export interface RecebimentoPrevisto {
   origem: "PROGRAMADO" | "BASE";
   criadoEm: string;
   cancelado: { em: string; motivo: string } | null;
+  /** Baixa sem receber (F3.139), só para quem tem o Financeiro: o motivo, quem e quando. */
+  baixa?: { motivo: "PERDOADA" | "INADIMPLENCIA" | "RENEGOCIADA"; explicacao: string; valor: number; por: PessoaRef; em: string };
+  /** Baixa sem receber, para quem não tem o Financeiro (pergunta 2): só que saiu da cobrança. */
+  foraDaCobranca?: boolean;
   /** Paga antes do T3jus, vinda da planilha (F3.73): só informação, nasce cancelada. */
   pagoAntes?: boolean;
   /** Paga antes do T3jus que já voltou para A receber ("Não foi paga", F3.84): sai da folha. */

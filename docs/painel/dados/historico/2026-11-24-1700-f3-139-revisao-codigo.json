@@ -1,0 +1,16 @@
+{
+  "data": "24/11/2026",
+  "inicio": "17:00",
+  "fim": "17:30",
+  "texto": "Correções da revisão do código da baixa sem receber: o aviso do carnê não diz a quem não tem o Financeiro quem deu ou desfez a baixa; a janela não trava com as custas marcadas e \"Renegociada\", e o foco vai ao motivo; as custas com baixa junto, \"De onde veio\", Contratos com o Financeiro, a ficha com só renegociada, o histórico de cobrança e o botão do carnê seguem o desenho; sugestões pequenas aplicadas e três anotadas no F3.139. No P16, a 1010 vai pelo apply_migration depois das que já estão na main (de 1020 a 1091).",
+  "refs": [
+    "F3.139",
+    "FI-24",
+    "FI-25",
+    "FI-08",
+    "EX-16",
+    "PT-02",
+    "PT-10",
+    "P16"
+  ]
+}

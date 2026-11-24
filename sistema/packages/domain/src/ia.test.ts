@@ -86,6 +86,17 @@ describe("PT-11 o que a IA recebe", () => {
     expect(t).toContain("contato autorizado da ficha do cliente Hélio Batista Corrêa");
     expect(t).not.toContain("Compromissos");
   });
+  it("F3.139: a parcela com baixa sem receber é assunto da equipe, sem valor e sem dizer que nada está em aberto", () => {
+    const parcelas = [{ descricao: "Parcela 3/6", vencimento: "2026-12-10", valor: 50000, falta: 50000, situacao: "A_VENCER" }];
+    const t = instrucoesIa(ctx({ dados: { parcelas, parcelasComEquipe: 1 } }));
+    expect(t).toContain("uma parcela que é assunto da equipe");
+    expect(t).toContain("passe para uma pessoa com o motivo NAO_SOUBE");
+    const so = instrucoesIa(ctx({ dados: { parcelas: [], parcelasComEquipe: 2 } }));
+    expect(so).toContain("2 parcelas que são assunto da equipe");
+    expect(so).not.toContain("Parcelas em aberto: nenhuma.");
+    expect(instrucoesIa(ctx({ dados: { parcelas: [] } }))).toContain("Parcelas em aberto: nenhuma.");
+    expect(instrucoesIa(ctx({ dados: { parcelas: [], parcelasComEquipe: 0 } }))).not.toContain("assunto da equipe");
+  });
   it("número desconhecido não recebe caso e vai para o Comercial", () => {
     const t = instrucoesIa(ctx({ cliente: null, contato: null, dados: {} }));
     expect(t).toContain("número desconhecido");

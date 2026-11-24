@@ -12,7 +12,7 @@ import {
   cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, razaoSocialEmBranco, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
   type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido, type ContaPagar, CATEGORIAS_SAIDA,
-  type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type FechamentoNoContrato,
+  type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type FechamentoNoContrato, type PessoaRef,
 } from "@t3jus/domain";
 import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
@@ -20,6 +20,10 @@ import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { contar, diaBr, diaCurto, lerDia, nomeDoMes } from "./agenda.ts";
 import { BotaoCarne, FolhaCarne } from "./Carne.tsx";
+import { JanelaBaixa, JanelaDesfazerBaixa } from "./BaixaParcela.tsx";
+import {
+  avisoBaixaFeita, avisoDesfeita, casoPronto, ehAnotacaoDoDesfazer, linhasDaBaixa, nomeDaParcela, notaDaBaixa, notaReembolsoBaixado, responsavelDepoisDoDesfazer,
+} from "./baixa.ts";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { diasEntre } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
@@ -29,7 +33,7 @@ import { BlocoExitos, JanelaConferir, JanelaNaoCobrar } from "./FinanceiroExito.
 import { comoVolta, gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela, textoCobranca } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { juntarComE } from "./clientes.ts";
-import { ambarEncerra, casoDoHash, linhaEAtalhoDaPendencia, nomesCurtos, numerosDoFechamento } from "./fechamento.ts";
+import { ambarEncerra, casoDoHash, temBaixa, linhaEAtalhoDaPendencia, nomesCurtos, numerosDoFechamento } from "./fechamento.ts";
 import {
   DeOndeVeio, diaOuInstante, FechadosAntes, FechamentoNaLateral, JanelaFechamento, QuadroFechamentoContrato, textoJaEncerradoPorOutro,
 } from "./FechamentoCaso.tsx";
@@ -843,7 +847,7 @@ function dirDoFechamento({ f, fp, fechado, comLev, aoEncerrar }: {
     return dir("Fechamento do caso", <Selo tom="ok" icone="check">{nada ? "Nada a receber" : "Nada falta"}</Selo>,
       nada && ca
         ? <><b>{ca.nome} terminou{ca.resultado === "PERDA" ? " com perda" : ""}{ca.encerradoEm ? ` em ${diaOuInstante(ca.encerradoEm)}` : ""}.</b><br />{f.parcelas.length ? "Não há nada a receber nem a reembolsar." : "O contrato era só de êxito: não há nada a receber nem a reembolsar."}</>
-        : <><b>Tudo recebido{a.reembolsos?.adiantado ? " e reembolsado" : ""}.</b><br />O caso {ca?.nome ?? ""} já pode ser encerrado no financeiro.</>,
+        : <><b>{temBaixa(a) ? "Tudo recebido ou baixado com motivo" : `Tudo recebido${a.reembolsos?.adiantado ? " e reembolsado" : ""}`}.</b><br />O caso {ca?.nome ?? ""} já pode ser encerrado no financeiro.</>,
       <button className="btn btn-pri" type="button" onClick={(e) => aoEncerrar(e.currentTarget)}><Icone nome="cadeado" className="ico" />Encerrar o caso no financeiro</button>);
   }
   const aberto = f.parcelas.some((p) => p.situacao === "A_VENCER" || p.situacao === "PARCIAL");
@@ -932,6 +936,8 @@ function SituacaoNaFicha({ p, hoje }: { p: ParcelaDoContrato; hoje: string }) {
     if (atraso > 0) nota = `${contar(atraso, "dia", "dias")} de atraso; baixou ${mesReferencia(p.vencimento, hoje)}${p.pagaEm.slice(0, 7) !== p.vencimento.slice(0, 7) ? `, no caixa entrou em ${nomeDoMes(p.pagaEm)}` : ""}.`;
   } else if (p.situacao === "PARCIAL" || (p.situacao === "VENCIDA" && p.recebido > 0)) {
     nota = `Recebido ${reais(p.recebido)} de ${reais(p.valor)}.`;
+  } else if (p.situacao === "BAIXADA" && p.baixa) {
+    nota = notaDaBaixa(p.baixa);
   } else if (p.situacao === "CANCELADA" && p.cancelado) {
     nota = p.cancelado.motivo;
   } else if (p.cobranca && p.situacao === "VENCIDA") {
@@ -953,8 +959,16 @@ function SituacaoNaFicha({ p, hoje }: { p: ParcelaDoContrato; hoje: string }) {
 
 const NOME_EVENTO: Record<string, string> = { LIGACAO: "ligou", MENSAGEM: "mandou mensagem", ANOTACAO: "anotou", PASSADA: "" };
 
-function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: string; aoAnotar: () => void }) {
+function Cobranca({ p, baixada, cliente, responsavel, hoje, aoAnotar }: {
+  p: ParcelaDoContrato | null; baixada: ParcelaDoContrato | null; cliente: string; responsavel: PessoaRef; hoje: string; aoAnotar: () => void;
+}) {
   const c = p?.cobranca;
+  // Revisão, nota 8: sem parcela em cobrança, o histórico da parcela com baixa sem receber continua aqui.
+  const h = p ?? baixada;
+  const linhas = h ? [
+    ...linhasDaBaixa(h).map((l) => ({ em: l.em, baixa: l, e: null })),
+    ...h.eventos.filter((e) => !ehAnotacaoDoDesfazer(e, h.baixaDesfeita)).map((e) => ({ em: e.em, baixa: null, e })),
+  ].sort((a, b) => (a.em < b.em ? 1 : a.em > b.em ? -1 : 0)) : [];
   return (
     <section className="folha" aria-labelledby="t-cob" style={{ overflow: "hidden" }}>
       <div className="folha-cab">
@@ -963,7 +977,9 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
           {p ? <p className="sub">{p.descricao}, de {mesReferencia(p.vencimento, hoje)}</p> : null}
         </div>
       </div>
-      {!p ? (
+      {!p && baixada ? (
+        <p className="fi-cob-sem">Nenhuma parcela de {primeiroNome(cliente)} está em cobrança. O histórico da {nomeDaParcela(baixada.descricao)} continua aqui e volta a valer se a baixa for desfeita.</p>
+      ) : !p ? (
         <p className="fi-cob-sem">Nenhuma parcela em aberto. A cobrança volta a aparecer quando houver o que receber.</p>
       ) : (
         <div className="fi-cob">
@@ -976,7 +992,7 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
                 <dt>Próxima ação</dt>
                 <dd>
                   {quandoAcao(c.proxData, hoje).replace(/^./, (x) => x.toUpperCase())}: {c.proxOque}
-                  <small>responsável: {c.proxResponsavel.nome}</small>
+                  <small>{ehAnotacaoDoDesfazer(c, p.baixaDesfeita) ? responsavelDepoisDoDesfazer(c.proxResponsavel, p.baixaDesfeita, responsavel) : `responsável: ${c.proxResponsavel.nome}`}</small>
                 </dd>
               </div>
             </dl>
@@ -989,12 +1005,21 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
           </button>
         </div>
       )}
-      {p && p.eventos.length ? (
+      {linhas.length ? (
         <div className="eventos-dia" style={{ paddingTop: 0 }}>
           <h3>Histórico de cobrança</h3>
           <ol className="eventos">
-            {p.eventos.map((e, i) => (
-              <li key={`${e.em}-${i}`}>
+            {linhas.map(({ em, baixa, e }, i) => baixa ? (
+              <li key={`${em}-${i}`}>
+                <time dateTime={em}>{diaCurto(diaDoInstante(em))}</time>
+                <span className={i === 0 ? "pto forte" : "pto"} aria-hidden="true" />
+                <div>
+                  <p><b>{baixa.quem}</b> {baixa.oque}</p>
+                  <small>{baixa.texto}</small>
+                </div>
+              </li>
+            ) : e ? (
+              <li key={`${em}-${i}`}>
                 <time dateTime={e.em}>{diaCurto(diaDoInstante(e.em))}</time>
                 <span className={i === 0 ? "pto forte" : "pto"} aria-hidden="true" />
                 <div>
@@ -1010,7 +1035,7 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
                   </small>
                 </div>
               </li>
-            ))}
+            ) : null)}
           </ol>
         </div>
       ) : null}
@@ -1023,6 +1048,10 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   const { dados, recarregar } = useCarga<ParcelasContrato>(`/v1/escritorio/financeiro/contratos/${id}`);
   const pessoas = usePessoas();
   const [registrar, setRegistrar] = useState<ParcelaDoContrato | null>(null);
+  // F3.139: dar baixa sem receber e desfazer; depois, o foco vai ao botão que passa a existir na linha.
+  const [baixar, setBaixar] = useState<ParcelaDoContrato | null>(null);
+  const [desfazer, setDesfazer] = useState<ParcelaDoContrato | null>(null);
+  const focoNaLinha = useRef<string | null>(null);
   const [anotar, setAnotar] = useState(false);
   const [carne, setCarne] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
@@ -1040,6 +1069,11 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   // Decisão 12 (seção 4.6): chegar por "Ver o acerto" (#t-fecha ou #t-fecha-<caso>) foca o título da folha,
   // também na troca de tela sem recarga.
   const carregou = !!dados && dados !== "erro";
+  useEffect(() => {
+    if (!focoNaLinha.current || !carregou) return;
+    const b = document.querySelector<HTMLElement>(`[data-baixa="${CSS.escape(focoNaLinha.current)}"]`);
+    if (b) { b.focus(); focoNaLinha.current = null; }
+  }, [carregou, dados]);
   useEffect(() => {
     if (!carregou) return;
     const focar = () => {
@@ -1068,6 +1102,8 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
     <a className="btn btn-sec" href={ROTAS_CONTRATOS.contrato(f.id)}><Icone nome="pena" className="ico" />Ver o contrato</a>
   ) : undefined;
   const vivas = f.parcelas.filter((p) => p.situacao !== "CANCELADA");
+  const baixadoNum = f.totais.baixado ?? 0;
+  const renegociadoNum = f.totais.renegociado ?? 0;
   // F3.132: os fechamentos dos casos do contrato (0901). Uma folha por caso ainda sem fechamento, logo
   // depois do âmbar (a confirmar, b); os fechados e os com levantamento vão para a lateral.
   const fechamentos = f.fechamentos ?? [];
@@ -1124,25 +1160,36 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                 <p className="sub">Cada parcela guarda o mês a que se refere, mesmo quando é paga depois.</p>
               </div>
               <div className="acoes">
-                {f.situacao === "ATIVO" && vivas.some((p) => p.situacao !== "PAGA") ? <BotaoCarne aoAbrir={() => setCarne(true)} /> : null}
+                {f.situacao === "ATIVO" && vivas.some((p) => p.situacao !== "PAGA" && p.situacao !== "BAIXADA") ? <BotaoCarne aoAbrir={() => setCarne(true)} /> : null}
                 {verContrato}
               </div>
             </div>
             <dl className="fi-quatro">
-              <div><dt>Contratado</dt><dd className="num">{reais(f.totais.contratado)}</dd></div>
+              <div>
+                <dt>Contratado</dt><dd className="num">{reais(f.totais.contratado)}</dd>
+                {renegociadoNum ? <dd className="fi-motivo">sem os {reais(renegociadoNum)} renegociados</dd> : null}
+              </div>
               <div><dt>Recebido</dt><dd className="num">{reais(f.totais.recebido)}</dd></div>
               <div><dt>Em atraso</dt><dd className={f.totais.atraso ? "num urg" : "num"}>{reais(f.totais.atraso)}</dd></div>
               <div><dt>A vencer</dt><dd className="num">{reais(f.totais.aVencer)}</dd></div>
+              {baixadoNum || renegociadoNum ? (
+                <div>
+                  <dt>{baixadoNum ? "Baixado sem receber" : "Renegociado"}</dt>
+                  <dd className="num">{reais(baixadoNum || renegociadoNum)}</dd>
+                  {baixadoNum && renegociadoNum ? <dd className="fi-motivo">mais {reais(renegociadoNum)} renegociados</dd> : null}
+                  {!baixadoNum && renegociadoNum ? <dd className="fi-motivo">vira parcelas novas em Contratos</dd> : null}
+                </div>
+              ) : null}
             </dl>
             {falhaAbrir ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="O comprovante não abriu.">{falhaAbrir}</Aviso></div> : null}
             {f.parcelas.length ? (
               <table className="hn-tab fi-tab" data-prio-tabela="parcelas" data-sai2="640" data-cartoes="560">
                 <caption className="sr">Parcelas do contrato</caption>
-                <colgroup>{["21%", "11%", "9%", "28%", "14%", "17%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+                <colgroup>{["21%", "11%", "9%", "24%", "14%", "21%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                 <thead>
                   <tr>
                     <th scope="col">Parcela</th><th scope="col">Vence</th><th scope="col">Forma</th><th scope="col">Situação</th>
-                    <th scope="col" style={{ textAlign: "right" }}>Valor</th><th scope="col">Recibo</th>
+                    <th scope="col" style={{ textAlign: "right" }}>Valor</th><th scope="col">Recibo e ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1150,7 +1197,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                     const recibos = p.pagamentos.filter((x) => x.recibo);
                     const comprovantes = p.pagamentos.flatMap((x) => (anexos.porDono.get(x.id) ?? []).slice(0, 1));
                     const semComprovante = p.pagamentos.find((x) => !anexos.porDono.has(x.id));
-                    const cls = p.situacao === "VENCIDA" ? "fi-atraso" : p.situacao === "PAGA" ? "fi-pago" : p.situacao === "CANCELADA" ? "fi-cancelada" : undefined;
+                    const cls = p.situacao === "VENCIDA" ? "fi-atraso" : p.situacao === "PAGA" ? "fi-pago" : p.situacao === "CANCELADA" ? "fi-cancelada" : p.situacao === "BAIXADA" ? "fi-baixada" : undefined;
                     return (
                       <tr key={p.id} className={cls}>
                         <td><div className="fi-dt"><b>{p.descricao}</b><small>{mesReferencia(p.vencimento, hoje)}</small></div></td>
@@ -1158,9 +1205,10 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                         <td data-r="Forma">{nomeForma(p.forma) ?? "—"}</td>
                         <td data-r="Situação"><SituacaoNaFicha p={p} hoje={hoje} /></td>
                         <td data-r="Valor" className="fi-v num">{reais(p.valor)}</td>
-                        <td data-r="Recibo">
+                        <td data-r="Recibo e ações">
+                          <div className="fi-docs">
                           {recibos.length || p.pagamentos.length ? (
-                            <div className="fi-docs">
+                            <>
                               {recibos.map((x) => (
                                 <LinkRecibo key={x.id} pagamento={x.id} numero={`${x.recibo!.ano}-${numeroRecibo(x.recibo!)}`} />
                               ))}
@@ -1174,12 +1222,23 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                                   <Icone nome="enviar" className="ico" />Anexar comprovante<span className="sr"> da {p.descricao.toLowerCase()}</span>
                                 </button>
                               ) : null}
-                            </div>
+                            </>
                           ) : p.situacao === "VENCIDA" || p.situacao === "PARCIAL" ? (
                             <button className="btn btn-sec btn-compacto" type="button" onClick={() => setRegistrar(p)}>
                               Registrar<span className="sr"> recebimento da {p.descricao.toLowerCase()}</span>
                             </button>
-                          ) : <span className="fi-pq">—</span>}
+                          ) : p.situacao === "BAIXADA" ? null : <span className="fi-pq">—</span>}
+                          {p.situacao === "VENCIDA" ? (
+                            <button className="btn btn-sec btn-compacto fi-bx" type="button" data-baixa={p.id} onClick={() => setBaixar(p)}>
+                              Dar baixa sem receber<span className="sr">: {nomeDaParcela(p.descricao)}, de {dataBr(p.vencimento)}</span>
+                            </button>
+                          ) : null}
+                          {p.situacao === "BAIXADA" ? (
+                            <button className="btn btn-sec btn-compacto fi-bx" type="button" data-baixa={p.id} onClick={() => setDesfazer(p)}>
+                              <Icone nome="desfazer" className="ico" />Desfazer a baixa sem receber<span className="sr">: {nomeDaParcela(p.descricao)}</span>
+                            </button>
+                          ) : null}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1209,12 +1268,46 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
           {lateral.map((x) => <FechamentoNaLateral key={`f-${x.casoId}`} fc={x} contratoId={f.id} primeira={x.casoId === primeiroFecha} />)}
           <FechadosAntes lista={antes} />
           <FolhaCarne contrato={f.id} area="FINANCEIRO" escritorio={escritorio} aberta={carne} aoAbrir={() => setCarne(true)} aoFechar={() => setCarne(false)} />
-          <Cobranca p={emCobranca} hoje={hoje} aoAnotar={() => setAnotar(true)} />
+          <Cobranca p={emCobranca} baixada={emCobranca ? null : f.parcelas.filter((x) => x.situacao === "BAIXADA").at(-1) ?? null}
+            cliente={f.cliente.nome} responsavel={f.responsavel} hoje={hoje} aoAnotar={() => setAnotar(true)} />
         </aside>
       </div>
       {registrar ? (
         <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} escritorio={escritorio} aoFechar={() => setRegistrar(null)}
           aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); }} />
+      ) : null}
+      {baixar ? (
+        <JanelaBaixa p={baixar} f={f} hoje={hoje} aoFechar={() => setBaixar(null)}
+          aoFeito={(r, custasFicam) => {
+            setBaixar(null);
+            const a = avisoBaixaFeita(r, f.cliente.nome, custasFicam);
+            const caso = casoPronto(r.casos);
+            setFeito({
+              ...a,
+              acoes: caso || (r.baixa?.motivo === "RENEGOCIADA" && escritorio.areas.includes("CONTRATOS")) ? (
+                <>
+                  {caso ? <a className="btn btn-sec btn-compacto" href={`${ROTAS_FINANCEIRO.contrato(f.id)}#t-fecha-${caso.id}`}>Ver o fechamento</a> : null}
+                  {r.baixa?.motivo === "RENEGOCIADA" && escritorio.areas.includes("CONTRATOS")
+                    ? <a className="btn btn-sec btn-compacto" href={ROTAS_CONTRATOS.mudar(f.id)}>Mudar as condições do contrato</a> : null}
+                </>
+              ) : undefined,
+            });
+            focoNaLinha.current = r.id;
+            recarregar();
+          }} />
+      ) : null}
+      {desfazer ? (
+        <JanelaDesfazerBaixa p={desfazer} f={f} eu={escritorio.pessoa} aoFechar={() => setDesfazer(null)}
+          aoFeito={(r) => {
+            setDesfazer(null);
+            const volta = f.parcelas.find((x) => x.id === r.id) ?? null;
+            setFeito({
+              ...avisoDesfeita(r, escritorio.pessoa),
+              acoes: volta ? <button className="btn btn-sec btn-compacto" type="button" onClick={() => { setFeito(null); setRegistrar({ ...volta, ...r, pagamentos: volta.pagamentos, eventos: volta.eventos }); }}>Registrar recebimento</button> : undefined,
+            });
+            focoNaLinha.current = r.id;
+            recarregar();
+          }} />
       ) : null}
       {fechar ? (
         <JanelaFechamento casoId={fechar.casoId} acerto={fechar.acerto} nomeCaso={fechar.acerto.caso?.nome ?? "O caso"} voltar="Voltar ao contrato" noContrato
@@ -1224,12 +1317,12 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
           atalho={(p) => linhaEAtalhoDaPendencia(fechar.acerto, p, { contratoId: f.id, casoId: fechar.casoId, hoje, parcelasDaFicha, areas: escritorio.areas }).atalho}
           ajuda={(lista) => (fechar.acerto.aVencer && lista.every((p) => p.vencimento && p.vencimento >= hoje)
             ? `${fechar.acerto.aVencer.exito ? "O êxito" : "A parcela"} ainda não venceu: o caso fica pronto para encerrar depois de ${diaCurto(fechar.acerto.aVencer.vencimento)}.` : null)}
-          resumo={<ResumoPronto a={fechar.acerto} />}
+          resumo={<ResumoPronto a={fechar.acerto} />} baixar={{ hoje }}
           aoFechar={() => setFechar(null)}
           aoAtalho={(a) => {
             setFechar(null);
-            const p = a.tipo === "registrar" ? f.parcelas.find((x) => x.id === a.parcelaId) : undefined;
-            if (p) setRegistrar(p);
+            const p = a.tipo === "registrar" || a.tipo === "baixar" ? f.parcelas.find((x) => x.id === a.parcelaId) : undefined;
+            if (p && a.tipo === "baixar") setBaixar(p); else if (p) setRegistrar(p);
           }}
           aoFeito={(x) => { setFechar(null); setFeito(x); recarregar(); }}
           aoJaEncerrado={() => { setFechar(null); setJaEncerrado(fechar.casoId); recarregar(); }} />
@@ -1326,7 +1419,9 @@ function AdiantadoNoCaso({ contas }: { contas: ContaPagar[] }) {
                 {c.pagaEm ? `Paga pelo escritório em ${diaCurto(c.pagaEm)}` : `Vence em ${diaCurto(c.vencimento)}, ainda não paga`}
                 {c.adiantada?.caso ? ` · ${c.adiantada.caso.nome}` : ""} · categoria “{CATEGORIAS_SAIDA[c.categoria]}”
               </small>
-              {c.adiantada && !c.adiantada.reembolsadoEm ? (
+              {c.reembolsoBaixado ? (
+                <p className="fi-prox">{notaReembolsoBaixado(c.reembolsoBaixado)}</p>
+              ) : c.adiantada && !c.adiantada.reembolsadoEm ? (
                 <p className="fi-prox"><Icone nome="relogio" className="ico" />Reembolso combinado: <b>{comoVolta(c)}</b></p>
               ) : null}
             </div>
@@ -1334,6 +1429,7 @@ function AdiantadoNoCaso({ contas }: { contas: ContaPagar[] }) {
               <span className="fi-v num">{reais(c.valorPago ?? c.valor)}</span>
               {c.adiantada?.reembolsadoEm
                 ? <Selo tom="ok" icone="check">Reembolsado em {diaCurto(c.adiantada.reembolsadoEm)}</Selo>
+                : c.reembolsoBaixado ? <Selo tom="neutro">Baixa sem receber</Selo>
                 : <Selo tom="atencao">A reembolsar</Selo>}
             </div>
           </li>

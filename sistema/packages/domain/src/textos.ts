@@ -132,6 +132,14 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_E_PAGO_ANTES: "Esta parcela não veio da planilha como paga antes do T3jus. Recarregue a página para ver.",
   VENCIMENTO_INVALIDO: "Escolha uma data de até um ano antes do vencimento da planilha e de até três anos a partir de hoje.",
   JA_VOLTOU: "A parcela já voltou para “Pago antes do T3jus”. Recarregue a página para ver.",
+  // Baixa sem receber (F3.139). PARCELA_MUDOU e PARCELA_JA_BAIXADA têm texto próprio na janela,
+  // com quem e quando; estes são o texto de reserva.
+  PARCELA_BAIXADA: "Esta parcela teve baixa sem receber. Desfaça a baixa antes.",
+  PARCELA_NAO_VENCIDA: "Esta parcela ainda não venceu. Para parar de cobrar as próximas, mude as condições ou encerre o contrato, em Contratos.",
+  PARCELA_MUDOU: "Outra pessoa registrou um recebimento nesta parcela. Nada foi baixado. Veja como ficou antes de decidir.",
+  PARCELA_JA_BAIXADA: "Outra pessoa já deu baixa sem receber nesta parcela. Nada mais mudou.",
+  PARCELA_NAO_BAIXADA: "Esta parcela não está mais baixada. Recarregue a página para ver como ela está.",
+  RENEGOCIADA_CONTRATO_ENCERRADO: "O contrato foi encerrado enquanto a janela estava aberta, e a renegociação não vale mais. Escolha outro motivo ou deixe a parcela em atraso.",
   // O logo do escritório (F3.81).
   LOGO_FORMATO: "O T3jus não lê este arquivo como logo. Envie o logo em PNG, JPG ou SVG.",
   LOGO_GRANDE: "O arquivo passa de 1 MB. Salve o logo de novo em PNG, sem foto de fundo.",

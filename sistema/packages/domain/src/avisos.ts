@@ -73,7 +73,7 @@ export type TipoAvisoSino =
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
   | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
   | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18"
-  | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR" | "CASO_ENCERRADO_FINANCEIRO";
+  | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR" | "CASO_ENCERRADO_FINANCEIRO" | "BAIXA_RENEGOCIADA";
 
 /** Quem recebe o aviso de caso encerrado no financeiro (F3.150): quem encerra contratos ou a responsável. */
 export type PapelCasoFechou = "CONTRATOS" | "RESPONSAVEL";
@@ -81,7 +81,7 @@ export type PapelCasoFechou = "CONTRATOS" | "RESPONSAVEL";
 export interface ContratoNoAviso { id?: string; numero: string; cliente?: string; clienteId?: string; outroCaso?: string }
 
 /** O que deixou o caso pronto para encerrar no financeiro (F3.147; EX-16, EX-17). */
-export type MotivoCasoPronto = "PAGAMENTO" | "REEMBOLSO" | "EXITO" | "CONTRATO_ENCERRADO" | "CASO_ENCERRADO" | "OUTRO_CASO" | "ROTINA";
+export type MotivoCasoPronto = "PAGAMENTO" | "REEMBOLSO" | "EXITO" | "BAIXA" | "CONTRATO_ENCERRADO" | "CASO_ENCERRADO" | "OUTRO_CASO" | "ROTINA";
 
 export interface AvisoSino {
   id: string;
@@ -115,6 +115,8 @@ export interface AvisoSino {
      *  Nenhum valor em reais (PT-02). */
     clientes?: string[]; maisClientes?: number; contratoId?: string; parcelas?: number; denovo?: boolean; periodoId?: string;
     exito?: "NAO_COBRADO" | "PAGO"; reembolso?: string; contratoEncerrado?: string; outroCaso?: string; contratoSegue?: string;
+    /** Baixa sem receber (F3.139): a parcela e o cliente dela, no caso pronto; o combinado, na renegociação. */
+    clienteParcela?: string; combinado?: string;
     /** Caso encerrado no financeiro (F3.150): o papel de quem recebe, o primeiro cliente do caso, os
      *  contratos que ficaram abertos, os encerrados junto, os que já estavam encerrados, os que seguem
      *  com outro caso e, para a responsável com contrato aberto, quem encerra contratos. Sem valor (PT-02). */
