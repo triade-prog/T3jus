@@ -2,7 +2,7 @@
   "data": "24/11/2026",
   "inicio": "00:04",
   "fim": "01:16",
-  "texto": "Tabelas do Portal com base própria (F3.124): colunas secundárias saem por prioridade, coluna lateral desce em 8 telas abaixo de 1360 px e nada fica cortado de 800 a 1920 px; pendentes F3.163 (acessibilidade) e F3.164 (testes instáveis).",
+  "texto": "Tabelas do Portal com base própria (F3.124): colunas secundárias saem por prioridade, coluna lateral desce em 8 telas abaixo de 1360 px e nada fica cortado de 800 a 1920 px; pendentes F3.165 (acessibilidade) e F3.164 (testes instáveis).",
   "refs": [
     "PT-10",
     "PT-25"
