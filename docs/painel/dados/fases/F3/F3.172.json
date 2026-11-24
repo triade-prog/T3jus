@@ -1,0 +1,11 @@
+{
+  "id": "F3.172",
+  "texto": "Avisos do sino do cliente excluído a pedido do titular: tirar o nome e o serviço guardados em avisos_sino.dados (o PEDIDO_CONTRATO, que proposta_resumo_aviso copia na 0532, e o CLIENTE_FEZ_18 da 0830); hoje a exclusão não mexe neles e avisos_sino_guardiao só deixa mudar o lido",
+  "peca": "S2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1280,
+  "proximo": "Planejar a limpeza de avisos_sino.dados na exclusão (e nos já excluídos) a partir do achado A2 do plano da F3.159 e do M5 da revisão; não pede decisão da Carol (a regra já é a PT-11)"
+}

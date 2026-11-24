@@ -1,0 +1,10 @@
+{
+  "id": "P15",
+  "texto": "Aplicar no Supabase a migration 1090 (o serviço da proposta do cliente excluído vira o texto fixo, F3.159) e, com o ok da Carol depois da contagem, a 1091 (os já excluídos, sem volta)",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 150,
+  "nota": "Ordem (cabeçalho da 1091 e README, \"Arquivos do cliente excluído\"): 1) conferir com list_migrations que a 0970, a 0971 e a 1030 estão no ar; 2) aplicar a 1090; 3) rodar a contagem só de leitura (project-files t3jus/f3-156/contagem-antes-1091.sql) e mostrar à Carol; 4) com o ok dela, aplicar a 1091 e conferir que servicos_a_trocar ficou 0 e que as linhas reabertas estão na fila. O texto novo do inventário de propostas (no_fim) precisa do ok da Carol antes do merge. Não há função a publicar: a api-console de hoje já apaga <esc>/propostas/<id>-v<n>.docx. Não depende da 1080 (P14). Se der errado: recriar comercial_apagar_do_excluido com o corpo da 0190; o que a 1091 trocou não volta."
+}

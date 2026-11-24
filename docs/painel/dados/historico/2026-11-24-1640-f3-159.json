@@ -1,0 +1,12 @@
+{
+  "data": "24/11/2026",
+  "inicio": "16:40",
+  "fim": "17:05",
+  "texto": "O serviço da proposta do cliente excluído vira o texto fixo \"Serviço apagado a pedido do titular\" na exclusão, no mesmo UPDATE do escopo (migration 1090), e a 1091 faz o mesmo nos já excluídos, reabrindo na fila o Word da versão de antes (F3.159, pgTAP 141). Abertos o item do sino que ainda guarda o nome e o serviço (F3.172) e a publicação (P15); nada aplicado no Supabase.",
+  "refs": [
+    "F3.159",
+    "F3.172",
+    "P15",
+    "PT-11"
+  ]
+}
