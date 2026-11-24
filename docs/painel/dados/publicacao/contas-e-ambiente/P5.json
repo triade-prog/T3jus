@@ -5,7 +5,8 @@
     "CH-11",
     "CH-12"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 50,
-  "nota": "Conferido em 22/11/2026 às 22h45 (Brasília): migrations aplicadas até a 0860, menos a 0850; api-portal v34 e api-console v15 fixadas no commit bb30fbb. Enquanto isso, o filtro Assinados sem caso em Contratos e o aviso do Jurídico não carregam."
+  "nota": "Conferido em 22/11/2026 às 22h45 (Brasília): migrations aplicadas até a 0860, menos a 0850; api-portal v34 e api-console v15 fixadas no commit bb30fbb. Enquanto isso, o filtro Assinados sem caso em Contratos e o aviso do Jurídico não carregam.",
+  "evidencia": "Conferido em 24/11/2026, 9h50 (Bahia): a 0850 (jornada do cliente, parte 1) está aplicada no Supabase desde 23/11/2026 (list_migrations, versão 20261123015559), junto com a 0851–0854 e a 0870; a api-portal v40 está publicada do 64ad2ef (main com o #164), que já tem a rota dos assinados sem caso (/contratos/sem-caso), e a api-console v17 da main (P10)."
 }
