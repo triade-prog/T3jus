@@ -5,7 +5,8 @@
     "AP-01",
     "CH-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 110,
-  "nota": "A 0960 precisa da 0930 (termo de curatela), da 0830 e da 0853, já no ar; não precisa da 0970 (P10) e pode ir antes ou depois dela. Se a 0970 for depois, aplicar a da main, que já deixa o termo de tutela fora da lista de documentos. Ordem: aplicar a 0960 e só então publicar a api-portal (a rota nova chama portal_cliente_termo_tutela_iniciar). Antes, conferir com list_migrations se as anteriores já estão no ar."
+  "nota": "A 0960 precisa da 0930 (termo de curatela), da 0830 e da 0853, já no ar; não precisa da 0970 (P10) e pode ir antes ou depois dela. Se a 0970 for depois, aplicar a da main, que já deixa o termo de tutela fora da lista de documentos. Ordem: aplicar a 0960 e só então publicar a api-portal (a rota nova chama portal_cliente_termo_tutela_iniciar). Antes, conferir com list_migrations se as anteriores já estão no ar.",
+  "evidencia": "Migration 0960 aplicada no Supabase em 24/11/2026, 8h17 (Bahia), com o ok da Carol (cartão de decisão), depois da 0970/0971 e da 1000; funções novas e a regra cliente_documentos_tipo_check com TERMO_TUTELA conferidas no banco. api-portal v40 publicada no 64ad2ef (main com o #163 e o #164) em 24/11/2026, 8h18 (Bahia), com o repositório público; saude 200 por app.t3jus.pro e a rota POST .../termo-tutela responde (não é mais 404)."
 }
