@@ -1,0 +1,12 @@
+{
+  "id": "F3.176",
+  "texto": "Foco depois de uma falha: o \"Tentar de novo\" do suporte de acesso no Console (e o mesmo padrão em PrazoComprovante.tsx e EquipeOab.tsx) recebe o foco num requestAnimationFrame que às vezes roda antes de a falha aparecer, e o foco se perde",
+  "peca": "B4",
+  "refs": [
+    "PT-23"
+  ],
+  "status": "pendente",
+  "ordem": 1320,
+  "nota": "Achado pela F3.164: console-suporte.spec.ts:109 falha cerca de 1 em 60 nos dois projetos. Com o relógio fixo o erro some do teste, por isso esta correção vem antes do relógio fixo nesse arquivo.",
+  "proximo": "Focar depois de a falha aparecer na tela (useEffect) nas três telas"
+}

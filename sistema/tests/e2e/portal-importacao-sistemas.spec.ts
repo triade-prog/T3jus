@@ -8,7 +8,7 @@
 import { gunzipSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
 import { planilhaXlsx } from "../../packages/ui/src/portal/planilha.ts";
-import { semViolacoes } from "./console-dados.ts";
+import { fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -186,6 +186,9 @@ function backup(): Buffer {
     { nome: "Tarefas", larguras: [20], linhas: [["Tarefa"], ["Ligar para o cliente"]] },
   ]));
 }
+
+// Os prazos de desfazer (desfazerAte) são datas fixas: o relógio fica em AGORA, antes deles (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("F3.56: Importar do Astrea e do ADVBOX", () => {
   test("escolher a origem: a sócia dona vê os três cartões; a equipe vai direto à planilha", async ({ page }) => {

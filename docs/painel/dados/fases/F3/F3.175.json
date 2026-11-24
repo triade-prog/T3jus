@@ -1,0 +1,12 @@
+{
+  "id": "F3.175",
+  "texto": "Comercial: a data de \"criada\" e de \"enviada\" da proposta sai do dia em UTC (criadaEm.slice(0, 10) e enviadaEm em Comercial.tsx), e entre 21h e 24h de Brasília uma proposta de hoje aparece com a data de amanhã",
+  "peca": "S2",
+  "refs": [
+    "AP-05"
+  ],
+  "status": "pendente",
+  "ordem": 1310,
+  "nota": "Achado pela F3.164 (portal-comercial.spec.ts:188 falha entre 21h e 24h). Não muda a aparência; muda o dia mostrado. Conferir os outros slice(0, 10) sobre instantes listados no plano da F3.164.",
+  "proximo": "Mostrar o dia de Brasília em Comercial.tsx e guardar com um teste às 22h30"
+}

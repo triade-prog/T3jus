@@ -2,7 +2,7 @@
 // Os quatro passos (arquivo, colunas, prévia, importar), o resultado, o histórico e o desfazer.
 // A API é simulada; o arquivo vai como está (octet-stream) e só a API o lê.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -132,6 +132,9 @@ const base = (x: Record<string, Resp | Resp[]> = {}) => ({
   ...x,
 });
 const XLSX = { name: "clientes-e-contratos-2026.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from("PK\u0003\u0004 planilha") };
+
+// Os prazos de desfazer (desfazerAte) são datas fixas: o relógio fica em AGORA, antes deles (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("F3.55: Importar planilha", () => {
   test("passo 1: escolher o arquivo envia como está e abre as colunas; a planilha-modelo abre na janela", async ({ page }) => {
