@@ -1,0 +1,12 @@
+{
+  "id": "D34",
+  "texto": "Desenho do aviso no sino quando o caso é encerrado no financeiro: para quem cuida dos contratos, quando sobra contrato para encerrar, e para a responsável pelo caso, com o que o aviso mostra depois (contrato encerrado, fechamento feito, contrato que segue com outro caso) e as frases que prometem o aviso na ficha do cliente e na janela de encerrar",
+  "peca": "S4",
+  "refs": [
+    "EX-16",
+    "EX-17"
+  ],
+  "status": "feito",
+  "ordem": 84,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-sino-caso-fechou/ (12 estados, computador e celular, axe sem violação), com plano escrito por um especialista e revisado por outro (PLANO.md v2.1 e REVISAO.md) e desenho revisado por uma terceira especialista (REVISAO-DESENHO.md), aprovado pela Carol em 24/11/2026 às 11h33 (Bahia) com as recomendações das 6 perguntas"
+}

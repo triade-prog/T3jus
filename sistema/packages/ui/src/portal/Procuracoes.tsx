@@ -8,16 +8,16 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  type Anexo, CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, PAPEIS_RESPONSAVEL, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
+  type Anexo, CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
-  type VersaoDocumento, type DadoQueConta, type AssinaturaComCaso,
+  type VersaoDocumento, type DadoQueConta, type AssinaturaComCaso, type FichaCliente,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
-import { iniciais } from "../console/tempo.ts";
+import { hora, iniciais } from "../console/tempo.ts";
 import { lerDia } from "./agenda.ts";
 import { abrirAnexo, enviarAnexo } from "./Anexos.tsx";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
@@ -35,9 +35,13 @@ import { contar, erroDoArquivo, Quando, quando, tamanhoArquivo } from "./peticoe
 import {
   API_DOCUMENTOS, assinaTutela, avisoDoMenor, avisoFaltaQuemAssina, avisoFez18, baixarNoCabecalho, botaoGerar, casoDoMenor, chaveModelo, chavesAssinadas, ERROS_DOCUMENTO,
   errosDocumentos, faltasDeQuemAssina, faltasDoProprioCliente, formInicialDocumentos, fraseDaFaixaGerar, fraseNoDocumentoOutorgados, fraseVaoSair, juntar,
-  linhaFaltaNoQuadro, nomeCurto, origemModelo, PODERES_TELA, pedidoDocumentos, problemaDosAssinados, quantosDocumentos, RESUMO_ERRO_DOCUMENTO, ROTAS_DOCUMENTOS,
-  rotuloAssinado, seloAba, seloAssinado, tituloFaltas, type FormDocumentos,
+  linhaFaltaNoQuadro, nomeCurto, origemModelo, PODERES_TELA, pedidoDocumentos, problemaDosAssinados, quadroQuemAssina, quantosDocumentos, RESUMO_ERRO_DOCUMENTO,
+  ROTAS_DOCUMENTOS, rotuloAssinado, seloAba, seloAssinado, tituloFaltas, type FormDocumentos,
 } from "./procuracoes.ts";
+import {
+  completarQuemAssina, escolhasGuardadasValidas, filtrarFormDocumentos, guardarEscolhas, lerEscolhasGuardadas, limparEscolhasGuardadas, montarEscolhas,
+  rotaFichaDeGerar, semArtigos, tituloFichaSalva, type IdVolta, type ParteFicha, type RetornoEmGerar,
+} from "./voltaGerar.ts";
 
 const SOBRE = "Procurações e modelos";
 const primeiro = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
@@ -854,7 +858,27 @@ function motivosDe(e: { detalhes?: Record<string, unknown> }): Record<string, st
   return m && typeof m === "object" ? (m as Record<string, string>) : null;
 }
 
-function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultado: (r: ResultadoDocumentos, d: DadosDocumentos) => void }) {
+/** O aviso no alto de "O que gerar" na volta da ficha (F3.160): salva, ou ficou como outra pessoa salvou. */
+type AvisoDaVolta = { tipo: "salva" } | { tipo: "ficou"; por: string | null; em: string | null };
+
+/** Tira do endereço os marcadores da volta, depois de lidos (F3.160). */
+function limparEnderecoDaVolta() {
+  try {
+    const u = new URL(window.location.href);
+    if (!u.searchParams.has("escolhas") && !u.searchParams.has("ficha")) return;
+    u.searchParams.delete("escolhas");
+    u.searchParams.delete("ficha");
+    window.history.replaceState(null, "", u);
+  } catch {
+    // Nada a fazer.
+  }
+}
+
+function GerarConteudo({ contrato, retorno, aoResultado }: {
+  contrato: string;
+  retorno: RetornoEmGerar;
+  aoResultado: (r: ResultadoDocumentos, d: DadosDocumentos, f: FormDocumentos, aba: number) => void;
+}) {
   const [d, setD] = useState<DadosDocumentos | null | "erro" | "nao">(null);
   const [f, setF] = useState<FormDocumentos | null>(null);
   const [erros, setErros] = useState<Record<string, string>>({});
@@ -862,22 +886,79 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   const [gerando, setGerando] = useState(false);
   const [previa, setPrevia] = useState<PreviaDocumentos | null | "erro">(null);
   const [aba, setAba] = useState(0);
+  // A volta da ficha (F3.160): o aviso, de onde a pessoa saiu e um contador que pede a prévia de novo.
+  const [avisoVolta, setAvisoVolta] = useState<AvisoDaVolta | null>(null);
+  const [restaurou, setRestaurou] = useState<{ foco: IdVolta | null } | null>(null);
+  const [vezPrevia, setVezPrevia] = useState(0);
   const resumo = useRef<HTMLDivElement>(null);
   const form = useRef<HTMLFormElement>(null);
+  const refAviso = useRef<HTMLDivElement>(null);
+  const leuVolta = useRef(false);
+  const assinadasAoCarregar = useRef<string[]>([]);
+  const { escolhas: comEscolhas, ficha: comoFicou } = retorno;
 
   const carregar = useCallback(async () => {
     const r = await chamarPortal<DadosDocumentos>(`/v1/escritorio/contratos/${contrato}/documentos-dados`);
     if (!r.ok) return setD(r.status === 404 ? "nao" : "erro");
+    assinadasAoCarregar.current = [...chavesAssinadas(r.dados)];
+    let inicial = formInicialDocumentos(r.dados);
+    // As escolhas só voltam com o marcador no endereço, uma vez, e passam pelos dados de agora (revisão, ajustes 2, 5 e 7).
+    if (comEscolhas && !leuVolta.current) {
+      leuVolta.current = true;
+      const g = escolhasGuardadasValidas(lerEscolhasGuardadas(contrato), r.dados);
+      limparEnderecoDaVolta();
+      if (g) {
+        inicial = g.form;
+        setAba(g.aba);
+        setRestaurou({ foco: g.foco });
+        if (comoFicou === "salva") setAvisoVolta({ tipo: "salva" });
+        if (comoFicou === "ficou") {
+          const x = await chamarPortal<FichaCliente>(`/v1/escritorio/clientes/${r.dados.cliente.id}`);
+          setAvisoVolta({ tipo: "ficou", por: x.ok ? x.dados.alterado?.por ?? null : null, em: x.ok ? x.dados.alterado?.em ?? null : null });
+        }
+      }
+    }
     setD(r.dados);
-    setF(formInicialDocumentos(r.dados));
-  }, [contrato]);
+    setF(inicial);
+  }, [contrato, comEscolhas, comoFicou]);
   useEffect(() => { void Promise.resolve().then(() => carregar()); }, [carregar]);
 
+  // Na volta: o foco no aviso de salvo (sem região viva, revisão, ajuste 18) ou no link de onde a pessoa saiu.
+  const pronto = !!d && d !== "erro" && d !== "nao" && !!f;
+  useEffect(() => {
+    if (!pronto || !restaurou) return;
+    const id = requestAnimationFrame(() => {
+      if (avisoVolta) refAviso.current?.focus();
+      else if (restaurou.foco) document.getElementById(restaurou.foco)?.focus();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [pronto, restaurou, avisoVolta]);
+
+  // O "voltar" do navegador pela memória da página (bfcache): os dados vêm de novo, as escolhas ficam
+  // e passam pelo mesmo filtro, e a prévia é pedida de novo (revisão, ajuste 1).
+  useEffect(() => {
+    const aoMostrar = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      lerEscolhasGuardadas(contrato);
+      limparEnderecoDaVolta();
+      void chamarPortal<DadosDocumentos>(`/v1/escritorio/contratos/${contrato}/documentos-dados`).then((r) => {
+        if (!r.ok) return;
+        const antes = assinadasAoCarregar.current;
+        assinadasAoCarregar.current = [...chavesAssinadas(r.dados)];
+        setD(r.dados);
+        setF((x) => (x ? filtrarFormDocumentos(x, r.dados, antes) : formInicialDocumentos(r.dados)));
+        setVezPrevia((n) => n + 1);
+      });
+    };
+    window.addEventListener("pageshow", aoMostrar);
+    return () => window.removeEventListener("pageshow", aoMostrar);
+  }, [contrato]);
+
   // A prévia acompanha o formulário (decisão 12), sem gravar nada.
-  const chave = d && d !== "erro" && d !== "nao" && f ? JSON.stringify(pedidoDocumentos(d, f)) : "";
+  const chave = d && d !== "erro" && d !== "nao" && f ? `${vezPrevia}|${JSON.stringify(pedidoDocumentos(d, f))}` : "";
   useEffect(() => {
     if (!chave) return;
-    const ped = JSON.parse(chave) as ReturnType<typeof pedidoDocumentos>;
+    const ped = JSON.parse(chave.slice(chave.indexOf("|") + 1)) as ReturnType<typeof pedidoDocumentos>;
     if (!ped.documentos.length || !ped.outorgados.length || ped.cidadeData.length < 3) return;
     let vivo = true;
     const t = setTimeout(() => {
@@ -919,6 +1000,26 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   const temProcuracao = form_.docs.includes("PROCURACAO");
   const hipoPj = cli.tipo === "PJ" && form_.docs.includes("HIPOSSUFICIENCIA");
   const atualDe = (k: string) => dados.atuais.find((a) => a.chave === k);
+  // Os links de ficha voltam para cá (F3.160, D7): guardam as escolhas no clique e marcam o endereço,
+  // para o "voltar" do navegador também restaurar. Ficam escondidos no escritório só de consulta (data-muda).
+  const linkFicha = (foco: IdVolta, parte: ParteFicha | null, modo: "editar" | "por-si" = "editar") => ({
+    id: foco,
+    href: rotaFichaDeGerar(cli.id, contrato, modo, parte ?? undefined),
+    "data-muda": true,
+    onClick: () => {
+      guardarEscolhas(contrato, montarEscolhas(dados, form_, abaAtual, foco));
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.set("escolhas", "1");
+        u.searchParams.delete("ficha");
+        window.history.replaceState(null, "", u);
+      } catch {
+        // Sem o marcador, o "voltar" do navegador abre Gerar com o padrão.
+      }
+    },
+  });
+  const quadro = quadroQuemAssina(cli, dados.hoje, cli.rlDocumento ? formatarDocumento(cli.rlDocumento) : null);
+  const vUltima = dados.atuais.length ? Math.max(...dados.atuais.map((a) => a.numero)) : null;
 
   function marcarDoc(k: string, sim: boolean) {
     mudar({ docs: sim ? [...form_.docs, k] : form_.docs.filter((x) => x !== k) });
@@ -949,7 +1050,10 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
     setGerando(true);
     const r = await chamarPortal<ResultadoDocumentos>(`/v1/escritorio/contratos/${contrato}/documentos`, { metodo: "POST", corpo: pedidoDocumentos(dados, form_) });
     setGerando(false);
-    if (r.ok) return aoResultado(r.dados, dados);
+    if (r.ok) {
+      limparEscolhasGuardadas(contrato);
+      return aoResultado(r.dados, dados, form_, abaAtual);
+    }
     const m = motivosDe(r.erro);
     if (r.erro.codigo === "VALIDATION_ERROR" && m) {
       setErros(m);
@@ -970,7 +1074,8 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
         <Aviso tom="info" icone="historico" titulo={`A versão anterior é de ${Quando(dados.ultima.em).toLowerCase()}, gerada por ${dados.ultima.por.nome}.`}>
           {(() => {
             const mud = dados.mudancas.length ? `Desde então mudou ${(dados.mudancas.flatMap((x) => x.campos)).length === 1 ? "um dado" : "o cadastro"} de ${primeiro(cli.nome)}.` : "O cadastro do cliente não mudou desde então.";
-            return `${mud} A página abre com as mesmas escolhas. A versão anterior fica guardada.${assinadosAntes.length ? ` Já ${assinadosAntes.length === 1 ? "tem o assinado anexado" : "têm o assinado anexado"}: ${nomesDoc(assinadosAntes)}. ${assinadosAntes.length === 1 ? "A caixa vem desmarcada" : "As caixas vêm desmarcadas"}: o assinado continua valendo.` : ""}`;
+            // Na volta com as escolhas, a frase sobre elas vai para a linha do contrato (F3.160, revisão, ajuste 10).
+            return `${mud}${restaurou ? "" : " A página abre com as mesmas escolhas."} A versão anterior fica guardada.${assinadosAntes.length ? ` Já ${assinadosAntes.length === 1 ? "tem o assinado anexado" : "têm o assinado anexado"}: ${nomesDoc(assinadosAntes)}. ${assinadosAntes.length === 1 ? "A caixa vem desmarcada" : "As caixas vêm desmarcadas"}: o assinado continua valendo.` : ""}`;
           })()}
         </Aviso>
       ) : null}
@@ -989,14 +1094,39 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
               <div><h2 id="t-pr-g">O que gerar</h2><p className="sub">Os dados vêm da ficha do cliente, do contrato e da Equipe. Os campos sem “(opcional)” são obrigatórios.</p></div>
             </div>
             <form ref={form} className="form-folha pe-form" noValidate onSubmit={(e) => { e.preventDefault(); void gerar(); }} id="pr-form">
+              {avisoVolta ? (
+                <div className="c6">
+                  {/* Recebe o foco, sem região viva: o leitor de tela não fala duas vezes (revisão, ajuste 18). */}
+                  <div ref={refAviso} tabIndex={-1} className={`aviso ${avisoVolta.tipo === "salva" ? "aviso-sucesso" : "aviso-info"} pr-volta`}>
+                    <Icone nome={avisoVolta.tipo === "salva" ? "check" : "pessoas"} className="ico" />
+                    {avisoVolta.tipo === "salva" ? (
+                      <div>
+                        <strong className="aviso-titulo">{tituloFichaSalva(cli)}</strong>
+                        <p>A prévia já está com os dados novos.{dados.ultima ? "" : " As suas escolhas continuam aqui."}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <strong className="aviso-titulo">{avisoVolta.por ? `A ficha ficou como ${avisoVolta.por} salvou.` : "A ficha ficou como estava salva."}</strong>
+                        <p>
+                          {avisoVolta.por && avisoVolta.em ? `${primeiro(avisoVolta.por)} salvou às ${hora(avisoVolta.em)}; o que você escreveu não foi salvo. A prévia já está com os dados de ${primeiro(avisoVolta.por)}.`
+                            : "O que você escreveu não foi salvo. A prévia já está com os dados salvos."} As suas escolhas continuam aqui.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
               <div className="c6">
                 <p className="pe-rot">Contrato</p>
                 <div className="pr-contrato">
                   <span className="av-p" aria-hidden="true">{iniciais(cli.nome)}</span>
                   <span><b>{cli.nome}</b><small>{dados.contrato.numero} · {dados.contrato.objeto} · {dados.contrato.estado === "ELABORACAO" ? "em elaboração" : dados.contrato.estado === "ATIVO" ? "ativo" : "encerrado"}</small></span>
-                  <a className="btn btn-sec btn-compacto" href={ROTAS_DOCUMENTOS.gerar()}><Icone nome="trocar" className="ico ico-s" />Trocar contrato</a>
+                  <a className="btn btn-sec btn-compacto" href={ROTAS_DOCUMENTOS.gerar()} onClick={() => limparEscolhasGuardadas(contrato)}><Icone nome="trocar" className="ico ico-s" />Trocar contrato</a>
                 </div>
-                <p className="ajuda">Veio da ficha do contrato. As condições, os advogados e as inscrições já estão lá.</p>
+                <p className="ajuda">
+                  Veio da ficha do contrato. As condições, os advogados e as inscrições já estão lá.
+                  {restaurou && dados.ultima ? (restaurou.foco === "volta-resultado" ? ` Vieram as mesmas escolhas da ${vUltima ? `versão ${vUltima}` : "versão anterior"}.` : " Vieram as escolhas que você deixou aqui.") : ""}
+                </p>
               </div>
               {faltasAdv.map(({ a, f }) => (
                 <div className="c6" key={a.pessoaId}>
@@ -1013,7 +1143,12 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                 return (
                   <div className="c6">
                     <Aviso tom="atencao" icone="pessoas" titulo={a.titulo}
-                      acoes={a.temFalta ? <a className="btn btn-sec" href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />Completar na ficha<span className="sr"> (abre numa aba nova)</span></a> : undefined}>
+                      acoes={a.temFalta ? (
+                        <a className="btn btn-sec" {...linkFicha("volta-fez18", null, "por-si")}
+                          aria-label={`Completar na ficha: ${semArtigos(faltasNoDocumento(cli, dados.hoje))} de ${primeiro(cli.nome)}`}>
+                          <Icone nome="lapis" className="ico" />Completar na ficha
+                        </a>
+                      ) : undefined}>
                       {a.texto}
                     </Aviso>
                   </div>
@@ -1021,8 +1156,13 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
               })() : faltasAviso.length ? (
                 <div className="c6">
                   <Aviso tom="atencao" icone="pena" titulo={tituloFaltas(faltasAviso, cli.nome)}
-                    acoes={<a className="btn btn-sec" href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />Completar na ficha<span className="sr"> (abre numa aba nova)</span></a>}>
-                    Dá para gerar assim: {docsPedido.length > 1 ? `os ${docsPedido.length} documentos saem` : "o documento sai"} com o dado marcado, como [RG: falta], para preencher à mão ou no Word. Ou complete a ficha antes.
+                    acoes={(
+                      <a className="btn btn-sec" {...linkFicha("volta-falta-cliente", "cliente")}
+                        aria-label={`Completar na ficha: ${semArtigos(faltasAviso)} de ${cli.tipo === "PJ" ? cli.nome : primeiro(cli.nome)}`}>
+                        <Icone nome="lapis" className="ico" />Completar na ficha
+                      </a>
+                    )}>
+                    Dá para gerar assim: {docsPedido.length > 1 ? `os ${docsPedido.length} documentos saem` : "o documento sai"} com o dado marcado, como [RG: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.
                   </Aviso>
                 </div>
               ) : null}
@@ -1031,14 +1171,14 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                   <p className="pe-rot">Quem assina por {primeiro(cli.nome)}</p>
                   <div className={faltasRl.length ? "pe-dado rl-falta" : "pe-dado"}>
                     <span>
-                      <b>{cli.rlNome || "Não cadastrado"}</b>
-                      <small>{[cli.rlPapel ? PAPEIS_RESPONSAVEL[cli.rlPapel] : null, cli.rlDocumento ? `CPF ${formatarDocumento(cli.rlDocumento)}` : null].filter(Boolean).join(" · ") || "Papel e CPF não cadastrados"}</small>
+                      <b>{quadro.nome}</b>
+                      <small>{quadro.linha}</small>
                       {faltasRl.length ? <small>{linhaFaltaNoQuadro(cli)}</small> : null}
                       {curatela && dados.termoCuratela ? <small>Termo de curatela na ficha{cli.curProcesso ? ` · processo ${cli.curProcesso}` : ""}</small> : null}
                       {termoTutela ? <small>Termo de tutela na ficha</small> : null}
                     </span>
-                    <span className="selo selo-implant">{rotuloQuemAssina(quem)}</span>
-                    <a className="pe-completar" style={{ marginLeft: "auto" }} href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener">Mudar na ficha<span className="sr"> (abre numa aba nova)</span></a>
+                    {quadro.selo ? <span className="selo selo-implant">{rotuloQuemAssina(quem)}</span> : null}
+                    <a className="pe-completar" style={{ marginLeft: "auto" }} {...linkFicha("volta-quadro", "rl")}>Mudar<span className="sr"> quem assina por {primeiro(cli.nome)}</span> na ficha</a>
                   </div>
                 </div>
               ) : null}
@@ -1047,7 +1187,11 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                 // gerar-assistido; com tutora ou tutor, a frase do termo e "Baixar o termo" depois de
                 // "Completar na ficha" (F3.140, gerar-tutela e gerar-tutela-falta). O erro ao baixar
                 // vem logo abaixo do aviso, como na curatela.
-                const completar = <a className="btn btn-sec" href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener"><Icone nome="lapis" className="ico" />Completar na ficha<span className="sr"> (abre numa aba nova)</span></a>;
+                const completar = (
+                  <a className="btn btn-sec" {...linkFicha("volta-falta-rl", "rl")} aria-label={`Completar na ficha${completarQuemAssina(cli)}`}>
+                    <Icone nome="lapis" className="ico" />Completar na ficha
+                  </a>
+                );
                 const aviso = (baixar: ReactNode) => {
                   if (faltasRl.length) {
                     const a = avisoFaltaQuemAssina(cli, docsPedido.length, !!termoTutela)!;
@@ -1098,7 +1242,7 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
                   <p className="pe-rot">Quem assina pela empresa</p>
                   <div className="pe-dado">
                     <span><b>{cli.repNome || "Não cadastrado"}</b><small>{[cli.repCargo, cli.repDocumento ? `CPF ${cli.repDocumento}` : null].filter(Boolean).join(" · ") || "Cargo e CPF não cadastrados"}</small></span>
-                    <a className="pe-completar" style={{ marginLeft: "auto" }} href={ROTAS_DOCUMENTOS.cliente(cli.id)} target="_blank" rel="noopener">Mudar na ficha</a>
+                    <a className="pe-completar" style={{ marginLeft: "auto" }} {...linkFicha("volta-pj", "pj")}>Mudar<span className="sr"> quem assina pela empresa</span> na ficha</a>
                   </div>
                   <p className="ajuda">A procuração e o contrato saem com “neste ato representada por…”, e a assinatura sai em nome da empresa, por quem a representa.</p>
                 </div>
@@ -1262,7 +1406,7 @@ function GerarConteudo({ contrato, aoResultado }: { contrato: string; aoResultad
   );
 }
 
-function Resultado({ r, d, aoAnexar }: { r: ResultadoDocumentos; d: DadosDocumentos; aoAnexar: () => void }) {
+function Resultado({ r, d, escolhas, aoAnexar }: { r: ResultadoDocumentos; d: DadosDocumentos; escolhas: { form: FormDocumentos; aba: number }; aoAnexar: () => void }) {
   const bx = useBaixar();
   const pdf = usePdf();
   const zip = useRef<HTMLButtonElement>(null);
@@ -1302,8 +1446,22 @@ function Resultado({ r, d, aoAnexar }: { r: ResultadoDocumentos; d: DadosDocumen
               ))}
               {marcados.length ? (
                 <Aviso tom="atencao" icone="pena" titulo={`Saiu marcado: ${juntar(marcados)}.`}
-                  acoes={<a className="btn btn-sec" href={ROTAS_DOCUMENTOS.cliente(d.cliente.id)}><Icone nome="lapis" className="ico" />Completar na ficha</a>}>
-                  Preencha à mão ou no Word. Ou complete a ficha e gere de novo: a versão {versao} fica guardada.
+                  acoes={(() => {
+                    // Volta para Gerar de novo, com as escolhas desta geração (F3.160, D7).
+                    const c = d.cliente;
+                    const caso = casoDoMenor(c, d.hoje);
+                    const parte: ParteFicha = caso === "REPRESENTADO" || caso === "ASSISTIDO" ? (faltasDoProprioCliente(c, d.hoje).length ? "cliente" : "rl")
+                      : c.tipo === "PJ" && c.documento && c.endereco?.trim() ? "pj" : "cliente";
+                    return (
+                      <a className="btn btn-sec" id="volta-resultado" data-muda
+                        href={rotaFichaDeGerar(c.id, d.contrato.id, caso === "FEZ_18" ? "por-si" : "editar", caso === "FEZ_18" ? undefined : parte)}
+                        onClick={() => guardarEscolhas(d.contrato.id, montarEscolhas(d, escolhas.form, escolhas.aba, "volta-resultado"))}
+                        aria-label={`Completar na ficha: ${juntar(marcados)}`}>
+                        <Icone nome="lapis" className="ico" />Completar na ficha
+                      </a>
+                    );
+                  })()}>
+                  Preencha à mão ou no Word. Ou complete a ficha e gere de novo: ao salvar, você volta para cá, em Gerar de novo, com as mesmas escolhas. A versão {versao} fica guardada.
                 </Aviso>
               ) : null}
               <p className="pe-cuidado" style={{ margin: 0 }}><Icone nome="balanca" className="ico" /><span><b>Você revisa antes de imprimir.</b> O T3jus preencheu os modelos com os dados do cadastro e do contrato. Ele não confere o conteúdo jurídico.</span></p>
@@ -1343,16 +1501,16 @@ function Resultado({ r, d, aoAnexar }: { r: ResultadoDocumentos; d: DadosDocumen
   );
 }
 
-function GerarPagina({ contrato }: { contrato: string | null }) {
-  const [res, setRes] = useState<{ r: ResultadoDocumentos; d: DadosDocumentos } | null>(null);
+function GerarPagina({ contrato, retorno }: { contrato: string | null; retorno: RetornoEmGerar }) {
+  const [res, setRes] = useState<{ r: ResultadoDocumentos; d: DadosDocumentos; f: FormDocumentos; aba: number } | null>(null);
   const [janela, setJanela] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
   if (!contrato) return <EscolherContrato />;
   return (
     <>
-      {res ? <Resultado r={res.r} d={res.d} aoAnexar={() => setJanela(true)} /> : (
-        <GerarConteudo contrato={contrato} aoResultado={(r, d) => {
-          setRes({ r, d });
+      {res ? <Resultado r={res.r} d={res.d} escolhas={{ form: res.f, aba: res.aba }} aoAnexar={() => setJanela(true)} /> : (
+        <GerarConteudo contrato={contrato} retorno={retorno} aoResultado={(r, d, f, aba) => {
+          setRes({ r, d, f, aba });
           window.scrollTo({ top: 0 });
           setFeito({ titulo: r.documentos.length === 1 ? "1 documento gerado." : `${r.documentos.length} documentos gerados.`, texto: `Ficaram em Procurações e modelos e na ficha do contrato ${d.contrato.numero}, aba Documentos.` });
         }} />
@@ -1366,10 +1524,10 @@ function GerarPagina({ contrato }: { contrato: string | null }) {
   );
 }
 
-export function GerarDocumentosPortal({ contrato }: { contrato: string | null }) {
+export function GerarDocumentosPortal({ contrato, retorno = { escolhas: false, ficha: null } }: { contrato: string | null; retorno?: RetornoEmGerar }) {
   return (
     <MolduraArea area="CONTRATOS" secao="modelos" trilha={[{ nome: "Gerar documentos" }]}>
-      {() => <GerarPagina contrato={contrato} />}
+      {() => <GerarPagina contrato={contrato} retorno={retorno} />}
     </MolduraArea>
   );
 }

@@ -1,0 +1,62 @@
+[
+ {
+  "nome": "sf-contrato",
+  "url": "index.html?estado=sf-contrato",
+  "rotulo": "Felipe: falta encerrar o contrato"
+ },
+ {
+  "nome": "sf-varios",
+  "url": "index.html?estado=sf-varios",
+  "rotulo": "Felipe: dois contratos e três contratos"
+ },
+ {
+  "nome": "sf-socia",
+  "url": "index.html?estado=sf-socia",
+  "rotulo": "Marina: o aviso novo e o de “pronto”"
+ },
+ {
+  "nome": "sf-responsavel",
+  "url": "index.html?estado=sf-responsavel",
+  "rotulo": "Larissa: o fechamento terminou"
+ },
+ {
+  "nome": "sf-responsavel-falta",
+  "url": "index.html?estado=sf-responsavel-falta",
+  "rotulo": "Larissa: o contrato ficou aberto"
+ },
+ {
+  "nome": "sf-segue",
+  "url": "index.html?estado=sf-segue",
+  "rotulo": "Larissa: o contrato segue com outro caso (pergunta 4)"
+ },
+ {
+  "nome": "sf-agora-parcial",
+  "url": "index.html?estado=sf-agora-parcial",
+  "rotulo": "Felipe: encerrou um, falta o outro"
+ },
+ {
+  "nome": "sf-agora-encerrado",
+  "url": "index.html?estado=sf-agora-encerrado",
+  "rotulo": "Felipe: encerrou o contrato"
+ },
+ {
+  "nome": "sf-agora-terminou",
+  "url": "index.html?estado=sf-agora-terminou",
+  "rotulo": "Larissa: o contrato foi encerrado depois"
+ },
+ {
+  "nome": "sf-lido",
+  "url": "index.html?estado=sf-lido",
+  "rotulo": "Felipe: o aviso já lido"
+ },
+ {
+  "nome": "fecha-larissa",
+  "url": "fechamento.html?estado=fecha-larissa",
+  "rotulo": "Ficha de Noemi: a frase do aviso (pergunta 5)"
+ },
+ {
+  "nome": "encerrar-sem-contratos",
+  "url": "fechamento.html?estado=encerrar-sem-contratos",
+  "rotulo": "Janela do Diego: a frase do aviso (pergunta 5)"
+ }
+]

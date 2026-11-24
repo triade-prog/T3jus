@@ -48,6 +48,7 @@ export { ContratosPortal, HonorariosContratosPortal } from "./portal/Contratos.t
 export { LembretesContratoPortal } from "./portal/LembretesContrato.tsx";
 export { FichaContratoPortal } from "./portal/FichaContrato.tsx";
 export { GerarDocumentosPortal, ModelosDocumentoPortal, ProcuracoesContratosPortal } from "./portal/Procuracoes.tsx";
+export { lerRetornoEmGerar, lerVoltaDeGerar, type RetornoEmGerar, type VoltaDeGerar } from "./portal/voltaGerar.ts";
 export { ParcelasContratoFinanceiro, ReceberFinanceiro } from "./portal/Financeiro.tsx";
 export { PagarFinanceiro } from "./portal/FinanceiroPagar.tsx";
 export { RecorrenteFinanceiro } from "./portal/Recorrentes.tsx";

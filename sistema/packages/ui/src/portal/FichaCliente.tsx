@@ -26,7 +26,8 @@ import { ROTAS_JURIDICO } from "./juridico.ts";
 import { FolhaDocumentosPessoais } from "./DocumentosPessoais.tsx";
 import { FormularioCliente, type Conflito, type TermoEscolhido } from "./FormCliente.tsx";
 import { erroDoCodigoDoTermo, fraseDoTermoQueFalhou, tipoDoTermoNoEndereco } from "./termoCuratela.ts";
-import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, useEscritorioPortal } from "./Moldura.tsx";
+import { chamarPortal, irPara, MolduraPortal, ROTAS_PORTAL, soConsulta, substituirPor, useEscritorioPortal } from "./Moldura.tsx";
+import { voltaParaGerar, type VoltaDeGerar } from "./voltaGerar.ts";
 import { OrigemPlanilha } from "./Importacao.tsx";
 import { FolhaSistemaAntigo } from "./ImportacaoFinanceiro.tsx";
 import { FolhaFunilCliente } from "./FunilSaida.tsx";
@@ -737,8 +738,34 @@ const ExplicaEditar = () => {
 
 // ------------------------------------------------------------------------- a página
 
-export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado = false, termo = null, termoTipo = null }: {
+/**
+ * A faixa fixa de volta para Gerar documentos (F3.160, revisão, ajuste 8): fica enquanto a ficha veio de
+ * Gerar e não está no editar, mesmo depois de fechar o aviso. Sem região viva, para não falar sozinha.
+ */
+function FaixaVoltaGerar({ titulo, texto, href, foco = false }: { titulo: string; texto: string; href: string; foco?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (foco) ref.current?.focus();
+  }, [foco]);
+  return (
+    <div ref={ref} className="aviso aviso-info cl-inativo-faixa eg-volta" role="region" aria-label="Volta para Gerar documentos" tabIndex={foco ? -1 : undefined}>
+      <Icone nome="seta" className="ico" />
+      <div>
+        <strong className="aviso-titulo">{titulo}</strong>
+        <p>{texto}</p>
+      </div>
+      <a className="btn btn-pri" href={href} onClick={(e) => { e.preventDefault(); substituirPor(href); }}>
+        <Icone nome="esquerda" className="ico" />
+        Voltar para Gerar documentos
+      </a>
+    </div>
+  );
+}
+
+export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado = false, termo = null, termoTipo = null, volta = null }: {
   id: string; aba: AbaCliente; editarAoAbrir?: boolean; cadastrado?: boolean;
+  /** A ficha aberta por Gerar documentos (F3.160): o contrato da volta, a parte (D9) e a janela do fez 18 (D6). */
+  volta?: VoltaDeGerar | null;
   /** O código do erro do termo que não subiu depois do cadastro (F3.118). */
   termo?: string | null;
   /** De que termo era o erro (?termoTipo=TUTELA, F3.140); ausente ou fora da lista, a curatela. */
@@ -761,6 +788,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   // A assinatura e o caso abrem na própria ficha (F3.111, decisões 15 a 20).
   const [ligada, setLigada] = useState<JanelaLigada | null>(null);
   const [vezAba, setVezAba] = useState(0);
+  // Vindo de Gerar (F3.160): a ficha salvou, mas o termo não; fica em leitura com a faixa de volta.
+  const [termoRecusado, setTermoRecusado] = useState<"CURATELA" | "TUTELA" | null>(null);
+  const abriuJanelaDeGerar = useRef(false);
   const hoje = hojeBrasilia();
   const avisos = useAvisosCliente(id, aba === "ficha");
 
@@ -829,6 +859,32 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     setJanela(j);
   };
 
+  // Fez 18 vindo de Gerar (D6, revisão, ajuste 12): a janela abre sozinha só se ela ainda está no fez 18;
+  // se já assina por si, a ficha fica em leitura com a faixa.
+  useEffect(() => {
+    if (!volta?.janela || !f || !escritorio || abriuJanelaDeGerar.current) return;
+    abriuJanelaDeGerar.current = true;
+    if (f.situacao === "ATIVO" && f.assina?.situacao === "FEZ_18" && !soConsulta(escritorio)) {
+      void Promise.resolve().then(() => {
+        setAbertura((n) => n + 1);
+        setJanela("por-si");
+      });
+    }
+  }, [volta, f, escritorio]);
+
+  // O título da aba do navegador no editar vindo de Gerar (revisão, ajuste 17).
+  const tituloDeGerar = volta && editando && f && f.situacao === "ATIVO" && escritorio && !soConsulta(escritorio)
+    ? `Editar ficha de ${f.tipo === "PJ" ? f.nome : primeiroNome(f.nome)} · vindo de Gerar documentos` : null;
+  useEffect(() => {
+    if (!tituloDeGerar) return;
+    const antes = document.title;
+    document.title = tituloDeGerar;
+    return () => { document.title = antes; };
+  }, [tituloDeGerar]);
+
+  /** A volta para Gerar sem deixar o editar no histórico (revisão, ajuste 3). */
+  const voltarParaGerar = (como: "salva" | "ficou" | null) => { if (volta) substituirPor(voltaParaGerar(volta.contrato, como)); };
+
   const abrirLigada = (j: JanelaLigada) => {
     setFeito(null);
     setAbertura((n) => n + 1);
@@ -882,13 +938,35 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
             <Icone nome="busca" className="ico" />
           </span>
           <h1 style={{ fontSize: 28 }}>Cliente não encontrado</h1>
-          <p>Este endereço não é de um cliente deste escritório. Volte para a lista e busque pelo nome, CPF ou telefone.</p>
-          <div className="acoes">
-            <a className="btn btn-pri" href={ROTAS_PORTAL.clientes}>
-              <Icone nome="pessoas" className="ico" />
-              Ir para Clientes
-            </a>
-          </div>
+          {volta ? (
+            <>
+              <p>
+                Este endereço não é de um cliente deste escritório, ou o cliente foi excluído. Nada foi salvo. Volte para Gerar documentos e confira o contrato,
+                ou busque o cliente pelo nome, CPF ou telefone.
+              </p>
+              <div className="acoes">
+                <a className="btn btn-pri" href={voltaParaGerar(volta.contrato, null)} ref={(el) => { el?.focus(); }}
+                  onClick={(e) => { e.preventDefault(); voltarParaGerar(null); }}>
+                  <Icone nome="esquerda" className="ico" />
+                  Voltar para Gerar documentos
+                </a>
+                <a className="btn btn-sec" href={ROTAS_PORTAL.clientes}>
+                  <Icone nome="pessoas" className="ico" />
+                  Ir para Clientes
+                </a>
+              </div>
+            </>
+          ) : (
+            <>
+              <p>Este endereço não é de um cliente deste escritório. Volte para a lista e busque pelo nome, CPF ou telefone.</p>
+              <div className="acoes">
+                <a className="btn btn-pri" href={ROTAS_PORTAL.clientes}>
+                  <Icone nome="pessoas" className="ico" />
+                  Ir para Clientes
+                </a>
+              </div>
+            </>
+          )}
         </div>
       </MolduraPortal>
     );
@@ -906,6 +984,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   // Arquivado a pedido (F1.16): os dados ficam, só leitura, com o registro do arquivamento.
   const arquivado = f.situacao === "ARQUIVADO";
   const fimLgpd = excluido || arquivado;
+  // Só edita quem está ativo e fora do escritório só de consulta: o ?editar=1 de um inativo, arquivado
+  // ou excluído abre a leitura (F3.160; a falha do editarAoAbrir).
+  const emEdicao = editando && ativo && !soConsulta(escritorio);
   const cont = f.contagens ?? {};
   const temAba = (a: AbaCliente) =>
     a === "ficha" || (a === "atendimentos" ? comercial : !fimLgpd && cont[a] !== undefined);
@@ -924,7 +1005,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   const dir = fimLgpd ? (
     <RegistroNoCabecalho f={f} />
   ) : passo && comPasso ? (
-    <DirPasso f={f} passo={passo} comercial={comercial} hoje={hoje} editando={editando} aoRegistrar={comercial ? () => abrir("registrar") : null}
+    <DirPasso f={f} passo={passo} comercial={comercial} hoje={hoje} editando={emEdicao} aoRegistrar={comercial ? () => abrir("registrar") : null}
       aoJanela={abrirLigada} escritorio={nomeEsc} />
   ) : comercial ? (
     <section className="dir campo-ambar" aria-labelledby="cl-t-prox">
@@ -962,7 +1043,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           </p>
         </>
       )}
-      {ativo && !editando ? (
+      {ativo && !emEdicao ? (
         <button data-muda className="btn btn-pri" type="button" onClick={() => abrir("registrar")}>
           <Icone nome="mais" className="ico" />
           Registrar atendimento
@@ -979,7 +1060,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
         <small>dados</small>
       </p>
       <p className="cl-oque">{proc.faltam.length ? <>Falta: <b>{juntarComE(proc.faltam.map((x) => x.toLowerCase()))}</b></> : "Tudo pronto."}</p>
-      {proc.faltam.length && editar && !editando ? (
+      {proc.faltam.length && editar && !emEdicao ? (
         <button data-muda className="btn btn-pri" type="button" onClick={editar}>
           <Icone nome="lapis" className="ico" />
           Completar qualificação
@@ -1081,6 +1162,24 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     </div>
   ) : null;
 
+  // A faixa de volta para Gerar (F3.160), fora do editar: o termo recusado, o fez 18 já resolvido,
+  // a ficha inativa e o resto (escritório só de consulta, arquivada, excluída).
+  const pnVolta = f.tipo === "PJ" ? f.nome : primeiroNome(f.nome);
+  const faixaVolta = !volta || emEdicao ? null : termoRecusado ? (
+    <FaixaVoltaGerar titulo="Você veio de Gerar documentos." href={voltaParaGerar(volta.contrato, "salva")}
+      texto={`A ficha de ${pnVolta} foi salva; só o termo de ${termoRecusado === "TUTELA" ? "tutela" : "curatela"} não foi guardado. A prévia já vem com os dados novos e as suas escolhas continuam lá.`} />
+  ) : volta.janela && ativo && f.tipo === "PF" && f.assina?.situacao === "PROPRIO" ? (
+    <FaixaVoltaGerar foco titulo={`${pnVolta} já assina por si.`} href={voltaParaGerar(volta.contrato, null)}
+      texto={`${f.quemAssinava ? `Quem assinava com ${pnVolta} ficou guardado na ficha, até ${dataBr(f.quemAssinava.ate)}. ` : ""}Não há nada a completar aqui: a prévia em Gerar já sai assinada só por ${pnVolta}.`} />
+  ) : volta.janela && ativo && f.assina?.situacao === "FEZ_18" && !soConsulta(escritorio) ? null : !ativo && !fimLgpd ? (
+    <FaixaVoltaGerar titulo={`Você veio de Gerar documentos. A ficha de ${pnVolta} está inativa.`} href={voltaParaGerar(volta.contrato, null)}
+      texto="Para mudar, reative primeiro. Nada foi salvo; volte para gerar como está, com os dados marcados como falta." />
+  ) : (
+    <FaixaVoltaGerar titulo="Você veio de Gerar documentos." href={voltaParaGerar(volta.contrato, null)}
+      texto={soConsulta(escritorio) || fimLgpd ? "A ficha não pode ser mudada agora. Nada foi salvo; volte para gerar como está, com os dados marcados como falta."
+        : "Nada foi salvo; volte para gerar como está."} />
+  );
+
   const notaSemComercial = (
     <Folha titulo="Atendimentos" pequena>
       <p className="pt-pe-folha" style={{ borderTop: 0 }}>
@@ -1136,13 +1235,17 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
   );
 
   let corpo: ReactNode;
-  if (editando) {
+  if (emEdicao) {
     corpo = (
       <Grade
         principal={
           <FormularioCliente key={conflito ? `c-${f.versao}` : "e"} modo="editar" inicial={meu ?? rascunhoDaFicha(f)} comercial={comercial} versao={f.versao}
             idCliente={f.id} conflito={conflito} termoCuratela={f.termoCuratela ?? null} termoTutela={f.termoTutela ?? null} termoInicial={meuTermo}
+            deGerar={volta ? { parte: volta.campo } : null}
             aoSalvo={(r) => {
+              // Vindo de Gerar (F3.160): salvou e o termo, se havia, subiu: volta, com o aviso só se algo mudou (revisão, ajuste 9).
+              if (volta && !(r.termo && "erro" in r.termo)) return voltarParaGerar(r.fichaMudou || (r.termo && "enviado" in r.termo) ? "salva" : null);
+              if (volta && r.termo && "erro" in r.termo) setTermoRecusado(r.termo.tipo);
               // Mesmo com o termo que não subiu, sai do formulário: a versão mudou com o PUT.
               setEditando(false);
               setConflito(null);
@@ -1155,9 +1258,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
                 ? { titulo: "Ficha salva.", texto: fraseDoTermoQueFalhou(r.termo.erro, primeiroNome(r.nome), r.termo.tipo), tom: "atencao" }
                 : { titulo: "Ficha salva.", texto: r.termo ? (r.fichaMudou ? `${historico} ${guardado}` : guardado) : historico });
             }}
-            aoCancelar={() => { setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }}
+            aoCancelar={() => { if (volta) return voltarParaGerar(null); setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }}
             aoConflito={(x, t) => void aoConflitoEditar(x, t)}
-            aoFicarComSalva={() => { setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }} />
+            aoFicarComSalva={() => { if (volta) return voltarParaGerar("ficou"); setEditando(false); setConflito(null); setMeu(null); setMeuTermo(null); }} />
         }
         lateral={<ExplicaEditar />}
       />
@@ -1206,7 +1309,15 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           ) : (
             <>
               <Dados f={f} aoEditar={editar} />
-              {!arquivado ? <FolhaDocumentosPessoais f={f} escritorio={escritorio.nome} aoFeito={(x) => setFeito(x)} /> : null}
+              {!arquivado ? <FolhaDocumentosPessoais
+                  f={f}
+                  escritorio={escritorio.nome}
+                  aoFeito={(x) => {
+                    setFeito(x);
+                    // F3.155: a dona recarrega a ficha, para a janela de exclusão contar o documento novo.
+                    if (f.dono) void carregar();
+                  }}
+                /> : null}
               {f.tipo === "PF" ? (
                 <>
                   <FolhaQuemAssina f={f} aoEditar={editar} />
@@ -1241,8 +1352,9 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
         {cab}
         {fimLgpd ? null : <FaixaPedido f={f} aoExcluir={() => abrir("excluir")} aoRecusar={() => abrir("recusar")} />}
         {abas}
+        {faixaVolta}
         {faixaInativo}
-        {ativo && !editando ? (
+        {ativo && !emEdicao ? (
           <FaixaFez18 f={f} aoAtualizar={editar ? () => abrir("por-si") : undefined} gerarHref={ROTAS_DOCUMENTOS.gerar()} />
         ) : null}
         {corpo}
@@ -1269,8 +1381,11 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
           aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
       ) : null}
       {ativo && f.assina?.situacao === "FEZ_18" ? (
-        <JanelaAssinaPorSi key={`ps-${abertura}`} aberta={janela === "por-si"} f={f} aoFechar={() => setJanela(null)} aoFeito={(x) => void concluir(x)}
-          aoConflito={() => { setJanela(null); void carregar().then(() => setFeito(null)); }} />
+        <JanelaAssinaPorSi key={`ps-${abertura}`} aberta={janela === "por-si"} f={f} deGerar={!!volta?.janela}
+          // Vindo de Gerar (D6): "Agora não", o X e o Esc voltam sem salvar; o sucesso volta com o aviso de salvo.
+          aoFechar={() => (volta?.janela ? voltarParaGerar(null) : setJanela(null))}
+          aoFeito={(x) => (volta?.janela ? voltarParaGerar("salva") : void concluir(x))}
+          aoConflito={() => { setJanela(null); void carregar().then((novo) => { setFeito(null); if (volta?.janela && novo?.assina?.situacao === "FEZ_18") abrir("por-si"); }); }} />
       ) : null}
       {fimLgpd ? null : (
         <>

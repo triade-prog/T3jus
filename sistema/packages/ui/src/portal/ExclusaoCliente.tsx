@@ -5,6 +5,8 @@
 // dos atendimentos ficam a data, o canal, quem atendeu e o resumo (decisão 3); o excluído
 // fica em Inativos com a data e o protocolo (decisão 4). Com contrato ou processo, o cliente
 // só se arquiva a pedido (decisão 5, F1.16, estado excluir-depois).
+// F3.155 (desenho portal-exclusao-arquivos, Carol 24/11/2026): "O que é apagado" cita os arquivos
+// do cliente, logo depois da qualificação, só quando há arquivo; "O que fica" não muda (alternativa A).
 
 import { useId, useRef, useState } from "react";
 import { CANAIS_PEDIDO, nomeConfere, QUEM_PEDIU, type CanalPedido, type FichaCliente, type PedidoExclusao, type QuemPediu } from "@t3jus/domain";
@@ -14,6 +16,7 @@ import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela 
 import { dataLonga, hora } from "../console/tempo.ts";
 import { agoraBrasilia, dataBr, lerData } from "./clientes.ts";
 import { primeiroNome } from "./equipe.ts";
+import { linhaArquivosParaApagar } from "./exclusao.ts";
 import type { Feito } from "./FichaCliente.tsx";
 import { chamarPortal } from "./Moldura.tsx";
 
@@ -340,6 +343,7 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
   const contatos = f.contatos;
   const prox = f.proxContato;
   const n = f.atendimentos ?? 0;
+  const arquivos = linhaArquivosParaApagar(f.arquivosParaApagar);
 
   async function enviar() {
     setErro(null);
@@ -415,6 +419,12 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
                 Nome, {f.tipo === "PJ" ? "CNPJ, o representante" : "CPF, RG"} e a qualificação
                 <small>{f.tipo === "PJ" ? "endereço da sede e quem assina pela empresa" : "nacionalidade, estado civil, profissão e endereço"}</small>
               </li>
+              {arquivos ? (
+                <li>
+                  {arquivos.texto}
+                  <small>{arquivos.explicacao}</small>
+                </li>
+              ) : null}
               <li>
                 {contatos.length === 1 ? "O contato" : `Os ${contatos.length} contatos`}
                 <small>{contatos.map((x) => x.nome).join(", ")}, com telefones e e-mails</small>
