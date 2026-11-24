@@ -158,8 +158,11 @@ test.describe("Jurídico › Petições (EX-09)", () => {
     await expect(page.getByRole("link", { name: "Revisar Contestação cível, Souza x Construtora Atlas" })).toHaveAttribute("href", `/juridico/peticoes/${PET(2)}`);
     await expect(page.getByRole("link", { name: "Nova petição" })).toHaveAttribute("href", "/juridico/peticoes/nova");
     await semViolacoes(page);
+    // O Baixar leva o navegador ao arquivo: espera o download antes de ir para outra página (F3.164).
+    const baixou = page.waitForEvent("download");
     await page.getByRole("button", { name: "Baixar Recurso ordinário, Pereira x Mercado Bom Preço" }).click();
     await expect.poll(() => pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/peticoes/${PET(1)}/abrir`)).toBe(true);
+    await baixou;
     await page.goto(`${P}/juridico/peticoes`);
     await page.getByRole("button", { name: "Para eu revisar (1)" }).click();
     await expect(page.getByText("1 esperando a sua revisão")).toBeVisible();

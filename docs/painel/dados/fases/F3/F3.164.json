@@ -7,7 +7,7 @@
   ],
   "status": "andamento",
   "ordem": 1230,
-  "proximo": "PR 2: esperar o download antes do goto em Petições e Procurações e trocar a resposta antes de Assumir conversa",
-  "nota": "PR 1 (feito): relógio do navegador fixo em AGORA (24/11/2026, 15h de Brasília) com fixarRelogio de console-dados.ts nos dois arquivos da Importação. Faltam o PR 2 (as três corridas) e o PR 3 (relógio fixo nos demais arquivos, com a troca do agora de console-dados.ts e uma trava em Vitest). Os erros de tela achados viraram F3.175 e F3.176.",
-  "evidencia": "PR 1: portal-importacao.spec.ts e portal-importacao-sistemas.spec.ts com test.beforeEach(fixarRelogio): 120 passaram na hora real (--repeat-each 3) e 40 de 40 com o relógio do sistema em 28/11 15h, 15/01/2027 10h, 0h10 e 21h30 de Brasília (rodar-hora.sh, libfaketime). Antes, :281 falhava a partir de 27/11 e :414/:543 a partir de 29/11."
+  "proximo": "PR 3: relógio fixo nos arquivos que usam h() e d() e nos rótulos Hoje, Ontem e \"hoje às\", com uma trava em Vitest; o console-suporte só depois da F3.176",
+  "nota": "PR 1 (#186, mesclado): relógio do navegador fixo em AGORA (24/11/2026, 15h de Brasília) com fixarRelogio de console-dados.ts nos dois arquivos da Importação. PR 2: as três corridas. Falta o PR 3 (relógio fixo nos demais arquivos, com a troca do agora de console-dados.ts e uma trava em Vitest). Os erros de tela achados viraram F3.175 e F3.176.",
+  "evidencia": "PR 1: portal-importacao.spec.ts e portal-importacao-sistemas.spec.ts com test.beforeEach(fixarRelogio): 120 passaram na hora real (--repeat-each 3) e 40 de 40 com o relógio do sistema em 28/11 15h, 15/01/2027 10h, 0h10 e 21h30 de Brasília (rodar-hora.sh, libfaketime). Antes, :281 falhava a partir de 27/11 e :414/:543 a partir de 29/11. PR 2: em portal-peticoes.spec.ts:144 e portal-procuracoes.spec.ts:179 o teste espera o download (waitForEvent) antes do goto, e em portal-conversas.spec.ts:164 a resposta da conversa assumida entra antes do clique em Assumir conversa. Com --repeat-each 50 nos três testes, 300 de 300 passaram (antes, 8 em 50, 6 em 50 e 5 em 50 falhavam); os três arquivos inteiros com --repeat-each 2, 148 passaram."
 }
