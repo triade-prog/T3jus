@@ -1,0 +1,11 @@
+{
+  "data": "24/11/2026",
+  "inicio": "11:00",
+  "fim": "11:25",
+  "texto": "Idade do bebê no cadastro, em Gerar documentos e na ficha: 'tem menos de 1 ano hoje' e 'tem 1 ano hoje', e 'Esta data ainda não chegou.' para a data de nascimento depois de hoje. F3.162 feito, sem migration.",
+  "refs": [
+    "F3.162",
+    "AP-01",
+    "CH-08"
+  ]
+}

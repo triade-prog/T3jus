@@ -3,7 +3,7 @@
 // campos que mudaram no conflito (PT-19) e os rótulos de próximo contato.
 
 import {
-  CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, ORIGENS, TIPOS_DOCUMENTO_PESSOAL, TOTAL_QUALIFICACAO,
+  CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, hojeBrasilia, nascimentoNoFuturo, ORIGENS, TIPOS_DOCUMENTO_PESSOAL, TOTAL_QUALIFICACAO,
   type DadosCliente, type FichaCliente, type ProxContato, type TipoCliente, type TipoDocumentoPessoal,
 } from "@t3jus/domain";
 import { formatarTelefone } from "../console/ficha.ts";
@@ -195,14 +195,27 @@ export function corpoDoRascunho(r: RascunhoCliente) {
 }
 
 /** Confere com o esquema da API e devolve o corpo pronto ou os erros, com os textos aprovados. */
-export function conferirCliente(r: RascunhoCliente): { ok: true; corpo: DadosCliente } | { ok: false; erros: ErrosCliente } {
+export function conferirCliente(r: RascunhoCliente, hoje: string = hojeBrasilia()): { ok: true; corpo: DadosCliente } | { ok: false; erros: ErrosCliente } {
   const v = cadastrarClienteSchema.safeParse(corpoDoRascunho(r));
-  if (v.success) return { ok: true, corpo: v.data };
-  return { ok: false, erros: errosDosCaminhos(r, v.error.issues.map((i) => i.path as (string | number)[])) };
+  // A data depois de hoje o banco também recusa; aqui o erro aparece sem ir ao servidor (F3.162).
+  const futuro = dataNoFuturo(r, hoje);
+  if (v.success && !futuro) return { ok: true, corpo: v.data };
+  const erros = v.success ? {} : errosDosCaminhos(r, v.error.issues.map((i) => i.path as (string | number)[]), hoje);
+  if (futuro) erros.nascimento = TEXTO_DATA_NO_FUTURO;
+  return { ok: false, erros };
+}
+
+/** Texto do D25 (NOTAS, item 10) para a data de nascimento depois de hoje: no quadro e no erro do campo. */
+export const TEXTO_DATA_NO_FUTURO = "Esta data ainda não chegou.";
+
+function dataNoFuturo(r: RascunhoCliente, hoje: string): boolean {
+  if (r.tipo !== "PF" || r.capacidade !== "MENOR") return false;
+  const iso = lerData(r.nascimento);
+  return !!iso && nascimentoNoFuturo(iso, hoje);
 }
 
 /** Os erros da tela a partir dos caminhos do esquema (ou dos campos que o servidor devolveu). */
-export function errosDosCaminhos(r: RascunhoCliente, caminhos: (string | number)[][]): ErrosCliente {
+export function errosDosCaminhos(r: RascunhoCliente, caminhos: (string | number)[][], hoje: string = hojeBrasilia()): ErrosCliente {
   const erros: ErrosCliente = {};
   for (const [campo, n, sub] of caminhos) {
     if (campo === "contatos" && typeof n === "number") {
@@ -220,6 +233,7 @@ export function errosDosCaminhos(r: RascunhoCliente, caminhos: (string | number)
     else if (campo === "estadoCivil" || campo === "repEstadoCivil" || campo === "uf" || campo === "origem" || campo === "rlEstadoCivil" || campo === "rlUf")
       erros[campo] = "Escolha uma das opções.";
     else if (campo === "capacidade") erros.capacidade = "Escolha quem assina.";
+    else if (campo === "nascimento" && dataNoFuturo(r, hoje)) erros.nascimento = TEXTO_DATA_NO_FUTURO;
     else if (typeof campo === "string" && campo in TEXTOS) erros[campo] = TEXTOS[campo as keyof typeof TEXTOS]!;
   }
   return erros;

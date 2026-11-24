@@ -162,6 +162,57 @@ test.describe("Quem assina pelo cliente (F3.98)", () => {
   });
 });
 
+// ------------------------------------------------------------------------------- F3.162
+
+// F3.162: o bebê "tem menos de 1 ano", com 1 ano fica no singular, e a data depois de hoje tem o texto do D25.
+test.describe("Idade do bebê (F3.162)", () => {
+  const BEBE = nasceu(0, -40);
+  const UM = nasceu(1, -40);
+
+  test("cadastro: data no futuro, bebê e 1 ano", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(BASE),
+      "GET /v1/escritorio/clientes/duplicados": { corpo: { duplicados: [] } },
+      "POST /v1/escritorio/clientes": { status: 201, corpo: { id: CLI, versao: 1 } },
+    });
+    await page.goto(`${P}/clientes/novo`);
+    await page.getByLabel(/^Nome completo/).fill("Ana Clara Souza");
+    await page.getByLabel(/^Telefone ou WhatsApp/).fill("(11) 98877-6601");
+    await page.getByRole("radio", { name: /Não: é menor de 18 anos/ }).check();
+    const menor = page.getByRole("group", { name: /Menor de 18 anos/ });
+    const data = menor.getByLabel(/^Data de nascimento/);
+    await menor.getByLabel(/^É/).selectOption("MAE");
+    await menor.getByLabel(/^Nome completo/).fill("Joana Alves Souza");
+    await data.fill(br(nasceu(0, 10)));
+    await expect(menor.getByRole("status").filter({ hasText: "Esta data ainda não chegou. Confira a data: com ela, o T3jus diz se Ana é representado(a) ou assistido(a)." })).toBeVisible();
+    await expect(menor.getByText(/anos? hoje/)).toHaveCount(0);
+    await page.getByRole("button", { name: "Cadastrar cliente" }).click();
+    await expect(data).toHaveAttribute("aria-invalid", "true");
+    await expect(data).toHaveAccessibleDescription("Esta data ainda não chegou.");
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/clientes")).toBe(false);
+    await data.fill(br(BEBE));
+    await expect(menor.getByText("Ana tem menos de 1 ano hoje: é representado(a).", { exact: true })).toBeVisible();
+    await data.fill(br(UM));
+    await expect(menor.getByText("Ana tem 1 ano hoje: é representado(a).", { exact: true })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("ficha: o bebê com “menos de 1 ano” na data de nascimento", async ({ page }) => {
+    const bebe = { ...BASE, nome: "Ana Clara Souza", nascimento: BEBE, assina: { ...BASE.assina, idade: 0, faz16: mais(BEBE, 16), faz18: mais(BEBE, 18) } };
+    await simular(page, comuns(bebe));
+    await page.goto(`${P}/clientes/${CLI}`);
+    await expect(page.getByText(`${br(BEBE)} · menos de 1 ano`, { exact: true })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("ficha: 1 ano no singular", async ({ page }) => {
+    const um = { ...BASE, nome: "Ana Clara Souza", nascimento: UM, assina: { ...BASE.assina, idade: 1, faz16: mais(UM, 16), faz18: mais(UM, 18) } };
+    await simular(page, comuns(um));
+    await page.goto(`${P}/clientes/${CLI}`);
+    await expect(page.getByText(`${br(UM)} · 1 ano`, { exact: true })).toBeVisible();
+  });
+});
+
 // ------------------------------------------------------------------------------- F3.142
 
 // Gerar documentos do menor como no desenho aprovado (D25): gerar-representado, gerar-assistido,
@@ -208,6 +259,14 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
     await expect(page.getByText(/tem menos de 16 anos: a procuração e o contrato saem com/)).toHaveCount(0);
     await expect(page.getByText(/Faltam? \d dados? de quem assina/)).toHaveCount(0);
     await semViolacoes(page);
+  });
+
+  test("F3.162: o bebê tem menos de 1 ano no aviso do dia", async ({ page }) => {
+    const nasc = nasceu(0, -40);
+    await simular(page, dadosGerarMenor({ ...BASE, ...COM_RG, nascimento: nasc }, previa(3, [], "Nenhum dado sai marcado.")));
+    await gerar(page);
+    await expect(page.getByRole("status").filter({ hasText: "Pedro tem menos de 1 ano hoje: é representado(a)." })).toBeVisible();
+    await expect(page.getByText(/anos hoje/)).toHaveCount(0);
   });
 
   test("assistido: os dois assinam, com o pai", async ({ page }) => {

@@ -154,6 +154,12 @@ describe("Gerar documentos do menor (F3.142)", () => {
     expect(avisoDoMenor(rafaela(), HOJE, 3)).toBeNull();
   });
 
+  it("F3.162: o bebê tem menos de 1 ano, e com 1 ano fica no singular", () => {
+    expect(avisoDoMenor(pedro({ nascimento: "2026-05-10" }), HOJE, 3)!.titulo).toBe("Pedro tem menos de 1 ano hoje: é representado(a).");
+    expect(avisoDoMenor(pedro({ nascimento: "2025-08-01" }), HOJE, 3)!.titulo).toBe("Pedro tem 1 ano hoje: é representado(a).");
+    expect(avisoDoMenor(pedro({ nascimento: "2024-08-01" }), HOJE, 3)!.titulo).toBe("Pedro tem 2 anos hoje: é representado(a).");
+  });
+
   it("quantos documentos: o documento, os dois, os três, e nenhum marcado", () => {
     expect(quantosDocumentos(1)).toBe("o documento");
     expect(quantosDocumentos(2)).toBe("os dois documentos");

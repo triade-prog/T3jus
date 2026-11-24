@@ -236,3 +236,12 @@ A linha “Campos novos em clientes” das notas de Procurações já propunha `
 6. **Para salvar o menor, exigir a data de nascimento e o nome de quem assina?** **Recomendo que sim, só esses dois** (e o nome do curador, na curatela). Sem eles, marcar “não assina por si” não serve para nada e o documento sairia errado. O resto (CPF, RG, estado civil de quem assina) pode ficar para depois e sai marcado, como hoje.
 7. **Como concordar o gênero do cliente no texto (“nascido” ou “nascida”, “representado” ou “representada”)?** **Recomendo manter o “(a)” que o código já usa** (“nascido(a)”, “representado(a)”), sem pedir um dado novo. O gênero de quem assina vem do papel (mãe, pai, curadora). Se os escritórios estranharem, a saída é um campo “No documento: o cliente / a cliente”, opcional.
 8. **No contrato de honorários, o contratante é o menor (representado ou assistido) ou a mãe em nome próprio?** **Recomendo o menor, representado ou assistido, como já estava na prévia aprovada**, e pedir à advogada parceira que confirme. Quem quiser a mãe como contratante em nome próprio pode ter o próprio modelo do escritório com `[REPRESENTANTE_NOME]` e `[REPRESENTANTE_QUALIFICACAO]`.
+
+## F3.162: idade do bebê e data no futuro (aprovado pela Carol em 24/11/2026)
+
+Textos aprovados no thread "Corrigir idade do bebê na frase do menor", às 11h00 (Bahia), com plano e revisão em `t3jus/planos/F3.162-idade-bebe.md` e `F3.162-idade-bebe-revisao.md` (pasta do projeto):
+
+- A idade sai em palavras por `idadeEmPalavras` (domain): "menos de 1 ano" de 0 a 11 meses, "1 ano", e "N anos" de 2 em diante. Sem meses: a frase diz quem assina, e a data fica ao lado.
+- Cadastro e Gerar documentos: "Ana tem menos de 1 ano hoje: é representado(a)." e "Ana tem 1 ano hoje: é representado(a)." (o resto da frase igual).
+- Ficha, Data de nascimento: "10/05/2026 · menos de 1 ano" e "01/08/2025 · 1 ano".
+- Data de nascimento depois de hoje, no quadro do cadastro: "**Esta data ainda não chegou.** Confira a data: com ela, o T3jus diz se Ana é representado(a) ou assistido(a)." No erro do campo, ao salvar: "Esta data ainda não chegou." É o texto previsto no item 10 destas notas.

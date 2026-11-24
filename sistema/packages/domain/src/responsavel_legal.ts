@@ -66,7 +66,28 @@ export function idadeEm(nascimento: string, hoje: string): number {
   return ah - an - (mh < mn || (mh === mn && dh < dn) ? 1 : 0);
 }
 
-/** "2014-03-14" + 16 → "2030-03-14" (29/02 vira 01/03, como no banco). */
+/**
+ * A idade para a tela (F3.162): "menos de 1 ano", "1 ano", "12 anos". Sem meses: a frase diz quem
+ * assina, e a data fica ao lado. Negativo (data depois de hoje) também vira "menos de 1 ano", como o
+ * `age()` do banco; o cadastro mostra antes "Esta data ainda não chegou.". Toda tela que mostrar a
+ * idade de alguém usa esta função.
+ */
+export function idadeEmPalavras(anos: number): string {
+  if (anos < 1) return "menos de 1 ano";
+  return anos === 1 ? "1 ano" : `${anos} anos`;
+}
+
+/** "Pedro tem 12 anos hoje: é representado(a)." (cadastro e Gerar documentos, desenho D25). */
+export function tituloDaIdade(primeiro: string, anos: number, situacao: "REPRESENTADO" | "ASSISTIDO"): string {
+  return `${primeiro} tem ${idadeEmPalavras(anos)} hoje: é ${situacao === "REPRESENTADO" ? "representado(a)" : "assistido(a)"}.`;
+}
+
+/** A data de nascimento é depois de hoje (aaaa-mm-dd)? */
+export function nascimentoNoFuturo(nascimento: string, hoje: string): boolean {
+  return nascimento.slice(0, 10) > hoje.slice(0, 10);
+}
+
+/** "2014-03-14" + 16 → "2030-03-14" (29/02 vira 28/02, como no banco). */
 export function aniversario(nascimento: string, anos: number): string {
   const [a, m, d] = nascimento.slice(0, 10).split("-").map(Number) as [number, number, number];
   const x = new Date(Date.UTC(a + anos, m - 1, d));
