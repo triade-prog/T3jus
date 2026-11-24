@@ -1,0 +1,112 @@
+[
+ {
+  "nome": "editar-de-gerar",
+  "url": "telas.html?estado=editar-de-gerar",
+  "rotulo": "Editar vindo de Gerar: ao abrir, foco no CPF de Joana (D9)"
+ },
+ {
+  "nome": "editar-de-gerar-mudou",
+  "url": "telas.html?estado=editar-de-gerar-mudou",
+  "rotulo": "Editar vindo de Gerar: depois de escrever, “Mudou” (D10)"
+ },
+ {
+  "nome": "editar-de-gerar-salvando",
+  "url": "telas.html?estado=editar-de-gerar-salvando",
+  "rotulo": "Editar vindo de Gerar: salvando"
+ },
+ {
+  "nome": "editar-de-gerar-erros",
+  "url": "telas.html?estado=editar-de-gerar-erros",
+  "rotulo": "Editar vindo de Gerar: CPF que não confere"
+ },
+ {
+  "nome": "editar-de-gerar-conflito",
+  "url": "telas.html?estado=editar-de-gerar-conflito",
+  "rotulo": "Editar vindo de Gerar: outra pessoa salvou antes"
+ },
+ {
+  "nome": "editar-de-gerar-pj",
+  "url": "telas.html?estado=editar-de-gerar-pj",
+  "rotulo": "Editar vindo de Gerar: empresa (quem assina pela empresa)"
+ },
+ {
+  "nome": "ficha-salva-termo-recusado",
+  "url": "telas.html?estado=ficha-salva-termo-recusado",
+  "rotulo": "Ficha salva, termo recusado: a volta fica na tela"
+ },
+ {
+  "nome": "ficha-inativa-de-gerar",
+  "url": "telas.html?estado=ficha-inativa-de-gerar",
+  "rotulo": "Ficha inativa vinda de Gerar: leitura e a volta"
+ },
+ {
+  "nome": "ficha-nao-encontrada-de-gerar",
+  "url": "telas.html?estado=ficha-nao-encontrada-de-gerar",
+  "rotulo": "Cliente não encontrado, vindo de Gerar"
+ },
+ {
+  "nome": "fez-18-janela-de-gerar",
+  "url": "telas.html?estado=fez-18-janela-de-gerar",
+  "rotulo": "Fez 18: a janela aberta por Gerar (D6)"
+ },
+ {
+  "nome": "fez-18-ja-resolvido",
+  "url": "telas.html?estado=fez-18-ja-resolvido",
+  "rotulo": "Fez 18 já resolvido: sem janela, com a volta"
+ },
+ {
+  "nome": "gerar-voltou-salvo",
+  "url": "telas.html?estado=gerar-voltou-salvo",
+  "rotulo": "Gerar ao voltar: ficha salva, nada faltando"
+ },
+ {
+  "nome": "gerar-voltou-ainda-falta",
+  "url": "telas.html?estado=gerar-voltou-ainda-falta",
+  "rotulo": "Gerar ao voltar: salva, ainda falta o RG"
+ },
+ {
+  "nome": "gerar-voltou-cancelou",
+  "url": "telas.html?estado=gerar-voltou-cancelou",
+  "rotulo": "Gerar ao voltar: depois de Cancelar"
+ },
+ {
+  "nome": "gerar-voltou-ficou-com-a-salva",
+  "url": "telas.html?estado=gerar-voltou-ficou-com-a-salva",
+  "rotulo": "Gerar ao voltar: ficou com a versão salva"
+ },
+ {
+  "nome": "gerar-voltou-pj",
+  "url": "telas.html?estado=gerar-voltou-pj",
+  "rotulo": "Gerar ao voltar: empresa, com o nome inteiro"
+ },
+ {
+  "nome": "gerar-fez-18-agora-nao",
+  "url": "telas.html?estado=gerar-fez-18-agora-nao",
+  "rotulo": "Gerar ao voltar: fez 18, depois de “Agora não”"
+ },
+ {
+  "nome": "gerados-completar",
+  "url": "telas.html?estado=gerados-completar",
+  "rotulo": "Documentos gerados: “Completar na ficha” na mesma aba"
+ },
+ {
+  "nome": "gerar-de-novo-voltou",
+  "url": "telas.html?estado=gerar-de-novo-voltou",
+  "rotulo": "Gerar de novo ao voltar: o aviso reescrito"
+ },
+ {
+  "nome": "decisao-d1",
+  "url": "telas.html?estado=decisao-d1",
+  "rotulo": "Decisão D1: quadro do assistido com os dois nomes"
+ },
+ {
+  "nome": "decisao-d2",
+  "url": "telas.html?estado=decisao-d2",
+  "rotulo": "Decisão D2: “· da ficha do cliente”"
+ },
+ {
+  "nome": "decisao-d3",
+  "url": "telas.html?estado=decisao-d3",
+  "rotulo": "Decisão D3: “Contratante: Pedro, representado por Joana”"
+ }
+]

@@ -1,0 +1,13 @@
+{
+  "id": "F3.167",
+  "texto": "Fez 18 em Gerar documentos (D4 e D5 do F3.160): só a procuração vem marcada, com \"Vai sair 1 arquivo .docx: a procuração, assinada só por Rafaela.\", e a linha \"Já assinado em 08/07/2026, por Rafaela e pela avó.\"",
+  "peca": "S2",
+  "refs": [
+    "CH-08",
+    "AP-01"
+  ],
+  "status": "pendente",
+  "ordem": 1250,
+  "nota": "Decisões D4 e D5 da Carol no F3.160 (24/11/2026), separadas para um item próprio.",
+  "proximo": "Ver se \"Já assinado em …, por … e pela …\" sai dos dados que Gerar já recebe ou pede rota, e programar com o desenho aprovado do F3.160"
+}

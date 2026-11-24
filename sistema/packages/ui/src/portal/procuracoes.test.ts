@@ -1,10 +1,16 @@
 // As contas das telas de Procurações e modelos (F3.16), sem React.
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { faltasDoResponsavel, marcadosDoModeloDocumento, montarValoresDocumento, type Anexo, type ClienteDoDocumento, type DadosDocumentos, type DocumentosDoContrato, type PreviaDocumentos } from "@t3jus/domain";
 import {
   avisoDoMenor, avisoFaltaQuemAssina, avisoFez18, baixarNoCabecalho, botaoGerar, casoDoMenor, errosDocumentos, FALTA_DE_QUEM_ASSINA, faltasDeQuemAssina, faltasDoProprioCliente,
-  formInicialDocumentos, fraseDaFaixaGerar, fraseDoTermoDeTutela, fraseVaoSair, linhaFaltaNoQuadro, pedidoDocumentos, problemaDoAssinado, problemaDosAssinados, quantosDocumentos, seloAssinado, tituloFaltas,
+  formInicialDocumentos, fraseDaFaixaGerar, fraseDoTermoDeTutela, fraseVaoSair, linhaFaltaNoQuadro, pedidoDocumentos, problemaDoAssinado, problemaDosAssinados, quadroQuemAssina,
+  quantosDocumentos, seloAssinado, tituloFaltas,
 } from "./procuracoes.ts";
+import {
+  campoDoCursor, chaveEscolhas, completarQuemAssina, escolhasGuardadasValidas, faltasDaParte, guardarEscolhas, lerEscolhasGuardadas, lerRetornoEmGerar, lerVoltaDeGerar,
+  limparEscolhasGuardadas, montarEscolhas, rotaFichaDeGerar, textoVeioDeGerar, tituloFichaSalva, VALIDADE_ESCOLHAS_MS, voltaParaGerar,
+} from "./voltaGerar.ts";
+import { rascunhoVazio, type RascunhoCliente } from "./clientes.ts";
 
 const insc = (id: string) => ({ id, uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" }) as const;
 const base = (extra: Partial<DadosDocumentos> = {}): DadosDocumentos => ({
@@ -202,16 +208,16 @@ describe("Gerar documentos do menor (F3.142)", () => {
   it("falta dado de quem assina: o aviso em atenção, no plural, no singular e sem marca", () => {
     expect(avisoFaltaQuemAssina(pedro({ rlDocumento: null, rlRg: null }), 3)).toEqual({
       titulo: "Faltam 2 dados de quem assina por Pedro: o CPF e o RG de Joana.",
-      texto: "Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes.",
+      texto: "Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
     });
     expect(avisoFaltaQuemAssina(pedro({ rlRg: null }), 1)).toEqual({
       titulo: "Falta 1 dado de quem assina por Pedro: o RG de Joana.",
-      texto: "Dá para gerar assim: o documento sai com [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes.",
+      texto: "Dá para gerar assim: o documento sai com [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
     });
     expect(avisoFaltaQuemAssina(pedro({ rlMoraJunto: false, rlEndereco: null }), 2)!.texto).toContain("os dois documentos saem com [ENDEREÇO DE QUEM ASSINA: falta]");
     expect(avisoFaltaQuemAssina(pedro({ rlProfissao: null }), 3)).toEqual({
       titulo: "Falta 1 dado de quem assina por Pedro: a qualificação de Joana.",
-      texto: "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes.",
+      texto: "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
     });
     expect(avisoFaltaQuemAssina(pedro(), 3)).toBeNull();
   });
@@ -224,7 +230,7 @@ describe("Gerar documentos do menor (F3.142)", () => {
   it("fez 18: o título da ficha, quem não entra mais e o que antes não ia no documento", () => {
     expect(avisoFez18(rafaela({ estadoCivil: null, profissao: null }), HOJE)).toEqual({
       titulo: "Rafaela fez 18 anos em 19/11/2026: agora assina por si.",
-      texto: "A tutora, Cleusa, que assinava com Rafaela, não entra mais. Faltam 2 dados de Rafaela, que antes não iam no documento: o estado civil e a profissão. Dá para gerar assim: saem marcados, para completar no Word. Ou complete a ficha antes.",
+      texto: "A tutora, Cleusa, que assinava com Rafaela, não entra mais. Faltam 2 dados de Rafaela, que antes não iam no documento: o estado civil e a profissão. Dá para gerar assim: saem marcados, para completar no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
       temFalta: true,
     });
     expect(avisoFez18(rafaela({ estadoCivil: "SOLTEIRO", profissao: null }), HOJE)!.texto)
@@ -288,9 +294,9 @@ describe("Gerar documentos do menor (F3.142)", () => {
     const falta = davi({ rlDocumento: null, rlRg: null });
     expect(avisoFaltaQuemAssina(falta, 3, true)).toEqual({
       titulo: "Faltam 2 dados de quem assina por Davi: o CPF e o RG de Sônia.",
-      texto: `Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes. ${COM}`,
+      texto: `Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá. ${COM}`,
     });
-    expect(avisoFaltaQuemAssina(falta, 3, false)!.texto).toMatch(/Ou complete a ficha antes\. Junte uma cópia do termo de tutela à procuração\.$/);
+    expect(avisoFaltaQuemAssina(falta, 3, false)!.texto).toMatch(/Ou complete a ficha antes: ao salvar, você volta para cá\. Junte uma cópia do termo de tutela à procuração\.$/);
     expect(avisoFaltaQuemAssina(pedro({ rlDocumento: null }), 3, true)!.texto).not.toMatch(/tutela/);
   });
 
@@ -315,5 +321,198 @@ describe("Gerar documentos do menor (F3.142)", () => {
     expect(avisoDoMenor(pedro({ nascimento: null }), HOJE, 3)).toBeNull();
     expect(avisoFez18(pedro({ nascimento: null }), HOJE)).toBeNull();
     expect(fraseDaFaixaGerar(pedro({ nascimento: null, rlRg: "1" }), HOJE, null)).toBe("Algum dado sai marcado, para completar.");
+  });
+});
+
+// ------------------------------------------------------------------------------- F3.160
+
+describe("Editar a ficha vindo de Gerar documentos (F3.160)", () => {
+  const CT = "f1000000-0000-4000-8000-000000000233";
+  const CL = "c1000000-0000-4000-8000-000000000201";
+  const AGORA = Date.parse("2026-11-24T15:00:00Z");
+
+  it("a ida leva só o tipo fixo, o contrato e a parte da lista", () => {
+    expect(rotaFichaDeGerar(CL, CT, "editar", "rl")).toBe(`/clientes/${CL}?editar=1&de=gerar&contrato=${CT}&campo=rl`);
+    expect(rotaFichaDeGerar(CL, CT, "editar")).toBe(`/clientes/${CL}?editar=1&de=gerar&contrato=${CT}`);
+    expect(rotaFichaDeGerar(CL, CT, "por-si", "rl")).toBe(`/clientes/${CL}?janela=por-si&de=gerar&contrato=${CT}`);
+    expect(rotaFichaDeGerar(CL, CT, "editar", "outra" as "rl")).not.toContain("campo=");
+  });
+
+  it("a volta é sempre para Gerar, com o marcador das escolhas, e nunca leva nada de fora", () => {
+    expect(voltaParaGerar(CT, "salva")).toBe(`/contratos/modelos/gerar?contrato=${CT}&escolhas=1&ficha=salva`);
+    expect(voltaParaGerar(CT, "ficou")).toBe(`/contratos/modelos/gerar?contrato=${CT}&escolhas=1&ficha=ficou`);
+    expect(voltaParaGerar(CT.toUpperCase(), null)).toBe(`/contratos/modelos/gerar?contrato=${CT}&escolhas=1`);
+    for (const x of ["https://evil.com", "//evil.com", "/\\evil", "javascript:alert(1)", `${CT}&x=//evil.com`]) {
+      expect(voltaParaGerar(x, "salva")).toBe("/contratos/modelos/gerar");
+    }
+  });
+
+  it("a ficha só aceita de=gerar com o UUID do contrato; o resto abre a ficha normal", () => {
+    expect(lerVoltaDeGerar({ de: "gerar", contrato: CT, campo: "rl" })).toEqual({ contrato: CT, campo: "rl", janela: false });
+    expect(lerVoltaDeGerar({ de: "gerar", contrato: CT.toUpperCase() })).toEqual({ contrato: CT, campo: null, janela: false });
+    expect(lerVoltaDeGerar({ de: "gerar", contrato: CT, janela: "por-si" })).toEqual({ contrato: CT, campo: null, janela: true });
+    expect(lerVoltaDeGerar({ de: "gerar", contrato: CT, campo: "x", janela: "outra" })).toEqual({ contrato: CT, campo: null, janela: false });
+    // Com outro parâmetro hostil, a volta continua sendo só o contrato.
+    expect(lerVoltaDeGerar({ de: "gerar", contrato: CT, volta: "//evil.com", destino: "https://evil.com" })).toEqual({ contrato: CT, campo: null, janela: false });
+    for (const q of [
+      { de: "gerar" }, { de: "outra-coisa", contrato: CT }, { contrato: CT }, { de: "gerar", contrato: [CT, CT] }, { de: ["gerar"], contrato: CT },
+      { de: "gerar", contrato: "https://evil.com" }, { de: "gerar", contrato: "//evil.com" }, { de: "gerar", contrato: "/\\evil" },
+      { de: "gerar", contrato: "javascript:alert(1)" }, { de: "gerar", contrato: "123" },
+    ]) expect(lerVoltaDeGerar(q)).toBeNull();
+  });
+
+  it("Gerar só aceita os marcadores fixos", () => {
+    expect(lerRetornoEmGerar({ escolhas: "1", ficha: "salva" })).toEqual({ escolhas: true, ficha: "salva" });
+    expect(lerRetornoEmGerar({ escolhas: "1", ficha: "ficou" })).toEqual({ escolhas: true, ficha: "ficou" });
+    expect(lerRetornoEmGerar({ escolhas: "sim", ficha: "https://evil.com" })).toEqual({ escolhas: false, ficha: null });
+    expect(lerRetornoEmGerar({ escolhas: ["1"], ficha: ["salva"] })).toEqual({ escolhas: false, ficha: null });
+  });
+
+  const dados = (extra: Partial<DadosDocumentos> = {}) => base({ cliente: { ...base().cliente, id: CL }, ...extra });
+  const guardado = (extra: Record<string, unknown> = {}) => ({
+    ...montarEscolhas(dados(), { docs: ["CONTRATO", "PROCURACAO"], outorgados: { m: ["i1"], l: ["i2"] }, poderes: ["DESISTIR", "ACORDO"], outroPoder: "requerer alvará", cidadeData: "São Paulo, 24 de novembro de 2026" }, 1, "volta-falta-rl", AGORA - 60_000),
+    ...extra,
+  });
+
+  it("as escolhas guardadas voltam conferidas com os dados de agora", () => {
+    expect(escolhasGuardadasValidas(guardado(), dados(), AGORA)).toEqual({
+      form: { docs: ["CONTRATO", "PROCURACAO"], outorgados: { m: ["i1"], l: ["i2"] }, poderes: ["ACORDO", "DESISTIR"], outroPoder: "requerer alvará", cidadeData: "São Paulo, 24 de novembro de 2026" },
+      aba: 1, foco: "volta-falta-rl",
+    });
+    // Advogado ou inscrição que sumiu, modelo que saiu e poder fora da lista não voltam.
+    const g = guardado({ form: { docs: ["CONTRATO", "OUTRO:x"], outorgados: { m: ["i1", "i9"], z: ["i1"] }, poderes: ["ACORDO", "NADA"], outroPoder: "", cidadeData: "São Paulo, hoje" } });
+    expect(escolhasGuardadasValidas(g, dados(), AGORA)!.form).toEqual({ docs: ["CONTRATO"], outorgados: { m: ["i1"] }, poderes: ["ACORDO"], outroPoder: "", cidadeData: "São Paulo, hoje" });
+  });
+
+  it("o que ficou assinado depois sai; o assinado antes que a pessoa marcou de novo fica", () => {
+    const assinadoAgora = dados({ contrato: { ...base().contrato, assinadoEm: "2026-11-24" } });
+    expect(escolhasGuardadasValidas(guardado(), assinadoAgora, AGORA)!.form.docs).toEqual(["PROCURACAO"]);
+    expect(escolhasGuardadasValidas(guardado({ assinadas: ["CONTRATO"] }), assinadoAgora, AGORA)!.form.docs).toEqual(["CONTRATO", "PROCURACAO"]);
+  });
+
+  it("formato errado, vencido, do futuro ou de outro cliente: nada volta", () => {
+    for (const x of [
+      null, "texto", 42, [], guardado({ v: 2 }), guardado({ em: "ontem" }), guardado({ em: AGORA + 10 * 60_000 }), guardado({ em: AGORA - VALIDADE_ESCOLHAS_MS - 1 }),
+      guardado({ clienteId: "outro" }), guardado({ assinadas: "CONTRATO" }), guardado({ form: null }), guardado({ form: { docs: "x" } }),
+      guardado({ form: { ...guardado().form, outroPoder: "x".repeat(301) } }), guardado({ form: { ...guardado().form, cidadeData: 5 } }),
+      guardado({ form: { ...guardado().form, outorgados: { m: "i1" } } }),
+    ]) expect(escolhasGuardadasValidas(x, dados(), AGORA)).toBeNull();
+    // A aba fora da conta e o foco fora da lista fixa caem no começo e em nada.
+    expect(escolhasGuardadasValidas(guardado({ aba: -1, foco: "javascript:alert(1)" }), dados(), AGORA)).toMatchObject({ aba: 0, foco: null });
+    expect(escolhasGuardadasValidas(guardado({ aba: 7 }), dados(), AGORA)!.aba).toBe(0);
+    expect(escolhasGuardadasValidas(guardado({ aba: 1.5 }), dados(), AGORA)!.aba).toBe(0);
+  });
+
+  it("nenhum dado do cliente vai para o armazenamento", () => {
+    const d = dados({ cliente: { ...base().cliente, id: CL, nome: "Pedro Henrique Alves Souza", documento: "48821390730" } });
+    const json = JSON.stringify(montarEscolhas(d, formInicialDocumentos(d), 0, "volta-quadro"));
+    expect(json).not.toContain("Pedro");
+    expect(json).not.toContain("48821390730");
+    expect(Object.keys(JSON.parse(json) as object).sort()).toEqual(["aba", "assinadas", "clienteId", "em", "foco", "form", "v"]);
+  });
+
+  describe("o sessionStorage", () => {
+    const mapa = new Map<string, string>();
+    const falso = {
+      get length() { return mapa.size; },
+      key: (i: number) => [...mapa.keys()][i] ?? null,
+      getItem: (k: string) => mapa.get(k) ?? null,
+      setItem: (k: string, v: string) => { mapa.set(k, v); },
+      removeItem: (k: string) => { mapa.delete(k); },
+    };
+    const g = globalThis as unknown as { window?: unknown };
+    afterEach(() => { mapa.clear(); delete g.window; });
+
+    it("lê uma vez e apaga; JSON quebrado ou armazenamento bloqueado não quebram", () => {
+      g.window = { sessionStorage: falso };
+      guardarEscolhas(CT, guardado() as never);
+      expect(mapa.has(chaveEscolhas(CT))).toBe(true);
+      expect(lerEscolhasGuardadas(CT)).toMatchObject({ v: 1, foco: "volta-falta-rl" });
+      expect(lerEscolhasGuardadas(CT)).toBeNull();
+      mapa.set(chaveEscolhas(CT), "{quebrado");
+      expect(lerEscolhasGuardadas(CT)).toBeNull();
+      expect(mapa.has(chaveEscolhas(CT))).toBe(false);
+      g.window = { get sessionStorage() { throw new Error("SecurityError"); } };
+      expect(() => guardarEscolhas(CT, guardado() as never)).not.toThrow();
+      expect(lerEscolhasGuardadas(CT)).toBeNull();
+      expect(() => limparEscolhasGuardadas()).not.toThrow();
+    });
+
+    it("limpar apaga só as chaves t3jus.gerar.*", () => {
+      g.window = { sessionStorage: falso };
+      mapa.set(chaveEscolhas(CT), "1");
+      mapa.set(chaveEscolhas(CL), "2");
+      mapa.set("outra", "3");
+      limparEscolhasGuardadas(CT);
+      expect([...mapa.keys()].sort()).toEqual(["outra", chaveEscolhas(CL)]);
+      limparEscolhasGuardadas();
+      expect([...mapa.keys()]).toEqual(["outra"]);
+    });
+  });
+
+  const rasc = (extra: Partial<RascunhoCliente> = {}): RascunhoCliente => ({
+    ...rascunhoVazio("PF"), nome: "Pedro Henrique Alves Souza", documento: "488.213.907-30", nacionalidade: "brasileiro", endereco: "Rua das Acácias, 418",
+    capacidade: "MENOR", nascimento: "14/03/2014", rlPapel: "MAE", rlNome: "Joana Alves Souza", rlDocumento: "", rlRg: "", rlNacionalidade: "brasileira",
+    rlEstadoCivil: "DIVORCIADO", rlProfissao: "auxiliar administrativa", rlMoraJunto: true, ...extra,
+  });
+
+  it("D9: o cursor no primeiro campo que falta da parte e o aviso diz o que falta", () => {
+    expect(faltasDaParte(rasc(), "rl", "2026-11-22").map((x) => x.campo)).toEqual(["rlDocumento", "rlRg"]);
+    expect(campoDoCursor(rasc(), "rl", "2026-11-22")).toBe("rlDocumento");
+    expect(textoVeioDeGerar(rasc(), "rl", "2026-11-22"))
+      .toBe("Faltam o CPF e o RG de Joana: o cursor já está no CPF. Ao salvar, você volta para lá, com a prévia já com os dados novos.");
+    expect(textoVeioDeGerar(rasc({ rlDocumento: "377.640.215-63" }), "rl", "2026-11-22"))
+      .toBe("Falta o RG de Joana: o cursor já está no RG. Ao salvar, você volta para lá, com a prévia já com os dados novos.");
+    // Sem falta: o primeiro campo da parte e o texto do D25.
+    const completo = rasc({ rlDocumento: "377.640.215-63", rlRg: "28.441.903-7" });
+    expect(campoDoCursor(completo, "rl", "2026-11-22")).toBe("rlNome");
+    expect(textoVeioDeGerar(completo, "rl", "2026-11-22")).toBe("Ao salvar, volta para lá, com a prévia já com os dados novos.");
+    // O próprio cliente menor: sem estado civil, profissão e RG.
+    expect(faltasDaParte(rasc({ nacionalidade: "" }), "cliente", "2026-11-22").map((x) => x.curta)).toEqual(["a nacionalidade"]);
+    expect(textoVeioDeGerar(rasc({ nacionalidade: "" }), "cliente", "2026-11-22")).toMatch(/^Falta a nacionalidade de Pedro: o cursor já está na nacionalidade\./);
+    expect(campoDoCursor(rasc(), null, "2026-11-22")).toBe("nome");
+  });
+
+  it("D9 na empresa: o cursor em quem assina e o nome inteiro", () => {
+    const far = { ...rascunhoVazio("PJ"), nome: "Farmácia Bom Jesus Ltda.", repNome: "Rita de Cássia Moura", repCargo: "", repDocumento: "" };
+    expect(campoDoCursor(far, "pj", "2026-11-22")).toBe("repCargo");
+    expect(campoDoCursor({ ...far, repCargo: "Sócia", repDocumento: "1" }, "pj", "2026-11-22")).toBe("repNome");
+    expect(textoVeioDeGerar(far, "pj", "2026-11-22")).toBe("O cursor já está em “Quem assina pela empresa”. Ao salvar, você volta para lá, com a prévia já com os dados novos.");
+    expect(textoVeioDeGerar({ ...far, documento: "" }, "cliente", "2026-11-22")).toMatch(/^Faltam o CNPJ, o endereço, o cargo e o CPF de quem assina de Farmácia Bom Jesus Ltda\.: o cursor já está no CNPJ\./);
+  });
+
+  it("D8: a ficha salva com o primeiro nome, e a empresa com o nome inteiro", () => {
+    expect(tituloFichaSalva({ nome: "Pedro Henrique Alves Souza", tipo: "PF" })).toBe("Ficha de Pedro salva.");
+    expect(tituloFichaSalva({ nome: "Farmácia Bom Jesus Ltda.", tipo: "PJ" })).toBe("Ficha de Farmácia Bom Jesus Ltda. salva.");
+  });
+});
+
+describe("O quadro de quem assina em Gerar (F3.160, D1 e D2)", () => {
+  const HOJE = "2026-11-22";
+  const c = (extra: Partial<ClienteDoDocumento> = {}): ClienteDoDocumento => ({
+    id: "cl", nome: "Pedro Henrique Alves Souza", tipo: "PF", documento: "48821390730", nacionalidade: "brasileiro", estadoCivil: null, profissao: null,
+    rg: null, rgOrgao: null, endereco: "Rua das Acácias, 418", bairro: null, cidade: null, uf: null, cep: null,
+    repNome: null, repCargo: null, repDocumento: null, repEstadoCivil: null, repProfissao: null, versao: 1,
+    capacidade: "MENOR", nascimento: "2014-03-14", rlPapel: "MAE", rlNome: "Joana Alves Souza", rlDocumento: "37764021563", rlRg: null, rlMoraJunto: true,
+    rlNacionalidade: "brasileira", rlEstadoCivil: "DIVORCIADO", rlProfissao: "auxiliar administrativa",
+    ...extra,
+  });
+
+  it("D2: a linha termina com “· da ficha do cliente”, com e sem CPF", () => {
+    expect(quadroQuemAssina(c(), HOJE, "377.640.215-63")).toEqual({ nome: "Joana Alves Souza", linha: "Mãe · CPF 377.640.215-63 · da ficha do cliente", selo: true });
+    expect(quadroQuemAssina(c({ rlDocumento: null }), HOJE, null).linha).toBe("Mãe · da ficha do cliente");
+  });
+
+  it("D1: no assistido, os dois nomes e a frase de quem assina, sem o selo", () => {
+    const lucas = c({ nome: "Lucas Ferreira Moura", nascimento: "2010-02-03", rlPapel: "PAI", rlNome: "Marcos Ferreira Moura" });
+    expect(quadroQuemAssina(lucas, HOJE, "123.456.789-09")).toEqual({
+      nome: "Lucas e Marcos Ferreira Moura", linha: "Lucas assina, assistido(a) pelo pai, Marcos · CPF 123.456.789-09 · da ficha do cliente", selo: false,
+    });
+    expect(quadroQuemAssina({ ...lucas, rlPapel: "TUTORA", rlNome: "Sônia Lima" }, HOJE, null).linha).toBe("Lucas assina, assistido(a) pela tutora, Sônia · da ficha do cliente");
+  });
+
+  it("o nome acessível de “Completar na ficha” diz o que falta e de quem", () => {
+    expect(completarQuemAssina(c())).toBe(": RG de Joana");
+    expect(completarQuemAssina(c({ rlDocumento: null }))).toBe(": CPF e RG de Joana");
   });
 });

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
-  ContratosPortal, FichaContratoPortal, GerarDocumentosPortal, HonorariosContratosPortal, LembretesContratoPortal, ModelosDocumentoPortal, MudarContratoPortal,
+  ContratosPortal, lerRetornoEmGerar, FichaContratoPortal, GerarDocumentosPortal, HonorariosContratosPortal, LembretesContratoPortal, ModelosDocumentoPortal, MudarContratoPortal,
   NovoContratoPortal, ProcuracoesContratosPortal,
 } from "@t3jus/ui";
 
@@ -27,8 +27,10 @@ export default async function Pagina({ params, searchParams }: {
     if (!a) return <ProcuracoesContratosPortal />;
     if (a === "modelos" && !b) return <ModelosDocumentoPortal />;
     if (a === "gerar" && !b) {
-      const c = (await searchParams).contrato;
-      return <GerarDocumentosPortal contrato={typeof c === "string" && UUID.test(c) ? c.toLowerCase() : null} />;
+      // A volta da ficha (F3.160): só os marcadores fixos escolhas=1 e ficha=salva|ficou.
+      const q = await searchParams;
+      const c = q.contrato;
+      return <GerarDocumentosPortal contrato={typeof c === "string" && UUID.test(c) ? c.toLowerCase() : null} retorno={lerRetornoEmGerar(q)} />;
     }
   }
   if (secao === "contratos") {

@@ -5636,6 +5636,21 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .pr-rep.rl-falta{border-color:var(--vinho-3);border-style:dashed}
 /* Gerar documentos do menor com falta de quem assina (F3.142): a borda tracejada sem mudar o tamanho da caixa. */
 .pe-dado.rl-falta{border:1px dashed var(--vinho-3);padding:11px 13px}
+/* Editar a ficha vindo de Gerar documentos (F3.160, docs/design/aprovadas/portal-editar-vindo-de-gerar): o selo
+   "Falta" (o par do quadro tracejado de Gerar), a faixa fixa de volta e o aviso dentro da janela do fez 18. */
+.eg-falta{font-family:var(--sans);display:inline-flex;align-items:center;margin-left:8px;height:20px;padding:0 8px;border-radius:10px;
+  background:var(--papel);border:1px dashed var(--vinho-3);color:var(--vinho-3);font-size:11px;font-weight:600;vertical-align:1px}
+.eg-volta{margin:0 0 20px}
+.eg-volta+.cl-inativo-faixa{margin-top:-8px}
+.eg-volta .btn{white-space:nowrap}
+.janela .eg-janela-aviso{margin:0 0 14px}
+@media (max-width:760px){
+  .eg-volta .btn{white-space:normal}
+  .aviso .aviso-acoes .btn{white-space:normal;text-align:center;height:auto;min-height:44px;padding-top:8px;padding-bottom:8px}
+  .aviso .comparar{width:100%;table-layout:fixed}
+  .aviso .comparar th,.aviso .comparar td{overflow-wrap:anywhere;white-space:normal;padding-left:6px;padding-right:6px}
+  .aviso .comparar thead th{letter-spacing:.02em;font-size:11px}
+}
 .rl-assina{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .rl-assina>span{display:block}
 .pe-ass .rl-fio{display:block;width:min(240px,85%);margin:18px auto 6px;border-top:1px solid var(--tinta)}

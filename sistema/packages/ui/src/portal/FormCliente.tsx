@@ -17,11 +17,12 @@ import { problemaDoArquivo } from "../console/documentos.ts";
 import { formatarTelefone } from "../console/ficha.ts";
 import { dataLonga } from "../console/tempo.ts";
 import {
-  campoDoServidor, conferirCliente, dataBr, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato,
+  campoDoServidor, conferirCliente, dataBr, diferencasCliente, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato,
   type ErrosCliente, type RascunhoCliente,
 } from "./clientes.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 import { descricaoArquivoTermo, enviarTermo, fichaMudou, type TipoTermo } from "./termoCuratela.ts";
+import { campoDoCursor, faltasDaParte, textoVeioDeGerar, type ParteFicha } from "./voltaGerar.ts";
 
 type CampoTexto = Exclude<keyof RascunhoCliente, "tipo" | "contatos" | "principal" | "rlMoraJunto">;
 const PROC = "procuração";
@@ -32,6 +33,11 @@ function Uso({ children }: { children: ReactNode }) {
 function Mudou() {
   return <span className="mudou">Mudou</span>;
 }
+/** O campo que o link de Gerar levou a completar e ainda está vazio (F3.160): tracejado, com o texto. */
+function Falta() {
+  return <span className="eg-falta">Falta</span>;
+}
+const AJUDA_FALTA = "Falta. Vai na procuração e no contrato.";
 
 export interface Conflito {
   /** "Felipe Matos salvou esta ficha às 14h52, enquanto você editava." */
@@ -65,11 +71,13 @@ export function tipoDoTermoDoPainel(r: Pick<RascunhoCliente, "tipo" | "capacidad
   return sit.situacao === "FEZ_18" ? null : "TUTELA";
 }
 
-export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, daConversa, termoCuratela = null, termoTutela = null, termoInicial = null,
-  aoSalvo, aoCancelar,
+export function FormularioCliente({ modo, inicial, comercial, versao, idCliente, conflito, daConversa, deGerar = null, termoCuratela = null, termoTutela = null,
+  termoInicial = null, aoSalvo, aoCancelar,
   aoConflito, aoFicarComSalva }: {
   modo: "novo" | "editar";
   daConversa?: CadastroDaConversa | null;
+  /** O editar aberto por Gerar documentos (F3.160): a parte de onde a pessoa veio (D9), ou null. */
+  deGerar?: { parte: ParteFicha | null } | null;
   inicial: RascunhoCliente;
   comercial: boolean;
   versao?: number;
@@ -100,9 +108,24 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
   const [duplicados, setDuplicados] = useState<{ por: "documento" | "telefone"; lista: PossivelDuplicado[] } | null>(null);
   const novo = modo === "novo";
   const pf = r.tipo === "PF";
-  const mudou = (k: string) => !!conflito?.diferencas.some((d) => d.chave === k);
+  // A ficha como estava ao abrir, para o "Mudou" ao vivo em todo editar (D10), e o que faltava na parte
+  // de onde a pessoa veio de Gerar, com o campo do cursor (D9).
+  const [aoAbrir] = useState(() => {
+    const hj = hojeBrasilia();
+    const parte = deGerar?.parte ?? null;
+    return {
+      faltas: new Set<string>(parte ? faltasDaParte(inicial, parte, hj).map((x) => x.campo) : []),
+      cursor: deGerar ? campoDoCursor(inicial, parte, hj) : "nome",
+      veio: deGerar ? textoVeioDeGerar(inicial, parte, hj) : "",
+    };
+  });
+  const [base] = useState(inicial);
+  const mudaram = novo || conflito ? null : new Set(diferencasCliente(base, r).map((d) => d.chave));
+  const mudou = (k: string) => (conflito ? conflito.diferencas.some((d) => d.chave === k) : !!mudaram?.has(k));
+  const falta = (k: CampoTexto) => !!deGerar && aoAbrir.faltas.has(k) && !r[k].trim();
 
-  // O foco começa no primeiro campo (no conflito, fica no aviso, que é lido primeiro).
+  // O foco começa no primeiro campo, ou no que falta da parte de onde a pessoa veio de Gerar (D9); no
+  // conflito, fica no aviso, que é lido primeiro.
   useEffect(() => {
     if (!conflito) form.current?.querySelector<HTMLElement>("[data-foco]")?.focus();
   }, [conflito]);
@@ -195,14 +218,15 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           {o.opcional ? <span className="opcional"> (opcional)</span> : null}
           {o.pre ? <span className="jf-pre">da conversa</span> : null}
           {o.uso ? <Uso>{PROC}</Uso> : null}
+          {falta(k) ? <Falta /> : null}
           {mudou(k) ? <Mudou /> : null}
         </label>
         <input className="entrada" id={id} type={o.tipo ?? "text"} value={r[k]} autoComplete={o.auto ?? "off"} inputMode={o.modo}
-          data-foco={o.foco ? true : undefined} onChange={(ev) => mudar(k, ev.target.value)} onBlur={o.aoSair}
-          aria-invalid={e ? true : undefined} aria-describedby={descritoPor(!e && o.ajuda && `${id}-aj`, e && `${id}-er`)} />
-        {!e && o.ajuda ? (
+          data-foco={(deGerar ? k === aoAbrir.cursor && !conflito : o.foco) ? true : undefined} onChange={(ev) => mudar(k, ev.target.value)} onBlur={o.aoSair}
+          aria-invalid={e ? true : undefined} aria-describedby={descritoPor(!e && (o.ajuda || falta(k)) && `${id}-aj`, e && `${id}-er`)} />
+        {!e && (o.ajuda || falta(k)) ? (
           <p className="ajuda" id={`${id}-aj`}>
-            {o.ajuda}
+            {falta(k) ? AJUDA_FALTA : o.ajuda}
           </p>
         ) : null}
         {o.depois}
@@ -221,10 +245,11 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           {rotulo}
           {o.opcional ? <span className="opcional"> (opcional)</span> : null}
           {o.uso ? <Uso>{PROC}</Uso> : null}
+          {falta(k) ? <Falta /> : null}
           {mudou(k) ? <Mudou /> : null}
         </label>
-        <select className="entrada" id={id} value={r[k]} onChange={(ev) => mudar(k, ev.target.value)}
-          aria-invalid={e ? true : undefined} aria-describedby={descritoPor(!e && o.ajuda && `${id}-aj`, e && `${id}-er`)}>
+        <select className="entrada" id={id} value={r[k]} onChange={(ev) => mudar(k, ev.target.value)} data-foco={deGerar && k === aoAbrir.cursor && !conflito ? true : undefined}
+          aria-invalid={e ? true : undefined} aria-describedby={descritoPor(!e && (o.ajuda || falta(k)) && `${id}-aj`, e && `${id}-er`)}>
           <option value="">Escolha</option>
           {pares.map(([v, t]) => (
             <option key={v} value={v}>
@@ -232,9 +257,9 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
             </option>
           ))}
         </select>
-        {!e && o.ajuda ? (
+        {!e && (o.ajuda || falta(k)) ? (
           <p className="ajuda" id={`${id}-aj`}>
-            {o.ajuda}
+            {falta(k) ? AJUDA_FALTA : o.ajuda}
           </p>
         ) : null}
         {e ? <ErroCampo id={`${id}-er`}>{e}</ErroCampo> : null}
@@ -651,7 +676,10 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
     <section className="folha" aria-labelledby={`${ids}-t`}>
       <div className="folha-cab">
         <div>
-          <h2 id={`${ids}-t`}>{novo ? "Dados do cliente" : "Editar ficha"}</h2>
+          <h2 id={`${ids}-t`}>
+            {novo ? "Dados do cliente" : "Editar ficha"}
+            {deGerar ? <span className="sr"> · você veio de Gerar documentos</span> : null}
+          </h2>
           <p className="sub">
             {novo ? "Comece pelo nome e um contato. A qualificação pode ficar para quando for fazer a procuração." : "Os campos sem “(opcional)” são obrigatórios."}
           </p>
@@ -668,11 +696,13 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
           </span>
         </p>
       ) : null}
-      <form ref={form} className="form-folha" noValidate onSubmit={(ev) => { ev.preventDefault(); void salvar(); }}>
+      <form ref={form} className="form-folha" noValidate onSubmit={(ev) => { ev.preventDefault(); void salvar(); }}
+        aria-describedby={deGerar ? `${ids}-veio` : undefined}>
         {nErros ? (
           <div className="c6">
             <Aviso tom="urgencia" titulo={faltaAcertar(nErros)}>
               {novo ? "O cliente ainda não foi cadastrado." : "A ficha não foi salva. O resto do que você escreveu continua aqui."}
+              {deGerar ? " Ao salvar, você volta para Gerar documentos." : ""}
             </Aviso>
           </div>
         ) : null}
@@ -711,10 +741,10 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
                   ) : null}
                   <div className="aviso-acoes" style={{ width: "100%" }}>
                     <button className="btn btn-pri" type="submit" disabled={salvando}>
-                      Salvar a minha versão
+                      {deGerar ? "Salvar a minha versão e voltar" : "Salvar a minha versão"}
                     </button>
                     <button className="btn btn-sec" type="button" onClick={aoFicarComSalva}>
-                      Ficar com a versão salva
+                      {deGerar ? "Ficar com a versão salva e voltar" : "Ficar com a versão salva"}
                     </button>
                   </div>
                 </>
@@ -722,7 +752,20 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
               {conflito.diferencas.length
                 ? `Nada do que você escreveu se perdeu. Compare ${conflito.diferencas.length === 1 ? "o campo que mudou" : `os ${conflito.diferencas.length} campos que mudaram`} e escolha qual versão fica.`
                 : "Nada do que você escreveu se perdeu. A versão salva é igual à sua; salve para confirmar."}
+              {deGerar ? " Nas duas, você volta para Gerar documentos." : ""}
             </Aviso>
+          </div>
+        ) : null}
+        {deGerar ? (
+          // Sem região viva: o aviso é lido pelo aria-describedby do formulário e pelo título (revisão, ajuste 17).
+          <div className="c6">
+            <div className="aviso aviso-info" id={`${ids}-veio`}>
+              <Icone nome="seta" className="ico" />
+              <div>
+                <strong className="aviso-titulo">Você veio de Gerar documentos.</strong>
+                <p>{faltasDaParte(r, deGerar.parte ?? "cliente", hoje).length === aoAbrir.faltas.size || !deGerar.parte ? aoAbrir.veio : "Ao salvar, volta para lá, com a prévia já com os dados novos."}</p>
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -785,19 +828,24 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
         {qualificacao}
         {novo ? null : contatosEdit}
         <div className="form-pe">
-          <span className="esq-pe">
+          {deGerar && salvando ? (
+            <span className="esq-pe" role="status">Salvando a ficha. Em seguida, você volta para Gerar documentos.</span>
+          ) : <span className="esq-pe">
             {novo
               ? cap === "PLENA"
                 ? "Os campos sem “(opcional)” são obrigatórios. O cadastro fica no histórico do escritório, com seu nome e a hora."
                 : "Os campos sem “(opcional)” são obrigatórios. Para menor, também a data de nascimento e o nome de quem assina; para curatela, o nome do curador. O cadastro fica no histórico do escritório."
               : "Cada mudança vai para o histórico do escritório, com seu nome e os campos alterados."}
-          </span>
-          <button className="btn btn-fantasma" type="button" onClick={aoCancelar}>
+          </span>}
+          <button className="btn btn-fantasma" type="button" onClick={aoCancelar} disabled={!!deGerar && salvando}>
             {novo && daConversa ? "Voltar à conversa" : "Cancelar"}
+            {deGerar ? <span className="sr"> e voltar para Gerar documentos</span> : null}
           </button>
           <button className="btn btn-pri" type="submit" disabled={salvando}>
-            <Icone nome="check" className="ico" />
-            {salvando ? "Salvando…" : novo ? (daConversa ? "Cadastrar e voltar à conversa" : "Cadastrar cliente") : "Salvar ficha"}
+            <Icone nome={deGerar && salvando ? "relogio" : "check"} className="ico" />
+            {salvando ? "Salvando…" : novo ? (daConversa ? "Cadastrar e voltar à conversa" : "Cadastrar cliente") : deGerar ? (
+              <>Salvar e voltar<span className="sr"> para Gerar documentos</span></>
+            ) : "Salvar ficha"}
           </button>
         </div>
       </form>

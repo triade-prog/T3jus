@@ -200,7 +200,7 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
   test("representado: o aviso do dia e “Em todos, Joana assina por Pedro”", async ({ page }) => {
     await simular(page, dadosGerarMenor({ ...BASE, ...COM_RG }, previa(3, [], "Nenhum dado sai marcado.")));
     await gerar(page);
-    await expect(page.getByText("Quem assina por Pedro")).toBeVisible();
+    await expect(page.getByText("Quem assina por Pedro", { exact: true })).toBeVisible();
     await expect(page.getByText("Mãe · CPF 377.640.215-63")).toBeVisible();
     const aviso = page.getByRole("status").filter({ hasText: "Pedro tem 11 anos hoje: é representado(a)." });
     await expect(aviso).toContainText(`Só Joana assina, em nome de Pedro, os três documentos. Em ${br(mais(PEDRO_NASC, 16))}, aos 16 anos, Pedro passa a ser assistido(a), e os dois assinam. O T3jus faz a conta pela data de nascimento, no dia de gerar.`);
@@ -214,7 +214,9 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
     const nasc = nasceu(16, -60);
     await simular(page, dadosGerarMenor({ ...BASE, ...COM_RG, nascimento: nasc, rlPapel: "PAI", rlNome: "Marcos Alves Souza" }, previa(1, [], "Nenhum dado sai marcado."), 1));
     await gerar(page);
-    await expect(page.getByText("Pai · CPF 377.640.215-63")).toBeVisible();
+    // D1 (F3.160): no assistido, os dois nomes e a frase de quem assina, sem o selo "Assiste".
+    await expect(page.getByText("Pedro e Marcos Alves Souza", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pedro assina, assistido(a) pelo pai, Marcos · CPF 377.640.215-63 · da ficha do cliente", { exact: true })).toBeVisible();
     const aviso = page.getByRole("status").filter({ hasText: "Pedro tem 16 anos hoje: é assistido(a)." });
     await expect(aviso).toContainText(`Os dois assinam o documento: Pedro e o pai, Marcos, que o(a) assiste. Em ${br(mais(nasc, 18))}, aos 18 anos, Pedro passa a assinar sozinho(a).`);
     await expect(faixa(page)).toContainText("Nenhum dado sai marcado. Em todos, Pedro e Marcos assinam.");
@@ -226,10 +228,11 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
     await simular(page, dadosGerarMenor({ ...BASE, rlDocumento: null, rlRg: null }, previa(3, marcados, "2 dados saem marcados em cada um.")));
     await gerar(page);
     const aviso = page.getByRole("status").filter({ hasText: "Faltam 2 dados de quem assina por Pedro: o CPF e o RG de Joana." });
-    await expect(aviso).toContainText("Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes.");
-    const completar = aviso.getByRole("link", { name: "Completar na ficha (abre numa aba nova)" });
-    await expect(completar).toHaveAttribute("href", `/clientes/${CLI}`);
-    await expect(completar).toHaveAttribute("target", "_blank");
+    await expect(aviso).toContainText("Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.");
+    // F3.160: na mesma aba, com a volta para Gerar.
+    const completar = aviso.getByRole("link", { name: "Completar na ficha: CPF e RG de Joana" });
+    await expect(completar).toHaveAttribute("href", `/clientes/${CLI}?editar=1&de=gerar&contrato=${CT}&campo=rl`);
+    await expect(completar).not.toHaveAttribute("target", /.*/);
     await expect(page.getByText(/é representado\(a\)/)).toHaveCount(0);
     await expect(page.getByText("Faltam o CPF e o RG dela")).toBeVisible();
     await expect(page.locator(".pe-dado.rl-falta")).toHaveCount(1);
@@ -247,8 +250,9 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
       previa(1, marcados, "2 dados saem marcados."), 1));
     await gerar(page);
     const aviso = page.getByRole("status").filter({ hasText: `Pedro fez 18 anos em ${br(mais(nasc, 18))}: agora assina por si.` });
-    await expect(aviso).toContainText("A tutora, Cleusa, que assinava com Pedro, não entra mais. Faltam 2 dados de Pedro, que antes não iam no documento: o estado civil e a profissão. Dá para gerar assim: saem marcados, para completar no Word. Ou complete a ficha antes.");
-    await expect(aviso.getByRole("link", { name: "Completar na ficha (abre numa aba nova)" })).toHaveAttribute("href", `/clientes/${CLI}`);
+    await expect(aviso).toContainText("A tutora, Cleusa, que assinava com Pedro, não entra mais. Faltam 2 dados de Pedro, que antes não iam no documento: o estado civil e a profissão. Dá para gerar assim: saem marcados, para completar no Word. Ou complete a ficha antes: ao salvar, você volta para cá.");
+    await expect(aviso.getByRole("link", { name: "Completar na ficha: estado civil e profissão de Pedro" }))
+      .toHaveAttribute("href", `/clientes/${CLI}?janela=por-si&de=gerar&contrato=${CT}`);
     await expect(page.getByText("Quem assina por Pedro")).toHaveCount(0);
     await expect(page.getByText("Faltam 2 dados de Pedro: o estado civil e a profissão.")).toHaveCount(0);
     await expect(faixa(page)).toContainText("2 dados saem marcados: o estado civil e a profissão de Pedro.");
@@ -821,12 +825,12 @@ test.describe("Termo de tutela (F3.140)", () => {
     await simular(page, rotasGerarT(falta, termoTutela(), previaT(marcados, "2 dados saem marcados em cada um.")));
     await page.goto(`${P}/contratos/modelos/gerar?contrato=${CT}`);
     const quadro = page.locator(".pe-dado.rl-falta");
-    await expect(quadro.locator("small")).toHaveText(["Tutora", "Faltam o CPF e o RG dela", "Termo de tutela na ficha"]);
+    await expect(quadro.locator("small")).toHaveText(["Tutora · da ficha do cliente", "Faltam o CPF e o RG dela", "Termo de tutela na ficha"]);
     const aviso = page.getByRole("status").filter({ hasText: "Faltam 2 dados de quem assina por Davi: o CPF e o RG de Sônia." });
-    await expect(aviso).toContainText(`Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes. ${COM}`);
+    await expect(aviso).toContainText(`Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá. ${COM}`);
     const botoes = aviso.locator(".aviso-acoes > *");
     await expect(botoes).toHaveCount(2);
-    await expect(botoes.nth(0)).toHaveAccessibleName("Completar na ficha (abre numa aba nova)");
+    await expect(botoes.nth(0)).toHaveAccessibleName("Completar na ficha: CPF e RG de Sônia");
     await expect(botoes.nth(1)).toHaveAccessibleName("Baixar o termo");
     await expect(faixaT(page)).toContainText("2 dados saem marcados em cada um: o CPF e o RG de Sônia. Junte o termo de tutela à procuração. Cada geração");
     await expect(faixaT(page)).not.toContainText("Em todos");
@@ -873,5 +877,363 @@ test.describe("Termo de tutela (F3.140)", () => {
     await page.goto(`${P}/clientes/${CLI}`);
     await page.locator(".rl-faixa").getByRole("button", { name: "Atualizar a ficha de Rafaela" }).click();
     await expect(page.getByRole("dialog", { name: "Rafaela agora assina por si" })).not.toContainText("termo de tutela");
+  });
+});
+
+// ------------------------------------------------------------------------------- F3.160
+
+// Editar a ficha vindo de Gerar documentos, como no desenho aprovado em
+// docs/design/aprovadas/portal-editar-vindo-de-gerar: os links de ficha em Gerar abrem o editar na
+// mesma aba, "Salvar e voltar" volta para Gerar com as escolhas (guardadas na aba, sem dado do
+// cliente) e a prévia nova, e o "voltar" do navegador não reabre o editar.
+test.describe("Editar vindo de Gerar documentos (F3.160)", () => {
+  const OAB_M = { id: "0ab00000-0000-4000-8000-000000000001", uf: "SP", numero: "214538", letra: null, tipo: "PRINCIPAL", versao: 1, texto: "OAB/SP 214.538", documento: "OAB/SP nº 214.538" };
+  const OAB_L = { ...OAB_M, id: "0ab00000-0000-4000-8000-000000000002", numero: "401226", texto: "OAB/SP 401.226", documento: "OAB/SP nº 401.226" };
+  const LARISSA = { id: "a0000000-0000-4000-8000-000000000103", nome: "Larissa Costa" };
+  const MODELOS = [
+    { tipo: "CONTRATO", modeloId: null, nome: "Contrato de honorários", numero: null, padrao: "CONTRATO", emRevisao: true },
+    { tipo: "PROCURACAO", modeloId: null, nome: "Procuração", numero: null, padrao: "PROCURACAO", emRevisao: true },
+    { tipo: "HIPOSSUFICIENCIA", modeloId: null, nome: "Declaração de hipossuficiência", numero: null, padrao: "HIPOSSUFICIENCIA_PF", emRevisao: true },
+  ];
+  const CONTATO = { id: "c2000000-0000-4000-8000-000000000009", nome: "Joana Alves Souza", papel: "Mãe", telefone: "+5511984723316", email: null, principal: true };
+  const FALTA = { ...BASE, rlDocumento: null, rlRg: null, contatos: [CONTATO] };
+  const COMPLETO = { ...FALTA, versao: 5, rlDocumento: "37764021563", rlRg: "28.441.903-7" };
+  const seg = (t: string, texto: string) => ({ t, texto });
+  const previa = (marcados: string[], frase: string) => ({
+    documentos: MODELOS.map((m) => ({ tipo: m.tipo, modeloId: null, nome: m.nome, marcados, desconhecidos: [],
+      paragrafos: [[seg("fixo", m.nome.toUpperCase())], [seg("fixo", "OUTORGANTE: "), seg("cadastro", "PEDRO ALVES SOUZA")]] })),
+    frase,
+  });
+  const dados = (cliente: unknown, extra: Record<string, unknown> = {}) => ({
+    contrato: { id: CT, numero: "C-2026-034", objeto: "Alimentos", estado: "ELABORACAO", assinadoEm: null, versao: 1 },
+    cliente, condicoes: [], casos: [],
+    advogados: [
+      { pessoaId: MARINA.id, nome: MARINA.nome, noContrato: true, responsavel: true, inscricoes: [OAB_M], escolhidas: [OAB_M.id] },
+      { pessoaId: LARISSA.id, nome: LARISSA.nome, noContrato: false, responsavel: false, inscricoes: [OAB_L], escolhidas: [OAB_L.id] },
+    ],
+    semOab: [], escritorio: { nome: "Ribeiro & Matos", cnpj: "41207338000105", endereco: "Rua Tabapuã, 1.123", cidade: "São Paulo", uf: "SP", oab: null },
+    marca: null, hoje, modelos: MODELOS, atuais: [], ultima: null, mudancas: [], poderesIniciais: ["ACORDO"],
+    ...extra,
+  });
+  const MARCADOS = ["CPF de quem assina de Pedro Alves Souza", "RG de quem assina de Pedro Alves Souza"];
+  const rotas = (ficha: Resp | Resp[], gerar: Resp | Resp[], extra: Record<string, Resp | Resp[]> = {}, esc: unknown = ESCRITORIO) => ({
+    "/v1/escritorio": { corpo: esc },
+    "GET /v1/escritorio/avisos": { corpo: { novos: 0, total: 0, itens: [] } },
+    [`GET /v1/escritorio/clientes/${CLI}`]: ficha,
+    [`GET /v1/escritorio/contratos/${CT}/documentos-dados`]: gerar,
+    [`POST /v1/escritorio/contratos/${CT}/documentos/previa`]: { corpo: previa(MARCADOS, "2 dados saem marcados em cada um.") },
+    ...extra,
+  });
+  const GERAR = `${P}/contratos/modelos/gerar?contrato=${CT}`;
+  const gerarSemMarcas = new RegExp(`/contratos/modelos/gerar\\?contrato=${CT}$`);
+  const chave = `t3jus.gerar.${CT}`;
+  const guardado = (page: Page) => page.evaluate((k) => sessionStorage.getItem(k), chave);
+  const larissa = (page: Page) => page.getByRole("checkbox", { name: /Larissa Costa/ });
+  const editar = (page: Page) => page.getByRole("heading", { name: "Editar ficha · você veio de Gerar documentos" });
+  const avisoSalvo = (page: Page, nome = "Pedro") => page.locator(".aviso").filter({ hasText: `Ficha de ${nome} salva.` });
+  const faixaVolta = (page: Page) => page.getByRole("region", { name: "Volta para Gerar documentos" });
+
+  test("falta → Completar na ficha na mesma aba, cursor no CPF de Joana, Mudou, Salvar e voltar com as escolhas e a prévia nova", async ({ page }) => {
+    const pedidos = await simular(page, rotas({ corpo: FALTA }, [{ corpo: dados(FALTA) }, { corpo: dados(COMPLETO) }],
+      { [`PUT /v1/escritorio/clientes/${CLI}`]: { corpo: { id: CLI, versao: 5 } } }));
+    await page.goto(GERAR);
+    // As escolhas: Larissa, sem a declaração, "Desistir da ação", outro poder e a aba Procuração da prévia.
+    await larissa(page).check();
+    await page.getByRole("checkbox", { name: /Declaração de hipossuficiência/ }).uncheck();
+    await page.getByRole("checkbox", { name: "Desistir da ação" }).check();
+    await page.getByLabel(/^Outro poder/).fill("requerer e levantar valores depositados em juízo");
+    await page.getByRole("tab", { name: /Procuração/ }).click();
+    const completar = page.getByRole("link", { name: "Completar na ficha: CPF e RG de Joana" });
+    await expect(completar).not.toHaveAttribute("target");
+    await completar.click();
+    await expect(page).toHaveURL(new RegExp(`/clientes/${CLI}\\?editar=1&de=gerar&contrato=${CT}&campo=rl$`));
+    // O que ficou guardado na aba: nenhum nome nem CPF do cliente.
+    const json = await guardado(page);
+    expect(json).toBeTruthy();
+    for (const x of ["Pedro", "Joana", "Souza", "48821390730", "37764021563"]) expect(json).not.toContain(x);
+
+    await expect(editar(page)).toBeVisible();
+    await expect(page).toHaveTitle(/Editar ficha de Pedro · vindo de Gerar documentos/);
+    await expect(page.locator(".aviso").filter({ hasText: "Você veio de Gerar documentos." }))
+      .toContainText("Faltam o CPF e o RG de Joana: o cursor já está no CPF. Ao salvar, você volta para lá, com a prévia já com os dados novos.");
+    const painel = page.getByRole("group", { name: /Menor de 18 anos/ });
+    await expect(painel.getByLabel(/^CPF/)).toBeFocused();
+    await expect(painel.locator(".eg-falta")).toHaveCount(2);
+    // O âmbar do cabeçalho fica sem "Gerar documentos" no editar.
+    await expect(page.locator(".ficha-cab").getByRole("link", { name: /Gerar documentos/ })).toHaveCount(0);
+    await semViolacoes(page);
+    await painel.getByLabel(/^CPF/).fill("377.640.215-63");
+    await painel.getByLabel(/^RG/).fill("28.441.903-7");
+    // D10: o "Mudou" ao vivo, comparado com a ficha ao abrir; o "Falta" sai.
+    await expect(painel.locator(".mudou")).toHaveCount(2);
+    await expect(painel.locator(".eg-falta")).toHaveCount(0);
+    await painel.getByLabel(/^RG/).fill("");
+    await expect(painel.locator(".mudou")).toHaveCount(1);
+    await painel.getByLabel(/^RG/).fill("28.441.903-7");
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Salvar e voltar para Gerar documentos" }).click();
+
+    await expect(page).toHaveURL(gerarSemMarcas);
+    await expect(avisoSalvo(page)).toBeFocused();
+    await expect(avisoSalvo(page)).toContainText("A prévia já está com os dados novos. As suas escolhas continuam aqui.");
+    expect(await avisoSalvo(page).getAttribute("role")).toBeNull();
+    await expect(larissa(page)).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: /Declaração de hipossuficiência/ })).not.toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Desistir da ação" })).toBeChecked();
+    await expect(page.getByLabel(/^Outro poder/)).toHaveValue("requerer e levantar valores depositados em juízo");
+    await expect(page.getByRole("tab", { name: /Procuração/ })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByText(/dados? de quem assina por Pedro/)).toHaveCount(0);
+    expect(await guardado(page)).toBeNull();
+    const put = pedidos.find((p) => p.metodo === "PUT")!.corpo as Record<string, string | number>;
+    expect(put.versao).toBe(4);
+    expect(String(put.rlDocumento).replace(/\D/g, "")).toBe("37764021563");
+    expect(put.rlRg).toBe("28.441.903-7");
+    // A prévia é pedida de novo, já com as escolhas que voltaram.
+    const ultima = pedidos.filter((p) => p.caminho.endsWith("/documentos/previa")).at(-1)!.corpo as { poderes: string[]; outroPoder: string; documentos: unknown[] };
+    expect(ultima.poderes).toContain("DESISTIR");
+    expect(ultima.outroPoder).toBe("requerer e levantar valores depositados em juízo");
+    expect(ultima.documentos).toHaveLength(2);
+    await semViolacoes(page);
+    // O "voltar" do navegador não reabre o editar.
+    await page.goBack();
+    await expect(page).not.toHaveURL(/\/clientes\//);
+  });
+
+  test("Cancelar volta sem salvar, com o foco no link e as escolhas; o voltar do navegador também", async ({ page }) => {
+    const pedidos = await simular(page, rotas({ corpo: FALTA }, { corpo: dados(FALTA) }));
+    await page.goto(GERAR);
+    await larissa(page).check();
+    await page.locator("#volta-falta-rl").click();
+    await expect(editar(page)).toBeVisible();
+    await page.getByRole("button", { name: "Cancelar e voltar para Gerar documentos" }).click();
+    await expect(page).toHaveURL(gerarSemMarcas);
+    await expect(page.locator("#volta-falta-rl")).toBeFocused();
+    await expect(larissa(page)).toBeChecked();
+    await expect(page.locator(".aviso").filter({ hasText: /Ficha de .* salva\./ })).toHaveCount(0);
+    expect(pedidos.some((p) => p.metodo === "PUT")).toBe(false);
+    await semViolacoes(page);
+    // O "voltar" do navegador, saindo da ficha sem salvar.
+    await page.locator("#volta-quadro").click();
+    await expect(page.getByRole("heading", { name: /Editar ficha/ })).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(gerarSemMarcas);
+    await expect(larissa(page)).toBeChecked();
+    await expect(page.locator("#volta-quadro")).toBeFocused();
+  });
+
+  test("conflito: “Ficar com a versão salva e voltar” chega sem “Ficha salva.”", async ({ page }) => {
+    const nova = { ...COMPLETO, alterado: { em: "2026-11-24T18:48:00Z", por: "Diego Almeida" } };
+    await simular(page, rotas([{ corpo: FALTA }, { corpo: nova }], { corpo: dados(FALTA) },
+      { [`PUT /v1/escritorio/clientes/${CLI}`]: { status: 409, corpo: { erro: { codigo: "VERSION_CONFLICT" } } } }));
+    await page.goto(GERAR);
+    await page.locator("#volta-falta-rl").click();
+    await page.getByRole("group", { name: /Menor de 18 anos/ }).getByLabel(/^RG/).fill("41.552.381-7");
+    await page.getByRole("button", { name: "Salvar e voltar para Gerar documentos" }).click();
+    const aviso = page.getByRole("alert").filter({ hasText: "Diego Almeida salvou esta ficha às 15h48, enquanto você editava." });
+    await expect(aviso).toContainText("Nas duas, você volta para Gerar documentos.");
+    await expect(aviso.getByRole("button", { name: "Salvar a minha versão e voltar" })).toBeVisible();
+    await semViolacoes(page);
+    await aviso.getByRole("button", { name: "Ficar com a versão salva e voltar" }).click();
+    await expect(page).toHaveURL(gerarSemMarcas);
+    const ficou = page.locator(".aviso").filter({ hasText: "A ficha ficou como Diego Almeida salvou." });
+    await expect(ficou).toBeFocused();
+    await expect(ficou).toContainText("Diego salvou às 15h48; o que você escreveu não foi salvo.");
+    await expect(page.getByText(/Ficha de Pedro salva\./)).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("conflito: “Salvar a minha versão e voltar” salva e volta com o aviso", async ({ page }) => {
+    const nova = { ...FALTA, versao: 5, alterado: { em: "2026-11-24T18:48:00Z", por: "Diego Almeida" } };
+    const pedidos = await simular(page, rotas([{ corpo: FALTA }, { corpo: nova }], { corpo: dados(FALTA) },
+      { [`PUT /v1/escritorio/clientes/${CLI}`]: [{ status: 409, corpo: { erro: { codigo: "VERSION_CONFLICT" } } }, { corpo: { id: CLI, versao: 6 } }] }));
+    await page.goto(GERAR);
+    await page.locator("#volta-falta-rl").click();
+    await page.getByRole("group", { name: /Menor de 18 anos/ }).getByLabel(/^RG/).fill("41.552.381-7");
+    await page.getByRole("button", { name: "Salvar e voltar para Gerar documentos" }).click();
+    await page.getByRole("button", { name: "Salvar a minha versão e voltar" }).click();
+    await expect(page).toHaveURL(gerarSemMarcas);
+    await expect(avisoSalvo(page)).toBeFocused();
+    expect(pedidos.filter((p) => p.metodo === "PUT").map((p) => (p.corpo as { versao: number }).versao)).toEqual([4, 5]);
+  });
+
+  test("termo recusado: fica na ficha em leitura, e a volta continua depois de fechar o aviso", async ({ page }) => {
+    const cur = { ...CURATELA, rlRg: null };
+    await simular(page, {
+      ...comuns(cur),
+      [`PUT /v1/escritorio/clientes/${CLI}`]: { corpo: { id: CLI, versao: 5 } },
+      [`POST /v1/escritorio/clientes/${CLI}/termo-curatela`]: { status: 400, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["tamanho"] } } } },
+    });
+    await page.goto(`${P}/clientes/${CLI}?editar=1&de=gerar&contrato=${CT}&campo=rl`);
+    const painel = page.getByRole("group", { name: /Sob curatela/ });
+    await expect(painel.getByLabel(/^RG/)).toBeFocused();
+    await escolher(page, "Escolher arquivo: termo de curatela", PDF);
+    await page.getByRole("button", { name: "Salvar e voltar para Gerar documentos" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Ficha salva." })).toHaveClass(/aviso-atencao/);
+    await expect(page).toHaveURL(/\/clientes\//);
+    const faixa = faixaVolta(page);
+    await expect(faixa).toContainText("A ficha de Sebastião foi salva; só o termo de curatela não foi guardado.");
+    await semViolacoes(page);
+    await page.getByRole("button", { name: "Fechar aviso" }).click();
+    await expect(faixa.getByRole("link", { name: "Voltar para Gerar documentos" })).toHaveAttribute("href", `/contratos/modelos/gerar?contrato=${CT}&escolhas=1&ficha=salva`);
+  });
+
+  test("parâmetro hostil abre o editar normal", async ({ page }) => {
+    await simular(page, comuns(FALTA));
+    for (const q of ["contrato=https://evil.com", "contrato=//evil.com", `de=outra&contrato=${CT}`, "contrato=javascript:alert(1)"]) {
+      await page.goto(`${P}/clientes/${CLI}?editar=1&${q.startsWith("de=") ? "" : "de=gerar&"}${q}`);
+      await expect(page.getByRole("button", { name: "Salvar ficha" })).toBeVisible();
+      await expect(page.getByText("Você veio de Gerar documentos.")).toHaveCount(0);
+    }
+  });
+
+  test("ficha inativa vinda de Gerar: em leitura, com a volta", async ({ page }) => {
+    await simular(page, comuns({ ...FALTA, situacao: "INATIVO", inativadoEm: h(1), inativadoPor: { id: "a0000000-0000-4000-8000-000000000104", nome: "Diego Almeida" } }));
+    await page.goto(`${P}/clientes/${CLI}?editar=1&de=gerar&contrato=${CT}&campo=rl`);
+    await expect(faixaVolta(page)).toContainText("Você veio de Gerar documentos. A ficha de Pedro está inativa.");
+    await expect(faixaVolta(page)).toContainText("Para mudar, reative primeiro. Nada foi salvo");
+    await expect(page.getByRole("heading", { name: /Editar ficha/ })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("cliente não encontrado vindo de Gerar: a volta é o primário, com o foco", async ({ page }) => {
+    await simular(page, { "/v1/escritorio": { corpo: ESCRITORIO }, "GET /v1/escritorio/avisos": { corpo: { novos: 0, total: 0, itens: [] } } });
+    await page.goto(`${P}/clientes/${CLI}?editar=1&de=gerar&contrato=${CT}`);
+    const volta = page.getByRole("link", { name: "Voltar para Gerar documentos" });
+    await expect(volta).toBeFocused();
+    await expect(volta).toHaveAttribute("href", `/contratos/modelos/gerar?contrato=${CT}&escolhas=1`);
+    await expect(page.getByRole("link", { name: "Ir para Clientes" })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("escritório só de consulta: os links não aparecem e ?editar=1 abre em leitura", async ({ page }) => {
+    const esc = { ...ESCRITORIO, cobranca: { soConsultaDesde: `${hoje}T12:00:00Z`, socioDono: "Marina Ribeiro", veFaturas: false, atraso: null } };
+    await simular(page, rotas({ corpo: FALTA }, { corpo: dados(FALTA) }, {}, esc));
+    await page.goto(GERAR);
+    await expect(page.getByText("Faltam 2 dados de quem assina por Pedro: o CPF e o RG de Joana.")).toBeVisible();
+    await expect(page.locator("#volta-falta-rl")).toBeHidden();
+    await expect(page.locator("#volta-quadro")).toBeHidden();
+    await page.goto(`${P}/clientes/${CLI}?editar=1&de=gerar&contrato=${CT}&campo=rl`);
+    await expect(faixaVolta(page)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Editar ficha/ })).toHaveCount(0);
+  });
+
+  test("ficha=salva forjado não avisa; Gerar aberto pelo caminho normal não restaura escolhas", async ({ page }) => {
+    await simular(page, rotas({ corpo: FALTA }, { corpo: dados(FALTA) }));
+    await page.goto(`${GERAR}&escolhas=1&ficha=salva`);
+    await expect(page.getByRole("heading", { name: "O que gerar" })).toBeVisible();
+    await expect(page.locator(".aviso").filter({ hasText: /salva\./ })).toHaveCount(0);
+    await larissa(page).check();
+    await page.locator("#volta-falta-rl").click();
+    await expect(editar(page)).toBeVisible();
+    // Desistiu e foi a Gerar pelo menu: abre como sempre.
+    await page.goto(GERAR);
+    await expect(page.getByRole("heading", { name: "O que gerar" })).toBeVisible();
+    await expect(larissa(page)).not.toBeChecked();
+  });
+
+  test("empresa: “Mudar na ficha” de quem assina pela empresa, ida e volta com o nome inteiro", async ({ page }) => {
+    const far = { ...BASE, tipo: "PJ", nome: "Farmácia Bom Jesus Ltda.", documento: "11222333000181", capacidade: "PLENA", nascimento: null, rlPapel: null, rlNome: null,
+      rlDocumento: null, assina: null, repNome: "Rita de Cássia Moura", repCargo: "Sócia-administradora", repDocumento: "37764021563", repEstadoCivil: "CASADO",
+      repProfissao: "farmacêutica", contatos: [{ ...CONTATO, nome: "Rita de Cássia Moura", papel: "Sócia" }] };
+    await simular(page, rotas({ corpo: far }, { corpo: dados(far) }, { [`PUT /v1/escritorio/clientes/${CLI}`]: { corpo: { id: CLI, versao: 5 } } }));
+    await page.goto(GERAR);
+    await page.getByRole("link", { name: "Mudar quem assina pela empresa na ficha" }).click();
+    await expect(page.getByText("O cursor já está em “Quem assina pela empresa”.", { exact: false })).toBeVisible();
+    const rep = page.getByLabel(/^Nome completo/);
+    await expect(rep).toBeFocused();
+    await semViolacoes(page);
+    await page.getByLabel(/^Cargo/).fill("Sócia-gerente");
+    await page.getByRole("button", { name: "Salvar e voltar para Gerar documentos" }).click();
+    await expect(avisoSalvo(page, "Farmácia Bom Jesus Ltda.")).toBeFocused();
+    await semViolacoes(page);
+  });
+
+  test("fez 18: a janela abre por Gerar; “Agora não” volta sem salvar; já resolvido não abre janela", async ({ page }) => {
+    const nasc = nasceu(18, -3);
+    const fez = { ...BASE, ...{ rlRg: "28.441.903-7", rlRgOrgao: "SSP/SP" }, nascimento: nasc, rlPapel: "TUTORA", rlNome: "Cleusa Nunes", rg: "41.207.338-0", rgOrgao: "SSP/SP",
+      contatos: [CONTATO], assina: { situacao: "FEZ_18", idade: 18, faz16: mais(nasc, 16), faz18: mais(nasc, 18), modo: null } };
+    const pedidos = await simular(page, rotas({ corpo: fez }, { corpo: dados(fez) }));
+    await page.goto(GERAR);
+    await page.getByRole("link", { name: "Completar na ficha: estado civil e profissão de Pedro" }).click();
+    const janela = page.getByRole("dialog", { name: "Pedro agora assina por si" });
+    await expect(janela).toBeVisible();
+    await expect(janela).toContainText("Você veio de Gerar documentos.Ao salvar, volta para lá, com a procuração já assinada só por Pedro. “Agora não” volta sem mudar nada.");
+    await expect(janela.getByRole("button", { name: "Salvar e voltar: Pedro assina por si" })).toBeVisible();
+    await semViolacoes(page);
+    await janela.getByRole("button", { name: "Agora não e voltar para Gerar documentos" }).click();
+    await expect(page).toHaveURL(gerarSemMarcas);
+    await expect(page.locator("#volta-fez18")).toBeFocused();
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho.endsWith("/assina-por-si"))).toBe(false);
+    // Outra pessoa já confirmou: a janela não abre vazia.
+    const depois = { ...fez, capacidade: "PLENA", rlNome: null, rlPapel: null, assina: { situacao: "PROPRIO", idade: null, faz16: null, faz18: null, modo: null },
+      estadoCivil: "SOLTEIRO", profissao: "estudante", quemAssinava: { papel: "TUTORA", nome: "Cleusa Nunes", documento: null, ate: hoje, contratos: [] } };
+    await simular(page, rotas({ corpo: depois }, { corpo: dados(depois) }));
+    await page.goto(`${P}/clientes/${CLI}?janela=por-si&de=gerar&contrato=${CT}`);
+    await expect(faixaVolta(page)).toContainText("Pedro já assina por si.");
+    await expect(faixaVolta(page)).toBeFocused();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("sessão vencida e sair apagam as escolhas guardadas", async ({ page, isMobile }) => {
+    await simular(page, rotas([{ corpo: FALTA }, { status: 401, corpo: { erro: { codigo: "UNAUTHORIZED" } } }], { corpo: dados(FALTA) }, { "POST /v1/auth/sair": { corpo: {} } }));
+    await page.goto(GERAR);
+    await page.locator("#volta-falta-rl").click();
+    await expect(editar(page)).toBeVisible();
+    expect(await guardado(page)).toBeTruthy();
+    if (!isMobile) {
+      await page.getByRole("button", { name: "Sair do Portal" }).click();
+      await expect(page).toHaveURL(/\/entrar/);
+      expect(await guardado(page)).toBeNull();
+      return;
+    }
+    // No celular: a sessão vence ao abrir a ficha de novo.
+    await page.reload();
+    await expect(page).toHaveURL(/\/entrar/);
+    expect(await guardado(page)).toBeNull();
+  });
+
+  test("Documentos gerados → Completar na ficha → Gerar de novo, com as mesmas escolhas", async ({ page }) => {
+    const GER = "6e000000-0000-4000-8000-000000000001";
+    const DOC = (n: number) => `d0c00000-0000-4000-8000-00000000000${n}`;
+    const usado = {
+      geracaoId: GER, em: new Date().toISOString(), por: MARINA, contrato: { id: CT, numero: "C-2026-034" },
+      documentos: MODELOS.slice(0, 2).map((m, i) => ({ id: DOC(i + 1), tipo: m.tipo, nome: m.nome, arquivo: `${m.tipo.toLowerCase()}-pedro.docx`, numero: 1, modelo: "Padrão T3jus", marcados: MARCADOS })),
+      outorgados: [{ pessoaId: MARINA.id, nome: MARINA.nome, frase: "OAB/SP nº 214.538" }],
+      poderes: ["ACORDO", "DESISTIR"], outroPoder: null, cidadeData: "São Paulo, hoje", representante: null,
+    };
+    const resultado = { geracaoId: GER, usado, documentos: usado.documentos.map(({ modelo: _m, ...d }) => d) };
+    const depois = dados(COMPLETO, {
+      atuais: MODELOS.slice(0, 2).map((m) => ({ chave: m.tipo, tipo: m.tipo, modeloId: null, numero: 1, geradoEm: usado.em, assinado: false })),
+      ultima: { geracaoId: GER, em: usado.em, por: MARINA, documentos: MODELOS.slice(0, 2).map((m) => ({ tipo: m.tipo, modeloId: null })),
+        outorgados: [{ pessoaId: MARINA.id, inscricoes: [OAB_M.id] }], poderes: ["ACORDO", "DESISTIR"], outroPoder: null, cidadeData: "São Paulo, hoje" },
+      mudancas: [{ campos: ["rlDocumento", "rlRg"], por: MARINA, em: usado.em }],
+    });
+    await simular(page, rotas({ corpo: FALTA }, [{ corpo: dados(FALTA) }, { corpo: depois }], {
+      [`POST /v1/escritorio/contratos/${CT}/documentos`]: { corpo: resultado },
+      [`PUT /v1/escritorio/clientes/${CLI}`]: { corpo: { id: CLI, versao: 5 } },
+    }));
+    await page.goto(GERAR);
+    await page.getByRole("checkbox", { name: /Declaração de hipossuficiência/ }).uncheck();
+    await page.getByRole("checkbox", { name: "Desistir da ação" }).check();
+    await page.getByRole("button", { name: /^Gerar 2 documentos/ }).click();
+    const aviso = page.locator(".aviso").filter({ hasText: "Saiu marcado:" });
+    await expect(aviso).toContainText("Ou complete a ficha e gere de novo: ao salvar, você volta para cá, em Gerar de novo, com as mesmas escolhas. A versão 1 fica guardada.");
+    expect(await guardado(page)).toBeNull();
+    const completar = aviso.getByRole("link", { name: /^Completar na ficha/ });
+    await expect(completar).toHaveAttribute("href", `/clientes/${CLI}?editar=1&de=gerar&contrato=${CT}&campo=rl`);
+    await completar.click();
+    const painel = page.getByRole("group", { name: /Menor de 18 anos/ });
+    await painel.getByLabel(/^CPF/).fill("377.640.215-63");
+    await painel.getByLabel(/^RG/).fill("28.441.903-7");
+    await page.getByRole("button", { name: "Salvar e voltar para Gerar documentos" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Gerar de novo" })).toBeVisible();
+    await expect(avisoSalvo(page)).toBeFocused();
+    await expect(avisoSalvo(page).locator("p")).toHaveText("A prévia já está com os dados novos.");
+    await expect(page.getByText("Vieram as mesmas escolhas da versão 1.", { exact: false })).toBeVisible();
+    await expect(page.getByText(/A página abre com as mesmas escolhas/)).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { name: /Declaração de hipossuficiência/ })).not.toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Desistir da ação" })).toBeChecked();
+    await semViolacoes(page);
   });
 });

@@ -329,9 +329,11 @@ export function FolhaQuemAssinava({ f }: { f: FichaCliente }) {
 }
 
 /** A janela "Agora assina por si": completa estado civil e profissão e guarda quem assinava. */
-export function JanelaAssinaPorSi({ aberta, f, aoFechar, aoFeito, aoConflito }: {
+export function JanelaAssinaPorSi({ aberta, f, deGerar = false, aoFechar, aoFeito, aoConflito }: {
   aberta: boolean;
   f: FichaCliente;
+  /** Aberta por "Completar na ficha" do fez 18 em Gerar documentos (F3.160, D6): o aviso de volta e "Salvar e voltar". */
+  deGerar?: boolean;
   aoFechar: () => void;
   aoFeito: (x: { titulo: string; texto: string }) => void;
   aoConflito: () => void;
@@ -374,16 +376,24 @@ export function JanelaAssinaPorSi({ aberta, f, aoFechar, aoFeito, aoConflito }: 
         <>
           <button className="btn btn-fantasma" type="button" onClick={aoFechar}>
             Agora não
+            {deGerar ? <span className="sr"> e voltar para Gerar documentos</span> : null}
           </button>
-          <button className="btn btn-pri" type="submit" disabled={salvando}>
+          <button className="btn btn-pri" type="submit" disabled={salvando} aria-label={deGerar && !salvando ? `Salvar e voltar: ${pn} assina por si` : undefined}>
             <Icone nome="check" className="ico" />
-            {salvando ? "Salvando…" : `Salvar: ${pn} assina por si`}
+            {salvando ? "Salvando…" : deGerar ? "Salvar e voltar" : `Salvar: ${pn} assina por si`}
           </button>
         </>
       }>
       <p id={`${ids}-d`}>
         {pn} fez 18 anos{f.assina?.faz18 ? ` em ${dataBr(f.assina.faz18)}` : ""}. Complete o que passa a ir no documento.
       </p>
+      {deGerar ? (
+        <div className="eg-janela-aviso">
+          <Aviso tom="info" icone="seta" titulo="Você veio de Gerar documentos.">
+            Ao salvar, volta para lá, com a procuração já assinada só por {pn}. “Agora não” volta sem mudar nada.
+          </Aviso>
+        </div>
+      ) : null}
       {erro ? <Aviso tom="urgencia" titulo="A ficha não foi salva.">{textoDoErro(erro)}</Aviso> : null}
       <div className="cl-dois">
         <div className="campo">
