@@ -452,9 +452,14 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     portal_cliente_sem_avisos: (a) => ({ dados: a.p_dados }),
     portal_cliente_avisos: (a) => ({ cliente: a.p_cliente }),
     // F3.147: o aviso de caso pronto vem com o "agora" calculado no banco, e a rota só repassa.
-    portal_avisos: () => ({ novos: 1, total: 1, itens: [{ id: "a1", tipo: "CASO_PRONTO_FECHAR", origem: "casos", origemId: "c1", em: "2026-11-17T14:05:00+00:00",
+    portal_avisos: () => ({ novos: 1, total: 2, itens: [{ id: "a1", tipo: "CASO_PRONTO_FECHAR", origem: "casos", origemId: "c1", em: "2026-11-17T14:05:00+00:00",
       lido: false, dados: { caso: "Carvalho x Construtora Lume", contrato: "C-2026-012", parcelas: 7, motivo: "PAGAMENTO" },
-      agora: { encerrado: { em: "2026-11-18T13:05:00+00:00", por: { id: "m", nome: "Marina Ribeiro" } } } }] }),
+      agora: { encerrado: { em: "2026-11-18T13:05:00+00:00", por: { id: "m", nome: "Marina Ribeiro" } } } },
+      // F3.150: o aviso de caso encerrado no financeiro passa sem mudança, com dados e agoraFechou.
+      { id: "a2", tipo: "CASO_ENCERRADO_FINANCEIRO", origem: "casos", origemId: "c1", em: "2026-11-18T13:05:00+00:00", lido: true,
+        dados: { papel: "CONTRATOS", caso: "Nogueira x Transportes Serra", quem: "Diego Almeida",
+          abertos: [{ id: "k25", numero: "C-2026-025", cliente: "Lúcia Nogueira", clienteId: "l" }, { id: "k26", numero: "C-2026-026", cliente: "Paulo Nogueira", clienteId: "p" }] },
+        agoraFechou: { abertos: [{ id: "k26", numero: "C-2026-026" }], saiu: [{ numero: "C-2026-025", em: "2026-11-18T14:20:00+00:00", por: { id: "f", nome: "Felipe Matos" }, voce: true }] } }] }),
     portal_aviso_lido: (a) => ({ id: a.p_id }),
     portal_avisos_lidos: (a) => ({ ate: a.p_ate }),
     portal_ia_salvar: (a) => {
@@ -1812,6 +1817,12 @@ Deno.test("PA-03: Automações, o desenho vai inteiro ao banco, a simulação sa
   assertEquals(avisos.novos, 1);
   assertEquals(avisos.itens[0].tipo, "CASO_PRONTO_FECHAR");
   assertEquals(avisos.itens[0].agora, { encerrado: { em: "2026-11-18T13:05:00+00:00", por: { id: "m", nome: "Marina Ribeiro" } } });
+  assertEquals(avisos.itens[1].tipo, "CASO_ENCERRADO_FINANCEIRO");
+  assertEquals(avisos.itens[1].dados.abertos.map((c: { numero: string }) => c.numero), ["C-2026-025", "C-2026-026"]);
+  assertEquals(avisos.itens[1].agoraFechou, {
+    abertos: [{ id: "k26", numero: "C-2026-026" }],
+    saiu: [{ numero: "C-2026-025", em: "2026-11-18T14:20:00+00:00", por: { id: "f", nome: "Felipe Matos" }, voce: true }],
+  });
   assertEquals((await (await m.pedir(`/v1/escritorio/avisos/${CLIENTE}/lido`, { corpo: {}, cookie })).json()).id, CLIENTE);
   assertEquals((await (await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "2026-11-18T10:04:00.123456+00:00" }, cookie })).json()).ate, "2026-11-18T10:04:00.123456+00:00");
   assertEquals((await erro(await m.pedir("/v1/escritorio/avisos/lidos", { corpo: { ate: "ontem" }, cookie }))).detalhes?.campos, ["ate"]);

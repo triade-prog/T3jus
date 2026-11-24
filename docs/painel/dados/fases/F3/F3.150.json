@@ -1,12 +1,13 @@
 {
   "id": "F3.150",
-  "texto": "Aviso no sino quando o caso sem levantamento é encerrado no financeiro, para quem encerra os contratos e para a responsável pelo caso (decisão 16 da jornada do cliente)",
+  "texto": "Aviso no sino quando o caso é encerrado no financeiro, para quem encerra os contratos e para quem é responsável pelo caso (decisão 16 da jornada do cliente)",
   "peca": "S4",
   "refs": [
     "EX-16",
     "EX-17"
   ],
-  "status": "pendente",
+  "status": "andamento",
   "ordem": 1065.5,
-  "proximo": "Desenho aprovado (D34, docs/design/aprovadas/portal-sino-caso-fechou): escrever o plano de código, passar pela revisão e programar (migration 1020, pgTAP livre no dia; o teste 135 passa a filtrar o tipo CASO_PRONTO_FECHAR)"
+  "proximo": "PR B: migration 1020 (o aviso no banco), pgTAP 137, ajuste do 135, as duas frases da pergunta 5 e a publicação P13",
+  "evidencia": "PR A (só a tela): o tipo CASO_ENCERRADO_FINANCEIRO no sino. avisos.ts (o tipo, PapelCasoFechou, ContratoNoAviso, os campos novos de dados, agoraFechou e quandoDia), Sino.tsx (as frases dos dois papéis, selo, linha Agora:, trecho para o leitor de tela, destino pelas áreas da sessão, .si-nr e o default com never no switch, para um tipo desconhecido não derrubar o Portal), Moldura.tsx (as áreas para o PainelSino) e portal.css (.si-nr). Testes: sino.test.ts com 29 testes vitest novos do F3.150; app_test.ts com o aviso novo passando sem mudança; tests/e2e/portal-sino-caso-encerrado-financeiro.spec.ts com 6 cenários, celular e computador, com axe."
 }
