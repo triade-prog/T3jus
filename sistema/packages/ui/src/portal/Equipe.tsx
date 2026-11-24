@@ -467,7 +467,7 @@ function Retiradas({ lista, consulta, aoConvidar }: { lista: PessoaRetiradaPorta
   const email = (p: PessoaRetiradaPortal) => (p.email ? p.email : <i className="fc-email-apagado">e-mail apagado</i>);
   return (
     <>
-      <table className="so-pc pt-tabela">
+      <table className="so-pc pt-tabela" data-prio-tabela="equipe-retiradas" data-sai2="680" data-cartoes="600">
         <colgroup>
           <col style={{ width: "28%" }} />
           <col style={{ width: "22%" }} />
@@ -863,7 +863,7 @@ export function EquipePortal({ aba }: { aba: "pessoas" | "historico" }) {
                     <Retiradas lista={retiradas!} consulta={consulta} aoConvidar={(p) => abrir(() => { setDeNovo(p); setConvidar(true); })} />
                   ) : (
                     <>
-                      <table className="so-pc pt-tabela">
+                      <table className="so-pc pt-tabela" data-prio-tabela="equipe" data-sai2="720" data-cartoes="600">
                         <colgroup>
                           <col style={{ width: "28%" }} />
                           <col style={{ width: "25%" }} />

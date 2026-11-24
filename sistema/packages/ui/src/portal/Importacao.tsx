@@ -76,9 +76,9 @@ export function Folha({ id, titulo, sub, acoes, children, estilo }: {
   );
 }
 
-export function Grade({ principal, lateral, rotulo = "Como funciona a importação" }: { principal: ReactNode; lateral: ReactNode; rotulo?: string }) {
+export function Grade({ principal, lateral, rotulo = "Como funciona a importação", desce = false }: { principal: ReactNode; lateral: ReactNode; rotulo?: string; desce?: boolean }) {
   return (
-    <div className="hn-grade">
+    <div className={desce ? "hn-grade pt-desce" : "hn-grade"}>
       <div className="hn-col">{principal}</div>
       <aside className="hn-col" aria-label={rotulo}>{lateral}</aside>
     </div>
@@ -702,9 +702,9 @@ function PassoColunas({ imp, escritorio, abaInicial }: { imp: Importacao; escrit
       ...(backup ? (["tipo_contato"] as const) : []),
     ];
     return (
-      <table className="hn-tab im-map">
+      <table className="hn-tab im-map" data-cartoes="520">
         <caption className="sr">{cap}</caption>
-        <colgroup><col style={{ width: "22%" }} /><col style={{ width: "20%" }} /><col style={{ width: "38%" }} /><col style={{ width: "20%" }} /></colgroup>
+        <colgroup><col style={{ width: "18%" }} /><col style={{ width: "26%" }} /><col style={{ width: "38%" }} /><col style={{ width: "18%" }} /></colgroup>
         <thead><tr><th scope="col">Coluna</th><th scope="col">Primeiro valor</th><th scope="col">Vai para</th><th scope="col">Como foi ligada</th></tr></thead>
         <tbody>
           {cols.map((c) => {
@@ -810,6 +810,11 @@ function PassoColunas({ imp, escritorio, abaInicial }: { imp: Importacao; escrit
     <>
       <Folha id="t-col" titulo="Ligue as colunas aos campos do T3jus" sub={`${imp.arquivo} · ${plural(linhasAba, "linha", "linhas")} · ${plural(colunas.length, "coluna", "colunas")}`}
         estilo={{ overflow: "hidden" }}>
+        {faltaTudo.length ? (
+          <p className="pt-so-desce im-falta-curta"><Icone nome="alerta" className="ico" />
+            <span>Falta ligar {plural(faltaTudo.length, "campo obrigatório", "campos obrigatórios")}: {faltaTudo.map((o) => NOMES_OBRIGATORIO[o]).join(", ")}. <a href="#t-obr">Ver o que é obrigatório</a></span>
+          </p>
+        ) : null}
         <div ref={topo} className="im-aba">
           {imp.abas && imp.abas.length > 1 && !backup ? (
             <div className="campo">
@@ -882,7 +887,7 @@ function PassoColunas({ imp, escritorio, abaInicial }: { imp: Importacao; escrit
     <div className="im">
       <CabFluxo origem={imp.origem} />
       <Passos atual={2} escolhas={[imp.arquivo]} voltar={[INICIO_ORIGEM[imp.origem]]} origem={imp.origem} />
-      <Grade principal={principal} lateral={lateral} rotulo="O que é obrigatório" />
+      <Grade principal={principal} lateral={lateral} rotulo="O que é obrigatório" desce />
     </div>
   );
 }
@@ -1876,7 +1881,7 @@ export function ImportacoesHistorico() {
             <section className="folha" aria-labelledby="t-hist" style={{ overflow: "hidden" }}>
               <h2 id="t-hist" className="sr">Importações</h2>
               {lista.length ? (
-                <table className="hn-tab im-hist">
+                <table className="hn-tab im-hist" data-prio-tabela="importacoes" data-sai3="760" data-sai2="600" data-cartoes="440">
                   <caption className="sr">Importações do escritório</caption>
                   <colgroup><col style={{ width: "26%" }} /><col style={{ width: "14%" }} /><col style={{ width: "20%" }} /><col style={{ width: "21%" }} /><col style={{ width: "19%" }} /></colgroup>
                   <thead><tr><th scope="col">Arquivo</th><th scope="col">Origem</th><th scope="col">O que entrou</th><th scope="col">Situação</th><th scope="col">Ações</th></tr></thead>

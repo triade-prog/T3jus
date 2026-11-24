@@ -984,7 +984,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
         </section>
       </div>
 
-      <div className="fi-grade">
+      <div className="fi-grade pt-desce">
         <div className="fi-col">
           <section className="folha fi-terc" aria-labelledby="t-rp-partes" style={{ overflow: "hidden" }}>
             <div className="fi-terc-cab"><Icone nome="escudo" className="ico" />De terceiros · não é do escritório</div>
@@ -1002,7 +1002,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
                 {grupos.map((g) => <span key={g.rot}><i style={{ background: g.cor }} />{g.rot} {reais(g.v)}</span>)}
               </p>
             </div>
-            <table className="hn-tab fi-tab fi-dest">
+            <table className="hn-tab fi-tab fi-dest" data-cartoes="680">
               <caption className="sr">Partes do valor levantado</caption>
               <colgroup>{["34%", "32%", "16%", "18%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
               <thead>

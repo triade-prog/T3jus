@@ -230,7 +230,7 @@ function ReceberConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
           {mostrar === "RECEBIDO_MES" ? " · pelo dia em que o dinheiro entrou" : agrupar === "CLIENTE" ? " · por cliente e contrato" : " · da mais antiga para a mais nova"}
         </p>
         {lista.length ? (
-          <table className="hn-tab fi-tab">
+          <table className="hn-tab fi-tab" data-prio-tabela="a-receber" data-sai2="760" data-cartoes="680">
             <caption className="sr">Parcelas {nomeMostrar[mostrar]}</caption>
             <colgroup>{["9%", "25%", "18%", "26%", "11%", "11%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
             <thead>
@@ -274,6 +274,7 @@ function ReceberConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
                           <OrigemExito p={p} />
                           <LevaJunto p={p} />
                           {venc || p.cobranca ? <MotivoEAcao p={p} hoje={hoje} /> : null}
+                          {p.semAvisoAutomatico ? <div className="pt-sobe" data-sobe="2"><small><span className="sr">Forma e cobrança: </span>Sem aviso automático</small></div> : null}
                         </div>
                       </td>
                       <td data-r="Valor" className="fi-v num">
@@ -1137,7 +1138,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
             </dl>
             {falhaAbrir ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="O comprovante não abriu.">{falhaAbrir}</Aviso></div> : null}
             {f.parcelas.length ? (
-              <table className="hn-tab fi-tab">
+              <table className="hn-tab fi-tab" data-prio-tabela="parcelas" data-sai2="640" data-cartoes="560">
                 <caption className="sr">Parcelas do contrato</caption>
                 <colgroup>{["21%", "11%", "9%", "28%", "14%", "17%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                 <thead>

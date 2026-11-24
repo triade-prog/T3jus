@@ -359,7 +359,7 @@ function ListaConteudo() {
           ))}
           <p className="pr-conta" role="status"><b>{contar(dados.documentos.length, "documento", "documentos")}</b> de {contar(contratos, "contrato", "contratos")}</p>
           {dados.documentos.length ? (
-            <table className="hn-tab pe-tab pr-tab">
+            <table className="hn-tab pe-tab pr-tab" data-prio-tabela="procuracoes" data-sai2="720" data-cartoes="560">
               <caption className="sr">Documentos gerados</caption>
               <colgroup>{["42%", "22%", "18%", "18%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
               <thead><tr>{["Documento", "Cliente e contrato", "Assinatura"].map((x) => <th key={x} scope="col">{x}</th>)}<th scope="col"><span className="sr">Ações</span></th></tr></thead>

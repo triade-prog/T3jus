@@ -272,7 +272,7 @@ export function ListaClientesPortal({ termoInicial = "", filtroInicial = "ativos
   const comPasso = !!lista?.some((c) => c.passo);
   const tabela = lista && lista.length ? (
     <>
-      <table className="so-pc cl-tab">
+      <table className="so-pc cl-tab" data-prio-tabela="clientes" data-sai3="800" data-sai2="720" data-cartoes="640">
         <caption className="sr">Clientes</caption>
         <colgroup>
           {comercial ? (

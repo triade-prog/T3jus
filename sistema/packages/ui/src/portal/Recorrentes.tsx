@@ -96,7 +96,7 @@ export function ListaRecorrentes({ aoMudou }: { aoMudou: () => void }) {
         {cab}
         {dados.ativas.length ? (
           <>
-            <table className="hn-tab fi-tab rc-tab">
+            <table className="hn-tab fi-tab rc-tab" data-prio-tabela="recorrentes" data-sai3="1120" data-sai2="1000" data-cartoes="800">
               <caption className="sr">Contas que se repetem todo mês</caption>
               <colgroup>{["18%", "16%", "11%", "11%", "8%", "11%", "25%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
               <thead>
@@ -233,7 +233,7 @@ function FichaConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => void
           </section>
         ) : null}
       </div>
-      <div className="fi-grade">
+      <div className="fi-grade pt-desce">
         <div className="fi-col">
           <section className="folha" aria-labelledby="t-lanc" style={{ overflow: "hidden" }}>
             <div className="folha-cab">
@@ -242,7 +242,7 @@ function FichaConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => void
                 <p className="sub">Cada mês é uma conta própria, com o seu boleto e a sua baixa.</p>
               </div>
             </div>
-            <table className="hn-tab fi-tab">
+            <table className="hn-tab fi-tab" data-cartoes="520">
               <caption className="sr">Contas lançadas</caption>
               <colgroup>{["20%", "14%", "18%", "24%", "24%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
               <thead>

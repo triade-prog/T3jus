@@ -201,7 +201,7 @@ function CasosConteudo({ situacaoInicial = "ANDAMENTO", comoInicial = null }: { 
         ) : null}
         <p className="hn-cont" role="status">{resumo}</p>
         {n ? (
-          <table className="hn-tab jr-tab">
+          <table className="hn-tab jr-tab" data-prio-tabela="casos" data-sai3={situacao === "ANDAMENTO" ? "880" : "640"} data-sai2={situacao === "ANDAMENTO" ? "760" : "520"} data-cartoes={situacao === "ANDAMENTO" ? "600" : "360"}>
             <caption className="sr">Casos</caption>
             <colgroup>{(situacao === "ANDAMENTO" ? ["27%", "16%", "15%", "15%", "14%", "13%"] : ["36%", "22%", "22%", "20%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
             <thead><tr>{["Caso e processo", "Cliente", situacao === "ANDAMENTO" ? "Etapa" : "Como encerrou", "Responsável", ...(situacao === "ANDAMENTO" ? ["Próximo prazo", "Pendências"] : [])].map((x) => <th key={x} scope="col">{x}</th>)}</tr></thead>
@@ -213,6 +213,7 @@ function CasosConteudo({ situacaoInicial = "ANDAMENTO", comoInicial = null }: { 
                       <div>
                         <a className="jr-nome" href={ROTAS_JURIDICO.caso(c.id)}>{c.nome}</a>
                         <small>{linhaProcesso(c)}</small>
+                        <div className="pt-sobe" data-sobe="2"><small><span className="sr">Cliente: </span>{c.cliente?.nome ?? "—"}{c.outrosClientes ? ` e mais ${contar(c.outrosClientes, "cliente", "clientes")}` : ""}{c.semContrato ? " · sem contrato" : ""}</small></div>
                         {enc && c.origem ? <div style={{ marginTop: 4 }}><SeloOrigem origem={c.origem.sistema} leve /></div> : null}
                       </div>
                     </div>

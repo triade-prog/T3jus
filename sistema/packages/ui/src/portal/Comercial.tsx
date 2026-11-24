@@ -423,7 +423,7 @@ function PropostasConteudo() {
         </Busca>
         <p className="hn-cont" role="status">{contagemTexto(dados.propostas, mostrar, q)}</p>
         {dados.propostas.length ? (
-          <table className="hn-tab">
+          <table className="hn-tab" data-prio-tabela="propostas" data-sai3="760" data-sai2="640" data-cartoes="520">
             <caption className="sr">Propostas</caption>
             <colgroup>
               {["30%", "27%", "15%", "15%", "13%"].map((w, i) => <col key={i} style={{ width: w }} />)}

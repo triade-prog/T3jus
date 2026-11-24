@@ -784,7 +784,7 @@ function FichaConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => void
       ]} />
       {f.devolucoes.length ? (
         <>
-          <table className="so-pc fi-tab em-ftab">
+          <table className="so-pc fi-tab em-ftab" data-cartoes="600">
             <caption className="sr">Devoluções</caption>
             <colgroup>{["18%", "26%", "18%", "17%", "21%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
             <thead><tr><th scope="col">Dia</th><th scope="col">Situação</th><th scope="col">Forma</th><th scope="col" style={{ textAlign: "right" }}>Valor</th><th scope="col">Comprovante</th></tr></thead>
@@ -843,7 +843,7 @@ function FichaConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => void
         </div>
       ) : null}
       {falhaAbrir ? <div className="fi-aviso-in"><Aviso tom="urgencia" titulo="O arquivo não abriu.">{falhaAbrir}</Aviso></div> : null}
-      <table className="so-pc fi-tab em-ftab">
+      <table className="so-pc fi-tab em-ftab" data-cartoes="600">
         <caption className="sr">Parcelas do empréstimo</caption>
         <colgroup>{["12%", "17%", "29%", "18%", "24%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead><tr><th scope="col">Parcela</th><th scope="col">Vence</th><th scope="col">Situação</th><th scope="col" style={{ textAlign: "right" }}>Valor</th><th scope="col">Comprovante</th></tr></thead>

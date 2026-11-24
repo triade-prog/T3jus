@@ -202,6 +202,27 @@ Telas aprovadas pela Carol em 18/11/2026, em `docs/design/aprovadas/portal-v1/`.
 - **Exportar:** o arquivo JSON fica na memória da página. "Salvar de novo" não gera outra exportação.
 - **Testes:** `tests/e2e/portal-v1.spec.ts` roda no celular e no computador, com axe. `packages/ui/src/portal/portal.test.ts` testa as regras de tela (convite vencido, frases do histórico, nome do arquivo).
 
+### Tabelas do Portal (F3.124)
+
+Decisões da Carol de 23/11/2026: quando a tabela não cabe, saem as colunas secundárias e a tabela fica. Abaixo de 1360 px de janela, a coluna lateral de algumas telas desce para baixo da folha (A3). Onde nem as colunas essenciais cabem, ficam os cartões do celular.
+
+- **Base:** o bloco "Tabelas do Portal" fica no fim do `portal.css`, preso a `.pt`. O Console não carrega esse arquivo.
+- **Prioridade das colunas:** a fonte única é `packages/ui/src/portal/prioridades.json`. O gancho `usePrioridadesDeColuna()` (`prioridades.ts`, chamado pela `MolduraPortal`) põe `data-prio` no `<th>` e nas células de cada `table[data-prio-tabela]`.
+- **Faixas:** cada `<table>` diz quando muda de nível, pela largura da folha (consulta de contêiner `pt-folha`). `data-sai3="N"`: abaixo de N px saem as colunas de prioridade 3. `data-sai2="N"`: saem também as de prioridade 2. `data-cartoes="N"`: viram os cartões do celular.
+- **O que sobe:** se uma coluna que sai tem algo que a pessoa precisa ver para agir, a parte crítica é repetida numa coluna que fica, em `<div className="pt-sobe" data-sobe="2|3">`. A cópia só aparece quando a coluna sai. Hoje há três: a nota e a origem do reembolso em A pagar, "Sem aviso automático" em A receber e o cliente em Casos.
+- **Coluna lateral que desce (A3):** só desce a grade marcada com `pt-desce` no JSX. São 8: Petições, Honorários, a lista de Automações, Avisos automáticos, a ficha da conta recorrente, o relatório de um cliente, a ficha do repasse e as telas de Importar com tabela (pela prop `desce` do componente `Grade`). Uma grade sem a marca fica ao lado, como sempre. A classe `pt-so-desce` mostra algo só quando a coluna lateral está embaixo (por exemplo, "Falta ligar N" em Ligar as colunas).
+- **Testes:** `tests/e2e/portal-tabelas.spec.ts` abre cada tela com tabela a partir de `tests/e2e/portal-tabelas-telas.json` (as respostas da API gravadas dos testes de cada tela). Ele confere a fonte única, as faixas em N e N − 1 com dados longos, que nenhuma tabela passa da folha, a distância entre os textos das células, o axe em cada nível, as grades que descem, as cópias que sobem e as propostas E4 e E5.
+
+#### Tabela nova no Portal
+
+1. Dê ao `<table>` um `data-prio-tabela="id"`. Em `prioridades.json`, ponha os cabeçalhos que podem sair: `"3"` sai primeiro, `"2"` depois. Fora do arquivo, a coluna nunca sai: a 1ª coluna (quem ou o quê), a situação, o valor e a ação.
+2. Se uma coluna que sai tem algo que a pessoa precisa ver para agir (um aviso, um botão), repita isso numa coluna que fica, dentro de `<div className="pt-sobe" data-sobe="2|3">`. Comece a cópia por `<span className="sr">Nome da coluna: </span>` e não use `id` fixo.
+3. No `<table>`, ponha `data-sai3`, `data-sai2` e, se nem as essenciais couberem na menor folha onde a tabela aparece, `data-cartoes`. Cada valor é o primeiro degrau de 40 px (de 280 a 1400) maior ou igual ao mínimo real daquele nível, mais 16 px de respiro e 24 px de folga.
+4. Todo degrau de `data-sai3` e `data-sai2` já tem regra no `portal.css`. Para `data-cartoes`, só os degraus usados têm. Se o seu for novo, copie um bloco `@container pt-folha (max-width:…)` de cartões e troque o número em todos os seletores e no `max-width`, que é `(N − 1)/16` rem. Sem isso, o teste falha em N − 1.
+5. Toda `td`, menos a primeira e a de ação, tem `data-r` (o rótulo do cartão do celular).
+6. Se a tela tem coluna lateral, ela fica ao lado por padrão. Para ela descer abaixo de 1360 px, ponha `pt-desce` na grade, e só se a coluna lateral não tiver alerta, botão principal nem algo que a pessoa precisa ver para agir.
+7. Ponha a tela em `tests/e2e/portal-tabelas-telas.json` (endereço e respostas da API) e a grade marcada, se houver, na lista `DESCEM` do `portal-tabelas.spec.ts`.
+
 ### Suporte de acesso do Console (F1.3, PT-23)
 
 Tela aprovada pela Carol em 18/11/2026, em `docs/design/aprovadas/console-suporte/`. O código fica em `packages/ui/src/console/Suporte.tsx` (regras em `suporte.ts`), na rota `/suporte` do Console.

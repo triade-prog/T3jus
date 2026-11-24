@@ -2,8 +2,11 @@
   "id": "F3.124",
   "texto": "Dar às tabelas .hn-tab do Portal uma base própria (ou tirar co-carteira do MolduraArea): hoje herdam do Console table-layout:auto, cabeçalho sem quebra e 1ª coluna com 250 px, e podem cortar a última coluna com nomes ou valores longos",
   "peca": "S2",
-  "refs": [],
-  "status": "pendente",
+  "refs": [
+    "PT-10",
+    "PT-25"
+  ],
+  "status": "feito",
   "ordem": 982,
-  "proximo": "Varrer as telas do Portal com .hn-tab em várias larguras e propor a correção ampla, passando pela especialista de frontend e pela Carol"
+  "evidencia": "Base própria das tabelas no fim do portal.css, presa a .pt: tira as heranças do .co-carteira e esconde colunas secundárias por prioridade (fonte única packages/ui/src/portal/prioridades.json, gancho na MolduraPortal), com cópias pt-sobe e cartões do celular como rede. A coluna lateral desce abaixo de 1360 px em 8 telas marcadas com pt-desce; E4 (Falta ligar no alto de Importar) e E5 (Ver a mensagem leva à prévia). Desenho e medição em telas/portal-tabelas (6 leituras do revisor, aprovado pela Carol em 24/11). Teste tests/e2e/portal-tabelas.spec.ts (43 telas de 800 a 1920: sem transbordo, faixas em N e N−1, axe por nível, só 8 grades descem); suíte do Portal 934 passaram; regra 'Tabela nova no Portal' no sistema/README.md."
 }

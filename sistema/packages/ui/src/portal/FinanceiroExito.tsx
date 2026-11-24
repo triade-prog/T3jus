@@ -42,7 +42,7 @@ export function BlocoExitos({ dados, aoConferir }: { dados: ExitosParaConferir; 
         </div>
         <Selo tom="atencao" icone="relogio">{dados.n === 1 ? "1 esperando você" : `${dados.n} esperando você`}</Selo>
       </header>
-      <table className="hn-tab ex-tab">
+      <table className="hn-tab ex-tab" data-prio-tabela="exito" data-sai3="800" data-sai2="680" data-cartoes="600">
         <caption className="sr">Êxitos calculados no encerramento dos casos, esperando conferência</caption>
         <colgroup>{["25%", "24%", "13%", "11%", "16%", "11%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>

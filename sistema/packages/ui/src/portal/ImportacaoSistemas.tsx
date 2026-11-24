@@ -491,7 +491,7 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
         <span><b>{imp.arquivo}</b> · enviado por {imp.por.nome}</span>
         <a className="btn btn-fantasma" href={ROTAS_IMPORTACAO.astrea}><Icone nome="xis" className="ico" />Trocar o arquivo</a>
       </p>
-      <table className="hn-tab is-abas-t">
+      <table className="hn-tab is-abas-t" data-cartoes="480">
         <caption className="sr">Abas do backup</caption>
         <colgroup><col style={{ width: "24%" }} /><col style={{ width: "42%" }} /><col style={{ width: "34%" }} /></colgroup>
         <thead><tr><th scope="col">Aba do backup</th><th scope="col">Vai para</th><th scope="col">Situação</th></tr></thead>
@@ -538,7 +538,7 @@ export function PassoAbas({ imp }: { imp: Importacao }) {
     <div className="im">
       <CabFluxo origem="ASTREA" />
       <Passos atual={2} origem="ASTREA" escolhas={[imp.arquivo]} voltar={[ROTAS_IMPORTACAO.astrea]} />
-      <Grade principal={principal} lateral={<><VemDe sistema="Astrea" /><ExplicaIs sistema="Astrea" /></>} rotulo="O que vem do Astrea" />
+      <Grade principal={principal} lateral={<><VemDe sistema="Astrea" /><ExplicaIs sistema="Astrea" /></>} rotulo="O que vem do Astrea" desce />
     </div>
   );
 }

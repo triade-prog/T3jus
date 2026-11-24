@@ -132,9 +132,9 @@ export function PassoColunasCasos({ imp }: { imp: Importacao }) {
   const linhasAba = imp.abas?.find((a) => a.indice === imp.aba)?.linhas ?? imp.linhasLidas ?? 0;
 
   const tabela = (
-    <table className="hn-tab im-map">
+    <table className="hn-tab im-map" data-cartoes="520">
       <caption className="sr">Colunas dos processos</caption>
-      <colgroup><col style={{ width: "22%" }} /><col style={{ width: "20%" }} /><col style={{ width: "38%" }} /><col style={{ width: "20%" }} /></colgroup>
+      <colgroup><col style={{ width: "18%" }} /><col style={{ width: "26%" }} /><col style={{ width: "38%" }} /><col style={{ width: "18%" }} /></colgroup>
       <thead><tr><th scope="col">Coluna</th><th scope="col">Primeiro valor</th><th scope="col">Vai para</th><th scope="col">Como foi ligada</th></tr></thead>
       <tbody>
         {colunas.map((c) => {
@@ -309,7 +309,7 @@ export function PassoColunasCasos({ imp }: { imp: Importacao }) {
     <div className="im">
       <CabFluxo origem={imp.origem} titulo={`Importar os processos do ${sistema}`} />
       <Passos atual={2} escolhas={[imp.arquivo]} voltar={[voltar]} origem={imp.origem} />
-      <Grade principal={principal} lateral={lateral} rotulo="O que é obrigatório" />
+      <Grade principal={principal} lateral={lateral} rotulo="O que é obrigatório" desce />
     </div>
   );
 }
