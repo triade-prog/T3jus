@@ -7,7 +7,10 @@
 // só no sino (sem e-mail), 30 dias, sem desligar tipos, abrir marca lido.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { MOTIVOS_NAO_COBRAR, quandoEncerrouNoFinanceiro, reais, type AvisoSino, type ListaAvisosSino, type MotivoNaoCobrar } from "@t3jus/domain";
+import {
+  MOTIVOS_NAO_COBRAR, quandoDia, quandoEncerrouNoFinanceiro, reais,
+  type AreaPortal, type AvisoSino, type ContratoNoAviso, type ListaAvisosSino, type MotivoNaoCobrar,
+} from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Aviso, Estado } from "../console/pecas.tsx";
 import { hora } from "../console/tempo.ts";
@@ -16,6 +19,7 @@ import { valorDaProposta } from "./comercial.ts";
 import { juntarComE } from "./clientes.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { linkFechamentoContrato } from "./fechamento.ts";
+import { ROTAS_PASSO } from "./fichaLigada.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
 
 const FUSO = "America/Sao_Paulo";
@@ -112,10 +116,192 @@ export function agoraCasoPronto(a: AvisoSino, agora: Date = new Date()): { selo:
   return null;
 }
 
-/** O que cada aviso diz: ícone, título, detalhe, destino e selo; no caso pronto, também a linha
- *  "Agora:" e o trecho para o leitor de tela. */
-export function descreverAviso(a: AvisoSino, agora: Date = new Date()): {
-  icone: NomeIcone; titulo: ReactNode; detalhe: ReactNode; onde: string; href: string; selo?: Selo; agora?: string; paraLeitor?: string;
+// ------------------------------------------------------------------ Caso encerrado no financeiro (F3.150)
+// Desenho aprovado em docs/design/aprovadas/portal-sino-caso-fechou (NOTAS.md, os textos exatos).
+// Dois papéis: quem encerra contratos (CONTRATOS), só quando sobrou contrato aberto, e quem é
+// responsável pelo caso (RESPONSAVEL). Nenhum valor em reais (PT-02). O "Agora:" vem de
+// agoraFechou, que o servidor lê na hora; "você" também vem do servidor (voce).
+
+/** "o C-2026-012, de Noemi Bastos Carvalho" (sem cliente: "o C-2026-012"). */
+export function contratoCom(c: ContratoNoAviso): string {
+  return `o ${c.numero}${c.cliente ? `, de ${c.cliente}` : ""}`;
+}
+
+/** "o C-1, de A", "o C-1, de A, e o C-2, de B" ou "o C-1, de A, o C-2, de B, e mais N contratos". */
+export function listaContratos(cs: ContratoNoAviso[]): string {
+  const [a, b] = cs;
+  if (!a) return "";
+  if (!b) return contratoCom(a);
+  const sep = (c: ContratoNoAviso) => (c.cliente ? ", e " : " e ");
+  if (cs.length === 2) return `${contratoCom(a)}${sep(b)}${contratoCom(b)}`;
+  const mais = cs.length - 2;
+  return `${contratoCom(a)}, ${contratoCom(b)}, e mais ${mais} ${mais === 1 ? "contrato" : "contratos"}`;
+}
+
+/** "o C-1" ou, com mais de um, "os contratos C-1 e C-2". */
+export function numeros(cs: { numero: string }[]): string {
+  return cs.length === 1 ? `o ${cs[0]!.numero}` : `os contratos ${juntarComE(cs.map((c) => c.numero))}`;
+}
+
+/** A lista seguida de verbo: com o cliente no fim, fecha o aposto com vírgula ("…, de Noemi, continua aberto"). */
+const listaAntesDoVerbo = (cs: ContratoNoAviso[]) => `${listaContratos(cs)}${cs.length <= 2 && cs.at(-1)?.cliente ? "," : ""}`;
+const maiuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+const ehResponsavel = (d: DadosAviso) => d.papel === "RESPONSAVEL";
+
+/** O detalhe do aviso. Com semPedido (o "Agora:" já resolveu), sai o "Encerre …". */
+export function fraseCasoFechou(d: DadosAviso, semPedido = false): string {
+  const quem = d.quem ?? "Alguém da equipe";
+  const abertos = d.abertos ?? [];
+  const seguem = d.seguem ?? [];
+  if (!ehResponsavel(d)) {
+    if (!abertos.length) return `${quem} encerrou o caso no financeiro.`;
+    const pedido = semPedido ? "" : abertos.length === 1 ? " Encerre o contrato." : " Encerre os contratos.";
+    return abertos.length === 1
+      ? `${quem} encerrou o caso no financeiro, e ${listaAntesDoVerbo(abertos)} continua aberto.${pedido}`
+      : `${quem} encerrou o caso no financeiro, e continuam abertos ${listaContratos(abertos)}.${pedido}`;
+  }
+  const juntos = d.juntos ?? [];
+  const ja = d.jaEncerrados ?? [];
+  const partes: string[] = [];
+  if (juntos.length === 1) partes.push(`${quem} encerrou o caso no financeiro e, junto, ${contratoCom(juntos[0]!)}.`);
+  else if (juntos.length > 1) partes.push(`${quem} encerrou o caso no financeiro e, junto, ${numeros(juntos)}.`);
+  else {
+    partes.push(`${quem} encerrou o caso no financeiro.`);
+    if (ja.length === 1) partes.push(`${maiuscula(listaAntesDoVerbo([ja[0]!]))} já estava encerrado.`);
+    else if (ja.length > 1) partes.push("Os contratos já estavam encerrados.");
+  }
+  if (abertos.length) {
+    const nomes = d.quemContratos ?? [];
+    partes.push(`Quem encerra ${listaAntesDoVerbo(abertos)} é a área Contratos${nomes.length ? ` (${juntarComE(nomes)})` : ""}.`);
+  }
+  for (const c of seguem) {
+    partes.push(`${maiuscula(listaAntesDoVerbo([c]))} fica aberto, porque as parcelas seguem com o caso ${c.outroCaso ?? "em andamento"}.`);
+  }
+  if (!abertos.length && !seguem.length) partes.push("O fechamento do caso terminou.");
+  return partes.join(" ");
+}
+
+const FALTA_UM: Selo = { tom: "andamento", texto: "Falta o contrato" };
+const FALTAM: Selo = { tom: "andamento", texto: "Faltam os contratos" };
+const SEGUE: Selo = { tom: "neutro", texto: "Segue com outro caso" };
+const FEITO: Selo = { tom: "ok", texto: "Fechamento feito" };
+
+/** O selo sem agoraFechou. */
+export function seloCasoFechou(d: DadosAviso): Selo {
+  const n = d.abertos?.length ?? 0;
+  if (n) return n === 1 ? FALTA_UM : FALTAM;
+  if (d.seguem?.length) return SEGUE;
+  return FEITO;
+}
+
+/** O trecho para o leitor de tela sem agoraFechou: o que o selo diz, sempre presente. */
+export function leitorCasoFechou(d: DadosAviso): string {
+  const ab = d.abertos ?? [];
+  const com = ehResponsavel(d) ? ", com a área Contratos" : "";
+  if (ab.length) return ab.length === 1 ? `. Falta encerrar o ${ab[0]!.numero}${com}.` : `. Falta encerrar ${ab.length} contratos${com}.`;
+  const n = d.seguem?.length ?? 0;
+  if (n) return n === 1 ? ". O contrato segue com outro caso." : ". Os contratos seguem com outros casos.";
+  return ". O fechamento terminou.";
+}
+
+type AgoraFechou = NonNullable<AvisoSino["agoraFechou"]>;
+type Saiu = NonNullable<AgoraFechou["saiu"]>[number];
+
+/** A parte "quem encerrou" da linha "Agora:". */
+function encerrouAgora(a: AvisoSino, x: AgoraFechou, agora: Date): string | null {
+  const dados = a.dados.abertos ?? [];
+  if (x.encerrados) {
+    const e = x.encerrados;
+    const quem = e.voce ? "você" : e.por?.nome;
+    const dia = quandoDia(e.em, agora);
+    if (dados.length === 1) return quem ? `${quem} encerrou o ${dados[0]!.numero} ${dia}` : `o ${dados[0]!.numero} foi encerrado ${dia}`;
+    return quem ? `${quem} encerrou os contratos ${dia}` : `os contratos foram encerrados ${dia}`;
+  }
+  const saiu = x.saiu ?? [];
+  if (!saiu.length) return null;
+  const novo = saiu.reduce((m: Saiu, s) => (new Date(s.em) > new Date(m.em) ? s : m), saiu[0]!);
+  const dia = quandoDia(novo.em, agora);
+  const quem = (s: Saiu) => (s.voce ? "você" : s.por?.nome ?? null);
+  if (saiu.length === 1) {
+    const q = quem(saiu[0]!);
+    return q ? `${q} encerrou o ${saiu[0]!.numero} ${dia}` : `o ${saiu[0]!.numero} foi encerrado ${dia}`;
+  }
+  const todosVoce = saiu.every((s) => s.voce);
+  const um = saiu[0]!.por?.id;
+  const mesma = !todosVoce && !!um && saiu.every((s) => !s.voce && s.por?.id === um);
+  if (todosVoce || mesma) return `${quem(saiu[0]!)} encerrou ${numeros(saiu)} ${dia}`;
+  return `${saiu.length} contratos foram encerrados ${dia}`;
+}
+
+/** O estado de agora do aviso: a linha "Agora:", o selo, o trecho para o leitor de tela, se o
+ *  pedido "Encerre …" sai do detalhe e os contratos que ainda faltam. Sem mudança, null. */
+export function agoraCasoFechou(a: AvisoSino, agora: Date = new Date()): {
+  selo: Selo; linha: string; paraLeitor: string; semPedido: boolean; restantes: { id: string; numero: string }[];
+} | null {
+  const x = a.agoraFechou;
+  if (!x) return null;
+  const restantes = x.abertos ?? [];
+  const seguemAgora = x.seguem ?? [];
+  const encerrou = encerrouAgora(a, x, agora);
+  if (!encerrou && !seguemAgora.length) return null;
+  const resp = ehResponsavel(a.dados);
+  const partes: string[] = [];
+  if (encerrou) partes.push(encerrou);
+  for (const s of seguemAgora) partes.push(`o ${s.numero} passou a seguir com o caso ${s.outroCaso}`);
+  if (seguemAgora.length && !restantes.length && !resp) partes.push("não precisa encerrar");
+  if (restantes.length) partes.push(`${restantes.length === 1 ? "falta" : "faltam"} ${juntarComE(restantes.map((r) => `o ${r.numero}`))}`);
+  const segueAlgum = seguemAgora.length + (resp ? a.dados.seguem?.length ?? 0 : 0);
+  const terminou = resp && !restantes.length && !segueAlgum;
+  const linha = `${partes.join("; ")}${terminou ? ", e o fechamento do caso terminou." : "."}`;
+  if (restantes.length) {
+    return {
+      selo: restantes.length === 1 ? FALTA_UM : FALTAM, linha, semPedido: false, restantes,
+      paraLeitor: restantes.length === 1 ? `. Agora: falta o ${restantes[0]!.numero}.` : `. Agora: faltam ${restantes.length} contratos.`,
+    };
+  }
+  if (terminou) return { selo: FEITO, linha, semPedido: true, restantes, paraLeitor: ". Agora: fechamento terminou." };
+  if (segueAlgum) {
+    return { selo: SEGUE, linha, semPedido: true, restantes,
+      paraLeitor: segueAlgum === 1 ? ". Agora: contrato segue com outro caso." : ". Agora: contratos seguem com outros casos." };
+  }
+  const um = (a.dados.abertos?.length ?? 0) <= 1;
+  return {
+    selo: { tom: "neutro", texto: um ? "Contrato encerrado" : "Contratos encerrados" }, linha, semPedido: true, restantes,
+    paraLeitor: um ? ". Agora: contrato encerrado." : ". Agora: contratos encerrados.",
+  };
+}
+
+/** Para onde o clique leva, pelas áreas da sessão (sem áreas, supõe que a pessoa tem a área). */
+export function destinoCasoFechou(a: AvisoSino, restantes: { id?: string; numero: string }[], areas?: readonly AreaPortal[]): { onde: string; href: string } {
+  const d = a.dados;
+  const tem = (x: AreaPortal) => !areas || areas.includes(x);
+  const caso = ROTAS_JURIDICO.caso(a.origemId);
+  const ficha = (cliente?: string, clienteId?: string) =>
+    clienteId ? { onde: `Ver a ficha de ${cliente ?? "o cliente"}`, href: `${ROTAS_PORTAL.clientes}/${clienteId}` } : { onde: "Ver o caso", href: caso };
+  if (ehResponsavel(d)) return tem("JURIDICO") ? { onde: "Ver o caso", href: caso } : ficha(d.cliente, d.clienteId);
+  const abertos = d.abertos ?? [];
+  const r = restantes[0];
+  const alvo = r ? { ...abertos.find((c) => c.id === r.id), ...r } : abertos[0];
+  if (!alvo?.id) return tem("JURIDICO") ? { onde: "Ver o caso", href: caso } : ficha(d.cliente, d.clienteId);
+  if (!tem("CONTRATOS")) return ficha(alvo.cliente ?? d.cliente, alvo.clienteId ?? d.clienteId);
+  return r
+    ? { onde: `Encerrar o ${alvo.numero}`, href: ROTAS_PASSO.encerrarContrato(alvo.id) }
+    : { onde: `Ver o ${alvo.numero}`, href: ROTAS_CONTRATOS.contrato(alvo.id) };
+}
+
+/** Cada número de contrato (C-2026-012) num span que não quebra no hífen (.si-nr). */
+export function comNumeros(texto: string): ReactNode {
+  const partes = texto.split(/(C-\d{4}-\d+)/);
+  if (partes.length === 1) return texto;
+  return partes.map((p, i) => (i % 2 ? <span key={i} className="si-nr">{p}</span> : p));
+}
+
+/** O que cada aviso diz: ícone, título, detalhe, destino e selo; no caso pronto e no caso encerrado,
+ *  também a linha "Agora:" e o trecho para o leitor de tela. Com numeros, o item embrulha cada número
+ *  de contrato em .si-nr. As áreas da sessão escolhem o destino do caso encerrado (sem elas, supõe
+ *  que a pessoa tem a área). */
+export function descreverAviso(a: AvisoSino, agora: Date = new Date(), areas?: readonly AreaPortal[]): {
+  icone: NomeIcone; titulo: ReactNode; detalhe: ReactNode; onde: string; href: string; selo?: Selo; agora?: string; paraLeitor?: string; numeros?: true;
 } {
   const d = a.dados;
   const conversa = `/conversas?c=${a.origemId}`;
@@ -307,12 +493,34 @@ export function descreverAviso(a: AvisoSino, agora: Date = new Date()): {
         ...(x ? { agora: x.linha, paraLeitor: x.paraLeitor } : {}),
       };
     }
+    case "CASO_ENCERRADO_FINANCEIRO": {
+      // F3.150 (EX-16, EX-17): o mesmo título para os dois papéis; o "Agora:" conta o que mudou nos
+      // contratos que ficaram abertos. Abrir não marca os avisos dos outros (regra do F3.147).
+      const x = agoraCasoFechou(a, agora);
+      return {
+        icone: "cadeado", titulo: <>O caso <b>{d.caso}</b> foi encerrado no financeiro</>,
+        detalhe: fraseCasoFechou(d, x?.semPedido ?? false),
+        ...destinoCasoFechou(a, x?.restantes ?? d.abertos ?? [], areas),
+        selo: x?.selo ?? seloCasoFechou(d),
+        paraLeitor: x?.paraLeitor ?? leitorCasoFechou(d),
+        ...(x ? { agora: x.linha } : {}),
+        numeros: true,
+      };
+    }
     case "PRAZO_2_DIAS":
       return {
         icone: "relogio", titulo: <>Prazo em 2 dias: <b>{d.prazo}</b>{d.cliente ? ` de ${d.cliente}` : ""}</>,
         detalhe: [d.vence ? `Vence ${d.vence}.` : null, "Responsável: você.", d.processo ? `Proc. ${d.processo}.` : null].filter(Boolean).join(" "),
         onde: "Abrir o prazo", href: "/juridico/prazos", selo: { tom: "atencao", texto: "em 2 dias" },
       };
+    default: {
+      // Um tipo que esta versão do Portal não conhece (o banco mais novo que a aba aberta, ou um
+      // rollback) não derruba o painel: o aviso aparece genérico. Um tipo do domain sem "case"
+      // continua sendo erro de compilação.
+      const _novo: never = a.tipo;
+      void _novo;
+      return { icone: "sino", titulo: <>Aviso</>, detalhe: "", onde: "Abrir o Portal", href: ROTAS_PORTAL.inicio };
+    }
   }
 }
 
@@ -361,10 +569,12 @@ export function BotaoSino({ cls, novos, aberto, aoClicar }: { cls: "icone-botao"
   );
 }
 
-export function PainelSino({ sino, aberto, aoFechar }: {
+export function PainelSino({ sino, aberto, aoFechar, areas }: {
   sino: ReturnType<typeof useSino>;
   aberto: boolean;
   aoFechar: () => void;
+  /** As áreas da sessão: escolhem o destino do aviso de caso encerrado (F3.150). */
+  areas?: readonly AreaPortal[];
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [filtro, setFiltro] = useState<"todos" | "novos">("todos");
@@ -442,7 +652,8 @@ export function PainelSino({ sino, aberto, aoFechar }: {
         <h3 className="si-dia">{g.dia}</h3>
         <ul className="si-ul">
           {g.itens.map((a) => {
-            const x = descreverAviso(a);
+            const x = descreverAviso(a, new Date(), areas);
+            const nr = (t: ReactNode) => (x.numeros && typeof t === "string" ? comNumeros(t) : t);
             return (
               <li key={a.id} className={a.lido ? "si-item" : "si-item si-novo"}>
                 <span className="si-ico" aria-hidden="true"><Icone nome={x.icone} className="ico" /></span>
@@ -454,8 +665,8 @@ export function PainelSino({ sino, aberto, aoFechar }: {
                       {x.paraLeitor ? <span className="sr">{x.paraLeitor}</span> : null}
                     </a>
                   </p>
-                  <p className="si-det">{x.detalhe}</p>
-                  {x.agora ? <p className="si-det"><b className="si-agora">Agora:</b> {x.agora}</p> : null}
+                  <p className="si-det">{nr(x.detalhe)}</p>
+                  {x.agora ? <p className="si-det"><b className="si-agora">Agora:</b> {nr(x.agora)}</p> : null}
                   <p className="si-meta">
                     {a.lido ? null : <span className="si-nv">Novo</span>}
                     {x.selo ? <span className={`selo selo-${x.selo.tom}`}>{x.selo.texto}</span> : null}

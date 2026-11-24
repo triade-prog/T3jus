@@ -469,7 +469,7 @@ export function MolduraPortal({
         </nav>
       </div>
 
-      <PainelSino sino={sino} aberto={sinoAberto} aoFechar={fecharSino} />
+      <PainelSino sino={sino} aberto={sinoAberto} aoFechar={fecharSino} areas={escritorio?.areas} />
 
       <dialog ref={mais} className="janela pt-mais" id="folha-mais" aria-labelledby="folha-mais-t" onClose={() => abrirMais.current?.focus()}>
         <div className="janela-cabeca">
