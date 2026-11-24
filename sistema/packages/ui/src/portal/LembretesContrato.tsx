@@ -481,7 +481,7 @@ function TabelaLembretes({ situacao, lembretes, hoje, consulta, ocupado, aoDispe
     : situacao === "CONTRATO" ? ["Cliente e caso", "Valor do lembrete", "Virou", "Ações"] : ["Cliente e caso", "Valor", "Motivo", "Ações"];
   const cap = situacao === "ABERTO" ? "Lembretes de contrato abertos" : situacao === "CONTRATO" ? "Lembretes que viraram contrato" : "Lembretes dispensados";
   return (
-    <table className="hn-tab il-tab">
+    <table className="hn-tab il-tab" data-cartoes="600">
       <caption className="sr">{cap}</caption>
       <colgroup>{cols.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
       <thead><tr>{tit.map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>

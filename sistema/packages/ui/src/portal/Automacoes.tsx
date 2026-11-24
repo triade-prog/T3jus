@@ -133,7 +133,7 @@ function TabelaAutomacoes({ criadas, prontas, pessoas, whats }: { criadas: Linha
   );
   return (
     <>
-      <table className="so-pc au-tab cv-tab">
+      <table className="so-pc au-tab cv-tab" data-prio-tabela="automacoes" data-sai3="560" data-sai2="480" data-cartoes="400">
         <caption className="sr">Automações do escritório</caption>
         <colgroup><col style={{ width: "38%" }} /><col style={{ width: "25%" }} /><col style={{ width: "17%" }} /><col style={{ width: "20%" }} /></colgroup>
         <thead><tr><th scope="col">Automação e quando sai</th><th scope="col">Situação</th><th scope="col">Últimos 7 dias</th><th scope="col">Mexeu por último</th></tr></thead>
@@ -353,7 +353,7 @@ function Lista({ l, aoAbrir }: { l: ListaAutomacoes; aoAbrir: (id: string) => vo
         {acoes}
       </div>
       {!whats ? <Aviso tom="atencao" icone="whats" titulo="O WhatsApp do escritório ainda não está ligado">Monte e teste à vontade; ligar fica para depois que o número estiver pronto.</Aviso> : null}
-      <div className="au-grade">
+      <div className="au-grade pt-desce">
         <div className="au-col">
           <section className="folha" aria-labelledby="t-au" style={{ overflow: "hidden" }}>
             <div className="folha-cab"><div><h2 id="t-au">Automações</h2><p className="sub">{criadas.length ? "Ligada, desligada, rascunho ou em aprovação no WhatsApp" : "Só as prontas, por enquanto"}</p></div></div>
@@ -1451,7 +1451,7 @@ function Ligar({ p, mudando, falha, aoLigar, aoSugerir }: {
     );
   }
   return (
-    <div className="au-grade" style={{ gridTemplateColumns: "minmax(0,1fr) 380px" }}>
+    <div className="au-grade au-grade-380">
       <div className="au-col">
         <Folha id="t-lg" titulo={ligada ? "O que está valendo" : "Revise e ligue"} sub="Em linguagem simples, o que vai acontecer">
           <Frase p={p} />
@@ -1537,7 +1537,7 @@ function Historico({ p }: { p: PaginaAutomacao }) {
   const lista = itens && itens !== "erro" ? itens : [];
   const falha = lista.find((e) => e.situacao === "FALHOU");
   return (
-    <div className="au-grade" style={{ gridTemplateColumns: "minmax(0,1fr) 360px" }}>
+    <div className="au-grade au-grade-360">
       <div className="au-col">
         <Folha id="t-hist" titulo="Execuções" sub="Últimos 30 dias · uma linha por cliente e origem">
           <div className="au-num">
@@ -1554,7 +1554,7 @@ function Historico({ p }: { p: PaginaAutomacao }) {
               </Estado></div>
             ) : (
               <>
-                <table className="so-pc au-hist-tab cv-tab">
+                <table className="so-pc au-hist-tab cv-tab" data-prio-tabela="automacoes-historico" data-sai3="640" data-sai2="520" data-cartoes="400">
                   <caption className="sr">Execuções da automação {p.nome}</caption>
                   <colgroup><col style={{ width: "24%" }} /><col style={{ width: "17%" }} /><col style={{ width: "33%" }} /><col style={{ width: "26%" }} /></colgroup>
                   <thead><tr><th scope="col">Cliente</th><th scope="col">Começou</th><th scope="col">Caminho no fluxo</th><th scope="col">Situação</th></tr></thead>

@@ -729,7 +729,7 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
               <p className="re-cont" role="status"><b>{busca || area ? contar(lista.length, "cliente encontrado", "clientes encontrados") : contar(lista.length, "cliente", "clientes")}</b>{busca || area ? "" : " com contrato no período"} · {ordemTexto}</p>
               {lista.length ? (
                 <>
-                  <table className="so-pc fi-tab re-tab">
+                  <table className="so-pc fi-tab re-tab" data-prio-tabela="relatorio-clientes" data-sai3="880" data-sai2="760" data-cartoes="640">
                     <caption className="sr">Por cliente, de {periodoTexto(d.periodo.de, d.periodo.ate)}, ordenado por {ordemTexto}</caption>
                     <colgroup>{["27%", "13%", "13%", "19%", "13%", "15%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                     <thead>
@@ -765,7 +765,7 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
                         <th scope="row">{contar(lista.length, "cliente", "clientes")}</th>
                         <td className="num">{reais(t.contratado)}</td>
                         <td className="num">{reais(t.entrou)}</td>
-                        <td className="num">{reais(t.falta)}<small>{reais(t.vencido)} vencidos{t.aparte ? ` · mais ${reais(t.aparte)} à parte` : ""}</small></td>
+                        <td className="num">{reais(t.falta)}<small><span className="num">{reais(t.vencido)}</span> vencidos{t.aparte ? <> · mais <span className="num">{reais(t.aparte)}</span> à parte</> : null}</small></td>
                         <td className="num">{reais(t.adiantado)}</td>
                         <td className="num">{reaisComSinal(t.rendeu)}</td>
                       </tr>
@@ -905,7 +905,7 @@ function ClienteRelatorioTela({ d, q, barra }: { d: RelatorioCliente; q: string;
         )}
       </div>
       {barra}
-      <div className="fi-grade">
+      <div className="fi-grade pt-desce">
         <div className="fi-col">
           <Folha id="t-num" titulo="No período" icone="funcoes" sub="Contratado, entrou, falta receber e rendeu, como nas outras visões.">
             <dl className="fi-quatro">
@@ -922,7 +922,7 @@ function ClienteRelatorioTela({ d, q, barra }: { d: RelatorioCliente; q: string;
             acoes={<a className="btn btn-sec" href={rotaFichaCliente(d.cliente.id)}><Icone nome="pessoas" className="ico" />Ficha do cliente</a>}>
             {d.contratos.length ? (
               <>
-                <table className="so-pc fi-tab re-tab re-ct">
+                <table className="so-pc fi-tab re-tab re-ct" data-prio-tabela="relatorio-cliente" data-sai2="560" data-cartoes="440">
                   <caption className="sr">Contratos e casos de {d.cliente.nome}</caption>
                   <colgroup>{["34%", "30%", "14%", "22%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                   <thead><tr><th scope="col">Contrato</th><th scope="col">Caso e área</th><th scope="col" className="v">Entrou</th><th scope="col" className="v">Falta receber</th></tr></thead>
@@ -1103,7 +1103,7 @@ function AreasConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido; q:
                 ) : null}
               </Folha>
               <Folha id="t-areas" titulo="Por área do direito" icone="balanca" sub="Entrou, falta receber e rendeu de cada área, com os casos de cada uma.">
-                <table className="so-pc fi-tab re-tab">
+                <table className="so-pc fi-tab re-tab" data-prio-tabela="relatorio-areas" data-sai3="800" data-sai2="720" data-cartoes="600">
                   <caption className="sr">Por área do direito, de {periodoTexto(p.de, p.ate)}</caption>
                   <colgroup>{["17%", "15%", "16%", "22%", "15%", "15%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                   <thead>
@@ -1221,7 +1221,7 @@ function ResponsaveisConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Ped
                 </Folha>
               </div>
               <Folha id="t-resp" titulo="Por responsável" icone="cracha" sub="Entrou, falta receber e casos de cada pessoa (a carga, IN-08).">
-                <table className="so-pc fi-tab re-tab">
+                <table className="so-pc fi-tab re-tab" data-prio-tabela="relatorio-responsaveis" data-sai3="840" data-cartoes="680">
                   <caption className="sr">Por responsável, de {periodoTexto(d.periodo.de, d.periodo.ate)}</caption>
                   <colgroup>{["24%", "16%", "14%", "18%", "14%", "14%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                   <thead>

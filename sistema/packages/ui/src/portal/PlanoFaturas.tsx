@@ -135,7 +135,7 @@ function ListaFaturas({ faturas, hoje, aoPagar, nota }: { faturas: FaturaCb[]; h
   const legenda = "Faturas do escritório";
   return (
     <>
-      <table className="cb-tab so-pc">
+      <table className="cb-tab so-pc" data-prio-tabela="faturas" data-sai2="680" data-cartoes="560">
         <caption className="sr">{legenda}</caption>
         <colgroup>
           <col />

@@ -338,7 +338,7 @@ function Recebimentos({ f, hoje, dono, aoNaoPaga, aoFoiPaga }: {
             <div><p>Depende do caso</p><p className="hn-res-grande">{variaveis.length ? juntarItens(variaveis.map((c) => ({ EXITO: "Êxito", SUCUMBENCIA: "Sucumbência", ATO: "Por ato", RECORRENTE: "Recorrente" } as Record<string, string>)[c.tipo]!)) : "Nada"}</p></div>
           </div>
           {j.mostrar.length ? (
-            <table className="hn-tab">
+            <table className="hn-tab" data-prio-tabela="ficha-programacao" data-sai2="720" data-cartoes="560">
               <caption className="sr">Programação dos recebimentos</caption>
               <colgroup>{(comSituacao ? ["14%", "32%", "18%", "15%", "21%"] : ["16%", "40%", "22%", "22%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
               <thead><tr>{["Vencimento", "O quê", "Condição", "Valor", ...(comSituacao ? ["Situação"] : [])].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>
@@ -397,7 +397,7 @@ function PagoAntes({ f, pagas, soma, hoje, aoNaoPaga }: { f: FichaContrato; paga
         <Icone nome="escudo" className="ico" />
         <span><b>Só informação.</b> Não entram nos totais acima, nem em A receber, nem no Caixa, e não geram recibo: o pagamento foi feito antes do T3jus, e a planilha não diz quando, como nem a quem.</span>
       </p>
-      <table className="hn-tab">
+      <table className="hn-tab" data-prio-tabela="ficha-pagas-antes" data-sai3="760" data-sai2="680" data-cartoes="560">
         <caption className="sr">Parcelas pagas antes do T3jus</caption>
         <colgroup>{(botao ? ["13%", "26%", "16%", "13%", "18%", "14%"] : ["14%", "34%", "18%", "15%", "19%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>

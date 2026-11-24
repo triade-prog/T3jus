@@ -1,0 +1,11 @@
+{
+  "id": "F3.163",
+  "texto": "Acabamento de acessibilidade das tabelas do Portal (sobra do F3.124): alvos de toque de 36 px para 44 px nas ações das tabelas, teste com leitor de tela de verdade nas cópias pt-sobe, e devolver o foco a um lugar sensato quando o botão que abriu a janela sumiu",
+  "peca": "S2",
+  "refs": [
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 1220,
+  "proximo": "Medir os alvos de toque das ações das tabelas e propor o ajuste à especialista de frontend e à Carol"
+}

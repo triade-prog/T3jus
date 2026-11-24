@@ -182,11 +182,14 @@ test.describe("Financeiro do Portal, Empréstimos (F3.51, FI-20)", () => {
     await expect(folha).toContainText("R$ 86.780,00");
     await expect(page.getByRole("region", { name: "Do escritório · hoje" })).toContainText("Inclui R$ 31.820,00 de empréstimos, já descontado o que foi pago. Entra no saldo, mas não é receita.");
     const meses = page.getByRole("region", { name: "Mês a mês" });
-    if (ehCelular(page)) {
-      const lista = meses.getByRole("list", { name: "Mês a mês" });
-      await expect(lista.getByRole("listitem").nth(1)).toContainText("Empréstimos−R$ 4.090,00");
-      await expect(lista.getByRole("listitem").nth(2)).toContainText("−R$ 3.540,00 prev.");
-    } else {
+    // F3.124: com a coluna Empréstimos, a tabela precisa de 720 px de folha. No celular e no computador
+    // até 1440 (folha de 564 px a 1280), fica a lista do celular; a tabela aparece com a folha larga.
+    const lista = meses.getByRole("list", { name: "Mês a mês" });
+    await expect(lista.getByRole("listitem").nth(1)).toContainText("Empréstimos−R$ 4.090,00");
+    await expect(lista.getByRole("listitem").nth(2)).toContainText("−R$ 3.540,00 prev.");
+    if (!ehCelular(page)) {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      await expect(lista).toBeHidden();
       const tab = meses.getByRole("table", { name: "Entradas, saídas, empréstimos e saldo por mês" });
       await expect(tab.getByRole("columnheader", { name: /Empréstimos/ })).toBeVisible();
       await expect(tab.getByRole("row", { name: /Outubro/ })).toContainText("+R$ 5.910,00");

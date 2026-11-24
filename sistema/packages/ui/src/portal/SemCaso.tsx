@@ -66,7 +66,7 @@ export function TabelaSemCaso({ d, aoMudou, aoVerTodos }: { d: ContratosSemCaso;
         Para cada um, abra o caso, junte a um caso que já existe ou marque que o contrato não tem caso. Tudo pela mesma janela.
         {d.podeAbrir ? "" : ` Quem abre o caso tem a área Jurídico: ${juntarNomes(d.quemAbre ?? [])}.`}
       </Aviso>
-      <table className="hn-tab">
+      <table className="hn-tab" data-prio-tabela="contratos-sem-caso" data-sai3="640" data-sai2="640" data-cartoes="560">
         <caption className="sr">Contratos assinados sem caso</caption>
         <colgroup>{["34%", "18%", "22%", "26%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead><tr>{["Contrato", "Responsável", "Assinado em", "Caso"].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>

@@ -15,6 +15,7 @@ import { iniciais } from "../console/tempo.ts";
 import { ICONE_AREA, ORDEM_AREAS, rotaArea, SECOES_AREA } from "./areas.ts";
 import type { CobrancaPortal } from "./PlanoFaturas.tsx";
 import { BotaoSino, PainelSino, useSino } from "./Sino.tsx";
+import { usePrioridadesDeColuna } from "./prioridades.ts";
 
 /** O escritório da sessão, como GET /v1/escritorio devolve. */
 export interface EscritorioPortal {
@@ -299,6 +300,7 @@ export function MolduraPortal({
   children: ReactNode;
 }) {
   useNavegarSemRecarga();
+  usePrioridadesDeColuna();
   const [saindo, setSaindo] = useState(false);
   const mais = useRef<HTMLDialogElement>(null);
   const abrirMais = useRef<HTMLButtonElement>(null);

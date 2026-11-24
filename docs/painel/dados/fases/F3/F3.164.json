@@ -1,0 +1,11 @@
+{
+  "id": "F3.164",
+  "texto": "Testes do Portal que falham por acaso ou pela hora: Conversas \"Com você\" (portal-conversas.spec.ts:164, falha cerca de 1 em 7 também na main; troca a resposta simulada só depois de clicar em Assumir conversa) e o sino \"Ontem\" (portal-sino-avisos.spec.ts:165, falha entre 0h e 6h de Brasília)",
+  "peca": "B4",
+  "refs": [
+    "PT-18"
+  ],
+  "status": "pendente",
+  "ordem": 1230,
+  "proximo": "Simular a resposta antes do clique no teste de Conversas e fixar o relógio do teste do sino"
+}

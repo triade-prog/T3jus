@@ -170,7 +170,7 @@ function ContratosConteudo() {
         ) : null}
         {semCasoAberto ? null : <p className="hn-cont" role="status">{resumo}</p>}
         {semCasoAberto ? null : n ? (
-          <table className="hn-tab">
+          <table className="hn-tab" data-prio-tabela="contratos" data-sai3="840" data-sai2="680" data-cartoes="560">
             <caption className="sr">Contratos</caption>
             <colgroup>{["27%", "29%", "14%", "17%", "13%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
             <thead><tr>{["Contrato", "Honorários", "Responsável", "Próximo recebimento", "Situação"].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>
@@ -357,7 +357,7 @@ function HonorariosConteudo() {
         {numero("#t-vc", d.noMes, "Base informada", `em ${mesAtual}`, d.noMes ? "hn-d-vinho" : "")}
         {numero("#t-tp", d.tipos.length, "Tipos em uso", `em ${contar(d.ativos, "contrato ativo", "contratos ativos")}`)}
       </nav>
-      <div className="hn-grade">
+      <div className="hn-grade pt-desce">
         <div className="hn-col">
           <section className="folha" aria-labelledby="t-bm" style={{ overflow: "hidden" }}>
             <div className="folha-cab">
@@ -413,7 +413,7 @@ function HonorariosConteudo() {
               </div>
             </div>
             {d.etapas.length ? (
-              <table className="hn-tab">
+              <table className="hn-tab" data-prio-tabela="honorarios" data-sai2="480" data-cartoes="360">
                 <caption className="sr">Condições esperando etapa</caption>
                 <colgroup>{["34%", "28%", "38%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                 <thead><tr>{["Contrato", "Condição", "Vira cobrança em"].map((t) => <th key={t} scope="col">{t}</th>)}</tr></thead>

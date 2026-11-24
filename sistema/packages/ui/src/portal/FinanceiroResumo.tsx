@@ -708,7 +708,7 @@ function FolhaMeses({ c }: { c: CaixaFinanceiro }) {
   return (
     <Folha id="t-meses" titulo="Mês a mês" icone="agenda" sub={`Realizado em cima, previsto embaixo. De ${nomeDoMes(c.mes)} em diante, o saldo é previsão.`}>
       <div className="so-pc">
-        <table className="fi-tab fi-tab-caixa em-tab">
+        <table className="fi-tab fi-tab-caixa em-tab" data-cartoes={emp ? "720" : "560"}>
           <caption className="sr">{emp ? "Entradas, saídas, empréstimos e saldo por mês" : "Entradas, saídas e saldo por mês"}</caption>
           <colgroup><col style={{ width: "16%" }} /><col /><col />{emp ? <col /> : null}<col /></colgroup>
           <thead>

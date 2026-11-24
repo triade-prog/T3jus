@@ -181,7 +181,7 @@ function PagarConteudo() {
         </div>
         {falhaAbrir ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="O arquivo não abriu.">{falhaAbrir}</Aviso></div> : null}
         {dados.contas.length ? (
-          <table className="hn-tab fi-tab fi-tab-pagar">
+          <table className="hn-tab fi-tab fi-tab-pagar" data-prio-tabela="a-pagar" data-sai3="960" data-sai2="800" data-cartoes="520">
             <caption className="sr">{cab.titulo}</caption>
             <colgroup>{["9%", "21%", "14%", "20%", "14%", "11%", "11%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
             <thead>
@@ -202,6 +202,8 @@ function PagarConteudo() {
                         <strong>{c.descricao}</strong>
                         {c.adiantada || c.fornecedor ? <small>{c.adiantada ? nomeCliente(c) : c.fornecedor}</small> : null}
                       </div>
+                      {c.adiantada ? <div className="pt-sobe" data-sobe="3"><small><span className="sr">Origem: </span>{o.titulo} · {o.detalhe}</small></div> : null}
+                      <div className="pt-sobe" data-sobe="2"><span className="sr">Nota ou guia: </span><NotaDaConta c={c} anexos={anexos.porDono.get(c.id)} aoAbrir={(a) => void abrir(a)} aoAnexar={() => setAnexar(c)} /></div>
                     </td>
                     <td data-r="Categoria"><span className="fi-cat">{CATEGORIAS_SAIDA[c.categoria]}</span></td>
                     <td data-r="Origem">

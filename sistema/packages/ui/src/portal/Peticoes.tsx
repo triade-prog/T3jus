@@ -230,7 +230,7 @@ function ListaConteudo() {
   return (
     <div className="hn">
       {cab}
-      <div className="hn-grade">
+      <div className="hn-grade pt-desce">
         <div className="hn-col">
           <section className="folha" aria-labelledby="t-pl" style={{ overflow: "hidden" }}>
             <div className="folha-cab">
@@ -250,7 +250,7 @@ function ListaConteudo() {
             </Busca>
             {bx.falha ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso></div> : null}
             {lista.length ? (
-              <table className="hn-tab pe-tab">
+              <table className="hn-tab pe-tab" data-prio-tabela="peticoes" data-sai3="680" data-cartoes="560">
                 <caption className="sr">Petições</caption>
                 <colgroup>{["33%", "19%", "17%", "31%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                 <thead><tr>{["Petição e arquivo", "Caso", "Gerada por", "Situação"].map((x) => <th key={x} scope="col">{x}</th>)}</tr></thead>

@@ -66,7 +66,7 @@ function Previa({ a }: { a: AvisoAutomatico }) {
       <div className="folha-cab">
         <div>
           <p className="sobretitulo">{g.nome}</p>
-          <h2 id="t-prev">Mensagem para {primeiro(nome)}</h2>
+          <h2 id="t-prev" tabIndex={-1}>Mensagem para {primeiro(nome)}</h2>
         </div>
       </div>
       <div className="cv-prev">
@@ -134,6 +134,19 @@ function Regras({ auto, lista }: { auto: ListaAutomacoes | "erro" | null; lista:
   );
 }
 
+// E5 (A3): com a coluna lateral embaixo (ou no celular), a prévia pode estar fora da tela. Leva até ela
+// e põe o foco no título, para quem usa teclado ou leitor de tela saber que ela mudou.
+function irParaPrevia() {
+  requestAnimationFrame(() => {
+    const t = document.getElementById("t-prev");
+    if (!t) return;
+    const r = t.getBoundingClientRect();
+    if (r.top >= 0 && r.bottom <= window.innerHeight) return;
+    t.scrollIntoView({ block: "start" });
+    t.focus({ preventScroll: true });
+  });
+}
+
 export function AvisosAutomaticosPortal() {
   const { escritorio, erro: erroEsc, recarregar } = useEscritorioPortal();
   const [tipo, setTipo] = useState<Gatilho | null>(null);
@@ -188,7 +201,7 @@ export function AvisosAutomaticosPortal() {
     const atual = lista.itens.find((a) => a.id === sel) ?? lista.itens.find((a) => a.situacao !== "NAO_ENTREGUE") ?? lista.itens[0] ?? null;
     const filtros = FILTROS_AVISO.filter((f) => f.gatilho === null || (lista.porTipo[f.gatilho] ?? 0) > 0 || f.gatilho === tipo);
     const ver = (a: AvisoAutomatico) => (
-      <button type="button" className="cv-ver" aria-current={a.id === atual?.id || undefined} onClick={() => setSel(a.id)}
+      <button type="button" className="cv-ver" aria-current={a.id === atual?.id || undefined} onClick={() => { setSel(a.id); irParaPrevia(); }}
         style={{ background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit" }}>
         Ver a mensagem<span className="sr"> de {GATILHOS[a.gatilho].nome.toLowerCase()} para {a.cliente.nome}</span>
       </button>
@@ -202,7 +215,7 @@ export function AvisosAutomaticosPortal() {
     miolo = (
       <div className="cv">
         {cab}
-        <div className="cv-av-grade">
+        <div className="cv-av-grade pt-desce">
           <div className="cv-col">
             <section className="folha" aria-labelledby="t-env" style={{ overflow: "hidden" }}>
               <div className="folha-cab">
@@ -232,7 +245,7 @@ export function AvisosAutomaticosPortal() {
                 </div>
               ) : (
                 <>
-                  <table className="so-pc cv-tab">
+                  <table className="so-pc cv-tab" data-cartoes="680">
                     <caption className="sr">Avisos automáticos enviados</caption>
                     <colgroup><col style={{ width: "34%" }} /><col style={{ width: "25%" }} /><col style={{ width: "17%" }} /><col style={{ width: "24%" }} /></colgroup>
                     <thead><tr><th scope="col">Aviso</th><th scope="col">Cliente</th><th scope="col">Enviado</th><th scope="col">Situação</th></tr></thead>
@@ -280,7 +293,7 @@ export function AvisosAutomaticosPortal() {
   }
 
   return (
-    <MolduraPortal atual="conversas" trilha={trilha} escritorio={escritorio} barra={barra}>
+    <MolduraPortal atual="conversas" trilha={trilha} escritorio={escritorio} barra={barra} pagina="co-equipe co-carteira">
       {miolo}
     </MolduraPortal>
   );
