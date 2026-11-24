@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FichaCliente } from "@t3jus/domain";
-import { conferirCliente, corpoDoRascunho, diferencasCliente, juntarComE, lerData, lerHora, prontosParaProcuracao, rascunhoDaFicha, rascunhoVazio, rotuloProx } from "./clientes.ts";
+import { conferirCliente, corpoDoRascunho, diferencasCliente, errosDosCaminhos, juntarComE, lerData, lerHora, prontosParaProcuracao, rascunhoDaFicha, rascunhoVazio, rotuloProx } from "./clientes.ts";
 
 const ficha = {
   id: "c1", tipo: "PF", nome: "Antônia Prado", documento: "52998224725", nacionalidade: "brasileira", estadoCivil: "VIUVO", profissao: null, rg: null, rgOrgao: null,
@@ -33,6 +33,18 @@ describe("Clientes do Portal: regras da tela", () => {
     expect(v.erros.nome).toBe("Escreva o nome completo do cliente.");
     expect(v.erros.documento).toMatch(/^Confira o CPF/);
     expect(v.erros[`contato.${chave}.par`]).toMatch(/^Escreva um telefone ou um e-mail/);
+  });
+
+  it("F3.162: data de nascimento do menor depois de hoje tem o texto do D25", () => {
+    const menor = { ...rascunhoVazio("PF"), nome: "Ana Souza", capacidade: "MENOR" as const, rlPapel: "MAE" as const, rlNome: "Joana Souza" };
+    const futuro = conferirCliente({ ...menor, nascimento: "23/11/2026" }, "2026-11-22");
+    expect(futuro.ok).toBe(false);
+    if (!futuro.ok) expect(futuro.erros.nascimento).toBe("Esta data ainda não chegou.");
+    const hoje = conferirCliente({ ...menor, nascimento: "22/11/2026" }, "2026-11-22");
+    expect(hoje.ok ? undefined : hoje.erros.nascimento).toBeUndefined();
+    // A recusa do servidor no campo também vira o texto do D25.
+    expect(errosDosCaminhos({ ...menor, nascimento: "23/11/2026" }, [["nascimento"]], "2026-11-22").nascimento).toBe("Esta data ainda não chegou.");
+    expect(errosDosCaminhos({ ...menor, nascimento: "" }, [["nascimento"]], "2026-11-22").nascimento).toMatch(/^Escreva a data de nascimento/);
   });
 
   it("conflito: só os campos que mudaram, com os nomes da tela", () => {

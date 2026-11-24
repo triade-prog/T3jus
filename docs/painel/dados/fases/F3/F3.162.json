@@ -6,8 +6,8 @@
     "AP-01",
     "CH-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1210,
   "nota": "Risco R1 da revisão do F3.142: cliente bebê é comum em ação de alimentos. O código não tem forma pronta para o singular nem para menos de 1 ano, e \"tem menos de 1 ano hoje\" é texto novo: ficou de fora do F3.142.",
-  "proximo": "Levar à Carol \"tem 1 ano hoje\" e \"tem menos de 1 ano hoje\" e trocar em FormCliente.tsx e em avisoDoMenor (procuracoes.ts)"
+  "evidencia": "Textos aprovados pela Carol em 24/11 (docs/design/aprovadas/portal-responsavel-legal/NOTAS.md, seção F3.162). idadeEmPalavras, tituloDaIdade e nascimentoNoFuturo no domain (responsavel_legal.ts), usados no cadastro (FormCliente.tsx), em Gerar documentos (avisoDoMenor, procuracoes.ts) e na ficha (FichaCliente.tsx, com Number.isFinite): \"tem menos de 1 ano hoje\", \"tem 1 ano hoje\", \"· menos de 1 ano\", \"· 1 ano\". Data de nascimento depois de hoje: \"Esta data ainda não chegou.\" no quadro do cadastro e no erro do campo, conferida no navegador antes de enviar (conferirCliente) e na recusa do servidor (errosDosCaminhos). Sem migration e sem mudança na api-portal. Testes: Vitest (responsavel_legal.test.ts, procuracoes.test.ts, clientes.test.ts; 581 passaram) e e2e portal-responsavel-legal.spec.ts (4 cenários novos, com axe, no celular e no computador; 26 passaram)."
 }

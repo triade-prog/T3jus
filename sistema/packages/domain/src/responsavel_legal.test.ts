@@ -2,7 +2,7 @@
 // qualificação e o bloco de assinatura que saem na procuração e no contrato, e o que falta.
 import { describe, expect, it } from "vitest";
 import { faltasNoDocumento, montarValoresDocumento, type ClienteDoDocumento, type DadosDocumentos, type EscolhasDocumentos } from "./documentos.ts";
-import { aniversario, idadeEm, quemAssina, situacaoNoDia } from "./responsavel_legal.ts";
+import { aniversario, idadeEm, idadeEmPalavras, nascimentoNoFuturo, quemAssina, situacaoNoDia, tituloDaIdade } from "./responsavel_legal.ts";
 import { cadastrarClienteSchema } from "./clientes.ts";
 
 // Os mesmos dados de documentos.test.ts (o escritório, o contrato e o advogado).
@@ -61,6 +61,29 @@ describe("F3.98: quem assina, pela data", () => {
     expect(idadeEm("2008-11-19", "2026-11-19")).toBe(18);
     expect(aniversario("2014-03-14", 16)).toBe("2030-03-14");
     expect(aniversario("2012-02-29", 18)).toBe("2030-02-28");
+  });
+  it("F3.162: a idade em palavras, com o bebê e o singular", () => {
+    expect(idadeEmPalavras(0)).toBe("menos de 1 ano");
+    expect(idadeEmPalavras(-1)).toBe("menos de 1 ano");
+    expect(idadeEmPalavras(1)).toBe("1 ano");
+    expect(idadeEmPalavras(2)).toBe("2 anos");
+    expect(idadeEmPalavras(15)).toBe("15 anos");
+    expect(idadeEmPalavras(17)).toBe("17 anos");
+    // Nasceu hoje, faltando um dia para 1 ano, no dia de 1 ano; 29/02 só completa o ano em 01/03.
+    expect(idadeEmPalavras(idadeEm("2026-11-22", "2026-11-22"))).toBe("menos de 1 ano");
+    expect(idadeEmPalavras(idadeEm("2025-11-23", "2026-11-22"))).toBe("menos de 1 ano");
+    expect(idadeEmPalavras(idadeEm("2025-11-22", "2026-11-22"))).toBe("1 ano");
+    expect(idadeEmPalavras(idadeEm("2024-02-29", "2025-02-28"))).toBe("menos de 1 ano");
+    expect(idadeEmPalavras(idadeEm("2024-02-29", "2025-03-01"))).toBe("1 ano");
+  });
+  it("F3.162: o título do cadastro e de Gerar documentos, e a data depois de hoje", () => {
+    expect(tituloDaIdade("Ana", 0, "REPRESENTADO")).toBe("Ana tem menos de 1 ano hoje: é representado(a).");
+    expect(tituloDaIdade("Ana", 1, "REPRESENTADO")).toBe("Ana tem 1 ano hoje: é representado(a).");
+    expect(tituloDaIdade("Pedro", 12, "REPRESENTADO")).toBe("Pedro tem 12 anos hoje: é representado(a).");
+    expect(tituloDaIdade("Lucas", 16, "ASSISTIDO")).toBe("Lucas tem 16 anos hoje: é assistido(a).");
+    expect(nascimentoNoFuturo("2026-11-23", "2026-11-22")).toBe(true);
+    expect(nascimentoNoFuturo("2026-11-22", "2026-11-22")).toBe(false);
+    expect(nascimentoNoFuturo("2014-03-14", "2026-11-22")).toBe(false);
   });
   it("até 15 anos, representado; 16 e 17, assistido; aos 18, assina por si", () => {
     expect(quemAssina(PEDRO, "2026-11-22")).toBe("REPRESENTADO");
