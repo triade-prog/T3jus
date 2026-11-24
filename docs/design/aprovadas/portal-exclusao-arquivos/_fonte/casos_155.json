@@ -1,0 +1,26 @@
+[
+ {
+  "nome": "excluir-arquivos",
+  "url": "exclusao.html?estado=excluir-arquivos"
+ },
+ {
+  "nome": "excluir-um-documento",
+  "url": "exclusao.html?estado=excluir-um-documento"
+ },
+ {
+  "nome": "excluir-pj-propostas",
+  "url": "exclusao.html?estado=excluir-pj-propostas"
+ },
+ {
+  "nome": "excluir-tutela",
+  "url": "exclusao.html?estado=excluir-tutela"
+ },
+ {
+  "nome": "excluir-sem-arquivos",
+  "url": "exclusao.html?estado=excluir-sem-arquivos"
+ },
+ {
+  "nome": "excluir-alternativa-fica",
+  "url": "exclusao.html?estado=excluir-alternativa-fica"
+ }
+]
