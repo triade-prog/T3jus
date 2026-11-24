@@ -1,6 +1,8 @@
 // Pedido de exclusão do titular (F1.15, PT-11), tela aprovada em
 // docs/design/aprovadas/portal-clientes-pendencias (estados excluir-* e excluido-*), com as
 // decisões da Carol de 18/11/2026. A API é simulada.
+// F3.155: a linha dos arquivos em "O que é apagado", pelo desenho aprovado em
+// docs/design/aprovadas/portal-exclusao-arquivos (Carol, 24/11/2026).
 import { expect, test, type Page } from "@playwright/test";
 import { h, semViolacoes } from "./console-dados.ts";
 
@@ -73,6 +75,9 @@ test.describe("Pedido de exclusão do titular (F1.15, PT-11)", () => {
     await expect(j.getByText("Os 2 contatos")).toBeVisible();
     await expect(j.getByText("Rosa Almeida")).toBeVisible();
     await expect(j.getByText(/Data, canal, quem atendeu e o resumo, nos 3 atendimentos/)).toBeVisible();
+    // F3.155: sem o campo arquivosParaApagar, a lista é a aprovada antes, sem a linha dos arquivos.
+    await expect(j.locator(".pd-some li")).toHaveCount(5);
+    await expect(j.locator(".pd-some li").filter({ hasText: "do T3jus" })).toHaveCount(0);
     await semViolacoes(page);
     await j.getByLabel("Para confirmar, escreva o nome do cliente").fill("Antonia Prado");
     await j.getByRole("button", { name: "Excluir os dados para sempre" }).click();
@@ -239,6 +244,119 @@ test.describe("Pedido de exclusão do titular (F1.15, PT-11)", () => {
     await expect(page.getByText(/1 deles arquivado a pedido \(LGPD\)/)).toBeVisible();
     await expect(page.getByText(/Arquivado a pedido \(LGPD\) em/).filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText(/protocolo EXC-2026-0008/).first()).toBeAttached();
+    await semViolacoes(page);
+  });
+});
+
+// F3.155 (PT-11): "O que é apagado" cita os arquivos do cliente, logo depois da qualificação, só
+// quando há arquivo; "O que fica" não muda (alternativa A).
+const VARIOS = "os arquivos são apagados do T3jus. Fica só que existiram: tipo, tamanho e datas, sem o nome dos arquivos.";
+const UM = "o arquivo é apagado do T3jus. Fica só que existiu: tipo, tamanho e datas, sem o nome do arquivo.";
+const DOCS = { hoje: dia(0), validadeDias: 90, podeAnexar: true, podeMudarPrazo: true, sociosDonos: ["Marina Ribeiro"], documentos: [], pedidos: [] };
+const NOVO = "f9000000-0000-4000-8000-000000000155";
+// Uma foto PNG mínima de verdade (1 × 1), para o canvas conseguir ler e juntar num PDF.
+const FOTO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+
+async function abrirExcluir(page: Page) {
+  await page.getByRole("button", { name: "Atender pedido de exclusão" }).click();
+  const j = page.getByRole("alertdialog", { name: "Excluir os dados de Antônia Ferreira Prado?" });
+  await expect(j).toBeVisible();
+  return j;
+}
+
+test.describe("Os arquivos do cliente na janela de exclusão (F3.155, PT-11)", () => {
+  test("documentos, termo de curatela e proposta: a linha vem logo depois da qualificação, no plural", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, arquivosParaApagar: { documentos: 3, curatela: true, tutela: false, propostas: 1 } } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const j = await abrirExcluir(page);
+    const some = j.locator(".pd-some li");
+    await expect(some).toHaveCount(6);
+    await expect(some.nth(0)).toContainText("Nome, CPF, RG e a qualificação");
+    await expect(some.nth(1)).toHaveText(`Os 3 documentos pessoais, o termo de curatela e o arquivo Word da proposta${VARIOS}`);
+    await expect(some.nth(1).locator("small")).toHaveText(VARIOS);
+    await expect(some.nth(2)).toContainText("Os 2 contatos");
+    // "O que fica" não muda.
+    const fica = j.locator(".pd-fica li");
+    await expect(fica).toHaveCount(3);
+    await expect(fica.nth(0)).toContainText("O registro da exclusão");
+    await expect(fica.filter({ hasText: "existiram" })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("um documento só: a linha no singular", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, arquivosParaApagar: { documentos: 1, curatela: false, tutela: false, propostas: 0 } } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const j = await abrirExcluir(page);
+    await expect(j.locator(".pd-some li")).toHaveCount(6);
+    await expect(j.locator(".pd-some li").nth(1)).toHaveText(`O documento pessoal${UM}`);
+    await semViolacoes(page);
+  });
+
+  test("a dona anexa um documento: a ficha recarrega, o aviso fica e a janela conta o documento novo", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: [
+        { corpo: { ...FICHA, arquivosParaApagar: { documentos: 0, curatela: false, tutela: false, propostas: 0 } } },
+        { corpo: { ...FICHA, arquivosParaApagar: { documentos: 1, curatela: false, tutela: false, propostas: 0 } } },
+      ],
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET ${ficha}/documentos`]: { corpo: DOCS },
+      [`POST ${ficha}/documentos`]: { status: 201, corpo: { id: NOVO, enderecoDeEnvio: `${P}/envio-falso/${NOVO}` } },
+      [`POST /v1/escritorio/clientes/documentos/${NOVO}/concluir`]: { corpo: {
+        id: NOVO, tipo: "RG_CPF", descricao: null, dataDocumento: null, nome: "rg.pdf", arquivoTipo: "application/pdf", tamanho: 380000, fotos: 1,
+        enviadoPor: MARINA, enviadoEm: h(0), dias: null, vencido: false, anteriores: 0 } },
+    });
+    await page.route("**/envio-falso/**", (rota) => rota.fulfill({ status: 200, body: "{}" }));
+    await page.goto(`${P}/clientes/${CLI}`);
+    const fichas = () => pedidos.filter((p) => p.metodo === "GET" && p.caminho === ficha).length;
+    await expect.poll(fichas).toBe(1);
+    await page.getByRole("region", { name: "Documentos pessoais" }).getByRole("button", { name: "Anexar documento" }).click();
+    const a = page.getByRole("dialog", { name: "Anexar documento" });
+    await a.getByLabel("Qual documento").selectOption("RG_CPF");
+    const [seletor] = await Promise.all([page.waitForEvent("filechooser"), a.getByRole("button", { name: "Escolher arquivo" }).click()]);
+    await seletor.setFiles([{ name: "IMG_0001.png", mimeType: "image/png", buffer: FOTO }]);
+    await a.getByRole("button", { name: "Guardar na ficha" }).click();
+    const aviso = page.getByRole("status").filter({ hasText: "guardado na ficha" });
+    await expect(aviso).toBeVisible();
+    await expect.poll(fichas).toBe(2);
+    await expect(aviso).toBeVisible();
+    // No celular, o aviso cobre o botão da exclusão: fecha antes de abrir a janela.
+    await aviso.getByRole("button", { name: "Fechar aviso" }).click();
+    const j = await abrirExcluir(page);
+    await expect(j.locator(".pd-some li").nth(1)).toHaveText(`O documento pessoal${UM}`);
+    await semViolacoes(page);
+  });
+
+  test("quem não é a dona anexa: a ficha não recarrega", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_DIEGO },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, dono: false } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`GET ${ficha}/documentos`]: { corpo: { ...DOCS, podeMudarPrazo: false } },
+      [`POST ${ficha}/documentos`]: { status: 201, corpo: { id: NOVO, enderecoDeEnvio: `${P}/envio-falso/${NOVO}` } },
+      [`POST /v1/escritorio/clientes/documentos/${NOVO}/concluir`]: { corpo: {
+        id: NOVO, tipo: "RG_CPF", descricao: null, dataDocumento: null, nome: "rg.pdf", arquivoTipo: "application/pdf", tamanho: 380000, fotos: 1,
+        enviadoPor: DIEGO, enviadoEm: h(0), dias: null, vencido: false, anteriores: 0 } },
+    });
+    await page.route("**/envio-falso/**", (rota) => rota.fulfill({ status: 200, body: "{}" }));
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("region", { name: "Documentos pessoais" }).getByRole("button", { name: "Anexar documento" }).click();
+    const a = page.getByRole("dialog", { name: "Anexar documento" });
+    await a.getByLabel("Qual documento").selectOption("RG_CPF");
+    const [seletor] = await Promise.all([page.waitForEvent("filechooser"), a.getByRole("button", { name: "Escolher arquivo" }).click()]);
+    await seletor.setFiles([{ name: "IMG_0001.png", mimeType: "image/png", buffer: FOTO }]);
+    await a.getByRole("button", { name: "Guardar na ficha" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "guardado na ficha" })).toBeVisible();
+    expect(pedidos.some((p) => p.metodo === "POST" && p.caminho.endsWith("/concluir"))).toBe(true);
+    expect(pedidos.filter((p) => p.metodo === "GET" && p.caminho === ficha)).toHaveLength(1);
     await semViolacoes(page);
   });
 });
