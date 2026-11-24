@@ -1036,11 +1036,10 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   const [feito, setFeito] = useState<Feito | null>(null);
   const [comprovante, setComprovante] = useState<{ p: ParcelaDoContrato; pg: PagamentoRecebido } | null>(null);
   const [falhaAbrir, setFalhaAbrir] = useState<string | null>(null);
-  // F3.132: a janela de fechamento, o caso de onde ela saiu, e o botão que a abriu (o foco volta a ele).
+  // F3.132: a janela de fechamento e o caso de onde ela saiu. O foco volta ao botão que a abriu pelo Janela
+  // (F3.165, foco.ts); o "Registrar" que o fechamento abre herda a pista dele.
   const [fechar, setFechar] = useState<FechamentoComAcerto | null>(null);
   const [jaEncerrado, setJaEncerrado] = useState<string | null>(null);
-  const [abriu, setAbriu] = useState<HTMLElement | null>(null);
-  const voltarFoco = () => requestAnimationFrame(() => (abriu?.isConnected ? abriu : document.querySelector<HTMLElement>(".fs-folha h2[tabindex]"))?.focus());
   const anexos = useAnexosFinanceiro([], dados && dados !== "erro" ? dados.parcelas.flatMap((p) => p.pagamentos.map((x) => x.id)) : []);
   const nome = dados && dados !== "erro" ? dados.cliente.nome : null;
   useEffect(() => {
@@ -1097,8 +1096,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
   const comOrigem = [...abertos, ...lateral];
   const primeiroFecha = abertos[0]?.casoId ?? lateral[0]?.casoId;
   const parcelasDaFicha = new Set(f.parcelas.map((p) => p.id));
-  function encerrar(x: FechamentoComAcerto, b: HTMLButtonElement) {
-    setAbriu(b);
+  function encerrar(x: FechamentoComAcerto) {
     setJaEncerrado(null);
     setFechar(x);
   }
@@ -1125,12 +1123,12 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
             </div>
           </div>
         </div>
-        <DirParcelas f={f} hoje={hoje} aoRegistrar={(p) => { setAbriu(null); setRegistrar(p); }}
-          fechamento={dirDoFechamento({ f, fp, fechado: fechados[0] ?? null, comLev: comLev.length > 0, aoEncerrar: (b) => { if (fp) encerrar(fp, b); } })} />
+        <DirParcelas f={f} hoje={hoje} aoRegistrar={(p) => setRegistrar(p)}
+          fechamento={dirDoFechamento({ f, fp, fechado: fechados[0] ?? null, comLev: comLev.length > 0, aoEncerrar: () => { if (fp) encerrar(fp); } })} />
       </div>
       {abertos.map((x, i) => (
         <QuadroFechamentoContrato key={x.casoId} casoId={x.casoId} acerto={x.acerto} contratoId={f.id} hoje={hoje} primeira={x.casoId === primeiroFecha}
-          botao={!(i === 0 && ambar)} aoEncerrar={(b) => encerrar(x, b)} />
+          botao={!(i === 0 && ambar)} aoEncerrar={() => encerrar(x)} />
       ))}
       <div className="fi-grade">
         <div className="fi-col">
@@ -1206,12 +1204,12 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                             </button>
                           ) : p.situacao === "BAIXADA" ? null : <span className="fi-pq">—</span>}
                           {p.situacao === "VENCIDA" ? (
-                            <button className="btn btn-sec btn-compacto fi-bx" type="button" data-baixa={p.id} onClick={(e) => { setAbriu(e.currentTarget); setBaixar(p); }}>
+                            <button className="btn btn-sec btn-compacto fi-bx" type="button" data-baixa={p.id} onClick={() => setBaixar(p)}>
                               Dar baixa sem receber<span className="sr">: {nomeDaParcela(p.descricao)}, de {dataBr(p.vencimento)}</span>
                             </button>
                           ) : null}
                           {p.situacao === "BAIXADA" ? (
-                            <button className="btn btn-sec btn-compacto fi-bx" type="button" data-baixa={p.id} onClick={(e) => { setAbriu(e.currentTarget); setDesfazer(p); }}>
+                            <button className="btn btn-sec btn-compacto fi-bx" type="button" data-baixa={p.id} onClick={() => setDesfazer(p)}>
                               <Icone nome="desfazer" className="ico" />Desfazer a baixa sem receber<span className="sr">: {nomeDaParcela(p.descricao)}</span>
                             </button>
                           ) : null}
@@ -1249,11 +1247,11 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
         </aside>
       </div>
       {registrar ? (
-        <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} escritorio={escritorio} aoFechar={() => { setRegistrar(null); if (abriu) voltarFoco(); }}
-          aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); if (abriu) voltarFoco(); }} />
+        <JanelaRegistrar parcela={registrar} whatsapp={!!escritorio.whatsappLigado} escritorio={escritorio} aoFechar={() => setRegistrar(null)}
+          aoFeito={(x) => { setRegistrar(null); setFeito(x); recarregar(); anexos.recarregar(); }} />
       ) : null}
       {baixar ? (
-        <JanelaBaixa p={baixar} f={f} hoje={hoje} aoFechar={() => { setBaixar(null); if (abriu) voltarFoco(); }}
+        <JanelaBaixa p={baixar} f={f} hoje={hoje} aoFechar={() => setBaixar(null)}
           aoFeito={(r, custasFicam) => {
             setBaixar(null);
             const a = avisoBaixaFeita(r, f.cliente.nome, custasFicam);
@@ -1273,7 +1271,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
           }} />
       ) : null}
       {desfazer ? (
-        <JanelaDesfazerBaixa p={desfazer} f={f} eu={escritorio.pessoa} aoFechar={() => { setDesfazer(null); if (abriu) voltarFoco(); }}
+        <JanelaDesfazerBaixa p={desfazer} f={f} eu={escritorio.pessoa} aoFechar={() => setDesfazer(null)}
           aoFeito={(r) => {
             setDesfazer(null);
             const volta = f.parcelas.find((x) => x.id === r.id) ?? null;
@@ -1294,14 +1292,14 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
           ajuda={(lista) => (fechar.acerto.aVencer && lista.every((p) => p.vencimento && p.vencimento >= hoje)
             ? `${fechar.acerto.aVencer.exito ? "O êxito" : "A parcela"} ainda não venceu: o caso fica pronto para encerrar depois de ${diaCurto(fechar.acerto.aVencer.vencimento)}.` : null)}
           resumo={<ResumoPronto a={fechar.acerto} />} baixar={{ hoje }}
-          aoFechar={() => { setFechar(null); voltarFoco(); }}
+          aoFechar={() => setFechar(null)}
           aoAtalho={(a) => {
             setFechar(null);
             const p = a.tipo === "registrar" || a.tipo === "baixar" ? f.parcelas.find((x) => x.id === a.parcelaId) : undefined;
-            if (p && a.tipo === "baixar") setBaixar(p); else if (p) setRegistrar(p); else voltarFoco();
+            if (p && a.tipo === "baixar") setBaixar(p); else if (p) setRegistrar(p);
           }}
-          aoFeito={(x) => { setFechar(null); setFeito(x); recarregar(); setAbriu(null); }}
-          aoJaEncerrado={() => { setFechar(null); setJaEncerrado(fechar.casoId); recarregar(); voltarFoco(); }} />
+          aoFeito={(x) => { setFechar(null); setFeito(x); recarregar(); }}
+          aoJaEncerrado={() => { setFechar(null); setJaEncerrado(fechar.casoId); recarregar(); }} />
       ) : null}
       <p className="fs-anuncio" role="status" aria-live="polite">
         {jaEncerrado ? textoJaEncerradoPorOutro(fechamentos.find((x): x is FechamentoComAcerto => x.casoId === jaEncerrado && comAcerto(x))?.acerto.fechado ?? null) : ""}

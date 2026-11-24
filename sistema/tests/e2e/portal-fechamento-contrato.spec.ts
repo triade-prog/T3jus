@@ -50,7 +50,7 @@ const ACERTO = {
   contratosLigados: [{ ...ctrN, objeto: "Vício construtivo", versao: 3, cliente: NOEMI }], podeEncerrarContratos: true,
   motivoContratos: "Caso Carvalho x Construtora Lume encerrado no financeiro.",
   contratosJaEncerrados: [{ id: CT_C, numero: "C-2026-013", cliente: CLAUDIO, encerradoEm: em(-6, "09:30"), encerradoPor: FELIPE }],
-  quemContratos: ["Felipe Matos", "Marina Ribeiro"],
+  quemContratos: ["Bianca Torres", "Felipe Matos", "Marina Ribeiro"],
 };
 const ORIGEM = [
   { acao: "contrato.encerrado", em: em(-6, "09:30"), por: FELIPE, dados: { deste: false, contrato: "C-2026-013", cliente_contrato: CLAUDIO.nome, motivo: "Tudo recebido." } },
@@ -173,6 +173,19 @@ test.describe("Fechamento do caso na ficha do contrato (F3.132: EX-16, EX-17, FI
     await expect(folha(page).getByRole("button", { name: "Encerrar o caso no financeiro" })).toBeFocused();
   });
 
+  test("F3.165: duas janelas seguidas (o fechamento abre o Registrar e some); Esc no Registrar devolve o foco ao botão que abriu o fechamento", async ({ page }) => {
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/contratos/${CT_N}`]: { corpo: FICHA_N } });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT_N}`);
+    await folha(page).getByRole("button", { name: "Encerrar o caso no financeiro" }).click();
+    const j = page.getByRole("alertdialog", { name: "Ainda não dá para encerrar" });
+    await j.getByRole("button", { name: "Registrar recebimento da parcela 6/6" }).click();
+    const r = page.getByRole("dialog", { name: "Registrar recebimento" });
+    await expect(r).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(r).toBeHidden();
+    await expect(folha(page).getByRole("button", { name: "Encerrar o caso no financeiro" })).toBeFocused();
+  });
+
   test("estados 7 e 8 (EX-17): tudo recebido, Encerrar sobe ao âmbar e encerra o caso e o contrato juntos", async ({ page }) => {
     const fechado = { ...PRONTO, fechado: { em: em(0, "16:20"), por: MARINA }, contratosEncerrados: [ctrN] };
     const pedidos = await simular(page, {
@@ -218,7 +231,8 @@ test.describe("Fechamento do caso na ficha do contrato (F3.132: EX-16, EX-17, FI
     await page.locator("#t-dir").locator("..").getByRole("button", { name: "Encerrar o caso no financeiro" }).click();
     const j = page.getByRole("dialog", { name: "Encerrar o caso no financeiro" });
     await expect(j.getByRole("checkbox")).toHaveCount(0);
-    await expect(j.getByRole("group", { name: "Contratos ligados ao caso" })).toContainText("O C-2026-012 fica aberto. Quem encerra é a área Contratos (Felipe e Marina)");
+    await expect(j.getByRole("group", { name: "Contratos ligados ao caso" })).toContainText(
+      "O C-2026-012 fica aberto. Quem encerra é a área Contratos (Bianca, Felipe e Marina), no passo “Encerrar o contrato” da ficha de Noemi. Eles recebem um aviso no sino.");
     await expect(j.getByRole("button", { name: "Encerrar o caso" })).toBeFocused();
     // Sem Jurídico, De onde veio não leva ao caso.
     await j.getByRole("button", { name: "Cancelar" }).click();

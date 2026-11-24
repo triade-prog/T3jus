@@ -1,0 +1,11 @@
+{
+  "id": "D36",
+  "texto": "Desenho dos documentos marcados conforme a área (CH-14): a folha \"Documentos por área\" em Modelos de documento, com a área aberta, salvo, conflito, erro e leitura; o arquivar e o enviar de outro documento; e Gerar documentos abrindo com a lista da área, o seletor \"Sugestão para\", o \"sugerido\", a área que fica no contrato e a frase cruzada em Documentos para começar",
+  "peca": "S2",
+  "refs": [
+    "CH-14"
+  ],
+  "status": "feito",
+  "ordem": 86,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-documentos-por-area/ (24 estados, computador e celular, axe sem violação), com plano escrito por um especialista e revisado por outro (PLANO.md e REVISAO.md, ajustes 1 a 6 obrigatórios), aprovado pela Carol em 24/11/2026 às 15h13 (Bahia) com as 5 respostas (as 8 áreas como tipo de processo; a área escolhida em Gerar só fica no contrato em elaboração, sem área e sem caso; quem configura é quem tem contratos.editar; a sugestão do T3jus igual à de hoje nas 8 áreas; o \"também tem\" só com o que entrou depois da última geração). O desenho foi feito como D35; virou D36 porque o D35 foi ocupado em main antes da entrega"
+}

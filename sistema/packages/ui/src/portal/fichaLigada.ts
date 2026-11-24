@@ -172,8 +172,10 @@ export function textoPasso(p: PassoCliente, nomeCliente: string): TextoPasso {
       return {
         ...base, sobre: "Próximo passo · fechamento",
         oque: oqueDoFechamento(p, primeiro),
-        // Decisão 16: quem não tem a área do passo lê quem faz.
-        semAcao: p.pode ? null : `Quem faz: a área ${NOMES_AREA[p.area]}, que não está liberada para você.${faz.length ? ` ${juntarComE(faz)}.` : ""}`,
+        // Decisão 16: quem não tem a área do passo lê quem faz. F3.150 (pergunta 5): no passo do
+        // Financeiro, o caso ainda não foi encerrado nele, e quem é responsável fica sabendo pelo sino.
+        semAcao: p.pode ? null : `Quem faz: a área ${NOMES_AREA[p.area]}, que não está liberada para você.${faz.length ? ` ${juntarComE(faz)}.` : ""}${
+          p.area === "FINANCEIRO" ? " Quando o caso for encerrado no financeiro, quem é responsável por ele fica sabendo pelo sino." : ""}`,
         curto: "Fechar o caso", detalhe: x ? nomeDoPassoFechamento(x, primeiro).toLowerCase() : "",
       };
     }

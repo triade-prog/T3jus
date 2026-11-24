@@ -1,0 +1,207 @@
+/* CSS_PE do peticoes.py aprovado (portal-peticoes/_fonte), copiado sem mudança */
+
+/* ==========================================================================
+   Portal · Jurídico › Petições (EX-09). Prefixo pe-. Só pares do contraste.md.
+   A prévia em papel repete o desenho aprovado de Contratos (ct-papel), com o
+   terceiro marcador "deste formulário".
+   ========================================================================== */
+.pe-cab-acoes{display:flex;gap:10px;flex-wrap:wrap}
+.pe-voltar{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--vinho);font-weight:500;text-decoration:none;font-size:13px}
+.pe-voltar:hover{text-decoration:underline}
+
+/* Lista de petições */
+.pe-tab td{vertical-align:middle}
+.pe-doc{display:flex;align-items:center;gap:12px}
+.pe-doc .pe-ci{width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:var(--sal-2);color:var(--vinho)}
+.pe-doc b{display:block;font-weight:500;line-height:1.35}
+.pe-doc small{display:block;font-size:12px;color:var(--texto-2);overflow-wrap:anywhere}
+.pe-caso{display:inline-flex;align-items:center;min-height:44px;color:var(--vinho);font-weight:500;text-decoration:none}
+.pe-caso:hover{text-decoration:underline}
+.pe-quando{font-size:13px;color:var(--texto-2);white-space:nowrap}
+.pe-tab tr.pe-nova td{background:#FCF8F5}
+.pe-dx{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pe-quem{display:grid;gap:4px;justify-items:start}
+.pe-bx{width:44px;padding:0;justify-content:center}
+.pe-partes .opcao small .selo{margin:4px 0 0 8px;vertical-align:middle}
+
+/* Passos da nova petição */
+.pe-passos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.pe-passos li{position:relative;display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 12px;border-radius:var(--raio);background:var(--papel);border:1px solid var(--borda-folha);font-size:13px;color:var(--texto-2);min-width:0}
+.pe-passos li>a,.pe-passos li>span.pe-pi{display:flex;align-items:center;gap:10px;min-width:0;color:inherit;text-decoration:none;min-height:44px;flex:1}
+.pe-passos li>a:hover b{text-decoration:underline}
+.pe-passos .pe-n{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--serifa);font-size:16px;font-weight:600;background:var(--sal-2);color:var(--vinho-2)}
+.pe-passos b{display:block;font-weight:500;color:var(--texto);line-height:1.25}
+.pe-passos small{display:block;font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-passos li.feito .pe-n{background:var(--vinho);color:var(--papel)}
+.pe-passos li[aria-current="step"]{border-color:var(--vinho);box-shadow:inset 0 -3px 0 var(--vinho);background:#FCF8F5}
+.pe-passos li[aria-current="step"] .pe-n{background:var(--ambar);color:var(--vinho-escuro)}
+.pe-passos li[aria-current="step"] b{color:var(--vinho)}
+
+/* Escolhas em cartão (caso, modelo) */
+.pe-escolhas{list-style:none;margin:0;padding:0 24px 8px;display:grid;gap:8px}
+.pe-escolhas .opcao{margin:0;padding:12px 14px;border:1px solid var(--borda-folha);border-radius:var(--raio);align-items:flex-start;background:var(--papel)}
+.pe-escolhas .opcao:has(input:checked){border-color:var(--vinho);background:var(--ambar-3)}
+.pe-escolhas .opcao strong{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);line-height:1.25}
+.pe-escolhas .opcao strong .selo{font-family:var(--sans)}
+.pe-escolhas .opcao small{display:block;font-size:12px;color:var(--texto-2)}
+.pe-escolhas .opcao .pe-linha2{color:var(--texto);font-size:13px}
+.pe-grupo-t{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2);padding:10px 24px 8px}
+.pe-busca{padding:0 24px 14px}
+.pe-busca .campo-busca{position:relative;max-width:420px}
+.pe-busca .campo-busca .ico{position:absolute;left:14px;top:12px;color:var(--vinho-4);pointer-events:none}
+.pe-busca .campo-busca input{padding-left:44px}
+
+/* Formulário da peça */
+.pe-form .ju-sec{margin-top:6px}
+.pe-dado{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px}
+.pe-dado b{font-weight:500}
+.pe-dado small{display:block;font-size:12px;color:var(--texto-2)}
+.pe-dado .pe-de{font-size:12px;color:var(--texto-2);margin-left:auto}
+.pe-partes{display:grid;gap:6px}
+.pe-partes .opcao{margin:0;border:1px solid var(--borda-folha);padding:10px 12px;align-items:flex-start}
+.pe-partes .opcao:has(input:checked){border-color:var(--vinho-2);background:#FCF8F5}
+.pe-partes .opcao .selo{margin-top:6px}
+.pe-partes .pe-completar{display:inline-flex;align-items:center;min-height:44px;margin:-6px 0 -10px 34px;font-size:13px;font-weight:500;color:var(--vinho)}
+.pe-adv{display:grid;gap:8px}
+.pe-adv>.pe-a{border:1px solid var(--borda-folha);border-radius:var(--raio);padding:4px 12px 8px}
+.pe-adv>.pe-a:has(>.opcao input:checked){border-color:var(--vinho-2);background:#FCF8F5}
+.pe-adv>.pe-a>.opcao{margin:0 -4px;padding:8px 4px}
+.pe-insc{border:0;margin:0 0 4px 34px;padding:8px 0 0;border-top:1px dashed var(--borda-folha);min-width:0;display:grid;gap:0}
+.pe-insc legend{float:left;width:100%;padding:0;margin:0 0 2px;font-size:12px;color:var(--texto-2)}
+.pe-insc .opcao{margin:0 -4px;padding:6px 4px;min-height:44px;align-items:center}
+.pe-insc .opcao small{display:inline;margin-left:6px}
+.pe-insc-uma{margin:0 0 6px 34px;font-size:13px;color:var(--texto)}
+.pe-insc-uma small{color:var(--texto-2);font-size:12px;margin-left:6px}
+.pe-sai{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio);background:var(--ambar-3);color:var(--tinta);font-size:13px;line-height:1.5}
+.pe-sai .ico{color:var(--vinho);flex:none;margin-top:1px}
+.pe-sai b{font-weight:600}
+.pe-fs{border:0;margin:0;padding:0;min-width:0;display:grid;gap:8px}
+.pe-fs>legend{padding:0;margin-bottom:8px;font-size:13px;font-weight:500;color:var(--texto)}
+.pe-fs>legend small{font-weight:400;color:var(--texto-2);margin-left:6px}
+.pe-fs .erro-msg{margin:-2px 0 4px}
+
+/* Resumo lateral da petição */
+.pe-resumo{margin:0;padding:0 24px 14px;display:grid}
+.pe-resumo>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--divisor)}
+.pe-resumo>div:first-child{border-top:0}
+.pe-resumo dt{font-size:12px;color:var(--texto-2);grid-column:1}
+.pe-resumo dd{margin:0;grid-column:1;font-weight:500;font-size:14px;line-height:1.35}
+.pe-resumo dd small{display:block;font-weight:400;font-size:12px;color:var(--texto-2)}
+.pe-resumo dd.pe-tr{grid-column:2;grid-row:1/span 2}
+.pe-lat-acoes{padding:0 24px 20px;display:grid;gap:10px}
+.pe-lat-acoes>p{font-size:13px;color:var(--texto-2);line-height:1.5}
+.pe-faltas{list-style:none;margin:0;padding:0 24px 12px;display:grid;gap:8px}
+.pe-faltas li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:12px 14px;border-radius:var(--raio);background:var(--ambar-3);color:var(--tinta);font-size:13px;line-height:1.5}
+.pe-faltas li .ico{width:18px;height:18px;color:var(--vinho);margin-top:2px}
+.pe-faltas li b{font-weight:600}
+.pe-faltas li .pe-fa{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:2px}
+.pe-faltas li .pe-fa a{display:inline-flex;align-items:center;min-height:44px;font-weight:500;color:var(--vinho)}
+.pe-ok{display:flex;gap:10px;align-items:flex-start;padding:0 24px 12px;font-size:13px;line-height:1.5}
+.pe-ok .ico{color:var(--vinho-2);flex:none;margin-top:1px}
+.pe-cuidado{margin:0 24px 14px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5;color:var(--tinta)}
+.pe-cuidado .ico{color:var(--vinho);flex:none;margin-top:1px}
+.pe-cuidado b{font-weight:600}
+
+/* Prévia em papel timbrado (o mesmo desenho do aprovado em Contratos) */
+.pe-leg{display:flex;flex-wrap:wrap;gap:6px 16px;padding:0 24px 12px;font-size:12px;color:var(--texto-2)}
+.pe-leg span{display:inline-flex;align-items:center;gap:6px}
+.pe-leg i{width:18px;height:12px;border-radius:2px;display:inline-block}
+.pe-papel-folha{padding:0 24px 24px}
+.pe-papel{background:var(--papel);border:1px solid var(--borda-folha);border-radius:4px;box-shadow:0 10px 24px -16px rgba(42,26,34,.45);padding:28px 40px 32px;font-family:var(--serifa);font-size:15px;line-height:1.7;color:var(--tinta);position:relative;max-width:760px;margin:0 auto}
+.pe-papel::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:var(--vinho);border-radius:4px 4px 0 0}
+.pe-timbre{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:8px;margin-bottom:18px;border-bottom:1px solid var(--ambar-2);font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--vinho-2)}
+.pe-papel p+p{margin-top:12px}
+.pe-papel .pe-end{font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+.pe-papel .pe-proc{margin-top:22px}
+.pe-papel .pe-tit{font-weight:700;letter-spacing:.06em}
+.pe-papel .pe-ass{margin-top:22px;text-align:center}
+.pe-papel mark{background:var(--sal-2);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--vinho-4)}
+.pe-papel mark.pe-f{background:#FCF8F5;box-shadow:none;border-bottom:2px dotted var(--vinho-2)}
+.pe-papel mark.pe-falta{background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--vinho-3);font-family:var(--sans);font-size:12px;font-weight:600;padding:1px 6px;white-space:nowrap}
+.pe-papel .pe-mais{font-family:var(--sans);font-size:12px;color:var(--texto-2);margin-top:18px;padding-top:12px;border-top:1px dashed var(--borda-folha);display:flex;gap:8px;align-items:flex-start}
+.pe-papel .pe-mais .ico{width:16px;height:16px;color:var(--vinho-4);flex:none;margin-top:1px}
+.pe-mini .pe-papel{padding:18px 18px 20px;font-size:12.5px;line-height:1.6}
+.pe-mini .pe-papel-folha{padding:0 24px 20px}
+
+/* Modelos */
+.pe-modelos{list-style:none;margin:0;padding:0 24px 10px}
+.pe-modelos li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--divisor)}
+.pe-modelos li:first-child{border-top:0}
+.pe-modelos .pe-ci{width:44px;height:44px;border-radius:var(--raio);display:grid;place-items:center;background:var(--sal-2);color:var(--vinho-2)}
+.pe-modelos li.pe-do-esc .pe-ci{background:var(--ambar-3);color:var(--vinho)}
+.pe-modelos strong{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);line-height:1.25}
+.pe-modelos strong .selo{font-family:var(--sans)}
+.pe-modelos small{display:block;font-size:12px;color:var(--texto-2)}
+.pe-modelos .pe-bts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pe-campos{padding:0 24px 8px}
+.pe-campos h3{font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-2);padding:12px 0 6px;border-top:1px solid var(--divisor)}
+.pe-campos h3:first-child{border-top:0;padding-top:0}
+.pe-campos dl{margin:0 0 8px;display:grid;gap:8px}
+.pe-campos dt code,.pe-code{font-family:var(--fonte-codigo);font-size:12px;background:var(--sal-2);color:var(--vinho);padding:2px 6px;border-radius:6px;overflow-wrap:anywhere}
+.pe-campos dd{margin:2px 0 0;font-size:12px;color:var(--texto-2);line-height:1.45}
+
+/* Janela de enviar modelo */
+.pe-arq{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--borda-folha);border-radius:var(--raio);background:#FCF8F5}
+.pe-arq.erro{border:2px solid var(--vinho-3);background:var(--papel)}
+.pe-arq .pe-ci{width:44px;height:44px;border-radius:var(--raio);display:grid;place-items:center;background:var(--sal-2);color:var(--vinho)}
+.pe-arq b{display:block;font-weight:500;overflow-wrap:anywhere}
+.pe-arq small{display:block;font-size:12px;color:var(--texto-2)}
+.pe-rot{font-size:13px;font-weight:500;color:var(--texto)}
+.pe-conf{border:1px solid var(--borda-folha);border-radius:var(--raio-g);padding:14px 16px;display:grid;gap:12px}
+.pe-conf h3{font-family:var(--sans);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--texto)}
+.pe-conf h3 .ico{color:var(--vinho)}
+.pe-chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.pe-chips li{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.pe-chips li .ico{width:14px;height:14px;color:var(--vinho-2)}
+.pe-chips li.pe-desc code{background:var(--ambar-3);box-shadow:inset 0 0 0 1px var(--vinho-3)}
+.pe-chips li.pe-desc .ico{color:var(--vinho-3)}
+
+/* Resultado */
+.pe-pronto{padding:0 24px 16px;display:grid;gap:14px}
+.pe-pronto .pe-arq{background:var(--papel)}
+.pe-pronto .pe-arq .pe-ci{background:var(--ambar-3)}
+.pe-proximo{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:pp}
+.pe-proximo li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start;font-size:13px;line-height:1.5}
+.pe-proximo li::before{counter-increment:pp;content:counter(pp);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--sal-2);color:var(--vinho);font-family:var(--serifa);font-weight:600;font-size:15px}
+.pe-proximo b{font-weight:600}
+.pe-reserva{margin:0 24px 20px;padding:16px;border:1.5px dashed var(--vinho-4);border-radius:var(--raio);display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--texto-2);line-height:1.5}
+.pe-reserva .ico{color:var(--vinho-4);flex:none;margin-top:1px}
+.pe-reserva b{color:var(--texto);font-weight:500}
+.pe-acoes-res{display:flex;gap:10px;flex-wrap:wrap}
+
+/* Ficha do caso: petições do caso */
+.pe-do-caso{list-style:none;margin:0;padding:0 24px 8px}
+.pe-do-caso li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--divisor);font-size:13px}
+.pe-do-caso li:first-child{border-top:0}
+.pe-do-caso b{display:block;font-weight:500;font-size:14px}
+.pe-do-caso small{display:block;font-size:12px;color:var(--texto-2);margin-bottom:4px}
+.docs>li.pe-novo-doc{background:#FCF8F5}
+
+@media (max-width:760px){
+  .pe-cab-acoes{flex-direction:column;width:100%}
+  .pe-cab-acoes .btn{width:100%}
+  .pe-passos{gap:4px}
+  .pe-passos li{flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 2px;min-height:64px;text-align:center}
+  .pe-passos li>a,.pe-passos li>span.pe-pi{flex-direction:column;gap:2px;min-height:52px;justify-content:center}
+  .pe-passos small{display:none}
+  .pe-passos b{font-size:12px}
+  .pe-escolhas{padding:0 16px 8px}
+  .pe-grupo-t{padding:10px 16px 8px}
+  .pe-busca{padding:0 16px 12px}
+  .pe-resumo,.pe-faltas,.pe-ok,.pe-lat-acoes,.pe-campos,.pe-modelos,.pe-pronto,.pe-do-caso{padding-left:16px;padding-right:16px}
+  .pe-cuidado,.pe-reserva{margin-left:16px;margin-right:16px}
+  .pe-leg{padding:0 16px 10px}
+  .pe-papel-folha,.pe-mini .pe-papel-folha{padding:0 12px 16px}
+  .pe-papel{padding:20px 16px 22px;font-size:13.5px;line-height:1.65}
+  .pe-modelos li{grid-template-columns:44px minmax(0,1fr)}
+  .pe-modelos .pe-bts{grid-column:1/-1;justify-content:stretch}
+  .pe-modelos .pe-bts .btn{flex:1 1 auto}
+  .pe-arq{grid-template-columns:44px minmax(0,1fr)}
+  .pe-arq .btn{grid-column:1/-1;width:100%}
+  .pe-insc,.pe-insc-uma{margin-left:30px}
+  .pe-acoes-res .btn{width:100%}
+  .pe-dado .pe-de{margin-left:0;flex-basis:100%}
+  /* Botões no rodapé do formulário, largos, um ao lado do outro */
+  .pe-rodape{padding-top:12px;border-top:1px solid var(--divisor)}
+  .pe-rodape .btn{flex:1 1 calc(50% - 5px)}
+}

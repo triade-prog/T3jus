@@ -222,8 +222,7 @@
 .cl-tab td{vertical-align:middle}
 .cl-tab .esc>div{min-width:0}
 .cl-tab .esc a{position:relative;display:inline-block;margin:0;overflow-wrap:anywhere}
-/* Área de toque de 44px sem empurrar a linha: nome longo quebra em duas linhas sem cobrir o tipo. */
-.cl-tab .esc a::after{content:"";position:absolute;inset:-10px -4px -6px}
+/* A área de toque de 44 px do link vem da regra F3.165, no fim do bloco "Tabelas do Portal". */
 .cl-tab .esc small{margin-top:0}
 .cl-ct strong{display:block;font-weight:500;font-size:14px}
 .cl-ct small{display:block;font-size:12px;color:var(--texto-2)}
@@ -5300,11 +5299,12 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .fl-contato .btn{min-height:44px;background:rgba(255,255,255,.92)}
 .fl-semacao{font-size:12.5px;color:var(--tinta);line-height:1.45;display:flex;gap:8px;align-items:flex-start}
 .fl-semacao .ico{width:16px;height:16px;flex:none;margin-top:1px;color:#4F1D35}
+/* F3.150: o "Quem faz" do passo do fechamento fica limpo do padrão decorativo do canto do campo âmbar */
+.fl-passo.fl-fecha .fl-semacao,.fl-passo.fl-fecha .jf-quem{position:relative;z-index:1;background:var(--ambar);box-shadow:0 0 0 6px var(--ambar);border-radius:4px}
 
 /* Tabelas das abas novas */
 .fl-tab td{vertical-align:middle}
 .fl-tab .fl-num a{position:relative;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);text-decoration:none;display:inline-block;overflow-wrap:anywhere;line-height:1.25}
-.fl-tab .fl-num a::after{content:"";position:absolute;inset:-10px -4px -6px}
 .fl-tab .fl-num a:hover{text-decoration:underline}
 .fl-tab small,.fl-c small{display:block;font-size:12px;color:var(--texto-2);line-height:1.4}
 .fl-tab b{font-weight:500}
@@ -6327,6 +6327,80 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 /* No código: a lista do Jurídico usa jr-; o grupo de opções com erro da janela do resultado usa a mesma marca. */
 .jr-fs.il-fs-erro{padding:10px 12px;border-radius:var(--raio);box-shadow:inset 3px 0 0 var(--vinho-3);background:#FCF6F2}
 
+/* ==========================================================================
+   CH-14 (F3.170, F3.171; desenho D36) · documentos marcados conforme a área (prefixo da-). Só tokens e pares aprovados.
+   ========================================================================== */
+/* Gerar documentos: o seletor da área, o "sugerido" e as linhas de sugestão */
+.da-sug{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 2px}
+.da-sug label{font-weight:500;font-size:14px}
+.da-sug select.entrada{width:auto;min-width:230px;max-width:100%;height:44px}
+.da-de{margin:0;font-size:13px;color:var(--texto-2);flex:1 1 220px;min-width:0}
+.da-aj{margin:2px 0 6px;font-size:13px;color:var(--texto-2);line-height:1.5}
+.da-tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;margin-left:8px;border-radius:10px;background:var(--sal-2);color:var(--vinho);
+  font-size:11px;font-weight:600;letter-spacing:.02em;vertical-align:1px;white-space:nowrap}
+.da-linha{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:2px 0 4px;padding:12px 14px;border-radius:var(--raio);background:var(--ambar-3);
+  color:var(--tinta);font-size:13px;line-height:1.5}
+.da-linha p{margin:0;flex:1 1 260px;min-width:0}
+.da-linha b{font-weight:600}
+.da-linha .btn{flex:none}
+.da-status{display:flex;gap:10px;align-items:flex-start;margin:2px 0 4px;padding:10px 14px;border-radius:var(--raio);background:var(--sal-2);color:var(--tinta);font-size:13px;line-height:1.5}
+.da-status .ico{flex:none;color:var(--vinho);margin-top:2px}
+.da-status p{margin:0}
+.da-pe-area{display:flex;gap:8px;align-items:flex-start;margin-top:6px;color:var(--tinta)}
+.da-pe-area .ico{flex:none;color:var(--vinho);margin-top:2px}
+/* Modelos de documento: a folha "Documentos por área" */
+.da-folha .sub a{color:var(--vinho);font-weight:500}
+.da-lista{list-style:none;margin:0;padding:0 24px 8px}
+.da-lista>li{display:grid;grid-template-columns:210px minmax(0,1fr) auto;gap:6px 20px;align-items:center;padding:14px 0;border-top:1px solid var(--divisor)}
+.da-lista>li:first-child{border-top:0;padding-top:4px}
+.da-nome strong{display:block;font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);line-height:1.25}
+.da-nome .selo{margin-top:6px}
+.da-docs p{margin:0;font-size:14px;line-height:1.5}
+.da-docs small{display:block;margin-top:2px;font-size:12.5px;color:var(--texto-2)}
+.da-docs .da-nenhum{color:var(--texto-2)}
+.da-lista>li.da-aberta{grid-template-columns:minmax(0,1fr);padding:16px 0}
+.da-edit{display:grid;gap:14px;padding:18px 18px 16px;border:1.5px solid var(--vinho-4);border-radius:var(--raio);background:var(--papel)}
+.da-edit-cab{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.da-edit-cab h3{margin:0;font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho)}
+.da-edit-cab p{margin:0;font-size:13px;color:var(--texto-2)}
+.da-edit fieldset{border:0;margin:0;padding:0;min-width:0}
+.da-ops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.da-edit legend{font-weight:500;margin:0 0 8px;padding:0}
+.da-edit .opcao{margin:0}
+.da-edit .aviso{margin:0}
+.da-edit-pe{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:12px;border-top:1px solid var(--divisor)}
+.da-edit-pe .da-volta{margin-right:auto}
+.da-edit-pe .da-pe-status{font-size:12.5px;color:var(--texto-2);margin-right:auto}
+.da-folha .hn-pe{margin:0 24px 18px}
+.da-folha>.aviso,.da-folha>.da-topo{margin:0 24px 16px}
+.da-quem{display:flex;gap:10px;align-items:flex-start;margin:0 24px 16px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.da-quem .ico{flex:none;color:var(--vinho);margin-top:2px}
+.da-quem p{margin:0}
+.da-folha .estado{margin:0 24px 20px}
+.pr-mods .pr-mod .pe-bts{flex-wrap:wrap}
+/* Documentos para começar (EX-18): a frase cruzada do lede, sublinhada (o link não depende só da cor) */
+.pt-cab .lede a{color:var(--vinho);font-weight:500;text-decoration:underline;text-underline-offset:2px}
+/* Prévia: modelo do escritório */
+.da-papel-nota{font-size:12px}
+@media (max-width:760px){
+  .da-sug{flex-direction:column;align-items:stretch}
+  .da-sug select.entrada{width:100%;min-width:0}
+  .da-de{flex:none}
+  .da-linha .btn{width:100%;justify-content:center}
+  .da-lista{padding:0 16px 8px}
+  .da-lista>li{grid-template-columns:minmax(0,1fr);gap:8px}
+  .da-lista>li .da-ac .btn{width:100%;justify-content:center;min-height:44px}
+  .da-edit{padding:14px}
+  .da-ops{grid-template-columns:minmax(0,1fr)}
+  .da-edit-pe{flex-direction:column;align-items:stretch}
+  .da-edit-pe .btn{width:100%;justify-content:center;min-height:44px;white-space:normal;height:auto}
+  .da-edit-pe .da-volta,.da-edit-pe .da-pe-status{margin-right:0}
+  .da-folha .hn-pe,.da-folha>.aviso,.da-folha>.da-topo,.da-quem,.da-folha .estado{margin-left:16px;margin-right:16px}
+  .da-edit .aviso .aviso-acoes .btn{white-space:normal;text-align:center;height:auto;min-height:44px;padding-top:8px;padding-bottom:8px;width:100%;justify-content:center}
+  .da-edit .comparar{width:100%;table-layout:fixed}
+  .da-edit .comparar th,.da-edit .comparar td{overflow-wrap:anywhere;white-space:normal;padding-left:6px;padding-right:6px}
+}
+
 /* ==== Tabelas do Portal (F3.124): base própria ====
    O Portal herda da carteira do Console (.co-carteira) a tabela em layout fixo, o cabeçalho sem
    quebra, a 1ª coluna com 250/210 px e, no tablet, os cartões da carteira. Aqui o encaixe passa a
@@ -7262,4 +7336,19 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
     .pt .folha>.so-pc:has(>table[data-cartoes="360"]){display:none!important}
     .pt .folha>.so-pc:has(>table[data-cartoes="360"])~:is(ul,ol).so-cel{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));padding:0 24px 20px}
   }
+}
+
+/* F3.165 · Alvos de toque de 44 px nas tabelas do Portal.
+   Vale só para as células de tabela da folha e para as listas que trocam a tabela no celular
+   (.cartoes.so-cel e .cb-cartoes.so-cel). Fica de fora: o que está dentro de janela (dialog), o link que já
+   cobre o cartão inteiro (.c-nome) e qualquer alvo marcado com .sem-area.
+   Computador: o desenho fica igual. Botões ganham uma área de toque invisível de pelo menos 44 x 44 px,
+   centrada neles; links ganham a mesma área crescendo para cima (só 4 px para baixo), para não cobrir o
+   texto que se copia logo abaixo (número do processo, e-mail). A linha não cresce.
+   Celular: o botão compacto dessas tabelas e listas passa a ter 44 px de altura visível. */
+.pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) :is(a[href],button):not(.c-nome,.sem-area,dialog *){position:relative}
+.pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) :is(a[href],button):not(.c-nome,.sem-area,dialog *)::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+.pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) a[href]:not(.btn,.c-nome,.sem-area,dialog *)::after{top:auto;bottom:-4px;height:max(calc(100% + 4px),44px);transform:translateX(-50%)}
+@media (max-width:760px){
+  .pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) .btn-compacto:not(dialog *){min-height:44px}
 }

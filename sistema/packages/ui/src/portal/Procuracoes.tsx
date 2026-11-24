@@ -13,6 +13,7 @@ import {
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
   type VersaoDocumento, type DadoQueConta, type AssinaturaComCaso, type FichaCliente,
+  AREAS_DOCUMENTOS, mesmaLista, rotuloAreaDocumentos, type AreaDireito, type DocumentosPorArea as DadosPorArea,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -26,6 +27,8 @@ import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast, type Feito } from "./FichaCliente.tsx";
 import { usePerguntaDoCaso } from "./CasoDaAssinatura.tsx";
 import { ROTAS_JURIDICO } from "./juridico.ts";
+import { API_POR_AREA, AvisoFoco, DocumentosPorArea } from "./DocumentosPorArea.tsx";
+import { areasComOModelo, avisoArquivar, tituloArquivar } from "./documentosPorArea.ts";
 import { chamarPortal, irPara, ROTAS_PORTAL } from "./Moldura.tsx";
 import { rotaPessoaEquipe } from "./EquipeOab.tsx";
 import { BaixarTermo } from "./ResponsavelLegal.tsx";
@@ -37,6 +40,7 @@ import {
   errosDocumentos, faltasDeQuemAssina, faltasDoProprioCliente, formInicialDocumentos, fraseDaFaixaGerar, fraseNoDocumentoOutorgados, fraseVaoSair, juntar,
   linhaFaltaNoQuadro, nomeCurto, origemModelo, PODERES_TELA, pedidoDocumentos, problemaDosAssinados, quadroQuemAssina, quantosDocumentos, RESUMO_ERRO_DOCUMENTO,
   ROTAS_DOCUMENTOS, rotuloAssinado, seloAba, seloAssinado, tituloFaltas, type FormDocumentos,
+  ajudaDaArea, areaVaiAoContrato, fraseTrocaAplicada, linhaSugestaoDaArea, linhaTambemTem, marcadosAgora, origemDaArea, sugeridosDaArea, trocarArea,
 } from "./procuracoes.ts";
 import {
   completarQuemAssina, escolhasGuardadasValidas, filtrarFormDocumentos, guardarEscolhas, lerEscolhasGuardadas, limparEscolhasGuardadas, montarEscolhas,
@@ -495,7 +499,13 @@ export function ProcuracoesContratosPortal() {
 
 function ModelosConteudo() {
   const { dados, recarregar } = useCarga<ListaModelosDocumento>(`${API_DOCUMENTOS}/modelos`);
+  // Documentos por área (CH-14, F3.170): a folha embaixo dos modelos e as áreas na janela de arquivar.
+  const porArea = useCarga<DadosPorArea>(API_POR_AREA);
   const [janela, setJanela] = useState<{ alvo: ModeloDocumentoLinha | null } | null>(null);
+  const [arquivar, setArquivar] = useState<ModeloDocumentoLinha | null>(null);
+  const [enviado, setEnviado] = useState<ModeloDocumentoLinha | null>(null);
+  const refEnviado = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (enviado) refEnviado.current?.focus(); }, [enviado]);
   const [feito, setFeito] = useState<Feito | null>(null);
   const bx = useBaixar();
   const cab = (
@@ -525,6 +535,14 @@ function ModelosConteudo() {
               </div>
             </div>
             {bx.falha ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso></div> : null}
+            {enviado ? (
+              <div style={{ margin: "0 24px 12px" }}>
+                <AvisoFoco alvo={refEnviado} tom="sucesso" titulo={`${enviado.nome} salvo.`}
+                  acoes={<a className="btn btn-sec" href="#da"><Icone nome="baixo" className="ico" />Ir para Documentos por área</a>}>
+                  Ele já aparece em Gerar documentos, desmarcado. Para vir marcado nos contratos de alguma área, mude em Documentos por área.
+                </AvisoFoco>
+              </div>
+            ) : null}
             <ul className="pe-modelos">
               {dados.modelos.map((m) => (
                 <li key={m.id} className={m.padrao ? undefined : "pe-do-esc"}>
@@ -567,15 +585,24 @@ function ModelosConteudo() {
                         <Icone nome="trocar" className="ico ico-s" />{m.padrao ? "Usar o do escritório" : "Trocar"}<span className="sr">: {m.nome}</span>
                       </button>
                     ) : null}
+                    {dados.podeEnviar && m.tipo === "OUTRO" && !m.padrao ? (
+                      <button className="btn btn-sec btn-compacto" type="button" data-muda onClick={() => setArquivar(m)}>
+                        <Icone nome="xis" className="ico ico-s" />Arquivar<span className="sr"> {m.nome.charAt(0).toLowerCase() + m.nome.slice(1)}</span>
+                      </button>
+                    ) : null}
                   </div>
                 </li>
               ))}
             </ul>
-            {dados.podeEnviar && !dados.modelos.some((m) => m.tipo === "OUTRO") ? (
-              <div className="pr-outro">
+            {dados.podeEnviar ? (
+              <div className="pr-outro" data-muda>
                 <Icone nome="mais" className="ico" />
-                <span><b>Outros documentos do escritório.</b> Substabelecimento, declaração de residência, termo de acordo: envie como “Outro documento”, com os mesmos campos. Ele aparece como mais uma caixa na hora de gerar.</span>
-                <button className="btn btn-sec btn-compacto" type="button" onClick={() => setJanela({ alvo: null })}><Icone nome="enviar" className="ico ico-s" />Enviar outro documento</button>
+                {dados.modelos.some((m) => m.tipo === "OUTRO")
+                  ? <span><b>Outros documentos do escritório.</b> Substabelecimento, declarações e requerimentos entram aqui, com os mesmos campos, e aparecem na hora de gerar.</span>
+                  : <span><b>Outros documentos do escritório.</b> Substabelecimento, declaração de residência, termo de acordo: envie como “Outro documento”, com os mesmos campos. Ele aparece como mais uma caixa na hora de gerar.</span>}
+                <button className="btn btn-sec btn-compacto" type="button" onClick={() => setJanela({ alvo: null })}>
+                  <Icone nome="enviar" className="ico ico-s" />{dados.modelos.some((m) => m.tipo === "OUTRO") ? "Enviar outro modelo" : "Enviar outro documento"}
+                </button>
               </div>
             ) : null}
             <p className="hn-pe">
@@ -583,6 +610,7 @@ function ModelosConteudo() {
               <span>Trocar um modelo cria a versão nova e guarda a anterior. Os documentos já gerados não mudam. Cada envio e cada troca ficam no histórico do escritório, com quem fez e quando.</span>
             </p>
           </section>
+          <DocumentosPorArea dados={porArea.dados} aoTentar={porArea.recarregar} aoMudar={porArea.recarregar} />
         </div>
         <aside className="hn-col" aria-label="Campos aceitos">
           <section className="folha" aria-labelledby="t-pr-cps">
@@ -604,13 +632,65 @@ function ModelosConteudo() {
       {janela ? (
         <JanelaModeloDoc modelos={dados.modelos} alvo={janela.alvo} aoFechar={() => setJanela(null)}
           aoFeito={(m) => {
+            const outroNovo = !janela.alvo && m.tipo === "OUTRO" && m.versao === 1;
             setJanela(null);
-            setFeito({ titulo: "Modelo salvo", texto: m.versao > 1 ? `${m.nome} está na versão ${m.versao}. A anterior ficou guardada.` : `${m.nome} passa a valer nos próximos documentos.` });
+            // O outro documento novo vem desmarcado em todas as áreas: o aviso leva a Documentos por área (CH-14).
+            if (outroNovo) setEnviado(m);
+            else setFeito({ titulo: "Modelo salvo", texto: m.versao > 1 ? `${m.nome} está na versão ${m.versao}. A anterior ficou guardada.` : `${m.nome} passa a valer nos próximos documentos.` });
             recarregar();
+            porArea.recarregar();
+          }} />
+      ) : null}
+      {arquivar ? (
+        <JanelaArquivarModelo m={arquivar} areas={porArea.dados && porArea.dados !== "erro" ? areasComOModelo(`OUTRO:${arquivar.id}`, porArea.dados.areas) : []}
+          aoFechar={() => setArquivar(null)}
+          aoFeito={() => {
+            const nome = arquivar.nome;
+            setArquivar(null);
+            setEnviado(null);
+            setFeito({ titulo: "Modelo arquivado", texto: `${nome} saiu de Gerar documentos. Os documentos já gerados continuam para baixar.` });
+            recarregar();
+            porArea.recarregar();
           }} />
       ) : null}
       {feito ? <Toast feito={feito} aoFechar={() => setFeito(null)} /> : null}
     </div>
+  );
+}
+
+/** Arquivar um outro documento do escritório (CH-14): diz em que áreas ele deixa de vir marcado. */
+function JanelaArquivarModelo({ m, areas, aoFechar, aoFeito }: { m: ModeloDocumentoLinha; areas: AreaDireito[]; aoFechar: () => void; aoFeito: () => void }) {
+  const [motivo, setMotivo] = useState("");
+  const [erro, setErro] = useState(false);
+  const [falha, setFalha] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const t = tituloArquivar(m.nome);
+  const av = avisoArquivar(m.nome, areas);
+  async function enviar() {
+    if (motivo.trim().length < 3) { setErro(true); return; }
+    setEnviando(true);
+    setFalha(null);
+    const r = await chamarPortal(`${API_DOCUMENTOS}/modelos/${m.id}/arquivar`, { metodo: "POST", corpo: { versao: m.linhaVersao, motivo: motivo.trim() } });
+    setEnviando(false);
+    if (r.ok) return aoFeito();
+    setFalha(textoDoErro(r.erro));
+  }
+  return (
+    <Janela id="janela-arquivar" aberta alerta aoFechar={aoFechar} sobretitulo="Modelos de documento" titulo={t.titulo} descricao="ja-d"
+      aoEnviar={() => void enviar()}
+      pe={<><button className="btn btn-fantasma" type="button" onClick={aoFechar}>Cancelar</button>
+        <button className="btn btn-perigo" type="submit" disabled={enviando} aria-busy={enviando || undefined}><Icone nome="xis" className="ico" />{enviando ? "Arquivando…" : "Arquivar o modelo"}</button></>}>
+      <p id="ja-d" className="ajuda">{t.descricao}</p>
+      {av ? <Aviso tom="atencao" icone="alerta" titulo={av.titulo}>{av.texto}</Aviso> : null}
+      {falha ? <Aviso tom="urgencia" titulo="O modelo não foi arquivado.">{falha}</Aviso> : null}
+      <div className="campo">
+        <label htmlFor="ar-motivo">Motivo</label>
+        <input className="entrada" id="ar-motivo" data-foco value={motivo} maxLength={300} onChange={(e) => { setMotivo(e.target.value); setErro(false); }}
+          aria-invalid={erro || undefined} aria-describedby={descritoPor("ar-aj", erro && "ar-er")} />
+        <p className="ajuda" id="ar-aj">Fica no histórico do escritório. Ex.: o escritório passou a usar outro texto.</p>
+        {erro ? <ErroCampo id="ar-er">Escreva o motivo.</ErroCampo> : null}
+      </div>
+    </Janela>
   );
 }
 
@@ -890,6 +970,8 @@ function GerarConteudo({ contrato, retorno, aoResultado }: {
   const [avisoVolta, setAvisoVolta] = useState<AvisoDaVolta | null>(null);
   const [restaurou, setRestaurou] = useState<{ foco: IdVolta | null } | null>(null);
   const [vezPrevia, setVezPrevia] = useState(0);
+  // A troca de área no seletor (CH-14): se a lista nova entrou ou se ficou a linha "Usar a sugestão".
+  const [trocou, setTrocou] = useState<{ aplicou: boolean } | null>(null);
   const resumo = useRef<HTMLDivElement>(null);
   const form = useRef<HTMLFormElement>(null);
   const refAviso = useRef<HTMLDivElement>(null);
@@ -1022,8 +1104,30 @@ function GerarConteudo({ contrato, retorno, aoResultado }: {
   const vUltima = dados.atuais.length ? Math.max(...dados.atuais.map((a) => a.numero)) : null;
 
   function marcarDoc(k: string, sim: boolean) {
-    mudar({ docs: sim ? [...form_.docs, k] : form_.docs.filter((x) => x !== k) });
+    mudar({ docs: sim ? [...form_.docs, k] : form_.docs.filter((x) => x !== k), mexeu: true });
+    if (trocou?.aplicou) setTrocou(null);
   }
+  // A área do seletor (CH-14, F3.171): sem caixa mexida, a lista da área entra; com caixa mexida, nada muda sozinho.
+  function escolherArea(a: AreaDireito) {
+    const t = trocarArea(dados, form_, a);
+    setF(t.form);
+    setFalha(null);
+    setTrocou({ aplicou: t.aplicou });
+  }
+  function usarSugestao() {
+    if (!form_.area) return;
+    mudar({ docs: marcadosAgora(dados, form_.area), mexeu: false });
+    setTrocou({ aplicou: true });
+    requestAnimationFrame(() => document.getElementById("gd-area")?.focus());
+  }
+  function marcarTambem(chaves: string[]) {
+    mudar({ docs: [...form_.docs, ...chaves.filter((k) => !form_.docs.includes(k))], mexeu: true });
+    requestAnimationFrame(() => document.getElementById(`gd-doc-${chaves[0]}`)?.focus());
+  }
+  const sugeridos = sugeridosDaArea(dados, form_.area);
+  const tambem = linhaTambemTem(dados, form_);
+  const linhaUsar = trocou && !trocou.aplicou && form_.area && !mesmaLista(form_.docs, marcadosAgora(dados, form_.area)) ? linhaSugestaoDaArea(dados, form_.area) : null;
+  const areaFica = areaVaiAoContrato(dados, form_) ? rotuloAreaDocumentos(form_.area as AreaDireito) : null;
   function marcarAdv(id: string, sim: boolean) {
     const a = dados.advogados.find((x) => x.pessoaId === id)!;
     const o = { ...form_.outorgados };
@@ -1251,6 +1355,36 @@ function GerarConteudo({ contrato, retorno, aoResultado }: {
               <fieldset className="pe-fs c6" id="pr-g-documentos" tabIndex={-1} aria-describedby={descritoPor(tem("documentos") && "pr-doc-er")}>
                 <legend>Documentos</legend>
                 {tem("documentos") ? <ErroCampo id="pr-doc-er">{msg("documentos")}</ErroCampo> : null}
+                {dados.sugestao && form_.area ? (
+                  <>
+                    <div className="da-sug">
+                      <label htmlFor="gd-area">Sugestão para</label>
+                      <select className="entrada" id="gd-area" name="gd-area" aria-describedby="gd-area-de" value={form_.area}
+                        onChange={(e) => escolherArea(e.target.value as AreaDireito)}>
+                        {AREAS_DOCUMENTOS.map((a) => <option key={a} value={a}>{rotuloAreaDocumentos(a)}</option>)}
+                      </select>
+                      <p className="da-de" id="gd-area-de">{origemDaArea(dados, form_, !!restaurou)}</p>
+                    </div>
+                    <p className="da-aj">{ajudaDaArea(dados, form_, !!restaurou)}</p>
+                    {trocou?.aplicou ? <div className="da-status" role="status"><Icone nome="ajuda" className="ico" /><p>{fraseTrocaAplicada(dados, form_.area)}</p></div> : null}
+                    {linhaUsar ? (
+                      <div className="da-linha">
+                        <p><b>{linhaUsar.titulo}</b> {linhaUsar.texto}</p>
+                        <button className="btn btn-sec btn-compacto" type="button" onClick={usarSugestao}>
+                          <Icone nome="check" className="ico ico-s" />Usar a sugestão<span className="sr"> de {rotuloAreaDocumentos(form_.area)}</span>
+                        </button>
+                      </div>
+                    ) : null}
+                    {tambem ? (
+                      <div className="da-linha">
+                        <p><b>{tambem.titulo}</b> {tambem.texto}</p>
+                        <button className="btn btn-sec btn-compacto" type="button" onClick={() => marcarTambem(tambem.chaves)}>
+                          <Icone nome="check" className="ico ico-s" />Marcar<span className="sr"> {tambem.nomes}</span>
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
                 <div className="pe-partes">
                   {dados.modelos.map((m) => {
                     const k = chaveModelo(m);
@@ -1258,9 +1392,9 @@ function GerarConteudo({ contrato, retorno, aoResultado }: {
                     const ja = assinadas.has(k);
                     return (
                       <label className="opcao" key={k}>
-                        <input className="marcar" type="checkbox" checked={form_.docs.includes(k)} aria-invalid={tem("documentos") || undefined} onChange={(e) => marcarDoc(k, e.target.checked)} />
+                        <input className="marcar" type="checkbox" id={`gd-doc-${k}`} checked={form_.docs.includes(k)} aria-invalid={tem("documentos") || undefined} onChange={(e) => marcarDoc(k, e.target.checked)} />
                         <span>
-                          <strong style={{ fontWeight: 500 }}>{m.nome}</strong>
+                          <strong style={{ fontWeight: 500 }}>{m.nome}{sugeridos.has(k) ? <span className="da-tag">sugerido</span> : null}</strong>
                           <small>{O_QUE_LEVA[m.tipo]} {origemModelo(m)}.</small>
                           {ja ? <small><b>{k === "CONTRATO" && dados.contrato.assinadoEm ? `Já assinado em ${diaBr(dados.contrato.assinadoEm)}.` : `A v${at?.numero ?? 1} já tem o assinado.`}</b> Gere de novo só se o documento mudou.</small> : null}
                           {m.tipo === "HIPOSSUFICIENCIA" && cli.tipo === "PJ" ? (
@@ -1393,6 +1527,9 @@ function GerarConteudo({ contrato, retorno, aoResultado }: {
             {curatela ? ` ${faixaCuratela(cli.nome, cli.rlNome, quem === "CURATELA_ASSISTE")}` : ""} Cada geração fica registrada, com quem gerou e quando.
             {hipoPj ? " Junte à declaração da empresa a prova de que ela não pode pagar as custas." : ""}
           </p>
+          {areaFica ? (
+            <p className="sub da-pe-area"><Icone nome="balanca" className="ico ico-s" /><span><b>A área {areaFica} fica no contrato {dados.contrato.numero}.</b> O caso que abrir na assinatura já nasce em {areaFica}.</span></p>
+          ) : null}
           {falha ? <Aviso tom="urgencia" titulo="Nada foi gerado.">{falha}</Aviso> : null}
         </div>
         <div className="pr-faixa-bt">
@@ -1431,6 +1568,11 @@ function Resultado({ r, d, escolhas, aoAnexar }: { r: ResultadoDocumentos; d: Da
               </button>
             </div>
             <div className="pe-pronto">
+              {r.areaGravada ? (
+                <Aviso tom="info" icone="balanca" titulo={`A área ${rotuloAreaDocumentos(r.areaGravada)} ficou no contrato ${d.contrato.numero}.`}>
+                  O caso que abrir quando o contrato assinado for anexado já nasce em {rotuloAreaDocumentos(r.areaGravada)}. Para trocar, use Mudar na ficha do contrato.
+                </Aviso>
+              ) : null}
               {bx.falha ? <Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso> : null}
               {r.documentos.map((x) => (
                 <Fragment key={x.id}>
@@ -1490,6 +1632,7 @@ function Resultado({ r, d, escolhas, aoAnexar }: { r: ResultadoDocumentos; d: Da
                 <div><dt>Poderes especiais</dt><dd>{u.poderes.length || u.outroPoder ? juntar([...u.poderes.map((p) => PODERES_ESPECIAIS[p] as string), ...(u.outroPoder ? [u.outroPoder] : [])]).replace(/^./, (c) => c.toUpperCase()) : "Só os gerais"}</dd></div>
               ) : null}
               {u.representante ? <div><dt>{u.representante.cargo && /^(mãe|pai|tutora?|curadora?)$/i.test(u.representante.cargo) ? "Quem assinou pelo cliente" : "Quem assina pela empresa"}</dt><dd>{u.representante.nome}{u.representante.cargo ? `, ${u.representante.cargo}` : ""}</dd></div> : null}
+              {r.areaGravada ? <div><dt>Área</dt><dd>{rotuloAreaDocumentos(r.areaGravada)}, escolhida aqui · ficou no contrato</dd></div> : null}
               <div><dt>Cidade e data</dt><dd>{u.cidadeData}</dd></div>
               <div><dt>Saiu marcado</dt><dd>{marcados.length ? juntar(marcados) : "Nada"}</dd></div>
             </dl>

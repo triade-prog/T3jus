@@ -55,14 +55,16 @@ describe("A janela de encerrar (F3.132, EX-17)", () => {
     expect(custasDaParcela(lista, "p6")).toBe(41230);
     expect(custasDaParcela(lista, "outra")).toBe(0);
   });
-  it("decisão 10: sem Contratos, diz quem encerra e onde, sem a promessa de aviso", () => {
+  it("decisão 10 e F3.150 (pergunta 5): sem Contratos, diz quem encerra, onde e que recebem o aviso no sino", () => {
     const ligados = [{ numero: "C-2026-012", cliente: { nome: "Noemi Bastos Carvalho" } }];
-    expect(textoQuemEncerraContratos(ligados, ["Marina Ribeiro", "Felipe Matos"])).toBe(
-      "O C-2026-012 fica aberto. Quem encerra é a área Contratos (Marina e Felipe), no passo “Encerrar o contrato” da ficha de Noemi.");
+    expect(textoQuemEncerraContratos(ligados, ["Bianca Torres", "Felipe Matos", "Marina Ribeiro"])).toBe(
+      "O C-2026-012 fica aberto. Quem encerra é a área Contratos (Bianca, Felipe e Marina), no passo “Encerrar o contrato” da ficha de Noemi. Eles recebem um aviso no sino.");
     expect(textoQuemEncerraContratos(ligados, undefined)).toBe(
       "O C-2026-012 fica aberto. Quem encerra é a área Contratos, no passo “Encerrar o contrato” da ficha de Noemi.");
+    expect(textoQuemEncerraContratos(ligados, [])).toBe(
+      "O C-2026-012 fica aberto. Quem encerra é a área Contratos, no passo “Encerrar o contrato” da ficha de Noemi.");
     expect(textoQuemEncerraContratos([...ligados, { numero: "C-2026-013", cliente: { nome: "Cláudio Carvalho" } }], ["Felipe Matos"])).toBe(
-      "Os C-2026-012 e C-2026-013 ficam abertos. Quem encerra é a área Contratos (Felipe), no passo “Encerrar o contrato” das fichas de Noemi e Cláudio.");
+      "Os C-2026-012 e C-2026-013 ficam abertos. Quem encerra é a área Contratos (Felipe), no passo “Encerrar o contrato” das fichas de Noemi e Cláudio. Felipe recebe um aviso no sino.");
   });
   it("decisão 9: o contrato já encerrado fica como está, com quem encerrou", () => {
     expect(textoJaEncerrado({ encerradoEm: "2026-11-12", encerradoPor: { nome: "Felipe Matos" } }, (x) => x.slice(8, 10) + "/" + x.slice(5, 7)))

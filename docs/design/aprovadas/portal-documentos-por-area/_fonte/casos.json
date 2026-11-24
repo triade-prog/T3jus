@@ -1,0 +1,122 @@
+[
+ {
+  "nome": "por-area-sugestao",
+  "url": "telas.html?estado=por-area-sugestao",
+  "rotulo": "Documentos por área: primeiro uso, a sugestão do T3jus nas 8 áreas"
+ },
+ {
+  "nome": "modelo-enviado-areas",
+  "url": "telas.html?estado=modelo-enviado-areas",
+  "rotulo": "Outro documento enviado: o caminho até Documentos por área"
+ },
+ {
+  "nome": "por-area-mudar",
+  "url": "telas.html?estado=por-area-mudar",
+  "rotulo": "Mudar Previdenciário: as caixas de todos os modelos"
+ },
+ {
+  "nome": "por-area-salvando",
+  "url": "telas.html?estado=por-area-salvando",
+  "rotulo": "Salvando Previdenciário"
+ },
+ {
+  "nome": "por-area-salva",
+  "url": "telas.html?estado=por-area-salva",
+  "rotulo": "Previdenciário salvo: a lista nova e quem mudou"
+ },
+ {
+  "nome": "por-area-conflito",
+  "url": "telas.html?estado=por-area-conflito",
+  "rotulo": "Outra pessoa salvou Previdenciário antes"
+ },
+ {
+  "nome": "por-area-erro",
+  "url": "telas.html?estado=por-area-erro",
+  "rotulo": "Erro ao salvar: nada mudou, as caixas continuam"
+ },
+ {
+  "nome": "por-area-erro-carregar",
+  "url": "telas.html?estado=por-area-erro-carregar",
+  "rotulo": "Erro ao carregar a folha"
+ },
+ {
+  "nome": "por-area-leitura",
+  "url": "telas.html?estado=por-area-leitura",
+  "rotulo": "Portal só para consulta: a folha para ler"
+ },
+ {
+  "nome": "arquivar-modelo-com-areas",
+  "url": "telas.html?estado=arquivar-modelo-com-areas",
+  "rotulo": "Arquivar um modelo que vem marcado em 2 áreas"
+ },
+ {
+  "nome": "gerar-sugerido-contrato",
+  "url": "telas.html?estado=gerar-sugerido-contrato",
+  "rotulo": "Gerar: Previdenciário, a área do contrato, com o modelo do escritório marcado"
+ },
+ {
+  "nome": "gerar-sugerido-caso-pj",
+  "url": "telas.html?estado=gerar-sugerido-caso-pj",
+  "rotulo": "Gerar: empresa, a área do caso; o contrato já assinado vem desmarcado"
+ },
+ {
+  "nome": "gerar-sem-area",
+  "url": "telas.html?estado=gerar-sem-area",
+  "rotulo": "Gerar: contrato sem área, e o escritório não marca nada sem área"
+ },
+ {
+  "nome": "gerar-trocou-area",
+  "url": "telas.html?estado=gerar-trocou-area",
+  "rotulo": "Gerar: escolheu Família sem ter mexido nas caixas, e a área vai ao contrato"
+ },
+ {
+  "nome": "gerar-trocou-area-mexida",
+  "url": "telas.html?estado=gerar-trocou-area-mexida",
+  "rotulo": "Gerar: escolheu Família depois de mexer, e aparece “Usar a sugestão”"
+ },
+ {
+  "nome": "gerar-de-novo-tambem-tem",
+  "url": "telas.html?estado=gerar-de-novo-tambem-tem",
+  "rotulo": "Gerar de novo: “Previdenciário também tem… Marcar”"
+ },
+ {
+  "nome": "gerado-area-gravada",
+  "url": "telas.html?estado=gerado-area-gravada",
+  "rotulo": "Documentos gerados: a área ficou no contrato"
+ },
+ {
+  "nome": "gerar-voltou-da-ficha",
+  "url": "telas.html?estado=gerar-voltou-da-ficha",
+  "rotulo": "Gerar ao voltar da ficha (F3.160): a área e as caixas como estavam"
+ },
+ {
+  "nome": "ex18-frase",
+  "url": "telas.html?estado=ex18-frase",
+  "rotulo": "Documentos para começar (EX-18): a frase que aponta para Documentos por área"
+ },
+ {
+  "nome": "decisao-p1",
+  "url": "telas.html?estado=decisao-p1",
+  "rotulo": "Pergunta 1: tipo de processo = área"
+ },
+ {
+  "nome": "decisao-p2",
+  "url": "telas.html?estado=decisao-p2",
+  "rotulo": "Pergunta 2: a área escolhida fica no contrato"
+ },
+ {
+  "nome": "decisao-p3",
+  "url": "telas.html?estado=decisao-p3",
+  "rotulo": "Pergunta 3: quem muda (a outra resposta, vista por Diego)"
+ },
+ {
+  "nome": "decisao-p4",
+  "url": "telas.html?estado=decisao-p4",
+  "rotulo": "Pergunta 4: o que vem marcado até o escritório mudar"
+ },
+ {
+  "nome": "decisao-p5",
+  "url": "telas.html?estado=decisao-p5",
+  "rotulo": "Pergunta 5: quando avisar em “Gerar de novo”"
+ }
+]

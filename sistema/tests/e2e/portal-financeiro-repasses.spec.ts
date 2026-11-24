@@ -367,7 +367,7 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     const ligado = { id: "c7000000-0000-4000-8000-000000000047", numero: "C-2025-047", objeto: "Pensão por morte", versao: 6, cliente: { id: BEN.id, nome: BEN.nome } };
     const ja = { id: "c7000000-0000-4000-8000-000000000048", numero: "C-2025-048", cliente: { id: BEN.id, nome: BEN.nome }, encerradoEm: `${dia(-6)}T12:30:00Z`, encerradoPor: { id: "f", nome: "Felipe Matos" } };
     const pronto = { ...ACERTO, pendencias: [], falta: 0, faltaPagar: 0, contratosLigados: [ligado], contratosJaEncerrados: [ja], podeEncerrarContratos: false,
-      quemContratos: ["Marina Ribeiro", "Felipe Matos"], motivoContratos: "Caso encerrado." };
+      quemContratos: ["Bianca Torres", "Felipe Matos", "Marina Ribeiro"], motivoContratos: "Caso encerrado." };
     const pedidos = await simular(page, {
       ...comuns(),
       [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: { ...FICHA, acerto: pronto } },
@@ -378,7 +378,8 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     const j = page.getByRole("dialog", { name: "Encerrar o caso no financeiro" });
     const grupo = j.getByRole("group", { name: "Contratos ligados ao caso" });
     await expect(grupo).toContainText("C-2025-047 · Benedito Souza Lima");
-    await expect(grupo).toContainText("O C-2025-047 fica aberto. Quem encerra é a área Contratos (Marina e Felipe), no passo “Encerrar o contrato” da ficha de Benedito.");
+    await expect(grupo).toContainText(
+      "O C-2025-047 fica aberto. Quem encerra é a área Contratos (Bianca, Felipe e Marina), no passo “Encerrar o contrato” da ficha de Benedito. Eles recebem um aviso no sino.");
     await expect(grupo).toContainText(`Já encerrado em ${ddmm(-6)}, por Felipe, em Contratos · fica como está`);
     await expect(j.getByRole("checkbox")).toHaveCount(0);
     await expect(j).not.toContainText("Motivo que fica no contrato");
