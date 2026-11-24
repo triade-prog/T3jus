@@ -1,0 +1,18 @@
+{
+  "data": "24/11/2026",
+  "inicio": "16:30",
+  "fim": "16:45",
+  "texto": "Telas da baixa sem receber: \"Dar baixa sem receber\" na coluna \"Recibo e ações\" da parcela vencida, a janela com o motivo, a explicação e as custas, sem segundo envio, o conflito e a falha; a linha baixada com \"Desfazer a baixa sem receber\"; o atalho secundário e a regra \"tudo recebido ou baixado com motivo\" no fechamento; Contratos sem o Financeiro vê só Fora da cobrança. F3.139 feito; o número dos Relatórios (F3.172) e o êxito baixado na divisão do alvará (F3.173) ficam pendentes; aplicar a 1010 e publicar fica no P14.",
+  "refs": [
+    "F3.139",
+    "F3.172",
+    "F3.173",
+    "FI-24",
+    "FI-25",
+    "FI-08",
+    "EX-16",
+    "IN-04",
+    "IN-07",
+    "P14"
+  ]
+}

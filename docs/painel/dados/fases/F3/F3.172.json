@@ -1,0 +1,13 @@
+{
+  "id": "F3.172",
+  "texto": "Número \"Baixado sem receber\" nos Relatórios, por período e por cliente, lido de parcela_baixas, sem reescrever o mês passado quando a baixa é desfeita (nota 11 da baixa sem receber)",
+  "peca": "S4",
+  "refs": [
+    "IN-04",
+    "IN-07"
+  ],
+  "status": "pendente",
+  "ordem": 1280,
+  "nota": "Proposto no plano aprovado da baixa sem receber (docs/design/aprovadas/portal-baixa-parcela-motivo/PLANO.md, seção 7). O F3.139 já tira a parcela baixada de \"em aberto\" e \"vencido\" nos dias em que esteve baixada.",
+  "proximo": "Desenhar o número \"Baixado sem receber\" nos Relatórios (agente de frontend e ok da Carol) e programar"
+}

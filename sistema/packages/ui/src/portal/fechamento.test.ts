@@ -5,7 +5,7 @@ import type { AcertoCaso, PendenciaCaso } from "@t3jus/domain";
 import { contar } from "./agenda.ts";
 import {
   ambarEncerra, botaoEncerrar, casoDoHash, comLevantamento, gruposDoQuadro, idDaFolha, linhaEAtalhoDaPendencia, linhaPronto, numerosDoFechamento,
-  parcelaCurta, primeiroAtalho, rotuloEncerrarJunto, subDoCaso, textoAjudaPendencia, textoEncerrado, textoJaEncerrado, textoOrigem,
+  parcelaCurta, primeiroAtalho, rotuloEncerrarJunto, subDoCaso, textoAjudaPendencia, textoEncerrado, textoRegraEncerrar, atalhoBaixar, custasDaParcela, textoJaEncerrado, textoOrigem,
   textoQuemEncerraContratos, tituloPendencias,
 } from "./fechamento.ts";
 
@@ -29,9 +29,31 @@ describe("A janela de encerrar (F3.132, EX-17)", () => {
     expect(comLevantamento({ entrou: 3864000 })).toBe(true);
     expect(textoEncerrado({ entrou: 0 })).toBe("tudo recebido");
   });
-  it("nota 1: o texto de ajuda da parcela não depende de quem vê", () => {
+  it("nota 1, refeita no F3.139: a ajuda da parcela diz que dá para dar baixa sem receber, com o motivo", () => {
     expect(textoAjudaPendencia("Noemi Bastos Carvalho")).toBe(
-      "Se Noemi não vai pagar, ainda não dá para dar baixa na parcela sem receber: anote a cobrança, e o caso segue “acerto pendente” até a parcela ser paga.");
+      "Se Noemi não vai pagar, você pode dar baixa na parcela sem receber, com o motivo. Ela sai de Em atraso, fica no contrato, e o caso deixa de esperar por ela.");
+    expect(textoAjudaPendencia("Noemi Bastos Carvalho", 41230)).toContain("As custas de R$ 412,30 saem junto só se você marcar isso na mesma janela.");
+  });
+  it("FI-08 (F3.139): tudo recebido ou baixado com motivo", () => {
+    const baixado = { valor: 100000, renegociado: 0, reembolsos: [], parcelas: [{ parcelaId: "p", descricao: "Parcela 6 de 6", cliente: "Noemi", contratoId: "c", motivo: "INADIMPLENCIA" as const, valor: 100000, por: { id: "m", nome: "Marina" }, em: "2026-11-18T13:14:00Z" }] };
+    expect(textoEncerrado({ comLevantamento: false, entrou: 0, baixado })).toBe("tudo recebido ou baixado com motivo");
+    expect(textoEncerrado({ comLevantamento: true, entrou: 0, baixado })).toBe("tudo recebido ou baixado com motivo e repassado");
+    expect(textoEncerrado({ comLevantamento: false, entrou: 0, baixado: { ...baixado, parcelas: [] } })).toBe("tudo recebido");
+    expect(textoRegraEncerrar(false)).toBe("O financeiro do caso só encerra com tudo recebido ou baixado com motivo.");
+    expect(textoRegraEncerrar(true)).toBe("O financeiro do caso só encerra com tudo recebido ou baixado com motivo, e tudo repassado.");
+  });
+  it("decisão 2 (F3.139): o atalho secundário só na parcela vencida deste contrato, para quem pode", () => {
+    const lista = [
+      { tipo: "PARCELA" as const, nome: "Parcela 6/6", valor: 100000, parcelaId: "p6", vencimento: "2026-11-10", contratoId: "c" },
+      { tipo: "REEMBOLSO" as const, nome: "Custas", valor: 41230, parcela: { id: "p6", descricao: "Parcela 6 de 6", vencimento: "2026-11-10", contrato: { id: "c", numero: "C-1" } } },
+    ];
+    const reg = { tipo: "registrar" as const, parcelaId: "p6", rotulo: "Registrar recebimento da parcela 6/6" };
+    expect(atalhoBaixar(reg, lista, "2026-11-18", true)).toEqual({ tipo: "baixar", parcelaId: "p6", rotulo: "Dar baixa sem receber" });
+    expect(atalhoBaixar(reg, lista, "2026-11-18", false)).toBeNull();
+    expect(atalhoBaixar(reg, lista, "2026-11-09", true)).toBeNull();
+    expect(atalhoBaixar({ tipo: "link", href: "/x", rotulo: "Abrir" }, lista, "2026-11-18", true)).toBeNull();
+    expect(custasDaParcela(lista, "p6")).toBe(41230);
+    expect(custasDaParcela(lista, "outra")).toBe(0);
   });
   it("decisão 10: sem Contratos, diz quem encerra e onde, sem a promessa de aviso", () => {
     const ligados = [{ numero: "C-2026-012", cliente: { nome: "Noemi Bastos Carvalho" } }];
@@ -109,6 +131,21 @@ describe("A folha \"Fechamento do caso\" na ficha do contrato (F3.132, FI-08, de
   it("pergunta 3: o contrato que segue em outro caso diz com qual", () => {
     const a = noemi({ contratos: [noemi().contratos![0]!, { ...noemi().contratos![1]!, seguePor: [{ id: "k2", nome: "Andrade x Loja Dois" }] }] });
     expect(linhas(a, N.id)[2]![1]).toBe("ok: Contrato C-2026-013 segue no caso Andrade x Loja Dois: as parcelas ficam com ele → /financeiro/a-receber/contratos/ct13#t-fecha-k9");
+  });
+  it("F3.139 (FI-08, FI-25): a 6/6 e as custas com baixa sem receber fecham o caso, com o motivo e quem", () => {
+    const a = noemi({
+      pendencias: [], falta: 0,
+      baixado: { valor: 100000, renegociado: 0,
+        parcelas: [{ parcelaId: P6, descricao: "Parcela 6 de 6", cliente: "Noemi Bastos Carvalho", contratoId: N.id, motivo: "INADIMPLENCIA", valor: 100000,
+          por: { id: "m", nome: "Marina Ribeiro" }, em: "2026-11-18T13:14:00Z" }],
+        reembolsos: [{ contaId: "cp", descricao: "Custas iniciais e diligência do oficial", categoria: "CUSTAS", valor: 41230 }] },
+    });
+    const g = linhas(a, N.id);
+    expect(g[1]).toEqual(["Deste contrato · C-2026-012, Noemi",
+      "ok: 5 de 6 parcelas recebidas · R$\u00a05.000,00 / parcela 6/6 baixada sem receber (inadimplência), por Marina em 18/11"]);
+    expect(g[3]).toEqual(["Adiantado pelo escritório no caso", "ok: Custas iniciais e diligência do oficial: reembolso baixado sem receber · R$\u00a0412,30"]);
+    expect(numerosDoFechamento(a)).toMatchObject({ falta: 0, tom: "nada", faltaTxt: "tudo recebido ou baixado com motivo",
+      reembolsoTxt: "as custas de R$\u00a0412,30 tiveram baixa sem receber" });
   });
   it("os três números, cada um também em texto", () => {
     expect(numerosDoFechamento(noemi())).toEqual({ recebido: 650000, contratos: 2, reembolsado: 0, reembolsoTxt: "de R$\u00a0412,30 adiantados", falta: 141230,

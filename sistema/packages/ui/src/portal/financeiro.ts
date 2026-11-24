@@ -39,6 +39,9 @@ export function seloParcela(p: Pick<ParcelaLinha, "situacao" | "vencimento" | "f
   switch (p.situacao) {
     case "CANCELADA":
       return { tom: "neutro", texto: "Cancelada" };
+    case "BAIXADA":
+      // F3.139: "baixa" sozinha quer dizer recebido; o selo diz "sem receber" (nota 9).
+      return { tom: "neutro", texto: "Baixa sem receber" };
     case "PAGA":
       return { tom: "ok", icone: "check", texto: p.pagaEm ? `Paga em ${diaCurto(p.pagaEm)}` : "Paga" };
     case "VENCIDA": {

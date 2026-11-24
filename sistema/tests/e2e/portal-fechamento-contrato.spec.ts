@@ -158,10 +158,12 @@ test.describe("Fechamento do caso na ficha do contrato (F3.132: EX-16, EX-17, FI
     const j = page.getByRole("alertdialog", { name: "Ainda não dá para encerrar" });
     await expect(j.getByRole("button", { name: "Voltar ao contrato" })).toBeFocused();
     await expect(j).toContainText("Ainda falta receber neste caso.");
-    await expect(j).toContainText("O financeiro do caso só encerra com tudo recebido. Faltam R$ 1.412,30.");
+    await expect(j).toContainText("O financeiro do caso só encerra com tudo recebido ou baixado com motivo. Faltam R$ 1.412,30.");
     await expect(j.locator("li.falta").first()).toContainText(`Parcela 6/6 · R$ 1.000,00 · venceu ${curto(-8)} (pendente)`);
     await expect(j.locator("li.falta").nth(1)).toContainText("Custas · R$ 412,30 · vai junto com a parcela 6/6");
-    await expect(j).toContainText("Se Noemi não vai pagar, ainda não dá para dar baixa na parcela sem receber");
+    // F3.139 (decisão 2): o texto de ajuda refeito e o atalho secundário "Dar baixa sem receber".
+    await expect(j).toContainText("Se Noemi não vai pagar, você pode dar baixa na parcela sem receber, com o motivo. Ela sai de Em atraso, fica no contrato, e o caso deixa de esperar por ela. As custas de R$ 412,30 saem junto só se você marcar isso na mesma janela.");
+    await expect(j.getByRole("button", { name: "Dar baixa sem receber" })).toBeVisible();
     await semViolacoes(page);
     await j.getByRole("button", { name: "Registrar recebimento da parcela 6/6" }).click();
     const r = page.getByRole("dialog", { name: "Registrar recebimento" });

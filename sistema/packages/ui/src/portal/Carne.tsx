@@ -105,6 +105,8 @@ export function textoMudanca(m: MudancaCarne): string {
   const p = (m.parcela ?? "").toLowerCase();
   if (m.tipo === "CHAVE_PIX") return "a chave Pix do escritório mudou";
   if (m.tipo === "CANCELADA") return `a ${p} foi cancelada`;
+  if (m.tipo === "BAIXADA") return `a ${p} teve baixa sem receber`;
+  if (m.tipo === "BAIXA_DESFEITA") return `a ${p} voltou para A receber`;
   if (m.tipo === "VENCIMENTO") return `o vencimento da ${p} passou de ${diaCurto(m.era!)} para ${diaCurto(m.agora!)}`;
   return `o valor da ${p} passou de ${reais(Number(m.era))} para ${reais(Number(m.agora))}`;
 }
@@ -542,7 +544,7 @@ export function FolhaCarne({ contrato, area, escritorio, aberta, aoAbrir, aoFech
   else if (!o) corpo = <Carregando rotulo="Carregando os carnês…" linhas={2} />;
   else {
     const vigente = o.contrato.situacao === "ATIVO";
-    const abertas = o.parcelas.some((p) => p.situacao !== "PAGA" && p.situacao !== "CANCELADA");
+    const abertas = o.parcelas.some((p) => p.situacao !== "PAGA" && p.situacao !== "CANCELADA" && p.situacao !== "BAIXADA");
     const pode = vigente && abertas;
     const btn = pode ? <BotaoCarne aoAbrir={aoAbrir} /> : null;
     const porque = !vigente ? "O carnê sai só de contrato vigente." : !abertas ? "Todas as parcelas com valor já foram pagas." : null;
@@ -741,7 +743,8 @@ function JanelaWhats({ carne, area, aoFechar, aoEnviado }: { carne: string; area
 
 type Modo = "A_VENCER" | "ESCOLHER";
 
-const podeEntrar = (p: ParcelaParaCarne) => p.situacao !== "PAGA" && p.situacao !== "CANCELADA";
+// F3.139 (nota 7): a parcela com baixa sem receber não entra em carnê novo.
+const podeEntrar = (p: ParcelaParaCarne) => p.situacao !== "PAGA" && p.situacao !== "CANCELADA" && p.situacao !== "BAIXADA";
 
 /** O carnê como vai sair, montado na tela para a prévia da janela (o servidor guarda o de verdade). */
 function previaDoCarne(o: OpcoesCarne, escritorio: EscritorioPortal, ps: ParcelaParaCarne[], formato: FormatoCarne, capa: boolean, hoje: string): CarneParaImprimir {

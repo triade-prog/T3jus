@@ -66,7 +66,8 @@ export function resumoContrato(lista: Condicao[]): {
 /** A programação da ficha: os 3 meses à frente e o que já passou; o resto conta à parte. */
 export function janelaProgramacao(lista: RecebimentoPrevisto[], hoje: string): { mostrar: RecebimentoPrevisto[]; depois: number; ate: string | null; programado: number } {
   const limite = somarMesesDia(hoje, 3);
-  const vivos = lista.filter((r) => !r.cancelado);
+  // F3.139: a parcela com baixa sem receber continua na programação do contrato.
+  const vivos = lista.filter((r) => !r.cancelado || !!r.baixa || !!r.foraDaCobranca);
   // As pagas antes do T3jus (F3.73) ficam na folha delas, fora da programação. A que passou para
   // A receber e voltou ("Foi paga, sim", F3.84) também: ela está de novo na folha.
   const mostrar = lista.filter((r) => !r.pagoAntes && !(r.eraPagoAntes && r.cancelado) && r.vencimento <= limite);
