@@ -5292,6 +5292,8 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 .fl-contato .btn{min-height:44px;background:rgba(255,255,255,.92)}
 .fl-semacao{font-size:12.5px;color:var(--tinta);line-height:1.45;display:flex;gap:8px;align-items:flex-start}
 .fl-semacao .ico{width:16px;height:16px;flex:none;margin-top:1px;color:#4F1D35}
+/* F3.150: o "Quem faz" do passo do fechamento fica limpo do padrão decorativo do canto do campo âmbar */
+.fl-passo.fl-fecha .fl-semacao,.fl-passo.fl-fecha .jf-quem{position:relative;z-index:1;background:var(--ambar);box-shadow:0 0 0 6px var(--ambar);border-radius:4px}
 
 /* Tabelas das abas novas */
 .fl-tab td{vertical-align:middle}

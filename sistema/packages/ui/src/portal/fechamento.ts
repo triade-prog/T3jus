@@ -51,7 +51,8 @@ export const AJUDA_REPASSE =
 
 /**
  * Decisão 10: quem não encerra contratos vê a seção sem caixa, com quem encerra e onde. Sem os
- * nomes (API de antes), diz só a área.
+ * nomes (API de antes), diz só a área. F3.150 (pergunta 5): com os nomes, a promessa do aviso no
+ * sino ("Eles recebem…"; com um nome só, "Felipe recebe…"). Sem nomes, ninguém seria avisado.
  */
 export function textoQuemEncerraContratos(ligados: { numero: string; cliente: { nome: string } }[], quem: string[] | undefined): string {
   const numeros = juntarComE(ligados.map((c) => c.numero));
@@ -59,7 +60,8 @@ export function textoQuemEncerraContratos(ligados: { numero: string; cliente: { 
   const area = quem?.length ? `a área Contratos (${juntarComE(quem.map(primeiroNome))})` : "a área Contratos";
   const fica = ligados.length === 1 ? `O ${numeros} fica aberto` : `Os ${numeros} ficam abertos`;
   const ficha = `${nomes.length === 1 ? "da ficha" : "das fichas"} de ${juntarComE(nomes)}`;
-  return `${fica}. Quem encerra é ${area}, no passo “Encerrar o contrato” ${ficha}.`;
+  const aviso = !quem?.length ? "" : quem.length === 1 ? ` ${primeiroNome(quem[0]!)} recebe um aviso no sino.` : " Eles recebem um aviso no sino.";
+  return `${fica}. Quem encerra é ${area}, no passo “Encerrar o contrato” ${ficha}.${aviso}`;
 }
 
 /** O contrato já encerrado na janela (decisão 9): "Já encerrado em 12/11, por Felipe, em Contratos · fica como está". */
