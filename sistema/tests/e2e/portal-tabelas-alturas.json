@@ -23,7 +23,7 @@
   "/equipe": {"1024": [["equipe", 306]], "1280": [["equipe", 325]]},
   "/meu-escritorio": {"1024": [["faturas", 191]], "1280": [["faturas", 191]]},
   "/equipe (2)": {"1024": [["equipe-retiradas", 272]], "1280": [["equipe-retiradas", 252]]},
-  "/financeiro/a-receber/contratos/:id": {"1024": [["parcelas", 1209]], "1280": [["parcelas", 463]]},
+  "/financeiro/a-receber/contratos/:id": {"1024": [["parcelas", 1261]], "1280": [["parcelas", 498]]},
   "/contratos/modelos": {"1024": [["procuracoes", 619]], "1280": [["procuracoes", 551]]},
   "A pagar · conta recorrente": {"1024": [["hn-tab.fi-tab", 185]], "1280": [["hn-tab.fi-tab", 185]]},
   "Repasses · ficha do repasse": {"1024": [["hn-tab.fi-tab", 356], ["", 102]], "1280": [["hn-tab.fi-tab", 356], ["", 102]]},
