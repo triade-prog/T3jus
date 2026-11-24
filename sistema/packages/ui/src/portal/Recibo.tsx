@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  assinaturaDoRecibo, dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasDoTimbreRecibo, linhasTimbrado, localEData,
+  assinaturaDoRecibo, dataBr, detalheDoReembolso, documentoComNome, FORMAS_PAGAMENTO, linhaDoReembolso, linhasDoReciboAntigo, linhasDoTimbreRecibo, localEData,
   mesDeReferencia, numeroDoRecibo, parcelaDoRecibo, razaoLonga, reais, subMarcaAdvocacia, textoDoRecibo, tituloDoRecibo, totalDoRecibo,
   type LinhaDoPapel, type ReciboParaImprimir,
 } from "@t3jus/domain";
@@ -48,7 +48,7 @@ function TimbreRecibo({ r }: { r: ReciboParaImprimir }) {
       </header>
     );
   }
-  const linhas = linhasTimbrado({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined });
+  const linhas = linhasDoReciboAntigo({ ...r.escritorio, oab: r.marca?.oab ?? r.escritorio.oab ?? null, contatos: r.escritorio.contatos ?? undefined });
   return (
     <header className="rb-timbre">
       <MarcaRecibo r={r} sub="Advocacia" />

@@ -3,7 +3,7 @@ import {
   conferirFormEscritorio, dadosDoForm, enderecoDoEscritorioNoDocumento, faltasDoEscritorio, formDoEscritorio, linhaDaSede,
   listaFaltasEscritorio, nomeDoEscritorioNoDocumento, qualificacaoDoEscritorio, type DadosEscritorioDocumentos,
 } from "./escritorio_dados.ts";
-import { linhasTimbrado } from "./proposta_docx.ts";
+import { linhasDoReciboAntigo } from "./proposta_docx.ts";
 import { enderecoDoAdvogado, type DadosDocumentoPessoa } from "./dados_advogado.ts";
 import { camposDoPadraoDocumento, marcadosDoModeloDocumento, modeloPadraoDocumento, paragrafosPadraoDocumento } from "./documentos.ts";
 
@@ -89,8 +89,8 @@ describe("PA-07: dados do escritório para os documentos", () => {
       .toBe("Rua Sete de Setembro, 120, sala 4, Centro, Presidente Jânio Quadros/BA, CEP 46250-000");
   });
 
-  it("decisão 9: o timbrado usa a razão social e o contato do escritório", () => {
-    expect(linhasTimbrado({ ...completo, contatos: [{ telefone: "71999990000", email: "outro@x.com" }] })).toEqual([
+  it("decisão 9: o recibo antigo (linhasDoReciboAntigo) sai como saía, com a razão social e o contato", () => {
+    expect(linhasDoReciboAntigo({ ...completo, contatos: [{ telefone: "71999990000", email: "outro@x.com" }] })).toEqual([
       "Santana Sociedade Individual de Advocacia",
       "CNPJ 60.814.144/0001-03 · OAB/BA 4.217 · Rua Sete de Setembro, 120, sala 4, Centro · Presidente Jânio Quadros/BA · CEP 46250-000",
       "(77) 98123-9809 · contato@santana.adv.br · santana.adv.br",

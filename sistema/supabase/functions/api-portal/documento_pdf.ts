@@ -11,7 +11,9 @@ import { A4, MM, SUAVE, TINTA, VINHO } from "./carne_pdf.ts";
 
 // As margens do .docx padrão (criarDocx): 3 cm em cima e à esquerda, 2 cm embaixo e à direita.
 const ESQ = 30 * MM, DIR = 20 * MM, TOPO = 30 * MM, BAIXO = 20 * MM;
-const CAB = 12.5 * MM;
+// O cabeçalho começa onde o .docx diz (w:header): 10 mm no padrão novo (F3.146, decisão 15 de
+// razao-social-sobras), 12,5 mm no de antes e na maioria dos modelos do Word.
+const CAB_PADRAO = 12.5 * MM;
 const LARGURA = A4.w - ESQ - DIR;
 
 /** A fonte padrão do PDF só tem o alfabeto latino (WinAnsi): o resto sai sem o caractere. */
@@ -116,7 +118,7 @@ export function textoRodapePdf(r: RodapePdf): string {
 }
 
 /** Monta o PDF a partir do .docx. `complexo` diz se o modelo tem o que o leiaute simples não reproduz. */
-export async function pdfDoDocx(docx: Uint8Array, rodape: RodapePdf): Promise<{ pdf: Uint8Array; complexo: boolean }> {
+export async function pdfDoDocx(docx: Uint8Array, rodape: RodapePdf): Promise<{ pdf: Uint8Array; complexo: boolean; fioMm: number | null; corpoMm: number }> {
   const lido = await lerDocxParaPdf(docx);
   const doc = await PDFDocument.create();
   doc.setTitle(so(`${rodape.contrato} · v${rodape.versao}`));
@@ -136,13 +138,16 @@ export async function pdfDoDocx(docx: Uint8Array, rodape: RodapePdf): Promise<{ 
     }
   }
 
-  // O cabeçalho de cada página: o logo (até 92 × 18 mm) e as linhas do timbrado, com o fio vinho.
+  // O cabeçalho de cada página: o logo no tamanho que o .docx dá (92 × 12 mm no padrão novo; sem a
+  // medida, até 92 × 18 mm, como antes) e as linhas do timbrado, com o fio vinho.
+  const cab = lido.cabecalhoMm !== null ? lido.cabecalhoMm * MM : CAB_PADRAO;
+  const img = lido.imagemCabecalho;
   const cabecalho = (pg: PDFPage): number => {
-    let y = A4.h - CAB;
+    let y = A4.h - cab;
     if (!lido.cabecalho.length && !logo) return A4.h - TOPO;
     if (logo) {
-      const esc = Math.min((92 * MM) / logo.width, (18 * MM) / logo.height);
-      const w = logo.width * esc, h = logo.height * esc;
+      const esc = img?.larguraMm && img.alturaMm ? 0 : Math.min((92 * MM) / logo.width, (18 * MM) / logo.height);
+      const w = esc ? logo.width * esc : img!.larguraMm! * MM, h = esc ? logo.height * esc : img!.alturaMm! * MM;
       y -= h;
       pg.drawImage(logo, { x: ESQ + (LARGURA - w) / 2, y, width: w, height: h });
       y -= 2 * MM;
@@ -156,11 +161,14 @@ export async function pdfDoDocx(docx: Uint8Array, rodape: RodapePdf): Promise<{ 
     });
     y -= 2 * MM;
     pg.drawLine({ start: { x: ESQ, y }, end: { x: A4.w - DIR, y }, thickness: 0.75, color: VINHO });
+    fio = (A4.h - y) / MM;
     return Math.min(y - 6 * MM, A4.h - TOPO);
   };
+  let fio: number | null = null;
 
   let pg = doc.addPage([A4.w, A4.h]);
   let y = cabecalho(pg);
+  const corpoMm = (A4.h - y) / MM;
   const novaPagina = () => {
     pg = doc.addPage([A4.w, A4.h]);
     y = cabecalho(pg);
@@ -194,5 +202,6 @@ export async function pdfDoDocx(docx: Uint8Array, rodape: RodapePdf): Promise<{ 
     const n = `página ${i + 1} de ${paginas.length}`;
     p.drawText(n, { x: A4.w - DIR - larg(pe, n, t), y: 10 * MM, size: t, font: pe, color: SUAVE });
   });
-  return { pdf: await doc.save(), complexo: lido.complexo };
+  // fioMm e corpoMm (da borda de cima): para o teste medir o cabeçalho (timbrado_docx_test.ts).
+  return { pdf: await doc.save(), complexo: lido.complexo, fioMm: fio, corpoMm };
 }

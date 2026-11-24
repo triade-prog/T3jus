@@ -5,11 +5,16 @@
 // em cores e em preto e branco e o registro da sociedade na OAB, que agora só se mostra aqui: ele
 // se muda em Dados do escritório (PA-07, decisão 3). Só a sócia dona muda.
 // Também o logo no papel (LogoNoDocumento), lido da cópia da marca guardada em cada documento.
+// F3.146 (docs/design/aprovadas/razao-social-sobras, D1 a D3): a prévia mostra o papel como ele sai
+// (a linha da identificação no carnê e as 4 linhas no recibo) e a linha de aviso da razão social em
+// branco (LinhaRazaoSocial), usada também nas janelas "Gerar carnê" e "Registrar recebimento".
 
 import { useRef, useState, type ReactNode } from "react";
 import {
-  contrasteLegivel, enderecoDoLogo, fraseOabSociedade, jeitoPadrao, LOGO_MIN_CONTRASTE, LOGO_MIN_LADO, quaseQuadrado, textoRecusaLogo,
-  type CorLogo, type JeitoLogo, type LogoEscritorio, type MarcaDocumento, type MarcaNoDocumento, type RecusaLogo,
+  contrasteLegivel, enderecoDoLogo, fraseOabSociedade, identificacaoDoCarne, jeitoPadrao, linhasDoTimbreRecibo, LOGO_MIN_CONTRASTE, LOGO_MIN_LADO,
+  quaseQuadrado, razaoLonga, razaoSocialEmBranco, subMarcaAdvocacia, textoDaLinha, textoRecusaLogo, timbradoDoEscritorio,
+  type CorLogo, type EscritorioNoPapel, type JeitoLogo, type LinhaDoPapel, type LogoEscritorio, type MarcaDocumento, type MarcaNoDocumento,
+  type MotivoRazaoEmBranco, type RecusaLogo,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -47,39 +52,80 @@ function Topo({ e, nome }: { e: EstadoMarca; nome: string }) {
   return <span className="lg-m"><span className="lg-letra">{nome}</span></span>;
 }
 
-function MiniCarne({ e, nome, cnpj, oab }: { e: EstadoMarca; nome: string; cnpj: string | null; oab: string | null }) {
+/** Os pedaços de uma linha; CNPJ, OAB, CEP e telefones não quebram no meio. */
+function Linha({ l }: { l: LinhaDoPapel }) {
+  return <>{l.map((p, i) => (p.inteiro ? <span key={i} className="rz-nw">{p.texto}</span> : p.texto))}</>;
+}
+
+const usaLetra = (e: EstadoMarca) => !(e.marca === "LOGO" && e.logo);
+
+/** A via do carnê (D1, decisões 2 a 5): a marca, o "Advocacia" pequeno no nome em letra que não diz
+ *  isso e a linha da identificação (razão social · CNPJ · OAB). `semIdentificacao`: sem sociedade,
+ *  para quem não recebe o nome da sócia dona (decisão 7). */
+function MiniCarne({ e, d, semIdentificacao = false }: { e: EstadoMarca; d: DadosTimbrado; semIdentificacao?: boolean }) {
+  const sub = usaLetra(e) ? subMarcaAdvocacia(d.nome) : null;
+  const ident = semIdentificacao ? null : identificacaoDoCarne(d);
+  const longo = !!ident?.nome && razaoLonga(ident.nome);
   return (
-    <div className="lg-papel lg-cn">
-      <div className="lg-cn-top"><Topo e={e} nome={nome} /><p className="lg-num">Via do cliente<b>4 de 6</b></p></div>
-      <p className="lg-doc">{[cnpj ? `CNPJ ${cnpj}` : null, oab].filter(Boolean).join(" · ") || " "}</p>
+    <div className={`lg-papel lg-cn rz-cn${longo ? " rz-longo" : ""}`}>
+      <div className="lg-cn-top">
+        <div className="rz-marca">
+          <Topo e={e} nome={d.nome} />
+          {sub ? <span className="rz-sub">{sub}</span> : null}
+          {ident ? (
+            <p className="lg-doc rz-ident">
+              {ident.nome ? <b>{ident.nome}</b> : null}{ident.nome && ident.documento.length ? " · " : null}<Linha l={ident.documento} />
+            </p>
+          ) : null}
+        </div>
+        <p className="lg-num">Via do cliente<b>4 de 6</b></p>
+      </div>
       <div className="lg-fio" />
     </div>
   );
 }
 
-function MiniRecibo({ e, nome, razao, cnpj, oab, local }: { e: EstadoMarca; nome: string; razao: string; cnpj: string | null; oab: string | null; local: string | null }) {
+/** O alto do recibo (D1, decisões 1 e 4): a marca à esquerda e as 4 linhas da folha, a 1ª em destaque. */
+function MiniRecibo({ e, d }: { e: EstadoMarca; d: DadosTimbrado }) {
+  const t = linhasDoTimbreRecibo(d);
+  const sub = usaLetra(e) ? subMarcaAdvocacia(d.nome) : null;
+  const longo = !!t.destaque && razaoLonga(t.destaque);
   return (
-    <div className="lg-papel">
-      <div className="lg-rb">
-        <Topo e={e} nome={nome} />
-        <p><b>{razao}</b>{cnpj || oab ? <><br />{[cnpj ? `CNPJ ${cnpj}` : null, oab].filter(Boolean).join(" · ")}</> : null}{local ? <><br />{local}</> : null}</p>
+    <div className={`lg-papel${longo ? " rz-longo" : ""}`}>
+      <div className="lg-rb rz-rb">
+        {sub ? <div className="rz-marca"><Topo e={e} nome={d.nome} /><span className="rz-sub">{sub}</span></div> : <Topo e={e} nome={d.nome} />}
+        <p className="rz-ender">
+          {t.destaque ? <b>{t.destaque}</b> : null}
+          {t.linhas.map((l, i) => <span key={i}><Linha l={l} /></span>)}
+        </p>
       </div>
       <div className="lg-fio" style={{ marginTop: 8 }} />
     </div>
   );
 }
 
-export type DadosTimbrado = { nome: string; cnpj: string | null; oab: string | null; local: string | null };
+/** O escritório como vai no papel (o timbrado do dia; o nome é o nome curto). `semDona`: sem
+ *  sociedade, a pessoa não recebe o nome completo e a OAB da sócia dona (só Financeiro, Contratos
+ *  e a dona recebem; migration 1000). */
+export type DadosTimbrado = EscritorioNoPapel & { semDona?: boolean };
+
+const nomeDaMarca = (e: EstadoMarca) =>
+  e.marca === "LOGO" && e.logo ? (quaseQuadrado(e.logo) && e.jeito === "LOGO_E_NOME" ? "o logo e o nome ao lado" : "o logo") : "o nome em letra";
+
+/** O texto para leitor de tela (decisão 8): a identificação inteira, como vai no papel. */
+function identificacaoInteira(d: DadosTimbrado, site: boolean): string {
+  const t = timbradoDoEscritorio(d, { site });
+  return [t.nome, ...[t.documento, t.sede, t.contato].map(textoDaLinha)].filter(Boolean).join(" · ");
+}
 
 export function PreviaMarca({ e, d, titulo = "Como vai sair" }: { e: EstadoMarca; d: DadosTimbrado; titulo?: string }) {
-  const nomeMarca = e.marca === "LOGO" && e.logo ? (quaseQuadrado(e.logo) && e.jeito === "LOGO_E_NOME" ? "logo e o nome ao lado" : "logo") : "nome em letra";
   const figuras: ReactNode[] = [];
   for (const doc of ["carnê", "recibo"] as const) {
     for (const pb of [false, true]) {
       figuras.push(
         <figure key={`${doc}${pb}`} className={pb ? "lg-pb" : undefined}>
-          <div role="img" aria-label={`Prévia do alto do ${doc}, ${pb ? "em preto e branco" : "em cores"}, com o ${nomeMarca}`}>
-            {doc === "carnê" ? <MiniCarne e={e} nome={d.nome} cnpj={d.cnpj} oab={d.oab} /> : <MiniRecibo e={e} nome={d.nome} razao={d.nome} cnpj={d.cnpj} oab={d.oab} local={d.local} />}
+          <div role="img" aria-label={`Prévia do alto do ${doc}, ${pb ? "em preto e branco" : "em cores"}, com ${nomeDaMarca(e)} e a identificação do escritório: ${identificacaoInteira(d, doc === "recibo")}`}>
+            {doc === "carnê" ? <MiniCarne e={e} d={d} /> : <MiniRecibo e={e} d={d} />}
           </div>
           <figcaption><b>{doc === "carnê" ? "Carnê" : "Recibo"}</b> · {pb ? "preto e branco" : "em cores"}</figcaption>
         </figure>,
@@ -91,6 +137,42 @@ export function PreviaMarca({ e, d, titulo = "Como vai sair" }: { e: EstadoMarca
       <h3><Icone nome="olho" className="ico" />{titulo}</h3>
       <div className="lg-prev">{figuras}</div>
     </div>
+  );
+}
+
+/** Para "Completar em Escritório › Dados do escritório": a página abre no editar. */
+export const ROTA_COMPLETAR_DADOS = `${ROTAS_ESCRITORIO.dados}?editar=1`;
+
+/**
+ * A linha de aviso da razão social em branco (D1 a D3, decisões 9 a 12): só na tela, nunca no papel.
+ * O texto sai do motivo de razaoSocialEmBranco; a sócia dona vê "Completar", os outros leem quem
+ * completa e "Ver". Sem botão de "pedir" nesta entrega (pergunta 5 do plano).
+ */
+export function LinhaRazaoSocial({ motivo, papel, nomeCurto, dono, dona }: {
+  motivo: MotivoRazaoEmBranco;
+  /** "O carnê", "O recibo" ou "O carnê e o recibo". */
+  papel: "O carnê" | "O recibo" | "O carnê e o recibo";
+  nomeCurto: string;
+  dono: boolean;
+  /** O nome da sócia dona, para "Quem completa é…". */
+  dona: string;
+}) {
+  const sai = papel === "O carnê e o recibo" ? "saem" : "sai";
+  return (
+    <p className="cn-chave rz-linha">
+      <Icone nome="alerta" className="ico" />
+      <span>
+        {motivo === "TIPO" ? (
+          <><b>Falta dizer em Dados do escritório se ele é uma sociedade.</b> {papel} {sai} com o nome {nomeCurto}, sem razão social. Se a advogada atua sem sociedade, é só marcar isso lá, e o aviso some.</>
+        ) : (
+          <><b>A razão social do escritório está em branco.</b> {papel} {sai} com o nome {nomeCurto} no lugar dela.</>
+        )}
+        {dono ? null : ` Quem completa é ${dona}, a sócia dona.`}
+        {dono
+          ? <a className="rz-ir" href={ROTA_COMPLETAR_DADOS}><Icone nome="lapis" className="ico" />Completar em Escritório › Dados do escritório</a>
+          : <a className="rz-ir" href={ROTAS_ESCRITORIO.dados}><Icone nome="olho" className="ico" />Ver em Escritório › Dados do escritório</a>}
+      </span>
+    </p>
   );
 }
 
@@ -165,6 +247,8 @@ export function MarcaTimbrado({ e, mudar, d, salvoEm, erroMarca, naoSalvo, aoRem
   }
 
   const l = e.marca === "LOGO" ? e.logo : null;
+  // Com a razão social em branco, a mesma linha das janelas embaixo da prévia (decisão 6). Só a dona edita esta folha.
+  const motivo = razaoSocialEmBranco(d);
   const input = (id: string, rotulo: ReactNode, foco?: boolean) => (
     <>
       <input ref={entrada} className="sr" type="file" id={id} accept={ACEITA} aria-describedby="lg-arq-aj" disabled={enviando}
@@ -287,6 +371,7 @@ export function MarcaTimbrado({ e, mudar, d, salvoEm, erroMarca, naoSalvo, aoRem
           </div>
         ) : null}
         <PreviaMarca e={e} d={d} titulo={e.marca === "LOGO" && !l ? "Como sai hoje, enquanto não houver logo" : "Como vai sair"} />
+        {motivo ? <LinhaRazaoSocial motivo={motivo} papel="O carnê e o recibo" nomeCurto={d.nome} dono dona="" /> : null}
         <div className="lg-bloco">
           <h3><Icone nome="balanca" className="ico" />Registro da sociedade na OAB</h3>
           <p className="lg-oab-ler">
@@ -322,8 +407,12 @@ export function JanelaRemoverLogo({ aberta, aoFechar, aoRemover }: { aberta: boo
   );
 }
 
-/** Para ler (quem não é a sócia dona): a marca em uso, com a prévia, e o registro na OAB. */
+/** Para ler (quem não é a sócia dona): a marca em uso, com a prévia do carnê, e o registro na OAB.
+ *  Sem sociedade e sem o nome da sócia dona (decisão 7), a miniatura vem sem a linha e com uma frase. */
 export function MarcaParaLer({ e, d, desde }: { e: EstadoMarca; d: DadosTimbrado; desde: string | null }) {
+  const semLinha = d.tipo === "SEM_SOCIEDADE" && !!d.semDona;
+  const ident = semLinha ? null : identificacaoDoCarne(d);
+  const rot = `Prévia do alto do carnê com ${nomeDaMarca(e)}${ident ? ` e a identificação do escritório: ${[ident.nome, textoDaLinha(ident.documento)].filter(Boolean).join(" · ")}` : ""}`;
   return (
     <>
       <div>
@@ -331,11 +420,14 @@ export function MarcaParaLer({ e, d, desde }: { e: EstadoMarca; d: DadosTimbrado
         <dd>
           <div className="lg-ro-marca">
             {e.marca === "LOGO" && e.logo ? `O logo do escritório${desde ? `, desde ${desde}` : ""}` : `${d.nome}, em letra`}
-            <div role="img" aria-label={`Prévia do alto do carnê com ${e.marca === "LOGO" && e.logo ? "o logo" : "o nome em letra"}`}><MiniCarne e={e} nome={d.nome} cnpj={d.cnpj} oab={d.oab} /></div>
+            <div role="img" aria-label={rot}><MiniCarne e={e} d={d} semIdentificacao={semLinha} /></div>
+            {semLinha ? (
+              <p className="rz-nota">Embaixo da marca, o carnê leva o nome completo e a OAB da advogada. Essa linha aparece aqui para quem tem Financeiro ou Contratos.</p>
+            ) : null}
           </div>
         </dd>
       </div>
-      <div><dt>Registro da sociedade na OAB</dt><dd>{d.oab ?? "Não informado"}</dd></div>
+      <div><dt>Registro da sociedade na OAB</dt><dd>{d.oab ?? (d.tipo === "SEM_SOCIEDADE" ? "Sem registro: advogada sem sociedade" : "Não informado")}</dd></div>
     </>
   );
 }

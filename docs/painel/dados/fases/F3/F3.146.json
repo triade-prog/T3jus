@@ -5,8 +5,7 @@
   "refs": [
     "PA-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1150,
-  "nota": "linhasTimbrado (proposta_docx.ts) ainda junta \"CNPJ · OAB · sede\" numa linha só e é usada no .docx (api-portal/documentos.ts e proposta_docx.ts) e em EscritorioDados.tsx; a tabela aprovada em escritorio-dados-documentos pede 4 linhas. MarcaTimbrado.tsx (MiniCarne) ainda mostra só \"CNPJ · OAB\" embaixo da marca.",
-  "proximo": "Desenhar a prévia de Marca e timbrado com a linha da identificação e o aviso de razão social em branco (pergunta 3 do desenho do carnê e recibo), levar à Carol e, aprovado, trocar linhasTimbrado pelas 4 linhas de timbrado.ts no .docx e em Dados do escritório"
+  "evidencia": "Desenho aprovado pela Carol em 23/11/2026, 10h57 (Bahia), com todas as recomendações (docs/design/aprovadas/razao-social-sobras, D1 a D4). timbradoDoDocx (4 linhas, OAB de Dados do escritório, nome curto ao lado do logo) no .docx da proposta e dos documentos, cabeçalho a 10 mm e logo em 92 × 12 mm; linhasTimbrado virou linhasDoReciboAntigo (só o recibo antigo); prévia de Dados do escritório com as 4 linhas; prévias de Marca e timbrado com a linha da identificação; aviso de razão social em branco (razaoSocialEmBranco) ao gerar carnê ou recibo e em Marca e timbrado. Migration 1000 (portal_proposta_timbrado; timbrado em portal_recebimento só para Financeiro, Contratos ou a dona), pgTAP 134 (14 testes). Testes: Vitest 546, Deno com timbrado_docx_test.ts (6 escritórios, com e sem logo), pgTAP 3190, e2e 367 (celular e computador, axe) com portal-razao-social-sobras.spec.ts e portal-nao-paga-logo.spec.ts."
 }

@@ -1,0 +1,10 @@
+{
+  "id": "P9",
+  "texto": "Aplicar no Supabase a migration 1000 (timbrado da proposta e de Marca e timbrado, F3.146) e publicar a api-portal e o Portal, com o ok da Carol",
+  "refs": [
+    "PA-07"
+  ],
+  "status": "pendente",
+  "ordem": 90,
+  "nota": "Aplicar a 1000 depois da 0990 (conferir com list_migrations); depois publicar a api-portal (proposta_docx.ts chama portal_proposta_timbrado, que só existe com a 1000) e, por fim, o Portal. Depois, no escritório de demonstração: baixar uma proposta e gerar um contrato padrão, abrir os dois .docx e o PDF do contrato. Proposta baixada de novo sai com o cabeçalho novo; documentos já emitidos não mudam."
+}

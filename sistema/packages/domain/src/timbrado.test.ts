@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { linhasTimbrado } from "./proposta_docx.ts";
+import { linhasDoReciboAntigo } from "./proposta_docx.ts";
 import {
-  assinaturaDoRecibo, camposDoEscritorioNaCapa, identificacaoDoCarne, linhasDoTimbreRecibo, mesmoNome, razaoLonga, subMarcaAdvocacia,
-  textoDaLinha, timbradoDoEscritorio, type EscritorioNoPapel, type LinhaDoPapel,
+  assinaturaDoRecibo, camposDoEscritorioNaCapa, identificacaoDoCarne, linhasDoTimbreRecibo, mesmoNome, razaoLonga, razaoSocialEmBranco, subMarcaAdvocacia,
+  textoDaLinha, timbradoDoDocx, timbradoDoEscritorio, type EscritorioNoPapel, type LinhaDoPapel,
 } from "./timbrado.ts";
 
 // O elenco do desenho aprovado (docs/design/aprovadas/carne-recibo-razao-social, _fonte/rs_dados.py).
@@ -156,7 +156,90 @@ describe("timbrado no carnê e no recibo (F3.133, PA-07)", () => {
     expect(timbradoDoEscritorio({ ...vazia, contatos: null }).contato).toEqual([]);
   });
 
-  it("linhasTimbrado (.docx) continua com 3 linhas (F3.146)", () => {
-    expect(linhasTimbrado(completa)).toHaveLength(3);
+  it("o recibo antigo (linhasDoReciboAntigo) continua com as 3 linhas de antes (PT-03)", () => {
+    expect(linhasDoReciboAntigo(completa)).toEqual([
+      "SANTANA, LIMA E OLIVEIRA SOCIEDADE DE ADVOGADOS",
+      "CNPJ 47.318.552/0001-06 · OAB/BA 4.217 · Av. Tancredo Neves, 1.632, sala 1.208, Caminho das Árvores · Salvador/BA · CEP 41820-020",
+      "(71) 3352-4180 · contato@santana.adv.br · santana.adv.br",
+    ]);
+  });
+});
+
+describe("o .docx tem as 4 linhas (F3.146, PA-07, razao-social-sobras D4)", () => {
+  const linhas = (x: ReturnType<typeof timbradoDoDocx>) => [x.nome, ...x.linhas.map(textoDaLinha)];
+
+  it("sociedade completa: as 4 linhas, com o site", () => {
+    const d = timbradoDoDocx(completa, { logo: false });
+    expect(linhas(d)).toEqual([
+      "SANTANA, LIMA E OLIVEIRA SOCIEDADE DE ADVOGADOS",
+      "CNPJ 47.318.552/0001-06 · OAB/BA 4.217",
+      "Av. Tancredo Neves, 1.632, sala 1.208, Caminho das Árvores, Salvador/BA, CEP 41820-020",
+      "(71) 3352-4180 · contato@santana.adv.br · santana.adv.br",
+    ]);
+    expect(d.longa).toBe(false);
+    // CNPJ, OAB, CEP, telefone, e-mail e site não quebram no meio.
+    expect(d.linhas.flat().filter((p) => p.inteiro).map((p) => p.texto)).toEqual([
+      "CNPJ 47.318.552/0001-06", "OAB/BA 4.217", "CEP 41820-020", "(71) 3352-4180", "contato@santana.adv.br", "santana.adv.br",
+    ]);
+  });
+
+  it("com logo, a razão social diferente do nome curto fica (decisão 17)", () => {
+    expect(timbradoDoDocx(completa, { logo: true }).nome).toBe("SANTANA, LIMA E OLIVEIRA SOCIEDADE DE ADVOGADOS");
+  });
+
+  it("sem sociedade: o nome completo e 'OAB · sem CNPJ', nunca o CPF", () => {
+    const d = timbradoDoDocx(semSociedade, { logo: false });
+    expect(linhas(d).slice(0, 2)).toEqual(["Carolina Soares Santana", "OAB/BA 63.876-S · sem CNPJ"]);
+    expect(JSON.stringify(d)).not.toContain("52998224725");
+  });
+
+  it("razão social vazia: o nome curto, sem [falta]; com logo, a 1ª linha sai (o logo já diz o nome)", () => {
+    const sem = timbradoDoDocx(vazia, { logo: false });
+    expect(sem.nome).toBe("Santana Advocacia");
+    expect(JSON.stringify(sem)).not.toMatch(/falta|confira/);
+    // Sem telefone e e-mail do escritório, o primeiro contato que tem um deles, sem o site.
+    expect(textoDaLinha(sem.linhas.at(-1)!)).toBe("(71) 98877-1020 · carol@santana.adv.br");
+    expect(timbradoDoDocx(vazia, { logo: true }).nome).toBeNull();
+  });
+
+  it("razão igual ao nome curto: com logo sai, sem logo fica", () => {
+    const igual = { ...completa, razaoSocial: "SANTANA ADVOCACIA" };
+    expect(timbradoDoDocx(igual, { logo: true }).nome).toBeNull();
+    expect(timbradoDoDocx(igual, { logo: false }).nome).toBe("SANTANA ADVOCACIA");
+  });
+
+  it("150 letras: a letra menor (decisão 18)", () => {
+    const d = timbradoDoDocx({ ...completa, razaoSocial: RAZAO_LONGA }, { logo: true });
+    expect(d.nome).toHaveLength(150);
+    expect(d.longa).toBe(true);
+  });
+
+  it("sede antiga com 'confira': o texto antigo e a cidade, sem 'confira' (decisão 20)", () => {
+    const antigo = { ...completa, cep: null, logradouro: null, numero: null, complemento: null, bairro: null, endereco: "Av. Tancredo Neves 1632 sl 1208 - Caminho das Arvores", enderecoConfira: true };
+    const d = timbradoDoDocx(antigo, { logo: false });
+    expect(textoDaLinha(d.linhas[1]!)).toBe("Av. Tancredo Neves 1632 sl 1208 - Caminho das Arvores, Salvador/BA");
+    expect(JSON.stringify(d)).not.toMatch(/confira|falta/);
+  });
+
+  it("a OAB é a de Dados do escritório (decisão 21): a função não lê a marca", () => {
+    const d = timbradoDoDocx({ ...completa, oab: "OAB/BA 4.217" }, { logo: false });
+    expect(textoDaLinha(d.linhas[0]!)).toBe("CNPJ 47.318.552/0001-06 · OAB/BA 4.217");
+  });
+});
+
+describe("razaoSocialEmBranco: o motivo da linha de aviso (F3.146, decisão 10)", () => {
+  it("sociedade ou sociedade individual sem razão social: RAZAO", () => {
+    expect(razaoSocialEmBranco({ tipo: "SOCIEDADE", razaoSocial: null })).toBe("RAZAO");
+    expect(razaoSocialEmBranco({ tipo: "SOCIEDADE_INDIVIDUAL", razaoSocial: "" })).toBe("RAZAO");
+    expect(razaoSocialEmBranco({ tipo: "SOCIEDADE", razaoSocial: "   " })).toBe("RAZAO");
+  });
+  it("tipo em branco e sem razão social (escritório migrado): TIPO", () => {
+    expect(razaoSocialEmBranco({ tipo: null, razaoSocial: null })).toBe("TIPO");
+    expect(razaoSocialEmBranco({ razaoSocial: " " })).toBe("TIPO");
+  });
+  it("sem sociedade ou com a razão preenchida: sem aviso", () => {
+    expect(razaoSocialEmBranco({ tipo: "SEM_SOCIEDADE", razaoSocial: null })).toBeNull();
+    expect(razaoSocialEmBranco({ tipo: "SOCIEDADE", razaoSocial: "SANTANA ADVOCACIA" })).toBeNull();
+    expect(razaoSocialEmBranco({ tipo: null, razaoSocial: "Santana Sociedade de Advogados" })).toBeNull();
   });
 });

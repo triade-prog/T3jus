@@ -8,7 +8,10 @@
 //   4. telefone · e-mail · site do escritório; sem telefone e e-mail, o primeiro contato.
 // Nunca sai "[falta]" nem "confira": o papel vai para o cliente (decisão 12). O CPF da sócia dona
 // não entra em lugar nenhum. A tela e os dois PDFs do servidor usam estas mesmas funções.
-// `linhasTimbrado` (proposta_docx.ts) continua com 3 linhas para o .docx (F3.146).
+// O .docx (a proposta e os documentos do modelo padrão) usa as mesmas 4 linhas desde o F3.146
+// (`timbradoDoDocx`, desenho em docs/design/aprovadas/razao-social-sobras, decisões 15 a 22). A
+// função antiga de 3 linhas virou `linhasDoReciboAntigo` (proposta_docx.ts): serve só ao recibo
+// emitido antes da 0890, que não muda (PT-03).
 
 import { linhaDaSede } from "./escritorio_dados.ts";
 import { cnpjFmt, telefoneFmt, type EscritorioDoTimbrado } from "./proposta_docx.ts";
@@ -156,4 +159,25 @@ export function assinaturaDoRecibo(e: EscritorioNoPapel): { nome: string; docume
 export function camposDoEscritorioNaCapa(e: EscritorioNoPapel): { nome: string | null; linhas: LinhaDoPapel[] } {
   const t = timbradoDoEscritorio(e, { site: false });
   return { nome: mesmoNome(t.nome, e.nome) ? null : t.nome, linhas: [t.documento, t.sede, t.contato].filter((l) => l.length) };
+}
+
+/** O cabeçalho do .docx (F3.146, decisões 15 a 22 de razao-social-sobras): a 1ª linha em negrito
+ *  (`nome`; nula com o logo quando é igual ao nome curto, decisão 17) e as outras 3, com o site.
+ *  A OAB da sociedade é a de Dados do escritório (`oab`, decisão 21), nunca a da marca. Nunca
+ *  "[falta]" nem "confira": essas marcas ficam no corpo do contrato (decisão 20). */
+export interface TimbradoDoDocx { nome: string | null; linhas: LinhaDoPapel[]; longa: boolean }
+export function timbradoDoDocx(e: EscritorioDoTimbrado, o: { logo: boolean }): TimbradoDoDocx {
+  const t = timbradoDoEscritorio(e);
+  const tira = o.logo && mesmoNome(t.nome, e.nome);
+  return { nome: tira ? null : t.nome, linhas: [t.documento, t.sede, t.contato].filter((l) => l.length), longa: !tira && razaoLonga(t.nome) };
+}
+
+/** Por que o papel sai com o nome curto (F3.146, decisão 10 de razao-social-sobras): "TIPO" quando
+ *  o tipo do escritório está em branco e não há razão social (escritório migrado, que pode ser de
+ *  advogada sem sociedade); "RAZAO" quando é sociedade sem razão social; nulo quando não há aviso
+ *  (sem sociedade, ou a razão social preenchida). Só espaços conta como em branco. */
+export type MotivoRazaoEmBranco = "TIPO" | "RAZAO";
+export function razaoSocialEmBranco(e: Pick<EscritorioDoTimbrado, "tipo" | "razaoSocial">): MotivoRazaoEmBranco | null {
+  if (e.tipo === "SEM_SOCIEDADE" || cheio(e.razaoSocial)) return null;
+  return e.tipo ? "RAZAO" : "TIPO";
 }
