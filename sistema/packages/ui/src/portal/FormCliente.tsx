@@ -7,7 +7,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  CAPACIDADES, ESTADOS_CIVIS, hojeBrasilia, MODOS_CURATELA, ORIGENS, PAPEIS_CURATELA, PAPEIS_MENOR, situacaoNoDia, UFS, type Capacidade,
+  CAPACIDADES, ESTADOS_CIVIS, hojeBrasilia, MODOS_CURATELA, nascimentoNoFuturo, ORIGENS, PAPEIS_CURATELA, PAPEIS_MENOR, situacaoNoDia, tituloDaIdade, UFS, type Capacidade,
   type PossivelDuplicado, type TermoResponsavel, type TipoCliente,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -17,7 +17,7 @@ import { problemaDoArquivo } from "../console/documentos.ts";
 import { formatarTelefone } from "../console/ficha.ts";
 import { dataLonga } from "../console/tempo.ts";
 import {
-  campoDoServidor, conferirCliente, dataBr, diferencasCliente, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato,
+  campoDoServidor, conferirCliente, dataBr, diferencasCliente, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato, TEXTO_DATA_NO_FUTURO,
   type ErrosCliente, type RascunhoCliente,
 } from "./clientes.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
@@ -332,7 +332,12 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
     setErros(({ nascimento: _n, rlNome: _r, rlPapel: _p, rlDocumento: _d, ...resto }) => resto);
   };
   const rlDocOk = r.rlDocumento.trim() && !erros.rlDocumento && documentoConfere("PF", r.rlDocumento);
-  const calc = !sit || sit.idade === null ? (
+  const calc = sit && nascIso && nascimentoNoFuturo(nascIso, hoje) ? (
+    <div className="rl-calc rl-neutro c3" role="status" aria-live="polite">
+      <Icone nome="ajuda" className="ico" />
+      <span><b>{TEXTO_DATA_NO_FUTURO}</b> Confira a data: com ela, o T3jus diz se {primeiro} é representado(a) ou assistido(a).</span>
+    </div>
+  ) : !sit || sit.idade === null ? (
     <div className="rl-calc rl-neutro c3" role="status" aria-live="polite">
       <Icone nome="ajuda" className="ico" />
       <span>Com a data, o T3jus diz se {primeiro} é representado(a) ou assistido(a), e faz a conta de novo a cada documento gerado.</span>
@@ -342,9 +347,9 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
       <Icone nome="pessoas" className="ico" />
       <span>
         {sit.situacao === "REPRESENTADO" ? (
-          <><b>{primeiro} tem {sit.idade} anos hoje: é representado(a).</b> Só quem responde por {primeiro} assina. Aos 16 anos, em {dataBr(sit.faz16!)}, passa a ser assistido(a), e os dois assinam.</>
+          <><b>{tituloDaIdade(primeiro, sit.idade, "REPRESENTADO")}</b> Só quem responde por {primeiro} assina. Aos 16 anos, em {dataBr(sit.faz16!)}, passa a ser assistido(a), e os dois assinam.</>
         ) : sit.situacao === "ASSISTIDO" ? (
-          <><b>{primeiro} tem {sit.idade} anos hoje: é assistido(a).</b> {primeiro} e quem responde por {primeiro} assinam juntos. Aos 18 anos, em {dataBr(sit.faz18!)}, passa a assinar sozinho(a).</>
+          <><b>{tituloDaIdade(primeiro, sit.idade, "ASSISTIDO")}</b> {primeiro} e quem responde por {primeiro} assinam juntos. Aos 18 anos, em {dataBr(sit.faz18!)}, passa a assinar sozinho(a).</>
         ) : (
           <><b>{primeiro} já tem 18 anos e assina por si.</b> Para quem já é cliente, a ficha avisa e muda quando alguém confirmar.</>
         )}

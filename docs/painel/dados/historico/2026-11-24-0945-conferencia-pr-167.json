@@ -1,0 +1,10 @@
+{
+  "data": "24/11/2026",
+  "inicio": "09:45",
+  "fim": "10:05",
+  "texto": "Painel conferido com a main até o PR #167: P5 feito (0850 aplicada desde 23/11, api-portal v40 e api-console v17 no ar), situação atualizada e próximo passo do D4 sem a importação já pronta",
+  "refs": [
+    "CH-11",
+    "CH-12"
+  ]
+}

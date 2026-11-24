@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  CANAIS, ESTADOS_CIVIS, formatarDocumento, hojeBrasilia, MOTIVOS_SAIDA_FUNIL, ORIGENS, TIPOS_CLIENTE,
+  CANAIS, ESTADOS_CIVIS, formatarDocumento, hojeBrasilia, idadeEmPalavras, MOTIVOS_SAIDA_FUNIL, ORIGENS, TIPOS_CLIENTE,
   type Atendimento, type Canal, type ClienteFunil, type SaidaFunil, type ContatoCliente, type FichaCliente, type PessoaRef,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -159,7 +159,7 @@ function Dados({ f, aoEditar }: { f: FichaCliente; aoEditar?: () => void }) {
         {item(pf ? "CPF" : "CNPJ", f.documento ? <><span className="num">{formatarDocumento(f.documento)}</span>{conf}</> : null)}
         {pf ? (
           <>
-            {menor ? item("Data de nascimento", f.nascimento ? `${dataBr(f.nascimento)}${typeof f.assina?.idade === "number" ? ` · ${f.assina.idade} anos` : ""}` : null) : null}
+            {menor ? item("Data de nascimento", f.nascimento ? `${dataBr(f.nascimento)}${typeof f.assina?.idade === "number" && Number.isFinite(f.assina.idade) ? ` · ${idadeEmPalavras(f.assina.idade)}` : ""}` : null) : null}
             {item("Nacionalidade", f.nacionalidade)}
             {menor && !f.rg ? (
               <div>

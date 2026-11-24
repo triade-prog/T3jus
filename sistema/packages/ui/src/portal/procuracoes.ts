@@ -4,7 +4,7 @@
 // (0680_documentos_contrato.sql); aqui só o que a tela mostra.
 
 import {
-  aniversario, cidadeDataDocumento, CODIGOS_PODERES, dataBr, DOCUMENTOS_CONTRATO, faltasDoResponsavel, faltasNoDocumento, fraseOutorgados, idadeEm,
+  aniversario, cidadeDataDocumento, CODIGOS_PODERES, dataBr, DOCUMENTOS_CONTRATO, faltasDoResponsavel, faltasNoDocumento, fraseOutorgados, idadeEm, tituloDaIdade,
   outorgadosEscolhidos, PAPEIS_RESPONSAVEL, papelFeminino, situacaoNoDia,
   type Anexo, type ClienteDoDocumento, type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ModeloEmUso, type PoderEspecial,
   type PreviaDocumentos, type TipoDocumentoContrato,
@@ -289,12 +289,12 @@ export function avisoDoMenor(c: ClienteDoDocumento, hoje: string, docs: number, 
   const idade = idadeEm(c.nascimento!, hoje);
   if (caso === "REPRESENTADO") {
     return {
-      titulo: `${p} tem ${idade} anos hoje: é representado(a).`,
+      titulo: tituloDaIdade(p, idade, "REPRESENTADO"),
       texto: `Só ${r} assina, em nome de ${p}, ${quantosDocumentos(docs)}. Em ${dataBr(aniversario(c.nascimento!, 16))}, aos 16 anos, ${p} passa a ser assistido(a), e os dois assinam. O T3jus faz a conta pela data de nascimento, no dia de gerar.${fraseDoTermoDeTutela(c, temTermo)}`,
     };
   }
   return {
-    titulo: `${p} tem ${idade} anos hoje: é assistido(a).`,
+    titulo: tituloDaIdade(p, idade, "ASSISTIDO"),
     texto: `Os dois assinam ${quantosDocumentos(docs)}: ${p} e ${papelComArtigo(c)}, ${r}, que o(a) assiste. Em ${dataBr(aniversario(c.nascimento!, 18))}, aos 18 anos, ${p} passa a assinar sozinho(a).${fraseDoTermoDeTutela(c, temTermo)}`,
   };
 }
