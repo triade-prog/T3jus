@@ -5,7 +5,8 @@
   "refs": [
     "FI-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1065.7,
-  "proximo": "Reproduzir num Postgres 17 a gravação de uma divisão de levantamento pela função da API com set role service_role; se falhar no commit, passar destinacoes_fecham a security definer numa migration nova, com o teste do mesmo jeito do teste 22 do pgTAP 135 do F3.147"
+  "evidencia": "Confirmado: no Postgres 17 o gatilho adiado roda com o papel do commit (só o 18 muda), e pela API é o service_role, sem privilégio nas tabelas; em produção (24/11, só leitura) o banco é 17.12, destinacoes_fecham não era security definer e era o único gatilho adiado assim, e levantamentos e destinacoes têm 0 linhas. Num banco com todas as migrations, registrar o levantamento como service_role falhava no commit com permission denied for table levantamentos e não gravava nada. Migration 1080: destinacoes_fecham security definer, dona dominio, com search_path fixo, e recusa quando o contexto não é o escritório do levantamento ou não o enxerga (nunca passa calada). Testes: pgTAP 140 com 14 testes (registrar, feito e dispensado pela API com o fim como service_role, a rede no contexto e sem contexto, todo gatilho adiável do public é security definer com autoteste, a própria função), que falham sem a 1080 e passam com ela; tests/concorrencia/levantamento-pela-api.sh com commit de verdade como service_role, chamado no scripts/test-db.sh; o CI roda no Postgres 17. Suíte inteira: 119 arquivos, 3.574 testes.",
+  "nota": "Plano e revisão em project-files t3jus/f3-163/plano.md e revisao.md (aprovado com ajustes, os 11 aceitos). A aplicação em produção é o P14."
 }

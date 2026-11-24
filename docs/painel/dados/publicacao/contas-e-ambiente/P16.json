@@ -1,0 +1,13 @@
+{
+  "id": "P16",
+  "texto": "Aplicar no Supabase a migration 1010 (baixa de parcela sem receber, F3.139) e publicar a api-portal e o Portal, com o ok da Carol",
+  "refs": [
+    "FI-24",
+    "FI-25",
+    "FI-08",
+    "EX-16"
+  ],
+  "status": "pendente",
+  "ordem": 160,
+  "nota": "Ordem: 1) aplicar a 1010 pelo apply_migration, com o conteúdo do arquivo direto (como a 1030), depois das que já estão na main (1020, 1030, 1070, 1080, 1090 e 1091; nenhuma mexe nas funções que a 1010 troca): o supabase db push recusaria uma migration de número menor fora de ordem (antes, conferir com list_migrations que a 1000 já está no ar); 2) publicar a api-portal, com as rotas GET/POST /v1/escritorio/financeiro/parcelas/:id/baixa e POST .../baixa/desfazer; 3) publicar o Portal. Sem a 1010, as rotas novas respondem erro e a tela não mostra o botão de desfazer. Sem a api-portal nova, o Portal mostra o botão, mas a janela não abre a parcela."
+}

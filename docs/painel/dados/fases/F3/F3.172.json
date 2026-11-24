@@ -1,13 +1,11 @@
 {
   "id": "F3.172",
-  "texto": "Número \"Baixado sem receber\" nos Relatórios, por período e por cliente, lido de parcela_baixas, sem reescrever o mês passado quando a baixa é desfeita (nota 11 da baixa sem receber)",
-  "peca": "S4",
+  "texto": "Avisos do sino do cliente excluído a pedido do titular: tirar o nome e o serviço guardados em avisos_sino.dados (o PEDIDO_CONTRATO, que proposta_resumo_aviso copia na 0532, e o CLIENTE_FEZ_18 da 0830); hoje a exclusão não mexe neles e avisos_sino_guardiao só deixa mudar o lido",
+  "peca": "S2",
   "refs": [
-    "IN-04",
-    "IN-07"
+    "PT-11"
   ],
   "status": "pendente",
   "ordem": 1280,
-  "nota": "Proposto no plano aprovado da baixa sem receber (docs/design/aprovadas/portal-baixa-parcela-motivo/PLANO.md, seção 7). O F3.139 já tira a parcela baixada de \"em aberto\" e \"vencido\" nos dias em que esteve baixada.",
-  "proximo": "Desenhar o número \"Baixado sem receber\" nos Relatórios (agente de frontend e ok da Carol) e programar"
+  "proximo": "Planejar a limpeza de avisos_sino.dados na exclusão (e nos já excluídos) a partir do achado A2 do plano da F3.159 e do M5 da revisão; não pede decisão da Carol (a regra já é a PT-11)"
 }

@@ -1,0 +1,10 @@
+{
+  "data": "24/11/2026",
+  "inicio": "16:59",
+  "fim": "17:02",
+  "texto": "Migration 1080 aplicada no Supabase com o ok da Carol (P14): a divisão do alvará em Repasses passa no commit pela API.",
+  "refs": [
+    "F3.163",
+    "FI-05"
+  ]
+}

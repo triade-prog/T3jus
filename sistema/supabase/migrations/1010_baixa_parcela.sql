@@ -17,7 +17,7 @@
 -- A baixa é um cancelamento marcado (como a parcela "paga antes do T3jus", 0420): os mais de 30
 -- lugares que já filtram cancelado_em is null tiram a parcela de Em atraso, de A receber, da
 -- régua, do carnê novo, da Início e das pendências do acerto. O que não vem de graça muda aqui,
--- de forma explícita (seções 4 a 16), cada um com teste no pgTAP 140.
+-- de forma explícita (seções 4 a 16), cada um com teste no pgTAP 142.
 --
 -- parcela_baixas é só de inserção. Cada baixa tem uma linha BAIXA da parcela (a que
 -- recebimentos_previstos.baixa_id aponta) e, com a caixa das custas marcada, uma linha BAIXA por
