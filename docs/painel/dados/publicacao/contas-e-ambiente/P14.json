@@ -4,7 +4,8 @@
   "refs": [
     "FI-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 140,
-  "nota": "Não depende da 1020 (P13) nem da 1070 e pode entrar antes delas; antes, conferir com list_migrations o que já está no ar e anotar que o histórico do Supabase fica fora da ordem dos números. Não precisa publicar a api-portal. Depois, conferir só com leitura: destinacoes_fecham com prosecdef = true, dona dominio e proacl com service_role. Se der errado: alter function destinacoes_fecham() security invoker (volta ao estado de antes, em que o registro pela API falha)."
+  "nota": "Não depende da 1020 (P13) nem da 1070 e pode entrar antes delas; antes, conferir com list_migrations o que já está no ar e anotar que o histórico do Supabase fica fora da ordem dos números. Não precisa publicar a api-portal. Depois, conferir só com leitura: destinacoes_fecham com prosecdef = true, dona dominio e proacl com service_role. Se der errado: alter function destinacoes_fecham() security invoker (volta ao estado de antes, em que o registro pela API falha).",
+  "evidencia": "Aplicada em 24/11/2026 às 16h59 (Brasília), com o ok da Carol no cartão da thread, pelo apply_migration com o conteúdo do commit mesclado 0ca0bb4 (PR #180). Conferido só com leitura: destinacoes_fecham com prosecdef = true, search_path=public, dona dominio, execute do service_role, md5 do prosrc igual ao do arquivo (5d64077…), e nenhum gatilho adiável do public sem security definer. No histórico do Supabase ela entrou depois da 1070, na ordem dos números."
 }
