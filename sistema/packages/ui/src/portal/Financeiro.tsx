@@ -12,7 +12,7 @@ import {
   cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, razaoSocialEmBranco, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
   type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido, type ContaPagar, CATEGORIAS_SAIDA,
-  type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type FechamentoNoContrato,
+  type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type FechamentoNoContrato, type PessoaRef,
 } from "@t3jus/domain";
 import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
@@ -21,7 +21,9 @@ import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, falt
 import { contar, diaBr, diaCurto, lerDia, nomeDoMes } from "./agenda.ts";
 import { BotaoCarne, FolhaCarne } from "./Carne.tsx";
 import { JanelaBaixa, JanelaDesfazerBaixa } from "./BaixaParcela.tsx";
-import { avisoBaixaFeita, avisoDesfeita, casoPronto, nomeDaParcela, notaDaBaixa } from "./baixa.ts";
+import {
+  avisoBaixaFeita, avisoDesfeita, casoPronto, ehAnotacaoDoDesfazer, linhasDaBaixa, nomeDaParcela, notaDaBaixa, notaReembolsoBaixado, responsavelDepoisDoDesfazer,
+} from "./baixa.ts";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { diasEntre } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
@@ -957,8 +959,16 @@ function SituacaoNaFicha({ p, hoje }: { p: ParcelaDoContrato; hoje: string }) {
 
 const NOME_EVENTO: Record<string, string> = { LIGACAO: "ligou", MENSAGEM: "mandou mensagem", ANOTACAO: "anotou", PASSADA: "" };
 
-function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: string; aoAnotar: () => void }) {
+function Cobranca({ p, baixada, cliente, responsavel, hoje, aoAnotar }: {
+  p: ParcelaDoContrato | null; baixada: ParcelaDoContrato | null; cliente: string; responsavel: PessoaRef; hoje: string; aoAnotar: () => void;
+}) {
   const c = p?.cobranca;
+  // Revisão, nota 8: sem parcela em cobrança, o histórico da parcela com baixa sem receber continua aqui.
+  const h = p ?? baixada;
+  const linhas = h ? [
+    ...linhasDaBaixa(h).map((l) => ({ em: l.em, baixa: l, e: null })),
+    ...h.eventos.filter((e) => !ehAnotacaoDoDesfazer(e, h.baixaDesfeita)).map((e) => ({ em: e.em, baixa: null, e })),
+  ].sort((a, b) => (a.em < b.em ? 1 : a.em > b.em ? -1 : 0)) : [];
   return (
     <section className="folha" aria-labelledby="t-cob" style={{ overflow: "hidden" }}>
       <div className="folha-cab">
@@ -967,7 +977,9 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
           {p ? <p className="sub">{p.descricao}, de {mesReferencia(p.vencimento, hoje)}</p> : null}
         </div>
       </div>
-      {!p ? (
+      {!p && baixada ? (
+        <p className="fi-cob-sem">Nenhuma parcela de {primeiroNome(cliente)} está em cobrança. O histórico da {nomeDaParcela(baixada.descricao)} continua aqui e volta a valer se a baixa for desfeita.</p>
+      ) : !p ? (
         <p className="fi-cob-sem">Nenhuma parcela em aberto. A cobrança volta a aparecer quando houver o que receber.</p>
       ) : (
         <div className="fi-cob">
@@ -980,7 +992,7 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
                 <dt>Próxima ação</dt>
                 <dd>
                   {quandoAcao(c.proxData, hoje).replace(/^./, (x) => x.toUpperCase())}: {c.proxOque}
-                  <small>responsável: {c.proxResponsavel.nome}</small>
+                  <small>{ehAnotacaoDoDesfazer(c, p.baixaDesfeita) ? responsavelDepoisDoDesfazer(c.proxResponsavel, p.baixaDesfeita, responsavel) : `responsável: ${c.proxResponsavel.nome}`}</small>
                 </dd>
               </div>
             </dl>
@@ -993,12 +1005,21 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
           </button>
         </div>
       )}
-      {p && p.eventos.length ? (
+      {linhas.length ? (
         <div className="eventos-dia" style={{ paddingTop: 0 }}>
           <h3>Histórico de cobrança</h3>
           <ol className="eventos">
-            {p.eventos.map((e, i) => (
-              <li key={`${e.em}-${i}`}>
+            {linhas.map(({ em, baixa, e }, i) => baixa ? (
+              <li key={`${em}-${i}`}>
+                <time dateTime={em}>{diaCurto(diaDoInstante(em))}</time>
+                <span className={i === 0 ? "pto forte" : "pto"} aria-hidden="true" />
+                <div>
+                  <p><b>{baixa.quem}</b> {baixa.oque}</p>
+                  <small>{baixa.texto}</small>
+                </div>
+              </li>
+            ) : e ? (
+              <li key={`${em}-${i}`}>
                 <time dateTime={e.em}>{diaCurto(diaDoInstante(e.em))}</time>
                 <span className={i === 0 ? "pto forte" : "pto"} aria-hidden="true" />
                 <div>
@@ -1014,7 +1035,7 @@ function Cobranca({ p, hoje, aoAnotar }: { p: ParcelaDoContrato | null; hoje: st
                   </small>
                 </div>
               </li>
-            ))}
+            ) : null)}
           </ol>
         </div>
       ) : null}
@@ -1139,12 +1160,15 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                 <p className="sub">Cada parcela guarda o mês a que se refere, mesmo quando é paga depois.</p>
               </div>
               <div className="acoes">
-                {f.situacao === "ATIVO" && vivas.some((p) => p.situacao !== "PAGA") ? <BotaoCarne aoAbrir={() => setCarne(true)} /> : null}
+                {f.situacao === "ATIVO" && vivas.some((p) => p.situacao !== "PAGA" && p.situacao !== "BAIXADA") ? <BotaoCarne aoAbrir={() => setCarne(true)} /> : null}
                 {verContrato}
               </div>
             </div>
             <dl className="fi-quatro">
-              <div><dt>Contratado</dt><dd className="num">{reais(f.totais.contratado)}</dd></div>
+              <div>
+                <dt>Contratado</dt><dd className="num">{reais(f.totais.contratado)}</dd>
+                {renegociadoNum ? <dd className="fi-motivo">sem os {reais(renegociadoNum)} renegociados</dd> : null}
+              </div>
               <div><dt>Recebido</dt><dd className="num">{reais(f.totais.recebido)}</dd></div>
               <div><dt>Em atraso</dt><dd className={f.totais.atraso ? "num urg" : "num"}>{reais(f.totais.atraso)}</dd></div>
               <div><dt>A vencer</dt><dd className="num">{reais(f.totais.aVencer)}</dd></div>
@@ -1153,6 +1177,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                   <dt>{baixadoNum ? "Baixado sem receber" : "Renegociado"}</dt>
                   <dd className="num">{reais(baixadoNum || renegociadoNum)}</dd>
                   {baixadoNum && renegociadoNum ? <dd className="fi-motivo">mais {reais(renegociadoNum)} renegociados</dd> : null}
+                  {!baixadoNum && renegociadoNum ? <dd className="fi-motivo">vira parcelas novas em Contratos</dd> : null}
                 </div>
               ) : null}
             </dl>
@@ -1183,7 +1208,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                         <td data-r="Recibo e ações">
                           <div className="fi-docs">
                           {recibos.length || p.pagamentos.length ? (
-                            <div className="fi-docs">
+                            <>
                               {recibos.map((x) => (
                                 <LinkRecibo key={x.id} pagamento={x.id} numero={`${x.recibo!.ano}-${numeroRecibo(x.recibo!)}`} />
                               ))}
@@ -1197,7 +1222,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                                   <Icone nome="enviar" className="ico" />Anexar comprovante<span className="sr"> da {p.descricao.toLowerCase()}</span>
                                 </button>
                               ) : null}
-                            </div>
+                            </>
                           ) : p.situacao === "VENCIDA" || p.situacao === "PARCIAL" ? (
                             <button className="btn btn-sec btn-compacto" type="button" onClick={() => setRegistrar(p)}>
                               Registrar<span className="sr"> recebimento da {p.descricao.toLowerCase()}</span>
@@ -1243,7 +1268,8 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
           {lateral.map((x) => <FechamentoNaLateral key={`f-${x.casoId}`} fc={x} contratoId={f.id} primeira={x.casoId === primeiroFecha} />)}
           <FechadosAntes lista={antes} />
           <FolhaCarne contrato={f.id} area="FINANCEIRO" escritorio={escritorio} aberta={carne} aoAbrir={() => setCarne(true)} aoFechar={() => setCarne(false)} />
-          <Cobranca p={emCobranca} hoje={hoje} aoAnotar={() => setAnotar(true)} />
+          <Cobranca p={emCobranca} baixada={emCobranca ? null : f.parcelas.filter((x) => x.situacao === "BAIXADA").at(-1) ?? null}
+            cliente={f.cliente.nome} responsavel={f.responsavel} hoje={hoje} aoAnotar={() => setAnotar(true)} />
         </aside>
       </div>
       {registrar ? (
@@ -1393,7 +1419,9 @@ function AdiantadoNoCaso({ contas }: { contas: ContaPagar[] }) {
                 {c.pagaEm ? `Paga pelo escritório em ${diaCurto(c.pagaEm)}` : `Vence em ${diaCurto(c.vencimento)}, ainda não paga`}
                 {c.adiantada?.caso ? ` · ${c.adiantada.caso.nome}` : ""} · categoria “{CATEGORIAS_SAIDA[c.categoria]}”
               </small>
-              {c.adiantada && !c.adiantada.reembolsadoEm ? (
+              {c.reembolsoBaixado ? (
+                <p className="fi-prox">{notaReembolsoBaixado(c.reembolsoBaixado)}</p>
+              ) : c.adiantada && !c.adiantada.reembolsadoEm ? (
                 <p className="fi-prox"><Icone nome="relogio" className="ico" />Reembolso combinado: <b>{comoVolta(c)}</b></p>
               ) : null}
             </div>
@@ -1401,6 +1429,7 @@ function AdiantadoNoCaso({ contas }: { contas: ContaPagar[] }) {
               <span className="fi-v num">{reais(c.valorPago ?? c.valor)}</span>
               {c.adiantada?.reembolsadoEm
                 ? <Selo tom="ok" icone="check">Reembolsado em {diaCurto(c.adiantada.reembolsadoEm)}</Selo>
+                : c.reembolsoBaixado ? <Selo tom="neutro">Baixa sem receber</Selo>
                 : <Selo tom="atencao">A reembolsar</Selo>}
             </div>
           </li>

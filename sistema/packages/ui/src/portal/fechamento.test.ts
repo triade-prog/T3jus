@@ -52,6 +52,8 @@ describe("A janela de encerrar (F3.132, EX-17)", () => {
     expect(atalhoBaixar(reg, lista, "2026-11-18", false)).toBeNull();
     expect(atalhoBaixar(reg, lista, "2026-11-09", true)).toBeNull();
     expect(atalhoBaixar({ tipo: "link", href: "/x", rotulo: "Abrir" }, lista, "2026-11-18", true)).toBeNull();
+    // Sugestão 11 da revisão: a parcela de êxito vencida aceita a baixa como as outras (plano, seção 3, item 18).
+    expect(atalhoBaixar(reg, [{ ...lista[0]!, exito: true }], "2026-11-18", true)).toEqual({ tipo: "baixar", parcelaId: "p6", rotulo: "Dar baixa sem receber" });
     expect(custasDaParcela(lista, "p6")).toBe(41230);
     expect(custasDaParcela(lista, "outra")).toBe(0);
   });
@@ -228,5 +230,14 @@ describe("De onde veio (decisão 1)", () => {
     expect(textoOrigem(ev("financeiro.exito_nao_cobrado", { cliente: "Carlos Dias", motivo: "PERDOADO", explicacao: "Combinado com Marina" }), "X"))
       .toEqual({ fez: "marcou o êxito de Carlos como não cobrado", detalhe: "Perdoado · “Combinado com Marina”" });
     expect(textoOrigem(ev("financeiro.exito_lancado", { valor: 840000, vencimento: "2026-12-15" }), "X")).toEqual({ fez: "conferiu e lançou o êxito", detalhe: "R$\u00a08.400,00, vence 15/12/2026" });
+    // F3.139, revisão nota 5: a baixa e o desfazer não caem em "registrou uma mudança".
+    expect(textoOrigem(ev("financeiro.parcela_baixada", { parcela: "Parcela 6 de 6", motivo: "INADIMPLENCIA", valor: 100000, reembolsos: 0, custasAReembolsar: 1 }), "X"))
+      .toEqual({ fez: "deu baixa sem receber na parcela 6/6", detalhe: "Inadimplência · R$\u00a01.000,00; as custas ficaram a reembolsar, em A pagar" });
+    expect(textoOrigem(ev("financeiro.parcela_baixada", { parcela: "Parcela 6 de 6", motivo: "PERDOADA", valor: 100000, reembolsos: 1, custasAReembolsar: 0 }), "X").detalhe)
+      .toBe("Perdoada · R$\u00a01.000,00; o reembolso das custas teve baixa junto");
+    expect(textoOrigem(ev("financeiro.parcela_baixada", { parcela: "Parcela 6 de 6", motivo: "PERDOADA", valor: 100000, reembolsos: 0, custasAReembolsar: 0 }), "X").detalhe)
+      .toBe("Perdoada · R$\u00a01.000,00");
+    expect(textoOrigem(ev("financeiro.parcela_baixa_desfeita", { parcela: "Parcela 6 de 6", explicacao: "Ela pagou em dinheiro", com: "Marina Ribeiro" }), "X"))
+      .toEqual({ fez: "desfez a baixa sem receber da parcela 6/6", detalhe: "“Ela pagou em dinheiro” · próxima ação com Marina Ribeiro" });
   });
 });

@@ -8,7 +8,7 @@
 --      o "Foi paga, sim" recusa com PARCELA_BAIXADA;
 -- e o relatório (baixa em outubro, desfeita em dezembro, o fim de outubro não muda).
 begin;
-select plan(69);
+select plan(75);
 
 select ajustar_relogio(('2026-05-28 10:00-03'::timestamptz - now()));
 
@@ -198,6 +198,17 @@ select is((select a.dados ->> 'motivo' from avisos_sino a, ids where a.tipo = 'C
   'BAIXADA', 'nota 7: o sino do carnê diz que a parcela teve baixa sem receber, não que foi cancelada');
 select is((select carne_mudancas(k) -> 0 ->> 'tipo' from carnes k, ct where k.contrato_id = ct.noemi), 'BAIXADA',
   'nota 7: o "o que mudou" do carnê diz BAIXADA');
+-- Revisão do código, nota 1 (pergunta 2, PT-02): Felipe cuida do contrato, mas não tem o Financeiro.
+select is((select a.dados ->> 'quem' from avisos_sino a, ids where a.tipo = 'CARNE_DESATUALIZADO' and a.pessoa_id = ids.diego),
+  'Marina Ribeiro', 'pergunta 2: Diego, que tem o Financeiro, lê quem deu a baixa');
+select is((select jsonb_build_array(a.dados ? 'quem', a.dados ->> 'motivo', a.dados ->> 'parcela') from avisos_sino a, ids
+            where a.tipo = 'CARNE_DESATUALIZADO' and a.pessoa_id = ids.felipe),
+  '[false, "BAIXADA", "Parcela 6 de 6"]'::jsonb, 'pergunta 2, PT-02: Felipe, sem o Financeiro, lê só que a parcela teve baixa sem receber');
+-- Revisão, nota 5: "De onde veio" traz a baixa com o motivo, o valor e as custas.
+select is((select x - 'em' - 'por' from ids, ct, cs, jsonb_array_elements(contrato_fechamento_origem(rm, ct.noemi, cs.a)) x
+            where x ->> 'acao' = 'financeiro.parcela_baixada'),
+  '{"acao": "financeiro.parcela_baixada", "dados": {"motivo": "INADIMPLENCIA", "parcela": "Parcela 6 de 6", "valor": 100000, "reembolsos": 1, "custasAReembolsar": 0}}'::jsonb,
+  'nota 5: "De onde veio" traz a baixa, com o motivo, o valor e o reembolso que teve baixa junto');
 
 -- Saiu de Em atraso e de A receber, não conta como recebido, e o caso fica pronto.
 select is((select (portal_financeiro_receber(diego, rm, 'VENCIDAS') -> 'parcelas') @> jsonb_build_array(jsonb_build_object('id', p.noemi6)) from ids, p),
@@ -336,6 +347,14 @@ select is((select jsonb_build_array(v ->> 'situacao', v -> 'proximaAcao' -> 'com
 select is((select e.prox_oque || ' · ' || e.texto from cobranca_eventos e, p where e.parcela_id = p.noemi6 order by e.ordem desc limit 1),
   'Falar com Noemi Bastos Carvalho · Baixa sem receber desfeita: Noemi pagou afinal', 'nota 14: o desfazer põe alguém cuidando da parcela');
 select ok((select not conta_reembolso_baixado(cp.noemi) from cp), 'FI-25: a baixa das custas também se desfaz');
+select is((select x -> 'dados' from ids, ct, cs, jsonb_array_elements(contrato_fechamento_origem(rm, ct.noemi, cs.a)) x
+            where x ->> 'acao' = 'financeiro.parcela_baixa_desfeita'),
+  '{"com": "Marina Ribeiro", "motivo": "INADIMPLENCIA", "parcela": "Parcela 6 de 6", "valor": 100000, "explicacao": "Noemi pagou afinal"}'::jsonb,
+  'nota 5: "De onde veio" traz o desfazer, com o porquê e com quem ficou a próxima ação');
+select is((select a.dados ? 'quem' from avisos_sino a, ids where a.tipo = 'CARNE_DESATUALIZADO' and a.pessoa_id = ids.felipe),
+  false, 'pergunta 2: no desfazer, Felipe também não lê quem desfez');
+select ok(pg_get_functiondef('portal_financeiro_parcela_baixar(uuid,uuid,uuid,jsonb)'::regprocedure) ~ 'x\.escritorio_id = p_escritorio\) for share',
+  'sugestão 16: a baixa trava o contrato, e uma "Renegociada" não passa num contrato que se encerra ao mesmo tempo');
 select is((select string_agg(b.tipo, ',' order by b.ordem) from parcela_baixas b, p where b.parcela_id = p.noemi6), 'BAIXA,BAIXA,DESFEITA,DESFEITA',
   'decisão 19, PT-03: desfazer nunca apaga a baixa');
 select is((select x.ac -> 'pendencias' -> 0 ->> 'tipo' from ids, cs, lateral (select portal_financeiro_caso_acerto(diego, rm, cs.a) ac) x), 'PARCELA',

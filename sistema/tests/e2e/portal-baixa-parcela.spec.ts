@@ -47,9 +47,26 @@ const FICHA = {
   totais: { contratado: 600000, recebido: 500000, atraso: 100000, aVencer: 0, baixado: 0, renegociado: 0 }, aguardandoBase: 0,
   parcelas: [pago(1, -161), pago(2, -131), pago(3, -100), pago(4, -69), pago(5, -39), SEXTA], adiantados: [], fechamentos: [],
 };
+// Revisão, nota 4: as custas que tiveram baixa junto, na folha do adiantado.
+const CUSTAS_BAIXADAS = {
+  id: "cp1", descricao: "Custas iniciais e diligência do oficial", fornecedor: null, categoria: "CUSTAS", valor: 41230, valorPago: 41230, vencimento: dia(-150),
+  forma: "PIX", pagaEm: dia(-150), situacao: "PAGA", recorrente: null,
+  reembolsoBaixado: { motivo: "INADIMPLENCIA", por: MARINA, em: em(0, "10:14"), parcela: "Parcela 6 de 6" },
+  adiantada: { cliente: NOEMI, caso: { id: CASO, nome: "Carvalho x Construtora Lume" }, como: "PROXIMA_PARCELA", reembolsadoEm: null, parcela: null },
+};
 const FICHA_BAIXADA = {
   ...FICHA, totais: { contratado: 600000, recebido: 500000, atraso: 0, aVencer: 0, baixado: 100000, renegociado: 0 },
-  parcelas: [...FICHA.parcelas.slice(0, 5), BAIXADA],
+  parcelas: [...FICHA.parcelas.slice(0, 5), BAIXADA], adiantados: [CUSTAS_BAIXADAS],
+};
+// Revisão, nota 8: depois do desfazer, a anotação que ele grava e a baixa que se desfez.
+const DESFEITA = { por: MARINA, em: em(0, "10:31"), explicacao: "Noemi ligou e prometeu pagar em dezembro.", baixa: { motivo: "INADIMPLENCIA", por: MARINA, em: em(0, "10:14") } };
+const ANOTACAO_DESFAZER = {
+  tipo: "ANOTACAO", texto: "Baixa sem receber desfeita: Noemi ligou e prometeu pagar em dezembro.", motivo: null, motivoDesde: null, proxData: dia(1),
+  proxOque: "Falar com Noemi Bastos Carvalho", proxResponsavel: MARINA, autor: MARINA, em: em(0, "10:31"),
+};
+const FICHA_DESFEITA = {
+  ...FICHA, parcelas: [...FICHA.parcelas.slice(0, 5), { ...SEXTA, baixaDesfeita: DESFEITA, cobranca: ANOTACAO_DESFAZER,
+    eventos: [ANOTACAO_DESFAZER, { ...SEXTA.cobranca, tipo: "MENSAGEM" }] }],
 };
 const CASO_DA_BAIXA = { id: CASO, nome: "Carvalho x Construtora Lume", pronto: false, espera: true, fechado: null };
 const PREVIA = {
@@ -118,6 +135,8 @@ test.describe("Dar baixa sem receber (F3.139: FI-24, FI-25)", () => {
     const enviar = j.getByRole("button", { name: "Dar baixa sem receber na parcela 6/6" });
     await enviar.click();
     await expect(j).toContainText("Faltam 2 coisas para dar baixa sem receber.");
+    // Revisão, nota 3 (PT-10): o foco vai ao primeiro erro, o grupo de motivos, e não à explicação.
+    await expect(j.getByRole("radio").first()).toBeFocused();
     expect(pedidos.filter((p) => p.metodo === "POST" && p.caminho === BASE)).toHaveLength(0);
     await j.getByRole("radio", { name: /Inadimplência/ }).check();
     await expect(j.getByLabel("O que aconteceu")).toBeVisible();
@@ -137,6 +156,43 @@ test.describe("Dar baixa sem receber (F3.139: FI-24, FI-25)", () => {
     await expect(linha6(page)).toContainText("Inadimplência · por Marina Ribeiro em");
     await expect(linha6(page).getByRole("button", { name: /Desfazer a baixa sem receber/ })).toBeFocused();
     await expect(page.locator(".fi-quatro")).toContainText("Baixado sem receber");
+    // Revisão, nota 4: as custas com baixa junto não ficam "A reembolsar".
+    const adi = page.locator("section[aria-labelledby=t-adi]");
+    await expect(adi).toContainText("Inadimplência, por Marina Ribeiro em");
+    await expect(adi).toContainText("junto com a parcela 6/6");
+    await expect(adi).toContainText("Baixa sem receber");
+    await expect(adi).not.toContainText("A reembolsar");
+    // Revisão, nota 8: o histórico de cobrança da 6/6 fica, com a linha da baixa.
+    const cob = page.locator("section[aria-labelledby=t-cob]");
+    await expect(cob).toContainText("Nenhuma parcela de Noemi está em cobrança. O histórico da parcela 6/6 continua aqui e volta a valer se a baixa for desfeita.");
+    await expect(cob).toContainText("Marina Ribeiro deu baixa sem receber, às 10h14");
+    await expect(cob).toContainText("Inadimplência. A régua desta parcela parou, sem mandar mais nada.");
+    // Revisão, nota 9: só sobrou a baixada; não há carnê a gerar.
+    await expect(page.getByRole("button", { name: "Gerar carnê" })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("revisão, nota 2: a caixa das custas marcada não vai com \"Renegociada\", e um campo que a janela não mostra vira falha à vista", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/financeiro/contratos/${CT}`]: { corpo: FICHA },
+      [`GET ${BASE}`]: { corpo: PREVIA },
+      [`POST ${BASE}`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", mensagem: "Confira a baixa sem receber", detalhes: { campos: ["falta"] } } } },
+    });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT}`);
+    await linha6(page).getByRole("button", { name: /Dar baixa sem receber/ }).click();
+    const j = page.getByRole("dialog", { name: "Dar baixa sem receber" });
+    await j.getByRole("radio", { name: /Inadimplência/ }).check();
+    await j.getByRole("checkbox", { name: /também no reembolso das custas/ }).check();
+    await j.getByRole("radio", { name: /Renegociada/ }).check();
+    await expect(j.getByRole("checkbox", { name: /também no reembolso das custas/ })).toHaveCount(0);
+    await j.getByLabel("O que foi combinado").fill("Parcelado: 2 × R$ 500,00, em dezembro e janeiro");
+    await j.getByRole("button", { name: "Dar baixa sem receber na parcela 6/6" }).click();
+    await expect(j).toContainText("Não deu para dar baixa sem receber.");
+    const posts = pedidos.filter((p) => p.metodo === "POST" && p.caminho === BASE);
+    expect(posts).toHaveLength(1);
+    expect((posts[0]!.corpo as { reembolso: boolean }).reembolso).toBe(false);
+    await expect(j.getByRole("button", { name: "Tentar de novo" })).toBeFocused();
     await semViolacoes(page);
   });
 
@@ -164,7 +220,7 @@ test.describe("Dar baixa sem receber (F3.139: FI-24, FI-25)", () => {
   test("decisões 16 a 19: desfazer pede o porquê, avisa das custas e põe a próxima ação", async ({ page }) => {
     const pedidos = await simular(page, {
       ...comuns(),
-      [`GET /v1/escritorio/financeiro/contratos/${CT}`]: [{ corpo: FICHA_BAIXADA }, { corpo: FICHA }],
+      [`GET /v1/escritorio/financeiro/contratos/${CT}`]: [{ corpo: FICHA_BAIXADA }, { corpo: FICHA_DESFEITA }],
       [`GET ${BASE}`]: { corpo: PREVIA_BAIXADA },
       [`POST ${BASE}/desfazer`]: { corpo: { ...SEXTA, casos: [CASO_DA_BAIXA], proximaAcao: { com: MARINA, data: dia(1), cliente: NOEMI.nome } } },
     });
@@ -174,6 +230,9 @@ test.describe("Dar baixa sem receber (F3.139: FI-24, FI-25)", () => {
     await expect(j).toContainText("A parcela 6/6 volta para Em atraso, com R$ 1.000,00 a receber. Você fica com a próxima ação: falar com Noemi amanhã.");
     await expect(j).toContainText("As custas de R$ 412,30 voltam a ir junto com esta parcela.");
     await expect(j).toContainText("Felipe Matos cuida do contrato, mas não tem a área Financeiro.");
+    // Sugestões 12 e 14 da revisão.
+    await expect(j).toContainText("O reembolso das custas, R$ 412,30, que teve baixa junto, também volta para A pagar, a reembolsar.");
+    await expect(j).toContainText("A régua não manda de uma vez o que venceu durante a baixa: nenhum aviso automático sai desta parcela, e a cobrança fica com a pessoa.");
     await j.getByRole("button", { name: "Desfazer a baixa sem receber" }).click();
     await expect(j).toContainText("Escreva por que desfazer, com pelo menos 3 letras.");
     await j.getByLabel("Por que desfazer").fill("Noemi ligou e prometeu pagar em dezembro");
@@ -181,6 +240,13 @@ test.describe("Dar baixa sem receber (F3.139: FI-24, FI-25)", () => {
     await expect(page.getByRole("status").filter({ hasText: "A parcela 6/6 voltou para Em atraso." })).toContainText("A próxima ação é falar com Noemi amanhã, com você.");
     expect(pedidos.find((p) => p.metodo === "POST" && p.caminho.endsWith("/desfazer"))!.corpo).toEqual({ explicacao: "Noemi ligou e prometeu pagar em dezembro" });
     await expect(linha6(page).getByRole("button", { name: /Dar baixa sem receber/ })).toBeFocused();
+    // Revisão, nota 8: o desfazer e a baixa no histórico de cobrança, e por que a próxima ação ficou com Marina.
+    const cob = page.locator("section[aria-labelledby=t-cob]");
+    await expect(cob).toContainText("responsável: Marina Ribeiro, que desfez a baixa (Felipe, que cuida do contrato, não tem Financeiro)");
+    await expect(cob).toContainText("Marina Ribeiro desfez a baixa sem receber, às 10h31");
+    await expect(cob).toContainText("“Noemi ligou e prometeu pagar em dezembro.” A régua não manda de uma vez os passos que venceram durante a baixa.");
+    await expect(cob).toContainText("Marina Ribeiro deu baixa sem receber, às 10h14");
+    await expect(cob).not.toContainText("Marina Ribeiro anotou");
     await semViolacoes(page);
   });
 
@@ -201,6 +267,42 @@ test.describe("Dar baixa sem receber (F3.139: FI-24, FI-25)", () => {
     await expect(page.getByText("Fora da cobrança, por decisão do Financeiro.")).toBeVisible();
     await expect(page.locator("body")).not.toContainText("Inadimplência");
     await expect(page.locator("body")).not.toContainText("Cancelado: Baixa sem receber");
+    await semViolacoes(page);
+  });
+
+  test("revisão, nota 6: em Contratos, quem tem o Financeiro lê o motivo, quem e a explicação, e o âmbar leva ao Financeiro", async ({ page }) => {
+    const rec = (n: number, extra = {}) => ({ id: pc(n), tipo: "PARCELADO", descricao: `Parcela ${n} de 6`, vencimento: dia(-200 + n * 30), valor: 100000, origem: "PROGRAMADO",
+      criadoEm: em(-200, "10:00"), cancelado: null, base: null, situacao: "PAGA", recebido: 100000, falta: 0, pagaEm: dia(-200 + n * 30), ...extra });
+    const ficha = {
+      id: CT, numero: "C-2026-012", objeto: "Vício construtivo", situacao: "ATIVO", cliente: { ...NOEMI, tipo: "PF" }, responsavel: FELIPE,
+      condicoes: [{ tipo: "PARCELADO", total: 600000, parcelas: 6, primeiro: dia(-170) }], proximo: null, basePendente: null, criadoEm: em(-200, "10:00"),
+      observacoes: null, versao: 3, assinadoEm: dia(-200), assinaturaPor: MARINA, encerradoEm: null, motivoEncerramento: null, proposta: null, advogados: [MARINA],
+      financeiro: true, historico: [], mudancasPagoAntes: [], importacao: null,
+      recebimentos: [rec(1), rec(2), rec(3), rec(4), rec(5), rec(6, { cancelado: { em: em(0, "10:14"), motivo: "Baixa sem receber" }, situacao: "BAIXADA", recebido: 0, pagaEm: null,
+        baixa: { motivo: "INADIMPLENCIA", explicacao: BAIXA.explicacao, valor: 100000, por: MARINA, em: em(0, "10:14") } })],
+    };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/contratos/${CT}`]: { corpo: ficha } });
+    await page.goto(`${P}/contratos/contratos/${CT}?aba=recebimentos`);
+    const l6 = page.locator("tr").filter({ hasText: "Parcela 6 de 6" });
+    await expect(l6).toContainText("Inadimplência · por Marina Ribeiro em");
+    await expect(l6).toContainText(BAIXA.explicacao);
+    await expect(page.locator("section.dir")).toContainText("Parcela 6 de 6: baixa sem receber em");
+    await expect(page.locator("section.dir")).toContainText("Nada em aberto");
+    await expect(page.getByRole("link", { name: "Ver no Financeiro" })).toHaveAttribute("href", `/financeiro/a-receber/contratos/${CT}`);
+    await semViolacoes(page);
+    await page.goto(`${P}/contratos/contratos/${CT}`);
+    await expect(page.getByText("6 recebimentos programados · 1 com baixa sem receber.")).toBeVisible();
+  });
+
+  test("revisão, nota 7: só renegociada, a ficha explica o Contratado e para onde vai o valor", async ({ page }) => {
+    const reneg = { ...BAIXADA, baixa: { ...BAIXA, motivo: "RENEGOCIADA", explicacao: "Parcelado: 2 × R$ 250,00", reembolsos: [] } };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/contratos/${CT}`]: { corpo: {
+      ...FICHA, totais: { contratado: 500000, recebido: 500000, atraso: 0, aVencer: 0, baixado: 0, renegociado: 100000 }, parcelas: [...FICHA.parcelas.slice(0, 5), reneg],
+    } } });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT}`);
+    await expect(page.locator(".fi-quatro")).toContainText("sem os R$ 1.000,00 renegociados");
+    await expect(page.locator(".fi-quatro")).toContainText("Renegociado");
+    await expect(page.locator(".fi-quatro")).toContainText("vira parcelas novas em Contratos");
     await semViolacoes(page);
   });
 });

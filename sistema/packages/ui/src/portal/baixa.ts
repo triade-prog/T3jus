@@ -8,7 +8,7 @@ import {
 } from "@t3jus/domain";
 import { diaCurto } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
-import { parcelaCurta } from "./fechamento.ts";
+import { nomeDaParcela } from "./fechamento.ts";
 import { mesReferencia } from "./financeiro.ts";
 
 const FUSO = { timeZone: "America/Sao_Paulo" } as const;
@@ -17,12 +17,19 @@ const horaDoInstante = (em: string) => {
   const p = Object.fromEntries(new Intl.DateTimeFormat("pt-BR", { ...FUSO, hour: "numeric", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(em)).map((x) => [x.type, x.value]));
   return `${Number(p.hour)}h${p.minute}`;
 };
-const minusc = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 
-/** "Parcela 6 de 6" vira "parcela 6/6"; "Fixo" vira "parcela". */
-export function nomeDaParcela(descricao: string): string {
-  const c = parcelaCurta(descricao);
-  return /\d+\/\d+/.test(c) ? minusc(c) : `parcela ${minusc(c)}`;
+export { nomeDaParcela } from "./fechamento.ts";
+
+/** Sugestão 14 da revisão: com avisos_desde = agora, a régua de atraso não recomeça nesta parcela. */
+export const REGUA_DEPOIS_DE_DESFAZER =
+  "A régua não manda de uma vez o que venceu durante a baixa: nenhum aviso automático sai desta parcela, e a cobrança fica com a pessoa.";
+
+/** Sugestão 12 da revisão (decisão 18): a baixa das custas que foi junto também se desfaz. */
+export function textoCustasBaixadasVoltam(reembolsos: { valor: number }[]): string {
+  const v = reais(reembolsos.reduce((t, x) => t + x.valor, 0));
+  return reembolsos.length === 1
+    ? `O reembolso das custas, ${v}, que teve baixa junto, também volta para A pagar, a reembolsar.`
+    : `Os reembolsos das custas, ${v}, que tiveram baixa junto, também voltam para A pagar, a reembolsar.`;
 }
 
 /** A ajuda de cada motivo (decisão 7). */
@@ -72,6 +79,45 @@ export function textoDiasAtraso(d: number): string {
 export function notaDaBaixa(b: Pick<BaixaSemReceber, "motivo" | "por" | "em" | "recebidoAntes" | "valor">): string {
   const base = `${MOTIVOS_BAIXA[b.motivo]} · por ${b.por.nome} em ${diaCurto(diaDoInstante(b.em))}`;
   return b.recebidoAntes > 0 ? `Recebido ${reais(b.recebidoAntes)} · baixa sem receber de ${reais(b.valor)}. ${base}` : base;
+}
+
+/** Revisão, nota 6: a frase "Gera:" da condição em Contratos, com quantas tiveram baixa sem receber. */
+export function geraComBaixas(n: number, baixadas: number): string {
+  const programados = n === 1 ? "1 recebimento programado" : `${n} recebimentos programados`;
+  return `${programados}${baixadas ? ` · ${baixadas} com baixa sem receber` : ""}.`;
+}
+
+/** Revisão, nota 6: o âmbar de Contratos, para quem tem o Financeiro: "Parcela 6 de 6: baixa sem receber em 18/11". */
+export function ambarBaixaNoContrato(r: { descricao: string; baixa: { em: string } }): string {
+  return `${r.descricao}: baixa sem receber em ${diaCurto(diaDoInstante(r.baixa.em))}`;
+}
+
+/** Revisão, nota 8: as linhas do histórico de cobrança que a baixa e o desfazer escrevem (bx-feita, bx-desfeita). */
+export type LinhaDaBaixa = { em: string; quem: string; oque: string; texto: string };
+type ComBaixa = { baixa?: Pick<BaixaSemReceber, "motivo" | "por" | "em"> | null;
+  baixaDesfeita?: { por: PessoaRef; em: string; explicacao: string; baixa?: { motivo: MotivoBaixa; por: PessoaRef; em: string } | null } | null };
+export function linhasDaBaixa(p: ComBaixa): LinhaDaBaixa[] {
+  const deu = (b: { motivo: MotivoBaixa; por: PessoaRef; em: string }, depois: string): LinhaDaBaixa =>
+    ({ em: b.em, quem: b.por.nome, oque: `deu baixa sem receber, às ${horaDoInstante(b.em)}`, texto: `${MOTIVOS_BAIXA[b.motivo]}. ${depois}` });
+  if (p.baixa) return [deu(p.baixa, "A régua desta parcela parou, sem mandar mais nada.")];
+  const d = p.baixaDesfeita;
+  if (!d) return [];
+  const desfez: LinhaDaBaixa = { em: d.em, quem: d.por.nome, oque: `desfez a baixa sem receber, às ${horaDoInstante(d.em)}`,
+    texto: `“${d.explicacao}” A régua não manda de uma vez os passos que venceram durante a baixa.` };
+  return d.baixa ? [desfez, deu(d.baixa, "A cobrança parou.")] : [desfez];
+}
+/** A anotação que o desfazer grava ("Baixa sem receber desfeita: …") vira a linha acima, não uma anotação comum. */
+export const ehAnotacaoDoDesfazer = (e: { tipo: string; texto: string | null; autor: PessoaRef }, d: { por: PessoaRef } | null | undefined) =>
+  !!d && e.tipo === "ANOTACAO" && e.autor.id === d.por.id && !!e.texto?.startsWith("Baixa sem receber desfeita: ");
+/** "responsável: Marina Ribeiro, que desfez a baixa (Felipe, que cuida do contrato, não tem Financeiro)". */
+export function responsavelDepoisDoDesfazer(prox: PessoaRef, d: { por: PessoaRef } | null | undefined, responsavel: PessoaRef): string {
+  if (!d || prox.id !== d.por.id) return `responsável: ${prox.nome}`;
+  return `responsável: ${prox.nome}, que desfez a baixa${responsavel.id !== prox.id ? ` (${primeiroNome(responsavel.nome)}, que cuida do contrato, não tem Financeiro)` : ""}`;
+}
+
+/** FI-25: a nota do reembolso que teve baixa junto: "Inadimplência, por Marina Ribeiro em 18/11, junto com a parcela 6/6". */
+export function notaReembolsoBaixado(b: { motivo: MotivoBaixa; por: PessoaRef; em: string; parcela: string | null }): string {
+  return `${MOTIVOS_BAIXA[b.motivo]}, por ${b.por.nome} em ${diaCurto(diaDoInstante(b.em))}${b.parcela ? `, junto com a ${nomeDaParcela(b.parcela)}` : ""}`;
 }
 
 /** O que a recusa de conflito diz (decisão 14): outra pessoa registrou ou já deu baixa. */

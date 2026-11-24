@@ -26,7 +26,7 @@ export type Atalho =
 export function atalhoBaixar(a: Atalho | null, lista: PendenciaCaso[], hoje: string, pode: boolean): Atalho | null {
   if (!pode || a?.tipo !== "registrar") return null;
   const p = lista.find((x) => x.tipo === "PARCELA" && x.parcelaId === a.parcelaId);
-  if (!p || p.exito || !p.vencimento || p.vencimento >= hoje) return null;
+  if (!p || !p.vencimento || p.vencimento >= hoje) return null;
   return { tipo: "baixar", parcelaId: a.parcelaId, rotulo: "Dar baixa sem receber" };
 }
 
@@ -148,6 +148,13 @@ const pct = (p: number) => `${(p / 100).toLocaleString("pt-BR")}%`;
 /** "Parcela 6 de 6" vira "Parcela 6/6", como no desenho; "Fixo" e o resto ficam como estão. */
 export function parcelaCurta(descricao: string): string {
   return descricao.replace(/(\d+) de (\d+)/, "$1/$2");
+}
+
+/** "Parcela 6 de 6" vira "parcela 6/6"; "Fixo" vira "parcela fixo" (F3.139). */
+export function nomeDaParcela(descricao: string): string {
+  const c = parcelaCurta(descricao);
+  const m = c.charAt(0).toLowerCase() + c.slice(1);
+  return /\d+\/\d+/.test(c) ? m : `parcela ${m}`;
 }
 
 /** Uma linha do quadro: feito (check), falta (alerta) ou espera (relógio), cada uma dita também em texto. */
@@ -431,6 +438,18 @@ export function textoOrigem(e: EventoDeOrigem, caso: string): { fez: string; det
       const forma = s("forma") in FORMAS_PAGAMENTO ? FORMAS_PAGAMENTO[s("forma") as keyof typeof FORMAS_PAGAMENTO] : "";
       return { fez: "registrou o recebimento", detalhe: [parcelaCurta(s("parcela")), [valor, forma ? `por ${forma}` : ""].filter(Boolean).join(" ")].filter(Boolean).join(" · ") };
     }
+    // F3.139, revisão nota 5: a baixa sem receber e o desfazer, como no desenho.
+    case "financeiro.parcela_baixada": {
+      const motivo = MOTIVOS_BAIXA[s("motivo") as keyof typeof MOTIVOS_BAIXA] ?? "";
+      const reemb = typeof d.reembolsos === "number" ? d.reembolsos : 0;
+      const abertas = typeof d.custasAReembolsar === "number" ? d.custasAReembolsar : 0;
+      const custas = reemb > 0 ? "o reembolso das custas teve baixa junto" : abertas > 0 ? "as custas ficaram a reembolsar, em A pagar" : "";
+      return { fez: `deu baixa sem receber na ${s("parcela") ? nomeDaParcela(s("parcela")) : "parcela"}`,
+        detalhe: [motivo, valor].filter(Boolean).join(" · ") + (custas ? `; ${custas}` : "") };
+    }
+    case "financeiro.parcela_baixa_desfeita":
+      return { fez: `desfez a baixa sem receber da ${s("parcela") ? nomeDaParcela(s("parcela")) : "parcela"}`,
+        detalhe: [s("explicacao") ? `“${s("explicacao")}”` : "", s("com") ? `próxima ação com ${s("com")}` : ""].filter(Boolean).join(" · ") };
     default:
       return { fez: "registrou uma mudança", detalhe: caso };
   }

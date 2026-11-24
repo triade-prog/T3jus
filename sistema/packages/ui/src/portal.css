@@ -1722,7 +1722,6 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 .fi-tab tr.fi-cancelada .num{text-decoration:line-through}
 /* F3.139: a parcela com baixa sem receber fica na tabela, sem o tom de atraso e sem riscar. */
 .fi-tab tr.fi-baixada td{color:var(--texto-2)}
-.fi-docs .fi-docs{gap:0}
 .fi-docs .fi-bx{min-height:44px;margin-top:4px;gap:6px;white-space:normal;text-align:left;max-width:100%;height:auto}
 .fi-tab .fi-acao .btn{white-space:nowrap}
 .fi-quem a{min-height:44px}

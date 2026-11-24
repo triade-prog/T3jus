@@ -18,7 +18,7 @@ import { primeiroNome } from "./equipe.ts";
 import { mesReferencia, textoCobranca } from "./financeiro.ts";
 import { chamarPortal } from "./Moldura.tsx";
 import {
-  AJUDA_MOTIVO, casoPronto, comQuemFica, conflitoDaBaixa, errosDaBaixa, nomeDaParcela, notaDaBaixa, rotuloExplicacao, SEM_RENEGOCIAR, textoCustas,
+  AJUDA_MOTIVO, casoPronto, REGUA_DEPOIS_DE_DESFAZER, textoCustasBaixadasVoltam, comQuemFica, conflitoDaBaixa, errosDaBaixa, nomeDaParcela, notaDaBaixa, rotuloExplicacao, SEM_RENEGOCIAR, textoCustas,
   textoDiasAtraso, tituloErrosBaixa, type ConflitoBaixa,
 } from "./baixa.ts";
 
@@ -76,29 +76,37 @@ export function JanelaBaixa({ p, f, hoje, aoFechar, aoFeito }: {
   const casos = (pv?.casos ?? []).filter((c) => c.espera && !c.fechado);
   const quemContratos = juntarComE((pv?.quemContratos ?? []).map((x) => primeiroNome(x.nome)));
 
+  // Revisão, nota 3 (decisão 13, PT-10): o foco vai ao primeiro erro; sem motivo, ao primeiro rádio.
+  const focarErro = (e: { motivo?: string }) =>
+    e.motivo ? requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('input[name="bx-motivo"]')?.focus()) : focarPrimeiroErro(corpo.current);
+  // Revisão, nota 2: a caixa das custas some com "Renegociada", e o pedido segue o que está à vista.
+  const comReembolso = reembolso && motivo !== "RENEGOCIADA" && valorSemDestino > 0;
+
   async function enviar() {
     if (saindo.current || !pv) return;
     setFalha(null);
     const e = errosDaBaixa(motivo, explicacao);
     setErros(e);
-    if (e.motivo || e.explicacao) return focarPrimeiroErro(corpo.current);
+    if (e.motivo || e.explicacao) return focarErro(e);
     saindo.current = true;
     setEnviando(true);
     const res = await chamarPortal<BaixaFeita>(`/v1/escritorio/financeiro/parcelas/${p.id}/baixa`, {
-      metodo: "POST", corpo: { motivo, explicacao: explicacao.trim(), falta: pv.falta, reembolso: reembolso && valorSemDestino > 0 },
+      metodo: "POST", corpo: { motivo, explicacao: explicacao.trim(), falta: pv.falta, reembolso: comReembolso },
     });
     saindo.current = false;
     setEnviando(false);
-    if (res.ok) return aoFeito(res.dados, reembolso ? 0 : valorSemDestino);
+    if (res.ok) return aoFeito(res.dados, comReembolso ? 0 : valorSemDestino);
     const c = conflitoDaBaixa(res.erro.detalhes, hoje);
     if (c) return setConflito(c);
     const campos = (res.erro.detalhes?.campos ?? []) as string[];
-    if (res.erro.codigo === "VALIDATION_ERROR" && campos.length) {
-      setErros({
+    // Revisão, nota 2: um campo que a janela não mostra vira falha à vista, nunca um clique sem resposta.
+    if (res.erro.codigo === "VALIDATION_ERROR" && campos.length && campos.every((x) => x === "motivo" || x === "explicacao")) {
+      const novos = {
         ...(campos.includes("motivo") ? { motivo: "Escolha o motivo." } : {}),
         ...(campos.includes("explicacao") ? { explicacao: "Escreva a explicação, com pelo menos 3 letras." } : {}),
-      });
-      return focarPrimeiroErro(corpo.current);
+      };
+      setErros(novos);
+      return focarErro(novos);
     }
     setFalha(textoDoErro(res.erro));
   }
@@ -287,12 +295,13 @@ export function JanelaDesfazerBaixa({ p, f, eu, aoFechar, aoFeito }: {
           </Aviso>
         ))}
         {pv?.custasVoltam.length ? <p>As custas de {reais(pv.custasVoltam.reduce((t, c) => t + c.valor, 0))} voltam a ir junto com esta parcela.</p> : null}
+        {b?.reembolsos.length ? <p>{textoCustasBaixadasVoltam(b.reembolsos)}</p> : null}
         <ul className="np-oque" aria-label="O que vai acontecer">
           <li><Icone nome="seta" className="ico" /><span>Volta para <b>Em atraso</b>, com {reais(b?.valor ?? p.falta)} a receber.{b?.recebidoAntes ? ` O recebido de ${reais(b.recebidoAntes)} não muda.` : ""}</span></li>
           {pv && com ? (
             <li><Icone nome="pessoa-mais" className="ico" /><span>Entra uma anotação de cobrança, “Baixa desfeita”, e a próxima ação: falar com {cliente} amanhã, {com}.{responsavelSemFin ? ` ${f.responsavel.nome} cuida do contrato, mas não tem a área Financeiro.` : ""}</span></li>
           ) : null}
-          <li><Icone nome="sino" className="ico" /><span>A régua volta a valer só daqui para a frente: não manda de uma vez o que venceu durante a baixa.</span></li>
+          <li><Icone nome="sino" className="ico" /><span>{REGUA_DEPOIS_DE_DESFAZER}</span></li>
           <li><Icone nome="historico" className="ico" /><span>A baixa sem receber e o desfazer ficam no histórico, cada um com quem, quando e por quê.</span></li>
         </ul>
         <div className="campo">

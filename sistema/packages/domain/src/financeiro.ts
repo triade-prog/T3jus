@@ -107,7 +107,7 @@ export interface ParcelaLinha {
   /** A baixa sem receber em vigor (F3.139). Sem a 1010, não vem. */
   baixa?: BaixaSemReceber | null;
   /** O último desfazer, quando a parcela voltou para Em atraso. */
-  baixaDesfeita?: { por: PessoaRef; em: string; explicacao: string } | null;
+  baixaDesfeita?: { por: PessoaRef; em: string; explicacao: string; baixa?: { motivo: MotivoBaixa; por: PessoaRef; em: string } | null } | null;
 }
 
 // ------------------------------------------------------------------ Baixa sem receber (F3.139: FI-24, FI-25)
@@ -415,6 +415,8 @@ export interface ContaPagar {
   emprestimo?: ContaDoEmprestimo | null;
   /** A conta do mês cancelada ao encerrar a recorrência (F3.24): fica no histórico, fora das somas. */
   cancelada?: { em: string; por: PessoaRef; motivo: string } | null;
+  /** O reembolso que teve baixa sem receber junto com a parcela (F3.139, FI-25). Sem a 1010, não vem. */
+  reembolsoBaixado?: { motivo: MotivoBaixa; por: PessoaRef; em: string; parcela: string | null } | null;
   adiantada: {
     cliente: { id: string; nome: string };
     /** O caso em que o escritório adiantou (F3.23); null nas contas antigas ou de cliente sem caso. */

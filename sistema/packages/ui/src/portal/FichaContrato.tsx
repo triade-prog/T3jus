@@ -28,6 +28,7 @@ import { tamanhoLegivel } from "../console/documentos.ts";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { ROTAS_FINANCEIRO, seloParcela } from "./financeiro.ts";
 import { MolduraArea } from "./MolduraArea.tsx";
+import { ambarBaixaNoContrato, geraComBaixas, notaDaBaixa } from "./baixa.ts";
 import { HistoricoRecebimentos, JanelaFoiPaga, JanelaNaoPaga, textoAtraso } from "./NaoPaga.tsx";
 import { BaixarContratoNoCabecalho, DocumentosDaFicha, feitoDosAssinados, JanelaAssinados, proximoDosDocumentos } from "./Procuracoes.tsx";
 
@@ -40,9 +41,10 @@ const horaDoInstante = (em: string) => new Intl.DateTimeFormat("pt-BR", { ...fus
 
 /** F3.139: a parcela com baixa sem receber continua na programação do contrato (conta no "x de 6"). */
 const naProgramacao = (r: RecebimentoPrevisto) => !r.cancelado || !!r.baixa || !!r.foraDaCobranca;
-/** "Baixa sem receber em 18/11" (com Financeiro) ou só "Fora da cobrança, por decisão do Financeiro." (pergunta 2). */
+/** Revisão, nota 6: com Financeiro, "Inadimplência · por Marina Ribeiro em 18/11"; sem ele, só
+ *  "Fora da cobrança, por decisão do Financeiro." (pergunta 2). A explicação vai em outra linha. */
 export function notaForaDaCobranca(r: Pick<RecebimentoPrevisto, "baixa" | "foraDaCobranca">): string | null {
-  if (r.baixa) return `Baixa sem receber em ${dataBr(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(r.baixa.em))).slice(0, 5)}, no Financeiro, em A receber.`;
+  if (r.baixa) return notaDaBaixa({ ...r.baixa, recebidoAntes: 0 });
   return r.foraDaCobranca ? "Fora da cobrança, por decisão do Financeiro." : null;
 }
 
@@ -55,7 +57,9 @@ function geraNoContrato(f: FichaContrato) {
       case "FIXO":
       case "PARCELADO":
       case "MENSAL":
-        return assinado ? `${n === 1 ? "1 recebimento programado" : `${n} recebimentos programados`}.` : "Vira recebimento programado quando a assinatura for registrada.";
+        return assinado
+          ? geraComBaixas(n, f.recebimentos.filter((r) => r.tipo === c.tipo && r.baixa).length)
+          : "Vira recebimento programado quando a assinatura for registrada.";
       case "EXITO":
         return "Quando o caso chegar à etapa, quem marca informa o valor e o Financeiro é avisado.";
       case "SUCUMBENCIA":
@@ -131,6 +135,25 @@ function Dir({ f, aoAssinar, docs, aoAnexarDocs }: { f: FichaContrato; aoAssinar
     );
   }
   const p = f.proximo;
+  // Revisão, nota 6 (estado 17): nada à frente e uma parcela com baixa sem receber; quem tem o Financeiro vai até ela.
+  const semAberto = f.recebimentos.every((r) => r.baixa || r.cancelado || r.foraDaCobranca || r.situacao === "PAGA");
+  const baixada = !p && f.financeiro && semAberto ? f.recebimentos.filter((r) => r.baixa).at(-1) : undefined;
+  if (baixada?.baixa) {
+    return (
+      <section className="dir campo-ambar" aria-labelledby="t-pr">
+        <p className="sobretitulo" id="t-pr">Próximo recebimento</p>
+        <div className="hn-dir-linha">
+          <p className="grande">Nenhum</p>
+          <Selo tom="ok" icone="check">Nada em aberto</Selo>
+        </div>
+        <p className="hn-oque"><b>{ambarBaixaNoContrato({ descricao: baixada.descricao, baixa: baixada.baixa })}</b><br />no Financeiro, em A receber</p>
+        <a className="btn btn-pri" href={ROTAS_FINANCEIRO.contrato(f.id)}>
+          <Icone nome="carteira" className="ico" />
+          Ver no Financeiro
+        </a>
+      </section>
+    );
+  }
   return (
     <section className="dir campo-ambar" aria-labelledby="t-pr">
       <p className="sobretitulo" id="t-pr">Próximo recebimento</p>
@@ -529,7 +552,7 @@ function LinhaRecebimento({ r, f, hoje, aoFoiPaga, comSituacao }: {
             ) : null}
           </span>
         ) : r.descricao}
-        {notaForaDaCobranca(r) ? <><br /><small>{notaForaDaCobranca(r)}</small></> : r.cancelado ? <><br /><small>Cancelado: {r.cancelado.motivo}</small></> : null}
+        {notaForaDaCobranca(r) ? <><br /><small>{notaForaDaCobranca(r)}</small>{r.baixa ? <><br /><small>{r.baixa.explicacao}</small></> : null}</> : r.cancelado ? <><br /><small>Cancelado: {r.cancelado.motivo}</small></> : null}
         {r.base ? <><br /><small>Base de {reais(r.base.valor)}, informada por {r.base.por.nome}</small></> : null}
       </td>
       <td data-r="Condição">{c ? <SeloTipo c={c} curto /> : null}</td>

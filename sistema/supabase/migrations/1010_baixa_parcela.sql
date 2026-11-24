@@ -228,7 +228,10 @@ as $$
   select parcela_linha_sem_baixa(r) || jsonb_build_object(
     'baixa', (select parcela_baixa_json(b) from parcela_baixas b where b.id = r.baixa_id),
     'baixaDesfeita', case when r.baixa_id is null then (
-      select jsonb_build_object('por', pessoa_ref(d.feito_por), 'em', d.feito_em, 'explicacao', d.explicacao)
+      -- Revisão, nota 8: a baixa que se desfez vai junto, para a linha "deu baixa" do histórico de cobrança.
+      select jsonb_build_object('por', pessoa_ref(d.feito_por), 'em', d.feito_em, 'explicacao', d.explicacao,
+               'baixa', (select jsonb_build_object('motivo', x.motivo, 'por', pessoa_ref(x.feito_por), 'em', x.feito_em)
+                           from parcela_baixas x where x.id = d.desfaz_id))
         from parcela_baixas d where d.parcela_id = r.id and d.tipo = 'DESFEITA'
          and exists (select 1 from parcela_baixas b where b.id = d.desfaz_id and b.reembolso_conta_id is null)
        order by d.ordem desc limit 1) end)
@@ -334,8 +337,11 @@ declare
   e text[] := '{}';
 begin
   perform parcela_baixa_entrar(p_pessoa, p_escritorio);
+  -- Sugestão 16 da revisão: a trava no contrato segura o encerramento até a baixa terminar. O
+  -- contrato trava antes da parcela, na mesma ordem do encerramento, para não haver impasse.
+  select * into c from contratos where id = (select x.contrato_id from recebimentos_previstos x
+                                              where x.id = p_parcela and x.escritorio_id = p_escritorio) for share;
   select * into r from recebimentos_previstos where id = p_parcela and escritorio_id = p_escritorio for update;
-  select * into c from contratos where id = r.contrato_id;
   if r.id is null or r.valor is null or c.estado is null or c.estado not in ('ATIVO', 'ENCERRADO') then
     raise exception 'Parcela não encontrada' using errcode = 'TC404';
   end if;
@@ -389,7 +395,9 @@ begin
   -- Contratos mostra a quem não tem o Financeiro. A explicação fica só em parcela_baixas.
   perform registrar_historico('financeiro.parcela_baixada', 'recebimentos_previstos', r.id::text,
     jsonb_build_object('baixa', b.id, 'contrato', c.id, 'parcela', r.descricao, 'motivo', v_motivo, 'valor', v_falta,
-                       'recebidoAntes', v_rec, 'reembolsos', v_n_reemb));
+                       'recebidoAntes', v_rec, 'reembolsos', v_n_reemb,
+                       -- As custas sem outra parcela que ficaram a reembolsar, em A pagar (revisão, nota 5).
+                       'custasAReembolsar', (select count(*) from jsonb_array_elements(v_custas) x where x -> 'depois' = 'null'::jsonb) - v_n_reemb));
 
   -- Pergunta 3b: quem tem Contratos recebe o combinado, se quem deu a baixa não tem Contratos.
   if v_motivo = 'RENEGOCIADA' and p_pessoa not in (select * from pessoas_com_area(p_escritorio, 'CONTRATOS', 'contratos.editar')) then
@@ -458,7 +466,8 @@ begin
   values (p_escritorio, r.id, 'ANOTACAO', left('Baixa sem receber desfeita: ' || v_expl, 1000),
           v_hoje + 1, left('Falar com ' || k.nome, 300), v_resp, p_pessoa);
   perform registrar_historico('financeiro.parcela_baixa_desfeita', 'recebimentos_previstos', r.id::text,
-    jsonb_build_object('baixa', b.id, 'contrato', c.id, 'parcela', r.descricao, 'motivo', b.motivo, 'valor', b.valor));
+    jsonb_build_object('baixa', b.id, 'contrato', c.id, 'parcela', r.descricao, 'motivo', b.motivo, 'valor', b.valor,
+                       'responsavel', v_resp));
   return parcela_linha(r) || jsonb_build_object('proximaAcao', jsonb_build_object('com', pessoa_ref(v_resp), 'data', v_hoje + 1, 'cliente', k.nome),
                                                 'casos', parcela_casos_do_acerto(r));
 end $$;
@@ -873,6 +882,14 @@ select t1010_trocar('avisos_sino_parcela_do_carne()',
   $q$    case when new.baixa_id is not null and old.baixa_id is null then 'BAIXADA'
          when new.baixa_id is null and old.baixa_id is not null then 'BAIXA_DESFEITA'
          when new.cancelado_em is not null and old.cancelado_em is null then 'CANCELADA'$q$);
+-- Revisão do código, nota 1 (pergunta 2, PT-02): no aviso do carnê, quem deu ou desfez a baixa só vai
+-- a quem tem o Financeiro; o responsável sem o Financeiro lê só "a parcela teve baixa sem receber".
+select t1010_trocar('carne_avisar_desatualizado(carnes,uuid,text,text)',
+  $q$        'gerou', v_pessoa = k.gerado_por));$q$,
+  $q$        'gerou', v_pessoa = k.gerado_por)
+        - case when p_motivo in ('BAIXADA', 'BAIXA_DESFEITA')
+                    and v_pessoa not in (select * from pessoas_com_area(k.escritorio_id, 'FINANCEIRO', 'financeiro.editar'))
+               then 'quem' else '' end);$q$);
 select t1010_trocar('carne_ordem_parcelas(uuid)',
   $q$r.valor is not null and r.cancelado_em is null$q$,
   $q$r.valor is not null and (r.cancelado_em is null or r.baixa_id is not null)$q$);
@@ -961,6 +978,18 @@ end $$;
 select t1010_trocar('contrato_fechamento_origem(uuid,uuid,uuid)',
   $q$        and h.acao = 'financeiro.recebimento'$q$,
   $q$        and h.acao in ('financeiro.recebimento', 'financeiro.parcela_baixada', 'financeiro.parcela_baixa_desfeita')$q$);
+-- Revisão, nota 5: o texto da baixa e do desfazer. A explicação do desfazer vem de parcela_baixas
+-- (o histórico não a guarda), e a próxima ação diz com quem ficou.
+select t1010_trocar('contrato_fechamento_origem(uuid,uuid,uuid)',
+  $q$             'explicacao', u.dados ->> 'explicacao',$q$,
+  $q$             'explicacao', case when u.acao = 'financeiro.parcela_baixa_desfeita'
+                                then (select x.explicacao from parcela_baixas x
+                                       where x.escritorio_id = p_escritorio and x.tipo = 'DESFEITA' and x.desfaz_id::text = u.dados ->> 'baixa')
+                                else u.dados ->> 'explicacao' end,
+             'reembolsos', u.dados -> 'reembolsos',
+             'custasAReembolsar', u.dados -> 'custasAReembolsar',
+             'com', case when u.acao = 'financeiro.parcela_baixa_desfeita'
+                         then (select p.nome from pessoas p where p.id::text = u.dados ->> 'responsavel') end,$q$);
 
 -- ---------------------------------------------------------------------------------------
 -- 15. A IA do escritório (pergunta 5): a parcela baixada é "assunto da equipe", sem valor nem
