@@ -4,7 +4,8 @@
   "refs": [
     "PA-07"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 90,
-  "nota": "Aplicar a 1000 depois da 0990 (conferir com list_migrations); depois publicar a api-portal (proposta_docx.ts chama portal_proposta_timbrado, que só existe com a 1000) e, por fim, o Portal. Depois, no escritório de demonstração: baixar uma proposta e gerar um contrato padrão, abrir os dois .docx e o PDF do contrato. Proposta baixada de novo sai com o cabeçalho novo; documentos já emitidos não mudam."
+  "nota": "Aplicar a 1000 (a 0990 não depende dela e entrou na main depois); depois publicar a api-portal (proposta_docx.ts chama portal_proposta_timbrado, que só existe com a 1000) e, por fim, o Portal. Depois, no escritório de demonstração: baixar uma proposta e gerar um contrato padrão, abrir os dois .docx e o PDF do contrato. Proposta baixada de novo sai com o cabeçalho novo; documentos já emitidos não mudam. Falta só o teste à mão no escritório de demonstração.",
+  "evidencia": "PR #161 mesclado em 24/11/2026, 8h13 (Bahia). Migration 1000_timbrado_proposta_recebimento aplicada no Supabase em 24/11/2026, ~8h15 (Bahia), com o ok da Carol (24/11, 0h08); portal_proposta_timbrado, portal_recebimento e recebimento_sem_timbrado no banco. api-portal v39 publicada no d2348c9 (main com #161 e #162), saude 200. Portal na Vercel em produção no 0b5e837 (main com o #161, PR #166) em 24/11/2026, ~8h25 (Bahia)."
 }
