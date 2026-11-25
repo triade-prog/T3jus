@@ -4,10 +4,10 @@
 // tela depois de entrar com o acesso fechado. A API é simulada; aqui se testa a tela, a
 // acessibilidade e o que ela manda.
 import { expect, test } from "@playwright/test";
-import { C, CA, CLIENTES, d, ficha, h, SESSAO, semViolacoes, simular } from "./console-dados.ts";
+import { agora, C, CA, CLIENTES, d, ficha, fixarRelogio, h, semViolacoes, SESSAO, simular } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
-const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(agora));
 const somar = (iso: string, dias: number) => {
   const [a, m, x] = iso.split("-").map(Number) as [number, number, number];
   return new Date(Date.UTC(a, m - 1, x + dias)).toISOString().slice(0, 10);
@@ -34,6 +34,9 @@ const encerramento = (situacao: "CONSULTA" | "FECHADO" | "MARCADO", fimEm = hoje
   ...datas(fimEm, situacao), motivo: "O escritório pediu o fim do contrato.", registradoEm: h(0), estagioAntes: "ATIVO",
   por: { id: CA.pessoaId, nome: CA.nome }, exportadoEm: null,
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("F0.14: encerrar e reabrir o contrato no Console", () => {
   test("encerrar: datas do quadro, erros presos aos campos, o que vai ao servidor e a ficha só de leitura", async ({ page }) => {

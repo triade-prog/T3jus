@@ -4,7 +4,7 @@
 // a ficha do caso com "Antes de seguir" e a folha "Documentos para começar" em primeiro. A API é
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -21,7 +21,7 @@ const ESCRITORIO = {
   socios: ["Marina Ribeiro"], pessoas: 5, outrosEscritorios: 0, funcoes: ["SOCIO"], cnpj: null, cidade: "São Paulo", uf: "SP", endereco: null,
   contatos: [], ultimaExportacao: null,
 };
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 
 const FICHA = {
   id: CLI, tipo: "PF", nome: "Antônia Ferreira Prado", documento: "52998224725", nacionalidade: "brasileira", estadoCivil: "VIUVO", profissao: "Aposentada",
@@ -86,6 +86,9 @@ const comuns = (ficha: unknown = FICHA) => ({
   "/v1/escritorio/pessoas": { corpo: { pessoas: [MARINA, LARISSA] } },
   [`GET /v1/escritorio/clientes/${CLI}/documentos`]: { corpo: DOCS },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Documentos para começar na abertura do caso (EX-18)", () => {
   test("Abrir o caso: a lista vem pronta com o que já temos, e o que vai ao servidor", async ({ page }) => {

@@ -6,7 +6,7 @@
 // F3.156: a despesa adiantada ao cliente e o quadro "O que a lei obriga a guardar", pelo desenho
 // aprovado em docs/design/aprovadas/portal-exclusao-despesas (Carol, 24/11/2026, alternativa A).
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -20,7 +20,7 @@ const BASE = {
 };
 const ESC_MARINA = { ...BASE, pessoa: "Marina Ribeiro", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"], funcoes: ["SOCIO"] };
 const ESC_DIEGO = { ...BASE, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (iso: string) => iso.split("-").reverse().join("/");
 
 const FICHA = {
@@ -62,6 +62,9 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
   return pedidos;
 }
 const ficha = `/v1/escritorio/clientes/${CLI}`;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Pedido de exclusão do titular (F1.15, PT-11)", () => {
   test("a dona exclui: confere o pedido e o nome; a ficha vira “Cliente excluído”", async ({ page }) => {

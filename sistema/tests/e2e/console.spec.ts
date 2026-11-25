@@ -4,7 +4,10 @@
 // regras de quem vê o quê estão nos testes do banco e das APIs. As outras telas do Console v1
 // estão em console-v1.spec.ts. No celular, a tabela da carteira vira cartões.
 import { expect, test } from "@playwright/test";
-import { C, CLIENTES, d, ficha, id, IN, SESSAO, semViolacoes, simular } from "./console-dados.ts";
+import { C, CLIENTES, d, ficha, fixarRelogio, id, IN, semViolacoes, SESSAO, simular } from "./console-dados.ts";
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Console: carteira de escritórios", () => {
   test("mostra só a carteira da pessoa, com resumo, o que pede agora, filtro e busca", async ({ page }) => {

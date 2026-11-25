@@ -4,7 +4,7 @@
 // a IA, a equipe e os momentos; o contexto pelas áreas; assumir, escrever, devolver e passar.
 // A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -38,7 +38,7 @@ const HEL = "c0000000-0000-4000-8000-000000000001";
 const ANT = "c0000000-0000-4000-8000-000000000002";
 const RAF = "c0000000-0000-4000-8000-000000000003";
 const GAB = "c0000000-0000-4000-8000-000000000004";
-const atras = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+const atras = (min: number) => new Date(agora - min * 60_000).toISOString();
 
 const linha = (o: Record<string, unknown>) => ({
   cliente: null, quemEscreve: null, papel: null, resolvidaEm: null, motivo: null, responsavel: null, assumidaPor: null,
@@ -130,6 +130,9 @@ function comuns(esc: unknown = ESCRITORIO, lista: unknown = LISTA): Record<strin
 }
 
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Conversas do Portal, Mensagens (PD-07, EX-10, AP-02)", () => {
   test("fila: quem espera, há quanto tempo, o motivo e o responsável; o número de quem espera no menu", async ({ page }) => {
@@ -285,7 +288,7 @@ test.describe("Conversas do Portal, Mensagens (PD-07, EX-10, AP-02)", () => {
   });
 
   test("F3.64: Avisos automáticos mostra o que saiu, a situação, a mensagem escolhida e os avisos ligados", async ({ page }) => {
-    const hoje = new Date().toISOString();
+    const hoje = new Date(agora).toISOString();
     const aviso = (id: string, gatilho: string, nome: string, extra: Record<string, unknown> = {}) => ({
       id, mensagemId: id, execucaoId: id, gatilho, automacao: { id: "a-" + gatilho, nome }, nome, detalhe: null,
       cliente: { id: GAB, nome: "Gabriela Teixeira" }, para: { nome: "Gabriela Teixeira", papel: null }, conversaId: GAB, em: hoje,

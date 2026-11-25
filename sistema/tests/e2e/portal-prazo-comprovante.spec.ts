@@ -3,7 +3,7 @@
 // Documentos para começar, a prévia do efeito, salvar, o erro, a falha, a equipe e o reflexo na
 // ficha do cliente. A API é simulada; aqui se testa a tela, a acessibilidade e o que vai ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -15,7 +15,7 @@ const ESCRITORIO = {
   contatos: [], ultimaExportacao: null,
 };
 const LARISSA = { ...ESCRITORIO, pessoa: "Larissa Costa", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] };
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const DOCS_URL = "/v1/escritorio/juridico/documentos-inicio";
 const PRAZO_URL = "/v1/escritorio/juridico/documentos-inicio/prazo-comprovante";
 
@@ -74,6 +74,9 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
   return pedidos;
 }
 const folhaPrazo = (page: Page) => page.getByRole("region", { name: "Prazo do comprovante" });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Prazo do comprovante (F3.134, AP-08)", () => {
   test("a sócia dona muda para 60 dias: vê o efeito antes, salva e a lista diz o prazo novo", async ({ page }) => {

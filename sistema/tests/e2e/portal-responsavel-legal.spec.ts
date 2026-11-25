@@ -5,7 +5,7 @@
 // "Baixar o termo" na ficha e Gerar documentos da curatela como no estado gerar-curatela. A API é
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -41,7 +41,7 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
 }
 
 /** Hoje em Brasília, e a data de quem faz n anos daqui a d dias. */
-const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora));
 const nasceu = (anos: number, dias: number) => {
   const x = new Date(`${hoje}T12:00:00Z`);
   x.setUTCDate(x.getUTCDate() + dias);
@@ -69,6 +69,9 @@ const comuns = (ficha: unknown) => ({
   "GET /v1/escritorio/avisos": { corpo: { novos: 0, total: 0, itens: [] } },
   [`GET /v1/escritorio/clientes/${CLI}`]: { corpo: ficha },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Quem assina pelo cliente (F3.98)", () => {
   test("cadastro: menor pede a data e quem assina, faz a conta e manda os campos", async ({ page }) => {
@@ -1256,7 +1259,7 @@ test.describe("Editar vindo de Gerar documentos (F3.160)", () => {
     const GER = "6e000000-0000-4000-8000-000000000001";
     const DOC = (n: number) => `d0c00000-0000-4000-8000-00000000000${n}`;
     const usado = {
-      geracaoId: GER, em: new Date().toISOString(), por: MARINA, contrato: { id: CT, numero: "C-2026-034" },
+      geracaoId: GER, em: new Date(agora).toISOString(), por: MARINA, contrato: { id: CT, numero: "C-2026-034" },
       documentos: MODELOS.slice(0, 2).map((m, i) => ({ id: DOC(i + 1), tipo: m.tipo, nome: m.nome, arquivo: `${m.tipo.toLowerCase()}-pedro.docx`, numero: 1, modelo: "Padrão T3jus", marcados: MARCADOS })),
       outorgados: [{ pessoaId: MARINA.id, nome: MARINA.nome, frase: "OAB/SP nº 214.538" }],
       poderes: ["ACORDO", "DESISTIR"], outroPoder: null, cidadeData: "São Paulo, hoje", representante: null,
