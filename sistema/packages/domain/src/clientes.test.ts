@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cadastrarClienteSchema, cpfValido, diasEntre, formatarDocumento, hojeBrasilia, registrarAtendimentoSchema } from "./clientes.ts";
+import { cadastrarClienteSchema, cpfValido, diaBrasilia, diasEntre, formatarDocumento, hojeBrasilia, registrarAtendimentoSchema } from "./clientes.ts";
 
 const base = { tipo: "PF", nome: " Helena Prado ", contatos: [{ nome: "Helena", telefone: "(11) 98888-7777", principal: true }] };
 
@@ -38,5 +38,26 @@ describe("Clientes do Portal (AP-01, AP-02)", () => {
   it("datas: dias entre duas datas e hoje em Brasília", () => {
     expect(diasEntre("2026-11-13", "2026-11-18")).toBe(5);
     expect(hojeBrasilia(new Date("2026-11-19T02:30:00Z"))).toBe("2026-11-18");
+  });
+
+  it("F3.175: dia de Brasília de um instante às 22h30, como o banco manda", () => {
+    // 22h30 do dia 24 em Brasília é 01h30 do dia 25 em UTC.
+    expect(diaBrasilia("2026-11-25T01:30:00+00:00")).toBe("2026-11-24");
+    expect(diaBrasilia("2026-11-25T01:30:00.000Z")).toBe("2026-11-24");
+    expect(diaBrasilia("2026-11-25T01:30:00.123456+00:00")).toBe("2026-11-24");
+    expect(diaBrasilia("2026-11-25 01:30:00+00")).toBe("2026-11-24");
+    expect(diaBrasilia("2026-11-24T22:30:00-03:00")).toBe("2026-11-24");
+    // Meia-noite exata em Brasília já é o dia seguinte.
+    expect(diaBrasilia("2026-11-25T03:00:00Z")).toBe("2026-11-25");
+    expect(diaBrasilia("2026-11-25T02:59:59Z")).toBe("2026-11-24");
+  });
+
+  it("F3.175: data pura volta igual, texto sem fuso é cortado como vem e inválido não lança", () => {
+    expect(diaBrasilia("2026-11-24")).toBe("2026-11-24");
+    expect(diaBrasilia("2026-11-24T22:30:00")).toBe("2026-11-24");
+    expect(diaBrasilia("2026-11-24T23:59")).toBe("2026-11-24");
+    expect(diaBrasilia("lixo")).toBe("lixo");
+    expect(diaBrasilia("2026-13-45T25:00:00Z")).toBe("2026-13-45");
+    expect(diaBrasilia("")).toBe("");
   });
 });

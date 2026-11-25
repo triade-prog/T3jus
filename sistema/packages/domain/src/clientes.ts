@@ -604,7 +604,23 @@ export function diasEntre(de: string, ate: string): number {
   return Math.round((Date.parse(`${ate}T00:00:00Z`) - Date.parse(`${de}T00:00:00Z`)) / 86_400_000);
 }
 
+// Um formatador só, criado uma vez: hojeBrasilia e diaBrasilia rodam uma vez por linha nas listas.
+const DIA_EM_BRASILIA = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+
 /** Hoje no horário de Brasília (aaaa-mm-dd). */
 export function hojeBrasilia(agora = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(agora);
+  return DIA_EM_BRASILIA.format(agora);
+}
+
+// Texto com hora e designador de fuso no fim: "Z", "+00:00", "-03:00", "+0000" ou "+00".
+const INSTANTE_COM_FUSO = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}.*(?:[zZ]|[+-]\d{2}(?::?\d{2})?)$/;
+
+/** Dia (aaaa-mm-dd) em Brasília de um texto (F3.175). Um instante com fuso, como o banco manda
+ *  um timestamptz ("2026-11-25T01:30:00+00:00", 22h30 do dia 24 em Brasília), vira o dia de
+ *  Brasília. Uma data pura (aaaa-mm-dd) volta igual. Um texto com hora e sem fuso já é a hora de
+ *  Brasília e é cortado como vem. Nunca lança: texto inválido volta cortado. */
+export function diaBrasilia(v: string): string {
+  if (!INSTANTE_COM_FUSO.test(v)) return v.slice(0, 10);
+  const t = Date.parse(v);
+  return Number.isNaN(t) ? v.slice(0, 10) : DIA_EM_BRASILIA.format(new Date(t));
 }

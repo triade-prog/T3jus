@@ -20,6 +20,15 @@ describe("EX-06: períodos da agenda", () => {
   });
   it("datas e horas em Brasília", () => {
     expect([diaDe("2026-11-19T02:30:00Z"), horaDe("2026-11-19T02:30:00Z")]).toEqual(["2026-11-18", "23:30"]);
+  });
+  it("F3.175: o dia de Brasília de um instante às 22h30, de uma data pura e de um texto inválido", () => {
+    expect(diaDe("2026-11-25T01:30:00+00:00")).toBe("2026-11-24");
+    expect(diaDe("2026-11-25T01:30:00.000Z")).toBe("2026-11-24");
+    expect(diaDe("2026-11-24T22:30:00-03:00")).toBe("2026-11-24");
+    expect(diaDe("2026-11-25T03:00:00Z")).toBe("2026-11-25");
+    expect(diaDe("2026-11-24")).toBe("2026-11-24");
+    expect(diaDe("2026-11-24T22:30:00")).toBe("2026-11-24");
+    expect(diaDe("lixo")).toBe("lixo");
     expect(lerDia("19/11/2026")).toBe("2026-11-19");
     expect(lerDia("31/02/2026")).toBeNull();
     expect([lerHorario("9:30"), lerHorario("16h00"), lerHorario("25:00")]).toEqual(["09:30", "16:00", null]);

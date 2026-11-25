@@ -65,6 +65,8 @@ export function somarMeses(d: string, n: number): string {
   alvo.setUTCDate(Math.min(dd, ultimo));
   return alvo.toISOString().slice(0, 10);
 }
+/** "24/11/2026" de uma data pura (aaaa-mm-dd), só data pura: também monta documentos. Um instante
+ *  (timestamptz) passa antes por diaBrasilia (F3.175). */
 export const dataBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
 export const reais = (c: number) => formatar(dinheiro(c));
 /** 3000 → "30%"; 1250 → "12,5%". */

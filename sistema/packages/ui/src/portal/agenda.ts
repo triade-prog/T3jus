@@ -1,7 +1,7 @@
 // Regras de tela da Agenda (docs/design/aprovadas/portal-agenda-conversas): datas no horário de
 // Brasília, períodos de mês, semana e dia, posição na grade e textos. Sem React, com testes.
 
-import { TIPOS_COMPROMISSO_CURTO, diaUtil, proximoHorario, type CompromissoLinha, type TipoCompromisso } from "@t3jus/domain";
+import { TIPOS_COMPROMISSO_CURTO, diaBrasilia, diaUtil, proximoHorario, type CompromissoLinha, type TipoCompromisso } from "@t3jus/domain";
 
 export type VisaoAgenda = "mes" | "semana" | "dia";
 
@@ -76,16 +76,19 @@ export const diaCurto = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 /** "18/11/2026" */
 export const diaBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
 
+const HORA_EM_BRASILIA = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+});
+
 function partes(isoHora: string): { dia: string; hora: string } {
-  const p = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-  }).formatToParts(new Date(isoHora));
+  const p = HORA_EM_BRASILIA.formatToParts(new Date(isoHora));
   const v = (t: string) => p.find((x) => x.type === t)?.value ?? "";
   return { dia: `${v("year")}-${v("month")}-${v("day")}`, hora: `${v("hour")}:${v("minute")}` };
 }
 
-/** Dia (aaaa-mm-dd) em Brasília de um instante. */
-export const diaDe = (isoHora: string) => partes(isoHora).dia;
+/** Dia (aaaa-mm-dd) em Brasília de um instante; uma data pura volta igual e um texto inválido
+ *  não lança. É o diaBrasilia do domínio (F3.175). */
+export const diaDe = (isoHora: string) => diaBrasilia(isoHora);
 /** Hora (hh:mm) em Brasília de um instante. */
 export const horaDe = (isoHora: string) => partes(isoHora).hora;
 export function minutos(hhmm: string): number {
