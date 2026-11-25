@@ -2,7 +2,7 @@
 // em docs/design/aprovadas/portal-sem-avisos-sino. A API é simulada; aqui se testa a tela, a
 // acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -18,9 +18,9 @@ const ESCRITORIO = {
   contatos: [], ultimaExportacao: null,
 };
 const LARISSA = { ...ESCRITORIO, pessoa: "Larissa Costa", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] };
-const hojeBr = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date());
-const amanhaBr = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 864e5));
-const hojeIso = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+const hojeBr = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(agora));
+const amanhaBr = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + 864e5));
+const hojeIso = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora));
 
 const FICHA = {
   id: CLI, tipo: "PF", nome: "Antônia Ferreira Prado", documento: "52998224725", nacionalidade: "brasileira", estadoCivil: "VIUVO", profissao: "aposentada",
@@ -66,6 +66,9 @@ const ficha = (avisos: Resp | Resp[], extra: Record<string, Resp | Resp[]> = {})
   "GET /v1/escritorio/avisos": { corpo: { novos: 0, total: 0, itens: [] } },
   ...extra,
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Ficha do cliente: não receber avisos (F3.63, PA-03)", () => {
   test("registrar: erros presos ao campo, depois manda quem pediu, como e o dia; a ficha mostra o selo", async ({ page }) => {

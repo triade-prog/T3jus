@@ -4,7 +4,7 @@
 // Casos e processos; e a assinatura que sugere juntar ao caso que o cliente já tem. A API é
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -22,7 +22,7 @@ const ESCRITORIO = {
 };
 const SO_CONTRATOS = { ...ESCRITORIO, pessoa: "Bianca Lopes", dono: false, areas: ["CONTRATOS"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 
 const SEM_CASO = {
   podeAbrir: true, quemAbre: null,
@@ -69,6 +69,9 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
   "GET /v1/escritorio/contratos": { corpo: LISTA },
   "GET /v1/escritorio/contratos/pedidos": { corpo: [] },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Jornada do cliente: o caso da assinatura (CH-11, CH-12)", () => {
   test("Contratos: o filtro Assinados sem caso e a janela que marca 'não tem caso'", async ({ page }) => {

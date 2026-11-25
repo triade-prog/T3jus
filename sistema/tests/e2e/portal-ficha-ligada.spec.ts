@@ -4,7 +4,7 @@
 // Casos; o "No escritório"; e a assinatura que abre o caso. A API é simulada; aqui se testa a
 // tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -24,7 +24,7 @@ const ESCRITORIO = {
 };
 const COM_DIEGO = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL", "FINANCEIRO"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 
 const linha = (n: number, nome: string, passo: Record<string, unknown>) => ({
@@ -87,6 +87,9 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
   return pedidos;
 }
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Ficha do cliente ligada (F3.110, F3.111)", () => {
   test("lista: coluna Próximo passo, e Gerar proposta só na linha sem proposta", async ({ page }) => {
@@ -166,7 +169,7 @@ test.describe("Ficha do cliente ligada (F3.110, F3.111)", () => {
       [`GET /v1/escritorio/clientes/${cid(1)}`]: { corpo: FICHA },
       "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
       [`GET /v1/escritorio/clientes/${cid(1)}/anterior`]: [anterior({}), anterior({ lembretes: [], dispensados: [{
-        id: "d1000000-0000-4000-8000-000000000001", valor: 375000, caso: null, motivo: "JA_NEGOCIADO", detalhe: null, em: new Date().toISOString(), por: MARINA }] })],
+        id: "d1000000-0000-4000-8000-000000000001", valor: 375000, caso: null, motivo: "JA_NEGOCIADO", detalhe: null, em: new Date(agora).toISOString(), por: MARINA }] })],
       "POST /v1/escritorio/contratos/lembretes/d1000000-0000-4000-8000-000000000001/dispensar": { corpo: { lembrete: { id: "d1000000-0000-4000-8000-000000000001" }, totais: {}, clientesAbertos: 0 } },
     });
     await page.goto(`${P}/clientes/${cid(1)}`);

@@ -2,7 +2,7 @@
 // docs/design/aprovadas/portal-pendencias-pequenas (estados atalho, janela, erro, registrado e
 // ja-fora). A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -40,9 +40,9 @@ const K_HELIO = "b0000000-0000-4000-8000-000000000001";
 const K_MARTA = "b0000000-0000-4000-8000-000000000002";
 const K_JOANA = "b0000000-0000-4000-8000-000000000003";
 const M_PEDIDO = "f0000000-0000-4000-8000-000000000004";
-const atras = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
-const hojeBr = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date());
-const hojeIso = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+const atras = (min: number) => new Date(agora - min * 60_000).toISOString();
+const hojeBr = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(agora));
+const hojeIso = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora));
 const PEDIDO = "Doutora, dá para parar de mandar aquelas mensagens automáticas de parcela? Eu pago sempre em dia.";
 
 const linha = (o: Record<string, unknown>) => ({
@@ -130,6 +130,9 @@ async function contexto(page: Page, nome: string) {
   if (ehCelular(page)) await page.locator("summary").filter({ hasText: `Sobre ${nome}` }).click();
   return page.getByRole(ehCelular(page) ? "group" : "complementary", { name: new RegExp(`Sobre ${nome}`) });
 }
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Conversa: não receber avisos (F3.65, PA-03)", () => {
   test("o atalho abre a janela já com a mensagem, quem escreve e o WhatsApp; registra ligado à conversa", async ({ page }) => {

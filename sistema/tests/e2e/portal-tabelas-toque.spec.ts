@@ -11,6 +11,7 @@
 // 6. As duas tabelas da Equipe têm nome, e a cópia que sobe a 1024 é lida uma vez só.
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { fixarRelogio } from "./console-dados.ts";
 import { AGENDA, CONTRATOS, ESCRITORIO, FICHA, LARISSA, MARINA, cid } from "./portal-tabelas-toque-dados.ts";
 
 const P = "http://localhost:3000";
@@ -165,6 +166,8 @@ test.describe("F3.165 · a Agenda do celular fica como estava (teste 3)", () => 
   for (const w of [390, 320]) for (const ver of ["semana", "mes"] as const) {
     test(`Agenda a ${w}, vista ${ver}: o canto do cartão abre a ficha, e a borda de um dia não abre o vizinho`, async ({ page }) => {
       soCelular();
+      // O mini-calendário do mês muda de 6 para 5 semanas conforme o mês: relógio em AGORA, novembro de 2026 (F3.164).
+      await fixarRelogio(page);
       await simular(page, { "/v1/escritorio": ESCRITORIO, "/v1/escritorio/pessoas": { pessoas: [LARISSA] }, "/v1/escritorio/clientes": { comercial: true, clientes: [] }, "/v1/escritorio/agenda": AGENDA });
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(`${P}/agenda${ver === "mes" ? "?ver=mes" : ""}`);

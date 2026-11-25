@@ -6,7 +6,7 @@
 // acessibilidade e o que ela manda.
 import { quadroAntesDoCommit } from "./quadro.ts";
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { fixarRelogio, hojeAs, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -38,7 +38,7 @@ async function simular(page: Page, rotas: Record<string, Resp | ((corpo: unknown
 const MARINA = { id: "aa000000-0000-4000-8000-000000000001", nome: "Marina Ribeiro" };
 const DIEGO = { id: "aa000000-0000-4000-8000-000000000002", nome: "Diego Almeida" };
 const PAULA = { id: "aa000000-0000-4000-8000-000000000003", nome: "Paula Nunes" };
-const hoje = (hh: string) => new Date(`${new Date().toISOString().slice(0, 10)}T${hh}:00-03:00`).toISOString();
+const hoje = hojeAs;
 
 const CHAVES = ["PAGAMENTO_RECEBIDO", "PARCELA_VAI_VENCER", "PARCELA_ATRASO", "ETAPA_CASO", "LEMBRETE_AUDIENCIA", "PRESTACAO_CONTAS"];
 const avisos = (sit: string, mudar: Record<string, object> = {}) =>
@@ -81,6 +81,9 @@ const IA = {
 async function entrar(page: Page, esc = ESCRITORIO) {
   return { "/v1/escritorio": { corpo: esc } } as Record<string, Resp>;
 }
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test("PA-04: sem número, a sócia dona liga passo a passo; fixo pede ligação de voz; o rascunho fica salvo", async ({ page }) => {
   const pedidos = await simular(page, {
