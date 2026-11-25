@@ -394,7 +394,7 @@ function HonorariosConteudo() {
                       <a className="ct-nome" href={ROTAS_CONTRATOS.contrato(x.contrato.id)}>{x.cliente}</a>
                       <small>{x.contrato.numero} · {x.descricao.toLowerCase()}</small>
                     </div>
-                    <p className="ct-calc">{reais(x.base)} dá <b>{reais(x.valor)}</b><small>Informada por {x.por.nome} em {diaCurto(x.em.slice(0, 10))}</small></p>
+                    <p className="ct-calc">{reais(x.base)} dá <b>{reais(x.valor)}</b><small>Informada por {x.por.nome} em {diaCurto(diaDe(x.em))}</small></p>
                     <Selo tom="andamento">a receber em {diaCurto(x.vencimento)}</Selo>
                   </li>
                 ))}

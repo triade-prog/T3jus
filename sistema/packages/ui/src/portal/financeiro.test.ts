@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ParcelaLinha } from "@t3jus/domain";
-import { situacaoPrestacao, gruposPorCliente, gruposPorVencimento, mesReferencia, origemConta, quandoAcao, quandoConta, seloParcela } from "./financeiro.ts";
+import type { CobrancaAtual, ParcelaLinha } from "@t3jus/domain";
+import { situacaoPrestacao, gruposPorCliente, textoCobranca, gruposPorVencimento, mesReferencia, origemConta, quandoAcao, quandoConta, seloParcela } from "./financeiro.ts";
 
 const parc = (vencimento: string, falta: number, contrato = "c1", cliente = "Hélio"): ParcelaLinha => ({
   id: vencimento + contrato, tipo: "PARCELADO", descricao: "Parcela 1 de 6", vencimento, valor: falta, recebido: 0, falta, forma: null,
@@ -63,5 +63,12 @@ describe("Prestação de contas pela fila do WhatsApp (F3.44)", () => {
     expect(situacaoPrestacao({ ...p, envio: "NA_FILA" })).toBe("na fila do WhatsApp do escritório desde 01/12, às 10h15");
     expect(situacaoPrestacao({ ...p, envio: "LIDA", envioEm: "2026-12-01T14:02:00Z" })).toBe("lida pelo cliente em 01/12, às 11h02");
     expect(situacaoPrestacao({ ...p, envio: "FALHOU", motivo: "Número sem WhatsApp" })).toBe("não entregue: número sem WhatsApp");
+  });
+});
+
+describe("F3.175: a última cobrança no dia de Brasília", () => {
+  it("uma ligação às 22h30 de Brasília é do próprio dia", () => {
+    const c = { tipo: "LIGACAO", em: "2026-11-25T01:30:00+00:00" } as CobrancaAtual;
+    expect(textoCobranca(c)).toBe("Ligação em 24/11");
   });
 });

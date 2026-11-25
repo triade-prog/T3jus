@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { SocioCliente } from "@t3jus/domain";
 import { contarCarteira, filtrarCarteira, pendencias, situacaoSocio, tarefasDaCarteira, type ClienteCarteira } from "./carteira.ts";
 import { esperando, haQuanto, iniciais } from "./tempo.ts";
+import { dataBr as dataBrCobranca } from "./cobranca.ts";
+import { dataBr as dataBrFim } from "./FimContrato.tsx";
 
 const AGORA = new Date("2026-11-18T15:00:00Z"); // 12h em Brasília
 
@@ -86,5 +88,17 @@ describe("carteira (CO-01)", () => {
     expect(filtrarCarteira(lista, { filtro: "ENCERRADOS", termo: "", ordem: "FIM" }).map((c) => c.id)).toEqual(["c", "m"]);
     expect(filtrarCarteira(lista, { filtro: "ENCERRADOS", termo: "", ordem: "PROXIMO" }).map((c) => c.id)).toEqual(["c", "m"]);
     expect(tarefasDaCarteira(lista, AGORA).map((t) => t.clienteId)).toEqual(["a"]);
+  });
+});
+
+describe("F3.175: datas do Console no dia de Brasília", () => {
+  it("o dataBr da cobrança: instante às 22h30 de Brasília e data pura", () => {
+    expect(dataBrCobranca("2026-11-25T01:30:00+00:00")).toBe("24/11/2026");
+    expect(dataBrCobranca("2026-11-24")).toBe("24/11/2026");
+  });
+  it("o dataBr do fim do contrato (Carteira: acesso fechado às 22h30)", () => {
+    expect(dataBrFim("2026-11-25T01:30:00+00:00")).toBe("24/11/2026");
+    expect(dataBrFim("2026-11-25T01:30:00+00:00", true)).toBe("24/11");
+    expect(dataBrFim("2026-12-19")).toBe("19/12/2026");
   });
 });

@@ -4,7 +4,7 @@
 // usando (o banco filtra): resumo por estágio, o que pede a pessoa agora e a lista.
 
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
-import { criarEscritorioSchema, ESTAGIOS, UFS } from "@t3jus/domain";
+import { criarEscritorioSchema, diaBrasilia, ESTAGIOS, UFS } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import {
@@ -83,7 +83,7 @@ function ProximoPasso({ c, celular }: { c: ClienteCarteira; celular?: boolean })
 function socioDoEncerrado(c: ClienteCarteira, padrao: { nome: string | null; detalhe: string }) {
   const e = c.encerramento;
   if (!e) return padrao;
-  if (e.exportadoEm) return { ...padrao, detalhe: `Baixou os dados em ${dataBr(e.exportadoEm.slice(0, 10), true)}` };
+  if (e.exportadoEm) return { ...padrao, detalhe: `Baixou os dados em ${dataBr(diaBrasilia(e.exportadoEm), true)}` };
   if (e.situacao === "FECHADO") return { ...padrao, detalhe: `Sem acesso desde ${dataBr(e.acessoFechadoEm ?? e.acessoFechaEm, true)}` };
   return { ...padrao, detalhe: "Ainda não baixou os dados" };
 }

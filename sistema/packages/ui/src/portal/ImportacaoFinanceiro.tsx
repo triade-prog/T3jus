@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  CAMPOS_LANCAMENTO_IMPORTACAO, dataBr, MOTIVOS_DISPENSA, NOMES_CAMPO_IMPORTACAO, reais,
+  CAMPOS_LANCAMENTO_IMPORTACAO, dataBr, diaBrasilia, MOTIVOS_DISPENSA, NOMES_CAMPO_IMPORTACAO, reais,
   type CampoImportacao, type ColunaImportacao, type DecisaoLinha, type FinanceiroAnterior, type Importacao, type LinhaPrevia,
   type ParesImportacao, type ProblemaLinha, type ResumoPrevia,
 } from "@t3jus/domain";
@@ -490,7 +490,7 @@ export function FolhaSistemaAntigo({ cliente, nome = "", podeCriarContrato, pode
       <div className="folha-cab">
         <div>
           <h2 id="t-antigo">Do {sistema}</h2>
-          <p className="sub">Só informação: fora do Caixa, de A receber e dos relatórios do contador.{a.importacao ? ` Importado em ${dataBr(a.importacao.em.slice(0, 10))}.` : ""}</p>
+          <p className="sub">Só informação: fora do Caixa, de A receber e dos relatórios do contador.{a.importacao ? ` Importado em ${dataBr(diaBrasilia(a.importacao.em))}.` : ""}</p>
         </div>
       </div>
       <div style={{ padding: "0 24px 20px", display: "grid", gap: 12 }}>

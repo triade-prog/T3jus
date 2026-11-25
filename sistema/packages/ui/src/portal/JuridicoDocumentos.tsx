@@ -131,7 +131,7 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
                     <span className="selo selo-ativo">{d.daFicha ? "Da ficha" : "Chegou"}</span>
                     <span>{d.tipoPessoal ? "Pessoal" : "Do caso"} · {d.daFicha
                       ? `guardado na ficha${cliente ? ` de ${cliente}` : ""}`
-                      : `marcado${d.chegouPor ? ` por ${primeiroNome(d.chegouPor.nome)}` : ""} em ${ddmm(d.chegouEm.slice(0, 10))}`}</span>
+                      : `marcado${d.chegouPor ? ` por ${primeiroNome(d.chegouPor.nome)}` : ""} em ${ddmm(diaDe(d.chegouEm))}`}</span>
                   </p>
                 </div>
               </li>
@@ -152,7 +152,7 @@ export function DocumentosDoCaso({ f, andamento, aoPedir, aoPedirDeNovo, aoChego
                 <span className="doc-nome">{d.nome}</span>
                 <p className="doc-meta">
                   <span className="selo selo-neutro">{CATEGORIAS_DOCUMENTO_CASO[d.categoria]}</span>
-                  <span>{tipoLegivel(d.tipo)} · {tamanhoLegivel(d.tamanho)} · {d.enviadoPor.nome} · {dataBr(d.enviadoEm.slice(0, 10))}</span>
+                  <span>{tipoLegivel(d.tipo)} · {tamanhoLegivel(d.tamanho)} · {d.enviadoPor.nome} · {dataBr(diaDe(d.enviadoEm))}</span>
                 </p>
               </div>
               <div className="doc-acoes">

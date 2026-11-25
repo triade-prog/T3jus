@@ -7,7 +7,7 @@
 // nem conta dias úteis: a tela diz isso. O lembrete no Início e no sino chega numa próxima entrega.
 
 import { useEffect, useRef, useState } from "react";
-import { dataBr, formatarCnj, type DocumentoFaltando, type FichaCaso, type LinhaCaso, type ListaCasos, type ListaPrazos, type ListaTarefas, type MostrarPrazos, type Prazo, type Tarefa, type VisaoTarefas } from "@t3jus/domain";
+import { dataBr, diaBrasilia, formatarCnj, type DocumentoFaltando, type FichaCaso, type LinhaCaso, type ListaCasos, type ListaPrazos, type ListaTarefas, type MostrarPrazos, type Prazo, type Tarefa, type VisaoTarefas } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -406,7 +406,7 @@ function LinhaPrazo({ p, hoje, aoCumprir, aoEditar }: { p: Prazo; hoje: string; 
           <span className="sr">Prazo final {dataBr(p.dataFinal)}. </span>
           {sub}
           {p.fazerAte && !p.cumpridoEm ? <>{sub ? " · " : ""}<b>{textoFazerAte(p.fazerAte, hoje)}</b></> : null}
-          {p.cumpridoEm ? <>{sub ? " · " : ""}Cumprido em {ddmm(p.cumpridoEm.slice(0, 10))}{p.cumpridoPor ? ` por ${p.cumpridoPor.nome}` : ""}</> : null}
+          {p.cumpridoEm ? <>{sub ? " · " : ""}Cumprido em {ddmm(diaBrasilia(p.cumpridoEm))}{p.cumpridoPor ? ` por ${p.cumpridoPor.nome}` : ""}</> : null}
         </small>
       </div>
       <div className="jr-pz-quem">
@@ -566,7 +566,7 @@ function LinhaTarefa({ t, hoje, comCaso = true, comQuem = true, aoMarcar, aoCheg
       <div className="jr-tf-oque">
         <label htmlFor={id} className="jr-tf-t">{t.titulo}<span className="sr">{feita ? " (concluída; desmarque para reabrir)" : ""}</span></label>
         {comCaso ? <a className="jr-tf-caso" href={ROTAS_JURIDICO.caso(t.caso.id)}>{t.caso.nome}</a>
-          : <small>{t.responsavel.nome} · {feita ? `concluída${t.concluidaPor ? ` por ${t.concluidaPor.nome}` : ""} em ${ddmm(t.concluidaEm!.slice(0, 10))}` : `vence ${t.venceEm === hoje ? "hoje" : ddmm(t.venceEm)}`}</small>}
+          : <small>{t.responsavel.nome} · {feita ? `concluída${t.concluidaPor ? ` por ${t.concluidaPor.nome}` : ""} em ${ddmm(diaBrasilia(t.concluidaEm!))}` : `vence ${t.venceEm === hoje ? "hoje" : ddmm(t.venceEm)}`}</small>}
         {t.esperando && !feita ? (
           <p className="jr-espera">
             <span><Icone nome="relogio" className="ico ico-s" />{textoEsperando(t.esperando, t.esperandoDesde, hoje)}</span>
@@ -781,7 +781,7 @@ export function PrazosETarefas({ f, escritorio, aoNovoPrazo, aoNovaTarefa, aoMud
                   <p className="jr-tf-t">{p.cumpridoEm ? <s>{p.descricao}</s> : p.descricao}</p>
                   <small>
                     {p.cumpridoEm
-                      ? `Cumprido em ${ddmm(p.cumpridoEm.slice(0, 10))}${p.cumpridoPor ? ` por ${p.cumpridoPor.nome}` : ""}`
+                      ? `Cumprido em ${ddmm(diaBrasilia(p.cumpridoEm))}${p.cumpridoPor ? ` por ${p.cumpridoPor.nome}` : ""}`
                       : `Prazo final ${dataBr(p.dataFinal)}${p.fazerAte ? ` · ${textoFazerAte(p.fazerAte, f.hoje)}, ${ddmm(p.fazerAte)}` : ""} · ${p.responsavel.nome}`}
                   </small>
                 </div>

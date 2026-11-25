@@ -8,7 +8,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  conferirDocx, ErroDocx, formatarCnj,
+  conferirDocx, ErroDocx, formatarCnj, hojeBrasilia,
   type ComentarioPeticao, type DadosPeticao, type FichaPeticao, type ListaModelos, type ResultadoGerar, type RevisorPossivel, type VersaoPeticao,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
@@ -81,7 +81,7 @@ function ArquivoPeticao({ f, aoBaixar, baixando, foco }: { f: FichaPeticao; aoBa
 
 const PRAZO = ({ f }: { f: FichaPeticao }) => {
   if (!f.caso.prazo) return null;
-  const u = urgenciaPrazo(f.caso.prazo.data, new Date().toISOString().slice(0, 10));
+  const u = urgenciaPrazo(f.caso.prazo.data, hojeBrasilia());
   return <p className="pe-cuidado" style={{ margin: 0 }}><Icone nome="relogio" className="ico" /><span><b>O prazo do caso: {u.texto.toLowerCase()}.</b> {f.caso.prazo.descricao}.</span></p>;
 };
 
@@ -451,7 +451,7 @@ function Revisar({ f, eu, recarregar, aoDecidido }: { f: FichaPeticao; eu: strin
             </div>
             {recado ? <blockquote className="pe-recado">{recado}</blockquote> : null}
             {f.caso.prazo ? (() => {
-              const u = urgenciaPrazo(f.caso.prazo.data, new Date().toISOString().slice(0, 10));
+              const u = urgenciaPrazo(f.caso.prazo.data, hojeBrasilia());
               return <p className="pe-prazo"><Selo tom={u.tom === "urgente" ? "urgente" : u.tom === "atencao" ? "atencao" : "neutro"} icone="alerta">Prazo do caso: {u.texto.toLowerCase()}</Selo><span>{f.caso.prazo.descricao}</span></p>;
             })() : null}
             <dl className="pe-resumo pe-dados-rev">

@@ -7,7 +7,7 @@
 // No alto, "Plano e faturas", só do sócio dono (F1.20, CO-06).
 
 import { useEffect, useId, useRef, useState } from "react";
-import { CONTATO_T3JUS, type DadosEscritorioDocumentos } from "@t3jus/domain";
+import { CONTATO_T3JUS, diaBrasilia, type DadosEscritorioDocumentos } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, ErroAoCarregar, Janela } from "../console/pecas.tsx";
@@ -50,7 +50,7 @@ export function nomeArquivoExportacao(escritorio: string, iso: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 50);
-  return `${base || "escritorio"}-${iso.slice(0, 10)}.json`;
+  return `${base || "escritorio"}-${diaBrasilia(iso)}.json`;
 }
 
 /** O pé da folha de dados quando o Portal está só para consulta (F0.14, CO-06). */

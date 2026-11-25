@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avisoDispensado, avisoTrazido, buscaVazia, conflitoDispensa, contagemLembretes, grupoDoEndereco, ROTAS_LEMBRETES, textoCaso, textoLancamentos } from "./lembretes.ts";
+import { avisoDispensado, avisoTrazido, buscaVazia, conflitoDispensa, contagemLembretes, grupoDoEndereco, grupoVazio, ROTAS_LEMBRETES, textoCaso, textoLancamentos } from "./lembretes.ts";
 import { resumoEncerrados, textoComoEncerrou, textoOrigemCaso } from "./juridico.ts";
 
 const marina = { id: "p1", nome: "Marina Ribeiro" };
@@ -72,5 +72,11 @@ describe("o caso que veio de outro sistema (F3.143, F3.148)", () => {
       linhaOrigem: 14, abaOrigem: "Processos", registroOrigem: null, arquivadoEm: null, veioEncerrado: false, etapaLigada: { ordem: 4, nome: "Instrução" } });
     expect(t).toEqual({ titulo: "Veio da importação do Astrea", importadoEm: "21/11/2026, 16h52", rotuloEtapa: "Etapa no Astrea",
       etapa: "“Audiência marcada”, ligada a 4. Instrução", rotuloOnde: "No Astrea", onde: "Linha P14 da aba Processos" });
+  });
+});
+
+describe("F3.175: o dia da importação no grupo vazio", () => {
+  it("uma importação às 22h30 de Brasília é do próprio dia", () => {
+    expect(grupoVazio("ABERTO", 1, "ASTREA", "2026-11-25T01:30:00+00:00").texto).toContain("importação do Astrea de 24/11 virou contrato");
   });
 });

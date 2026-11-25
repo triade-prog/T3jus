@@ -1,7 +1,7 @@
 // Histórico administrativo do Console (CO-04): cada ação do banco vira uma frase para quem
 // lê. As pessoas citadas nos dados vêm por id; quem chama diz o nome que conhece.
 
-import { CATEGORIAS_DOCUMENTO, ESTAGIOS, FUNCOES_CONSOLE } from "@t3jus/domain";
+import { CATEGORIAS_DOCUMENTO, diaBrasilia, ESTAGIOS, FUNCOES_CONSOLE } from "@t3jus/domain";
 
 export interface EventoHistorico {
   id: number;
@@ -30,9 +30,9 @@ const CAMPOS_FICHA: Record<string, string> = {
 const nomeFuncao = (f: unknown) => (typeof f === "string" && f in FUNCOES_CONSOLE ? FUNCOES_CONSOLE[f as keyof typeof FUNCOES_CONSOLE] : String(f ?? ""));
 const lista = (v: unknown) => (Array.isArray(v) ? v.map(nomeFuncao).join(", ") : "");
 
-/** "2026-11-30" vira "30/11/2026". */
-function dataDoEvento(v: unknown): string {
-  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10).split("-").reverse().join("/") : "uma data";
+/** "2026-11-30" vira "30/11/2026"; um instante vira o dia de Brasília (F3.175). */
+export function dataDoEvento(v: unknown): string {
+  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? diaBrasilia(v).split("-").reverse().join("/") : "uma data";
 }
 
 export function fraseDoEvento(e: EventoHistorico, nomeDe: (id: string) => string | null = () => null): FraseEvento {

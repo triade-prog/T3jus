@@ -5,7 +5,7 @@
 // Implantação e Suporte veem o plano e a situação, sem valores nem faturas (o banco já esconde).
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { FORMAS_ASSINATURA, mesPorExtenso, UFS_BRASIL, type FormaAssinatura } from "@t3jus/domain";
+import { diaBrasilia, FORMAS_ASSINATURA, mesPorExtenso, UFS_BRASIL, type FormaAssinatura } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { brl, dataBr, enderecoEmLinha, sedeParaCobranca, textoEvento, textoPessoas, type AssinaturaCb, type AssinaturaResposta, type FaturaCb } from "./cobranca.ts";
@@ -968,7 +968,7 @@ function MiniHistorico({ r }: { r: AssinaturaResposta }) {
           const t = textoEvento(e);
           return (
             <li key={e.id}>
-              <span>{dataBr(e.em.slice(0, 10))}</span>
+              <span>{dataBr(diaBrasilia(e.em))}</span>
               {t.quem} {t.acao}
               {t.detalhe ? ` · ${t.detalhe}` : ""}
               {t.motivo ? (
@@ -1270,7 +1270,7 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
           <div className="cb-txt">
             <p className="sobretitulo">Portal só para consulta</p>
             <h2 id={`${ids}-atr`}>
-              A equipe da {nome} só consulta, desde {s.soConsultaDesde!.slice(0, 10) === r.hoje ? "hoje" : dataBr(s.soConsultaDesde!)}
+              A equipe da {nome} só consulta, desde {diaBrasilia(s.soConsultaDesde!) === r.hoje ? "hoje" : dataBr(s.soConsultaDesde!)}
             </h2>
             <p>
               Todos veem tudo e o sócio dono baixa os dados, mas ninguém cria nem muda nada.{" "}

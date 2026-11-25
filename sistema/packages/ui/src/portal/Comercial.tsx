@@ -12,7 +12,7 @@ import {
 import { Icone } from "../Icone.tsx";
 import { Carregando, ErroAoCarregar, Estado } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
-import { contar, diaCurto } from "./agenda.ts";
+import { contar, diaCurto, diaDe } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
 import { ateSemana, faixaVencidos, nomeSituacao, quandoRetorno, ROTAS_COMERCIAL, SELO_SITUACAO, taxa, textoPeriodo, textoUltimo } from "./comercial.ts";
 import { SeloTipo } from "./Honorarios.tsx";
@@ -282,7 +282,7 @@ function AtendimentosConteudo() {
                   <li key={p.id}>
                     <a href={ROTAS_COMERCIAL.proposta(p.id)}>{p.numero} · {p.cliente}</a>
                     <small>
-                      {p.situacao === "NEGOCIACAO" ? "Em negociação" : p.enviadaEm ? `Enviada em ${diaCurto(p.enviadaEm.slice(0, 10))}` : "Enviada"} · com {p.responsavel.nome}
+                      {p.situacao === "NEGOCIACAO" ? "Em negociação" : p.enviadaEm ? `Enviada em ${diaCurto(diaDe(p.enviadaEm))}` : "Enviada"} · com {p.responsavel.nome}
                     </small>
                     <SeloRetorno r={p.retorno} hoje={hoje} prefixo="retorno " semData="sem retorno marcado" />
                   </li>
@@ -356,7 +356,7 @@ type Mostrar = "ANDAMENTO" | "CONTRATO" | "RECUSADAS";
 
 function retornoNaLista(p: PropostaLinha, hoje: string): ReactNode {
   if (!p.retorno && p.situacao === "RASCUNHO") {
-    const c = p.criadaEm.slice(0, 10);
+    const c = diaDe(p.criadaEm);
     return <span className="num">criada {c === hoje ? "hoje" : `em ${diaCurto(c)}`}</span>;
   }
   if (p.situacao === "CONTRATO" || p.situacao === "RECUSADA") return <span className="hn-sem">—</span>;

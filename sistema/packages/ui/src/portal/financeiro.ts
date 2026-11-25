@@ -1,7 +1,7 @@
 // Peças puras do Financeiro do Portal (desenho aprovado em docs/design/aprovadas/portal-financeiro):
 // endereços, mês de referência, situação da parcela em palavras e os grupos de A receber.
 
-import { reais, REEMBOLSO_COMO, FORMAS_PAGAMENTO, type CobrancaAtual, type ContaPagar, type MensagemPrestacao, type ParcelaLinha } from "@t3jus/domain";
+import { diaBrasilia, reais, REEMBOLSO_COMO, FORMAS_PAGAMENTO, type CobrancaAtual, type ContaPagar, type MensagemPrestacao, type ParcelaLinha } from "@t3jus/domain";
 import { DIAS_SEMANA, diaCurto, diaDaSemana, nomeDoMes, somarDias } from "./agenda.ts";
 import { diasEntre } from "./comercial.ts";
 
@@ -65,7 +65,7 @@ export function seloParcela(p: Pick<ParcelaLinha, "situacao" | "vencimento" | "f
 export function textoCobranca(c: CobrancaAtual | null): string | null {
   if (!c) return null;
   const nomes: Record<CobrancaAtual["tipo"], string> = { LIGACAO: "Ligação", MENSAGEM: "Mensagem", ANOTACAO: "Anotação", PASSADA: "Passada" };
-  const dia = c.em.slice(0, 10);
+  const dia = diaBrasilia(c.em);
   return `${nomes[c.tipo]} em ${diaCurto(dia)}`;
 }
 

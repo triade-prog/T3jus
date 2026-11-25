@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  AREAS_PORTAL, fraseOab, TRATAMENTOS, UFS_BRASIL, type ContaPortal, type DadosDocumentoPessoa, type ContratoDoAdvogado, type FichaPessoaEquipe, type InscricaoOab,
+  AREAS_PORTAL, diaBrasilia, fraseOab, TRATAMENTOS, UFS_BRASIL, type ContaPortal, type DadosDocumentoPessoa, type ContratoDoAdvogado, type FichaPessoaEquipe, type InscricaoOab,
   type PessoaEquipePortal, type TipoOab, type UfBrasil,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -24,7 +24,8 @@ const rotaDadosAdvogado = (pessoaId: string) => `${ROTAS_ESCRITORIO.advogados}?e
 
 const EQUIPE_API = "/v1/escritorio/equipe";
 const UFS = Object.keys(UFS_BRASIL).sort() as UfBrasil[];
-const diaBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+// aaaa-mm-dd ou um instante (o dia de Brasília, F3.175).
+const diaBr = (iso: string) => diaBrasilia(iso).split("-").reverse().join("/");
 export const rotaPessoaEquipe = (pessoaId: string) => `${ROTAS_PORTAL.equipe}/pessoas/${pessoaId}`;
 
 /** O papel na faixa vinho: Sócia dona, Advogada ou Advogado (do tratamento), ou Equipe. */

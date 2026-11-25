@@ -103,7 +103,7 @@ export function modelosParaCaso(modelos: ModeloPeticao[], area: AreaDireito): {
 
 /** "v2 · enviado por Marina Ribeiro em 02/10/2026" ou "padrão do T3jus · atualizado em 01/11/2026". */
 export function linhaVersaoModelo(m: Pick<ModeloPeticao, "padrao" | "versao" | "enviadoPor" | "atualizadoEm">): string {
-  const d = m.atualizadoEm.slice(0, 10);
+  const d = diaDe(new Date(m.atualizadoEm));
   const data = `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
   return m.padrao ? `padrão do T3jus · atualizado em ${data}` : `v${m.versao} · enviado por ${m.enviadoPor?.nome ?? "alguém da equipe"} em ${data}`;
 }

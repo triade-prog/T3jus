@@ -5,7 +5,7 @@
 // depois disso, nenhuma chamada manda o escritório pelo navegador.
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { CONTATO_T3JUS, type DatasContrato } from "@t3jus/domain";
+import { CONTATO_T3JUS, diaBrasilia, type DatasContrato } from "@t3jus/domain";
 import { chamarApi, textoDoErro, type ErroApi } from "./api.ts";
 import { Icone } from "./Icone.tsx";
 import { Aviso, Cabecalho } from "./pecas.tsx";
@@ -21,7 +21,8 @@ export interface EscritorioParaEscolher {
 }
 
 const fechado = (e: EscritorioParaEscolher) => e.encerramento?.situacao === "FECHADO";
-const diaBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+// aaaa-mm-dd ou um instante (o dia de Brasília, F3.175).
+const diaBr = (iso: string) => diaBrasilia(iso).split("-").reverse().join("/");
 
 /** Só restaram escritórios com o acesso fechado: a tela "O acesso terminou". */
 function AcessoTerminou({ fechados, email, aoSair }: { fechados: EscritorioParaEscolher[]; email: string; aoSair: () => void }) {

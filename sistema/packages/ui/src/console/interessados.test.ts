@@ -2,7 +2,7 @@
 // alto, frases do histórico e a leitura de data e hora digitadas.
 import { describe, expect, it } from "vitest";
 import type { Interessado } from "@t3jus/domain";
-import { contarChips, filtrar, fraseEvento, lerDataBr, lerHora, numeros, prazo, quandoPasso } from "./interessados.ts";
+import { contarChips, dataBrInteira, filtrar, fraseEvento, lerDataBr, lerHora, numeros, prazo, quandoPasso } from "./interessados.ts";
 
 const HOJE = "2026-11-21";
 const base: Interessado = {
@@ -56,5 +56,12 @@ describe("Interessados", () => {
     expect(lerHora("18h00")).toBe("18:00");
     expect(lerHora("9h")).toBe("09:00");
     expect(lerHora("25h")).toBeNull();
+  });
+});
+
+describe("F3.175: dataBrInteira no dia de Brasília", () => {
+  it("instante às 22h30 de Brasília e data pura", () => {
+    expect(dataBrInteira("2026-11-25T01:30:00+00:00")).toBe("24/11/2026");
+    expect(dataBrInteira("2026-11-26")).toBe("26/11/2026");
   });
 });

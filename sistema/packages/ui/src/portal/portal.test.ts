@@ -75,3 +75,9 @@ describe("A trilha do topo nas áreas (D29)", () => {
     expect(trilhaDaArea("CONTRATOS", "Contratos", s)).toEqual([{ nome: "Contratos", href: "/contratos" }, { nome: "Honorários" }]);
   });
 });
+
+describe("F3.175: o nome do arquivo da exportação no dia de Brasília", () => {
+  it("às 22h30 de Brasília, em UTC como o banco manda, o arquivo leva o próprio dia", () => {
+    expect(nomeArquivoExportacao("Ribeiro & Matos Advocacia", "2026-11-25T01:30:00+00:00")).toBe("ribeiro-matos-advocacia-2026-11-24.json");
+  });
+});

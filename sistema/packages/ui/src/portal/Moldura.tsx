@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { AREAS_PORTAL, mesPorExtenso, type AreaPortal, type DadosEscritorioDocumentos, type DatasContrato } from "@t3jus/domain";
+import { AREAS_PORTAL, diaBrasilia, mesPorExtenso, type AreaPortal, type DadosEscritorioDocumentos, type DatasContrato } from "@t3jus/domain";
 import { chamarApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { LogoCompacto } from "../Marca.tsx";
@@ -58,8 +58,9 @@ export interface EscritorioPortal {
  */
 export const soConsulta = (e: Pick<EscritorioPortal, "encerramento" | "cobranca"> | null) => !!e?.encerramento || !!e?.cobranca?.soConsultaDesde;
 
+// aaaa-mm-dd ou um instante (o dia de Brasília, F3.175).
 const diaBr = (iso: string, curta = false) => {
-  const [a, m, d] = iso.slice(0, 10).split("-");
+  const [a, m, d] = diaBrasilia(iso).split("-");
   return curta ? `${d}/${m}` : `${d}/${m}/${a}`;
 };
 
