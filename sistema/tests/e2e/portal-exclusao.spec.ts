@@ -3,6 +3,8 @@
 // decisões da Carol de 18/11/2026. A API é simulada.
 // F3.155: a linha dos arquivos em "O que é apagado", pelo desenho aprovado em
 // docs/design/aprovadas/portal-exclusao-arquivos (Carol, 24/11/2026).
+// F3.156: a despesa adiantada ao cliente e o quadro "O que a lei obriga a guardar", pelo desenho
+// aprovado em docs/design/aprovadas/portal-exclusao-despesas (Carol, 24/11/2026, alternativa A).
 import { expect, test, type Page } from "@playwright/test";
 import { h, semViolacoes } from "./console-dados.ts";
 
@@ -357,6 +359,90 @@ test.describe("Os arquivos do cliente na janela de exclusão (F3.155, PT-11)", (
     await expect(page.getByRole("status").filter({ hasText: "guardado na ficha" })).toBeVisible();
     expect(pedidos.some((p) => p.metodo === "POST" && p.caminho.endsWith("/concluir"))).toBe(true);
     expect(pedidos.filter((p) => p.metodo === "GET" && p.caminho === ficha)).toHaveLength(1);
+    await semViolacoes(page);
+  });
+});
+
+// F3.156 (PT-11): a descrição da despesa adiantada em "O que é apagado" e o quadro à parte "O que a
+// lei obriga a guardar" (alternativa A); "O que fica, sem dado pessoal" não muda; só a frase em
+// negrito da faixa do escudo muda. Os estados do desenho aprovado.
+const ARQ = { documentos: 3, curatela: true, tutela: false, propostas: 1 };
+const DESC_UM = "vira “Despesa adiantada a cliente excluído”. O valor, as datas e o reembolso continuam no Financeiro.";
+const LEI = "O que a lei obriga a guardar";
+const PE = "Ficam pela obrigação fiscal do escritório, que vale mesmo com o pedido do titular (LGPD, art. 16, I).";
+
+async function abrirComDespesa(page: Page, arquivosQueFicam: Record<string, unknown> | undefined) {
+  await simular(page, {
+    "/v1/escritorio": { corpo: ESC_MARINA },
+    [`GET ${ficha}`]: { corpo: { ...FICHA, arquivosParaApagar: ARQ, ...(arquivosQueFicam ? { arquivosQueFicam } : {}) } },
+    "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+  });
+  await page.goto(`${P}/clientes/${CLI}`);
+  return await abrirExcluir(page);
+}
+
+test.describe("A despesa adiantada na janela de exclusão (F3.156, PT-11)", () => {
+  test("sem despesa: a janela é a aprovada da F3.155 (o estado despesa-nenhuma)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { despesas: 0, comArquivo: 0, arquivos: 0, pastas: 0, ate: null });
+    await expect(j.locator(".pd-some li")).toHaveCount(6);
+    await expect(j.locator(".pd-some li").filter({ hasText: "despesa" })).toHaveCount(0);
+    await expect(j.getByRole("heading", { name: LEI })).toHaveCount(0);
+    await expect(j.getByRole("heading", { name: "O que fica, sem dado pessoal" })).toBeVisible();
+    await expect(j.locator(".pt-comuns b")).toHaveText("Nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+
+  test("uma despesa paga com a nota: a descrição, o quadro com a data e a faixa (o estado despesa-paga-nota)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { despesas: 1, comArquivo: 1, arquivos: 1, pastas: 0, ate: "2033-01-01" });
+    const some = j.locator(".pd-some li");
+    await expect(some).toHaveCount(7);
+    await expect(some.nth(1)).toContainText("Os 3 documentos pessoais");
+    await expect(some.nth(2)).toHaveText(`A descrição da despesa adiantada${DESC_UM}`);
+    // "O que fica, sem dado pessoal" não muda.
+    await expect(j.getByRole("heading", { name: "O que fica, sem dado pessoal" })).toBeVisible();
+    await expect(j.locator(".pd-fica li")).toHaveCount(3);
+    const lei = j.locator(".pd-guarda");
+    await expect(lei.getByRole("heading", { name: LEI })).toBeVisible();
+    await expect(lei.locator("li")).toHaveCount(1);
+    await expect(lei.locator("li").nth(0)).toHaveText("O arquivo da despesa adiantada"
+      + "a nota, guia, boleto ou comprovante, com o nome trocado pelo tipo, como “Nota fiscal.pdf”. O T3jus apaga sozinho em 01/01/2033.");
+    await expect(lei.locator(".pd-arq-nota")).toHaveText(PE);
+    // O quadro vem logo depois de "O que fica" e antes da faixa do escudo.
+    await expect(j.locator(".pd-fica + .pd-guarda + .pt-comuns")).toHaveCount(1);
+    await expect(j.locator(".pt-comuns b")).toHaveText("Fora esse arquivo, nada aqui precisa ser guardado por lei.");
+    await expect(j.locator(".pt-comuns")).toContainText("Este cliente não tem contrato nem processo no T3jus");
+    await semViolacoes(page);
+  });
+
+  test("duas despesas, uma em aberto: sem data, com a regra (o estado despesa-em-aberto)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { despesas: 2, comArquivo: 2, arquivos: 2, pastas: 0, ate: null });
+    await expect(j.locator(".pd-some li").nth(2)).toContainText("A descrição das 2 despesas adiantadas");
+    const linha = j.locator(".pd-guarda li").nth(0);
+    await expect(linha).toContainText("Os 2 arquivos das 2 despesas adiantadas");
+    await expect(linha.locator("small")).toHaveText("notas, guias, boletos ou comprovantes, com o nome trocado pelo tipo, como “Nota fiscal.pdf”. "
+      + "Enquanto houver despesa em aberto, não há data: o T3jus apaga sozinho em 1º de janeiro do 7º ano depois do pagamento.");
+    await expect(j.locator(".pt-comuns b")).toHaveText("Fora esses arquivos, nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+
+  test("a despesa que já foi na pasta do contador (o estado despesa-pasta-contador)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { despesas: 1, comArquivo: 1, arquivos: 2, pastas: 1, ate: "2033-01-01" });
+    const lei = j.locator(".pd-guarda li");
+    await expect(lei).toHaveCount(2);
+    await expect(lei.nth(0)).toContainText("Os 2 arquivos da despesa adiantada");
+    await expect(lei.nth(0)).toContainText("O T3jus apaga sozinho em 01/01/2033.");
+    await expect(lei.nth(1)).toHaveText("A pasta mandada ao contador"
+      + "fica como foi montada, com a descrição antiga no nome dos arquivos. A cópia do T3jus sai pela regra do mês da pasta; a que o contador recebeu fica fora do T3jus.");
+    await expect(j.getByText(/avis/i).filter({ hasText: "contador" })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("despesa sem arquivo: só a linha da descrição; sem quadro e com a faixa aprovada (o estado despesa-sem-arquivo)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { despesas: 1, comArquivo: 0, arquivos: 0, pastas: 0, ate: null });
+    await expect(j.locator(".pd-some li")).toHaveCount(7);
+    await expect(j.locator(".pd-some li").nth(2)).toHaveText(`A descrição da despesa adiantada${DESC_UM}`);
+    await expect(j.locator(".pd-guarda")).toHaveCount(0);
+    await expect(j.locator(".pt-comuns b")).toHaveText("Nada aqui precisa ser guardado por lei.");
     await semViolacoes(page);
   });
 });

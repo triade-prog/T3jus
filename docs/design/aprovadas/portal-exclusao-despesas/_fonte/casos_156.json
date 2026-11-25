@@ -1,0 +1,22 @@
+[
+ {
+  "nome": "despesa-nenhuma",
+  "url": "exclusao.html?estado=despesa-nenhuma"
+ },
+ {
+  "nome": "despesa-paga-nota",
+  "url": "exclusao.html?estado=despesa-paga-nota"
+ },
+ {
+  "nome": "despesa-em-aberto",
+  "url": "exclusao.html?estado=despesa-em-aberto"
+ },
+ {
+  "nome": "despesa-pasta-contador",
+  "url": "exclusao.html?estado=despesa-pasta-contador"
+ },
+ {
+  "nome": "despesa-sem-arquivo",
+  "url": "exclusao.html?estado=despesa-sem-arquivo"
+ }
+]

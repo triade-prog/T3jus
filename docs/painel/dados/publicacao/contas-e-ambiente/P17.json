@@ -1,0 +1,10 @@
+{
+  "id": "P17",
+  "texto": "Publicar a api-console com o caminho do .zip, aplicar no Supabase a migration 1092 (a despesa adiantada do cliente excluído fica pela lei fiscal e sai sozinha no marco, F3.156) e, com o ok da Carol depois da contagem, a 1093 (os já excluídos, sem volta); publicar o Portal",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 170,
+  "nota": "Ordem (cabeçalho da 1093, README \"Arquivos do cliente excluído\" e revisão, seção 4): 1) publicar a api-console com o caminhoValido novo (<esc>/exportacoes/<exportação>-<n>.zip); pode ir antes, porque sem a 1092 não há .zip na fila, e se for depois o .zip só ganha \"Caminho inválido\" e é tentado de novo; 2) rodar a contagem só de leitura (project-files t3jus/f3-156/contagem-antes-1092.sql) e mostrar à Carol, principalmente anexos_ja_vencidos e pastas_ja_vencidas; 3) com o ok dela, aplicar a 1092 pelo apply_migration, com o conteúdo de project-files t3jus/migrations-para-colar/1092_despesas_cliente_excluido.sql (antes, conferir com list_migrations que a 0970, a 1030 e a 1090 estão no ar); a partir da primeira noite (3h de Brasília), a rotina já apaga o que passou do marco, e isso não tem volta; 4) com o ok dela, aplicar a 1093 (sem volta: descrição e nome dos já excluídos) e conferir que financeiro_preencher_excluidos() devolve {}; 5) publicar o Portal (a janela de exclusão com o quadro \"O que a lei obriga a guardar\"); a tela de hoje ignora a chave arquivosQueFicam. Os textos novos do inventário (anexos, contas_pagar, exportacao_pastas e arquivos_apagar) precisam do ok da Carol antes do merge. Se der errado: drop trigger financeiro_apagar_do_excluido on clientes_escritorio para a exclusão e recriar aplicar_prazos com o texto de antes (0580 com as trocas da 0590 e da 0950) para a rotina; o que já foi trocado ou apagado não volta."
+}

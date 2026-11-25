@@ -1,0 +1,12 @@
+{
+  "data": "24/11/2026",
+  "inicio": "19:35",
+  "fim": "20:06",
+  "texto": "F3.156: a nota, a guia, o boleto e o comprovante da despesa adiantada do cliente excluído a pedido do titular e a pasta do contador ficam guardados pela obrigação fiscal e saem sozinhos no marco (1º de janeiro de ano + 2 + 5; conta em aberto não vence), com a descrição e o nome trocados na exclusão e a janela com o quadro \"O que a lei obriga a guardar\" (migrations 1092 e 1093, pgTAP 143, publicação P17).",
+  "refs": [
+    "F3.156",
+    "F3.177",
+    "P17",
+    "PT-11"
+  ]
+}

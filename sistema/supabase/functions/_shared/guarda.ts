@@ -3,8 +3,10 @@
 // lotes. Todo caminho de arquivo do escritório começa com o id dele.
 //
 // Exclusão a pedido do titular (F3.141; PT-11): apagar arquivos um a um, pelos caminhos exatos
-// que o banco pôs na fila arquivos_apagar (0970). Só dois formatos, sempre dentro da pasta do
-// escritório: <escritório>/<documento> e <escritório>/propostas/<proposta>-v<n>.docx.
+// que o banco pôs na fila arquivos_apagar (0970). Fim da guarda fiscal da despesa de cliente excluído
+// (F3.156; 1092): a mesma fila apaga o arquivo da despesa e o .zip da pasta do contador. Só três
+// formatos, sempre dentro da pasta do escritório: <escritório>/<documento>,
+// <escritório>/propostas/<proposta>-v<n>.docx e <escritório>/exportacoes/<exportação>-<n>.zip (n de 1 a 99).
 
 export interface LimpezaArquivos {
   /**
@@ -14,7 +16,7 @@ export interface LimpezaArquivos {
   apagarPasta(bucket: string, pasta: string, maximo: number): Promise<{ apagados: number; restam: boolean }>;
   /**
    * Apaga os objetos de caminho exato (até 1.000 por pedido). Objeto que não existe conta como
-   * sucesso: o que importa é ele não estar lá depois. Caminho fora dos dois formatos nem sai.
+   * sucesso: o que importa é ele não estar lá depois. Caminho fora dos três formatos nem sai.
    */
   apagarObjetos(bucket: string, caminhos: string[]): Promise<{ apagados: number }>;
 }
@@ -27,10 +29,12 @@ export function pastaValida(pasta: string): boolean {
 }
 
 const UUID_SOLTO = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-// A mesma regra do check arquivos_apagar_caminho (0970).
-const CAMINHO = new RegExp(`^${UUID_SOLTO}/(${UUID_SOLTO}|propostas/${UUID_SOLTO}-v[1-9][0-9]{0,8}\\.docx)$`);
+// A mesma regra do check arquivos_apagar_caminho (0970, com o .zip da 1092).
+const CAMINHO = new RegExp(
+  `^${UUID_SOLTO}/(${UUID_SOLTO}|propostas/${UUID_SOLTO}-v[1-9][0-9]{0,8}\\.docx|exportacoes/${UUID_SOLTO}-[1-9][0-9]?\\.zip)$`,
+);
 
-/** Só arquivo de um dos dois formatos da fila, dentro da pasta de um escritório. */
+/** Só arquivo de um dos três formatos da fila, dentro da pasta de um escritório. */
 export function caminhoValido(caminho: string): boolean {
   return !caminho.includes("..") && CAMINHO.test(caminho) && pastaValida(caminho.split("/")[0]!);
 }

@@ -502,6 +502,8 @@ export interface FichaCliente {
   vinculosLgpd?: VinculosLgpd | null;
   /** Só para a sócia dona, no cliente ativo ou inativo sem contrato nem processo (F3.155). Para quem não é a dona, o campo não vem. */
   arquivosParaApagar?: ArquivosParaApagar;
+  /** Só para a sócia dona, nas mesmas condições de arquivosParaApagar (F3.156): o que fica guardado pela lei fiscal. */
+  arquivosQueFicam?: ArquivosQueFicam;
   /** O próximo passo, as contagens das abas e o "No escritório" (F3.110). Não vêm no excluído nem no arquivado. */
   passo?: PassoCliente;
   contagens?: ContagensCliente;
@@ -523,6 +525,23 @@ export interface ArquivosParaApagar {
   tutela: boolean;
   /** Propostas do cliente: o servidor apaga todas as versões do Word de cada uma. */
   propostas: number;
+}
+
+/**
+ * O que a exclusão a pedido do titular guarda pela obrigação fiscal (F3.156): as despesas adiantadas
+ * para o cliente e os arquivos delas. Só para a sócia dona, no cliente que ela pode excluir.
+ */
+export interface ArquivosQueFicam {
+  /** Despesas adiantadas para o cliente: a descrição de todas vira "Despesa adiantada a cliente excluído". */
+  despesas: number;
+  /** Quantas dessas despesas têm nota, guia, boleto ou comprovante. */
+  comArquivo: number;
+  /** Arquivos prontos dessas despesas, que ficam guardados com o nome trocado pelo tipo. */
+  arquivos: number;
+  /** Pastas mandadas ao contador que contêm esses arquivos (ficam como foram montadas). */
+  pastas: number;
+  /** O dia em que o T3jus apaga os arquivos (aaaa-mm-dd, 1º de janeiro); null sem arquivo ou com alguma despesa em aberto. */
+  ate: string | null;
 }
 
 export interface Atendimento {

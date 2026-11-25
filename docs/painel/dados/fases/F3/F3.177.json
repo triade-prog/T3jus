@@ -1,0 +1,12 @@
+{
+  "id": "F3.177",
+  "texto": "Histórico financeiro importado do cliente excluído a pedido do titular: a descrição livre de historico_financeiro_anterior (até 300 letras, da importação) fica ligada ao cliente e a exclusão não mexe nela; decidir se é prova de receita guardada pela obrigação fiscal, como a F3.156, e o que fazer com o texto",
+  "peca": "S4",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1330,
+  "nota": "Achado m12 da revisão do plano da F3.156 (project-files t3jus/f3-156/revisao.md), fora do escopo dela.",
+  "proximo": "Planejar com o coordenador a regra da descrição importada do cliente excluído (texto fixo na exclusão, como a F3.156, ou guardar até o marco fiscal) e levar à Carol se mudar a decisão da PT-11"
+}
