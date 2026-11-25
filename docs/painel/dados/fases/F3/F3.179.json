@@ -1,12 +1,11 @@
 {
   "id": "F3.179",
-  "texto": "Exportação completa: o nome do arquivo que o servidor manda (Content-Disposition em api-portal/app.ts:347) sai do dia em UTC (String(dados.geradoEm).slice(0, 10)) e, entre 21h e 24h de Brasília, leva a data de amanhã",
-  "peca": "B2",
+  "texto": "Condições de honorário da proposta do cliente excluído: o sobre das condições de ÊXITO e RECORRENTE é texto livre (até 120 letras, por exemplo \"do que Maria receber do INSS\") e fica na proposta e na cópia em avisos_sino.dados.condicoes do PEDIDO_CONTRATO",
+  "peca": "S2",
   "refs": [
-    "PT-15"
+    "PT-11"
   ],
   "status": "pendente",
   "ordem": 1350,
-  "nota": "Achado na varredura da F3.175 (plano F3.175/F3.176, seção 2.4.4). A tela (Escritorio.tsx, nomeArquivoExportacao) já foi corrigida na F3.175; falta o servidor. É só servidor: deploy da api-portal, sem migration. Conferir no mesmo item o pagamento.ts:163 (dataSituacao.slice(0, 10) da API do Inter: certo se vier aaaa-mm-dd local, errado se vier data e hora em UTC). Registro da revisão: WhatsApp.tsx:1245 (agoraHora) usa a hora do navegador, sem timeZone.",
-  "proximo": "Montar o nome do arquivo da exportação com o dia de Brasília (Intl em America/Sao_Paulo, como proposta_docx.ts:18) na api-portal e conferir o pagamento.ts:163"
+  "proximo": "Decisão da Carol (como foi a do serviço na F3.159): trocar o sobre por um texto fixo na exclusão, na proposta e no aviso; no sino, é uma linha a mais em aviso_sino_dados_do_excluido (revisão da F3.172, M3)"
 }
