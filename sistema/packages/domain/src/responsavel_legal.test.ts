@@ -1,8 +1,11 @@
 // F3.98 (CH-08, AP-01): quem assina pelo cliente menor ou sob curatela. A conta pela data, a
 // qualificação e o bloco de assinatura que saem na procuração e no contrato, e o que falta.
 import { describe, expect, it } from "vitest";
-import { faltasNoDocumento, montarValoresDocumento, type ClienteDoDocumento, type DadosDocumentos, type EscolhasDocumentos } from "./documentos.ts";
-import { aniversario, idadeEm, idadeEmPalavras, nascimentoNoFuturo, quemAssina, situacaoNoDia, tituloDaIdade } from "./responsavel_legal.ts";
+import { faltasNoDocumento, montarValoresDocumento, previaDocumento, type ClienteDoDocumento, type DadosDocumentos, type EscolhasDocumentos } from "./documentos.ts";
+import {
+  aniversario, faltasDoResponsavel, faltasDoResponsavelComMarcas, idadeEm, idadeEmPalavras, marcasDaQualificacaoDoResponsavel, nascimentoNoFuturo,
+  qualificacaoDoResponsavel, quemAssina, situacaoNoDia, tituloDaIdade, type PapelResponsavel, type ResponsavelDoCliente,
+} from "./responsavel_legal.ts";
 import { cadastrarClienteSchema } from "./clientes.ts";
 
 // Os mesmos dados de documentos.test.ts (o escritório, o contrato e o advogado).
@@ -60,7 +63,29 @@ describe("F3.98: quem assina, pela data", () => {
     expect(idadeEm("2008-11-19", "2026-11-18")).toBe(17);
     expect(idadeEm("2008-11-19", "2026-11-19")).toBe(18);
     expect(aniversario("2014-03-14", 16)).toBe("2030-03-14");
-    expect(aniversario("2012-02-29", 18)).toBe("2030-02-28");
+    // Art. 132, § 3º, do CC e art. 3º da Lei 810/1949: sem 29/02 no ano, o aniversário é 01/03 (F3.161).
+    expect(aniversario("2012-02-29", 18)).toBe("2030-03-01");
+    expect(aniversario("2012-02-29", 16)).toBe("2028-02-29");
+    expect(aniversario("2011-03-01", 18)).toBe("2029-03-01");
+    expect(aniversario("2012-02-28", 18)).toBe("2030-02-28");
+  });
+  it("F3.161 (CH-08, AP-01, art. 132, § 3º, do CC): a data mostrada e a virada da idade nunca divergem", () => {
+    const divergem: string[] = [];
+    for (let t = Date.UTC(2004, 0, 1); t <= Date.UTC(2012, 11, 31); t += 86_400_000) {
+      const n = new Date(t).toISOString().slice(0, 10);
+      for (const anos of [1, 16, 18]) {
+        const dia = aniversario(n, anos);
+        const vespera = new Date(Date.parse(dia) - 86_400_000).toISOString().slice(0, 10);
+        if (idadeEm(n, dia) !== anos || idadeEm(n, vespera) !== anos - 1) divergem.push(`${n} +${anos}`);
+      }
+    }
+    expect(divergem).toEqual([]);
+  });
+  it("F3.161: quem nasceu em 29/02 é assistido em 28/02 e assina por si em 01/03, aos 18", () => {
+    expect(situacaoNoDia("MENOR", "2012-02-29", "2030-02-28")).toEqual({ situacao: "ASSISTIDO", idade: 17, faz16: "2028-02-29", faz18: "2030-03-01", modo: null });
+    expect(situacaoNoDia("MENOR", "2012-02-29", "2030-03-01").situacao).toBe("FEZ_18");
+    expect(quemAssina({ ...PEDRO, nascimento: "2012-02-29" }, "2030-02-28")).toBe("ASSISTIDO");
+    expect(quemAssina({ ...PEDRO, nascimento: "2012-02-29" }, "2030-03-01")).toBe("PROPRIO");
   });
   it("F3.162: a idade em palavras, com o bebê e o singular", () => {
     expect(idadeEmPalavras(0)).toBe("menos de 1 ano");
@@ -136,6 +161,68 @@ describe("F3.98: o texto na procuração e no contrato", () => {
     expect(v.valores.CLIENTE_QUALIFICACAO).toContain("[RG DE QUEM ASSINA: falta]");
     expect(v.valores.CLIENTE_ASSINATURA).toContain("CPF [CPF DE QUEM ASSINA: falta]");
     expect(faltasNoDocumento(sem, "2026-11-22")).toEqual(["o CPF de quem assina", "o RG de quem assina"]);
+  });
+  it("F3.161: a qualificação de quem assina sai marcada, como a do cliente", () => {
+    const semProf = valores({ ...PEDRO, rlProfissao: null });
+    expect(semProf.valores.CLIENTE_QUALIFICACAO).toContain("JOANA ALVES SOUZA, brasileira, divorciada, [PROFISSÃO DE QUEM ASSINA: falta], portadora do RG nº");
+    expect(semProf.valores.REPRESENTANTE_QUALIFICACAO).toContain("brasileira, divorciada, [PROFISSÃO DE QUEM ASSINA: falta], portadora do RG nº");
+    expect(semProf.marcados).toEqual(["Qualificação de quem assina de Pedro Henrique Alves Souza"]);
+    const semTres = valores({ ...PEDRO, rlNacionalidade: null, rlEstadoCivil: null, rlProfissao: "  " });
+    expect(semTres.valores.CLIENTE_QUALIFICACAO).toContain(
+      "JOANA ALVES SOUZA, [NACIONALIDADE DE QUEM ASSINA: falta], [ESTADO CIVIL DE QUEM ASSINA: falta], [PROFISSÃO DE QUEM ASSINA: falta], portadora do RG nº 41.552.318-7");
+    // Continua 1 dado (RL_QUALIFICACAO na ficha), com até 3 marcas no texto.
+    expect(semTres.marcados).toEqual(["Qualificação de quem assina de Pedro Henrique Alves Souza"]);
+    // A prévia destaca a marca nova.
+    const previa = previaDocumento(["[CLIENTE_QUALIFICACAO]"], semProf).flat();
+    expect(previa.some((x) => x.t === "falta" && x.texto === "[PROFISSÃO DE QUEM ASSINA: falta]")).toBe(true);
+  });
+  it("F3.161: o pai sem estado civil leva a marca neutra; com ele, o gênero do papel", () => {
+    const pai = { ...PEDRO, rlPapel: "PAI" as const, rlNome: "Marcos Alves Souza" };
+    expect(qualificacaoDoResponsavel({ ...pai, rlEstadoCivil: null })).toMatch(/^brasileira, \[ESTADO CIVIL DE QUEM ASSINA: falta\], auxiliar administrativa, portador do RG/);
+    expect(qualificacaoDoResponsavel({ ...pai, rlEstadoCivil: "CASADO" })).toMatch(/^brasileira, casado, auxiliar administrativa, portador do RG/);
+  });
+  it("F3.161: assistido com o pai sem profissão; o menor continua sem estado civil e profissão quando vazios", () => {
+    const lucas = { ...PEDRO, nome: "Lucas Ferreira Moura", nascimento: "2010-02-03", rlPapel: "PAI" as const, rlNome: "Marcos Ferreira Moura", rlEstadoCivil: "CASADO" as const, rlProfissao: null };
+    const q = valores(lucas).valores.CLIENTE_QUALIFICACAO!;
+    expect(q).toMatch(/^brasileiro, menor púbere, nascido\(a\) em 03\/02\/2010/);
+    expect(q).toContain("neste ato assistido(a) por seu pai, MARCOS FERREIRA MOURA, brasileira, casado, [PROFISSÃO DE QUEM ASSINA: falta], portador do RG");
+    expect(q).not.toContain("[ESTADO CIVIL: falta]");
+    expect(q).not.toContain("[PROFISSÃO: falta]");
+  });
+  it("F3.161: curatela com a marca do curatelado e a de quem assina, diferentes, e 1 marcado de quem assina", () => {
+    const seb: ClienteDoDocumento = { ...PEDRO, nome: "Sebastião Ramos Filho", capacidade: "CURATELA", nascimento: null, nacionalidade: null, estadoCivil: "VIUVO", profissao: "aposentado",
+      rg: "6.214.873-0", rgOrgao: "SSP/SP", rlPapel: "CURADORA", rlNome: "Helena Ramos Castro", rlNacionalidade: null, rlEstadoCivil: null, rlProfissao: null,
+      curModo: "REPRESENTA" };
+    const v = valores(seb);
+    expect(v.valores.CLIENTE_QUALIFICACAO).toMatch(/^\[NACIONALIDADE: falta\], viúvo\(a\)/);
+    expect(v.valores.CLIENTE_QUALIFICACAO).toContain(
+      "HELENA RAMOS CASTRO, [NACIONALIDADE DE QUEM ASSINA: falta], [ESTADO CIVIL DE QUEM ASSINA: falta], [PROFISSÃO DE QUEM ASSINA: falta], portadora do RG nº");
+    expect(v.marcados.filter((m) => /quem assina/.test(m))).toEqual(["Qualificação de quem assina de Sebastião Ramos Filho"]);
+    expect(faltasNoDocumento(seb, "2026-11-22")).toContain("a qualificação de quem assina");
+  });
+  it("F3.161: as marcas da qualificação vêm de uma fonte só, para a tela e para o .docx", () => {
+    expect(marcasDaQualificacaoDoResponsavel(PEDRO)).toEqual([]);
+    expect(marcasDaQualificacaoDoResponsavel({ ...PEDRO, rlNacionalidade: null, rlEstadoCivil: null, rlProfissao: null }))
+      .toEqual(["[NACIONALIDADE DE QUEM ASSINA: falta]", "[ESTADO CIVIL DE QUEM ASSINA: falta]", "[PROFISSÃO DE QUEM ASSINA: falta]"]);
+    // As 8 combinações dos 3 campos, com mãe, pai e curadora.
+    for (const papel of ["MAE", "PAI", "CURADORA"] as PapelResponsavel[]) {
+      for (let i = 0; i < 8; i++) {
+        const c: ResponsavelDoCliente = { ...PEDRO, rlPapel: papel, rlNacionalidade: i & 1 ? "brasileira" : null,
+          rlEstadoCivil: i & 2 ? "SOLTEIRO" : null, rlProfissao: i & 4 ? "professora" : null };
+        const marcas = marcasDaQualificacaoDoResponsavel(c);
+        const q = qualificacaoDoResponsavel(c);
+        for (const m of marcas) expect(q).toContain(m);
+        expect(q.match(/\[[^\]]+: falta\]/g) ?? []).toEqual(marcas);
+        expect(marcas.length > 0).toBe(faltasDoResponsavel(c).includes("a qualificação de quem assina"));
+      }
+    }
+    // Toda falta de quem assina deixa marca, e a marca está no texto do documento.
+    const tudo = { ...PEDRO, rlDocumento: null, rlRg: null, rlProfissao: null, rlMoraJunto: false, rlEndereco: null };
+    const f = faltasDoResponsavelComMarcas(tudo);
+    expect(f.map((x) => x.falta)).toEqual(faltasDoResponsavel(tudo));
+    expect(f.every((x) => x.marcas.length > 0)).toBe(true);
+    const v = valores(tudo).valores;
+    for (const m of f.flatMap((x) => x.marcas)) expect(`${v.CLIENTE_QUALIFICACAO}\n${v.CLIENTE_ASSINATURA}`).toContain(m);
   });
   it("pergunta 3: quem fez 18 anos assina por si no próprio dia, e passa a precisar de estado civil, profissão e RG", () => {
     const rafa = { ...PEDRO, nascimento: "2008-11-19" };

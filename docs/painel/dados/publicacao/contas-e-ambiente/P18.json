@@ -1,0 +1,11 @@
+{
+  "id": "P18",
+  "texto": "Aplicar no Supabase a migration 1120 (os 16 e os 18 anos de quem nasceu em 29/02, F3.161), publicar a api-portal com a qualificação de quem assina marcada no .docx e só então mesclar (o merge publica o Portal), com o ok da Carol",
+  "refs": [
+    "CH-08",
+    "AP-01"
+  ],
+  "status": "pendente",
+  "ordem": 180,
+  "nota": "Ordem (plano do F3.161, seção 6, com a revisão, seção 6): 1) conferir com list_migrations que a 0830 está no ar e que nada acima da 1120 já foi aplicado; 2) com o ok da Carol, aplicar a 1120 pelo apply_migration, com o conteúdo de project-files t3jus/migrations-para-colar/1120_aniversario_29_fevereiro.sql (do commit final aprovado do PR; conferir o md5 com o arquivo do commit; no commit do código, db76af4bde607f469ce54e17877dd87f), e conferir prosecdef verdadeiro em portal_cliente_assina_por_si e avisar_clientes_fez_18 e aniversario_em('2012-02-29', 18) = 2030-03-01; 3) publicar a api-portal do mesmo commit (o domain vai junto na Edge Function: o .docx e a prévia passam a marcar a qualificação de quem assina); 4) só então o merge, que publica o Portal (aviso e faixa citam as marcas). Nunca o merge antes da api-portal: o aviso citaria [PROFISSÃO DE QUEM ASSINA: falta] e o .docx sairia sem ela. Se der errado: recriar cliente_assina, portal_cliente_assina_por_si e avisar_clientes_fez_18 com o texto da 0830 e, só depois, drop function aniversario_em(date, integer); a api-portal volta para a versão anterior. Nada já gravado muda."
+}
