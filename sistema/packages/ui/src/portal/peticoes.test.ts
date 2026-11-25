@@ -82,3 +82,9 @@ describe("Petições (EX-09): textos da tela", () => {
     expect(trechoCurto("x".repeat(200), 10)).toBe(`${"x".repeat(9)}…`);
   });
 });
+
+describe("F3.175: a linha de versão no dia de Brasília", () => {
+  it("um modelo enviado às 22h30 de Brasília é do próprio dia", () => {
+    expect(linhaVersaoModelo({ ...modelo("x", "QUALQUER", false), atualizadoEm: "2026-11-25T01:30:00+00:00" })).toBe("v2 · enviado por Marina Ribeiro em 24/11/2026");
+  });
+});

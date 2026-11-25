@@ -28,7 +28,7 @@ export interface PessoaDaEquipe {
 }
 
 const apagada = (p: PessoaDaEquipe) => !!p.saida?.entradaApagadaEm;
-const dia = (iso: string) => dataBr(iso.slice(0, 10));
+const dia = (iso: string) => dataBr(iso);
 
 type Filtro = "TODAS" | "ATIVAS" | "DESATIVADAS";
 

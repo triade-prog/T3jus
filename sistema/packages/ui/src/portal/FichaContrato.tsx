@@ -251,7 +251,7 @@ function FolhaCasoDoContrato({ f, aoAbrir }: { f: FichaContrato; aoAbrir: () => 
       <div className="jf-semcaso">
         {f.semCaso ? (
           <>
-            <p>Marcado{m ? <> em {dataBr(m.em.slice(0, 10))}{m.por ? <>, por {m.por.nome}</> : null}</> : null}: <b>sem processo</b>. Por isso a ficha de {f.cliente.nome} mostra “Contrato ativo” e não pede proposta nem caso.</p>
+            <p>Marcado{m ? <> em {dataBr(diaDoInstante(m.em))}{m.por ? <>, por {m.por.nome}</> : null}</> : null}: <b>sem processo</b>. Por isso a ficha de {f.cliente.nome} mostra “Contrato ativo” e não pede proposta nem caso.</p>
             <p>Se o contrato virar processo, abra o caso aqui. A marca sai e o contrato passa a ser o do caso.</p>
           </>
         ) : (
@@ -409,7 +409,7 @@ function PagoAntes({ f, pagas, soma, hoje, aoNaoPaga }: { f: FichaContrato; paga
   const imp = f.importacao;
   const doTipo = (t: RecebimentoPrevisto["tipo"]) => f.recebimentos.filter((r) => r.tipo === t && (r.pagoAntes || naProgramacao(r))).length;
   const total = doTipo(pagas[0]!.tipo);
-  const podeDesfazer = imp && !imp.desfeita && imp.desfazerAte && imp.desfazerAte.slice(0, 10) >= hoje;
+  const podeDesfazer = imp && !imp.desfeita && imp.desfazerAte && diaDoInstante(imp.desfazerAte) >= hoje;
   const botao = !!f.podeMarcarNaoPaga;
   const corrigidas = f.recebimentos.filter((r) => r.pagoAntes && r.corrigida && f.recebimentos.some((x) => x.eraPagoAntes && !x.cancelado && x.descricao === r.descricao && diaDoInstante(x.criadoEm) === hoje));
   const quem = (f.quemFinanceiro ?? []).map((p) => p.nome);

@@ -3,7 +3,7 @@
 // docs/design/aprovadas/portal-importacao-sobras e na rodada 2 (portal-importacao-sobras-rodada2).
 
 import {
-  dataBr, reais, SITUACOES_LEMBRETE,
+  dataBr, diaBrasilia, reais, SITUACOES_LEMBRETE,
   type LembreteContrato, type OrdemLembrete, type OrigemDados, type PessoaRef, type SituacaoLembrete,
 } from "@t3jus/domain";
 import { esperando } from "../console/tempo.ts";
@@ -82,7 +82,7 @@ export function buscaVazia(s: SituacaoLembrete, q: string): { titulo: string; te
 /** O grupo vazio, sem busca. */
 export function grupoVazio(s: SituacaoLembrete, total: number, origem: OrigemDados | null, importadoEm: string | null): { titulo: string; texto: string } {
   if (s === "ABERTO") {
-    const de = importadoEm ? ` de ${dataBr(importadoEm.slice(0, 10)).slice(0, 5)}` : "";
+    const de = importadoEm ? ` de ${dataBr(diaBrasilia(importadoEm)).slice(0, 5)}` : "";
     return {
       titulo: "Nenhum lembrete aberto",
       texto: total

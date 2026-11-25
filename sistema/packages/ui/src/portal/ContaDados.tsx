@@ -8,7 +8,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
-  CAMPOS_MUDADOS_DADOS, CODIGOS_ESTADO_CIVIL, ESTADOS_CIVIS_ADVOGADO, MENSAGENS_DADOS_DOCUMENTO, TOTAL_DADOS_DOCUMENTO, UFS_BRASIL,
+  CAMPOS_MUDADOS_DADOS, CODIGOS_ESTADO_CIVIL, diaBrasilia, ESTADOS_CIVIS_ADVOGADO, MENSAGENS_DADOS_DOCUMENTO, TOTAL_DADOS_DOCUMENTO, UFS_BRASIL,
   enderecoDoAdvogado, estadoCivilNaTela, faltasDoAdvogado, formatarDocumento, listaFaltas, pedacosQualificacaoAdvogado,
   type DadosDocumentoPessoa, type EnderecoEscritorio, type EstadoCivil, type InscricaoOab, type MudancaDadosDocumento, type Tratamento,
   type UfBrasil,
@@ -18,7 +18,8 @@ import { Aviso, descritoPor, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro 
 import { chamarPortal } from "./Moldura.tsx";
 
 const UFS = Object.keys(UFS_BRASIL).sort() as UfBrasil[];
-const diaBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+// aaaa-mm-dd ou um instante (o dia de Brasília, F3.175).
+const diaBr = (iso: string) => diaBrasilia(iso).split("-").reverse().join("/");
 const horaBr = (iso: string) => {
   const d = new Date(iso);
   return `${diaBr(d.toLocaleDateString("sv-SE", { timeZone: "America/Bahia" }))} às ${d.toLocaleTimeString("pt-BR", { timeZone: "America/Bahia", hour: "2-digit", minute: "2-digit" }).replace(":", "h")}`;

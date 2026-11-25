@@ -1,0 +1,12 @@
+{
+  "id": "F3.182",
+  "texto": "Exportação completa: o nome do arquivo que o servidor manda (Content-Disposition em api-portal/app.ts:347) sai do dia em UTC (String(dados.geradoEm).slice(0, 10)) e, entre 21h e 24h de Brasília, leva a data de amanhã",
+  "peca": "B2",
+  "refs": [
+    "PT-15"
+  ],
+  "status": "pendente",
+  "ordem": 1380,
+  "nota": "Achado na varredura da F3.175 (plano F3.175/F3.176, seção 2.4.4). A tela (Escritorio.tsx, nomeArquivoExportacao) já foi corrigida na F3.175; falta o servidor. É só servidor: deploy da api-portal, sem migration. Conferir no mesmo item o pagamento.ts:163 (dataSituacao.slice(0, 10) da API do Inter: certo se vier aaaa-mm-dd local, errado se vier data e hora em UTC). Registro da revisão: WhatsApp.tsx:1245 (agoraHora) usa a hora do navegador, sem timeZone.",
+  "proximo": "Montar o nome do arquivo da exportação com o dia de Brasília (Intl em America/Sao_Paulo, como proposta_docx.ts:18) na api-portal e conferir o pagamento.ts:163"
+}

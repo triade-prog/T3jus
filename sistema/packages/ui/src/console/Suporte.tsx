@@ -5,7 +5,7 @@
 // equipe nunca vê nem escolhe a senha, e o e-mail nunca muda por aqui. O servidor decide.
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { mascararEmail, type EventoSuporte, type FichaAcesso, type PessoaSuporte } from "@t3jus/domain";
+import { diaBrasilia, mascararEmail, type EventoSuporte, type FichaAcesso, type PessoaSuporte } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { CARTEIRA, chamarConsole, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
@@ -41,9 +41,9 @@ function EmailMascarado({ email }: { email: string | null }) {
   );
 }
 
-/** "2026-11-18…" vira "18/11/2026"; com `curta`, "18/11". */
+/** "2026-11-18" ou um instante (o dia de Brasília, F3.175) vira "18/11/2026"; com `curta`, "18/11". */
 function diaBr(iso: string, curta = false): string {
-  const [a, m, d] = iso.slice(0, 10).split("-");
+  const [a, m, d] = diaBrasilia(iso).split("-");
   return curta ? `${d}/${m}` : `${d}/${m}/${a}`;
 }
 

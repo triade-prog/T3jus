@@ -2,7 +2,7 @@
 // que elas calculam deles. Telas aprovadas em docs/design/aprovadas/console-cobranca. Módulo
 // simples (sem "use client"), para os testes e as páginas do servidor usarem.
 
-import { dinheiro, ErroDinheiro, formatar, lerReais, mesPorExtenso, type FormaAssinatura, type SituacaoFatura } from "@t3jus/domain";
+import { diaBrasilia, dinheiro, ErroDinheiro, formatar, lerReais, mesPorExtenso, type FormaAssinatura, type SituacaoFatura } from "@t3jus/domain";
 import type { NomeIcone } from "../Icone.tsx";
 
 /** As abas de Cobrança (fora do componente de cliente para a página do servidor conferir). */
@@ -227,9 +227,9 @@ export function brl(centavos: number): string {
   return centavos < 0 ? `− ${v}` : v;
 }
 
-/** "2026-11-20" (ou um instante) → "20/11/2026". */
+/** "2026-11-20" (ou um instante, no dia de Brasília: F3.175) → "20/11/2026". */
 export function dataBr(iso: string): string {
-  const [a, m, d] = iso.slice(0, 10).split("-");
+  const [a, m, d] = diaBrasilia(iso).split("-");
   return `${d}/${m}/${a}`;
 }
 
@@ -257,7 +257,7 @@ export function numeroFatura(f: Pick<FaturaCb, "numero" | "competencia">): strin
   return `${f.competencia.slice(0, 4)}/${String(f.numero).padStart(4, "0")}`;
 }
 
-/** Dias entre duas datas (aaaa-mm-dd), sem fuso. */
+/** Dias entre duas datas (aaaa-mm-dd), sem fuso. Só para data pura: um instante seria cortado no dia UTC. */
 export function diasEntre(de: string, ate: string): number {
   return Math.round((Date.parse(`${ate.slice(0, 10)}T12:00:00Z`) - Date.parse(`${de.slice(0, 10)}T12:00:00Z`)) / 86_400_000);
 }

@@ -8,7 +8,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  type Anexo, CODIGOS_PODERES, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
+  type Anexo, CODIGOS_PODERES, diaBrasilia, DOCUMENTOS_CONTRATO, faltasDoAdvogado, faltasNoDocumento, formatarDocumento, hojeBrasilia, quemAssina, rotuloQuemAssina, O_QUE_LEVA, PODERES_ESPECIAIS, TIPOS_DOCUMENTO_CONTRATO,
   type CampoDocumento, type ConferenciaModeloDocumento, type ContratoLinha, type DadosDocumentos, type DocumentoDoContrato,
   type DocumentosDoContrato, type FichaContrato, type LinhaDocumento, type ListaContratos, type ListaDocumentos, type ListaModelosDocumento,
   type ModeloDocumentoLinha, type PessoaComOab, type PoderEspecial, type PreviaDocumentos, type ResultadoDocumentos, type TipoDocumentoContrato,
@@ -554,7 +554,7 @@ function ModelosConteudo() {
                       {m.emRevisao ? <Selo tom="atencao" icone="relogio">Em revisão</Selo> : null}
                     </strong>
                     <small>
-                      {m.padrao ? `Padrão T3jus, de ${diaBr(m.atualizadoEm.slice(0, 10))}` : `v${m.versao} · enviado por ${m.enviadoPor?.nome ?? "alguém da equipe"}, ${quando(m.atualizadoEm)}`}
+                      {m.padrao ? `Padrão T3jus, de ${diaBr(diaBrasilia(m.atualizadoEm))}` : `v${m.versao} · enviado por ${m.enviadoPor?.nome ?? "alguém da equipe"}, ${quando(m.atualizadoEm)}`}
                       {" · "}{contar(m.campos.length, "campo", "campos")} · usado {m.usos} {m.usos === 1 ? "vez" : "vezes"}
                     </small>
                     {m.codigos && m.codigos.length > 1 ? <small>Duas versões de texto: {m.codigos.map((c) => c.nome.replace(/^Declaração de hipossuficiência,? ?/i, "")).join(" e ")}. O T3jus escolhe pelo tipo do cliente.</small> : null}

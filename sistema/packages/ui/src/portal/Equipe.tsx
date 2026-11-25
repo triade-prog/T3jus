@@ -5,7 +5,7 @@
 // da pessoa. Quem não é o dono vê "Esta página é do sócio dono". O servidor decide tudo.
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { AREAS_PORTAL, convidarEquipeSchema, type AreaPortal, type PessoaEquipePortal, type PessoaRetiradaPortal } from "@t3jus/domain";
+import { AREAS_PORTAL, convidarEquipeSchema, diaBrasilia, type AreaPortal, type PessoaEquipePortal, type PessoaRetiradaPortal } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -21,7 +21,8 @@ const ORDEM = Object.keys(AREAS_PORTAL) as AreaPortal[];
 const EQUIPE_API = "/v1/escritorio/equipe";
 type Filtro = "TODAS" | "ATIVAS" | "CONVITES" | "RETIRADAS";
 
-const diaBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+// aaaa-mm-dd ou um instante (o dia de Brasília, F3.175).
+const diaBr = (iso: string) => diaBrasilia(iso).split("-").reverse().join("/");
 const apagada = (p: PessoaRetiradaPortal) => !!p.saida?.entradaApagadaEm;
 
 /** Aviso de sucesso que flutua no canto (no celular, acima da barra de baixo). */

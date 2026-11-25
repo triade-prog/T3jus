@@ -3,6 +3,7 @@
 // Desenho aprovado: docs/design/aprovadas/site-comercial/interessados.html.
 
 import {
+  diaBrasilia,
   ESTAGIOS_INTERESSADO,
   ESTAGIOS_ABERTOS,
   ORIGENS_INTERESSADO,
@@ -59,8 +60,9 @@ export function diaMes(iso: string, hoje: string): string {
   return a === hoje.slice(0, 4) ? `${d}/${m}` : `${d}/${m}/${a}`;
 }
 
+/** "2026-11-26" ou um instante (o dia de Brasília, F3.175) → "26/11/2026". */
 export function dataBrInteira(iso: string): string {
-  const [a, m, d] = iso.slice(0, 10).split("-");
+  const [a, m, d] = diaBrasilia(iso).split("-");
   return `${d}/${m}/${a}`;
 }
 

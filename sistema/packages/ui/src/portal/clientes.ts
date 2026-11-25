@@ -3,7 +3,7 @@
 // campos que mudaram no conflito (PT-19) e os rótulos de próximo contato.
 
 import {
-  CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, hojeBrasilia, nascimentoNoFuturo, ORIGENS, TIPOS_DOCUMENTO_PESSOAL, TOTAL_QUALIFICACAO,
+  CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diaBrasilia, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, hojeBrasilia, nascimentoNoFuturo, ORIGENS, TIPOS_DOCUMENTO_PESSOAL, TOTAL_QUALIFICACAO,
   type DadosCliente, type FichaCliente, type ProxContato, type TipoCliente, type TipoDocumentoPessoal,
 } from "@t3jus/domain";
 import { formatarTelefone } from "../console/ficha.ts";
@@ -323,9 +323,9 @@ export function lerHora(texto: string): string | null {
   return `${m[1]!.padStart(2, "0")}:${m[2]}`;
 }
 
-/** "2026-11-18" vira "18/11/2026". */
+/** "2026-11-18" vira "18/11/2026"; um instante vira o dia de Brasília (F3.175). */
 export function dataBr(iso: string): string {
-  const [a, m, d] = iso.slice(0, 10).split("-");
+  const [a, m, d] = diaBrasilia(iso).split("-");
   return `${d}/${m}/${a}`;
 }
 

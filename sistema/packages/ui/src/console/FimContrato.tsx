@@ -6,7 +6,7 @@
 // com motivo até o fim da guarda e só a Administração.
 
 import { useId, useState } from "react";
-import { dataDigitada, datasDoFim, nomeConfere, type EncerramentoConsole } from "@t3jus/domain";
+import { dataDigitada, datasDoFim, diaBrasilia, nomeConfere, type EncerramentoConsole } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import type { FichaDoCliente } from "./ficha.ts";
@@ -17,9 +17,9 @@ import { dataHora } from "./tempo.ts";
 export const PODE_ENCERRAR = "console.contrato.encerrar";
 const MAX_MOTIVO = 300;
 
-/** "2026-11-19" vira "19/11/2026"; com `curta`, "19/11". */
+/** "2026-11-19" ou um instante (o dia de Brasília, F3.175) vira "19/11/2026"; com `curta`, "19/11". */
 export function dataBr(iso: string, curta = false): string {
-  const [a, m, d] = iso.slice(0, 10).split("-");
+  const [a, m, d] = diaBrasilia(iso).split("-");
   return curta ? `${d}/${m}` : `${d}/${m}/${a}`;
 }
 

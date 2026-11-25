@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FichaCliente } from "@t3jus/domain";
-import { conferirCliente, corpoDoRascunho, diferencasCliente, errosDosCaminhos, juntarComE, lerData, lerHora, prontosParaProcuracao, rascunhoDaFicha, rascunhoVazio, rotuloProx } from "./clientes.ts";
+import { conferirCliente, corpoDoRascunho, dataBr, diferencasCliente, errosDosCaminhos, juntarComE, lerData, lerHora, prontosParaProcuracao, rascunhoDaFicha, rascunhoVazio, rotuloProx } from "./clientes.ts";
 
 const ficha = {
   id: "c1", tipo: "PF", nome: "Antônia Prado", documento: "52998224725", nacionalidade: "brasileira", estadoCivil: "VIUVO", profissao: null, rg: null, rgOrgao: null,
@@ -69,5 +69,15 @@ describe("Clientes do Portal: regras da tela", () => {
     expect(juntarComE(["a", "b", "c"])).toBe("a, b e c");
     expect([lerData("18/11/2026"), lerData("31/02/2026"), lerData("2026-11-18")]).toEqual(["2026-11-18", null, null]);
     expect([lerHora("9:05"), lerHora("15h10"), lerHora("25:00")]).toEqual(["09:05", "15:10", null]);
+  });
+});
+
+describe("F3.175: dataBr mostra o dia de Brasília", () => {
+  it("um instante às 22h30 de Brasília, em UTC como o banco manda, fica no próprio dia", () => {
+    expect(dataBr("2026-11-25T01:30:00+00:00")).toBe("24/11/2026");
+    expect(dataBr("2026-11-25T01:30:00.000Z")).toBe("24/11/2026");
+  });
+  it("uma data pura não anda", () => {
+    expect(dataBr("2026-11-24")).toBe("24/11/2026");
   });
 });
