@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 1173,
-  "proximo": "Planejar o que sai das conversas na exclusão a pedido do titular (telefone, nome do contato e textos) e o que fica como prova"
+  "proximo": "Planejar o que sai das conversas na exclusão a pedido do titular (telefone, nome do contato e textos) e o que fica como prova. Inclui os avisos do sino de origem conversas (CONVERSA_IA, CONVERSA_ASSUMIDA, CONVERSA_PASSADA e DOCUMENTO_CHEGOU, com as chaves conversa, contato, trecho, recado, arquivo, texto e caso), que a F3.172 deixou de fora (revisão, M4): a troca entra no aviso_sino_dados_do_excluido e no guardião da 1110, sem travar o cliente dentro de transação que segura a conversa (deadlock com a exclusão)"
 }

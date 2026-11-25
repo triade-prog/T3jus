@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 1174,
-  "proximo": "Limpar as linhas de importação na exclusão e decidir o que acontece com os documentos do caso e as petições quando o desfazer deixa o cliente sem caso (revisão da F3.141, M5)"
+  "proximo": "Limpar as linhas de importação na exclusão e decidir o que acontece com os documentos do caso e as petições quando o desfazer deixa o cliente sem caso (revisão da F3.141, M5). O desfazer também deixa excluível o cliente com levantamento no caso (levantamentos.cliente_id; revisão da F3.172, M2): o levantamento, as destinações, a requisição a caminho e a parte dos avisos REPASSE_* guardam o nome dele, e a rotina do atraso continua criando aviso (a F3.172 já troca o cliente desses avisos)"
 }
