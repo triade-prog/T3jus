@@ -185,9 +185,15 @@ describe("Gerar documentos do menor (F3.142)", () => {
     expect(casoDoMenor(pedro({ nascimento: "2010-11-22" }), HOJE)).toBe("ASSISTIDO");
     expect(casoDoMenor(pedro({ nascimento: "2008-11-22" }), HOJE)).toBe("FEZ_18");
     expect(casoDoMenor(pedro({ nascimento: "2008-11-23" }), HOJE)).toBe("ASSISTIDO");
-    // 16 anos depois de um ano bissexto é outro ano bissexto: a data dos 16 é 29/02; a dos 18, 28/02.
+    // 16 anos depois de um ano bissexto é outro ano bissexto: a data dos 16 é 29/02; a dos 18, 01/03
+    // (art. 132, § 3º, do CC e art. 3º da Lei 810/1949; F3.161).
     expect(avisoDoMenor(pedro({ nascimento: "2012-02-29" }), "2026-11-22", 3)!.texto).toContain("Em 29/02/2028, aos 16 anos");
-    expect(avisoDoMenor(pedro({ nascimento: "2012-02-29" }), "2028-02-29", 3)!.texto).toContain("Em 28/02/2030, aos 18 anos");
+    expect(avisoDoMenor(pedro({ nascimento: "2012-02-29" }), "2028-02-29", 3)!.texto).toContain("Em 01/03/2030, aos 18 anos");
+    const vespera = avisoDoMenor(pedro({ nascimento: "2012-02-29" }), "2030-02-28", 3)!;
+    expect(vespera.titulo).toBe("Pedro tem 17 anos hoje: é assistido(a).");
+    expect(vespera.texto).toContain("Em 01/03/2030, aos 18 anos");
+    expect(avisoFez18(pedro({ nascimento: "2012-02-29" }), "2030-02-28")).toBeNull();
+    expect(avisoFez18(pedro({ nascimento: "2012-02-29" }), "2030-03-01")!.titulo).toBe("Pedro fez 18 anos em 01/03/2030: agora assina por si.");
   });
 
   it("o gênero de quem assina vem do papel", () => {
@@ -200,11 +206,14 @@ describe("Gerar documentos do menor (F3.142)", () => {
     expect(linhaFaltaNoQuadro(pedro())).toBeNull();
   });
 
-  it("as faltas de quem assina saem do domínio, com a marca do .docx", () => {
+  it("as faltas de quem assina saem do domínio, com as marcas do .docx", () => {
     const c = pedro({ rlDocumento: null, rlRg: null });
     expect(faltasDeQuemAssina(c)).toEqual([
-      { curta: "o CPF", marca: "[CPF DE QUEM ASSINA: falta]" },
-      { curta: "o RG", marca: "[RG DE QUEM ASSINA: falta]" },
+      { curta: "o CPF", marcas: ["[CPF DE QUEM ASSINA: falta]"] },
+      { curta: "o RG", marcas: ["[RG DE QUEM ASSINA: falta]"] },
+    ]);
+    expect(faltasDeQuemAssina(pedro({ rlEstadoCivil: null, rlProfissao: null }))).toEqual([
+      { curta: "a qualificação", marcas: ["[ESTADO CIVIL DE QUEM ASSINA: falta]", "[PROFISSÃO DE QUEM ASSINA: falta]"] },
     ]);
     const tudo = pedro({ rlDocumento: null, rlRg: null, rlProfissao: null, rlMoraJunto: false, rlEndereco: null });
     expect(faltasDeQuemAssina(tudo).map((x) => x.curta)).toEqual(["o CPF", "o RG", "a qualificação", "o endereço"]);
@@ -212,10 +221,16 @@ describe("Gerar documentos do menor (F3.142)", () => {
     // Todo texto possível do domínio está no mapa, menos o "quem assina pelo cliente", que o banco não deixa existir.
     const todos = faltasDoResponsavel({ rlNome: "", rlMoraJunto: false });
     expect(todos.filter((f) => !FALTA_DE_QUEM_ASSINA[f])).toEqual(["quem assina pelo cliente"]);
-    expect(Object.values(FALTA_DE_QUEM_ASSINA).map((x) => x.marca)).toEqual(["[CPF DE QUEM ASSINA: falta]", "[RG DE QUEM ASSINA: falta]", null, "[ENDEREÇO DE QUEM ASSINA: falta]"]);
+    expect(Object.values(FALTA_DE_QUEM_ASSINA)).toEqual(["o CPF", "o RG", "a qualificação", "o endereço"]);
+    // Toda falta tem marca, e cada marca que a tela cita sai de verdade no .docx (F3.161).
+    const marcas = faltasDeQuemAssina(tudo).flatMap((x) => x.marcas);
+    expect(faltasDeQuemAssina(tudo).every((x) => x.marcas.length > 0)).toBe(true);
+    const d = base({ cliente: { ...tudo, nacionalidade: "brasileiro" }, hoje: HOJE });
+    const v = montarValoresDocumento(d, pedidoDocumentos(d, formInicialDocumentos(d))).valores;
+    for (const m of marcas) expect(`${v.CLIENTE_QUALIFICACAO}\n${v.CLIENTE_ASSINATURA}`).toContain(m);
   });
 
-  it("falta dado de quem assina: o aviso em atenção, no plural, no singular e sem marca", () => {
+  it("falta dado de quem assina: o aviso em atenção, no plural, no singular e com as marcas da qualificação", () => {
     expect(avisoFaltaQuemAssina(pedro({ rlDocumento: null, rlRg: null }), 3)).toEqual({
       titulo: "Faltam 2 dados de quem assina por Pedro: o CPF e o RG de Joana.",
       texto: "Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta] e [RG DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
@@ -227,8 +242,13 @@ describe("Gerar documentos do menor (F3.142)", () => {
     expect(avisoFaltaQuemAssina(pedro({ rlMoraJunto: false, rlEndereco: null }), 2)!.texto).toContain("os dois documentos saem com [ENDEREÇO DE QUEM ASSINA: falta]");
     expect(avisoFaltaQuemAssina(pedro({ rlProfissao: null }), 3)).toEqual({
       titulo: "Falta 1 dado de quem assina por Pedro: a qualificação de Joana.",
-      texto: "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
+      texto: "Dá para gerar assim: os três documentos saem com [PROFISSÃO DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
     });
+    expect(avisoFaltaQuemAssina(pedro({ rlDocumento: null, rlEstadoCivil: null, rlProfissao: null }), 3)).toEqual({
+      titulo: "Faltam 2 dados de quem assina por Pedro: o CPF e a qualificação de Joana.",
+      texto: "Dá para gerar assim: os três documentos saem com [CPF DE QUEM ASSINA: falta], [ESTADO CIVIL DE QUEM ASSINA: falta] e [PROFISSÃO DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.",
+    });
+    expect(linhaFaltaNoQuadro(pedro({ rlProfissao: null }))).toBe("Falta a qualificação dela");
     expect(avisoFaltaQuemAssina(pedro(), 3)).toBeNull();
   });
 
@@ -259,9 +279,11 @@ describe("Gerar documentos do menor (F3.142)", () => {
     expect(fraseDaFaixaGerar(falta, HOJE, previa(falta, [CLIENTE, CLIENTE, CLIENTE]))).toBe("2 dados saem marcados em cada um: o CPF e o RG de Joana.");
     // Um documento sem campo do cliente não atrapalha a lista.
     expect(fraseDaFaixaGerar(falta, HOJE, previa(falta, [CLIENTE, ["ADVOGADOS_QUALIFICACAO"]]))).toBe("2 dados saem marcados: o CPF e o RG de Joana.");
-    // Com a qualificação de quem assina, que não deixa marca, fica só a frase do servidor.
+    // A qualificação de quem assina também deixa marca e entra na lista (F3.161).
     const qual = pedro({ rlRg: null, rlProfissao: null });
-    expect(fraseDaFaixaGerar(qual, HOJE, previa(qual, [CLIENTE]))).toBe("2 dados saem marcados.");
+    expect(fraseDaFaixaGerar(qual, HOJE, previa(qual, [CLIENTE]))).toBe("2 dados saem marcados: o RG e a qualificação de Joana.");
+    const soQual = pedro({ rlProfissao: null });
+    expect(fraseDaFaixaGerar(soQual, HOJE, previa(soQual, [CLIENTE, CLIENTE, CLIENTE]))).toBe("1 dado sai marcado em cada um: a qualificação de Joana.");
     // Falta misturada (do cliente e de quem assina): só a frase do servidor.
     const mist = pedro({ nacionalidade: null, rlRg: null });
     expect(fraseDaFaixaGerar(mist, HOJE, previa(mist, [CLIENTE]))).toBe("2 dados saem marcados.");
@@ -308,6 +330,9 @@ describe("Gerar documentos do menor (F3.142)", () => {
     });
     expect(avisoFaltaQuemAssina(falta, 3, false)!.texto).toMatch(/Ou complete a ficha antes: ao salvar, você volta para cá\. Junte uma cópia do termo de tutela à procuração\.$/);
     expect(avisoFaltaQuemAssina(pedro({ rlDocumento: null }), 3, true)!.texto).not.toMatch(/tutela/);
+    // Só a qualificação, com a tutora: as marcas e o termo no fim (F3.161).
+    expect(avisoFaltaQuemAssina(davi({ rlProfissao: null }), 3, true)!.texto)
+      .toBe(`Dá para gerar assim: os três documentos saem com [PROFISSÃO DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá. ${COM}`);
   });
 
   it("F3.140: a faixa leva sempre o termo de tutela, com ou sem “Em todos”", () => {
