@@ -1,0 +1,10 @@
+{
+  "data": "25/11/2026",
+  "inicio": "10:30",
+  "fim": "11:07",
+  "texto": "F3.172: na exclusão a pedido do titular, o nome do cliente e o serviço nos avisos do sino viram o texto fixo, e o aviso dos 18 anos perde a data e quem assinava (migrations 1110 e 1111, pgTAP 150, concorrência); itens novos F3.178 a F3.180 e publicação P18",
+  "refs": [
+    "F3.172",
+    "PT-11"
+  ]
+}

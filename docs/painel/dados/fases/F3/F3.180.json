@@ -1,0 +1,11 @@
+{
+  "id": "F3.180",
+  "texto": "Contrato novo ao mesmo tempo que a exclusão a pedido do titular: portal_contrato_criar confere o cliente ATIVO sem trava, e a exclusão que confirma entre a conferência e o INSERT deixa nascer contrato de cliente excluído (a chave estrangeira só pede FOR KEY SHARE); com proposta, ainda pode haver deadlock com o UPDATE de propostas da exclusão",
+  "peca": "S3",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1360,
+  "proximo": "Ler o cliente com FOR SHARE no INSERT do contrato, como cliente_documento_nasce (0970), e testar com duas conexões (revisão da F3.172, m9)"
+}

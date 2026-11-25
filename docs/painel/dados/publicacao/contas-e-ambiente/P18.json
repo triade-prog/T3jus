@@ -1,0 +1,10 @@
+{
+  "id": "P18",
+  "texto": "Aplicar no Supabase a migration 1110 (os avisos do sino do cliente excluído ficam com o texto fixo, F3.172) e, com o ok da Carol depois da contagem, a 1111 (os já excluídos, sem volta)",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 180,
+  "nota": "Ordem (cabeçalho da 1111, README \"Arquivos do cliente excluído\" e plano da F3.172, seção 9): 1) conferir com list_migrations que a 1090 está no ar (servico_apagado_texto); 2) aplicar a 1110; daqui em diante, toda exclusão troca os avisos; 3) rodar a contagem só de leitura (project-files t3jus/f3-172/contagem-antes-1111.sql), que usa as funções da 1110, e mostrar à Carol; 4) com o ok dela, aplicar a 1111 e conferir que avisos_sino_preencher_excluidos() devolve {}. Nada a publicar no Portal, na api-console nem no Console. O texto novo do inventário de avisos_sino (no_fim) precisa do ok da Carol antes do merge. Se der errado: drop trigger sino_apagar_do_excluido on clientes_escritorio, drop trigger avisos_sino_nasce on avisos_sino e recriar avisos_sino_guardiao com o corpo da 0390; o índice pode ficar; o que já foi trocado não volta."
+}

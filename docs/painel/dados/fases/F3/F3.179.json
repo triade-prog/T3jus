@@ -1,0 +1,11 @@
+{
+  "id": "F3.179",
+  "texto": "Condições de honorário da proposta do cliente excluído: o sobre das condições de ÊXITO e RECORRENTE é texto livre (até 120 letras, por exemplo \"do que Maria receber do INSS\") e fica na proposta e na cópia em avisos_sino.dados.condicoes do PEDIDO_CONTRATO",
+  "peca": "S2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1350,
+  "proximo": "Decisão da Carol (como foi a do serviço na F3.159): trocar o sobre por um texto fixo na exclusão, na proposta e no aviso; no sino, é uma linha a mais em aviso_sino_dados_do_excluido (revisão da F3.172, M3)"
+}
