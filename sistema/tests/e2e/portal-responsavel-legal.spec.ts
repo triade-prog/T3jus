@@ -231,7 +231,7 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
       paragrafos: [[seg("fixo", m.nome.toUpperCase())], [seg("fixo", "OUTORGANTE: "), seg("cadastro", "PEDRO ALVES SOUZA")]] })),
     frase,
   });
-  const dadosGerarMenor = (cliente: unknown, prev: unknown, n = 3) => ({
+  const dadosGerarMenor = (cliente: unknown, prev: unknown, n = 3, dia = hoje) => ({
     "/v1/escritorio": { corpo: ESCRITORIO },
     "GET /v1/escritorio/avisos": { corpo: { novos: 0, total: 0, itens: [] } },
     "GET /v1/escritorio/pessoas/oab": { corpo: { pessoas: [{ ...MARINA, oab: [OAB] }] } },
@@ -240,7 +240,7 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
       cliente, condicoes: [], casos: [],
       advogados: [{ pessoaId: MARINA.id, nome: MARINA.nome, noContrato: true, responsavel: true, inscricoes: [OAB], escolhidas: [OAB.id] }],
       semOab: [], escritorio: { nome: "Ribeiro & Matos", cnpj: "41207338000105", endereco: "Rua Tabapuã, 1.123", cidade: "São Paulo", uf: "SP", oab: null },
-      marca: null, hoje, modelos: MODELOS.slice(0, n), atuais: [], ultima: null, mudancas: [], poderesIniciais: [],
+      marca: null, hoje: dia, modelos: MODELOS.slice(0, n), atuais: [], ultima: null, mudancas: [], poderesIniciais: [],
     } },
     [`POST /v1/escritorio/contratos/${CT}/documentos/previa`]: { corpo: prev },
   });
@@ -300,6 +300,29 @@ test.describe("Gerar documentos do menor (F3.142)", () => {
     // Um aviso de falta só: o genérico não repete as de quem assina.
     await expect(page.getByText(/^Faltam? \d dados? de Pedro/)).toHaveCount(0);
     await semViolacoes(page);
+  });
+
+  test("F3.161: falta só a qualificação de quem assina: o aviso cita a marca e a faixa lista a qualificação", async ({ page }) => {
+    const marcados = ["Qualificação de quem assina de Pedro Alves Souza"];
+    await simular(page, dadosGerarMenor({ ...BASE, ...COM_RG, rlProfissao: null }, previa(3, marcados, "1 dado sai marcado em cada um.")));
+    await gerar(page);
+    const aviso = page.getByRole("status").filter({ hasText: "Falta 1 dado de quem assina por Pedro: a qualificação de Joana." });
+    await expect(aviso).toContainText("Dá para gerar assim: os três documentos saem com [PROFISSÃO DE QUEM ASSINA: falta], para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.");
+    await expect(page.getByText("Falta a qualificação dela")).toBeVisible();
+    await expect(faixa(page)).toContainText("1 dado sai marcado em cada um: a qualificação de Joana. Cada geração");
+    await expect(faixa(page)).not.toContainText("Em todos");
+    await semViolacoes(page);
+  });
+
+  test("F3.161: quem nasceu em 29/02 tem 17 anos em 28/02 e faz 18 em 01/03 (art. 132, § 3º, do CC)", async ({ page }) => {
+    // As datas à mão: mais() daria 29/02/2030, que não existe.
+    await simular(page, dadosGerarMenor({ ...BASE, ...COM_RG, nascimento: "2012-02-29",
+      assina: { situacao: "ASSISTIDO", idade: 17, faz16: "2028-02-29", faz18: "2030-03-01", modo: null } },
+    previa(3, [], "Nenhum dado sai marcado."), 3, "2030-02-28"));
+    await gerar(page);
+    const aviso = page.getByRole("status").filter({ hasText: "Pedro tem 17 anos hoje: é assistido(a)." });
+    await expect(aviso).toContainText("Em 01/03/2030, aos 18 anos, Pedro passa a assinar sozinho(a).");
+    await expect(page.getByText(/fez 18 anos/)).toHaveCount(0);
   });
 
   test("fez 18: o aviso no lugar do quadro e do aviso genérico", async ({ page }) => {

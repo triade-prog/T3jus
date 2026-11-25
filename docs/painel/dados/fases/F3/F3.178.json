@@ -1,0 +1,13 @@
+{
+  "id": "F3.178",
+  "texto": "Estado civil e profissão de quem assina pela empresa marcados no .docx e contados em Gerar documentos, como a ficha conta (REP_QUALIFICACAO); hoje qualificacaoDoRepresentante só omite e faltasNoDocumento da PJ não conta",
+  "peca": "S2",
+  "refs": [
+    "CH-08",
+    "AP-01"
+  ],
+  "status": "pendente",
+  "ordem": 1340,
+  "nota": "Achado na revisão do plano do F3.161 (R7 do plano; revisão, seção 7, item 5): a mesma família de diferença da qualificação de quem assina pelo menor, mas do representante da pessoa jurídica. Não há promessa de marca quebrada (não conta e não marca). Os rótulos das marcas novas seriam texto novo de documento, para a Carol ver.",
+  "proximo": "Marcar no .docx e contar em Gerar o estado civil e a profissão de quem assina pela empresa, como a ficha conta (REP_QUALIFICACAO)"
+}

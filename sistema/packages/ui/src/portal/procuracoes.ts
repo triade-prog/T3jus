@@ -4,7 +4,7 @@
 // (0680_documentos_contrato.sql); aqui só o que a tela mostra.
 
 import {
-  aniversario, cidadeDataDocumento, faltaNaSugestao, marcadosDaArea, rotuloAreaDocumentos, type AreaDireito, CODIGOS_PODERES, dataBr, DOCUMENTOS_CONTRATO, faltasDoResponsavel, faltasNoDocumento, fraseOutorgados, idadeEm, tituloDaIdade,
+  aniversario, cidadeDataDocumento, faltaNaSugestao, marcadosDaArea, rotuloAreaDocumentos, type AreaDireito, CODIGOS_PODERES, dataBr, DOCUMENTOS_CONTRATO, faltasDoResponsavel, faltasDoResponsavelComMarcas, faltasNoDocumento, fraseOutorgados, idadeEm, tituloDaIdade,
   outorgadosEscolhidos, PAPEIS_RESPONSAVEL, papelFeminino, situacaoNoDia,
   type Anexo, type ClienteDoDocumento, type DadosDocumentos, type DocumentosDoContrato, type EscolhasDocumentos, type ModeloEmUso, type PoderEspecial,
   type PreviaDocumentos, type TipoDocumentoContrato,
@@ -253,18 +253,17 @@ export function casoDoMenor(c: ClienteDoDocumento, hoje: string): CasoDoMenor | 
   return s === "REPRESENTADO" || s === "ASSISTIDO" || s === "FEZ_18" ? s : null;
 }
 
-/** Cada falta de quem assina (o texto de faltasDoResponsavel), curta e com a marca que sai no .docx. */
-export const FALTA_DE_QUEM_ASSINA: Record<string, { curta: string; marca: string | null }> = {
-  "o CPF de quem assina": { curta: "o CPF", marca: "[CPF DE QUEM ASSINA: falta]" },
-  "o RG de quem assina": { curta: "o RG", marca: "[RG DE QUEM ASSINA: falta]" },
-  // A qualificação de quem assina não deixa marca no .docx: só fica de fora (item pendente no painel).
-  "a qualificação de quem assina": { curta: "a qualificação", marca: null },
-  "o endereço de quem assina": { curta: "o endereço", marca: "[ENDEREÇO DE QUEM ASSINA: falta]" },
+/** Cada falta de quem assina (o texto de faltasDoResponsavel), na forma curta. As marcas vêm do domínio (F3.161). */
+export const FALTA_DE_QUEM_ASSINA: Record<string, string> = {
+  "o CPF de quem assina": "o CPF",
+  "o RG de quem assina": "o RG",
+  "a qualificação de quem assina": "a qualificação",
+  "o endereço de quem assina": "o endereço",
 };
 
-/** As faltas de quem assina, na ordem do domínio, para "o CPF e o RG de Joana". */
-export function faltasDeQuemAssina(c: ClienteDoDocumento): { curta: string; marca: string | null }[] {
-  return faltasDoResponsavel(c).flatMap((f) => (FALTA_DE_QUEM_ASSINA[f] ? [FALTA_DE_QUEM_ASSINA[f]] : []));
+/** As faltas de quem assina, na ordem do domínio, para "o CPF e o RG de Joana", com as marcas que saem no .docx. */
+export function faltasDeQuemAssina(c: ClienteDoDocumento): { curta: string; marcas: string[] }[] {
+  return faltasDoResponsavelComMarcas(c).flatMap((f) => (FALTA_DE_QUEM_ASSINA[f.falta] ? [{ curta: FALTA_DE_QUEM_ASSINA[f.falta]!, marcas: f.marcas }] : []));
 }
 
 /** As faltas do próprio cliente: as do documento menos as de quem assina. */
@@ -310,20 +309,18 @@ export function avisoDoMenor(c: ClienteDoDocumento, hoje: string, docs: number, 
   };
 }
 
-/** O aviso quando falta dado de quem assina (gerar-falta). Sem a parte das marcas quando nenhuma sai no .docx. */
+/** O aviso quando falta dado de quem assina (gerar-falta), com as marcas que saem no .docx. */
 export function avisoFaltaQuemAssina(c: ClienteDoDocumento, docs: number, temTermo = false): { titulo: string; texto: string } | null {
   const f = faltasDeQuemAssina(c);
   if (!f.length) return null;
   const p = primeiroNome(c.nome);
   const r = c.rlNome?.trim() ? primeiroNome(c.rlNome) : "quem assina";
   const lista = `${juntar(f.map((x) => x.curta))} de ${r}`;
-  const marcas = f.map((x) => x.marca).filter((x): x is string => !!x);
+  const marcas = f.flatMap((x) => x.marcas);
   const sai = `${quantosDocumentos(docs)} ${docs === 1 ? "sai" : "saem"}`;
   return {
     titulo: f.length === 1 ? `Falta 1 dado de quem assina por ${p}: ${lista}.` : `Faltam ${f.length} dados de quem assina por ${p}: ${lista}.`,
-    texto: (marcas.length
-      ? `Dá para gerar assim: ${sai} com ${juntar(marcas)}, para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.`
-      : "Dá para gerar assim, para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.") + fraseDoTermoDeTutela(c, temTermo),
+    texto: `Dá para gerar assim: ${sai} com ${juntar(marcas)}, para preencher à mão ou no Word. Ou complete a ficha antes: ao salvar, você volta para cá.${fraseDoTermoDeTutela(c, temTermo)}`,
   };
 }
 
@@ -366,9 +363,9 @@ const marcadoDoCliente = (f: string, nome: string) => {
 /**
  * A frase da faixa do botão (decisão 26): a do servidor (ou a de reserva, sem prévia) e, no menor,
  * a lista do que sai marcado e "Em todos, Joana assina por Pedro." A lista só sai quando cada
- * documento da prévia não tem marcado ou tem exatamente os do cliente, e nunca com a qualificação
- * de quem assina, que não deixa marca no .docx. Com tutora ou tutor, termina com "Junte o termo de
- * tutela à procuração.", com ou sem "Em todos…" (F3.140, revisão B1).
+ * documento da prévia não tem marcado ou tem exatamente os do cliente. Toda falta de quem assina,
+ * inclusive a qualificação, deixa marca no .docx (F3.161). Com tutora ou tutor, termina com "Junte o
+ * termo de tutela à procuração.", com ou sem "Em todos…" (F3.140, revisão B1).
  */
 export function fraseDaFaixaGerar(c: ClienteDoDocumento, hoje: string, prev: PreviaDocumentos | null): string {
   const faltas = faltasNoDocumento(c, hoje);
@@ -383,7 +380,7 @@ export function fraseDaFaixaGerar(c: ClienteDoDocumento, hoje: string, prev: Pre
     && prev.documentos.every((d) => !d.marcados.length || (d.marcados.length === esperados.length && esperados.every((m) => d.marcados.includes(m))));
   if (bate) {
     if (caso === "FEZ_18") frase = `${base.slice(0, -1)}: ${juntar(faltas)} de ${primeiroNome(c.nome)}.`;
-    else if (rl.length === faltas.length && rl.every((x) => x.marca)) frase = `${base.slice(0, -1)}: ${juntar(rl.map((x) => x.curta))} de ${primeiroNome(c.rlNome!)}.`;
+    else if (rl.length === faltas.length) frase = `${base.slice(0, -1)}: ${juntar(rl.map((x) => x.curta))} de ${primeiroNome(c.rlNome!)}.`;
   }
   if (caso === "FEZ_18") return frase;
   const termo = (caso === "REPRESENTADO" || caso === "ASSISTIDO") && assinaTutela(c) ? " Junte o termo de tutela à procuração." : "";
