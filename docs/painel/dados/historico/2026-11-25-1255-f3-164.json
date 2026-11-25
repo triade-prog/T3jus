@@ -1,0 +1,10 @@
+{
+  "data": "25/11/2026",
+  "inicio": "12:55",
+  "fim": "13:46",
+  "texto": "Testes instáveis (F3.164), parte 4: os 21 arquivos de teste que ainda usavam a data real fixam o relógio, e a trava passa a acusar qualquer teste que calcule datas sem relógio fixo; passaram em 6 horários, inclusive a virada do ano.",
+  "refs": [
+    "F3.164",
+    "PT-18"
+  ]
+}

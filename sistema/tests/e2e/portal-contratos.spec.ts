@@ -3,7 +3,7 @@
 // encerrar, mudar condição de contrato ativo e Honorários com a base do mês. A API é
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -32,7 +32,7 @@ const ESCRITORIO = {
 };
 const SEM_AREA = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
 
@@ -153,6 +153,9 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
   "GET /v1/escritorio/contratos/honorarios": { corpo: HONORARIOS },
 });
 
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
+
 test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
   test("Lista: honorários, próximo recebimento, base a pedir e situação; filtro e busca vão ao servidor", async ({ page }) => {
     const pedidos = await simular(page, comuns());
@@ -198,7 +201,7 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     await simular(page, {
       ...comuns(),
       "GET /v1/escritorio/avisos": { corpo: { novos: 1, total: 1, itens: [
-        { id: "av1", tipo: "PEDIDO_CONTRATO", origem: "propostas", origemId: prop(14), em: new Date().toISOString(), lido: false,
+        { id: "av1", tipo: "PEDIDO_CONTRATO", origem: "propostas", origemId: prop(14), em: new Date(agora).toISOString(), lido: false,
           dados: { quem: "Diego Almeida", cliente: "Benedito Souza Lima", proposta: "P-2026-014", servico: "Aposentadoria por idade", aceita: dia(-1), condicoes: [PARC, EXITO] } },
       ] } },
     });

@@ -1,6 +1,7 @@
 // Trava do relógio dos testes de tela (F3.164): h(), d(), agora e os dias de console-dados.ts contam
 // a partir de AGORA, um instante fixo. Um arquivo de tela que os usa e não fixa o relógio do
-// navegador compara dados de 24/11/2026 com a hora real e volta a falhar pela hora ou pela data.
+// navegador compara dados de 24/11/2026 com a hora real e volta a falhar pela hora ou pela data. O
+// mesmo vale para quem calcula datas com Date.now() ou new Date() sem fixar o relógio.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -31,9 +32,10 @@ describe("relógio dos testes de tela (F3.164)", () => {
   const specs = arquivos.filter((f) => f.endsWith(".spec.ts") && !RELOGIO_REAL.has(f));
   it.each(specs)("%s: quem usa o relógio fixo de console-dados.ts fixa o do navegador", (f) => {
     const t = texto(f);
-    const usa = [...importados(t, "console-dados.ts")].some((n) => DO_RELOGIO.has(n)) || [...dadosComRelogio].some((dados) => importados(t, dados).size > 0);
+    const usa = [...importados(t, "console-dados.ts")].some((n) => DO_RELOGIO.has(n)) || [...dadosComRelogio].some((dados) => importados(t, dados).size > 0)
+      || /Date\.now\(\)|new Date\(\)/.test(t);
     if (!usa) return;
-    expect(/fixarRelogio\(|clock\.setFixedTime\(|clock\.install\(/.test(t), `${f} usa h(), d() ou agora e não chama fixarRelogio`).toBe(true);
+    expect(/fixarRelogio\(|clock\.setFixedTime\(|clock\.install\(/.test(t), `${f} usa h(), d(), agora ou o relógio real e não chama fixarRelogio`).toBe(true);
   });
 
   it("o arquivo que fica no relógio real não importa o relógio fixo", () => {

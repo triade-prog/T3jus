@@ -3,7 +3,7 @@
 // tipo "Outro", ficha com lembrete e cancelar com motivo. A API é simulada; aqui se testa a
 // tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -21,7 +21,7 @@ const ESCRITORIO = {
 const SEM_AREA = { ...ESCRITORIO, pessoa: "Paula Nunes", dono: false, areas: [], funcoes: ["EQUIPE"] };
 
 /** Dia em Brasília, aaaa-mm-dd, a n dias de hoje. */
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 
@@ -80,6 +80,9 @@ const comuns = (escritorio = ESCRITORIO, agenda: unknown = AGENDA) => ({
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
 /** A semana do computador ou a lista do celular, conforme a tela. */
 const visivel = (page: Page) => page.locator(ehCelular(page) ? ".so-cel" : ".so-pc");
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Agenda do Portal (EX-06, PD-07)", () => {
   test("semana da equipe toda: tipos escritos, cancelado riscado e o período certo", async ({ page }) => {

@@ -3,7 +3,7 @@
 // (da linha e do alto, com os erros do servidor) e a ficha de parcelas do contrato com a
 // cobrança. A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -20,7 +20,7 @@ const ESCRITORIO = {
 };
 const SEM_AREA = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
 
@@ -95,6 +95,9 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
     parcelas: [], recebimento: { pixTipo: null, pixChave: null, recebedor: null, cidade: null, instrucoes: null }, dono: true, socioDono: null, carnes: [],
   } },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Financeiro do Portal, A receber (FI-01 a FI-04, FI-14, FI-17)", () => {
   test("Lista: números do alto, grupos por vencimento, motivo e próxima ação; filtros vão ao servidor", async ({ page }) => {

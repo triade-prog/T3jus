@@ -1,7 +1,7 @@
 // Financeiro do Portal, contas que repetem todo mês: a lista, a ficha e as janelas de mudar e
 // encerrar. A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -13,7 +13,7 @@ const ESCRITORIO = {
 };
 const SEM_AREA = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 
 type Resp = { status?: number; corpo: unknown };
 type Pedido = { metodo: string; caminho: string; busca: string; corpo: unknown };
@@ -81,6 +81,9 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
   "GET /v1/escritorio/financeiro/recorrencias": { corpo: RECS },
   [`GET /v1/escritorio/financeiro/recorrencias/${rid(1)}`]: { corpo: FICHA },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Contas que repetem todo mês (FI-13, F3.24)", () => {
   test("Recorrentes do mês abre a lista: valor, dia, desde, o mês, Mudar e Encerrar; e as encerradas embaixo", async ({ page }) => {

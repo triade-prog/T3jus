@@ -4,7 +4,7 @@
 // (dispensar-sem-motivo, ja-dispensado, trazido-resolvido, busca-vazia-viraram). A API é
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -58,6 +58,9 @@ const lista = (situacao: string, lembretes: unknown[], x: Record<string, unknown
 const DISPENSADOS = [
   lembrete(4, "Jorge Batista", 50000, { situacao: "DISPENSADO", dispensa: { motivo: "PERDOADO", detalhe: "Cliente de longa data; a sócia decidiu não cobrar.", em: "2026-11-22T15:00:00Z", por: MARINA } }),
 ];
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Lembretes de contrato (F3.144, F3.145)", () => {
   test("Abertos: os três números, o valor com o mais antigo, o contrato ativo e Criar o contrato com o cliente", async ({ page }) => {
@@ -119,7 +122,7 @@ test.describe("Lembretes de contrato (F3.144, F3.145)", () => {
   });
 
   test("Já dispensado por outra pessoa: nada mudou, diz quem, e um botão só", async ({ page }) => {
-    const em = new Date(Date.now() - 3 * 60_000).toISOString();
+    const em = new Date(agora - 3 * 60_000).toISOString();
     await simular(page, {
       "/v1/escritorio": { corpo: ESCRITORIO },
       "GET /v1/escritorio/contratos/lembretes": { corpo: lista("ABERTO", ABERTOS) },
