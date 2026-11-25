@@ -8,5 +8,5 @@
   ],
   "status": "pendente",
   "ordem": 580,
-  "proximo": "Registrar o T3jus como parceiro de tecnologia na Meta (dependência externa); depois ligar a janela ao serviço, que chama whatsapp_meta_ligou e whatsapp_meta_evento, e o webhook de mensagens, que chama whatsapp_mensagem_recebida, whatsapp_mensagem_do_app e atenderConversa (já prontas e testadas)"
+  "proximo": "Registrar o T3jus como parceiro de tecnologia na Meta (dependência externa); depois ligar a janela ao serviço, que chama whatsapp_meta_ligou e whatsapp_meta_evento, e o webhook de mensagens, que chama whatsapp_mensagem_recebida, whatsapp_mensagem_do_app e atenderConversa (já prontas e testadas); e, da F3.157: ao guardar a mídia recebida no Storage, pôr o caminho na fila arquivos_apagar na exclusão (formato novo no check arquivos_apagar_caminho e no caminhoValido da api-console) antes de afrouxar o check conversa_mensagens_anexo_guardado da 1114; pôr a regra do nono dígito em telefone_chave e usá-la em conversa_cliente_do_numero (o número da ficha com o 9 e o da Meta sem ele); e conferir que o context.id de uma resposta não liga a conversa nova à conversa apagada"
 }

@@ -3,7 +3,7 @@
 -- aviso dos 18 anos saem a data e quem assinava; o aviso não se apaga; o guardião aceita só essa
 -- troca, conferida pelos dados; o aviso que nasce de cliente já excluído nasce com a troca; os
 -- clientes excluídos antes da 1110 entram pela função da 1111, também com o escritório só de
--- consulta (revisão, M1). Os avisos de conversa ficam para a F3.157 (revisão, M4).
+-- consulta (revisão, M1). Os avisos de conversa ficam para a F3.157 (revisão, M4; teste 155).
 begin;
 select plan(47);
 
@@ -251,8 +251,9 @@ select ok((select bool_and(a.dados = b.dados) from avisos_sino a join antes b us
 -- 7. O gatilho no lugar certo.
 select is((select array_agg(tgname::text order by tgname) from pg_trigger
             where tgrelid = 'clientes_escritorio'::regclass and not tgisinternal and tgname ~ '(apagar_do_excluido|excluido_arquivos)$'),
-  array['comercial_apagar_do_excluido', 'financeiro_apagar_do_excluido', 'sino_apagar_do_excluido', 'z_cliente_excluido_arquivos'],
-  'PT-11 F3.172: sino_apagar_do_excluido roda entre financeiro_ e z_, pela ordem do nome');
+  array['comercial_apagar_do_excluido', 'conversas_apagar_do_excluido', 'financeiro_apagar_do_excluido', 'sino_apagar_do_excluido',
+        'z_cliente_excluido_arquivos'],
+  'PT-11 F3.172: sino_apagar_do_excluido roda entre financeiro_ e z_, pela ordem do nome (com o conversas_ da F3.157)');
 select ok((select pg_get_triggerdef(oid) like '%AFTER UPDATE OF estado ON public.clientes_escritorio FOR EACH ROW WHEN (((new.estado = ''EXCLUIDO''::text) AND (old.estado <> ''EXCLUIDO''::text)))%'
              from pg_trigger where tgname = 'sino_apagar_do_excluido'),
   'PT-11 F3.172: o gatilho é AFTER UPDATE OF estado, só na passagem a EXCLUIDO');

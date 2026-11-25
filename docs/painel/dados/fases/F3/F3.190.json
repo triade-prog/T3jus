@@ -1,0 +1,12 @@
+{
+  "id": "F3.190",
+  "texto": "Janela de exclusão a pedido do titular: a linha \"As conversas do WhatsApp\" em \"O que é apagado\" (o número, os nomes e os textos das conversas saem; ficam as datas, quem atendeu e os momentos), com a contagem que a ficha traz",
+  "peca": "S2",
+  "refs": [
+    "PT-11",
+    "PA-05"
+  ],
+  "status": "pendente",
+  "ordem": 1173.5,
+  "proximo": "Desenhar a linha com o agente de frontend (docs/IDENTIDADE.md e conceito-gabinete), levar à Carol e, aprovada, programar: a ficha traz a contagem das conversas (como arquivosParaApagar) e linhaConversas em packages/ui/src/portal/exclusao.ts (decisão C4 da Carol, 25/11/2026)"
+}

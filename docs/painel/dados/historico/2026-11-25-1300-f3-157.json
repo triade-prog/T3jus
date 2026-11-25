@@ -1,0 +1,11 @@
+{
+  "data": "25/11/2026",
+  "inicio": "13:00",
+  "fim": "16:40",
+  "texto": "Conversas do WhatsApp do cliente excluído a pedido do titular (1114 e 1115): sai todo texto, fica o esqueleto, a conversa com registro de outro cliente fica e religa, a apagada some de Conversas com 404, os avisos do sino da conversa perdem o texto; P20 e F3.190 (linha na janela de exclusão) ficam pendentes",
+  "refs": [
+    "F3.157",
+    "PT-11",
+    "PA-05"
+  ]
+}
