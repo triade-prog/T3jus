@@ -38,7 +38,7 @@
 -- exclusão espera e o UPDATE dos avisos, numa instrução nova, vê o aviso confirmado; se a exclusão
 -- vem primeiro, o pedido espera e lê o cliente já EXCLUIDO. Não há ciclo.
 --
--- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P18): conferir que a 1090
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P19): conferir que a 1090
 -- está no ar; esta 1110; a contagem só de leitura (project-files t3jus/f3-172/contagem-antes-1111.sql);
 -- com o ok da Carol, a 1111. Nada a publicar no Portal, na api-console nem no Console.
 --

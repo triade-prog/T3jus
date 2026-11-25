@@ -1,13 +1,13 @@
 {
   "id": "F3.161",
-  "texto": "Qualificação de quem assina pelo menor ou curatelado sai marcada no .docx quando falta a nacionalidade, o estado civil ou a profissão (hoje só é omitida, mas conta como 1 marcado na faixa e na aba da prévia)",
+  "texto": "Qualificação de quem assina pelo menor ou curatelado sai marcada no .docx quando falta a nacionalidade, o estado civil ou a profissão, e entra no aviso e na faixa de Gerar documentos; quem nasceu em 29/02 faz 16 e 18 anos na data certa (01/03 em ano comum) no domínio e no banco",
   "peca": "S2",
   "refs": [
     "CH-08",
     "AP-01"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1200,
-  "nota": "Achado na revisão do F3.142 (qualificacaoDoResponsavel só omite; na qualificação do próprio cliente a mesma falta sai como [ESTADO CIVIL: falta]). Enquanto isso, Gerar documentos não lista essa falta na faixa e o aviso diz só \"Dá para gerar assim, para preencher à mão ou no Word.\". Também do domínio: quem nasceu em 29/02 faz 18 anos em 01/03 para idadeEm e para o banco (age()), mas aniversario(…, 18) e o faz18 dizem 28/02 (o comentário \"29/02 vira 01/03\" de responsavel_legal.ts está errado; pelo art. 132, § 3º, do Código Civil, o certo é 01/03).",
-  "proximo": "Marcar no .docx a qualificação que falta de quem assina (domínio) e alinhar a data dos 18 anos de quem nasceu em 29/02"
+  "nota": "Achado na revisão do F3.142 (qualificacaoDoResponsavel só omite; na qualificação do próprio cliente a mesma falta sai como [ESTADO CIVIL: falta]). Até aqui, Gerar documentos não listava essa falta na faixa e o aviso dizia só \"Dá para gerar assim, para preencher à mão ou no Word.\". Também do domínio: quem nasceu em 29/02 faz 18 anos em 01/03 para idadeEm e para o banco (age()), mas aniversario(…, 18) e o faz18 dizem 28/02 (pelo art. 132, § 3º, do Código Civil e pelo art. 3º da Lei 810/1949, o certo é 01/03). Feito pelo plano planos/F3.161-faltas-quem-assina.md com os ajustes da revisão. Sem tela nova: as frases que mudam são instâncias dos modelos aprovados (gerar-falta, decisão 26 do portal-responsavel-legal, decisão 12 do portal-procuracoes; o NOTAS aprovado já pedia falta() na qualificação de quem assina). A qualificação continua 1 dado (RL_QUALIFICACAO), com até 3 marcas. A aplicação da 1120 e a publicação da api-portal estão na P18. O estado civil e a profissão do representante da empresa ficam no F3.178.",
+  "evidencia": "responsavel_legal.ts: as marcas de quem assina escritas só no domínio (faltasDoResponsavelComMarcas, marcasDaQualificacaoDoResponsavel); qualificacaoDoResponsavel marca nacionalidade, estado civil e profissão ([… DE QUEM ASSINA: falta]); aniversario dá 01/03 para 29/02 (art. 132, § 3º, do CC; art. 3º da Lei 810/1949). procuracoes.ts: faltasDeQuemAssina com as marcas do domínio, avisoFaltaQuemAssina cita as marcas da qualificação e fraseDaFaixaGerar lista \"a qualificação de Joana\". Migration 1120_aniversario_29_fevereiro: aniversario_em e cliente_assina, portal_cliente_assina_por_si e avisar_clientes_fez_18 recriadas inteiras (security definer mantido), 6 expressões trocadas. Testes: Vitest responsavel_legal.test.ts (propriedade 2004–2012 para 1, 16 e 18 anos, 8 combinações × 3 papéis, prévia com a marca, curatela, assistido) e procuracoes.test.ts; pgTAP 144_aniversario_29_fevereiro_test.sql (com prosecdef, sino e janela em 28/02 e 01/03), 112 e 136 passando; e2e portal-responsavel-legal.spec.ts (falta só a qualificação; 29/02 aos 18)."
 }

@@ -6,7 +6,7 @@
 -- "Serviço apagado a pedido do titular" e, no aviso dos 18 anos, saem a data e quem assinava. O
 -- aviso não se apaga: continua no sino e na exportação, com o texto fixo.
 --
--- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P18):
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P19):
 --   1. conferir com list_migrations que a 1090 está no ar (servico_apagado_texto);
 --   2. aplicar a 1110 (daqui em diante, toda exclusão troca os avisos);
 --   3. rodar a contagem só de leitura (project-files t3jus/f3-172/contagem-antes-1111.sql) e mostrar

@@ -191,7 +191,7 @@ select is((teste.erro($$ update avisos_sino set dados = dados || '{"cliente": "C
 select portal_proposta_pedir_contrato(diego, rm, pr.hel_sem_pedido) from ids, pr;
 select ok((select count(*) = 2 and bool_and(dados ->> 'cliente' = 'Cliente excluído' and dados ->> 'servico' = servico_apagado_texto())
              from avisos_sino, pr where origem_id = pr.hel_sem_pedido),
-  'PT-11 F3.172: pedir o contrato da proposta aceita do cliente já excluído gera o aviso com o texto fixo (A1 fica na F3.178)');
+  'PT-11 F3.172: pedir o contrato da proposta aceita do cliente já excluído gera o aviso com o texto fixo (A1 fica na F3.181)');
 select aviso_sino(rm, diego, null, 'CONTRATO_GERADO', 'propostas', pr.hel,
   jsonb_build_object('contrato', 7, 'proposta', 9, 'servico', 'Divórcio de Helena', 'cliente', 'Helena Prado Souza', 'quem', 'Bianca Torres')) from ids, pr;
 select is((select dados from avisos_sino, pr where tipo = 'CONTRATO_GERADO' and origem_id = pr.hel),

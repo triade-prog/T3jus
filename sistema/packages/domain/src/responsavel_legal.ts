@@ -87,12 +87,15 @@ export function nascimentoNoFuturo(nascimento: string, hoje: string): boolean {
   return nascimento.slice(0, 10) > hoje.slice(0, 10);
 }
 
-/** "2014-03-14" + 16 → "2030-03-14" (29/02 vira 28/02, como no banco). */
+/**
+ * "2014-03-14" + 16 → "2030-03-14". Quem nasceu em 29/02, num ano sem 29/02, faz aniversário em
+ * 01/03 (art. 132, § 3º, do Código Civil, e art. 3º da Lei 810/1949: sem o dia correspondente, o
+ * ano termina no primeiro dia seguinte), o mesmo dia em que idadeEm e o age() do banco viram a
+ * idade. No banco, a mesma conta é aniversario_em (1120). O Date.UTC já rola 29/02 para 01/03.
+ */
 export function aniversario(nascimento: string, anos: number): string {
   const [a, m, d] = nascimento.slice(0, 10).split("-").map(Number) as [number, number, number];
-  const x = new Date(Date.UTC(a + anos, m - 1, d));
-  if (x.getUTCMonth() !== m - 1) x.setUTCDate(0);
-  return x.toISOString().slice(0, 10);
+  return new Date(Date.UTC(a + anos, m - 1, d)).toISOString().slice(0, 10);
 }
 
 /** Quem assina no dia: o menor que já fez 18 assina por si, mesmo antes de a ficha mudar. */
@@ -138,34 +141,63 @@ function falta(o_que: string): string {
   return `[${o_que}: falta]`;
 }
 
+// As marcas do que falta de quem assina, escritas só aqui (F3.161): o .docx, a prévia e os avisos de
+// Gerar documentos usam estas mesmas strings. O "DE QUEM ASSINA" separa da marca do próprio cliente
+// ([ESTADO CIVIL: falta]), que pode estar no mesmo parágrafo.
+const MARCA_QUEM_ASSINA = falta("QUEM ASSINA");
+const MARCA_CPF = falta("CPF DE QUEM ASSINA");
+const MARCA_RG = falta("RG DE QUEM ASSINA");
+const MARCA_NACIONALIDADE = falta("NACIONALIDADE DE QUEM ASSINA");
+const MARCA_ESTADO_CIVIL = falta("ESTADO CIVIL DE QUEM ASSINA");
+const MARCA_PROFISSAO = falta("PROFISSÃO DE QUEM ASSINA");
+const MARCA_ENDERECO = falta("ENDEREÇO DE QUEM ASSINA");
+
+/** Nacionalidade, estado civil (no gênero do papel) e profissão de quem assina, com a marca de cada um. */
+function partesDaQualificacao(c: ResponsavelDoCliente): { valor: string | null; marca: string }[] {
+  return [
+    { valor: c.rlNacionalidade?.trim().toLowerCase() || null, marca: MARCA_NACIONALIDADE },
+    { valor: estadoCivilNoGenero(c.rlEstadoCivil, papelFeminino(c.rlPapel)), marca: MARCA_ESTADO_CIVIL },
+    { valor: c.rlProfissao?.trim().toLowerCase() || null, marca: MARCA_PROFISSAO },
+  ];
+}
+
+/**
+ * As marcas da qualificação de quem assina que faltam, na ordem do texto (nacionalidade, estado
+ * civil, profissão). Vazia quando a qualificação está completa (F3.161).
+ */
+export function marcasDaQualificacaoDoResponsavel(c: ResponsavelDoCliente): string[] {
+  return partesDaQualificacao(c).filter((p) => !p.valor).map((p) => p.marca);
+}
+
 function cep(c: string): string {
   return c.length === 8 ? `${c.slice(0, 5)}-${c.slice(5)}` : c;
 }
 
 /** O endereço de quem assina, quando não mora com o cliente. */
 export function enderecoDoResponsavel(c: ResponsavelDoCliente): string {
-  if (!c.rlEndereco?.trim()) return falta("ENDEREÇO DE QUEM ASSINA");
+  if (!c.rlEndereco?.trim()) return MARCA_ENDERECO;
   const partes = [c.rlEndereco.trim(), c.rlBairro?.trim(), c.rlCidade?.trim(), c.rlUf?.trim()].filter(Boolean);
   return `${partes.join(", ")}${c.rlCep ? `, CEP ${cep(c.rlCep)}` : ""}`;
 }
 
-/** "brasileira, divorciada, auxiliar administrativa, portadora do RG nº …, inscrita no CPF sob o nº …". */
+/**
+ * "brasileira, divorciada, auxiliar administrativa, portadora do RG nº …, inscrita no CPF sob o nº …".
+ * O que falta sai marcado ([ESTADO CIVIL DE QUEM ASSINA: falta]), como na qualificação do cliente (F3.161).
+ */
 export function qualificacaoDoResponsavel(c: ResponsavelDoCliente): string {
   const f = papelFeminino(c.rlPapel);
-  const rg = c.rlRg?.trim() ? `${c.rlRg.trim()}${c.rlRgOrgao?.trim() ? ` ${c.rlRgOrgao.trim()}` : ""}` : falta("RG DE QUEM ASSINA");
+  const rg = c.rlRg?.trim() ? `${c.rlRg.trim()}${c.rlRgOrgao?.trim() ? ` ${c.rlRgOrgao.trim()}` : ""}` : MARCA_RG;
   return [
-    c.rlNacionalidade?.trim().toLowerCase(),
-    estadoCivilNoGenero(c.rlEstadoCivil, f),
-    c.rlProfissao?.trim().toLowerCase(),
+    ...partesDaQualificacao(c).map((p) => p.valor ?? p.marca),
     `${f ? "portadora" : "portador"} do RG nº ${rg}`,
-    `${f ? "inscrita" : "inscrito"} no CPF sob o nº ${c.rlDocumento ? formatarDocumento(c.rlDocumento) : falta("CPF DE QUEM ASSINA")}`,
-  ].filter((x): x is string => !!x).join(", ");
+    `${f ? "inscrita" : "inscrito"} no CPF sob o nº ${c.rlDocumento ? formatarDocumento(c.rlDocumento) : MARCA_CPF}`,
+  ].join(", ");
 }
 
 /** "neste ato representado(a) por sua mãe, JOANA ALVES SOUZA, brasileira, …". */
 export function trechoDoResponsavel(c: ResponsavelDoCliente, quem: Exclude<QuemAssina, "PROPRIO">): string {
   const verbo = quem === "ASSISTIDO" || quem === "CURATELA_ASSISTE" ? "assistido(a)" : "representado(a)";
-  const nome = c.rlNome?.trim() ? c.rlNome.trim().toUpperCase() : falta("QUEM ASSINA");
+  const nome = c.rlNome?.trim() ? c.rlNome.trim().toUpperCase() : MARCA_QUEM_ASSINA;
   return `neste ato ${verbo} por ${papelComPossessivo(c.rlPapel)}, ${nome}, ${qualificacaoDoResponsavel(c)}`;
 }
 
@@ -181,8 +213,8 @@ export function trechoDaCuratela(c: ResponsavelDoCliente): string {
 /** As linhas de assinatura: uma (representado) ou duas (assistido), com o CPF de quem assina. */
 export function assinaturaComResponsavel(nomeCliente: string, cpfCliente: string, c: ResponsavelDoCliente, quem: Exclude<QuemAssina, "PROPRIO">): string {
   const linha = "_______________________________________";
-  const nomeRl = c.rlNome?.trim() ? c.rlNome.trim().toUpperCase() : falta("QUEM ASSINA");
-  const cpfRl = `CPF ${c.rlDocumento ? formatarDocumento(c.rlDocumento) : falta("CPF DE QUEM ASSINA")}`;
+  const nomeRl = c.rlNome?.trim() ? c.rlNome.trim().toUpperCase() : MARCA_QUEM_ASSINA;
+  const cpfRl = `CPF ${c.rlDocumento ? formatarDocumento(c.rlDocumento) : MARCA_CPF}`;
   if (quem === "ASSISTIDO" || quem === "CURATELA_ASSISTE") {
     const papel = c.rlPapel ? PAPEIS_RESPONSAVEL[c.rlPapel].toLowerCase() : "responsável";
     return `${linha}\n${nomeCliente}\nCPF ${cpfCliente}\n\n${linha}\n${nomeRl}\n${papel}, que o(a) assiste\n${cpfRl}`;
@@ -190,15 +222,28 @@ export function assinaturaComResponsavel(nomeCliente: string, cpfCliente: string
   return `${linha}\n${nomeCliente}\nrepresentado(a) por ${papelComPossessivo(c.rlPapel)}, ${nomeRl}\n${cpfRl}`;
 }
 
-/** O que falta de quem assina, para o aviso no alto ("o CPF de quem assina"). */
-export function faltasDoResponsavel(c: ResponsavelDoCliente): string[] {
-  const f: string[] = [];
-  if (!c.rlNome?.trim()) f.push("quem assina pelo cliente");
-  if (!c.rlDocumento) f.push("o CPF de quem assina");
-  if (!c.rlRg?.trim()) f.push("o RG de quem assina");
-  if (!c.rlNacionalidade?.trim() || !c.rlEstadoCivil || !c.rlProfissao?.trim()) f.push("a qualificação de quem assina");
-  if (c.rlMoraJunto === false && !c.rlEndereco?.trim()) f.push("o endereço de quem assina");
+/**
+ * Cada falta de quem assina, com as marcas que ela deixa no .docx (F3.161): o CPF, o RG e o endereço
+ * deixam uma; a qualificação (nacionalidade, estado civil, profissão) é 1 dado, como na ficha
+ * (RL_QUALIFICACAO), e deixa de 1 a 3 marcas. A tela cita estas marcas; não escreve as suas.
+ */
+export function faltasDoResponsavelComMarcas(c: ResponsavelDoCliente): { falta: string; marcas: string[] }[] {
+  const f: { falta: string; marcas: string[] }[] = [];
+  if (!c.rlNome?.trim()) f.push({ falta: "quem assina pelo cliente", marcas: [MARCA_QUEM_ASSINA] });
+  if (!c.rlDocumento) f.push({ falta: "o CPF de quem assina", marcas: [MARCA_CPF] });
+  if (!c.rlRg?.trim()) f.push({ falta: "o RG de quem assina", marcas: [MARCA_RG] });
+  const qualificacao = marcasDaQualificacaoDoResponsavel(c);
+  if (qualificacao.length) f.push({ falta: "a qualificação de quem assina", marcas: qualificacao });
+  if (c.rlMoraJunto === false && !c.rlEndereco?.trim()) f.push({ falta: "o endereço de quem assina", marcas: [MARCA_ENDERECO] });
   return f;
+}
+
+/**
+ * O que falta de quem assina, para o aviso no alto ("o CPF de quem assina"). "A qualificação de
+ * quem assina" é 1 dado e sai marcada no .docx (F3.161).
+ */
+export function faltasDoResponsavel(c: ResponsavelDoCliente): string[] {
+  return faltasDoResponsavelComMarcas(c).map((x) => x.falta);
 }
 
 /** "Representa · Pedro tem menos de 16 anos", para o selo da ficha e de Gerar documentos. */
