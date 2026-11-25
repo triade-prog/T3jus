@@ -1,0 +1,12 @@
+{
+  "id": "F3.180",
+  "texto": "Foco depois de um await nas outras telas: 11 requestAnimationFrame levam o foco a um alvo que só existe ou só se habilita depois do commit do React (FormContrato, FormProposta, Juridico, Carne, DocumentosPessoais, Procuracoes, Peticoes.ir, CadastrarInteressado.focarTopo, ContratoOab) e, quando o quadro chega antes, o foco se perde",
+  "peca": "B4",
+  "refs": [
+    "PT-10"
+  ],
+  "status": "pendente",
+  "ordem": 1360,
+  "nota": "Achado na varredura da F3.176 (plano F3.175/F3.176, seção 3.3, decisão D2). O plano chamava este item de F3.179, mas a F3.178 já estava tomada por outra frente e a F3.179 ficou com o nome do arquivo da exportação. Se a D1 (focarPrimeiroErro com a guarda de foco) não entrar no PR da F3.176, ela também fica aqui.",
+  "proximo": "Pôr o foco num efeito disparado por contador, depois do commit, nas 11 chamadas da tabela 3.3 marcadas fora (D2)"
+}

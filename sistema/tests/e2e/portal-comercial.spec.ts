@@ -3,7 +3,7 @@
 // condições de honorário, Funil e Origem. A API é simulada; aqui se testa a tela, a
 // acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { AGORA, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -21,10 +21,14 @@ const ESCRITORIO = {
 const DIEGO_ESC = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
 const SEM_AREA = { ...ESCRITORIO, pessoa: "Felipe Matos", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+// Os dias contam do relógio fixo dos testes (AGORA, F3.164), o mesmo do navegador.
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(AGORA.getTime() + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 const curto = (n: number) => br(n).slice(0, 5);
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
+// O mesmo instante em UTC, como o banco manda um timestamptz (F3.175): às 22h30 de Brasília o
+// texto já traz o dia seguinte, e só o dia de Brasília acerta.
+const utc = (n: number, h: string) => new Date(em(n, h)).toISOString();
 
 const ret = (n: number, nome: string, d: number | null, oque: string | null, resp: typeof MARINA | null, ultimo = true) => ({
   clienteId: cli(n), nome, tipo: "PF", em: d === null ? null : dia(d), oque, responsavel: resp,
@@ -42,7 +46,7 @@ const RETORNOS = {
   totais: { vencidos: 2, hoje: 1, semana: 1, semData: 1 },
   porResponsavel: [{ pessoa: DIEGO, vencidos: 2, hoje: 0, total: 3 }, { pessoa: MARINA, vencidos: 0, hoje: 1, total: 2 }],
   propostasEsperando: [
-    { id: prop(15), numero: "P-2026-015", cliente: "Daniela Rocha Mendes", situacao: "ENVIADA", enviadaEm: em(-8, "10:00"), responsavel: DIEGO, retorno: { em: dia(-1), vencido: true } },
+    { id: prop(15), numero: "P-2026-015", cliente: "Daniela Rocha Mendes", situacao: "ENVIADA", enviadaEm: utc(-8, "22:30"), responsavel: DIEGO, retorno: { em: dia(-1), vencido: true } },
     { id: prop(16), numero: "P-2026-016", cliente: "Gabriela Teixeira", situacao: "NEGOCIACAO", enviadaEm: em(-6, "16:40"), responsavel: MARINA, retorno: { em: dia(0), vencido: false } },
   ],
 };
@@ -57,7 +61,7 @@ const linha = (n: number, nome: string, servico: string, situacao: string, condi
 const L16 = linha(16, "Gabriela Teixeira", "Divórcio consensual", "NEGOCIACAO", [PARC], MARINA, { em: dia(0), vencido: false });
 const L15 = linha(15, "Daniela Rocha Mendes", "Revisão de contrato bancário", "ENVIADA", [FIXO, EXITO], DIEGO, { em: dia(-1), vencido: true });
 const L14 = linha(14, "Benedito Souza Lima", "Aposentadoria por idade", "ACEITA", [PARC, EXITO], DIEGO, { em: dia(2), vencido: false });
-const L17 = linha(17, "Marcos Vinícius Duarte", "Trabalhista · vínculo com aplicativo", "RASCUNHO", [FIXO], MARINA, null, { criadaEm: new Date().toISOString() });
+const L17 = linha(17, "Marcos Vinícius Duarte", "Trabalhista · vínculo com aplicativo", "RASCUNHO", [FIXO], MARINA, null, { criadaEm: utc(0, "22:25") });
 const LISTA = { algum: true, contagem: { andamento: 4, contrato: 0, recusadas: 1 }, propostas: [L17, L16, L15, L14] };
 
 const ficha = (l: typeof L16, extra: Record<string, unknown> = {}) => ({
@@ -106,7 +110,7 @@ const FUNIL = {
     ],
   },
 };
-const SAIDA_EDU = { id: "f1000000-0000-4000-8000-000000000099", motivo: "NAO_VOLTOU", nota: "Liguei duas vezes.", marcadoPor: MARINA, marcadoEm: new Date().toISOString() };
+const SAIDA_EDU = { id: "f1000000-0000-4000-8000-000000000099", motivo: "NAO_VOLTOU", nota: "Liguei duas vezes.", marcadoPor: MARINA, marcadoEm: AGORA.toISOString() };
 const ORIGEM = {
   de: dia(-90), ate: dia(0), total: 24,
   linhas: [
@@ -150,6 +154,8 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
 });
 
 test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
+  test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
+
   test("Atendimentos: retornos do escritório por data, filtro por responsável e propostas esperando", async ({ page }) => {
     const pedidos = await simular(page, comuns());
     await page.goto(`${P}/comercial`);
@@ -166,6 +172,8 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await expect(page.getByRole("button", { name: "Todos (6)" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("link", { name: "P-2026-015 · Daniela Rocha Mendes" })).toBeVisible();
     await expect(page.locator(".cm-prop")).toContainText("retorno vencido ontem");
+    // Enviada às 22h30 de Brasília, em UTC (F3.175): o dia é o de Brasília, não o seguinte.
+    await expect(page.locator(".cm-prop")).toContainText(`Enviada em ${curto(-8)}`);
     await expect(page.locator(".cm-resp")).toContainText("2 vencidos");
     await semViolacoes(page);
 
@@ -186,6 +194,8 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
   });
 
   test("Propostas: lista com honorários, retorno e situação; filtro e busca vão ao servidor", async ({ page }) => {
+    // Às 22h30 de Brasília, com a proposta criada às 22h25 e em UTC (F3.175): é de hoje, não de amanhã.
+    await fixarRelogio(page, new Date(em(0, "22:30")));
     const pedidos = await simular(page, comuns());
     await page.goto(`${P}/comercial/propostas`);
     await expect(page.getByRole("heading", { level: 1, name: "Propostas" })).toBeVisible();
@@ -281,7 +291,7 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
   test("Quem não tem Contratos vê a proposta aceita e pede o contrato", async ({ page }) => {
     const pedidos = await simular(page, {
       ...comuns(DIEGO_ESC),
-      [`GET /v1/escritorio/propostas/${prop(14)}`]: [{ corpo: { ...F14, podeContrato: false } }, { corpo: { ...F14, podeContrato: false, contratoPedidoEm: new Date().toISOString() } }],
+      [`GET /v1/escritorio/propostas/${prop(14)}`]: [{ corpo: { ...F14, podeContrato: false } }, { corpo: { ...F14, podeContrato: false, contratoPedidoEm: AGORA.toISOString() } }],
       [`POST /v1/escritorio/propostas/${prop(14)}/pedir-contrato`]: { status: 204, corpo: null },
     });
     await page.goto(`${P}/comercial/propostas/${prop(14)}`);
@@ -448,7 +458,7 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     const pedidos = await simular(page, {
       ...comuns(),
       [`PUT /v1/escritorio/clientes/${cli(6)}/funil`]: [{ status: 503, corpo: { erro: { codigo: "INTERNAL_ERROR" } } }, { corpo: SAIDA_EDU }],
-      [`POST /v1/escritorio/clientes/${cli(6)}/funil/voltar`]: { corpo: { ...SAIDA_EDU, voltouPor: MARINA, voltouEm: new Date().toISOString() } },
+      [`POST /v1/escritorio/clientes/${cli(6)}/funil/voltar`]: { corpo: { ...SAIDA_EDU, voltouPor: MARINA, voltouEm: AGORA.toISOString() } },
       [`POST /v1/escritorio/clientes/${cli(21)}/funil/voltar`]: { corpo: {} },
     });
     await page.goto(`${P}/comercial/funil`);
