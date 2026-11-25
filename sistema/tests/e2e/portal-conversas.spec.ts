@@ -182,8 +182,9 @@ test.describe("Conversas do Portal, Mensagens (PD-07, EX-10, AP-02)", () => {
 
     rotas[`POST /v1/escritorio/conversas/${HEL}/assumir`] = { corpo: { versao: 4 } };
     rotas[`POST /v1/escritorio/conversas/${HEL}/mensagens`] = { status: 201, corpo: { id: "m6", envio: "NA_FILA" } };
-    await page.getByRole("button", { name: "Assumir conversa" }).click();
+    // A tela recarrega a conversa logo depois do POST: a resposta nova entra antes do clique (F3.164).
     rotas[`GET /v1/escritorio/conversas/${HEL}`] = { corpo: CONV_HELIO_ASS };
+    await page.getByRole("button", { name: "Assumir conversa" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Você assumiu a conversa." })).toBeVisible();
     expect(pedidos.find((p) => p.caminho.endsWith("/assumir"))?.corpo).toEqual({ versao: 3 });
     await expect(page.getByText("Com você", { exact: true })).toBeVisible();

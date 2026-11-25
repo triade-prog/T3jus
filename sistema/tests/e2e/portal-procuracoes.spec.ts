@@ -196,8 +196,11 @@ test.describe("Contratos › Procurações e modelos (CH-08, F3.16)", () => {
     await expect(page.getByRole("link", { name: "Gerar documentos" })).toHaveAttribute("href", "/contratos/modelos/gerar");
     await semViolacoes(page);
     await expect(page.getByRole("group", { name: "Baixar o contrato de Benedito" })).toBeVisible();
+    // O Baixar leva o navegador ao arquivo: espera o download antes de ir para outra página (F3.164).
+    const baixou = page.waitForEvent("download");
     await page.getByRole("button", { name: "Baixar em Word (.docx, para editar): o contrato de Benedito" }).click();
     await expect.poll(() => pedidos.some((p) => p.metodo === "POST" && p.caminho === `/v1/escritorio/documentos/${DOC(1)}/abrir`)).toBe(true);
+    await baixou;
     await page.goto(`${P}/contratos/modelos`);
     await page.getByRole("button", { name: "Assinados (1)" }).click();
     await expect(page.getByRole("button", { name: /Anexar o assinado/ })).toHaveCount(0);

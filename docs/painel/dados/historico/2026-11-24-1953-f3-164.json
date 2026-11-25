@@ -1,0 +1,10 @@
+{
+  "data": "24/11/2026",
+  "inicio": "19:53",
+  "fim": "20:05",
+  "texto": "Testes instáveis (F3.164), parte 2: Petições e Procurações esperam o download antes de ir para outra página, e Conversas troca a resposta antes de Assumir conversa; os três testes passaram 300 de 300 vezes.",
+  "refs": [
+    "F3.164",
+    "PT-18"
+  ]
+}
