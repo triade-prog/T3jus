@@ -7,7 +7,8 @@
     "FI-08",
     "EX-16"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 160,
-  "nota": "Ordem: 1) aplicar a 1010 pelo apply_migration, com o conteúdo do arquivo direto (como a 1030), depois das que já estão na main (1020, 1030, 1070, 1080, 1090 e 1091; nenhuma mexe nas funções que a 1010 troca): o supabase db push recusaria uma migration de número menor fora de ordem (antes, conferir com list_migrations que a 1000 já está no ar); 2) publicar a api-portal, com as rotas GET/POST /v1/escritorio/financeiro/parcelas/:id/baixa e POST .../baixa/desfazer; 3) publicar o Portal. Sem a 1010, as rotas novas respondem erro e a tela não mostra o botão de desfazer. Sem a api-portal nova, o Portal mostra o botão, mas a janela não abre a parcela."
+  "nota": "Ordem: 1) aplicar a 1010 pelo apply_migration, com o conteúdo do arquivo direto (como a 1030), depois das que já estão na main (1020, 1030, 1070, 1080, 1090 e 1091; nenhuma mexe nas funções que a 1010 troca): o supabase db push recusaria uma migration de número menor fora de ordem (antes, conferir com list_migrations que a 1000 já está no ar); 2) publicar a api-portal, com as rotas GET/POST /v1/escritorio/financeiro/parcelas/:id/baixa e POST .../baixa/desfazer; 3) publicar o Portal. Sem a 1010, as rotas novas respondem erro e a tela não mostra o botão de desfazer. Sem a api-portal nova, o Portal mostra o botão, mas a janela não abre a parcela.",
+  "evidencia": "PR #185 mesclado em 24/11/2026, 18h07 (Bahia). Migration 1010_baixa_parcela aplicada no Supabase em 24/11/2026, 19h55 (Bahia), com o ok da Carol no cartão, pelo conteúdo da main e7195806 conferido pelo md5, com uma troca: em produção a função com \"corrigida\" é portal_contrato_sem_situacao (a 0740 e a 0750 entraram em outra ordem), e o arquivo passou a achar a função pelo trecho; parcela_baixas, as funções de baixa e desfazer e as recusas PARCELA_BAIXADA conferidas no banco. api-portal v42 publicada no e7195806 (saúde 200; a rota da baixa responde 401 sem sessão). Portal no ar pela Vercel (produção no e7195806 e depois no 5cb145e)."
 }
