@@ -1,5 +1,6 @@
 // Suporte de acesso no Console (F1.3, PT-23), tela aprovada em docs/design/aprovadas/console-suporte.
 // A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
+import { quadroAntesDoCommit } from "./quadro.ts";
 import { expect, test } from "@playwright/test";
 import { C, CLIENTES, d, ficha, h, SESSAO, semViolacoes, simular } from "./console-dados.ts";
 
@@ -126,6 +127,66 @@ test.describe("Console: suporte de acesso", () => {
     await expect(janela.getByText("Marina já recebeu 3 links na última hora.")).toBeVisible();
     await expect(janela.locator('button[type="submit"]')).toHaveAttribute("aria-disabled", "true");
     await semViolacoes(page);
+  });
+
+  // F3.176: com o quadro antes do commit, um rAF depois do await rodaria com o botão ainda
+  // desabilitado e sem data-tentar, e o foco se perderia. O foco vem de um efeito, por contador.
+  test("falha do servidor com o quadro antes do commit: o foco vai ao Tentar de novo a cada falha", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    const falha = { status: 503, corpo: { erro: { codigo: "UPSTREAM_UNAVAILABLE" } } };
+    await simular(page, {
+      "/v1/sessao": { corpo: SUPORTE },
+      [P]: { corpo: fichaMarina() },
+      [`${P}/historico`]: { corpo: HIST },
+      [`POST ${P}/link-senha`]: [falha, falha, { status: 429, corpo: { erro: { codigo: "RATE_LIMITED" } } }],
+    });
+    await page.goto(`${C}/suporte?pessoa=${MARINA}`);
+    await page.getByRole("button", { name: "Mandar link" }).click();
+    const janela = page.getByRole("dialog");
+    const motivo = janela.getByLabel("Motivo");
+    const tentar = janela.getByRole("button", { name: "Tentar de novo" });
+    const resposta = () => page.waitForResponse((r) => r.url().endsWith("/link-senha"));
+    await motivo.fill("Pediu ao telefone");
+    let r = resposta();
+    await janela.getByRole("button", { name: "Mandar link" }).click();
+    await r;
+    await expect(janela.getByText("Não deu para concluir agora.")).toBeVisible();
+    await expect(tentar).toBeFocused();
+
+    // Depois da falha, digitar no Motivo mantém o foco lá: o efeito só roda com falha nova.
+    await motivo.focus();
+    await motivo.pressSequentially(" agora");
+    await expect(motivo).toHaveValue("Pediu ao telefone agora");
+    await expect(motivo).toBeFocused();
+
+    // A mesma falha de novo: o foco volta ao Tentar de novo.
+    r = resposta();
+    await tentar.click();
+    await r;
+    await expect(janela.getByText("Não deu para concluir agora.")).toBeVisible();
+    await expect(tentar).toBeFocused();
+
+    // A terceira dá o limite, como antes.
+    await tentar.click();
+    await expect(janela.getByText("Marina já recebeu 3 links na última hora.")).toBeVisible();
+  });
+
+  test("motivo recusado pelo servidor com o quadro antes do commit: o foco vai ao Motivo", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      "/v1/sessao": { corpo: SUPORTE },
+      [P]: { corpo: fichaMarina() },
+      [`${P}/historico`]: { corpo: HIST },
+      [`POST ${P}/link-senha`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["motivo"] } } } },
+    });
+    await page.goto(`${C}/suporte?pessoa=${MARINA}`);
+    await page.getByRole("button", { name: "Mandar link" }).click();
+    const janela = page.getByRole("dialog");
+    const motivo = janela.getByLabel("Motivo");
+    await motivo.fill("Pediu ao telefone");
+    await janela.getByRole("button", { name: "Mandar link" }).click();
+    await expect(motivo).toHaveAttribute("aria-invalid", "true");
+    await expect(motivo).toBeFocused();
   });
 
   test("tirar o autenticador: alertdialog, foco no Cancelar e conferência obrigatória", async ({ page }) => {

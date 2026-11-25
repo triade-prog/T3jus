@@ -1,6 +1,7 @@
 // A OAB de cada advogado na Equipe (EX-12), telas aprovadas em
 // docs/design/aprovadas/portal-equipe-oab: a lista com a OAB embaixo do nome, a ficha da pessoa,
 // adicionar, editar e remover a inscrição, o convite com a OAB e Sua conta. A API é simulada.
+import { quadroAntesDoCommit } from "./quadro.ts";
 import { expect, test, type Page } from "@playwright/test";
 import { h, semViolacoes, simular } from "./console-dados.ts";
 
@@ -218,5 +219,30 @@ test.describe("Equipe com a OAB (EX-12)", () => {
     const corpo = pedidos.find((p) => p.metodo === "PUT")!.corpo as { versao: number; nomeCompleto: string; cpf: string; enderecoDoEscritorio: boolean };
     expect(corpo).toMatchObject({ versao: 0, nomeCompleto: "Felipe Augusto Matos", enderecoDoEscritorio: true });
     expect(corpo.cpf.replace(/\D/g, "")).toBe("52998224725");
+  });
+
+  // F3.176: com o quadro antes do commit, o rAF depois do await rodaria antes de o campo ser
+  // marcado com erro. O foco vem de um efeito, por contador.
+  test("número de outra pessoa com o quadro antes do commit: o foco vai ao Número", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO }, "/v1/escritorio/equipe": { corpo: { pessoas: EQUIPE } },
+      [`/v1/escritorio/equipe/pessoas/${pid(3)}`]: { corpo: FICHA_GUSTAVO },
+      [`POST /v1/escritorio/equipe/pessoas/${pid(3)}/oab`]: {
+        status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["numero"], motivos: { numero: "OAB_DE_OUTRA_PESSOA" }, nome: "Felipe Matos" } } },
+      },
+    });
+    await page.goto(`${P}/equipe/pessoas/${pid(3)}`);
+    await page.getByRole("button", { name: "Adicionar inscrição" }).first().click();
+    const j = page.getByRole("dialog", { name: "Adicionar inscrição na OAB" });
+    await j.getByLabel("Número").fill("287.104");
+    // Erro local, sem ir ao servidor: o foco vai ao primeiro campo marcado.
+    await j.getByRole("button", { name: "Salvar inscrição" }).click();
+    await expect(j.getByLabel("UF da seccional")).toBeFocused();
+
+    await j.getByLabel("UF da seccional").selectOption("SP");
+    await j.getByRole("button", { name: "Salvar inscrição" }).click();
+    await expect(j.getByText("OAB/SP 287.104 já está com Felipe Matos nesta equipe. Confira o número na carteira de Gustavo.")).toBeVisible();
+    await expect(j.getByLabel("Número")).toBeFocused();
   });
 });
