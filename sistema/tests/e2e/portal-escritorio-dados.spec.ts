@@ -3,7 +3,7 @@
 // contrato, o que falta, a edição pela sócia dona com a prévia e a leitura para os outros.
 // A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test } from "@playwright/test";
-import { h, semViolacoes, simular } from "./console-dados.ts";
+import { fixarRelogio, h, semViolacoes, simular } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a7";
@@ -25,6 +25,9 @@ const COMPLETO = {
   endereco: "Rua Coronel Zeca Leite, 118, sala 2, Centro",
 };
 const ADVS = { dono: true, eu: "p1", socios: ["Carol Santana"], escritorio: { endereco: null, cidade: "Presidente Jânio Quadros", uf: "BA" }, advogados: [], semOab: [] };
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Dados do escritório para os documentos (PA-07)", () => {
   test("a sócia dona vê o que falta e completa, com a prévia do contrato", async ({ page }) => {

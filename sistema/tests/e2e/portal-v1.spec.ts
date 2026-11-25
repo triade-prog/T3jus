@@ -2,7 +2,7 @@
 // embaixo no celular, Equipe do escritório e área Escritório com a exportação. A API é
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes, simular } from "./console-dados.ts";
+import { fixarRelogio, h, semViolacoes, simular } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -30,6 +30,9 @@ const EQUIPE = [
   pessoa(5, "Tiago Rocha", [], null, h(5)),
 ];
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Portal v1: moldura em áreas (PA-01)", () => {
   test("o sócio dono vê as quatro áreas e a Equipe; no celular, a barra embaixo e o Mais", async ({ page }) => {

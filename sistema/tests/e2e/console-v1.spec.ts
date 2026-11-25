@@ -2,7 +2,7 @@
 // Ficha, Contrato e documentos, Equipe T3jus, Notas e Histórico, cadastrar escritório e a
 // Equipe T3jus. A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { C, CA, CLIENTES, d, ficha, h, IN, SESSAO, semViolacoes, simular } from "./console-dados.ts";
+import { C, CA, CLIENTES, d, ficha, fixarRelogio, h, IN, semViolacoes, SESSAO, simular } from "./console-dados.ts";
 
 const TODAS = [
   "console.contrato.editar", "console.documentos.enviar", "console.documentos.ver", "console.equipe.atribuir",
@@ -36,6 +36,9 @@ function fichaCedro(permissoes = TODAS, extra: Record<string, unknown> = {}) {
 }
 const R = `/v1/clientes/${CEDRO.id}`;
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Console v1: moldura", () => {
   test("no celular, o menu vira gaveta: abre, fecha com Esc e devolve o foco", async ({ page }) => {

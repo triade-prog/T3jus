@@ -4,7 +4,7 @@
 // documentos e a lista por área em Jurídico › Casos e processos. A API é simulada; aqui se testa a
 // tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -19,7 +19,7 @@ const ESCRITORIO = {
   socios: ["Marina Ribeiro"], pessoas: 5, outrosEscritorios: 0, funcoes: ["SOCIO"], cnpj: null, cidade: "São Paulo", uf: "SP", endereco: null,
   contatos: [], ultimaExportacao: null,
 };
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 
 const FICHA = {
@@ -77,6 +77,9 @@ const comuns = (docs: unknown = DOCS) => ({
 
 // Uma foto PNG mínima de verdade (1 × 1), para o canvas conseguir ler e juntar num PDF.
 const FOTO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Documentos pessoais na ficha do cliente (AP-08)", () => {
   test("a folha separa o que precisa de atenção do que está em dia", async ({ page }) => {

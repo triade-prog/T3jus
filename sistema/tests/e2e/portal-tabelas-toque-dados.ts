@@ -1,7 +1,7 @@
 // Dados dos testes de toque (F3.165) que o portal-tabelas-telas.json não tem: a ficha do cliente (as 3 tabelas
 // fl-tab: Propostas, Contratos e Casos) e a Agenda do celular. Vieram da medição do plano aprovado
 // (docs/design/aprovadas/portal-tabelas-toque/).
-import { h } from "./console-dados.ts";
+import { agora, h } from "./console-dados.ts";
 
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
 export const cid = (n: number) => `c1000000-0000-4000-8000-0000000002${String(n).padStart(2, "0")}`;
@@ -17,7 +17,7 @@ export const ESCRITORIO = {
   contatos: [], ultimaExportacao: null,
 };
 
-export const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+export const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 
 export const FICHA = {
   id: cid(1), tipo: "PF", nome: "Antônia Ferreira Prado", documento: "52998224725", nacionalidade: "brasileira", estadoCivil: "VIUVO", profissao: "Aposentada",

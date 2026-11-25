@@ -4,13 +4,19 @@ import AxeBuilder from "@axe-core/playwright";
 
 export const C = "http://localhost:3001";
 export const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-export const agora = Date.now();
 // Relógio fixo dos testes de tela (F3.164): uma terça às 15h de Brasília, longe das duas
-// meias-noites (UTC e Brasília) e dentro das datas fixas dos dados. fixarRelogio para o Date do
-// navegador nesse instante; com o Playwright, setTimeout e requestAnimationFrame continuam andando
-// no tempo real, mas Date.now fica parado (um cache "por 15 s" nunca vence dentro da página).
-// Chamar antes do primeiro goto, com test.beforeEach no arquivo.
+// meias-noites (UTC e Brasília) e dentro das datas fixas dos dados. h() e d() contam a partir dele,
+// então todo arquivo que os usa fixa também o relógio do navegador, com test.beforeEach. No
+// Playwright, setTimeout e requestAnimationFrame continuam andando no tempo real, mas Date.now fica
+// parado (um cache "por 15 s" nunca vence dentro da página). Chamar antes do primeiro goto.
 export const AGORA = new Date("2026-11-24T15:00:00-03:00");
+export const agora = AGORA.getTime();
+/** Dia em Brasília, n dias depois de AGORA: "2026-11-24". */
+export const diaIso = (n = 0) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
+/** O mesmo dia em dd/mm/aaaa. */
+export const diaBr = (n = 0) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(agora + n * 864e5));
+/** Instante "hoje às hh:mm" de Brasília, em ISO. */
+export const hojeAs = (hhmm: string) => new Date(`${diaIso()}T${hhmm}:00-03:00`).toISOString();
 export async function fixarRelogio(page: Page, quando: Date = AGORA) { await page.clock.setFixedTime(quando); }
 export const h = (n: number) => new Date(agora - n * 3600e3).toISOString();
 export const d = (n: number) => h(n * 24);

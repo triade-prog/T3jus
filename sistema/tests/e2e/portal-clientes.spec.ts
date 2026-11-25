@@ -3,7 +3,7 @@
 // conflito, registrar atendimento, inativar e reativar. A API é simulada; aqui se testa a tela,
 // a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -20,7 +20,7 @@ const ESCRITORIO = {
 const LARISSA = { ...ESCRITORIO, pessoa: "Larissa Costa", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] };
 
 /** Data em Brasília, aaaa-mm-dd, a n dias de hoje. */
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const linha = (n: number, nome: string, extra: Record<string, unknown> = {}) => ({
   id: cid(n), tipo: "PF", nome, situacao: "ATIVO", versao: 1, origem: "INDICACAO_CLIENTE", proxContato: null,
   contatoPrincipal: { id: kid(n), nome, papel: null, telefone: `+55119887766${String(n).padStart(2, "0")}`, email: null }, ...extra,
@@ -93,6 +93,9 @@ const listas = (comercial = true) => ({
 });
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
 const lista = (page: Page) => (ehCelular(page) ? page.getByRole("list", { name: "Clientes" }) : page.locator("table.cl-tab"));
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Clientes do Portal: lista (AP-01, AP-06)", () => {
   test("ativos com origem e próximo contato; vencido e hoje com selo escrito", async ({ page }) => {
@@ -321,7 +324,7 @@ test.describe("Clientes do Portal: ficha (AP-01, AP-02, AP-06)", () => {
   });
 
   test("AP-03: a ficha mostra o cliente no funil; encerrar sem proposta entra no histórico e deixa voltar", async ({ page }) => {
-    const saida = { id: "f1000000-0000-4000-8000-000000000077", motivo: "NAO_VOLTOU", nota: "Liguei duas vezes.", marcadoPor: MARINA, marcadoEm: new Date().toISOString() };
+    const saida = { id: "f1000000-0000-4000-8000-000000000077", motivo: "NAO_VOLTOU", nota: "Liguei duas vezes.", marcadoPor: MARINA, marcadoEm: new Date(agora).toISOString() };
     const pedidos = await simular(page, rotas({
       [`GET /v1/escritorio/clientes/${cid(1)}/funil`]: [
         { corpo: { situacao: "PRIMEIRO", podeEncerrar: true, rascunho: false, saida: null, eventos: [] } },
