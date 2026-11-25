@@ -1,0 +1,12 @@
+{
+  "id": "F3.181",
+  "texto": "Pedido de contrato de cliente excluído: a proposta aceita e pedida do cliente excluído fica para sempre na lista de pedidos do bloco de Contratos, com \"Cliente excluído\", e o contrato é recusado (exige cliente ativo); portal_proposta_pedir_contrato aceita pedir para cliente excluído",
+  "peca": "S3",
+  "refs": [
+    "PT-11",
+    "IN-01"
+  ],
+  "status": "pendente",
+  "ordem": 1370,
+  "proximo": "Decisão da Carol (muda a tela de Contratos e o sino; antes, o agente de frontend desenha): proposta do plano da F3.172 (achado A1) é tirar da lista o pedido de cliente excluído e recusar o pedido novo com CLIENTE_EXCLUIDO"
+}

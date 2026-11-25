@@ -1,12 +1,11 @@
 {
   "id": "F3.180",
-  "texto": "Foco depois de um await nas outras telas: 11 requestAnimationFrame levam o foco a um alvo que só existe ou só se habilita depois do commit do React (FormContrato, FormProposta, Juridico, Carne, DocumentosPessoais, Procuracoes, Peticoes.ir, CadastrarInteressado.focarTopo, ContratoOab) e, quando o quadro chega antes, o foco se perde",
-  "peca": "B4",
+  "texto": "Contrato novo ao mesmo tempo que a exclusão a pedido do titular: portal_contrato_criar confere o cliente ATIVO sem trava, e a exclusão que confirma entre a conferência e o INSERT deixa nascer contrato de cliente excluído (a chave estrangeira só pede FOR KEY SHARE); com proposta, ainda pode haver deadlock com o UPDATE de propostas da exclusão",
+  "peca": "S3",
   "refs": [
-    "PT-10"
+    "PT-11"
   ],
   "status": "pendente",
   "ordem": 1360,
-  "nota": "Achado na varredura da F3.176 (plano F3.175/F3.176, seção 3.3, decisão D2). O plano chamava este item de F3.179, mas a F3.178 já estava tomada por outra frente e a F3.179 ficou com o nome do arquivo da exportação. A D1 entrou no PR da F3.176: focarPrimeiroErro (console/pecas.tsx) tenta de novo até ~320 ms com a guarda de foco, então não fica aqui. Ficam só as 11 chamadas listadas.",
-  "proximo": "Pôr o foco num efeito disparado por contador, depois do commit, nas 11 chamadas da tabela 3.3 marcadas fora (D2)"
+  "proximo": "Ler o cliente com FOR SHARE no INSERT do contrato, como cliente_documento_nasce (0970), e testar com duas conexões (revisão da F3.172, m9)"
 }
