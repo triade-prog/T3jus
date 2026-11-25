@@ -5,7 +5,7 @@
 // desligar com motivo e quem só vê (sugerir mudança). A API é simulada; aqui se testa a tela, a
 // acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { fixarRelogio, hojeAs, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -36,7 +36,7 @@ async function simular(page: Page, rotas: Record<string, Resp | ((corpo: unknown
 
 const MARINA = { id: "aa000000-0000-4000-8000-000000000001", nome: "Marina Ribeiro" };
 const GUSTAVO = { id: "aa000000-0000-4000-8000-000000000002", nome: "Gustavo Lima" };
-const hoje = (hh: string) => new Date(`${new Date().toISOString().slice(0, 10)}T${hh}:00-03:00`).toISOString();
+const hoje = hojeAs;
 const ID = "ab000000-0000-4000-8000-000000000001";
 const PRONTA = "ab000000-0000-4000-8000-000000000002";
 
@@ -115,6 +115,9 @@ const PRONTA_PAG = pagina({
   rascunho: PRONTO, fluxo: PRONTO, listaErros: [], erros: 0, textosPorAprovar: 0, textosPorAprovarIds: [], modelos: { mod1: MODELO },
   conflitos: [{ id: PRONTA, nome: "Parcela em atraso", dias: [1, 8, 15] }], versao: 5,
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 // Os testes do desenho rodam no computador; os do celular, no bloco do fim.
 test.beforeEach(async ({ page }, info) => {

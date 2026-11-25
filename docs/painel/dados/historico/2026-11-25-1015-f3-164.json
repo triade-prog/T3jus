@@ -1,0 +1,10 @@
+{
+  "data": "25/11/2026",
+  "inicio": "10:15",
+  "fim": "11:21",
+  "texto": "Testes instáveis (F3.164), parte 3: os testes que usam h(), d() e os rótulos Hoje, Ontem e \"hoje às\" rodam com o relógio do navegador fixo em 24/11/2026 15h, com uma trava que acusa arquivo novo sem relógio; passaram em 6 horários, inclusive a virada do ano, que achou um teste da Agenda que quebraria em 1º/12.",
+  "refs": [
+    "F3.164",
+    "PT-18"
+  ]
+}

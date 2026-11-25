@@ -2,7 +2,7 @@
 // docs/design/aprovadas/portal-equipe-oab: a lista com a OAB embaixo do nome, a ficha da pessoa,
 // adicionar, editar e remover a inscrição, o convite com a OAB e Sua conta. A API é simulada.
 import { expect, test, type Page } from "@playwright/test";
-import { h, semViolacoes, simular } from "./console-dados.ts";
+import { fixarRelogio, h, semViolacoes, simular } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -44,6 +44,9 @@ const FICHA_FELIPE = {
 };
 const FICHA_GUSTAVO = { ...EQUIPE[2], frase: null, contratos: [], dados: { ...DADOS_FELIPE, nomeCompleto: "Gustavo Lima" }, escritorio: ESC_END };
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Equipe com a OAB (EX-12)", () => {
   test("a lista mostra a OAB embaixo do nome e o nome leva à ficha", async ({ page }) => {
