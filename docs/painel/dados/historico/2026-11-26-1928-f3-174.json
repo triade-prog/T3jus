@@ -1,0 +1,12 @@
+{
+  "data": "26/11/2026",
+  "inicio": "19:28",
+  "fim": "19:45",
+  "texto": "F3.174, segunda revisão do código aplicada: o desfazer grava e mostra o que os honorários pagaram de fato (inteira, uma parte ou nada); a ficha mostra no Fechamento do caso o êxito com a baixa mantida; Ver a divisão refeita mantém a escolha, o Por que desfazer e as linhas à mão; o Registrar avisa enquanto calcula; P22 publica a api-portal e o Portal antes da 1100, pelo apply_migration. pgTAP 146 com 57 testes.",
+  "refs": [
+    "F3.174",
+    "FI-24",
+    "FI-05",
+    "P22"
+  ]
+}

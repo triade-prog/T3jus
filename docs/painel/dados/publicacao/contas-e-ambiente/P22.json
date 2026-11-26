@@ -1,0 +1,12 @@
+{
+  "id": "P22",
+  "texto": "Publicar a api-portal e o Portal e só então aplicar no Supabase a migration 1100 (o êxito com baixa sem receber na divisão do alvará, F3.174), só com o ok da Carol",
+  "refs": [
+    "FI-24",
+    "FI-05",
+    "FI-25"
+  ],
+  "status": "pendente",
+  "ordem": 220,
+  "nota": "Ordem (plano da F3.174, seção A8, README \"Financeiro do Portal, Repasses\" e REVISAO-CODIGO-2, notas 3 e 4): 1) conferir com list_migrations que a 0554, a 0651 e a 1010 estão no ar; 2) conferir com pg_get_functiondef a repasse_proposta(uuid,uuid,uuid,bigint), o portal_financeiro_levantamento_registrar e a cadeia dele (financeiro_levantamento_registrar_sem_exito, financeiro_levantamento_registrar_base) e a financeiro_repasse_base, e guardar as definições: a 1100 acha o embrulho da 0651 e a ficha pelo conteúdo e para se o trecho não aparecer exatamente uma vez; 3) rodar a consulta só de leitura da nota 11: os levantamentos com uma parte HONORARIOS cujo caso e cliente tinham a parcela do êxito com baixa_id em vigor no criado_em do levantamento (a 1010 está no ar desde 24/11/2026); se achar algum, avisar a Carol e não mudar nada sozinho; 4) com o ok da Carol, publicar primeiro a api-portal (o schema do registrar ganhou exitoBaixadoVisto e desfazerBaixa; sem ela, o zod tira os campos) e depois o Portal; 5) só então aplicar a 1100. Por que nesta ordem: sem a 1100, o Portal novo funciona como hoje (a proposta não traz exitoBaixado, e o corpo de hoje aceita os campos novos sem reclamar); já a 1100 antes do Portal novo faria o Portal de hoje, sem a escolha, receber EXITO_BAIXADO sem o texto (sai a mensagem genérica de conflito), e o cliente com baixa renegociada não registraria nada. A 1100 vai pelo apply_migration do MCP, com o conteúdo do arquivo direto, fora de ordem: em produção já estão migrations de número maior (1110 a 1119), e o supabase db push recusaria uma migration local anterior à última aplicada; nenhuma delas mexe nas funções que a 1100 troca. Se der errado: recriar o embrulho da 0651, a repasse_proposta e a financeiro_repasse_base com o pg_get_functiondef guardado no passo 2 e apagar exito_parcelas_baixadas, exito_ultima_mudanca e levantamento_historico_dados; nada de tabela muda."
+}

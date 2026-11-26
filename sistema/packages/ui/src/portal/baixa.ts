@@ -3,8 +3,8 @@
 // sozinha quer dizer recebido (FI-02): todo botão e todo aviso diz "sem receber".
 
 import {
-  MOTIVOS_BAIXA, reais,
-  type BaixaDesfeita, type BaixaFeita, type BaixaSemReceber, type CasoDaBaixa, type CustasDaParcela, type MotivoBaixa, type PessoaRef,
+  dataBr, MOTIVOS_BAIXA, reais,
+  type BaixaDesfeita, type BaixaFeita, type BaixaSemReceber, type CasoDaBaixa, type CustasDaParcela, type ExitoBaixado, type MotivoBaixa, type PessoaRef,
 } from "@t3jus/domain";
 import { diaCurto } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
@@ -172,4 +172,127 @@ export function avisoDesfeita(r: Pick<BaixaDesfeita, "descricao" | "proximaAcao"
     titulo: `A ${nomeDaParcela(r.descricao)} voltou para Em atraso.`,
     texto: `A próxima ação é falar com ${primeiroNome(r.proximaAcao.cliente)} amanhã, ${com}.`,
   };
+}
+
+// ------------------------------------------------------------------ O êxito baixado na divisão do alvará (F3.174)
+// Desenho aprovado em docs/design/aprovadas/portal-exito-baixado-alvara (estados eb-). Os textos
+// novos dizem "paga a parcela do êxito", nunca "dá baixa" (nota 15 da revisão do plano).
+
+/** O que entrou, como a frase diz: "alvará", "RPV", "precatório", "depósito de acordo". */
+export function nomeDoLevantamento(tipo: string | null | undefined): string {
+  if (tipo === "RPV") return "RPV";
+  if (tipo === "PRECATORIO") return "precatório";
+  if (tipo === "ACORDO") return "depósito de acordo";
+  return "alvará";
+}
+
+/** O aviso abaixo da divisão (eb-proposta), com as variações das notas do desenho. */
+export function textoExitoBaixado(e: Pick<ExitoBaixado, "descricao" | "valor" | "baixa">, cliente: string, tipo?: string | null): {
+  titulo: string; detalhe: string; parcial: string | null; custas: string | null; explicacao: string; texto: string; renegociada: string | null;
+} {
+  const pn = primeiroNome(cliente);
+  const b = e.baixa;
+  const custas = b.reembolsos.reduce((t, x) => t + x.valor, 0);
+  const deste = nomeDoLevantamento(tipo);
+  const reneg = b.motivo === "RENEGOCIADA";
+  return {
+    titulo: `O êxito de ${pn} está com baixa sem receber.`,
+    detalhe: `${e.descricao} · ${reais(e.valor)} · ${MOTIVOS_BAIXA[b.motivo].toLowerCase()}, por ${b.por.nome} em ${dataBr(diaDoInstante(b.em))}.`,
+    parcial: b.recebidoAntes > 0
+      ? `Recebido ${reais(b.recebidoAntes)} de ${reais(e.valor)}. A baixa sem receber foi dos ${reais(b.valor)} que faltavam.` : null,
+    custas: custas > 0 ? `As custas de ${reais(custas)} tiveram baixa junto. Ao desfazer, elas entram na divisão como reembolso.` : null,
+    explicacao: b.explicacao,
+    texto: reneg
+      ? `Os honorários deste ${deste} pagam esse êxito: desfaça a baixa antes de dividir.`
+      : `Se os honorários deste ${deste} pagam esse êxito, desfaça a baixa antes de dividir. Se o escritório decidiu não cobrar, mantenha a baixa e tire os honorários: o valor fica com ${pn}.`,
+    renegociada: reneg
+      ? "Se o combinado já virou parcelas novas em Contratos, tire essas parcelas mudando as condições do contrato, ou o valor vai ser cobrado duas vezes." : null,
+  };
+}
+
+export type EscolhaExito = "DESFAZER" | "MANTER";
+
+/** Os erros do grupo e do "Por que desfazer" antes de enviar (eb-erro). */
+export function errosDoExito(escolha: EscolhaExito | null, explicacao: string, cliente: string, soDesfazer: boolean): { exito?: string; porque?: string } {
+  const pn = primeiroNome(cliente);
+  if (!escolha) {
+    return { exito: soDesfazer
+      ? `Escolha o que fazer com o êxito de ${pn}: desfazer a baixa sem receber.`
+      : `Escolha o que fazer com o êxito de ${pn}: desfazer a baixa sem receber ou tirar os honorários.` };
+  }
+  if (escolha === "DESFAZER" && explicacao.trim().length < 3) return { porque: "Escreva por que desfazer, com pelo menos 3 letras." };
+  return {};
+}
+
+/** "Falta acertar 1 coisa." (eb-erro). */
+export function tituloErrosExito(n: number): string {
+  return n === 1 ? "Falta acertar 1 coisa." : `Falta acertar ${n} coisas.`;
+}
+
+/** O "Por que desfazer" já preenchido: "O alvará de R$ 16.000,00 entrou em 18/11 e paga o êxito." */
+export function porQueDesfazer(tipo: string | null | undefined, valor: number | null, entrouEm: string | null): string {
+  const oque = nomeDoLevantamento(tipo);
+  return `O ${oque}${valor ? ` de ${reais(valor)}` : ""}${entrouEm ? ` entrou em ${diaCurto(entrouEm)}` : " entrou"} e paga o êxito.`;
+}
+
+/** O conflito EXITO_MUDOU (eb-conflito): quem desfez ou deu a baixa, e quando. */
+export function conflitoDoExito(d: Record<string, unknown> | undefined, hojeDia: string, cliente: string): { titulo: string; texto: string } | null {
+  if (!d || d.motivo !== "EXITO_MUDOU") return null;
+  const por = (d.por as PessoaRef | null)?.nome ?? "Alguém da equipe";
+  const em = typeof d.em === "string" ? d.em : null;
+  const quando = em ? (diaDoInstante(em) === hojeDia ? ` às ${horaDoInstante(em)}` : ` em ${diaCurto(diaDoInstante(em))}, às ${horaDoInstante(em)}`) : "";
+  const pn = primeiroNome(cliente);
+  return {
+    titulo: d.tipo === "BAIXA"
+      ? `${por} deu baixa sem receber no êxito de ${pn}${quando}.`
+      : `${por} desfez a baixa sem receber do êxito de ${pn}${quando}.`,
+    texto: "Nada foi registrado. Veja a divisão refeita antes de registrar.",
+  };
+}
+
+/** A linha do histórico do repasse registrado com "Manter" (eb-historico). */
+export function textoExitoMantido(d: Record<string, unknown>, cliente: string): string {
+  const pn = primeiroNome(cliente);
+  const baixas = Array.isArray(d.baixas) ? (d.baixas as { motivo?: MotivoBaixa; por?: PessoaRef | null; em?: string }[]) : [];
+  const como = baixas.map((b) => [b.motivo && MOTIVOS_BAIXA[b.motivo] ? MOTIVOS_BAIXA[b.motivo].toLowerCase() : null,
+    b.por || b.em ? `por ${b.por?.nome ?? "alguém da equipe"}${b.em ? ` em ${diaCurto(diaDoInstante(b.em))}` : ""}` : null].filter(Boolean).join(", "))
+    .filter(Boolean);
+  const parcela = baixas.length > 1 ? `as parcelas de ${pn} continuam` : `a parcela de ${pn} continua`;
+  return `Registrado sem os honorários do êxito: ${parcela} com baixa sem receber${como.length ? ` (${como.join("; ")})` : ""}.`;
+}
+
+/** Quem e quando, embaixo da linha: "Diego Almeida, ao registrar o alvará". */
+export function quemRegistrou(por: string | null | undefined, tipo: string | null | undefined): string {
+  return `${por ?? "Alguém da equipe"}, ao registrar o ${nomeDoLevantamento(tipo)}`;
+}
+
+/**
+ * O que o desfazer deu, com o que os honorários pagaram de fato (a confirmação e a linha do
+ * histórico): a parcela inteira, uma parte, ou nada (os honorários tirados depois de escolher).
+ */
+export function textoExitoDesfeito(pago: number, falta: number): string {
+  if (pago > 0 && falta <= 0) return "A baixa sem receber do êxito foi desfeita, e os honorários pagam a parcela.";
+  if (pago > 0) return `A baixa sem receber do êxito foi desfeita; os honorários pagaram ${reais(pago)}, e falta ${reais(falta)}.`;
+  return "A baixa sem receber do êxito foi desfeita, e a parcela volta a ser cobrada.";
+}
+
+/** O evento levantamento_exito_desfeito do histórico; sem o pago (evento antigo), o texto de antes. */
+export function textoExitoDesfeitoDoHistorico(d: Record<string, unknown>): string {
+  const b = (d.baixaDesfeita ?? {}) as { pago?: unknown; falta?: unknown };
+  if (typeof b.pago !== "number" || typeof b.falta !== "number") return textoExitoDesfeito(1, 0);
+  return textoExitoDesfeito(b.pago, b.falta);
+}
+
+/**
+ * A linha do "Fechamento do caso" depois do "Manter" (eb-historico): "Êxito do contrato C-2026-021:
+ * baixa sem receber", com "inadimplência, por Marina Ribeiro em 05/11 · mantida ao registrar o alvará".
+ */
+export function fechamentoExitoMantido(d: Record<string, unknown>, tipo: string | null | undefined): { titulo: string; detalhe: string }[] {
+  const baixas = Array.isArray(d.baixas) ? (d.baixas as { motivo?: MotivoBaixa; por?: PessoaRef | null; em?: string; contrato?: string | null }[]) : [];
+  return baixas.map((b) => ({
+    titulo: `Êxito${b.contrato ? ` do contrato ${b.contrato}` : ""}: baixa sem receber`,
+    detalhe: [b.motivo && MOTIVOS_BAIXA[b.motivo] ? MOTIVOS_BAIXA[b.motivo].toLowerCase() : null,
+      b.por || b.em ? `por ${b.por?.nome ?? "alguém da equipe"}${b.em ? ` em ${diaCurto(diaDoInstante(b.em))}` : ""}` : null]
+      .filter(Boolean).join(", ") + ` · mantida ao registrar o ${nomeDoLevantamento(tipo)}`,
+  }));
 }

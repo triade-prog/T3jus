@@ -1,0 +1,13 @@
+{
+  "data": "26/11/2026",
+  "inicio": "18:47",
+  "fim": "19:25",
+  "texto": "F3.174 feita (D38, seção A do plano): na divisão do alvará, o êxito do cliente com baixa sem receber aparece abaixo da tabela, com \"Desfazer a baixa antes de dividir\" (na mesma transação do registrar, e as custas baixadas junto voltam como reembolso) ou \"Manter a baixa e tirar os honorários\" (fica no histórico, sem a explicação). Migration 1100, pgTAP 146 (51 testes), script de concorrência, Deno, vitest e e2e. Falta aplicar a 1100 e publicar a api-portal e o Portal, com o ok da Carol (P22).",
+  "refs": [
+    "F3.174",
+    "FI-24",
+    "FI-05",
+    "FI-25",
+    "P22"
+  ]
+}

@@ -585,6 +585,11 @@ export const registrarLevantamentoSchema = z.object({
   divisao: z.array(linhaDivisaoSchema).max(20).default([]),
   /** Quando vem de um RPV ou precatório a caminho (F3.48): liga os dois. */
   requisicaoId: txt(40),
+  /** F3.174: as baixas sem receber do êxito que a tela viu na proposta ([] quando não viu nenhuma).
+   *  O servidor recusa com EXITO_MUDOU se o que está em vigor for outro. */
+  exitoBaixadoVisto: z.array(z.string().uuid()).max(5).nullish(),
+  /** F3.174: "Desfazer a baixa antes de dividir", na mesma transação do registrar. */
+  desfazerBaixa: z.object({ baixaId: z.string().uuid(), explicacao: z.string().max(1000) }).nullish(),
 });
 export type RegistrarLevantamento = z.input<typeof registrarLevantamentoSchema>;
 
@@ -598,6 +603,18 @@ export interface PropostaRepasse {
   falta: number;
   /** As parcelas do êxito do cliente no caso que a parte "honorários" vai baixar (F3.94). */
   exito?: { id: string; descricao: string; vencimento: string; falta: number }[];
+  /** As parcelas do êxito com baixa sem receber em vigor (F3.174). Sem a 1100, não vem. */
+  exitoBaixado?: ExitoBaixado[];
+}
+
+/** Uma parcela do êxito com baixa sem receber, na divisão do alvará (F3.174; FI-24). */
+export interface ExitoBaixado {
+  parcelaId: string;
+  descricao: string;
+  vencimento: string;
+  valor: number;
+  contrato: { id: string; numero: string; estado: SituacaoContrato };
+  baixa: BaixaSemReceber;
 }
 
 export interface Destinacao {

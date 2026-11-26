@@ -180,6 +180,8 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await expect(page.getByRole("status").filter({ hasText: "Alvará registrado." })).toContainText("R$ 8.000,00 para Benedito Souza Lima");
     expect(pedidos.find((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/repasses")?.corpo).toEqual({
       tipo: "ALVARA", casoId: CASO.id, clienteId: BEN.id, valor: 1270000, entrouEm: dia(0),
+      // F3.174, nota 12: sem êxito baixado, o corpo leva exitoBaixadoVisto: [].
+      exitoBaixadoVisto: [],
       divisao: [
         { para: "CLIENTE", valor: 800000 },
         { para: "HONORARIOS", nome: "Honorários de êxito", regra: PROPOSTA.linhas[0]!.regra, valor: 381000, contaId: null },
@@ -606,5 +608,174 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     await simular(page, comuns(SEM_AREA));
     await page.goto(`${P}/financeiro/repasses`);
     await expect(page.getByRole("heading", { name: "Esta área não está liberada para você" })).toBeVisible();
+  });
+});
+
+// F3.174 (FI-24, FI-05, FI-25): o êxito com baixa sem receber na divisão do alvará, desenho aprovado
+// em docs/design/aprovadas/portal-exito-baixado-alvara (estados eb-proposta, eb-desfazer-escolhido,
+// eb-mantida, eb-erro, eb-conflito e eb-historico).
+const RITA = { id: "be000000-0000-4000-8000-000000000021", nome: "Rita Fonseca" };
+const CASO_R = { id: "ca000000-0000-4000-8000-000000000021", nome: "Fonseca x Banco Aurora" };
+const B_RITA = "bb000000-0000-4000-8000-000000000021";
+const CUSTAS = "c3000000-0000-4000-8000-000000000121";
+const EB = {
+  parcelaId: "f6000000-0000-4000-8000-000000000021", descricao: "Êxito · Fonseca x Banco Aurora", vencimento: "2026-10-20", valor: 480000,
+  contrato: { id: "c0000000-0000-4000-8000-000000000021", numero: "C-2026-021", estado: "ATIVO" },
+  baixa: { id: B_RITA, motivo: "INADIMPLENCIA", explicacao: "Rita disse que o banco não pagou o acordo; não vamos cobrar agora.", valor: 480000,
+    recebidoAntes: 0, por: MARINA, em: "2026-11-05T13:00:00Z", reembolsos: [{ contaId: CUSTAS, descricao: "custas", valor: 41230, categoria: "CUSTAS" }], desfeita: null },
+};
+const PROP_R = {
+  contrato: { id: EB.contrato.id, numero: "C-2026-021" },
+  linhas: [{ para: "HONORARIOS", nome: "Honorários de êxito", regra: "30% · acordo · contrato C-2026-021", valor: 480000 }],
+  cliente: 1120000, falta: 0, exito: [], exitoBaixado: [EB],
+};
+const LISTA_R = { ...LISTA, casos: [{ id: CASO_R.id, nome: CASO_R.nome, parteContraria: "Banco Aurora", clientes: [RITA] }] };
+const POST_REP = "POST /v1/escritorio/financeiro/repasses";
+const postsRep = (pedidos: Pedido[]) => pedidos.filter((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/repasses");
+
+async function abrirRita(page: Page) {
+  await page.goto(`${P}/financeiro/repasses`);
+  await page.getByRole("button", { name: "Registrar alvará ou RPV" }).first().click();
+  const j = page.getByRole("dialog", { name: "Registrar alvará ou RPV" });
+  await j.getByLabel("O que entrou").selectOption("ALVARA");
+  await j.getByLabel("Valor levantado").fill("16.000,00");
+  await expect(j.getByRole("heading", { name: "O êxito de Rita está com baixa sem receber." })).toBeVisible();
+  return j;
+}
+
+test.describe("F3.174: o êxito com baixa sem receber na divisão do alvará (FI-24, FI-05, FI-25)", () => {
+  test("eb-proposta, eb-erro e eb-desfazer-escolhido: pelo teclado, desfazer a baixa e registrar numa vez só", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_R),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: PROP_R },
+      [POST_REP]: { status: 201, corpo: { id: id(3), exitoBaixado: [{ parcelaId: EB.parcelaId, descricao: EB.descricao, valor: 480000, paga: true }], baixaDesfeita: true } },
+    });
+    const j = await abrirRita(page);
+    const tab = j.getByRole("table", { name: "Para quem vai cada parte" });
+    // eb-proposta: na célula, só a linha curta; o aviso e a escolha abaixo da tabela, sem nada marcado.
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toContainText("Êxito com baixa sem receber · veja abaixo");
+    await expect(j.getByText("Êxito · Fonseca x Banco Aurora · R$ 4.800,00 · inadimplência, por Marina Ribeiro em 05/11/2026.")).toBeVisible();
+    await expect(j.getByText("Rita disse que o banco não pagou o acordo; não vamos cobrar agora.")).toBeVisible();
+    await expect(j.getByText("As custas de R$ 412,30 tiveram baixa junto. Ao desfazer, elas entram na divisão como reembolso.")).toBeVisible();
+    const grupo = j.getByRole("group", { name: "O que fazer com o êxito de Rita" });
+    await expect(grupo.getByRole("radio", { checked: true })).toHaveCount(0);
+    await expect(j.getByRole("group", { name: /Divisão proposta pelo contrato C-2026-021/ })).toHaveAttribute("aria-describedby", "eb-aviso");
+    await expect(tab.getByRole("row", { name: /Rita Fonseca/ })).toContainText("R$ 11.200,00");
+    await semViolacoes(page);
+    // eb-erro: registrar sem escolher.
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(j.getByRole("alert").filter({ hasText: "Falta acertar 1 coisa." })).toContainText("Nada foi registrado ainda.");
+    await expect(grupo.getByText("Escolha o que fazer com o êxito de Rita: desfazer a baixa sem receber ou tirar os honorários.")).toBeVisible();
+    const desfazer = grupo.getByRole("radio", { name: /Desfazer a baixa antes de dividir/ });
+    await expect(desfazer).toBeFocused();
+    await expect(desfazer).toHaveAttribute("aria-invalid", "true");
+    await semViolacoes(page);
+    expect(postsRep(pedidos)).toHaveLength(0);
+    // eb-desfazer-escolhido, pelo teclado.
+    await page.keyboard.press("Space");
+    await expect(desfazer).toBeChecked();
+    const porque = j.getByLabel("Por que desfazer");
+    await expect(porque).toHaveValue(`O alvará de R$ 16.000,00 entrou em ${ddmm(0)} e paga o êxito.`);
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toContainText("Paga a parcela do êxito (falta R$ 4.800,00)");
+    await expect(tab.getByRole("row", { name: /Reembolso: custas/ })).toContainText("Tinham baixa junto com o êxito; voltam a ser cobradas");
+    await expect(tab.getByRole("row", { name: /Rita Fonseca/ })).toContainText("R$ 10.787,70");
+    await semViolacoes(page);
+    // A variação das notas: "Desfazer" com o campo vazio.
+    await porque.fill("");
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(j.getByText("Escreva por que desfazer, com pelo menos 3 letras.")).toBeVisible();
+    await expect(porque).toBeFocused();
+    await porque.fill("O alvará entrou e paga o êxito.");
+    await j.getByRole("button", { name: "Registrar" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: "Alvará registrado." }))
+      .toContainText("A baixa sem receber do êxito foi desfeita, e os honorários pagam a parcela.");
+    expect(postsRep(pedidos)).toHaveLength(1);
+    expect(postsRep(pedidos)[0]!.corpo).toMatchObject({
+      exitoBaixadoVisto: [B_RITA],
+      desfazerBaixa: { baixaId: B_RITA, explicacao: "O alvará entrou e paga o êxito." },
+      divisao: [
+        { para: "CLIENTE", valor: 1078770 },
+        { para: "HONORARIOS", nome: "Honorários de êxito", valor: 480000 },
+        { para: "REEMBOLSO", nome: "Reembolso: custas", valor: 41230, contaId: CUSTAS },
+      ],
+    });
+  });
+
+  test("eb-mantida: manter a baixa tira os honorários, e o corpo vai sem eles", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_R),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: PROP_R },
+      [POST_REP]: { status: 201, corpo: { id: id(3), exitoBaixado: [] } },
+    });
+    const j = await abrirRita(page);
+    const tab = j.getByRole("table", { name: "Para quem vai cada parte" });
+    const manter = j.getByRole("radio", { name: /Manter a baixa e tirar os honorários/ });
+    await expect(manter).toHaveAccessibleName(/Os R\$ 4\.800,00 ficam com Rita/);
+    await manter.check();
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(0);
+    await expect(tab.getByRole("row", { name: /Rita Fonseca/ })).toContainText("R$ 16.000,00");
+    await expect(j.getByText("Os honorários saíram da divisão. O êxito de Rita continua com baixa sem receber, e isso fica no histórico do repasse.")).toBeVisible();
+    await semViolacoes(page);
+    // Escolher a outra opção depois põe a linha de volta, com o valor proposto.
+    await j.getByRole("radio", { name: /Desfazer a baixa antes de dividir/ }).check();
+    await expect(tab.getByLabel("Valor de Honorários de êxito")).toHaveValue("4.800,00");
+    await manter.check();
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alvará registrado." })).toBeVisible();
+    const corpo = postsRep(pedidos)[0]!.corpo as Record<string, unknown>;
+    expect(corpo.divisao).toEqual([{ para: "CLIENTE", valor: 1600000 }]);
+    expect([corpo.exitoBaixadoVisto, "desfazerBaixa" in corpo]).toEqual([[B_RITA], false]);
+  });
+
+  test("eb-conflito: Bianca desfez a baixa com a janela aberta; nada foi registrado e a divisão vem refeita", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_R),
+      "POST /v1/escritorio/financeiro/repasses/proposta": [{ corpo: PROP_R }, { corpo: { ...PROP_R, exitoBaixado: [] } }],
+      [POST_REP]: { status: 409, corpo: { erro: { codigo: "VERSION_CONFLICT", detalhes: {
+        motivo: "EXITO_MUDOU", tipo: "DESFEITA", por: BIANCA, em: `${dia(0)}T13:13:00Z`, parcelaId: EB.parcelaId } } } },
+    });
+    const j = await abrirRita(page);
+    await j.getByRole("button", { name: "Acrescentar perito, parceiro ou outro" }).click();
+    await j.getByLabel("Nome de quem recebe").fill("Dr. Rui Tavares");
+    await j.getByLabel("Valor de Dr. Rui Tavares").fill("405,00");
+    await j.getByRole("radio", { name: /Desfazer a baixa antes de dividir/ }).check();
+    await j.getByRole("button", { name: "Registrar" }).click();
+    const alerta = j.getByRole("alert").filter({ hasText: "Bianca Torres" });
+    await expect(alerta).toContainText("Bianca Torres desfez a baixa sem receber do êxito de Rita às 10h13.");
+    await expect(alerta).toContainText("Nada foi registrado. Veja a divisão refeita antes de registrar.");
+    const refeita = j.getByRole("button", { name: "Ver a divisão refeita" });
+    await expect(refeita).toBeFocused();
+    await expect(j.getByRole("table", { name: "Para quem vai cada parte" })).toHaveCount(0);
+    await semViolacoes(page);
+    await refeita.click();
+    await expect(j.getByRole("table", { name: "Para quem vai cada parte" }).getByRole("row", { name: /Honorários de êxito/ })).not.toContainText("baixa sem receber");
+    await expect(j.getByRole("heading", { name: "O êxito de Rita está com baixa sem receber." })).toHaveCount(0);
+    await expect(j.getByLabel("O que entrou")).toHaveValue("ALVARA");
+    await expect(j.getByLabel("Valor levantado")).toHaveValue("16.000,00");
+    // A linha acrescentada à mão continua na divisão refeita.
+    await expect(j.getByLabel("Valor de Dr. Rui Tavares")).toHaveValue("405,00");
+    expect(pedidos.filter((p) => p.caminho === "/v1/escritorio/financeiro/repasses/proposta")).toHaveLength(2);
+    // O clique em "Ver a divisão refeita" não reenvia o registrar.
+    expect(postsRep(pedidos)).toHaveLength(1);
+  });
+
+  test("eb-historico: na ficha do repasse, a escolha de manter a baixa, sem a explicação", async ({ page }) => {
+    const ficha = { ...FICHA, cliente: RITA, tipo: "ALVARA", historico: [
+      { acao: "financeiro.levantamento_exito_mantido", em: `${dia(0)}T13:14:00Z`, por: DIEGO,
+        dados: { tipo: "ALVARA", baixas: [{ baixa: B_RITA, motivo: "INADIMPLENCIA", valor: 480000, por: MARINA, em: "2026-11-05T13:00:00Z", contrato: "C-2026-021" }] } },
+      { acao: "financeiro.levantamento", em: `${dia(0)}T13:14:00Z`, por: DIEGO, dados: { tipo: "ALVARA", valor: 1600000, seguiuProposta: false } },
+    ] };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: ficha } });
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    const h = page.getByRole("region", { name: "Histórico" });
+    await expect(h).toContainText("Registrado sem os honorários do êxito: a parcela de Rita continua com baixa sem receber (inadimplência, por Marina Ribeiro em 05/11).");
+    await expect(h).toContainText("Diego Almeida, ao registrar o alvará");
+    await expect(h).not.toContainText("banco não pagou");
+    await expect(page.getByText("Sem os honorários do êxito: Diego Almeida manteve a baixa sem receber ao registrar.")).toBeVisible();
+    const fecha = page.getByRole("region", { name: "Fechamento do caso" });
+    await expect(fecha).toContainText("Êxito do contrato C-2026-021: baixa sem receber");
+    await expect(fecha).toContainText("inadimplência, por Marina Ribeiro em 05/11 · mantida ao registrar o alvará");
+    await semViolacoes(page);
   });
 });

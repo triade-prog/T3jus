@@ -56,3 +56,6 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/caso-pronto-simul
 
 # A divisão do levantamento pela API, como service_role, com commit de verdade (F3.163, FI-05).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/levantamento-pela-api.sh"
+
+# O êxito com baixa sem receber e a divisão do alvará ao mesmo tempo, com commit de verdade (F3.174, FI-24).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exito-baixado-divisao.sh"

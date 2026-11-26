@@ -8,10 +8,10 @@
 // registro e, por enquanto, vai pelo WhatsApp do aparelho; o envio pelo WhatsApp do escritório,
 // com o "lida", vem com Conversas.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import {
   contaPrestacao, dataBr, hojeBrasilia, TIPOS_REQUISICAO, MOTIVOS_ATRASO_REPASSE, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
-  type Destinacao, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
+  type Destinacao, type ExitoBaixado, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -28,6 +28,11 @@ import { MolduraArea } from "./MolduraArea.tsx";
 import { FolhaACaminho, JanelaExpedido, JanelaDataRequisicao, mesAno } from "./ACaminho.tsx";
 import { ItemParcelas, JanelaFechamento, textoJaEncerradoPorOutro } from "./FechamentoCaso.tsx";
 import { rotuloRepasse, type Atalho } from "./fechamento.ts";
+import {
+  conflitoDoExito, errosDoExito, nomeDoLevantamento, porQueDesfazer, fechamentoExitoMantido, quemRegistrou, textoExitoBaixado, textoExitoDesfeito, textoExitoDesfeitoDoHistorico, textoExitoMantido, tituloErrosExito,
+  type EscolhaExito,
+} from "./baixa.ts";
+import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { atrasada, FolhaQuemCuida, JanelaAnotarAtraso, JanelaTrocarResponsavel, NotaAtraso, SeloAtraso } from "./RepasseCuida.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -176,7 +181,7 @@ function Bloco({ l, hoje, prazo, eu, aoFeito, aoDispensar, aoPrestacao, aoAnotar
   );
 }
 
-function RepassesConteudo({ escritorio }: { escritorio: string }) {
+function RepassesConteudo({ escritorio, temContratos }: { escritorio: string; temContratos: boolean }) {
   const hoje = hojeBrasilia();
   const { dados, recarregar } = useCarga<ListaRepasses>("/v1/escritorio/financeiro/repasses");
   const [registrar, setRegistrar] = useState(false);
@@ -215,8 +220,8 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
         <JanelaAnotarAtraso d={anotar.d} l={anotar.l} pessoas={dados.podemCuidar} responsavelId={anotar.l.responsavel.id} hoje={hoje}
           aoFechar={() => setAnotar(null)} aoFeito={terminar} />
       ) : null}
-      {registrar && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} aoFechar={() => setRegistrar(false)} aoFeito={terminar} /> : null}
-      {entrou && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} de={entrou} aoFechar={() => setEntrou(null)} aoFeito={terminar} /> : null}
+      {registrar && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} temContratos={temContratos} aoFechar={() => setRegistrar(false)} aoFeito={terminar} /> : null}
+      {entrou && dados && dados !== "erro" ? <JanelaRegistrar casos={dados.casos} prazoDias={dados.prazoDias} temContratos={temContratos} de={entrou} aoFechar={() => setEntrou(null)} aoFeito={terminar} /> : null}
       {expedido && dados && dados !== "erro" ? <JanelaExpedido casos={dados.casos} aoFechar={() => setExpedido(false)} aoFeito={terminar} /> : null}
       {mudarData ? <JanelaDataRequisicao r={mudarData} hoje={hoje} aoFechar={() => setMudarData(null)} aoFeito={terminar} /> : null}
       {feitoEm ? <JanelaFeito l={feitoEm.l} d={feitoEm.d} aoFechar={() => setFeitoEm(null)} aoFeito={terminar} /> : null}
@@ -339,17 +344,38 @@ function RepassesConteudo({ escritorio }: { escritorio: string }) {
 }
 
 export function RepassesFinanceiro() {
-  return <MolduraArea area="FINANCEIRO" secao="repasses">{(e) => <RepassesConteudo escritorio={e.nome} />}</MolduraArea>;
+  return <MolduraArea area="FINANCEIRO" secao="repasses">{(e) => <RepassesConteudo escritorio={e.nome} temContratos={e.areas.includes("CONTRATOS")} />}</MolduraArea>;
 }
 
 // ------------------------------------------------------------------------- Registrar alvará ou RPV
 
 type LinhaTela = { chave: string; para: ParaDestinacao; nome: string; regra: string | null; valor: string; contaId?: string; proposta: boolean };
 
-function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
+/** F3.174 (decisão 4): a escolha muda a divisão. "Manter" tira os honorários propostos (e as custas que
+ *  voltariam); "Desfazer" põe de volta os honorários, com o valor proposto, e as custas que tiveram
+ *  baixa junto, como reembolso (pergunta A2). */
+function linhasDaEscolha(ls: LinhaTela[], base: LinhaTela[], escolha: EscolhaExito, eb: ExitoBaixado): LinhaTela[] {
+  const custa = (c: string) => `eb-c-${c}`;
+  if (escolha === "MANTER") return ls.filter((x) => !(x.proposta && x.para === "HONORARIOS") && !x.chave.startsWith("eb-c-"));
+  const hon = base.filter((b) => b.para === "HONORARIOS" && !ls.some((x) => x.chave === b.chave));
+  const custas = eb.baixa.reembolsos.filter((r) => !ls.some((x) => x.chave === custa(r.contaId))).map((r): LinhaTela => ({
+    chave: custa(r.contaId), para: "REEMBOLSO", nome: `Reembolso: ${r.descricao}`, regra: "Tinham baixa junto com o êxito; voltam a ser cobradas",
+    valor: paraCampo(r.valor), contaId: r.contaId, proposta: true,
+  }));
+  return [...hon, ...ls, ...custas];
+}
+
+/** O "R$" nunca se separa do número (NOTAS do desenho, acessibilidade). */
+function comValores(t: string) {
+  return t.split(/(R\$\s?[\d.]+,\d{2})/).map((x, i) => (i % 2 ? <span key={i} className="eb-num">{x}</span> : x));
+}
+
+function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito }: {
   casos: ListaRepasses["casos"]; prazoDias: number; aoFechar: () => void; aoFeito: (f: Feito) => void;
   /** "Entrou na conta" de um RPV ou precatório a caminho (F3.48): já vem preenchida e liga os dois. */
   de?: RequisicaoACaminho;
+  /** Quem vê tem a área Contratos (o link "Mudar as condições do contrato" da renegociada). */
+  temContratos?: boolean;
 }) {
   const hoje = hojeBrasilia();
   const opcoes = casos.flatMap((c) => (c.clientes ?? []).map((k) => ({ valor: `${c.id}|${k.id}`, rotulo: `${k.nome} · ${c.nome}`, cliente: k.nome })));
@@ -357,23 +383,42 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
   const [alvo, setAlvo] = useState(de ? `${de.caso.id}|${de.cliente.id}` : opcoes.length === 1 ? opcoes[0]!.valor : "");
   const [valor, setValor] = useState("");
   const [dia, setDia] = useState(diaBr(hoje));
-  const [div, setDiv] = useState<{ chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[]; exito?: PropostaRepasse["exito"] } | null>(null);
+  const [div, setDiv] = useState<{
+    chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[]; base: LinhaTela[]; exito?: PropostaRepasse["exito"]; exitoBaixado: ExitoBaixado[];
+  } | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [futuro, setFuturo] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // F3.174: a escolha do êxito baixado, o "Por que desfazer" e o conflito (EXITO_MUDOU).
+  const [escolha, setEscolha] = useState<EscolhaExito | null>(null);
+  const [porque, setPorque] = useState("");
+  const [conflito, setConflito] = useState<{ titulo: string; texto: string } | null>(null);
+  const [recarga, setRecarga] = useState(0);
+  // "Ver a divisão refeita" guarda o que a pessoa já tinha feito, para pôr de volta na divisão nova.
+  const guardado = useRef<{ escolha: EscolhaExito | null; baixaId: string | null; porque: string; manuais: LinhaTela[] } | null>(null);
+  // Nota 6 da revisão: o clique em "Registrar" com a divisão ainda sendo calculada é anunciado.
+  const [esperando, setEsperando] = useState(false);
+  // Decisão 8: o segundo clique, antes de o React desenhar o "Registrando…", não envia de novo.
+  const saindo = useRef(false);
   const corpo = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
   const tem = (c: string) => erros.includes(c);
   const total = lerCentavos(valor);
   const [casoId, clienteId] = alvo ? alvo.split("|") : [null, null];
   const nomeCliente = opcoes.find((o) => o.valor === alvo)?.cliente ?? "o cliente";
+  const pn = primeiroNome(nomeCliente);
   // A divisão vale para o caso, o cliente e o valor escritos; mudou um deles, vem outra proposta.
   const chaveAtual = casoId && clienteId && total ? `${alvo}|${total}` : null;
   const linhas = div && div.chave === chaveAtual ? div.linhas : null;
   const contrato = linhas ? div!.contrato : null;
   const buscando = !!chaveAtual && !linhas;
   const setLinhas = (f: (ls: LinhaTela[]) => LinhaTela[]) => setDiv((d) => (d ? { ...d, linhas: f(d.linhas) } : d));
+  const eb = linhas ? div!.exitoBaixado[0] ?? null : null;
+  const soDesfazer = eb?.baixa.motivo === "RENEGOCIADA";
+  const txEb = eb ? textoExitoBaixado(eb, nomeCliente, tipo || null) : null;
+  const msgEb = eb ? errosDoExito(null, "", nomeCliente, soDesfazer).exito : undefined;
+  const honProposto = div?.base.find((x) => x.para === "HONORARIOS");
 
   // A proposta pelo contrato, quando o caso, o cliente e o valor estão escritos.
   useEffect(() => {
@@ -384,9 +429,25 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
       const linhasProposta = r.ok
         ? r.dados.linhas.map((x, i) => ({ chave: `p${i}`, para: x.para, nome: x.nome, regra: x.regra, valor: paraCampo(x.valor), contaId: x.contaId, proposta: true }))
         : [];
-      setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null, linhas: linhasProposta, exito: r.ok ? r.dados.exito : undefined });
+      const exitoBaixado = r.ok ? r.dados.exitoBaixado ?? [] : [];
+      // Depois do conflito: as linhas à mão e o "Por que desfazer" voltam; a escolha, só se a mesma baixa ainda está em vigor.
+      const g = guardado.current;
+      guardado.current = null;
+      const ebNovo = exitoBaixado[0] ?? null;
+      const escolhaVolta = g?.escolha && ebNovo && ebNovo.baixa.id === g.baixaId ? g.escolha : null;
+      const comManuais = [...linhasProposta, ...(g?.manuais ?? [])];
+      setEscolha(escolhaVolta);
+      setPorque(g?.porque ?? "");
+      setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null,
+        linhas: escolhaVolta && ebNovo ? linhasDaEscolha(comManuais, linhasProposta, escolhaVolta, ebNovo) : comManuais, base: linhasProposta,
+        exito: r.ok ? r.dados.exito : undefined, exitoBaixado });
     });
-  }, [chaveAtual, casoId, clienteId, total]);
+  }, [chaveAtual, casoId, clienteId, total, recarga]);
+
+  // eb-conflito: o foco vai a "Ver a divisão refeita".
+  useEffect(() => {
+    if (conflito) corpo.current?.closest("dialog")?.querySelector<HTMLElement>("[data-refeita]")?.focus();
+  }, [conflito]);
 
   const outras = (linhas ?? []).reduce((s, x) => s + (lerCentavos(x.valor) ?? 0), 0);
   const doCliente = (total ?? 0) - outras;
@@ -394,8 +455,27 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
     setLinhas((ls) => ls.map((x) => (x.chave === chave ? { ...x, [campo]: v } : x)));
   const acrescentar = () =>
     setLinhas((ls) => [...ls, { chave: `m${Date.now()}`, para: "PERITO", nome: "", regra: null, valor: "", proposta: false }]);
+  const escolher = (x: EscolhaExito) => {
+    if (!eb || !div) return;
+    setEscolha(x);
+    setErros((es) => es.filter((c) => c !== "exito" && (x === "DESFAZER" || c !== "porque")));
+    if (x === "DESFAZER" && !porque.trim()) setPorque(porQueDesfazer(tipo || null, total, lerDia(dia)));
+    setLinhas((ls) => linhasDaEscolha(ls, div.base, x, eb));
+  };
+  const verRefeita = () => {
+    guardado.current = { escolha, baixaId: eb?.baixa.id ?? null, porque, manuais: (linhas ?? []).filter((x) => !x.proposta) };
+    setConflito(null);
+    setErros([]);
+    setFalha(null);
+    setDiv(null);
+    setRecarga((n) => n + 1);
+  };
 
   async function enviar() {
+    if (saindo.current) return;
+    if (conflito) return verRefeita();
+    // Com a divisão ainda sendo calculada, a tela não sabe do êxito baixado: espera a proposta.
+    if (buscando) return setEsperando(true);
     const e: string[] = [];
     const d = lerDia(dia);
     if (!tipo) e.push("tipo");
@@ -404,6 +484,11 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
     if (!d || d > hoje) e.push("entrouEm");
     const linhasRuins = (linhas ?? []).some((x) => !lerCentavos(x.valor) || x.nome.trim().length < 2);
     if (total && linhas && (linhasRuins || doCliente <= 0)) e.push("divisao");
+    if (eb) {
+      const ee = errosDoExito(escolha, porque, nomeCliente, soDesfazer);
+      if (ee.exito) e.push("exito");
+      if (ee.porque) e.push("porque");
+    }
     setFuturo(!!d && d > hoje);
     setFalha(null);
     if (e.length) {
@@ -411,30 +496,50 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
       return focarPrimeiroErro(corpo.current);
     }
     setErros([]);
+    saindo.current = true;
     setEnviando(true);
     const divisao = [
       { para: "CLIENTE", valor: doCliente },
       ...(linhas ?? []).map((x) => ({ para: x.para, nome: x.nome.trim(), regra: x.regra, valor: lerCentavos(x.valor), contaId: x.contaId ?? null })),
     ];
-    const r = await chamarPortal<{ id: string; exitoBaixado?: { descricao: string; valor: number; paga: boolean }[] }>("/v1/escritorio/financeiro/repasses", {
-      metodo: "POST", corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, ...(de ? { requisicaoId: de.id } : {}) },
+    // Nota 12: exitoBaixadoVisto vai sempre, com [] quando a tela não viu baixa.
+    const exitoBaixadoVisto = (div?.exitoBaixado ?? []).map((b) => b.baixa.id);
+    const desfazerBaixa = eb && escolha === "DESFAZER" ? { baixaId: eb.baixa.id, explicacao: porque.trim() } : undefined;
+    const r = await chamarPortal<{ id: string; exitoBaixado?: { parcelaId?: string; descricao: string; valor: number; paga: boolean }[]; baixaDesfeita?: boolean }>("/v1/escritorio/financeiro/repasses", {
+      metodo: "POST",
+      corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, exitoBaixadoVisto, ...(desfazerBaixa ? { desfazerBaixa } : {}), ...(de ? { requisicaoId: de.id } : {}) },
     });
+    saindo.current = false;
     setEnviando(false);
     if (r.ok) {
+      // O que os honorários pagaram de fato à parcela desfeita (podem ter sido tirados ou reduzidos).
+      const pagoNoExito = (r.dados.exitoBaixado ?? []).filter((b) => !eb || b.parcelaId === eb.parcelaId).reduce((t, b) => t + b.valor, 0);
       return aoFeito({
         titulo: `${TIPOS_LEVANTAMENTO[tipo as TipoLevantamento]} registrado.`,
         texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.${de ? " Saiu de “A caminho” e da previsão do Caixa." : ""}`
-          + (r.dados.exitoBaixado ?? []).map((b) => ` A parcela “${b.descricao}” ${b.paga ? "foi baixada" : `recebeu ${reais(b.valor)}`} pela divisão.`).join(""),
+          + (r.dados.baixaDesfeita
+            ? ` ${textoExitoDesfeito(pagoNoExito, Math.max((eb?.baixa.valor ?? 0) - pagoNoExito, 0))}`
+            : (r.dados.exitoBaixado ?? []).map((b) => ` A parcela “${b.descricao}” ${b.paga ? "foi baixada" : `recebeu ${reais(b.valor)}`} pela divisão.`).join("")),
       });
     }
+    const c = conflitoDoExito(r.erro.detalhes, hoje, nomeCliente);
+    if (c) return setConflito(c);
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
-      setErros(campos.map((c) => (c === "clienteId" ? "casoId" : String(c))));
+      // A explicação do desfazer (o banco a confere no desfazer que já existe) volta ao "Por que desfazer".
+      setErros(campos.map((x) => (x === "clienteId" ? "casoId" : x === "explicacao" ? "porque" : String(x))));
       setFuturo(false);
       return focarPrimeiroErro(corpo.current);
     }
     setFalha(textoDoErro(r.erro));
   }
+
+  const errosEb = [tem("exito") && { id: "eb-op-desfazer", texto: `Escolha o que fazer com o êxito de ${pn}.` },
+    tem("porque") && { id: "eb-porque", texto: "Escreva por que desfazer." }].filter(Boolean) as { id: string; texto: string }[];
+  const ir = (id: string) => (ev: MouseEvent) => {
+    ev.preventDefault();
+    document.getElementById(id)?.focus();
+  };
 
   return (
     <Janela id="j-rpv" classe="fi-larga" aberta aoFechar={aoFechar} sobretitulo="Repasses" titulo={de ? "Registrar o levantamento" : "Registrar alvará ou RPV"} descricao="j-rpv-d"
@@ -442,21 +547,45 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
       pe={
         <>
           <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
-          <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
-            <Icone nome="check" className="ico" />
-            Registrar
-          </button>
+          {conflito ? (
+            // Chaves diferentes: o clique em "Ver a divisão refeita" não pode virar envio no mesmo botão.
+            <button key="refeita" className="btn btn-pri" type="button" data-refeita onClick={verRefeita}>
+              <Icone nome="reenviar" className="ico" />
+              Ver a divisão refeita
+            </button>
+          ) : (
+            <button key="registrar" className="btn btn-pri" type="submit" aria-disabled={enviando || buscando || undefined} aria-busy={enviando || undefined}>
+              <Icone nome="check" className="ico" />
+              {enviando ? "Registrando…" : "Registrar"}
+            </button>
+          )}
         </>
       }>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
         <p id="j-rpv-d">{de ? "O dinheiro entrou na conta." : "Diga o que entrou e de qual caso."} A divisão sai do contrato, e você pode ajustar antes de registrar.</p>
+        <p className="sr" aria-live="polite">{enviando ? "Registrando." : esperando && buscando ? "Calculando a divisão pelo contrato…" : ""}</p>
         {de ? (
           <p className="rv-de">
             <Icone nome="balanca" className="ico" />
             <span>Vem do {TIPOS_REQUISICAO[de.tipo].titulo} a caminho: <b>{de.cliente.nome}</b>, requisitado {reais(de.valorRequisitado)}, estimado para {mesAno(de.estimadaMes)}. Ao registrar, ele sai de “A caminho” e da previsão do Caixa.</span>
           </p>
         ) : null}
-        {erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>Nada foi registrado ainda.</Aviso> : null}
+        {conflito ? (
+          <div className="aviso aviso-atencao" role="alert">
+            <Icone nome="pessoas" className="ico" />
+            <div><strong className="aviso-titulo">{conflito.titulo}</strong><p>{conflito.texto}</p></div>
+          </div>
+        ) : null}
+        {errosEb.length ? (
+          <div className="aviso aviso-urgencia eb-resumo" role="alert">
+            <Icone nome="alerta" className="ico" />
+            <div>
+              <strong className="aviso-titulo">{tituloErrosExito(errosEb.length)}</strong>
+              <p>Nada foi registrado ainda.</p>
+              <ul>{errosEb.map((x) => <li key={x.id}><a href={`#${x.id}`} onClick={ir(x.id)}>{x.texto}</a></li>)}</ul>
+            </div>
+          </div>
+        ) : erros.length ? <Aviso tom="urgencia" titulo={faltaAcertar(erros.length)}>Nada foi registrado ainda.</Aviso> : null}
         {falha ? <Aviso tom="urgencia" titulo="Nada foi registrado.">{falha}</Aviso> : null}
         <div className="fi-dois">
           <div className="campo">
@@ -499,7 +628,17 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
           <span>Entra como <b>valor de terceiros</b>. Só a parte do escritório passa para o caixa dele, quando for transferida.</span>
         </p>
 
-        <fieldset className="rp-div" aria-describedby={descritoPor(tem("divisao") && "rp-div-er")}>
+        {conflito ? (
+          // Revisão do desenho, nota 2: a divisão de antes sai, para não contradizer o aviso do topo.
+          <fieldset className="rp-div">
+            <legend>Divisão {contrato ? `proposta pelo contrato ${contrato.numero}` : "do valor"}</legend>
+            <p className="ajuda eb-velha">
+              <Icone nome="reenviar" className="ico" />
+              <span>A divisão saiu daqui porque o êxito de {pn} mudou. O que entrou, o caso, o valor e o dia continuam como você escreveu.</span>
+            </p>
+          </fieldset>
+        ) : (
+        <fieldset className="rp-div" aria-describedby={descritoPor(!!eb && "eb-aviso", tem("divisao") && "rp-div-er")}>
           <legend>Divisão {contrato ? `proposta pelo contrato ${contrato.numero}` : "do valor"}</legend>
           {!linhas ? (
             <p className="ajuda">{buscando ? "Calculando a divisão pelo contrato…" : "Escolha o caso e escreva o valor para ver a divisão."}</p>
@@ -518,8 +657,13 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
                         {x.proposta ? (
                           <div className="fi-quem">
                             <strong>{x.nome}</strong>{x.regra ? <small>{x.regra}</small> : null}
-                            {/* F3.94: a parte "honorários" baixa a parcela do êxito do cliente no caso. */}
-                            {x.para === "HONORARIOS" && div?.exito?.length
+                            {/* F3.174 (nota 1): na célula, só a linha curta; o aviso fica abaixo da tabela. */}
+                            {x.para === "HONORARIOS" && eb ? (
+                              escolha === "DESFAZER"
+                                ? <small className="rp-baixa"><Icone nome="check" className="ico" />Paga a parcela do êxito (falta {reais(eb.baixa.valor)})</small>
+                                : <small className="eb-cel"><Icone nome="alerta" className="ico" />Êxito com baixa sem receber · veja abaixo</small>
+                            ) : x.para === "HONORARIOS" && div?.exito?.length
+                              /* F3.94: a parte "honorários" baixa a parcela do êxito do cliente no caso. */
                               ? <small className="rp-baixa"><Icone nome="check" className="ico" />Dá baixa na parcela {div.exito.map((e) => `“${e.descricao}” (falta ${reais(e.falta)})`).join(" e ")}</small>
                               : null}
                           </div>
@@ -559,6 +703,58 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
                   </tr>
                 </tbody>
               </table>
+              {eb && txEb ? (
+                // F3.174 (eb-proposta): o aviso e a escolha, abaixo da tabela, dentro do quadro "Divisão".
+                <section className="eb-aviso" aria-labelledby="eb-aviso-t">
+                  <div className="eb-txt" id="eb-aviso">
+                    <h3 id="eb-aviso-t"><Icone nome="alerta" className="ico" />{txEb.titulo}</h3>
+                    <p className="eb-det">{comValores(txEb.detalhe)}</p>
+                    {txEb.parcial ? <p className="eb-det">{comValores(txEb.parcial)}</p> : null}
+                    {txEb.custas ? <p className="eb-det">{comValores(txEb.custas)}</p> : null}
+                    <p className="eb-expl"><q>{txEb.explicacao}</q></p>
+                    <p>{txEb.texto}</p>
+                    {txEb.renegociada ? (
+                      <p>
+                        {txEb.renegociada}
+                        {temContratos ? <> <a href={ROTAS_CONTRATOS.mudar(eb.contrato.id)}>Mudar as condições do contrato</a></> : null}
+                      </p>
+                    ) : null}
+                  </div>
+                  <fieldset className="eb-ops" aria-describedby={tem("exito") ? "eb-ops-er" : undefined}>
+                    <legend>O que fazer com o êxito de {pn}</legend>
+                    {tem("exito") ? <ErroCampo id="eb-ops-er">{msgEb}</ErroCampo> : null}
+                    <div className="eb-ops-l">
+                      <label className="opcao">
+                        <input className="marcar" type="radio" name="eb-exito" id="eb-op-desfazer" value="DESFAZER" checked={escolha === "DESFAZER"}
+                          onChange={() => escolher("DESFAZER")} aria-invalid={tem("exito") || undefined} />
+                        <span>Desfazer a baixa antes de dividir<small>A parcela volta a ser cobrada e os honorários deste {nomeDoLevantamento(tipo || null)} a pagam.</small></span>
+                      </label>
+                      {soDesfazer ? null : (
+                        <label className="opcao">
+                          <input className="marcar" type="radio" name="eb-exito" id="eb-op-manter" value="MANTER" checked={escolha === "MANTER"}
+                            onChange={() => escolher("MANTER")} aria-invalid={tem("exito") || undefined} />
+                          <span>Manter a baixa e tirar os honorários<small>Os {reais(lerCentavos(honProposto?.valor ?? "") ?? eb.valor)} ficam com {pn}. A escolha fica no histórico do repasse.</small></span>
+                        </label>
+                      )}
+                    </div>
+                    {escolha === "DESFAZER" ? (
+                      <div className="campo eb-porque">
+                        <label htmlFor="eb-porque">Por que desfazer</label>
+                        <textarea className="entrada" id="eb-porque" maxLength={1000} value={porque} onChange={(e) => setPorque(e.target.value)}
+                          aria-invalid={tem("porque") || undefined} aria-describedby={descritoPor("eb-porque-aj", tem("porque") && "eb-porque-er")} />
+                        <p className="ajuda" id="eb-porque-aj">Fica no histórico da parcela.</p>
+                        {tem("porque") ? <ErroCampo id="eb-porque-er">Escreva por que desfazer, com pelo menos 3 letras.</ErroCampo> : null}
+                      </div>
+                    ) : null}
+                    {escolha === "MANTER" ? (
+                      <p className="eb-nota" role="status">
+                        <Icone nome="historico" className="ico" />
+                        <span>Os honorários saíram da divisão. O êxito de {pn} continua com baixa sem receber, e isso fica no histórico do repasse.</span>
+                      </p>
+                    ) : null}
+                  </fieldset>
+                </section>
+              ) : null}
               <button className="btn btn-sec btn-compacto" type="button" onClick={acrescentar} style={{ justifySelf: "start" }}>
                 <Icone nome="mais" className="ico" />Acrescentar perito, parceiro ou outro
               </button>
@@ -568,13 +764,14 @@ function JanelaRegistrar({ casos, prazoDias, de, aoFechar, aoFeito }: {
                   {doCliente > 0
                     ? <>Soma da divisão: <b>{reais(total ?? 0)}</b>, igual ao valor levantado. Falta destinar: <b>R$ 0,00</b>. </>
                     : <>As outras partes somam <b>{reais(outras)}</b>, mais do que o valor levantado. </>}
-                  Parcela em atraso do cliente <b>não</b> é descontada aqui sem o aceite de {primeiroNome(nomeCliente)}.
+                  Parcela em atraso do cliente <b>não</b> é descontada aqui sem o aceite de {pn}.
                 </span>
               </p>
               {tem("divisao") ? <ErroCampo id="rp-div-er">Confira cada parte: todas precisam de nome e valor, e o cliente precisa ficar com algum valor.</ErroCampo> : null}
             </>
           )}
         </fieldset>
+        )}
       </div>
     </Janela>
   );
@@ -870,6 +1067,19 @@ function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
           <h3>{dataBr(g.dia)}{g.dia === hoje ? " · hoje" : ""}</h3>
           <ol className="eventos">
             {g.itens.map((e, i) => {
+              // F3.174 (eb-historico): a escolha do êxito baixado, ao registrar.
+              if (e.acao === "financeiro.levantamento_exito_mantido" || e.acao === "financeiro.levantamento_exito_desfeito") {
+                return (
+                  <li key={`${e.em}-${i}`} className="eb-hist-novo">
+                    <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
+                    <span className="pto" aria-hidden="true" />
+                    <div>
+                      <p>{e.acao === "financeiro.levantamento_exito_mantido" ? textoExitoMantido(e.dados, f.cliente.nome) : textoExitoDesfeitoDoHistorico(e.dados)}</p>
+                      <small>{quemRegistrou(e.por?.nome, String(e.dados.tipo ?? f.tipo))}</small>
+                    </div>
+                  </li>
+                );
+              }
               const det = detalheHistorico(e.acao, e.dados);
               return (
                 <li key={`${e.em}-${i}`}>
@@ -923,6 +1133,7 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
   if (dados === "erro") return <ErroAoCarregar oque="o repasse" aoTentar={recarregar} />;
   if (!dados) return <Carregando rotulo="Carregando o repasse…" linhas={5} />;
   const f = dados;
+  const mantido = f.historico.find((h) => h.acao === "financeiro.levantamento_exito_mantido");
   const abertas = f.destinacoes.filter(pendente);
   const faltaPagar = abertas.reduce((s, d) => s + d.valor, 0);
   const pago = f.destinacoes.filter((d) => d.situacao === "FEITO").reduce((s, d) => s + d.valor, 0);
@@ -991,7 +1202,10 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
             <div className="folha-cab">
               <div>
                 <h2 id="t-rp-partes"><Icone nome="enviar" className="ico" />Para onde vai cada parte</h2>
-                <p className="sub">A divisão foi registrada por {f.autor.nome} em {diaCurto(diaDoInstante(f.criadoEm))}.</p>
+                {/* F3.174 (eb-historico): registrado com "Manter", sem os honorários do êxito. */}
+                {mantido
+                  ? <p className="sub">Sem os honorários do êxito: {mantido.por?.nome ?? f.autor.nome} manteve a baixa sem receber ao registrar.</p>
+                  : <p className="sub">A divisão foi registrada por {f.autor.nome} em {diaCurto(diaDoInstante(f.criadoEm))}.</p>}
               </div>
             </div>
             <div className="fi-split">
@@ -1093,6 +1307,9 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
             <ul className="fi-check">
               <li><Icone nome="check" className="ico" /><span>{TIPOS_LEVANTAMENTO[f.tipo]} registrado em {dataBr(f.entrouEm)}</span></li>
               <ItemParcelas a={f.acerto} />
+              {mantido ? fechamentoExitoMantido(mantido.dados, f.tipo).map((x, i) => (
+                <li key={`eb-f-${i}`}><Icone nome="check" className="ico" /><span>{x.titulo}<small>{x.detalhe}</small></span></li>
+              )) : null}
               {f.destinacoes.map((d) => (
                 <li key={d.id} className={pendente(d) ? "falta" : undefined}>
                   <Icone nome={pendente(d) ? "alerta" : "check"} className="ico" />

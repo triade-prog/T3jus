@@ -1544,6 +1544,46 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 /* Janela de registrar */
 .janela.fi-larga{width:min(760px,calc(100vw - 32px))}
 @media (max-width:760px){.janela.fi-larga{width:100%}}
+
+/* Repasses · o êxito com baixa sem receber na divisão (F3.174, desenho em
+   docs/design/aprovadas/portal-exito-baixado-alvara). O aviso fica abaixo da tabela, dentro do
+   quadro "Divisão"; na célula de honorários, só a linha curta. */
+.fi-quem .eb-cel{display:flex;gap:6px;align-items:flex-start;color:var(--texto);font-weight:500}
+.fi-quem .eb-cel .ico{flex:none;width:14px;height:14px;margin-top:2px;color:var(--vinho)}
+.eb-aviso{display:grid;gap:10px;padding:16px 16px 16px 20px;border-radius:var(--raio-g);background:var(--atencao-fundo-suave,#FBEFE6);position:relative;overflow:hidden}
+.eb-aviso::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--ambar)}
+.eb-aviso h3{display:flex;gap:10px;align-items:flex-start;margin:0;font-family:var(--fonte-texto,inherit);font-size:14px;font-weight:600;color:var(--texto);line-height:1.45}
+.eb-aviso h3 .ico{flex:none;width:18px;height:18px;margin-top:1px;color:var(--texto)}
+.eb-txt{display:grid;gap:8px}
+.eb-aviso p{margin:0;font-size:13px;line-height:1.5;color:var(--texto)}
+.eb-aviso p a{color:var(--vinho);font-weight:500;display:inline-flex;align-items:center;min-height:44px}
+.eb-expl{padding-left:12px;border-left:2px solid var(--vinho-4)}
+.eb-expl q{font-family:var(--serifa);font-style:italic;font-size:15px}
+.eb-ops{border:0;margin:4px 0 0;padding:0;min-width:0}
+.eb-ops legend{font-weight:600;font-size:13px;margin-bottom:8px;padding:0;color:var(--texto)}
+.eb-ops .erro-msg{margin:0 0 8px;color:var(--texto)}
+.eb-ops-l{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.eb-ops .opcao{border:1px solid var(--borda-folha);border-radius:var(--raio);padding:12px 12px;margin:0;background:var(--papel);min-height:44px}
+.eb-ops .opcao:has(input:checked){border-color:var(--vinho);box-shadow:inset 0 0 0 1px var(--vinho)}
+.eb-ops .opcao span{font-weight:500}
+.eb-ops .opcao small{font-weight:400;margin-top:2px;line-height:1.45}
+.eb-ops .opcao:has(input[aria-invalid="true"]){border-color:var(--vinho-3)}
+.eb-porque{margin-top:10px;padding:12px 14px;border-radius:var(--raio);background:var(--papel);border:1px solid var(--borda-folha)}
+.eb-porque textarea.entrada{min-height:72px}
+.eb-nota{display:flex;gap:10px;align-items:flex-start;margin-top:10px!important;padding:10px 14px;border-radius:var(--raio);background:var(--papel);border:1px solid var(--borda-folha)}
+.eb-nota .ico{flex:none;width:16px;height:16px;margin-top:2px;color:var(--vinho)}
+.eb-resumo ul{margin:6px 0 0;padding-left:18px}
+.eb-resumo a{display:inline-flex;align-items:center;min-height:44px;color:var(--vinho);font-weight:500}
+.eb-num{white-space:nowrap}
+.eb-velha{display:flex;gap:10px;align-items:flex-start;margin:0;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);color:var(--texto)}
+.eb-velha .ico{flex:none;width:16px;height:16px;margin-top:2px;color:var(--vinho)}
+.eb-hist-novo p{font-weight:400}
+@media (max-width:760px){
+  .eb-ops-l{grid-template-columns:1fr}
+  .eb-aviso{padding:14px 14px 14px 18px}
+  .janela.fi-larga .janela-pe{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .janela.fi-larga .janela-pe .btn{width:100%;justify-content:center}
+}
 .fi-alvo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2)}
 .fi-alvo strong{display:block;font-weight:500}
 .fi-alvo small{display:block;font-size:12px;color:var(--texto-2)}
