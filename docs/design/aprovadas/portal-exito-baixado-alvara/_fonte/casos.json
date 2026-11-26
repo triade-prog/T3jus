@@ -1,0 +1,62 @@
+[
+ {
+  "nome": "eb-proposta",
+  "url": "financeiro.html?estado=eb-proposta",
+  "rotulo": "A divisão com o êxito baixado: o aviso e a escolha, sem nada marcado"
+ },
+ {
+  "nome": "eb-desfazer-escolhido",
+  "url": "financeiro.html?estado=eb-desfazer-escolhido",
+  "rotulo": "“Desfazer a baixa antes de dividir”: por que desfazer, e as custas voltam"
+ },
+ {
+  "nome": "eb-mantida",
+  "url": "financeiro.html?estado=eb-mantida",
+  "rotulo": "“Manter a baixa e tirar os honorários”: tudo fica com Rita"
+ },
+ {
+  "nome": "eb-erro",
+  "url": "financeiro.html?estado=eb-erro",
+  "rotulo": "Registrar sem escolher: o erro do grupo"
+ },
+ {
+  "nome": "eb-conflito",
+  "url": "financeiro.html?estado=eb-conflito",
+  "rotulo": "Bianca mudou o êxito com a janela aberta: nada foi registrado"
+ },
+ {
+  "nome": "eb-historico",
+  "url": "financeiro.html?estado=eb-historico",
+  "rotulo": "Marina, na ficha do repasse: a linha do histórico"
+ },
+ {
+  "nome": "rb-visao",
+  "url": "relatorios.html?estado=rb-visao",
+  "rotulo": "Visão geral: a folha “Baixado sem receber”"
+ },
+ {
+  "nome": "rb-visao-nenhuma",
+  "url": "relatorios.html?estado=rb-visao-nenhuma",
+  "rotulo": "Junho a agosto: nenhuma baixa no período"
+ },
+ {
+  "nome": "rb-mes-passado",
+  "url": "relatorios.html?estado=rb-mes-passado",
+  "rotulo": "Noemi, outubro: a baixa fica no mês dela"
+ },
+ {
+  "nome": "rb-cliente",
+  "url": "relatorios.html?estado=rb-cliente",
+  "rotulo": "Noemi, set. a nov.: a baixa e o desfazer, cada um no seu dia"
+ },
+ {
+  "nome": "rb-clientes",
+  "url": "relatorios.html?estado=rb-clientes",
+  "rotulo": "Por cliente: a coluna nova, ordenada por ela"
+ },
+ {
+  "nome": "rb-como",
+  "url": "relatorios.html?estado=rb-como",
+  "rotulo": "“Como contamos” com a regra nova"
+ }
+]

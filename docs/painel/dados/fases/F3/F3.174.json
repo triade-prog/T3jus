@@ -7,6 +7,6 @@
   ],
   "status": "pendente",
   "ordem": 1300,
-  "nota": "O F3.139 já pula na divisão a parcela que mudou depois da trava (1010, seção 13) e não divide a parcela baixada. Falta a tela da proposta de divisão mostrar o êxito baixado e o atalho para desfazer.",
-  "proximo": "Programar o êxito baixado na proposta de divisão do alvará pelo desenho aprovado (D35, decisão 38)"
+  "nota": "Desenho aprovado em 26/11/2026 (D38, docs/design/aprovadas/portal-exito-baixado-alvara, plano seção A). O registrar recusa os honorários com o êxito baixado (EXITO_BAIXADO); a pessoa escolhe desfazer a baixa, na mesma transação do registrar, ou manter a baixa e tirar os honorários. As custas baixadas junto voltam como reembolso (A2). O F3.139 já pula na divisão a parcela que mudou depois da trava (1010, seção 13).",
+  "proximo": "Programar pelo plano aprovado (D38, seção A): migration 1100, api-portal, ui de Repasses e pgTAP 146"
 }

@@ -1,0 +1,12 @@
+{
+  "id": "F3.193",
+  "texto": "Exclusão a pedido do titular: limpar a explicação da baixa sem receber (parcela_baixas.explicacao), texto livre que hoje fica (a 1092 limpa só as despesas)",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1470,
+  "nota": "Achado na revisão do plano da F3.174 (nota 18). Até lá, a tela não mostra a explicação de cliente excluído. O plano chamava este item de F3.180. Renumerado de novo ao juntar com a main, porque F3.184 a F3.186 também foram tomados.",
+  "proximo": "Planejar a limpeza da explicação da baixa na exclusão do cliente"
+}

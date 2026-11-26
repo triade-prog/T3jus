@@ -1,0 +1,14 @@
+{
+  "id": "F3.192",
+  "texto": "Rendeu: a custa adiantada que teve baixa sem receber volta a descontar das despesas que não voltaram (a 1010, 907-910, tirou e o \"Rendeu\" sobe com o perdão)",
+  "peca": "S4",
+  "refs": [
+    "FI-07",
+    "FI-25",
+    "IN-15"
+  ],
+  "status": "pendente",
+  "ordem": 1460,
+  "nota": "Carol disse sim em 26/11/2026 (recomendação do plano da F3.174, antiga pergunta B1). Pede drop e create de relatorio_adiantadas, que é returns table (0410:197-208). O plano chamava este item de F3.179. Renumerado de novo ao juntar com a main, porque F3.184 a F3.186 também foram tomados.",
+  "proximo": "Planejar e programar a volta da custa baixada ao desconto do Rendeu"
+}
