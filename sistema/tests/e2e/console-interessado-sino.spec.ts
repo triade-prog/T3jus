@@ -2,11 +2,11 @@
 // docs/design/aprovadas/console-interessado-sino. A API é simulada; aqui se testa a tela, a
 // acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { C, CA, IN, SESSAO, semViolacoes, simular } from "./console-dados.ts";
+import { agora, C, CA, fixarRelogio, IN, semViolacoes, SESSAO, simular } from "./console-dados.ts";
 
 const ADM = { ...SESSAO, acoes: ["console.interessados.ver"] };
 const SUP = { ...SESSAO, nome: "Bruno Seixas", funcoes: ["SUPORTE"], acoes: ["console.suporte.ver"] };
-const hojeBr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+const hojeBr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora));
 const br = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const dia = (n: number) => new Date(Date.parse(`${hojeBr}T12:00:00Z`) + n * 86400e3).toISOString().slice(0, 10);
 const PESSOAS = [{ id: CA.pessoaId, nome: CA.nome, funcoes: ["ADMINISTRACAO"] }, { id: IN.pessoaId, nome: IN.nome, funcoes: ["IMPLANTACAO"] }];
@@ -29,6 +29,9 @@ async function preencher(page: Page) {
   await j.getByRole("radio", { name: /^Ainda não/ }).check();
   return j;
 }
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Console: cadastrar interessado à mão", () => {
   test("confere os campos na tela, sem mandar nada ao servidor", async ({ page }) => {
@@ -115,9 +118,9 @@ const AVISOS = {
   novos: 2, total: 3, veInteressados: true,
   itens: [
     { id: "a1", tipo: "INTERESSADO_NOVO", dados: { escritorio: "Jatobá Advocacia", nome: "Lívia Prado", tamanho: "DE_6_A_10", trecho: "Queremos ver o financeiro.", prazo: dia(1) },
-      interessadoId: "f0000000-0000-4000-8000-000000000001", em: new Date().toISOString(), lido: false, agora: null },
+      interessadoId: "f0000000-0000-4000-8000-000000000001", em: new Date(agora).toISOString(), lido: false, agora: null },
     { id: "a2", tipo: "INTERESSADO_ATRIBUIDO", dados: { escritorio: "Ipê & Moura Advogados", quem: "Inês Nogueira", recado: "Você conhece a sócia." },
-      interessadoId: IPE, em: new Date(Date.now() - 60_000).toISOString(), lido: false, agora: null },
+      interessadoId: IPE, em: new Date(agora - 60_000).toISOString(), lido: false, agora: null },
     { id: "a3", tipo: "INTERESSADO_VENCIDO", dados: { escritorio: "Angico Advocacia", nome: "Débora Sales", passo: "Mandar o vídeo", data: dia(-1), responsavel: CA.nome },
       interessadoId: "f0000000-0000-4000-8000-000000000003", em: `${dia(-1)}T13:00:00Z`, lido: true, agora: null },
   ],
@@ -190,7 +193,7 @@ test.describe("Console: sino de avisos", () => {
   const ESC = "e0000000-0000-4000-8000-0000000000b1";
   const FAT = "fa000000-0000-4000-8000-000000000001";
   const fatura = (id: string, dias: number, marco: "AVISO" | "CONSULTA", lido: boolean) => ({
-    id, tipo: "FATURA_ATRASO", interessadoId: null, faturaId: FAT, lido, agora: null, em: new Date(Date.now() - (marco === "AVISO" ? 23 : 0) * 86400e3).toISOString(),
+    id, tipo: "FATURA_ATRASO", interessadoId: null, faturaId: FAT, lido, agora: null, em: new Date(agora - (marco === "AVISO" ? 23 : 0) * 86400e3).toISOString(),
     dados: { escritorio: "Bacuri Advocacia Trabalhista", escritorioId: ESC, competencia: "2026-10-01", vencimento: "2026-10-10", totalCentavos: 19000, dias, marco },
   });
   const AVISOS_FIN = { novos: 1, total: 2, veInteressados: false, veCobranca: true, itens: [fatura("f2", 30, "CONSULTA", false), fatura("f1", 7, "AVISO", true)] };

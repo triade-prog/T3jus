@@ -3,9 +3,9 @@
 // e o atraso na carteira. A API é simulada; aqui se testa a tela, a acessibilidade e o que ela
 // manda ao servidor.
 import { expect, test } from "@playwright/test";
-import { C, CA, CLIENTES, ficha, PERMISSOES, SESSAO, semViolacoes, simular } from "./console-dados.ts";
+import { agora, C, CA, CLIENTES, ficha, fixarRelogio, PERMISSOES, semViolacoes, SESSAO, simular } from "./console-dados.ts";
 
-const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora));
 const dia = (n: number) => new Date(Date.parse(`${hoje}T12:00:00Z`) + n * 86400e3).toISOString().slice(0, 10);
 const br = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const comp = (n: number) => `${dia(n).slice(0, 7)}-01`;
@@ -78,6 +78,9 @@ const assinatura = (o: Record<string, unknown> = {}) => ({
     ...o,
   },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Console: cobrança dos escritórios", () => {
   test("faturas: números, filtro de atraso e sem violações", async ({ page }) => {

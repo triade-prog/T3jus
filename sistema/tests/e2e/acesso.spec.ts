@@ -3,6 +3,7 @@
 // acessibilidade e o que ela manda para o servidor. As regras estão nos testes Deno das APIs.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { agora, fixarRelogio } from "./console-dados.ts";
 
 const APPS = [
   { nome: "Portal do advogado", url: "http://localhost:3000", trocada: "A partir de agora, entre com a senha nova." },
@@ -100,6 +101,9 @@ for (const app of APPS) {
   });
 }
 
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
+
 test("Portal: convite mostra quem convidou, pede nome e Termos, e entra", async ({ page }) => {
   const pedidos: unknown[] = [];
   await simular(page, "/v1/auth/criar-senha/abrir", [{
@@ -166,7 +170,7 @@ const NOMES = [
 const escritorios = (n: number) =>
   NOMES.slice(0, n).map(([nome, cidade, uf], i) => ({
     id: `0000000${i}-0000-4000-8000-000000000000`, nome, cidade, uf,
-    ultimaEntrada: i === n - 1 ? null : new Date(Date.now() - i * 26 * 3600 * 1000).toISOString(),
+    ultimaEntrada: i === n - 1 ? null : new Date(agora - i * 26 * 3600 * 1000).toISOString(),
   }));
 
 test.describe("Portal: escolha do escritório", () => {

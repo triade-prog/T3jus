@@ -5,7 +5,7 @@
 // carnê" e "Registrar recebimento". O papel continua saindo com o nome curto, sem "[falta]" e sem
 // o aviso. A API é simulada; aqui se testa a tela, a acessibilidade e os textos.
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { semViolacoes, simular } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes, simular } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -14,7 +14,7 @@ const BRUNA = { id: "a0000000-0000-4000-8000-000000000102", nome: "Bruna Teixeir
 const CT = "f1000000-0000-4000-8000-000000000146";
 const CARNE = "c4000000-0000-4000-8000-000000000146";
 const pc = (n: number) => `b2000000-0000-4000-8000-0000000001${String(n).padStart(2, "0")}`;
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 
 // O timbrado do dia (escritorio_timbrado_json, 0890), o elenco de carne-recibo-razao-social.
 const COMPLETA = {
@@ -56,6 +56,9 @@ async function alvo44(l: Locator) {
   await l.page().evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))));
   expect((await l.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 }
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Marca e timbrado: a prévia como o papel sai (F3.146, D1)", () => {
   test("a linha da identificação embaixo da marca e as 4 linhas do recibo; sem aviso com a razão preenchida", async ({ page }) => {

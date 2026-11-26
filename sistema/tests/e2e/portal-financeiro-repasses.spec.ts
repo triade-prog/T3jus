@@ -4,7 +4,7 @@
 // contrato, feito e dispensar com motivo, a prestação de contas e a ficha do repasse. A API é
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -16,7 +16,7 @@ const ESCRITORIO = {
 };
 const SEM_AREA = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 const ddmm = (n: number) => br(n).slice(0, 5);
 
@@ -113,6 +113,9 @@ const comuns = (escritorio: unknown = ESCRITORIO, lista: unknown = LISTA) => ({
   "GET /v1/escritorio/financeiro/repasses": { corpo: lista },
   [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: FICHA },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
   test("Lista: números do alto, um bloco de terceiros por valor, cada parte com prazo, e o repassado no mês", async ({ page }) => {
@@ -427,7 +430,7 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
   test("F3.71: os repasses de cada um, e trocar quem cuida (só quem tem o Financeiro; o motivo vai junto)", async ({ page }) => {
     const LEV2 = { ...LEV, id: id(5), cliente: { ...BEN, id: "be000000-0000-4000-8000-000000000002", nome: "Irene Castro" }, responsavel: BIANCA };
     const trocado = { ...FICHA, responsavel: DIEGO, historico: [
-      { acao: "financeiro.repasse_responsavel", em: new Date().toISOString(), por: MARINA, dados: { de: MARINA.id, para: DIEGO.id, motivo: "Bianca está de férias até 30/11." } },
+      { acao: "financeiro.repasse_responsavel", em: new Date(agora).toISOString(), por: MARINA, dados: { de: MARINA.id, para: DIEGO.id, motivo: "Bianca está de férias até 30/11." } },
       ...FICHA.historico] };
     const pedidos = await simular(page, {
       ...comuns(ESCRITORIO, { ...LISTA, levantamentos: [LEV, LEV2] }),
@@ -470,7 +473,7 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
   test("F3.46: anotar o atraso com o motivo e a próxima ação; o prazo não muda", async ({ page }) => {
     const anotada = { ...LEV.destinacoes[2], atraso: {
       id: "ab000000-0000-4000-8000-000000000001", motivo: "DOCUMENTO", texto: null, proximaEm: dia(1), proximaCom: BIANCA,
-      oQue: "Cobrar a nota por e-mail", em: new Date().toISOString(), por: MARINA } };
+      oQue: "Cobrar a nota por e-mail", em: new Date(agora).toISOString(), por: MARINA } };
     const depois = { ...LISTA, totais: { ...LISTA.totais, semMotivo: 0 }, levantamentos: [{ ...LEV, destinacoes: [LEV.destinacoes[0], LEV.destinacoes[1], anotada] }] };
     const pedidos = await simular(page, {
       ...comuns(),
@@ -503,10 +506,10 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
   });
 
   test("F3.48: a folha A caminho, registrar o expedido com a parte do escritório pelo contrato", async ({ page }) => {
-    const novo = req(3, { valorRequisitado: 1840000, parteEscritorio: 381000, estimadaMes: mesMais(2), passou: false, cliente: BEN, criadoEm: new Date().toISOString(), expedidoEm: dia(0), tribunal: "TJSP", devedor: "Prefeitura de Santo André" });
+    const novo = req(3, { valorRequisitado: 1840000, parteEscritorio: 381000, estimadaMes: mesMais(2), passou: false, cliente: BEN, criadoEm: new Date(agora).toISOString(), expedidoEm: dia(0), tribunal: "TJSP", devedor: "Prefeitura de Santo André" });
     const OFICIO = "0f000000-0000-4000-8000-0000000000f1";
     const oficio = { id: OFICIO, categoria: "OFICIO_REQUISITORIO", nome: "oficio-rpv-vale-alto.pdf", tipo: "application/pdf", tamanho: 312000,
-      donoId: novo.id, enviadoPor: { id: "x", nome: "Marina Ribeiro" }, enviadoEm: new Date().toISOString() };
+      donoId: novo.id, enviadoPor: { id: "x", nome: "Marina Ribeiro" }, enviadoEm: new Date(agora).toISOString() };
     const depois = { ...COM_CAMINHO, aCaminho: { ...COM_CAMINHO.aCaminho, total: 1056000, n: 3, itens: [PASSOU, EDUARDO, { ...novo, oficio }] } };
     const envios: string[] = [];
     await page.route("**/arquivos-falsos/**", async (rota) => {
