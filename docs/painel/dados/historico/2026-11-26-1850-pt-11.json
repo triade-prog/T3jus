@@ -1,0 +1,10 @@
+{
+  "data": "26/11/2026",
+  "inicio": "18:50",
+  "fim": "19:02",
+  "texto": "Migrations 1110, 1111, 1114 e 1115 aplicadas no Supabase (sino e conversas do cliente excluído); P19 e P20 feitas.",
+  "refs": [
+    "PT-11",
+    "PA-05"
+  ]
+}
