@@ -8,6 +8,6 @@
   ],
   "status": "pendente",
   "ordem": 1290,
-  "nota": "Proposto no plano aprovado da baixa sem receber (docs/design/aprovadas/portal-baixa-parcela-motivo/PLANO.md, seção 7). O F3.139 já tira a parcela baixada de \"em aberto\" e \"vencido\" nos dias em que esteve baixada.",
-  "proximo": "Desenhar o número \"Baixado sem receber\" nos Relatórios (agente de frontend e ok da Carol) e programar"
+  "nota": "Desenho aprovado em 26/11/2026 (D37, plano seção B): a baixa conta no dia em que foi feita (Brasília) e o desfazer aparece no período dele, sem mudar o mês passado; soma só perdoada e inadimplência, renegociada e custas ao lado. Proposto antes no plano da baixa sem receber (portal-baixa-parcela-motivo/PLANO.md, seção 7).",
+  "proximo": "Programar pelo plano aprovado (D37, seção B), depois da F3.174: migration 1101, Relatórios, exportação e pgTAP 147"
 }

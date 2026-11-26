@@ -1,0 +1,13 @@
+{
+  "id": "F3.184",
+  "texto": "Na divisão do alvará, avisar o êxito marcado como \"não cobrado\" na conferência, que hoje não aparece na proposta (0640:352)",
+  "peca": "S4",
+  "refs": [
+    "CH-07",
+    "FI-05"
+  ],
+  "status": "pendente",
+  "ordem": 1400,
+  "nota": "Achado no plano da F3.174 (docs/design/aprovadas/portal-exito-baixado-alvara/PLANO.md). O plano chamava este item de F3.178, número já tomado por outra frente.",
+  "proximo": "Planejar o aviso do êxito não cobrado na divisão do alvará (pede desenho)"
+}

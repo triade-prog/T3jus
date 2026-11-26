@@ -1,0 +1,15 @@
+{
+  "id": "D37",
+  "texto": "Desenho do êxito com baixa sem receber na divisão do alvará, em Financeiro › Repasses (o aviso, \"Desfazer a baixa antes de dividir\" ou \"Manter a baixa e tirar os honorários\", o erro, o conflito e o histórico do repasse), e do número \"Baixado sem receber\" nos Relatórios (visão geral, mês passado com baixa desfeita, Por cliente, Um cliente e \"Como calculamos\")",
+  "peca": "S4",
+  "refs": [
+    "FI-24",
+    "FI-25",
+    "FI-05",
+    "IN-04",
+    "IN-07"
+  ],
+  "status": "feito",
+  "ordem": 87,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-exito-baixado-alvara/ (12 estados, computador e celular, axe sem violação), com plano escrito por um especialista e revisado por outro (PLANO.md v2 e REVISAO.md, 22 notas, nenhuma grave) e desenho revisado por um terceiro especialista (REVISAO-DESENHO.md, 3 notas médias corrigidas), aprovado pela Carol em 26/11/2026 às 18h44 (Bahia) com as recomendações das perguntas A1, A2 e F3.185"
+}
