@@ -1,0 +1,22 @@
+[
+ {
+  "nome": "historico-nenhum",
+  "url": "exclusao.html?estado=historico-nenhum"
+ },
+ {
+  "nome": "historico-so",
+  "url": "exclusao.html?estado=historico-so"
+ },
+ {
+  "nome": "historico-e-despesas",
+  "url": "exclusao.html?estado=historico-e-despesas"
+ },
+ {
+  "nome": "historico-em-aberto",
+  "url": "exclusao.html?estado=historico-em-aberto"
+ },
+ {
+  "nome": "historico-sem-data",
+  "url": "exclusao.html?estado=historico-sem-data"
+ }
+]

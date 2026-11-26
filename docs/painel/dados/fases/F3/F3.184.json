@@ -1,0 +1,12 @@
+{
+  "id": "F3.184",
+  "texto": "Janela de exclusão a pedido do titular com a descrição dos lançamentos do sistema antigo guardada até o marco fiscal: a linha no quadro \"O que a lei obriga a guardar\" (também sem arquivo de despesa), com a data da troca por texto fixo, e a frase da faixa do escudo",
+  "peca": "S7",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "feito",
+  "ordem": 1400,
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-exclusao-historico (Carol, 26/11/2026, alternativa A; D37). linhaHistorico e despesasDoExcluido (packages/ui/src/portal/exclusao.ts) e ExclusaoCliente.tsx, com o tipo HistoricoQueFica no packages/domain. Testes em 26/11/2026: exclusao.test.ts (25 testes, 10 novos); e2e tests/e2e/portal-exclusao.spec.ts com 44 testes (10 novos: os 5 estados aprovados no celular e no computador, com axe).",
+  "nota": "Publicar o Portal depois da 1116 (P21)."
+}

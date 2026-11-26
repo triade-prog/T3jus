@@ -1,0 +1,13 @@
+{
+  "id": "F3.185",
+  "texto": "Caso novo de importação desfeita prende o cliente: o desfazer dos processos deixa o caso em Encerrados com a ligação, o desfazer dos clientes conta o cliente como mexido e a exclusão o recusa",
+  "peca": "S7",
+  "refs": [
+    "VA-05",
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1410,
+  "nota": "Revisão do plano da F3.177/F3.158 (M5), fora do escopo da F3.158 porque muda a regra do caso novo. O pgTAP 162 confere o comportamento de hoje, com um comentário que aponta este item.",
+  "proximo": "Ignorar, em cliente_vinculos_lgpd e no cli do plano do desfazer dos clientes (0600), a ligação a caso com encerrado_por = 'IMPORTACAO_DESFEITA' sem sinal de trabalho (imp_ligacao_mexida), com teste e o ok da Carol"
+}

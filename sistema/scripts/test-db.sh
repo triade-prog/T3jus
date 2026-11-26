@@ -44,6 +44,10 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-sino-sim
 # As conversas do WhatsApp, o webhook e o motor ao mesmo tempo que a exclusão (F3.157, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-conversa-simultanea.sh"
 
+# O histórico do sistema antigo, os lembretes, a importação e o desfazer ao mesmo tempo que a
+# exclusão (F3.177 e F3.158, PT-11).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-desfazer-simultaneo.sh"
+
 # Dispensar, trazer de volta e o contrato novo do mesmo cliente ao mesmo tempo (F3.145, VA-05).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/dispensar-contrato.sh"
 

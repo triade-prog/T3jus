@@ -1,0 +1,13 @@
+{
+  "id": "F3.187",
+  "texto": "Ligação nova a caso ao mesmo tempo que a exclusão, pela importação dos processos e pela tela: caso_clientes só pede FOR KEY SHARE no cliente e a ligação pode nascer para quem acabou de ser excluído",
+  "peca": "S3",
+  "refs": [
+    "PT-11",
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 1430,
+  "nota": "Revisão do plano da F3.177 (M6, a parte de caso_clientes). Irmã da F3.180.",
+  "proximo": "Um gatilho BEFORE INSERT em caso_clientes com FOR SHARE no cliente, no molde de historico_anterior_nasce (1116), com o roteiro de concorrência"
+}

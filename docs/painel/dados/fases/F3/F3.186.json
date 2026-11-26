@@ -1,0 +1,13 @@
+{
+  "id": "F3.186",
+  "texto": "Lembrete de contrato aberto do cliente excluído: continua em Contratos › Lembretes e ninguém consegue dispensá-lo (o dispensar recusa o excluído com CLIENTE_EXCLUIDO desde a F3.177)",
+  "peca": "S3",
+  "refs": [
+    "PT-11",
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 1420,
+  "nota": "Revisão do plano da F3.177 (M2). Até sair, a tela mostra o texto do servidor na recusa.",
+  "proximo": "Planejar e desenhar junto com a F3.181 (pergunta C4 à Carol): o que a lista de lembretes mostra do excluído e como ele sai dela"
+}
