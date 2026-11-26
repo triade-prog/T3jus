@@ -1,0 +1,10 @@
+{
+  "data": "26/11/2026",
+  "inicio": "19:00",
+  "fim": "19:05",
+  "texto": "Migrations 1116 a 1119 aplicadas no Supabase (histórico importado e importação do cliente excluído) e Portal no ar com a linha nova; P21 feita.",
+  "refs": [
+    "PT-11",
+    "VA-05"
+  ]
+}
