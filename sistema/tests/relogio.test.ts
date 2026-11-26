@@ -8,8 +8,8 @@ import { describe, expect, it } from "vitest";
 
 const PASTA = join(import.meta.dirname, "e2e");
 const DO_RELOGIO = new Set(["h", "d", "agora", "AGORA", "diaIso", "diaBr", "hojeAs"]);
-// Usa o relógio real de propósito até a correção do foco (F3.176).
-const RELOGIO_REAL = new Set(["console-suporte.spec.ts"]);
+// Arquivos que usam o relógio real de propósito (hoje, nenhum; o console-suporte saiu com a F3.176).
+const RELOGIO_REAL = new Set<string>([]);
 
 /** Os nomes que o arquivo importa de um arquivo de dados ("./x.ts"). */
 function importados(texto: string, de: string) {
