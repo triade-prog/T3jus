@@ -5,6 +5,9 @@
 // docs/design/aprovadas/portal-exclusao-arquivos (Carol, 24/11/2026).
 // F3.156: a despesa adiantada ao cliente e o quadro "O que a lei obriga a guardar", pelo desenho
 // aprovado em docs/design/aprovadas/portal-exclusao-despesas (Carol, 24/11/2026, alternativa A).
+// F3.177 (F3.184): a descrição dos lançamentos do sistema antigo no quadro "O que a lei obriga a
+// guardar", pelo desenho aprovado em docs/design/aprovadas/portal-exclusao-historico (Carol,
+// 26/11/2026, alternativa A).
 import { expect, test, type Page } from "@playwright/test";
 import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
@@ -446,6 +449,68 @@ test.describe("A despesa adiantada na janela de exclusão (F3.156, PT-11)", () =
     await expect(j.locator(".pd-some li").nth(2)).toHaveText(`A descrição da despesa adiantada${DESC_UM}`);
     await expect(j.locator(".pd-guarda")).toHaveCount(0);
     await expect(j.locator(".pt-comuns b")).toHaveText("Nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+});
+
+// F3.177 (F3.184; PT-11): a descrição dos lançamentos do sistema antigo fica guardada até o marco
+// fiscal; a linha entra no fim do quadro "O que a lei obriga a guardar" (sem arquivo, o quadro vem só
+// com ela) e a frase em negrito da faixa a cita. Os estados do desenho aprovado.
+const SEM_DESPESA = { despesas: 0, comArquivo: 0, arquivos: 0, pastas: 0, ate: null };
+const FIM_H = "A data, o valor e se foi pago não mudam.";
+const hist = (lancamentos: number, detalhes: number, semData: number, ate: string) => ({ lancamentos, detalhes, semData, origem: "ASTREA", ate });
+
+test.describe("O histórico do sistema antigo na janela de exclusão (F3.177, PT-11)", () => {
+  test("sem lançamento do sistema antigo: a janela da F3.156 (o estado historico-nenhum)", async ({ page }) => {
+    const j = await abrirComDespesa(page, SEM_DESPESA);
+    await expect(j.locator(".pd-guarda")).toHaveCount(0);
+    await expect(j.locator(".pt-comuns b")).toHaveText("Nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+
+  test("só o histórico: o quadro vem só com a linha dele (o estado historico-so)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { ...SEM_DESPESA, historico: hist(12, 1, 0, "2033-01-01") });
+    await expect(j.locator(".pd-some li")).toHaveCount(6);
+    const lei = j.locator(".pd-guarda");
+    await expect(lei.getByRole("heading", { name: LEI })).toBeVisible();
+    await expect(lei.locator("li")).toHaveCount(1);
+    await expect(lei.locator("li").nth(0)).toHaveText("A descrição dos 12 lançamentos do Astrea"
+      + `fica como veio na importação, com o detalhe escrito ao dispensar o lembrete de contrato. O T3jus troca sozinho por um texto fixo em 01/01/2033. ${FIM_H}`);
+    await expect(lei.locator(".pd-arq-nota")).toHaveText(PE);
+    await expect(j.locator(".pd-fica + .pd-guarda + .pt-comuns")).toHaveCount(1);
+    await expect(j.locator(".pt-comuns b")).toHaveText("Fora essas descrições, nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+
+  test("o histórico e a despesa com a nota: a linha no fim do quadro (o estado historico-e-despesas)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { despesas: 1, comArquivo: 1, arquivos: 1, pastas: 0, ate: "2033-01-01", historico: hist(1, 0, 0, "2031-01-01") });
+    const lei = j.locator(".pd-guarda li");
+    await expect(lei).toHaveCount(2);
+    await expect(lei.nth(0)).toContainText("O arquivo da despesa adiantada");
+    await expect(lei.nth(1)).toHaveText(`A descrição do lançamento do Astreafica como veio na importação. O T3jus troca sozinho por um texto fixo em 01/01/2031. ${FIM_H}`);
+    await expect(j.locator(".pt-comuns b")).toHaveText("Fora esse arquivo e essa descrição, nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+
+  test("despesas em aberto e lançamentos com detalhe (o estado historico-em-aberto)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { despesas: 2, comArquivo: 2, arquivos: 2, pastas: 0, ate: null, historico: hist(4, 1, 0, "2032-01-01") });
+    const lei = j.locator(".pd-guarda li");
+    await expect(lei).toHaveCount(2);
+    await expect(lei.nth(0)).toContainText("Enquanto houver despesa em aberto, não há data");
+    await expect(lei.nth(1)).toContainText("A descrição dos 4 lançamentos do Astrea");
+    await expect(lei.nth(1).locator("small")).toHaveText(
+      `fica como veio na importação, com o detalhe escrito ao dispensar o lembrete de contrato. O T3jus troca sozinho por um texto fixo em 01/01/2032. ${FIM_H}`);
+    await expect(j.locator(".pt-comuns b")).toHaveText("Fora esses arquivos e essas descrições, nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+
+  test("um lançamento sem data conta pela importação (o estado historico-sem-data)", async ({ page }) => {
+    const j = await abrirComDespesa(page, { ...SEM_DESPESA, historico: hist(3, 0, 1, "2033-01-01") });
+    const linha = j.locator(".pd-guarda li");
+    await expect(linha).toHaveCount(1);
+    await expect(linha.nth(0).locator("small")).toHaveText("fica como veio na importação. Um deles veio sem data e conta pela data da importação. "
+      + `O T3jus troca sozinho por um texto fixo em 01/01/2033. ${FIM_H}`);
+    await expect(j.locator(".pt-comuns b")).toHaveText("Fora essas descrições, nada aqui precisa ser guardado por lei.");
     await semViolacoes(page);
   });
 });

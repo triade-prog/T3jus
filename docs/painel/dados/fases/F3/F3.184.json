@@ -1,13 +1,12 @@
 {
   "id": "F3.184",
-  "texto": "Na divisão do alvará, avisar o êxito marcado como \"não cobrado\" na conferência, que hoje não aparece na proposta (0640:352)",
-  "peca": "S4",
+  "texto": "Janela de exclusão a pedido do titular com a descrição dos lançamentos do sistema antigo guardada até o marco fiscal: a linha no quadro \"O que a lei obriga a guardar\" (também sem arquivo de despesa), com a data da troca por texto fixo, e a frase da faixa do escudo",
+  "peca": "S7",
   "refs": [
-    "CH-07",
-    "FI-05"
+    "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1400,
-  "nota": "Achado no plano da F3.174 (docs/design/aprovadas/portal-exito-baixado-alvara/PLANO.md). O plano chamava este item de F3.178, número já tomado por outra frente.",
-  "proximo": "Planejar o aviso do êxito não cobrado na divisão do alvará (pede desenho)"
+  "evidencia": "Desenho aprovado em docs/design/aprovadas/portal-exclusao-historico (Carol, 26/11/2026, alternativa A; D37). linhaHistorico e despesasDoExcluido (packages/ui/src/portal/exclusao.ts) e ExclusaoCliente.tsx, com o tipo HistoricoQueFica no packages/domain. Testes em 26/11/2026: exclusao.test.ts (25 testes, 10 novos); e2e tests/e2e/portal-exclusao.spec.ts com 44 testes (10 novos: os 5 estados aprovados no celular e no computador, com axe).",
+  "nota": "Publicar o Portal depois da 1116 (P21)."
 }

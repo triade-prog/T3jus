@@ -1,15 +1,11 @@
 {
   "id": "D37",
-  "texto": "Desenho do êxito com baixa sem receber na divisão do alvará, em Financeiro › Repasses (o aviso, \"Desfazer a baixa antes de dividir\" ou \"Manter a baixa e tirar os honorários\", o erro, o conflito e o histórico do repasse), e do número \"Baixado sem receber\" nos Relatórios (visão geral, mês passado com baixa desfeita, Por cliente, Um cliente e \"Como calculamos\")",
-  "peca": "S4",
+  "texto": "Desenho da janela de exclusão a pedido do titular com a descrição dos lançamentos do sistema antigo (e o detalhe da dispensa do lembrete) guardada até o marco fiscal: a linha no quadro \"O que a lei obriga a guardar\", o quadro sem arquivo de despesa e a frase da faixa do escudo",
+  "peca": "S7",
   "refs": [
-    "FI-24",
-    "FI-25",
-    "FI-05",
-    "IN-04",
-    "IN-07"
+    "PT-11"
   ],
   "status": "feito",
   "ordem": 87,
-  "evidencia": "Desenho em docs/design/aprovadas/portal-exito-baixado-alvara/ (12 estados, computador e celular, axe sem violação), com plano escrito por um especialista e revisado por outro (PLANO.md v2 e REVISAO.md, 22 notas, nenhuma grave) e desenho revisado por um terceiro especialista (REVISAO-DESENHO.md, 3 notas médias corrigidas), aprovado pela Carol em 26/11/2026 às 18h44 (Bahia) com as recomendações das perguntas A1, A2 e F3.185"
+  "evidencia": "Desenho em docs/design/aprovadas/portal-exclusao-historico/ (5 estados, computador e celular, axe sem violação), no molde do aprovado portal-exclusao-despesas, aprovado pela Carol em 26/11/2026 na alternativa A (o lançamento sem data conta pela data da importação); a alternativa B foi recusada e saiu da pasta"
 }

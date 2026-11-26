@@ -115,7 +115,11 @@ select is((select count(*)::int from avisos_sino, pr where tipo = 'PEDIDO_CONTRA
 -- 2. A exclusão.
 select pg_temp.excluir(hel) from cli;
 select pg_temp.excluir(lia) from cli;
+-- Irene foi solta do caso pelo desfazer antigo e tem levantamento: desde a regra (d) da F3.158 (1118)
+-- ela só se arquiva. Aqui ela é excluída como antes da 1118, para conferir a troca do sino.
+alter table clientes_escritorio disable trigger cliente_excluido_nao_muda;
 select pg_temp.excluir(irene) from cli;
+alter table clientes_escritorio enable trigger cliente_excluido_nao_muda;
 
 select ok((select bool_and(a.dados ->> 'cliente' = 'Cliente excluído' and a.dados ->> 'servico' = servico_apagado_texto())
              from avisos_sino a, pr where a.origem_id = pr.hel),
@@ -251,9 +255,9 @@ select ok((select bool_and(a.dados = b.dados) from avisos_sino a join antes b us
 -- 7. O gatilho no lugar certo.
 select is((select array_agg(tgname::text order by tgname) from pg_trigger
             where tgrelid = 'clientes_escritorio'::regclass and not tgisinternal and tgname ~ '(apagar_do_excluido|excluido_arquivos)$'),
-  array['comercial_apagar_do_excluido', 'conversas_apagar_do_excluido', 'financeiro_apagar_do_excluido', 'sino_apagar_do_excluido',
-        'z_cliente_excluido_arquivos'],
-  'PT-11 F3.172: sino_apagar_do_excluido roda entre financeiro_ e z_, pela ordem do nome (com o conversas_ da F3.157)');
+  array['comercial_apagar_do_excluido', 'conversas_apagar_do_excluido', 'financeiro_apagar_do_excluido',
+        'historico_anterior_apagar_do_excluido', 'importacao_apagar_do_excluido', 'sino_apagar_do_excluido', 'z_cliente_excluido_arquivos'],
+  'PT-11 F3.172: sino_apagar_do_excluido roda entre financeiro_ e z_, pela ordem do nome (com o conversas_ da F3.157 e o historico_anterior_ e o importacao_ da F3.177 e da F3.158)');
 select ok((select pg_get_triggerdef(oid) like '%AFTER UPDATE OF estado ON public.clientes_escritorio FOR EACH ROW WHEN (((new.estado = ''EXCLUIDO''::text) AND (old.estado <> ''EXCLUIDO''::text)))%'
              from pg_trigger where tgname = 'sino_apagar_do_excluido'),
   'PT-11 F3.172: o gatilho é AFTER UPDATE OF estado, só na passagem a EXCLUIDO');

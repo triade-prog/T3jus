@@ -118,5 +118,5 @@
 - `requisicao_parte` e `seguiuProposta` só leem `linhas` (`0554:77-82`, `0280:393-395`).
 - Nenhuma tabela nova, nenhum gatilho novo: `escritorio_id` e `proteger_tabela_escritorio` não se aplicam; o índice novo em `parcela_baixas` está certo. O escritório vem de `quem(c)`. A faixa 1100-1109 está livre (a última é a 1093; não há outro branch).
 - `parcela_baixada_no_dia` usa o dia de Brasília (`1010:113-121`), e a regra da B2.1 concorda com ela.
-- `IDEIAS.md` tem 141 ideias, e FI-05, FI-24, FI-25, IN-04 e IN-07 existem. D37 e D38 com `ordem` 87 e 88 estão livres (o maior é 86). O pgTAP 144 é o próximo livre.
+- `IDEIAS.md` tem 141 ideias, e FI-05, FI-24, FI-25, IN-04 e IN-07 existem. D38 e D38 com `ordem` 87 e 88 estão livres (o maior é 86). O pgTAP 144 é o próximo livre.
 - As perguntas A1 e B1 são de fato decisões da Carol (A1 muda o que o escritório pode fazer com o dinheiro; B1 muda um número que ela já vê). A A2 também é, mas precisa da consequência da nota 2.

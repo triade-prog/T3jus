@@ -10,6 +10,9 @@
 // F3.156 (desenho portal-exclusao-despesas, Carol 24/11/2026, alternativa A): a descrição da despesa
 // adiantada em "O que é apagado"; o quadro à parte "O que a lei obriga a guardar" com os arquivos dela
 // e a pasta do contador; "O que fica, sem dado pessoal" não muda; muda só a frase em negrito da faixa.
+// F3.177 (F3.184; desenho portal-exclusao-historico, Carol 26/11/2026, alternativa A): a descrição dos
+// lançamentos do sistema antigo entra no fim do quadro "O que a lei obriga a guardar" (sem arquivo, o
+// quadro vem só com ela), com a data da troca por texto fixo; a frase em negrito da faixa a cita.
 
 import { useId, useRef, useState } from "react";
 import { CANAIS_PEDIDO, nomeConfere, QUEM_PEDIU, type CanalPedido, type FichaCliente, type PedidoExclusao, type QuemPediu } from "@t3jus/domain";
@@ -485,14 +488,22 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
                 <Icone nome="cadeado" className="ico" />O que a lei obriga a guardar
               </h3>
               <ul>
-                <li>
-                  {despesas.guarda.arquivos.texto}
-                  <small>{despesas.guarda.arquivos.explicacao}</small>
-                </li>
+                {despesas.guarda.arquivos ? (
+                  <li>
+                    {despesas.guarda.arquivos.texto}
+                    <small>{despesas.guarda.arquivos.explicacao}</small>
+                  </li>
+                ) : null}
                 {despesas.guarda.pasta ? (
                   <li>
                     {despesas.guarda.pasta.texto}
                     <small>{despesas.guarda.pasta.explicacao}</small>
+                  </li>
+                ) : null}
+                {despesas.guarda.historico ? (
+                  <li>
+                    {despesas.guarda.historico.texto}
+                    <small>{despesas.guarda.historico.explicacao}</small>
                   </li>
                 ) : null}
               </ul>

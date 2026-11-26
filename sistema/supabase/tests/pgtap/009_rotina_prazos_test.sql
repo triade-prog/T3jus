@@ -22,7 +22,7 @@ insert into historico (ocorrido_em, escritorio_id, autor_tipo, autor_id, acao, e
 update inventario_dados set situacao = 'PROPOSTA' where dado_pessoal;
 create temp table r1 as select aplicar_prazos() as j;
 select is((select j -> 'apagados' from r1), '{}'::jsonb, 'PT-11: prazo em proposta não apaga nada');
-select is((select j -> 'aguardando_aprovacao' from r1), '["sessoes_escritorio", "limites_uso", "historico", "pessoas", "interessados", "anexos"]'::jsonb,
+select is((select j -> 'aguardando_aprovacao' from r1), '["sessoes_escritorio", "limites_uso", "historico", "pessoas", "interessados", "anexos", "historico_financeiro_anterior"]'::jsonb,
   'PT-11: o resultado diz quais prazos esperam aprovação');
 select is((select count(*)::int from sessoes_escritorio), 2, 'sessões continuam enquanto o prazo não for aprovado');
 

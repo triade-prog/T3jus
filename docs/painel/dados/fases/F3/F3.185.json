@@ -1,14 +1,13 @@
 {
   "id": "F3.185",
-  "texto": "Rendeu: a custa adiantada que teve baixa sem receber volta a descontar das despesas que não voltaram (a 1010, 907-910, tirou e o \"Rendeu\" sobe com o perdão)",
-  "peca": "S4",
+  "texto": "Caso novo de importação desfeita prende o cliente: o desfazer dos processos deixa o caso em Encerrados com a ligação, o desfazer dos clientes conta o cliente como mexido e a exclusão o recusa",
+  "peca": "S7",
   "refs": [
-    "FI-07",
-    "FI-25",
-    "IN-15"
+    "VA-05",
+    "PT-11"
   ],
   "status": "pendente",
   "ordem": 1410,
-  "nota": "Carol disse sim em 26/11/2026 (recomendação do plano da F3.174, antiga pergunta B1). Pede drop e create de relatorio_adiantadas, que é returns table (0410:197-208). O plano chamava este item de F3.179.",
-  "proximo": "Planejar e programar a volta da custa baixada ao desconto do Rendeu"
+  "nota": "Revisão do plano da F3.177/F3.158 (M5), fora do escopo da F3.158 porque muda a regra do caso novo. O pgTAP 162 confere o comportamento de hoje, com um comentário que aponta este item.",
+  "proximo": "Ignorar, em cliente_vinculos_lgpd e no cli do plano do desfazer dos clientes (0600), a ligação a caso com encerrado_por = 'IMPORTACAO_DESFEITA' sem sinal de trabalho (imp_ligacao_mexida), com teste e o ok da Carol"
 }

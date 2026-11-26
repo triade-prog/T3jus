@@ -1,6 +1,6 @@
 # Êxito baixado na divisão do alvará (F3.174) e "Baixado sem receber" nos Relatórios (F3.173) · plano (v2)
 
-**Aprovado pela Carol em 26/11/2026 às 18h44 (Bahia), com as recomendações das perguntas A1 (não registrar com o êxito baixado: desfazer ou manter e tirar os honorários; renegociada só desfazer), A2 (sim, as custas baixadas junto voltam como reembolso) e F3.185 (sim). Na cópia aprovada, os pendentes propostos viraram F3.184 a F3.186 e os pgTAP 146 e 147, porque F3.178 a F3.183 e o pgTAP 144 foram tomados por outras frentes.**
+**Aprovado pela Carol em 26/11/2026 às 18h44 (Bahia), com as recomendações das perguntas A1 (não registrar com o êxito baixado: desfazer ou manter e tirar os honorários; renegociada só desfazer), A2 (sim, as custas baixadas junto voltam como reembolso) e F3.192 (sim). Na cópia aprovada, os pendentes propostos viraram F3.191 a F3.193 e os pgTAP 146 e 147, porque F3.178 a F3.190 e o pgTAP 144 foram tomados por outras frentes.**
 
 **Situação.** Esta é a versão 2, de 25/11/2026, sobre o `main` em `a9136be` (branch `claude/project-thread-uovozs`). Ela aplica a `revisao.md` (22 notas, 8 médias). O que fiz com cada nota está na tabela "Revisão aplicada", no fim.
 
@@ -233,7 +233,7 @@ Os textos novos dizem "**paga a parcela do êxito**" e nunca "dá baixa", para n
 
 ## A7. Painel (no mesmo commit da entrega)
 
-- **`D37`**, para o desenho dos estados `eb-` ("Desenho da escolha do êxito baixado na divisão do alvará"):
+- **`D38`**, para o desenho dos estados `eb-` ("Desenho da escolha do êxito baixado na divisão do alvará"):
   - `peca` S4, `refs` FI-24 e FI-05, `ordem` 87 (o maior hoje é 86);
   - fica `andamento` no desenho e `feito` com o ok da Carol;
   - a pasta vai para `docs/design/aprovadas/portal-exito-baixado-divisao/`.
@@ -243,9 +243,9 @@ Os textos novos dizem "**paga a parcela do êxito**" e nunca "dá baixa", para n
   - apagar `proximo`;
   - a entrega fecha a decisão 38 inteira.
 - **Itens pendentes novos,** criados no mesmo commit, cada um com a sua frente:
-  - **`F3.184`** "Na divisão do alvará, avisar o êxito marcado como não cobrado na conferência", `refs` CH-07 e FI-05. O êxito `NAO_COBRADO` (`0640:32`, `:352`) também não aparece na proposta;
-  - **`F3.185`** "Rendeu: a custa adiantada que teve baixa sem receber volta a descontar", `refs` FI-07, FI-25 e IN-15, com a pergunta à Carol (seção "Itens fora desta frente");
-  - **`F3.186`** "Explicação da baixa sem receber na exclusão do cliente", `refs` PT-11 (nota 18).
+  - **`F3.191`** "Na divisão do alvará, avisar o êxito marcado como não cobrado na conferência", `refs` CH-07 e FI-05. O êxito `NAO_COBRADO` (`0640:32`, `:352`) também não aparece na proposta;
+  - **`F3.192`** "Rendeu: a custa adiantada que teve baixa sem receber volta a descontar", `refs` FI-07, FI-25 e IN-15, com a pergunta à Carol (seção "Itens fora desta frente");
+  - **`F3.193`** "Explicação da baixa sem receber na exclusão do cliente", `refs` PT-11 (nota 18).
 - **Histórico:** `python3 docs/painel/painel.py novo-historico --refs F3.174 FI-24 FI-05 --texto "…"`, no horário de Brasília. Depois, `python3 docs/painel/painel.py conferir`, com 0 erro.
 - **`IDEIAS.md`:** não muda. O total segue 141.
 
@@ -433,20 +433,20 @@ Os textos novos dizem "**paga a parcela do êxito**" e nunca "dá baixa", para n
 
 ## Itens fora desta frente
 
-**`F3.185`, o Rendeu e a custa baixada sem receber** (FI-07, FI-25 e IN-15; era a pergunta B1).
+**`F3.192`, o Rendeu e a custa baixada sem receber** (FI-07, FI-25 e IN-15; era a pergunta B1).
 - **O problema.** A 1010 tirou a custa perdoada das "despesas que não voltaram" (`1010:907-910`). Com isso, perdoar R$ 412,30 de custas **aumenta** o Rendeu em R$ 412,30.
 - **A pergunta à Carol:** a custa adiantada que teve baixa sem receber continua descontando do Rendeu? **Recomendo que sim.**
 - **O que a mudança pede:** `relatorio_adiantadas` é `returns table` (`0410:197-208`). Uma coluna nova pede `drop` e `create`, e o item precisa listar quem a lê (`relatorio_por_cliente`, `0410:381`, o resumo, as áreas e os responsáveis) e ter um teste de que o Rendeu de um mês fechado não muda.
 
 **Os outros dois itens pendentes novos:**
-- **`F3.184`**, o êxito marcado como não cobrado na conferência, que também não aparece na divisão do alvará (CH-07 e FI-05);
-- **`F3.186`**, a explicação da baixa sem receber, que hoje não é limpa na exclusão do cliente (PT-11; a 1092 limpa as despesas, `1092:440-458`).
+- **`F3.191`**, o êxito marcado como não cobrado na conferência, que também não aparece na divisão do alvará (CH-07 e FI-05);
+- **`F3.193`**, a explicação da baixa sem receber, que hoje não é limpa na exclusão do cliente (PT-11; a 1092 limpa as despesas, `1092:440-458`).
 
 ## Ordem de trabalho
 
 1. **Este plano (v2)** e as respostas da Carol às perguntas A1 e A2.
-2. **`D37`:** o desenho dos 6 estados `eb-`, o ok da Carol e a pasta em `aprovadas`.
-3. **PR 1 (F3.174):** a 1100, a api-portal, o domain, o ui, os testes, o README e o painel (com os pendentes F3.184, F3.185 e F3.186).
+2. **`D38`:** o desenho dos 6 estados `eb-`, o ok da Carol e a pasta em `aprovadas`.
+3. **PR 1 (F3.174):** a 1100, a api-portal, o domain, o ui, os testes, o README e o painel (com os pendentes F3.191, F3.192 e F3.193).
 4. **`D38`:** o desenho dos 6 estados `rb-` e o ok da Carol.
 5. **PR 2 (F3.173):** a 1101, os testes, o README e o painel.
 
@@ -464,7 +464,7 @@ Nenhuma migration é aplicada nem publicada por este trabalho.
 | 4. Uma transação só | **Aplicada (decisão minha)** | É o caminho mais simples que protege o dinheiro: o registrar chama o desfazer que já existe, depois da trava e antes do corpo. Tudo entra ou nada entra, sem uma janela de "Em atraso" no meio, e o sino adiado vê só o estado final. Saem o rascunho fora da janela, a segunda janela, a falha ao abrir, a volta e o foco à mão (estados 6 a 8 e riscos 3 e 5 da v1). A anotação de cobrança fica: ela some quando a parcela é paga (`0500:43`) e serve quando o pagamento é parcial. Ver A2.2 |
 | 5. Data no futuro | **Aplicada** | Nos estados, o desfazer da Noemi passou para 12/11, antes do "hoje" de 18/11. O 02/12 fica só no pgTAP, que adianta o relógio |
 | 6. Faixas da tabela | **Aplicada** | Medir de novo `data-sai3/sai2/cartoes` (`Relatorios.tsx:732`), a ordem no nível 3 depois de "Despesas não reembolsadas" (`prioridades.json:23`), e a lista de Um cliente como `ul`, não tabela. Ver B3 |
-| 7. B1 fora desta frente | **Aplicada** | Virou o item pendente F3.185 (FI-07, FI-25, IN-15), com o `drop`/`create` de `relatorio_adiantadas` (`0410:197-208`) e a lista de quem a lê. Saiu a 1102 do PR 2 |
+| 7. B1 fora desta frente | **Aplicada** | Virou o item pendente F3.192 (FI-07, FI-25, IN-15), com o `drop`/`create` de `relatorio_adiantadas` (`0410:197-208`) e a lista de quem a lê. Saiu a 1102 do PR 2 |
 | 8. Escopo | **Aplicada** | Saíram `podeDesfazerBaixa`, `quemDesfaz` (o registrar `0280:346` e o desfazer `1010:247` pedem a mesma ação) e a linha do "A caminho". Parcial e custas viraram variações. A Parte A foi de 13 para 6 estados. A recusa e o "Manter" ficam, porque são o que torna a escolha rastreável |
 | 9. Linhas da 1010 | **Aplicada** | Corrigidas: `1010:432`, `:440-444`, `:445-447`, `:448`, `:453-457`, `:461-467`, tabela `:43-63` e inventário `:71-78` |
 | 10. "Três níveis" | **Aplicada** | A1.4 diz "dois dos três níveis, e a proposta" |
@@ -475,7 +475,7 @@ Nenhuma migration é aplicada nem publicada por este trabalho.
 | 15. "dá baixa" e "paga" | **Aplicada** | Os textos novos dizem "paga a parcela do êxito". O texto de hoje do registrado continua para o caso sem baixa |
 | 16. Sucumbência e linha manual | **Aplicada** | A2.3, item 15, e o pgTAP 2 com `HONORARIOS` mandado à mão |
 | 17. Encerrado depois da renegociada | **Aplicada** | A2.3, item 11, e o pgTAP 8 |
-| 18. LGPD | **Aplicada** | A explicação fica escondida para o cliente `EXCLUIDO` (`1092:157`) e fora da planilha; o histórico `exito_mantido` não a leva. Item pendente F3.186 (PT-11) |
+| 18. LGPD | **Aplicada** | A explicação fica escondida para o cliente `EXCLUIDO` (`1092:157`) e fora da planilha; o histórico `exito_mantido` não a leva. Item pendente F3.193 (PT-11) |
 | 19. Exportação ao contador | **Aplicada** | A2.3, item 18, e B2.8 |
 | 20. Desfeitas por grupo | **Aplicada** | A `DESFEITA` herda o motivo e a marca de custas, e cada grupo tem as suas desfeitas. Ver B2.3, B3, seção 3, e o teste 3 |
 | 21. Caminhos dos testes | **Aplicada** | Os caminhos completos a partir de `sistema/` |
