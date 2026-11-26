@@ -4,7 +4,7 @@
 // da conversa com o quadro "Com quem". A API é simulada; aqui se testa a tela, a acessibilidade e o
 // que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -17,7 +17,7 @@ const MARINA = { id: "aa000000-0000-4000-8000-000000000001", nome: "Marina Ribei
 const DIEGO = { id: "aa000000-0000-4000-8000-000000000002", nome: "Diego Almeida" };
 const RAF = "c0000000-0000-4000-8000-000000000003";
 const CLI = "d0000000-0000-4000-8000-000000000003";
-const atras = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+const atras = (min: number) => new Date(agora - min * 60_000).toISOString();
 
 type Resp = { status?: number; corpo: unknown };
 type Pedido = { metodo: string; caminho: string; busca: string; corpo: unknown };
@@ -64,6 +64,9 @@ function comuns(conversa: unknown): Record<string, Resp> {
 }
 
 const ehCelular = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Cadastro e primeira reunião pela conversa (AP-07)", () => {
   test("decisões 30 e 31: o Novo cliente vem com o nome e o telefone da conversa e volta para ela, já ligada", async ({ page }) => {

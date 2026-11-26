@@ -4,7 +4,7 @@
 // linha da parcela com o êxito e o reembolso, e registrar a parcela com o reembolso junto.
 // A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -21,7 +21,7 @@ const ESCRITORIO = {
   contatos: [], ultimaExportacao: null,
 };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 
 const X = {
@@ -76,6 +76,9 @@ const comuns = () => ({
   "/v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
   "/v1/escritorio/avisos": { corpo: { novos: 0, total: 0, itens: [] } },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Êxito para conferir e reembolso junto (F3.14, F3.85)", () => {
   test("Bloco do alto fora dos números; conferir com valor mudado pede o motivo e lança em A receber", async ({ page }) => {
@@ -260,7 +263,7 @@ test.describe("Êxito para conferir e reembolso junto (F3.14, F3.85)", () => {
         contrato: { id: "k2", numero: "C-2026-020", objeto: "Ação de cobrança" },
         parcela: { id: PARC_R, descricao: "Parcela 2 de 3", vencimento: dia(0), ordem: 2, total: 3 },
         valor: 240000, multaJuros: null, forma: "CHEQUE_PRE", pagoEm: dia(0),
-        registradoPor: { nome: "Diego Almeida", oab: null }, registradoEm: new Date().toISOString(), pagamentoId: id,
+        registradoPor: { nome: "Diego Almeida", oab: null }, registradoEm: new Date(agora).toISOString(), pagamentoId: id,
         reembolsos: [{ descricao: "Custas da apelação", valor: 124836, forma: "PIX", adiantadoEm: dia(-4), caso: "Ação de cobrança" }],
       } },
     });

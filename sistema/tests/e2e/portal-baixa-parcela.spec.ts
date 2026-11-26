@@ -4,7 +4,7 @@
 // a linha baixada com "Desfazer a baixa sem receber" e o que Contratos vê sem o Financeiro.
 // A API é simulada; aqui se testa a tela, o foco, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -23,7 +23,7 @@ const ESCRITORIO = {
 };
 const FELIPE_ESC = { ...ESCRITORIO, pessoa: "Felipe Matos", dono: false, areas: ["COMERCIAL", "CONTRATOS", "JURIDICO"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
 
 const pago = (n: number, d: number) => ({
@@ -107,6 +107,9 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
 });
 const linha6 = (page: Page) => page.locator("table.fi-tab tbody tr").filter({ hasText: "Parcela 6 de 6" });
 const BASE = `/v1/escritorio/financeiro/parcelas/${pc(6)}/baixa`;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Dar baixa sem receber (F3.139: FI-24, FI-25)", () => {
   test("decisões 1 a 15: erros no topo, motivo, explicação e custas; o aviso diz \"sem receber\" e o foco vai ao desfazer", async ({ page }) => {

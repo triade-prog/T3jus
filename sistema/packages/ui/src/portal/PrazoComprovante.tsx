@@ -119,6 +119,8 @@ function FormPrazo({ dados, aoCancelar, aoSalvo }: {
   const [previa, setPrevia] = useState<Previa>(null);
   const raiz = useRef<HTMLFormElement>(null);
   const falhaRef = useRef<HTMLDivElement>(null);
+  const [vezFalha, setVezFalha] = useState(0);
+  const [vezErro, setVezErro] = useState(0);
   const dias = escolha === "outro" ? lerDias(outro) : escolha;
   const total = dados.comprovantesTotal;
 
@@ -130,6 +132,16 @@ function FormPrazo({ dados, aoCancelar, aoSalvo }: {
     f.closest("section")?.scrollIntoView({ behavior: calmo ? "auto" : "smooth", block: "start" });
     f.querySelector<HTMLInputElement>('input[name="pzc-prazo"]:checked')?.focus({ preventScroll: true });
   }, []);
+
+  // Depois de cada erro ou falha, o foco vai ao campo ou ao aviso, depois do commit (F3.176): o
+  // "Quantos dias" e o aviso da falha só existem depois dele. Os contadores começam em 0 (não
+  // disputam o foco da abertura) e mudam a cada vez, mesmo com o mesmo código de erro.
+  useEffect(() => {
+    if (vezErro > 0) raiz.current?.querySelector<HTMLElement>("#pzc-dias")?.focus();
+  }, [vezErro]);
+  useEffect(() => {
+    if (vezFalha > 0) falhaRef.current?.focus();
+  }, [vezFalha]);
 
   // A prévia, 400 ms depois da última escolha; a anterior é cancelada.
   useEffect(() => {
@@ -154,7 +166,7 @@ function FormPrazo({ dados, aoCancelar, aoSalvo }: {
     setFalha(null);
     if (dias === null) {
       setErro(true);
-      requestAnimationFrame(() => raiz.current?.querySelector<HTMLElement>("#pzc-dias")?.focus());
+      setVezErro((n) => n + 1);
       return;
     }
     setErro(false);
@@ -169,11 +181,11 @@ function FormPrazo({ dados, aoCancelar, aoSalvo }: {
       setEscolha("outro");
       setOutro(String(dias));
       setErro(true);
-      requestAnimationFrame(() => raiz.current?.querySelector<HTMLElement>("#pzc-dias")?.focus());
+      setVezErro((n) => n + 1);
       return;
     }
     setFalha(r.erro.codigo);
-    requestAnimationFrame(() => falhaRef.current?.focus());
+    setVezFalha((n) => n + 1);
   }
 
   const p = previa && "p" in previa && previa.dias === dias ? previa.p : null;

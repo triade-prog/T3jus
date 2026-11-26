@@ -6,7 +6,7 @@
 // tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
 import { criarDocx } from "../../packages/domain/src/docx.ts";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -139,6 +139,9 @@ const ficha = (situacao: string, extra: Record<string, unknown> = {}) => ({
   versoes: [versao(1, { recado: "O prazo vence hoje: se puder, revise até as 16h." })], comentarios: [], eventos: [],
   pode: { revisar: false, novaVersao: false, enviar: false, passar: false }, ...extra,
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Jurídico › Petições (EX-09)", () => {
   test("Lista: situação de cada uma, Revisar para quem espera e Para eu revisar", async ({ page }) => {
@@ -515,7 +518,7 @@ test.describe("Jurídico › Petições (EX-09)", () => {
     await simular(page, {
       ...comuns("Felipe Matos", false),
       "GET /v1/escritorio/avisos": { corpo: { novos: 1, total: 1, itens: [
-        { id: "av1", tipo: "PETICAO_REVISAR", dados: { quem: "Beatriz Nogueira", modelo: "Contestação cível", caso: "Souza x Construtora Atlas", versao: 1 }, origem: "peticoes", origemId: PET(2), em: new Date().toISOString(), lido: false },
+        { id: "av1", tipo: "PETICAO_REVISAR", dados: { quem: "Beatriz Nogueira", modelo: "Contestação cível", caso: "Souza x Construtora Atlas", versao: 1 }, origem: "peticoes", origemId: PET(2), em: new Date(agora).toISOString(), lido: false },
       ] } },
       "GET /v1/escritorio/peticoes": { corpo: LISTA },
     });

@@ -2,11 +2,11 @@
 // docs/design/aprovadas/site-comercial/interessados.html. A API é simulada; aqui se testa a
 // tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test } from "@playwright/test";
-import { C, CA, IN, SESSAO, semViolacoes, simular } from "./console-dados.ts";
+import { agora, C, CA, fixarRelogio, IN, semViolacoes, SESSAO, simular } from "./console-dados.ts";
 
 const ADM = { ...SESSAO, acoes: ["console.interessados.ver"], interessadosAtencao: 2 };
 const SUP = { ...SESSAO, nome: "Bruno Seixas", funcoes: ["SUPORTE"], acoes: ["console.suporte.ver"] };
-const hojeBr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+const hojeBr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora));
 const dia = (n: number) => new Date(Date.parse(`${hojeBr}T12:00:00Z`) + n * 86400e3).toISOString().slice(0, 10);
 const JAT = "f0000000-0000-4000-8000-000000000001";
 const IPE = "f0000000-0000-4000-8000-000000000002";
@@ -36,6 +36,9 @@ const fichaIpe = (extra: Record<string, unknown> = {}) => ({
   ],
   ...extra,
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Console: Comercial › Interessados", () => {
   test("lista: números, funil, filtros e Comercial no menu com o contador", async ({ page }) => {

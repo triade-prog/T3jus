@@ -2,7 +2,7 @@
 // docs/design/aprovadas/portal-inicio-areas. O bloco Comercial é o de contatos do dia (F1.14,
 // AP-06). A API é simulada.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -20,7 +20,7 @@ const ESC_BIANCA = { ...BASE, pessoa: "Bianca Torres", dono: false, areas: ["CON
 const ESC_PAULA = { ...BASE, pessoa: "Paula Nunes", dono: false, areas: [], funcoes: ["EQUIPE"] };
 const ESC_LARISSA = { ...BASE, pessoa: "Larissa Costa", dono: false, areas: ["JURIDICO"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const item = (n: number, nome: string, atraso: number, oque: string, resp = DIEGO) => ({
   clienteId: cid(n), tipo: "PF", nome, em: dia(-atraso), oque, vencido: atraso > 0, diasAtraso: atraso, responsavel: resp,
   contatoPrincipal: { id: `k${n}`, nome: nome.split(" ")[0], papel: n === 2 ? "filha" : null, telefone: `+55119912345${String(n).padStart(2, "0")}`, email: null },
@@ -75,7 +75,7 @@ const COMUNS = {
   "GET /v1/escritorio/conversas?mostrar=PRECISA": { corpo: { whatsapp: { situacao: "LIGADO", numero: null, quemLiga: null }, eu: MARINA.id,
     contagem: { precisa: 1, equipe: 0, ia: 0, resolvidas: 0 }, hoje: { resolvidas: 0, respondidas: 0, avisos: 0 }, conversas: [
       { id: "v1", nome: "Daniela Souza", telefone: "+5511999990000", cliente: null, quemEscreve: null, papel: null, situacao: "PRECISA", resolvidaEm: null,
-        motivo: "CLIENTE_NOVO", responsavel: null, assumidaPor: null, esperandoDesde: new Date(Date.now() - 2 * 3600e3).toISOString(), ultimaEm: new Date().toISOString(),
+        motivo: "CLIENTE_NOVO", responsavel: null, assumidaPor: null, esperandoDesde: new Date(agora - 2 * 3600e3).toISOString(), ultimaEm: new Date(agora).toISOString(),
         ultima: { autor: "CLIENTE", texto: "Fui demitida grávida, vocês atendem esse tipo de caso?", anexo: null } }] } },
 };
 
@@ -127,6 +127,9 @@ const marina = (x: Record<string, Resp | Resp[]> = {}) => ({
   "GET /v1/escritorio/inicio/juridico?de=EQUIPE": { corpo: juridicoDados({ de: "EQUIPE", escritorioPrazosHoje: null }) },
   ...x,
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Início do Portal por áreas (F3.26)", () => {
   test("a dona vê a faixa com as 4 áreas, os blocos na ordem do menu e a parte comum", async ({ page }) => {

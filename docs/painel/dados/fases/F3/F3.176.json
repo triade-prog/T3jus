@@ -3,10 +3,11 @@
   "texto": "Foco depois de uma falha: o \"Tentar de novo\" do suporte de acesso no Console (e o mesmo padrão em PrazoComprovante.tsx e EquipeOab.tsx) recebe o foco num requestAnimationFrame que às vezes roda antes de a falha aparecer, e o foco se perde",
   "peca": "B4",
   "refs": [
-    "PT-23"
+    "PT-23",
+    "PT-10"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1320,
-  "nota": "Achado pela F3.164: console-suporte.spec.ts:109 falha cerca de 1 em 60 nos dois projetos. Com o relógio fixo o erro some do teste, por isso esta correção vem antes do relógio fixo nesse arquivo.",
-  "proximo": "Focar depois de a falha aparecer na tela (useEffect) nas três telas"
+  "nota": "Achado pela F3.164: console-suporte.spec.ts:109 falha cerca de 1 em 60 nos dois projetos. Com o relógio fixo o erro some do teste, por isso esta correção vem antes do relógio fixo nesse arquivo. O relógio fixo no console-suporte fica com a F3.164, que deve rodar os testes novos depois da troca.",
+  "evidencia": "O foco depois de uma falha vai por um useEffect disparado por um contador de falhas (começa em 0, não rouba o foco ao abrir; cada falha incrementa, então falha repetida refoca), no lugar do requestAnimationFrame logo depois do await: console/Suporte.tsx (Tentar de novo, por ref no botão), portal/PrazoComprovante.tsx (aviso da falha e Quantos dias) e portal/EquipeOab.tsx (primeiro campo marcado). focarPrimeiroErro (console/pecas.tsx, D1) tenta de novo por setTimeout até ~320 ms quando o campo ainda não foi marcado, e não tenta se o foco mudou desde a chamada (guarda da revisão, caso WhatsApp.tsx:336-337). Ajudante de teste tests/e2e/quadro.ts (quadroAntesDoCommit: rAF num microtask, com id próprio e cancelAnimationFrame, e rAF dentro de rAF no quadro de verdade). Testes novos com o quadro antes do commit: console-suporte (Tentar de novo focado a cada falha; digitar no Motivo depois da falha mantém o foco; 422 do servidor leva ao Motivo), portal-prazo-comprovante (aviso da falha e, no 422, Quantos dias), portal-equipe-oab (OAB de outra pessoa leva ao Número) e portal-whatsapp (erro só no receber o código: o foco fica no rádio, sem a nova tentativa roubar). Prova determinística: com o código antigo, os quatro testes novos das três telas falharam nos dois projetos (8 de 8, foco 'inactive'), inclusive o passo do 422 do prazo isolado; com a correção passam. Rodados: console-suporte, portal-prazo-comprovante, portal-equipe-oab e portal-whatsapp 66/66; amostra do focarPrimeiroErro (portal-contratos, portal-clientes, portal-baixa-parcela, portal-financeiro, console-cobranca, console-interessados) 164/164; Vitest acesso, prazoComprovante e suporte 27/27. As outras 11 chamadas rAF com o mesmo erro ficam na F3.183."
 }

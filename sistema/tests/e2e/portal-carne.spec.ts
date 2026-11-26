@@ -3,7 +3,7 @@
 // modo só leitura), a folha "Carnê" e a janela "Gerar carnê" na ficha do contrato, e o carnê em
 // A4 para imprimir. A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -20,7 +20,7 @@ const ESCRITORIO = {
 };
 const DIEGO_ESC = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL", "FINANCEIRO"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
 
 const SEM_CHAVE = {
@@ -91,6 +91,9 @@ async function simular(page: Page, rotas: Record<string, Resp | Resp[]>) {
   });
   return pedidos;
 }
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Carnê de pagamento do Portal (FI-23)", () => {
   test("FI-23: Recebimento sem chave, erros, Pix de teste e salvar", async ({ page }) => {

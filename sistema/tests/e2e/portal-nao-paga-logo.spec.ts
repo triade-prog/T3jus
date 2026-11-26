@@ -4,7 +4,7 @@
 // acessibilidade e o que ela manda ao servidor.
 import { deflateSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -24,7 +24,7 @@ const ESCRITORIO = {
 const FELIPE_ESC = { ...ESCRITORIO, pessoa: "Felipe Matos", dono: false, areas: ["COMERCIAL", "CONTRATOS", "JURIDICO"], funcoes: ["EQUIPE"] };
 const DIEGO_ESC = { ...ESCRITORIO, pessoa: "Diego Almeida", dono: false, areas: ["COMERCIAL", "FINANCEIRO"], funcoes: ["EQUIPE"] };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const br = (n: number) => dia(n).split("-").reverse().join("/");
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
 
@@ -111,6 +111,9 @@ const comunsContrato = (escritorio: unknown = ESCRITORIO) => ({
     parcelas: [], recebimento: { pixTipo: null, pixChave: null, recebedor: null, cidade: null, instrucoes: null }, dono: true, socioDono: MARINA, carnes: [],
   } },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("\"Não foi paga\" no Pago antes do T3jus (F3.84, VA-05)", () => {
   test("a parcela passa para A receber com motivo; sem motivo, o erro fica no campo", async ({ page }) => {

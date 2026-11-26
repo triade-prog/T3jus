@@ -160,6 +160,13 @@ export function JanelaOab({ pessoa, editar, aberta, escritorio, aoFechar, aoFeit
   const [outro, setOutro] = useState<string | undefined>();
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [vezErro, setVezErro] = useState(0);
+
+  // Depois de cada erro, o foco vai ao primeiro campo marcado, depois do commit (F3.176): o erro
+  // do servidor só marca o campo depois dele. O contador começa em 0 e muda a cada vez.
+  useEffect(() => {
+    if (vezErro > 0) corpo.current?.querySelector<HTMLElement>("[aria-invalid=true]")?.focus();
+  }, [vezErro]);
 
   const previa = previaOab(r);
   const outras = pessoa.oab.filter((i) => i.id !== editar?.id).map((i) => (principal && tipo === "PRINCIPAL" && i.id === principal.id ? { ...i, tipo: "SUPLEMENTAR" as const } : i));
@@ -181,7 +188,7 @@ export function JanelaOab({ pessoa, editar, aberta, escritorio, aoFechar, aoFeit
     setOutro(undefined);
     const e = conferirOab(r);
     setErros(e);
-    if (Object.keys(e).length) return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>("[aria-invalid=true]")?.focus());
+    if (Object.keys(e).length) return setVezErro((n) => n + 1);
     setEnviando(true);
     const dados = { uf: r.uf, numero: r.numero, letra: r.letra.trim() || null, tipo, trocarPrincipal: tipo === "PRINCIPAL" && !!principal };
     const x = editar
@@ -193,7 +200,7 @@ export function JanelaOab({ pessoa, editar, aberta, escritorio, aoFechar, aoFeit
       if (s && Object.keys(s.erros).length) {
         setErros(s.erros);
         setOutro(s.nome);
-        return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>("[aria-invalid=true]")?.focus());
+        return setVezErro((n) => n + 1);
       }
       return setFalha(x.erro);
     }

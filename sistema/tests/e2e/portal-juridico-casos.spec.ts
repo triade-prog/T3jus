@@ -4,7 +4,7 @@
 // clientes, ficha com a etapa no âmbar e a janela de mudar etapa com motivo e a prévia do
 // aviso. A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -105,6 +105,9 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
   "GET /v1/escritorio/pessoas": { corpo: { pessoas: [MARINA, LARISSA] } },
   [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: FICHA },
 });
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", () => {
   test("Lista: contagem por etapa, número no padrão do CNJ, cliente, etapa e filtros", async ({ page }) => {
@@ -444,8 +447,8 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
 
   test("F3.143, F3.148: o caso que veio encerrado, a linha da importação e registrar o resultado", async ({ page }) => {
     const feito = { ...FICHA_IMP, encerradoPor: "RESULTADO", resultado: "GANHO", versao: 3, podeRegistrarResultado: false,
-      resultadoRegistrado: { em: new Date().toISOString(), por: MARINA },
-      mudancas: [{ para: { ordem: 8, nome: "Encerrado" }, de: { ordem: 8, nome: "Encerrado" }, motivo: "Sentença procedente, confirmada pelo TRT.", resultado: "GANHO", aviso: null, avisoEnviadoEm: null, por: MARINA, em: new Date().toISOString() },
+      resultadoRegistrado: { em: new Date(agora).toISOString(), por: MARINA },
+      mudancas: [{ para: { ordem: 8, nome: "Encerrado" }, de: { ordem: 8, nome: "Encerrado" }, motivo: "Sentença procedente, confirmada pelo TRT.", resultado: "GANHO", aviso: null, avisoEnviadoEm: null, por: MARINA, em: new Date(agora).toISOString() },
         ...FICHA_IMP.mudancas] };
     const pedidos = await simular(page, {
       ...comuns(),

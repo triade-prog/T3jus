@@ -175,7 +175,20 @@ export function faltaAcertar(n: number): string {
   return n === 1 ? "Falta acertar 1 ponto, marcado abaixo." : `Falta acertar ${n} pontos, marcados abaixo.`;
 }
 
-/** Leva o foco ao primeiro campo marcado com erro dentro do elemento. */
-export function focarPrimeiroErro(raiz: HTMLElement | null) {
-  requestAnimationFrame(() => raiz?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+/** Leva o foco ao primeiro campo marcado com erro dentro do elemento. Depois de um await, o
+ *  quadro pode chegar antes de o React marcar o campo (F3.176): então tenta de novo, a cada
+ *  16 ms, por até ~320 ms (setTimeout dá a vez à tarefa do React). A nova tentativa não foca se
+ *  o foco já mudou desde a chamada: outra parte da tela já o pôs no lugar certo
+ *  (por exemplo, WhatsApp.tsx leva ao "Como receber o código" logo depois). */
+export function focarPrimeiroErro(raiz: HTMLElement | null, tentativas = 20) {
+  const antes = document.activeElement;
+  const ir = (n: number) => {
+    if (!raiz?.isConnected) return;
+    const atual = document.activeElement;
+    if (n < tentativas && atual !== antes && atual !== document.body && atual !== null) return;
+    const el = raiz.querySelector<HTMLElement>('[aria-invalid="true"]');
+    if (el) el.focus();
+    else if (n > 0) setTimeout(() => ir(n - 1), 16);
+  };
+  requestAnimationFrame(() => ir(tentativas));
 }

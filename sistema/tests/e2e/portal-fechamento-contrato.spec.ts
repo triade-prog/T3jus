@@ -5,7 +5,7 @@
 // levantamento, o já encerrado, o êxito a vencer e o caso encerrado pelo outro lado. A API é
 // simulada; aqui se testa a tela, o foco, a acessibilidade e o que ela manda.
 import { expect, test, type Page } from "@playwright/test";
-import { semViolacoes } from "./console-dados.ts";
+import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -26,7 +26,7 @@ const ESCRITORIO = {
   contatos: [], ultimaExportacao: null,
 };
 
-const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + n * 864e5));
+const dia = (n: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(agora + n * 864e5));
 const curto = (n: number) => `${dia(n).slice(8, 10)}/${dia(n).slice(5, 7)}`;
 const em = (n: number, h: string) => `${dia(n)}T${h}:00-03:00`;
 
@@ -112,6 +112,9 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
   ...carnes(CT_N), ...carnes(CT_C),
 });
 const folha = (page: Page) => page.locator("section.fs-folha").first();
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Fechamento do caso na ficha do contrato (F3.132: EX-16, EX-17, FI-08)", () => {
   test("estado 5: a folha logo depois do âmbar, com o que falta, os números e De onde veio", async ({ page }) => {
