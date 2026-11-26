@@ -1723,6 +1723,38 @@ Deno.test("FI-05, FI-06, FI-12: Repasses, proposta, registrar, feito, dispensar 
   assertEquals((await m.pedir(`/v1/escritorio/financeiro/repasses/${CLIENTE}/prestacao`, { corpo: {}, cookie })).status, 200);
 });
 
+Deno.test("F3.174, FI-24: o êxito baixado no registrar chega ao banco, e os dois 409 voltam com o detalhe", async () => {
+  const B = "6f1c2a4e-8d3b-4c5a-9e7f-1a2b3c4d5e6f";
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { tipo: "ALVARA", casoId: CLIENTE, clienteId: CLIENTE, valor: 1600000, entrouEm: "2026-11-18", divisao: [{ para: "CLIENTE", valor: 1600000 }] };
+  // Nota 12: o cliente novo manda exitoBaixadoVisto sempre, também [].
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/repasses", { corpo: { ...corpo, exitoBaixadoVisto: [] }, cookie })).status, 201);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_financeiro_levantamento_registrar")!;
+  assertEquals([ch.args.p_escritorio, (ch.args.p_dados as { exitoBaixadoVisto: unknown }).exitoBaixadoVisto], [AURORA, []]);
+  m.chamadas.length = 0;
+  await m.pedir("/v1/escritorio/financeiro/repasses", { corpo: { ...corpo, exitoBaixadoVisto: [B], desfazerBaixa: { baixaId: B, explicacao: "Paga o êxito" } }, cookie });
+  const d = m.chamadas.find((c) => c.funcao === "portal_financeiro_levantamento_registrar")!.args.p_dados as Record<string, unknown>;
+  assertEquals([d.exitoBaixadoVisto, d.desfazerBaixa], [[B], { baixaId: B, explicacao: "Paga o êxito" }]);
+  // Mais de 5 baixas vistas nem chegam ao banco.
+  m.chamadas.length = 0;
+  assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/repasses", { corpo: { ...corpo, exitoBaixadoVisto: Array(6).fill(B) }, cookie }))).detalhes?.campos, ["exitoBaixadoVisto"]);
+  assertEquals(m.chamadas.some((c) => c.funcao === "portal_financeiro_levantamento_registrar"), false);
+  // Os dois 409 do banco voltam como VERSION_CONFLICT, com o detalhe para a tela.
+  const rpc = m.banco.rpc.bind(m.banco);
+  for (const detalhe of [
+    { motivo: "EXITO_MUDOU", tipo: "DESFEITA", por: { id: B, nome: "Bianca Torres" }, em: "2026-11-18T13:13:00Z", parcelaId: B },
+    { motivo: "EXITO_BAIXADO", baixas: [B], renegociada: false },
+  ]) {
+    m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) =>
+      (f === "portal_financeiro_levantamento_registrar" ? new Promise<T>(() => erroBanco("TC409", detalhe)) : rpc<T>(f, a));
+    const r = await m.pedir("/v1/escritorio/financeiro/repasses", { corpo: { ...corpo, exitoBaixadoVisto: [] }, cookie });
+    assertEquals(r.status, 409);
+    const e = await erro(r);
+    assertEquals([e.codigo, e.detalhes], ["VERSION_CONFLICT", detalhe]);
+  }
+});
+
 Deno.test("FI-05: tipos de levantamento e destinações do domínio são os mesmos do banco", async () => {
   const { TIPOS_LEVANTAMENTO, PARA_DESTINACAO, PRAZO_REPASSE_DIAS, somarDiasUteis } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0280_portal_financeiro_repasses.sql", import.meta.url));

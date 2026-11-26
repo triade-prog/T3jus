@@ -3,6 +3,7 @@ import {
   ambarBaixaNoContrato, avisoBaixaFeita, avisoDesfeita, comQuemFica, conflitoDaBaixa, ehAnotacaoDoDesfazer, errosDaBaixa, geraComBaixas, linhasDaBaixa,
   nomeDaParcela, notaDaBaixa, notaReembolsoBaixado, REGUA_DEPOIS_DE_DESFAZER, responsavelDepoisDoDesfazer, rotuloExplicacao, textoCustas,
   textoCustasBaixadasVoltam, tituloErrosBaixa,
+  conflitoDoExito, errosDoExito, nomeDoLevantamento, porQueDesfazer, quemRegistrou, textoExitoBaixado, textoExitoMantido, tituloErrosExito,
 } from "./baixa.ts";
 
 const MARINA = { id: "m", nome: "Marina Ribeiro" };
@@ -94,5 +95,55 @@ describe("F3.139: as correções da revisão do código", () => {
     expect(textoCustasBaixadasVoltam([{ valor: 41230 }])).toBe("O reembolso das custas, R$ 412,30, que teve baixa junto, também volta para A pagar, a reembolsar.");
     expect(textoCustasBaixadasVoltam([{ valor: 100 }, { valor: 200 }])).toMatch(/^Os reembolsos das custas, R\$ 3,00, que tiveram baixa junto, também voltam/);
     expect(REGUA_DEPOIS_DE_DESFAZER).toContain("nenhum aviso automático sai desta parcela");
+  });
+});
+
+describe("F3.174: o êxito baixado na divisão do alvará (FI-24, FI-25)", () => {
+  const baixa = { id: "b", motivo: "INADIMPLENCIA" as const, explicacao: "Rita disse que o banco não pagou o acordo; não vamos cobrar agora.",
+    valor: 480000, recebidoAntes: 0, por: MARINA, em: "2026-11-05T13:00:00Z", reembolsos: [], desfeita: null };
+  const rita = { descricao: "Êxito · Fonseca x Banco Aurora", valor: 480000, baixa };
+  it("eb-proposta: o aviso, com inadimplência, e o texto do alvará", () => {
+    const t = textoExitoBaixado(rita, "Rita Fonseca", "ALVARA");
+    expect(t.titulo).toBe("O êxito de Rita está com baixa sem receber.");
+    expect(t.detalhe).toBe("Êxito · Fonseca x Banco Aurora · R$ 4.800,00 · inadimplência, por Marina Ribeiro em 05/11/2026.");
+    expect(t.texto).toBe("Se os honorários deste alvará pagam esse êxito, desfaça a baixa antes de dividir. Se o escritório decidiu não cobrar, mantenha a baixa e tire os honorários: o valor fica com Rita.");
+    expect([t.parcial, t.custas, t.renegociada]).toEqual([null, null, null]);
+  });
+  it("as variações das notas: perdoada, paga em parte, custas junto e renegociada", () => {
+    expect(textoExitoBaixado({ ...rita, baixa: { ...baixa, motivo: "PERDOADA" } }, "Rita Fonseca").detalhe).toContain("· perdoada, por Marina Ribeiro");
+    expect(textoExitoBaixado({ ...rita, baixa: { ...baixa, recebidoAntes: 100000, valor: 380000 } }, "Rita Fonseca").parcial)
+      .toBe("Recebido R$ 1.000,00 de R$ 4.800,00. A baixa sem receber foi dos R$ 3.800,00 que faltavam.");
+    expect(textoExitoBaixado({ ...rita, baixa: { ...baixa, reembolsos: [{ contaId: "c", descricao: "custas", valor: 41230, categoria: "CUSTAS" }] } }, "Rita Fonseca").custas)
+      .toBe("As custas de R$ 412,30 tiveram baixa junto. Ao desfazer, elas entram na divisão como reembolso.");
+    const r = textoExitoBaixado({ ...rita, baixa: { ...baixa, motivo: "RENEGOCIADA" } }, "Rita Fonseca", "RPV");
+    expect(r.texto).toBe("Os honorários deste RPV pagam esse êxito: desfaça a baixa antes de dividir.");
+    expect(r.renegociada).toContain("mudando as condições do contrato");
+  });
+  it("eb-erro: sem escolher, e com o desfazer sem explicação", () => {
+    expect(errosDoExito(null, "", "Rita Fonseca", false).exito)
+      .toBe("Escolha o que fazer com o êxito de Rita: desfazer a baixa sem receber ou tirar os honorários.");
+    expect(errosDoExito("DESFAZER", " a ", "Rita Fonseca", false).porque).toBe("Escreva por que desfazer, com pelo menos 3 letras.");
+    expect(errosDoExito("MANTER", "", "Rita Fonseca", false)).toEqual({});
+    expect(tituloErrosExito(1)).toBe("Falta acertar 1 coisa.");
+  });
+  it("eb-desfazer-escolhido: o por que já preenchido", () => {
+    expect(porQueDesfazer("ALVARA", 1600000, "2026-11-18")).toBe("O alvará de R$ 16.000,00 entrou em 18/11 e paga o êxito.");
+    expect(nomeDoLevantamento("ACORDO")).toBe("depósito de acordo");
+  });
+  it("eb-conflito: quem desfez ou deu a baixa, na hora de Brasília", () => {
+    const d = { motivo: "EXITO_MUDOU", tipo: "DESFEITA", por: { id: "b", nome: "Bianca Torres" }, em: "2026-11-18T13:13:00Z" };
+    expect(conflitoDoExito(d, "2026-11-18", "Rita Fonseca")).toEqual({
+      titulo: "Bianca Torres desfez a baixa sem receber do êxito de Rita às 10h13.",
+      texto: "Nada foi registrado. Veja a divisão refeita antes de registrar.",
+    });
+    expect(conflitoDoExito({ ...d, tipo: "BAIXA" }, "2026-11-18", "Rita Fonseca")?.titulo)
+      .toBe("Bianca Torres deu baixa sem receber no êxito de Rita às 10h13.");
+    expect(conflitoDoExito({ ...d, em: "2026-11-18T02:30:00Z" }, "2026-11-18", "Rita Fonseca")?.titulo).toContain("em 17/11, às 23h30");
+    expect(conflitoDoExito({ motivo: "PARCELA_MUDOU" }, "2026-11-18", "Rita Fonseca")).toBeNull();
+  });
+  it("eb-historico: a linha do repasse registrado com Manter, sem a explicação", () => {
+    expect(textoExitoMantido({ baixas: [{ motivo: "INADIMPLENCIA", por: MARINA, em: "2026-11-05T13:00:00Z" }] }, "Rita Fonseca"))
+      .toBe("Registrado sem os honorários do êxito: a parcela de Rita continua com baixa sem receber (inadimplência, por Marina Ribeiro em 05/11).");
+    expect(quemRegistrou("Diego Almeida", "ALVARA")).toBe("Diego Almeida, ao registrar o alvará");
   });
 });

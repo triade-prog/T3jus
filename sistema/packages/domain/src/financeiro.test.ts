@@ -1,7 +1,7 @@
 // Dias úteis do prazo do repasse (F3.46): o mesmo cálculo do banco (0552).
 import { describe, expect, it } from "vitest";
 import {
-  CATEGORIAS_LANCAR, CATEGORIAS_SAIDA, custoEmprestimo, diasUteisEntre, estimadaSugerida, feriadoNacional, parcelasDoEmprestimo, somarDiasUteis,
+  CATEGORIAS_LANCAR, CATEGORIAS_SAIDA, custoEmprestimo, registrarLevantamentoSchema, diasUteisEntre, estimadaSugerida, feriadoNacional, parcelasDoEmprestimo, somarDiasUteis,
   sugerirParcelasAntes, vencimentoDaParcela,
 } from "./financeiro.ts";
 
@@ -70,5 +70,21 @@ describe("FI-20: parcelas do empréstimo", () => {
   it("Lançar conta não oferece a categoria Empréstimos", () => {
     expect(Object.keys(CATEGORIAS_LANCAR)).toEqual(Object.keys(CATEGORIAS_SAIDA).filter((k) => k !== "EMPRESTIMOS"));
     expect(Object.keys(CATEGORIAS_SAIDA).at(-1)).toBe("EMPRESTIMOS");
+  });
+});
+
+describe("F3.174: o êxito baixado no registrar (FI-24, FI-05)", () => {
+  const base = { tipo: "ALVARA", casoId: "c", clienteId: "k", valor: 1600000, entrouEm: "2026-11-18", divisao: [{ para: "CLIENTE", valor: 1600000 }] };
+  const B = "6f1c2a4e-8d3b-4c5a-9e7f-1a2b3c4d5e6f";
+  it("o schema aceita exitoBaixadoVisto (também []) e desfazerBaixa", () => {
+    const r = registrarLevantamentoSchema.parse({ ...base, exitoBaixadoVisto: [B], desfazerBaixa: { baixaId: B, explicacao: "O alvará paga o êxito." } });
+    expect(r.exitoBaixadoVisto).toEqual([B]);
+    expect(r.desfazerBaixa).toEqual({ baixaId: B, explicacao: "O alvará paga o êxito." });
+    expect(registrarLevantamentoSchema.parse({ ...base, exitoBaixadoVisto: [] }).exitoBaixadoVisto).toEqual([]);
+  });
+  it("recusa mais de 5 baixas vistas, id que não é uuid e explicação longa demais", () => {
+    expect(registrarLevantamentoSchema.safeParse({ ...base, exitoBaixadoVisto: Array(6).fill(B) }).success).toBe(false);
+    expect(registrarLevantamentoSchema.safeParse({ ...base, exitoBaixadoVisto: ["nao-e-id"] }).success).toBe(false);
+    expect(registrarLevantamentoSchema.safeParse({ ...base, desfazerBaixa: { baixaId: B, explicacao: "x".repeat(1001) } }).success).toBe(false);
   });
 });

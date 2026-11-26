@@ -138,6 +138,10 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PARCELA_NAO_VENCIDA: "Esta parcela ainda não venceu. Para parar de cobrar as próximas, mude as condições ou encerre o contrato, em Contratos.",
   PARCELA_MUDOU: "Outra pessoa registrou um recebimento nesta parcela. Nada foi baixado. Veja como ficou antes de decidir.",
   PARCELA_JA_BAIXADA: "Outra pessoa já deu baixa sem receber nesta parcela. Nada mais mudou.",
+  // O êxito com baixa sem receber na divisão do alvará (F3.174). A janela tem os textos próprios;
+  // estes são a reserva.
+  EXITO_BAIXADO: "O êxito deste cliente está com baixa sem receber. Desfaça a baixa antes de dividir ou tire os honorários da divisão.",
+  EXITO_MUDOU: "O êxito deste cliente mudou enquanto você dividia. Nada foi registrado. Veja a divisão refeita.",
   PARCELA_NAO_BAIXADA: "Esta parcela não está mais baixada. Recarregue a página para ver como ela está.",
   RENEGOCIADA_CONTRATO_ENCERRADO: "O contrato foi encerrado enquanto a janela estava aberta, e a renegociação não vale mais. Escolha outro motivo ou deixe a parcela em atraso.",
   // O logo do escritório (F3.81).
