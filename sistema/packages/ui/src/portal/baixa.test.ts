@@ -4,6 +4,7 @@ import {
   nomeDaParcela, notaDaBaixa, notaReembolsoBaixado, REGUA_DEPOIS_DE_DESFAZER, responsavelDepoisDoDesfazer, rotuloExplicacao, textoCustas,
   textoCustasBaixadasVoltam, tituloErrosBaixa,
   conflitoDoExito, errosDoExito, nomeDoLevantamento, porQueDesfazer, quemRegistrou, textoExitoBaixado, textoExitoMantido, tituloErrosExito,
+  fechamentoExitoMantido, textoExitoDesfeito, textoExitoDesfeitoDoHistorico,
 } from "./baixa.ts";
 
 const MARINA = { id: "m", nome: "Marina Ribeiro" };
@@ -145,5 +146,17 @@ describe("F3.174: o êxito baixado na divisão do alvará (FI-24, FI-25)", () =>
     expect(textoExitoMantido({ baixas: [{ motivo: "INADIMPLENCIA", por: MARINA, em: "2026-11-05T13:00:00Z" }] }, "Rita Fonseca"))
       .toBe("Registrado sem os honorários do êxito: a parcela de Rita continua com baixa sem receber (inadimplência, por Marina Ribeiro em 05/11).");
     expect(quemRegistrou("Diego Almeida", "ALVARA")).toBe("Diego Almeida, ao registrar o alvará");
+  });
+  it("eb-historico: o fechamento do caso diz que a baixa foi mantida", () => {
+    expect(fechamentoExitoMantido({ baixas: [{ motivo: "INADIMPLENCIA", por: MARINA, em: "2026-11-05T13:00:00Z", contrato: "C-2026-021" }] }, "ALVARA"))
+      .toEqual([{ titulo: "Êxito do contrato C-2026-021: baixa sem receber", detalhe: "inadimplência, por Marina Ribeiro em 05/11 · mantida ao registrar o alvará" }]);
+    expect(fechamentoExitoMantido({}, "ALVARA")).toEqual([]);
+  });
+  it("o desfazer diz o que os honorários pagaram de fato (revisão 2, nota 1)", () => {
+    expect(textoExitoDesfeito(480000, 0)).toBe("A baixa sem receber do êxito foi desfeita, e os honorários pagam a parcela.");
+    expect(textoExitoDesfeito(100000, 380000)).toBe("A baixa sem receber do êxito foi desfeita; os honorários pagaram R$ 1.000,00, e falta R$ 3.800,00.");
+    expect(textoExitoDesfeito(0, 480000)).toBe("A baixa sem receber do êxito foi desfeita, e a parcela volta a ser cobrada.");
+    expect(textoExitoDesfeitoDoHistorico({ baixaDesfeita: { pago: 0, falta: 480000 } })).toBe("A baixa sem receber do êxito foi desfeita, e a parcela volta a ser cobrada.");
+    expect(textoExitoDesfeitoDoHistorico({ baixaDesfeita: {} })).toBe("A baixa sem receber do êxito foi desfeita, e os honorários pagam a parcela.");
   });
 });

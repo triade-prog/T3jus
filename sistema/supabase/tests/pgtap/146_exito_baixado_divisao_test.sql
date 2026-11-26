@@ -3,7 +3,7 @@
 -- (seção A6), com as respostas A1 (não registrar os honorários com o êxito baixado: desfazer ou
 -- manter e tirar os honorários; renegociada só desfazer) e A2 (sim: as custas voltam como reembolso).
 begin;
-select plan(51);
+select plan(57);
 
 create function pg_temp.fim() returns void language plpgsql as $$
 begin
@@ -152,6 +152,9 @@ select ok((select not exists (select 1 from jsonb_array_elements(inicio_financei
 select ok((select not exists (select 1 from ids, p, relatorio_abertas(ids.rm, '2026-11-18') a where a.parcela_id = p.rita)), 'e de A receber');
 select is((select dados -> 'baixaDesfeita' ->> 'motivo' from historico h, rd where h.acao = 'financeiro.levantamento_exito_desfeito' and h.entidade_id = rd.v ->> 'id'),
   'INADIMPLENCIA', 'o histórico do levantamento leva a baixa desfeita');
+select is((select jsonb_build_array(dados -> 'baixaDesfeita' -> 'pago', dados -> 'baixaDesfeita' -> 'falta') from historico h, rd
+            where h.acao = 'financeiro.levantamento_exito_desfeito' and h.entidade_id = rd.v ->> 'id'),
+  '[480000, 0]'::jsonb, 'e o que os honorários pagaram de fato (a parcela inteira)');
 select ok((select not exists (select 1 from historico h where h.acao = 'financeiro.levantamento_exito_mantido')), 'e não grava "mantido"');
 -- 11. FI-25 (A2, com o sim): as custas entram como reembolso, e o acerto não pende mais delas.
 select is((select count(*)::integer from destinacoes d, rd, cp where d.levantamento_id = (rd.v ->> 'id')::uuid and d.conta_id = cp.rita), 1,
@@ -185,6 +188,30 @@ select is((select valor from pagamentos_recebidos x, p where x.parcela_id = p.ti
 select is((select parcela_linha(r) ->> 'situacao' from recebimentos_previstos r, p where r.id = p.tiago), 'PAGA', 'e a parcela fica paga');
 rollback to savepoint parcial;
 
+-- Desfazer e depois tirar os honorários (E1) ou reduzi-los (E2): o histórico diz o que foi pago.
+savepoint sem_hon;
+create temp table re1 as select pg_temp.reg(ids.diego, cli.rita, '[]'::jsonb,
+  pg_temp.visto(bx.rita) || jsonb_build_object('desfazerBaixa', jsonb_build_object('baixaId', bx.rita, 'explicacao', 'Vamos cobrar de novo.'))) v
+  from ids, cli, bx;
+select pg_temp.fim();
+select is((select jsonb_build_array(re1.v -> 'baixaDesfeita', re1.v -> 'exitoBaixado', parcela_linha(r) ->> 'situacao') from re1, recebimentos_previstos r, p where r.id = p.rita),
+  '[true, [], "VENCIDA"]'::jsonb, 'E1: desfazer sem honorários passa, e a parcela volta a ser cobrada');
+select is((select jsonb_build_array(dados -> 'baixaDesfeita' -> 'pago', dados -> 'baixaDesfeita' -> 'falta') from historico h, re1
+            where h.acao = 'financeiro.levantamento_exito_desfeito' and h.entidade_id = re1.v ->> 'id'),
+  '[0, 480000]'::jsonb, 'E1: o histórico diz que nada foi pago e quanto falta');
+rollback to savepoint sem_hon;
+savepoint hon_menor;
+create temp table re2 as select pg_temp.reg(ids.diego, cli.rita, pg_temp.hon(100000),
+  pg_temp.visto(bx.rita) || jsonb_build_object('desfazerBaixa', jsonb_build_object('baixaId', bx.rita, 'explicacao', 'O alvará paga uma parte.'))) v
+  from ids, cli, bx;
+select pg_temp.fim();
+select is((select jsonb_build_array(re2.v -> 'exitoBaixado' -> 0 -> 'valor', re2.v -> 'exitoBaixado' -> 0 -> 'paga') from re2),
+  '[100000, false]'::jsonb, 'E2: com os honorários reduzidos, a resposta diz que a parcela recebeu R$ 1.000,00');
+select is((select jsonb_build_array(dados -> 'baixaDesfeita' -> 'pago', dados -> 'baixaDesfeita' -> 'falta') from historico h, re2
+            where h.acao = 'financeiro.levantamento_exito_desfeito' and h.entidade_id = re2.v ->> 'id'),
+  '[100000, 380000]'::jsonb, 'E2: e o histórico, o pago e o que falta');
+rollback to savepoint hon_menor;
+
 -- ---------------------------------------------------------------------------------------
 -- 5. A explicação do desfazer com menos de 3 letras recusa, e nada é gravado.
 select is((teste.erro($$ select pg_temp.reg(ids.diego, cli.rita, pg_temp.hon(),
@@ -204,6 +231,8 @@ create temp table hm as select h.dados from historico h, rm1 where h.acao = 'fin
 select is((select jsonb_build_array(dados ->> 'tipo', dados -> 'baixas' -> 0 ->> 'baixa', dados -> 'baixas' -> 0 ->> 'motivo', dados -> 'baixas' -> 0 ->> 'valor') from hm),
   (select jsonb_build_array('ALVARA', rita::text, 'INADIMPLENCIA', '480000') from bx), 'PT-03: o histórico do repasse guarda a baixa mantida');
 select ok((select dados::text not like '%banco não pagou%' from hm), 'PT-02: sem a explicação da baixa');
+select is((select dados -> 'baixas' -> 0 ->> 'contrato' from hm), (select numero from contratos, ct where id = ct.rita),
+  'e o número do contrato, para o fechamento do caso');
 select is((select h -> 'dados' -> 'baixas' -> 0 -> 'por' ->> 'nome' from ids, rm1,
            jsonb_array_elements(portal_financeiro_repasse(ids.socia, ids.rm, (rm1.v ->> 'id')::uuid) -> 'historico') h
           where h ->> 'acao' = 'financeiro.levantamento_exito_mantido'), 'Marina Ribeiro',

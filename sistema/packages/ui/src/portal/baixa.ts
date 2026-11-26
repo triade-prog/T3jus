@@ -266,5 +266,33 @@ export function quemRegistrou(por: string | null | undefined, tipo: string | nul
   return `${por ?? "Alguém da equipe"}, ao registrar o ${nomeDoLevantamento(tipo)}`;
 }
 
-/** A linha do histórico do repasse registrado com o desfazer (o texto da confirmação). */
-export const TEXTO_EXITO_DESFEITO = "A baixa sem receber do êxito foi desfeita, e os honorários pagam a parcela.";
+/**
+ * O que o desfazer deu, com o que os honorários pagaram de fato (a confirmação e a linha do
+ * histórico): a parcela inteira, uma parte, ou nada (os honorários tirados depois de escolher).
+ */
+export function textoExitoDesfeito(pago: number, falta: number): string {
+  if (pago > 0 && falta <= 0) return "A baixa sem receber do êxito foi desfeita, e os honorários pagam a parcela.";
+  if (pago > 0) return `A baixa sem receber do êxito foi desfeita; os honorários pagaram ${reais(pago)}, e falta ${reais(falta)}.`;
+  return "A baixa sem receber do êxito foi desfeita, e a parcela volta a ser cobrada.";
+}
+
+/** O evento levantamento_exito_desfeito do histórico; sem o pago (evento antigo), o texto de antes. */
+export function textoExitoDesfeitoDoHistorico(d: Record<string, unknown>): string {
+  const b = (d.baixaDesfeita ?? {}) as { pago?: unknown; falta?: unknown };
+  if (typeof b.pago !== "number" || typeof b.falta !== "number") return textoExitoDesfeito(1, 0);
+  return textoExitoDesfeito(b.pago, b.falta);
+}
+
+/**
+ * A linha do "Fechamento do caso" depois do "Manter" (eb-historico): "Êxito do contrato C-2026-021:
+ * baixa sem receber", com "inadimplência, por Marina Ribeiro em 05/11 · mantida ao registrar o alvará".
+ */
+export function fechamentoExitoMantido(d: Record<string, unknown>, tipo: string | null | undefined): { titulo: string; detalhe: string }[] {
+  const baixas = Array.isArray(d.baixas) ? (d.baixas as { motivo?: MotivoBaixa; por?: PessoaRef | null; em?: string; contrato?: string | null }[]) : [];
+  return baixas.map((b) => ({
+    titulo: `Êxito${b.contrato ? ` do contrato ${b.contrato}` : ""}: baixa sem receber`,
+    detalhe: [b.motivo && MOTIVOS_BAIXA[b.motivo] ? MOTIVOS_BAIXA[b.motivo].toLowerCase() : null,
+      b.por || b.em ? `por ${b.por?.nome ?? "alguém da equipe"}${b.em ? ` em ${diaCurto(diaDoInstante(b.em))}` : ""}` : null]
+      .filter(Boolean).join(", ") + ` · mantida ao registrar o ${nomeDoLevantamento(tipo)}`,
+  }));
+}

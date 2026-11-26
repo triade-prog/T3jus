@@ -29,7 +29,7 @@ import { FolhaACaminho, JanelaExpedido, JanelaDataRequisicao, mesAno } from "./A
 import { ItemParcelas, JanelaFechamento, textoJaEncerradoPorOutro } from "./FechamentoCaso.tsx";
 import { rotuloRepasse, type Atalho } from "./fechamento.ts";
 import {
-  conflitoDoExito, errosDoExito, nomeDoLevantamento, porQueDesfazer, quemRegistrou, TEXTO_EXITO_DESFEITO, textoExitoBaixado, textoExitoMantido, tituloErrosExito,
+  conflitoDoExito, errosDoExito, nomeDoLevantamento, porQueDesfazer, fechamentoExitoMantido, quemRegistrou, textoExitoBaixado, textoExitoDesfeito, textoExitoDesfeitoDoHistorico, textoExitoMantido, tituloErrosExito,
   type EscolhaExito,
 } from "./baixa.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
@@ -395,6 +395,10 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
   const [porque, setPorque] = useState("");
   const [conflito, setConflito] = useState<{ titulo: string; texto: string } | null>(null);
   const [recarga, setRecarga] = useState(0);
+  // "Ver a divisão refeita" guarda o que a pessoa já tinha feito, para pôr de volta na divisão nova.
+  const guardado = useRef<{ escolha: EscolhaExito | null; baixaId: string | null; porque: string; manuais: LinhaTela[] } | null>(null);
+  // Nota 6 da revisão: o clique em "Registrar" com a divisão ainda sendo calculada é anunciado.
+  const [esperando, setEsperando] = useState(false);
   // Decisão 8: o segundo clique, antes de o React desenhar o "Registrando…", não envia de novo.
   const saindo = useRef(false);
   const corpo = useRef<HTMLDivElement>(null);
@@ -425,10 +429,18 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
       const linhasProposta = r.ok
         ? r.dados.linhas.map((x, i) => ({ chave: `p${i}`, para: x.para, nome: x.nome, regra: x.regra, valor: paraCampo(x.valor), contaId: x.contaId, proposta: true }))
         : [];
-      setEscolha(null);
-      setPorque("");
-      setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null, linhas: linhasProposta, base: linhasProposta,
-        exito: r.ok ? r.dados.exito : undefined, exitoBaixado: r.ok ? r.dados.exitoBaixado ?? [] : [] });
+      const exitoBaixado = r.ok ? r.dados.exitoBaixado ?? [] : [];
+      // Depois do conflito: as linhas à mão e o "Por que desfazer" voltam; a escolha, só se a mesma baixa ainda está em vigor.
+      const g = guardado.current;
+      guardado.current = null;
+      const ebNovo = exitoBaixado[0] ?? null;
+      const escolhaVolta = g?.escolha && ebNovo && ebNovo.baixa.id === g.baixaId ? g.escolha : null;
+      const comManuais = [...linhasProposta, ...(g?.manuais ?? [])];
+      setEscolha(escolhaVolta);
+      setPorque(g?.porque ?? "");
+      setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null,
+        linhas: escolhaVolta && ebNovo ? linhasDaEscolha(comManuais, linhasProposta, escolhaVolta, ebNovo) : comManuais, base: linhasProposta,
+        exito: r.ok ? r.dados.exito : undefined, exitoBaixado });
     });
   }, [chaveAtual, casoId, clienteId, total, recarga]);
 
@@ -451,6 +463,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
     setLinhas((ls) => linhasDaEscolha(ls, div.base, x, eb));
   };
   const verRefeita = () => {
+    guardado.current = { escolha, baixaId: eb?.baixa.id ?? null, porque, manuais: (linhas ?? []).filter((x) => !x.proposta) };
     setConflito(null);
     setErros([]);
     setFalha(null);
@@ -462,7 +475,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
     if (saindo.current) return;
     if (conflito) return verRefeita();
     // Com a divisão ainda sendo calculada, a tela não sabe do êxito baixado: espera a proposta.
-    if (buscando) return;
+    if (buscando) return setEsperando(true);
     const e: string[] = [];
     const d = lerDia(dia);
     if (!tipo) e.push("tipo");
@@ -492,18 +505,20 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
     // Nota 12: exitoBaixadoVisto vai sempre, com [] quando a tela não viu baixa.
     const exitoBaixadoVisto = (div?.exitoBaixado ?? []).map((b) => b.baixa.id);
     const desfazerBaixa = eb && escolha === "DESFAZER" ? { baixaId: eb.baixa.id, explicacao: porque.trim() } : undefined;
-    const r = await chamarPortal<{ id: string; exitoBaixado?: { descricao: string; valor: number; paga: boolean }[]; baixaDesfeita?: boolean }>("/v1/escritorio/financeiro/repasses", {
+    const r = await chamarPortal<{ id: string; exitoBaixado?: { parcelaId?: string; descricao: string; valor: number; paga: boolean }[]; baixaDesfeita?: boolean }>("/v1/escritorio/financeiro/repasses", {
       metodo: "POST",
       corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, exitoBaixadoVisto, ...(desfazerBaixa ? { desfazerBaixa } : {}), ...(de ? { requisicaoId: de.id } : {}) },
     });
     saindo.current = false;
     setEnviando(false);
     if (r.ok) {
+      // O que os honorários pagaram de fato à parcela desfeita (podem ter sido tirados ou reduzidos).
+      const pagoNoExito = (r.dados.exitoBaixado ?? []).filter((b) => !eb || b.parcelaId === eb.parcelaId).reduce((t, b) => t + b.valor, 0);
       return aoFeito({
         titulo: `${TIPOS_LEVANTAMENTO[tipo as TipoLevantamento]} registrado.`,
         texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.${de ? " Saiu de “A caminho” e da previsão do Caixa." : ""}`
           + (r.dados.baixaDesfeita
-            ? ` ${TEXTO_EXITO_DESFEITO}`
+            ? ` ${textoExitoDesfeito(pagoNoExito, Math.max((eb?.baixa.valor ?? 0) - pagoNoExito, 0))}`
             : (r.dados.exitoBaixado ?? []).map((b) => ` A parcela “${b.descricao}” ${b.paga ? "foi baixada" : `recebeu ${reais(b.valor)}`} pela divisão.`).join("")),
       });
     }
@@ -539,7 +554,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
               Ver a divisão refeita
             </button>
           ) : (
-            <button key="registrar" className="btn btn-pri" type="submit" aria-disabled={enviando || undefined} aria-busy={enviando || undefined}>
+            <button key="registrar" className="btn btn-pri" type="submit" aria-disabled={enviando || buscando || undefined} aria-busy={enviando || undefined}>
               <Icone nome="check" className="ico" />
               {enviando ? "Registrando…" : "Registrar"}
             </button>
@@ -548,7 +563,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
       }>
       <div ref={corpo} style={{ display: "grid", gap: 16 }}>
         <p id="j-rpv-d">{de ? "O dinheiro entrou na conta." : "Diga o que entrou e de qual caso."} A divisão sai do contrato, e você pode ajustar antes de registrar.</p>
-        <p className="sr" aria-live="polite">{enviando ? "Registrando." : ""}</p>
+        <p className="sr" aria-live="polite">{enviando ? "Registrando." : esperando && buscando ? "Calculando a divisão pelo contrato…" : ""}</p>
         {de ? (
           <p className="rv-de">
             <Icone nome="balanca" className="ico" />
@@ -565,7 +580,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
           <div className="aviso aviso-urgencia eb-resumo" role="alert">
             <Icone nome="alerta" className="ico" />
             <div>
-              <strong className="aviso-titulo">{tituloErrosExito(erros.length)}</strong>
+              <strong className="aviso-titulo">{tituloErrosExito(errosEb.length)}</strong>
               <p>Nada foi registrado ainda.</p>
               <ul>{errosEb.map((x) => <li key={x.id}><a href={`#${x.id}`} onClick={ir(x.id)}>{x.texto}</a></li>)}</ul>
             </div>
@@ -1059,7 +1074,7 @@ function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
                     <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
                     <span className="pto" aria-hidden="true" />
                     <div>
-                      <p>{e.acao === "financeiro.levantamento_exito_mantido" ? textoExitoMantido(e.dados, f.cliente.nome) : TEXTO_EXITO_DESFEITO}</p>
+                      <p>{e.acao === "financeiro.levantamento_exito_mantido" ? textoExitoMantido(e.dados, f.cliente.nome) : textoExitoDesfeitoDoHistorico(e.dados)}</p>
                       <small>{quemRegistrou(e.por?.nome, String(e.dados.tipo ?? f.tipo))}</small>
                     </div>
                   </li>
@@ -1292,6 +1307,9 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
             <ul className="fi-check">
               <li><Icone nome="check" className="ico" /><span>{TIPOS_LEVANTAMENTO[f.tipo]} registrado em {dataBr(f.entrouEm)}</span></li>
               <ItemParcelas a={f.acerto} />
+              {mantido ? fechamentoExitoMantido(mantido.dados, f.tipo).map((x, i) => (
+                <li key={`eb-f-${i}`}><Icone nome="check" className="ico" /><span>{x.titulo}<small>{x.detalhe}</small></span></li>
+              )) : null}
               {f.destinacoes.map((d) => (
                 <li key={d.id} className={pendente(d) ? "falta" : undefined}>
                   <Icone nome={pendente(d) ? "alerta" : "check"} className="ico" />

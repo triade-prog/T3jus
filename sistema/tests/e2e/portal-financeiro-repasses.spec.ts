@@ -736,6 +736,9 @@ test.describe("F3.174: o êxito com baixa sem receber na divisão do alvará (FI
         motivo: "EXITO_MUDOU", tipo: "DESFEITA", por: BIANCA, em: `${dia(0)}T13:13:00Z`, parcelaId: EB.parcelaId } } } },
     });
     const j = await abrirRita(page);
+    await j.getByRole("button", { name: "Acrescentar perito, parceiro ou outro" }).click();
+    await j.getByLabel("Nome de quem recebe").fill("Dr. Rui Tavares");
+    await j.getByLabel("Valor de Dr. Rui Tavares").fill("405,00");
     await j.getByRole("radio", { name: /Desfazer a baixa antes de dividir/ }).check();
     await j.getByRole("button", { name: "Registrar" }).click();
     const alerta = j.getByRole("alert").filter({ hasText: "Bianca Torres" });
@@ -750,6 +753,8 @@ test.describe("F3.174: o êxito com baixa sem receber na divisão do alvará (FI
     await expect(j.getByRole("heading", { name: "O êxito de Rita está com baixa sem receber." })).toHaveCount(0);
     await expect(j.getByLabel("O que entrou")).toHaveValue("ALVARA");
     await expect(j.getByLabel("Valor levantado")).toHaveValue("16.000,00");
+    // A linha acrescentada à mão continua na divisão refeita.
+    await expect(j.getByLabel("Valor de Dr. Rui Tavares")).toHaveValue("405,00");
     expect(pedidos.filter((p) => p.caminho === "/v1/escritorio/financeiro/repasses/proposta")).toHaveLength(2);
     // O clique em "Ver a divisão refeita" não reenvia o registrar.
     expect(postsRep(pedidos)).toHaveLength(1);
@@ -758,7 +763,7 @@ test.describe("F3.174: o êxito com baixa sem receber na divisão do alvará (FI
   test("eb-historico: na ficha do repasse, a escolha de manter a baixa, sem a explicação", async ({ page }) => {
     const ficha = { ...FICHA, cliente: RITA, tipo: "ALVARA", historico: [
       { acao: "financeiro.levantamento_exito_mantido", em: `${dia(0)}T13:14:00Z`, por: DIEGO,
-        dados: { tipo: "ALVARA", baixas: [{ baixa: B_RITA, motivo: "INADIMPLENCIA", valor: 480000, por: MARINA, em: "2026-11-05T13:00:00Z" }] } },
+        dados: { tipo: "ALVARA", baixas: [{ baixa: B_RITA, motivo: "INADIMPLENCIA", valor: 480000, por: MARINA, em: "2026-11-05T13:00:00Z", contrato: "C-2026-021" }] } },
       { acao: "financeiro.levantamento", em: `${dia(0)}T13:14:00Z`, por: DIEGO, dados: { tipo: "ALVARA", valor: 1600000, seguiuProposta: false } },
     ] };
     await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: ficha } });
@@ -768,6 +773,9 @@ test.describe("F3.174: o êxito com baixa sem receber na divisão do alvará (FI
     await expect(h).toContainText("Diego Almeida, ao registrar o alvará");
     await expect(h).not.toContainText("banco não pagou");
     await expect(page.getByText("Sem os honorários do êxito: Diego Almeida manteve a baixa sem receber ao registrar.")).toBeVisible();
+    const fecha = page.getByRole("region", { name: "Fechamento do caso" });
+    await expect(fecha).toContainText("Êxito do contrato C-2026-021: baixa sem receber");
+    await expect(fecha).toContainText("inadimplência, por Marina Ribeiro em 05/11 · mantida ao registrar o alvará");
     await semViolacoes(page);
   });
 });

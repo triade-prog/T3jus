@@ -93,7 +93,7 @@ set search_path = public
 as $$
   select case when p_acao = 'financeiro.levantamento_exito_mantido' and jsonb_typeof(p_dados -> 'baixas') = 'array' then
     p_dados || jsonb_build_object('baixas', (
-      select coalesce(jsonb_agg(b || jsonb_build_object('por', (select pessoa_ref(p.id) from pessoas p where p.id::text = b ->> 'por'))
+      select coalesce(jsonb_agg(b || jsonb_build_object('por', pessoa_ref(nullif(b ->> 'por', '')::uuid))
                                 order by o), '[]'::jsonb)
         from jsonb_array_elements(p_dados -> 'baixas') with ordinality t(b, o)))
   else p_dados end
@@ -121,7 +121,8 @@ select t1100_trocar(t1100_achar('exito_parcelas_abertas(p_escritorio, l.caso_id,
   v_desf_id uuid;
   v_desf_parcela uuid;
   v_desf_baixa jsonb;
-  v_desfeita jsonb;$q$);
+  v_desfeita jsonb;
+  v_pago bigint;$q$);
 
 select t1100_trocar(t1100_achar('exito_parcelas_abertas(p_escritorio, l.caso_id, l.cliente_id)'),
   $q$begin
@@ -199,20 +200,26 @@ select t1100_trocar(t1100_achar('exito_parcelas_abertas(p_escritorio, l.caso_id,
       jsonb_build_object('tipo', l.tipo, 'baixas', (
         select jsonb_agg(jsonb_build_object('baixa', b -> 'baixa' ->> 'id', 'parcela', b ->> 'parcelaId', 'descricao', b ->> 'descricao',
                                             'motivo', b -> 'baixa' ->> 'motivo', 'valor', (b -> 'baixa' ->> 'valor')::bigint,
-                                            'por', b -> 'baixa' -> 'por' ->> 'id', 'em', b -> 'baixa' ->> 'em'))
+                                            'por', b -> 'baixa' -> 'por' ->> 'id', 'em', b -> 'baixa' ->> 'em',
+                                            'contrato', b -> 'contrato' ->> 'numero'))
           from jsonb_array_elements(v_baixadas) b)));
-  end if;
-  if v_desfeita is not null then
+  end if;$q$);
+
+-- Depois do pagamento pelos honorários: o rastro do desfazer, com o que foi pago de fato à parcela
+-- (os honorários podem ter sido tirados ou reduzidos depois de escolher desfazer), e a resposta
+-- com a baixa desfeita, para o aviso da tela.
+select t1100_trocar(t1100_achar('exito_parcelas_abertas(p_escritorio, l.caso_id, l.cliente_id)'),
+  $q$  return v || jsonb_build_object('exitoBaixado', v_baixas);$q$,
+  $q$  if v_desfeita is not null then
+    v_pago := coalesce((select sum((b ->> 'valor')::bigint) from jsonb_array_elements(v_baixas) b
+                         where (b ->> 'parcelaId')::uuid = v_desf_parcela), 0);
     perform registrar_historico('financeiro.levantamento_exito_desfeito', 'levantamentos', l.id::text,
       jsonb_build_object('tipo', l.tipo, 'baixaDesfeita', jsonb_build_object('baixa', v_desf_id, 'parcela', v_desf_parcela,
                          'motivo', v_desf_baixa ->> 'motivo', 'valor', (v_desf_baixa ->> 'valor')::bigint,
-                         'reembolsos', jsonb_array_length(coalesce(v_desf_baixa -> 'reembolsos', '[]'::jsonb)))));
-  end if;$q$);
-
--- O registrar devolve a baixa desfeita, para o aviso da tela.
-select t1100_trocar(t1100_achar('exito_parcelas_abertas(p_escritorio, l.caso_id, l.cliente_id)'),
-  $q$  return v || jsonb_build_object('exitoBaixado', v_baixas);$q$,
-  $q$  return v || jsonb_build_object('exitoBaixado', v_baixas, 'baixaDesfeita', v_desfeita is not null);$q$);
+                         'reembolsos', jsonb_array_length(coalesce(v_desf_baixa -> 'reembolsos', '[]'::jsonb)),
+                         'pago', v_pago, 'falta', greatest((v_desf_baixa ->> 'valor')::bigint - v_pago, 0))));
+  end if;
+  return v || jsonb_build_object('exitoBaixado', v_baixas, 'baixaDesfeita', v_desfeita is not null);$q$);
 
 -- ---------------------------------------------------------------------------------------
 -- 4. A ficha do repasse (o corpo da 0280, achado pelo conteúdo): o histórico com quem deu a baixa mantida.
