@@ -461,6 +461,8 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
   async function enviar() {
     if (saindo.current) return;
     if (conflito) return verRefeita();
+    // Com a divisão ainda sendo calculada, a tela não sabe do êxito baixado: espera a proposta.
+    if (buscando) return;
     const e: string[] = [];
     const d = lerDia(dia);
     if (!tipo) e.push("tipo");
