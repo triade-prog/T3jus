@@ -2,7 +2,7 @@
 // servidor; aqui só se escreve o período, a comparação, a ordem da lista e a planilha.
 
 import {
-  AREAS_DIREITO, reais, TIPOS_LEVANTAMENTO,
+  AREAS_DIREITO, MOTIVOS_BAIXA, reais, TIPOS_LEVANTAMENTO,
   type AreaRelatorio, type ClienteRelatorio, type CompararCom, type DadosRelatorioExportado, type PeriodoRelatorio,
 } from "@t3jus/domain";
 import type { Aba, Celula } from "./planilha.ts";
@@ -46,6 +46,23 @@ export function periodoCurto(de: string, ate: string): string {
   if (de.slice(0, 4) === ate.slice(0, 4)) return `${MES_CURTO[mesDe(de)]}–${MES_CURTO[mesDe(ate)]}`;
   return `${MES_CURTO[mesDe(de)]}/${de.slice(0, 4)}–${MES_CURTO[mesDe(ate)]}/${ate.slice(0, 4)}`;
 }
+
+/**
+ * F3.173: o período como o "Baixado sem receber" escreve: "set. a nov.", "nov." ou
+ * "set./2025 a jan./2026" quando são meses inteiros (o mês de hoje conta como inteiro); senão,
+ * "05/09 a 14/09/2026".
+ */
+export function periodoMeses(de: string, ate: string, hoje: string): string {
+  const inteiro = de.slice(8, 10) === "01" && (ate === fimDoMes(ate) || ate === hoje);
+  if (!inteiro) return periodoTexto(de, ate);
+  const m = (d: string) => `${MES_CURTO[mesDe(d)]}.`;
+  if (de.slice(0, 7) === ate.slice(0, 7)) return m(de);
+  if (de.slice(0, 4) === ate.slice(0, 4)) return `${m(de)} a ${m(ate)}`;
+  return `${m(de)}/${de.slice(0, 4)} a ${m(ate)}/${ate.slice(0, 4)}`;
+}
+
+/** "desfeita em 12/11": o selo da baixa que foi desfeita depois (nunca muda o número do período). */
+export const desfeitaEm = (d: string) => `desfeita em ${diaMes(d)}`;
 
 /** O rótulo curto do período de comparação ("jun–ago"), ou nulo quando não compara. */
 export const rotuloComparacao = (p: PeriodoRelatorio) => (p.cde && p.cate ? periodoCurto(p.cde, p.cate) : null);
@@ -140,11 +157,12 @@ export function consultaPeriodo(p: { de: string; ate: string; comparar: Comparar
 
 // ---------------------------------------------------------------------------- por cliente
 
-export type OrdemClientes = "entrou" | "falta" | "vencido" | "rendeu" | "nome";
+export type OrdemClientes = "entrou" | "falta" | "vencido" | "baixado" | "rendeu" | "nome";
 export const ORDENS_CLIENTES: { v: OrdemClientes; t: string }[] = [
   { v: "entrou", t: "Entrou, do maior para o menor" },
   { v: "falta", t: "Falta receber, do maior" },
   { v: "vencido", t: "Vencido, do maior" },
+  { v: "baixado", t: "Baixado sem receber, do maior" },
   { v: "rendeu", t: "Rendeu, do menor para o maior" },
   { v: "nome", t: "Nome, de A a Z" },
 ];
@@ -157,6 +175,7 @@ export function filtrarClientes(lista: ClienteRelatorio[], f: { q: string; area:
     entrou: (a, b) => b.entrou - a.entrou || nome(a, b),
     falta: (a, b) => b.falta - a.falta || nome(a, b),
     vencido: (a, b) => b.vencido - a.vencido || nome(a, b),
+    baixado: (a, b) => (b.baixado ?? 0) - (a.baixado ?? 0) || b.entrou - a.entrou || nome(a, b),
     rendeu: (a, b) => a.rendeu - b.rendeu || nome(a, b),
     nome,
   };
@@ -167,7 +186,7 @@ export function totaisClientes(lista: ClienteRelatorio[]) {
   const soma = (k: "contratado" | "entrou" | "falta" | "vencido" | "adiantado" | "rendeu") => lista.reduce((s, c) => s + c[k], 0);
   return {
     contratado: soma("contratado"), entrou: soma("entrou"), falta: soma("falta"), vencido: soma("vencido"),
-    adiantado: soma("adiantado"), rendeu: soma("rendeu"), aparte: lista.reduce((s, c) => s + c.aparte.reduce((x, a) => x + a.valor, 0), 0),
+    adiantado: soma("adiantado"), rendeu: soma("rendeu"), baixado: lista.reduce((s, c) => s + (c.baixado ?? 0), 0), aparte: lista.reduce((s, c) => s + c.aparte.reduce((x, a) => x + a.valor, 0), 0),
   };
 }
 
@@ -191,6 +210,7 @@ export function abasRelatorio(d: DadosRelatorioExportado): Aba[] {
       ["Falta receber (hoje)", r$(r.falta.valor), r.falta.anterior === null ? null : r$(r.falta.anterior)],
       ["  vencido", r$(r.falta.vencido), r.falta.vencidoAnterior === null ? null : r$(r.falta.vencidoAnterior)],
       ["RPV e precatório à parte (não soma)", r$(r.falta.aparte.valor), null],
+      ...(r.baixado ? linhasBaixado(r.baixado) : []),
       ["Despesas de caso adiantadas que não voltaram", r$(r.rendeu.adiantado), null],
       ["Rendeu", r$(r.rendeu.valor), r.rendeu.anterior === null ? null : r$(r.rendeu.anterior)],
       ["Contratado no período", r$(r.contratado), null],
@@ -198,11 +218,13 @@ export function abasRelatorio(d: DadosRelatorioExportado): Aba[] {
       ["Como contamos: Entrou pelo dia em que o dinheiro entrou, sem dinheiro de terceiros. Rendeu é Entrou menos as despesas de caso adiantadas que ainda não voltaram, sem aluguel nem salários.", null, null],
     ],
   };
+  const comBaixado = d.clientes.some((c) => c.baixado !== undefined);
   const clientes: Aba = {
-    nome: "Por cliente", larguras: [36, 16, 16, 16, 16, 18, 16, 28],
+    nome: "Por cliente", larguras: comBaixado ? [36, 16, 16, 16, 16, 18, 18, 16, 28] : [36, 16, 16, 16, 16, 18, 16, 28],
     linhas: [
-      ["Cliente", "Contratado", "Entrou", "Falta receber", "Vencido", "Despesas não reembolsadas", "Rendeu", "Responsáveis"],
-      ...d.clientes.map((c): Celula[] => [c.nome, r$(c.contratado), r$(c.entrou), r$(c.falta), r$(c.vencido), r$(c.adiantado), r$(c.rendeu), c.responsaveis.join(", ")]),
+      ["Cliente", "Contratado", "Entrou", "Falta receber", "Vencido", ...(comBaixado ? ["Baixado sem receber (não soma)"] : []), "Despesas não reembolsadas", "Rendeu", "Responsáveis"],
+      ...d.clientes.map((c): Celula[] => [c.nome, r$(c.contratado), r$(c.entrou), r$(c.falta), r$(c.vencido), ...(comBaixado ? [r$(c.baixado ?? 0)] : []),
+        r$(c.adiantado), r$(c.rendeu), c.responsaveis.join(", ")]),
     ],
   };
   const areas: Aba = {
@@ -234,7 +256,32 @@ export function abasRelatorio(d: DadosRelatorioExportado): Aba[] {
       ...d.terceiros.map((t): Celula[] => [diaBr(t.entrouEm), TIPOS_LEVANTAMENTO[t.tipo], t.cliente, t.caso, r$(t.valor), r$(t.repassado), r$(t.honorarios)]),
     ],
   };
-  return [numeros, clientes, areas, resp, rec, terc];
+  // F3.173: as baixas sem receber e os desfazer do período, sem a explicação.
+  const baixas: Aba | null = d.baixas ? {
+    nome: "Baixas sem receber", larguras: [12, 40, 32, 16, 24, 26, 16, 24],
+    linhas: [
+      ["Dia", "O quê", "Cliente", "Contrato", "Parcela", "Motivo", "Valor", "Quem"],
+      ...d.baixas.map((b): Celula[] => [diaBr(b.dia), oQueBaixa(b), b.cliente, b.contrato, b.parcela,
+        b.motivo === "RENEGOCIADA" ? `${MOTIVOS_BAIXA[b.motivo]} (não soma)` : MOTIVOS_BAIXA[b.motivo], r$(b.valor), b.por]),
+    ],
+  } : null;
+  return baixas ? [numeros, clientes, areas, resp, rec, baixas, terc] : [numeros, clientes, areas, resp, rec, terc];
+}
+
+/** As linhas do "Baixado sem receber" na aba Números. Só a primeira soma no período. */
+function linhasBaixado(b: NonNullable<DadosRelatorioExportado["resumo"]["baixado"]>): Celula[][] {
+  return [
+    ["Baixado sem receber no período", r$(b.valor), b.anterior === null ? null : r$(b.anterior)],
+    ["  baixas desfeitas no período (voltaram para A receber)", r$(b.desfeitas.valor), null],
+    ["  renegociado (não soma)", r$(b.renegociado.valor), null],
+    ["  custas baixadas junto (não soma)", r$(b.custas.valor), null],
+  ];
+}
+
+/** "Baixa sem receber · desfeita em 12/11", "Baixa desfeita · custas (não soma)". */
+export function oQueBaixa(b: { tipo: "BAIXA" | "DESFEITA"; custas: boolean; desfeitaEm: string | null }): string {
+  return [b.tipo === "BAIXA" ? "Baixa sem receber" : "Baixa desfeita", b.custas ? "custas (não soma)" : null,
+    b.tipo === "BAIXA" && b.desfeitaEm ? desfeitaEm(b.desfeitaEm) : null].filter(Boolean).join(" · ");
 }
 
 export const nomeArquivoRelatorio = (p: PeriodoRelatorio) => `relatorio-${p.de}-a-${p.ate}.xlsx`;

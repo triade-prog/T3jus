@@ -1,0 +1,12 @@
+{
+  "id": "P23",
+  "texto": "Depois da P22, publicar o Portal e só então aplicar no Supabase a migration 1101 (o \"Baixado sem receber\" nos Relatórios, F3.173), só com o ok da Carol",
+  "refs": [
+    "IN-04",
+    "IN-07",
+    "FI-24"
+  ],
+  "status": "pendente",
+  "ordem": 230,
+  "nota": "Ordem (README \"Relatórios do sócio\"): 1) conferir que a P22 terminou e, com list_migrations, que a 0410, a 0555 e a 1010 estão no ar; 2) conferir com pg_get_functiondef o portal_relatorio_resumo (o embrulho da 0555), o relatorio_por_cliente, o portal_relatorio_cliente e o portal_relatorio_exportar, guardar as definições e conferir que relatorio_cliente_base e relatorio_exportar_base ainda não existem: a 1101 troca o embrulho e relatorio_por_cliente por trecho exato e para se o trecho não aparecer exatamente uma vez; 3) com o ok da Carol, publicar o Portal (a api-portal não muda: as rotas dos Relatórios só repassam o JSON); 4) só então aplicar a 1101. Por que nesta ordem: o Portal novo aguenta o banco sem a 1101 (os campos novos são opcionais; sem eles a tela fica como hoje, só o Como contamos já traz a regra), e o Portal de hoje ignora os campos novos, então as duas ordens são seguras; o código vai antes por ser a ordem segura de sempre. A 1101 vai pelo apply_migration do MCP, com o conteúdo do arquivo direto, fora de ordem: em produção já estão migrations de número maior (1110 a 1119), e o supabase db push recusaria uma migration local anterior à última aplicada; nenhuma delas mexe nas funções que a 1101 troca. Se der errado: drop function portal_relatorio_cliente(uuid,uuid,uuid,text,text,text) e portal_relatorio_exportar(uuid,uuid,jsonb), renomear relatorio_cliente_base e relatorio_exportar_base de volta, recriar o portal_relatorio_resumo e o relatorio_por_cliente com o pg_get_functiondef guardado no passo 2, e apagar relatorio_baixado_json, relatorio_baixas e o índice parcela_baixas_dia; nada de tabela muda."
+}

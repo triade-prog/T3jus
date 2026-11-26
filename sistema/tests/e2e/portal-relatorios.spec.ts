@@ -1,7 +1,9 @@
 // Relatórios do sócio no Financeiro (F3.70; IN-02 a IN-05, IN-07, IN-08, IN-09, IN-12, IN-14,
 // IN-15), tela aprovada em docs/design/aprovadas/portal-relatorios. Só a sócia dona vê; o período
 // abre nos últimos 3 meses; terceiros só na folha âmbar. A API é simulada.
+// F3.173: o "Baixado sem receber" (estados rb- de docs/design/aprovadas/portal-exito-baixado-alvara).
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { semViolacoes } from "./console-dados.ts";
 
 const P = "http://localhost:3000";
@@ -46,10 +48,14 @@ const RESUMO = {
   areas: [{ area: "SEM_CASO", entrou: 3370000, casos: 0, contratos: 7 }, { area: "CIVEL", entrou: 2100000, casos: 5, contratos: 5 }],
   terceiros: { entrou: 16620656, n: 6, porTipo: { RPV: 3, ACORDO: 2, ALVARA: 1 }, repassado: 9631800, clientesRepassados: ["Irene Campos", "João Pedro Alves"],
     honorarios: 3918360, reembolso: 42000, outros: 0, naConta: 3028496 },
+  // F3.173 (rb-visao): Rita R$ 4.800,00 em 05/11; Noemi R$ 1.000,00 em 15/10, desfeita em 12/11, com
+  // as custas de R$ 412,30; Sebastião R$ 500,00 renegociados em 10/11.
+  baixado: { valor: 580000, n: 2, porMotivo: { PERDOADA: 0, INADIMPLENCIA: 580000 }, desfeitas: { valor: 100000, n: 1 },
+    renegociado: { valor: 50000, n: 1, desfeitas: { valor: 0, n: 0 } }, custas: { valor: 41230, n: 1, desfeitas: { valor: 41230, n: 1 } }, anterior: 0, algum: true },
 };
 const cli = (id: string, nome: string, entrou: number, rendeu: number, x: Record<string, unknown> = {}) => ({
   id, nome, inativo: false, contratos: 1, responsaveis: ["Felipe Matos"], areas: ["CIVEL"], contratado: entrou, aparte: [],
-  entrou, adiantado: entrou - rendeu, rendeu, falta: 240000, vencido: 0, ...x,
+  entrou, adiantado: entrou - rendeu, rendeu, falta: 240000, vencido: 0, baixado: 0, baixadoMotivos: [], ...x,
 });
 const CLIENTES = { periodo: PERIODO, clientes: [
   cli(VALE, "Construtora Vale Alto Ltda.", 1445000, 1445000, { contratos: 3, areas: ["CIVEL", "SEM_CASO", "TRIBUTARIO"], vencido: 320000, falta: 800000 }),
@@ -75,6 +81,34 @@ const UM = {
   adiantadas: [{ id: "a1", descricao: "Custas iniciais", valor: 48620, pagaEm: "2026-08-12", reembolsadoEm: "2026-10-28", como: "PROXIMA_PARCELA" }],
   terceiros: [{ id: "l1", tipo: "ALVARA", valor: 630000, entrouEm: "2026-11-04", caso: "Vale Alto x Concreto Forte", repasse: { valor: 630000, feitoEm: "2026-11-05", prazo: "2026-11-07" } }],
 };
+const RITA = "c1000000-0000-4000-8000-000000000321";
+const NOEMI = "c1000000-0000-4000-8000-000000000322";
+const CLIENTES_RB = { periodo: PERIODO, clientes: [
+  ...CLIENTES.clientes,
+  cli(RITA, "Rita Fonseca", 0, 0, { baixado: 480000, baixadoMotivos: ["INADIMPLENCIA"], falta: 0 }),
+  cli(NOEMI, "Noemi Bastos Carvalho", 0, 0, { baixado: 100000, baixadoMotivos: ["INADIMPLENCIA"], falta: 100000, vencido: 100000 }),
+] };
+const EXPL_N = "Noemi recusou pagar depois da perda; não vamos cobrar na Justiça.";
+const BX_N = { id: "b1", dia: "2026-10-15", tipo: "BAIXA", motivo: "INADIMPLENCIA", custas: false, soma: true, valor: 100000, parcela: "Parcela 6/6",
+  por: MARINA, desfeitaEm: "2026-11-12", baixaEm: null, explicacao: EXPL_N };
+const CUSTAS_N = { ...BX_N, id: "b2", custas: true, soma: false, valor: 41230, explicacao: null };
+const DESF_N = { id: "b3", dia: "2026-11-12", tipo: "DESFEITA", motivo: "INADIMPLENCIA", custas: false, soma: false, valor: 100000, parcela: "Parcela 6/6",
+  por: MARINA, desfeitaEm: null, baixaEm: "2026-10-15", explicacao: null };
+const UM_NOEMI = {
+  ...UM,
+  cliente: { id: NOEMI, nome: "Noemi Bastos Carvalho", inativo: false, contratos: 1, casos: 1, responsavel: FELIPE },
+  atraso: { valor: 100000, n: 1, dias: 39, mais: { descricao: "Parcela 6/6", vencimento: "2026-10-10", contrato: "Vício construtivo", prox: null } },
+  numeros: { contratado: 100000, entrou: 0, adiantado: 0, rendeu: 0, falta: 100000, vencido: 100000, entrouAnterior: 0, baixado: 100000, baixadoDesfeitas: 100000 },
+  contratos: [], entradas: [], abertas: [], adiantadas: [], terceiros: [],
+  baixas: [BX_N, CUSTAS_N, DESF_N, { ...DESF_N, id: "b4", custas: true, valor: 41230 }],
+};
+const OUTUBRO = { ...PERIODO, de: "2026-10-01", ate: "2026-10-31", cde: "2026-09-01", cate: "2026-09-30", aberto: false };
+const UM_NOEMI_OUT = {
+  ...UM_NOEMI, periodo: OUTUBRO,
+  numeros: { ...UM_NOEMI.numeros, baixadoDesfeitas: 0 },
+  baixas: [BX_N, CUSTAS_N],
+};
+
 const AREAS = { periodo: PERIODO, areas: [
   { area: "SEM_CASO", entrou: 3370000, anterior: 3100000, casos: null, encerrados: null, contratosSemCaso: 7, aparte: [], adiantado: 0, rendeu: 3370000, falta: 900000, vencido: 320000 },
   { area: "PREVIDENCIARIO", entrou: 1500000, anterior: 2400000, casos: 4, encerrados: 1, contratosSemCaso: null, aparte: [{ tipo: "PRECATORIO", valor: 2130000, cliente: "Hélio Batista Corrêa" }],
@@ -108,6 +142,8 @@ const dona = (x: Record<string, Resp | Resp[]> = {}) => ({
   [`GET ${R}/resumo`]: { corpo: RESUMO },
   [`GET ${R}/clientes`]: { corpo: CLIENTES },
   [`GET ${R}/clientes/${VALE}`]: { corpo: UM },
+  [`GET ${R}/clientes/${NOEMI}`]: { corpo: UM_NOEMI },
+  [`GET ${R}/clientes/${NOEMI}?de=2026-10-01&ate=2026-10-31`]: { corpo: UM_NOEMI_OUT },
   [`GET ${R}/areas`]: { corpo: AREAS },
   [`GET ${R}/responsaveis`]: { corpo: RESP },
   ...x,
@@ -281,5 +317,129 @@ test.describe("F3.70: Relatórios do sócio", () => {
     await semViolacoes(page);
     await page.getByRole("button", { name: "Tentar de novo" }).click();
     await expect(page.getByRole("region", { name: "Entrou · set–nov" })).toBeVisible();
+  });
+});
+
+test.describe("F3.173: Baixado sem receber nos Relatórios (IN-04, IN-07)", () => {
+  test("rb-visao: a folha depois de Falta receber, com o número, a comparação e o que fica ao lado sem somar", async ({ page }) => {
+    await simular(page, dona());
+    await page.goto(`${P}/financeiro/relatorios`);
+    const f = folha(page, "Baixado sem receber");
+    await expect(f).toContainText("Parcelas que saíram de Em atraso sem que o dinheiro entrasse, de set. a nov.");
+    await expect(f).toContainText("R$ 5.800,00· 2 parcelas");
+    await expect(f).toContainText("Inadimplência R$ 5.800,00");
+    await expect(f).toContainText("R$ 0,00 em jun. a ago.");
+    await expect(f).toContainText("Baixas desfeitas no períodovoltaram para A receberR$ 1.000,00");
+    await expect(f).toContainText("Renegociado no períodovira parcelas novas em Contratos e não somaR$ 500,00");
+    await expect(f).toContainText("Custas baixadas juntodespesas do escritório e não somaR$ 412,30R$ 412,30 desfeitos");
+    await expect(f).toContainText("Não conta em Entrou nem em Falta receber. Cada baixa fica no mês em que foi feita. Se for desfeita depois, o desfazer aparece no mês dele.");
+    const lado = page.getByRole("complementary", { name: "Falta receber, baixado sem receber, rendeu e terceiros" });
+    await expect(lado.locator(":scope > section h2")).toHaveText(["Falta receber", "Baixado sem receber", "Rendeu", "Passou pelo escritório"]);
+    await semViolacoes(page);
+  });
+
+  test("rb-visao-nenhuma: de junho a agosto, nenhuma baixa; sem baixa nunca, a folha não aparece", async ({ page }) => {
+    const JUN = { ...PERIODO, de: "2026-06-01", ate: "2026-08-31", cde: "2026-03-01", cate: "2026-05-31", aberto: false };
+    const zero = { valor: 0, n: 0 };
+    const nada = { valor: 0, n: 0, porMotivo: { PERDOADA: 0, INADIMPLENCIA: 0 }, desfeitas: zero, renegociado: { ...zero, desfeitas: zero },
+      custas: { ...zero, desfeitas: zero }, anterior: 0, algum: true };
+    await simular(page, dona({ [`GET ${R}/resumo?de=2026-06-01&ate=2026-08-31`]: { corpo: { ...RESUMO, periodo: JUN, baixado: nada } },
+      [`GET ${R}/resumo?de=2026-06-01&ate=2026-08-30`]: { corpo: { ...RESUMO, periodo: { ...JUN, ate: "2026-08-30" }, baixado: { ...nada, algum: false } } } }));
+    await page.goto(`${P}/financeiro/relatorios?de=2026-06-01&ate=2026-08-31`);
+    const f = folha(page, "Baixado sem receber");
+    await expect(f).toContainText("de jun. a ago.");
+    await expect(f).toContainText("Nenhuma baixa sem receber de jun. a ago.");
+    await expect(f).toContainText("Não conta em Entrou nem em Falta receber.");
+    await semViolacoes(page);
+    await page.goto(`${P}/financeiro/relatorios?de=2026-06-01&ate=2026-08-30`);
+    await expect(folha(page, "Rendeu")).toBeVisible();
+    await expect(folha(page, "Baixado sem receber")).toHaveCount(0);
+  });
+
+  test("rb-mes-passado: Noemi em outubro, a baixa fica no mês dela, com o selo do desfazer", async ({ page }) => {
+    await simular(page, dona());
+    await page.goto(`${P}/financeiro/relatorios/clientes/${NOEMI}?de=2026-10-01&ate=2026-10-31`);
+    await expect(page.getByRole("heading", { level: 1, name: "Noemi Bastos Carvalho" })).toBeVisible();
+    await expect(folha(page, "No período")).toContainText("Baixado sem receberR$ 1.000,00");
+    await expect(folha(page, "No período")).not.toContainText("de baixas desfeitas no período");
+    const lista = page.getByRole("list", { name: "Baixas sem receber no período" });
+    await expect(lista.getByRole("listitem")).toHaveCount(1);
+    await expect(lista.getByRole("listitem")).toContainText("15/10Baixa sem receber · Parcela 6/6inadimplência · por Marina Ribeiro");
+    await expect(lista.getByRole("listitem")).toContainText(EXPL_N);
+    await expect(lista.getByRole("listitem")).toContainText("desfeita em 12/11");
+    await expect(lista.getByRole("listitem")).toContainText("R$ 1.000,00");
+    await expect(folha(page, "Baixas sem receber no período")).toContainText("As custas de R$ 412,30 tiveram baixa junto em 15/10 e voltaram a ser cobradas em 12/11. Não somam: são despesa do escritório.");
+    await expect(folha(page, "Baixas sem receber no período")).toContainText("Baixado sem receber no períodoR$ 1.000,00");
+    await semViolacoes(page);
+  });
+
+  test("rb-cliente: de setembro a novembro, a baixa e o desfazer, cada um no seu dia", async ({ page }) => {
+    await simular(page, dona());
+    await page.goto(`${P}/financeiro/relatorios/clientes/${NOEMI}`);
+    await expect(folha(page, "No período")).toContainText("Baixado sem receberR$ 1.000,00R$ 1.000,00 de baixas desfeitas no período");
+    const itens = page.getByRole("list", { name: "Baixas sem receber no período" }).getByRole("listitem");
+    await expect(itens).toHaveCount(2);
+    await expect(itens.nth(0)).toContainText("15/10Baixa sem receber · Parcela 6/6");
+    await expect(itens.nth(1)).toContainText("12/11Baixa desfeita · Parcela 6/6por Marina Ribeiro · voltou para A receberR$ 1.000,00não tira de 15/10");
+    await semViolacoes(page);
+  });
+
+  test("o cliente excluído: a baixa aparece sem a explicação", async ({ page }) => {
+    await simular(page, dona({ [`GET ${R}/clientes/${NOEMI}`]: { corpo: { ...UM_NOEMI, baixas: [{ ...BX_N, explicacao: null }, DESF_N] } } }));
+    await page.goto(`${P}/financeiro/relatorios/clientes/${NOEMI}`);
+    await expect(page.getByRole("list", { name: "Baixas sem receber no período" }).getByRole("listitem")).toHaveCount(2);
+    await expect(page.getByText(EXPL_N)).toHaveCount(0);
+    await expect(page.locator(".rb-lista q")).toHaveCount(0);
+  });
+
+  test("rb-clientes: a coluna nova, a ordem por ela, o total que não soma e o cartão do celular", async ({ page }, info) => {
+    // A 1440, como o desenho; abaixo da faixa data-sai3, a coluna sai junto com "Despesas não reembolsadas".
+    if (info.project.name === "computador") await page.setViewportSize({ width: 1440, height: 900 });
+    await simular(page, dona({ [`GET ${R}/clientes`]: { corpo: CLIENTES_RB } }));
+    await page.goto(`${P}/financeiro/relatorios/clientes`);
+    await expect(folha(page, "Por cliente")).toContainText("Cada cliente com o que foi contratado, o que entrou, o que falta, o que teve baixa sem receber e o que rendeu no período.");
+    await page.getByLabel("Ordenar por").selectOption("baixado");
+    await expect(page.getByRole("status")).toContainText("5 clientes com contrato no período · do que mais teve baixa sem receber para o que menos teve");
+    if (info.project.name === "computador") {
+      const tab = page.getByRole("table", { name: /Por cliente/ });
+      await expect(tab.getByRole("columnheader", { name: "Baixado sem receber" })).toHaveAttribute("aria-sort", "descending");
+      await expect(tab.getByRole("row").nth(1)).toContainText("Rita Fonseca");
+      await expect(tab.getByRole("row").nth(1)).toContainText("R$ 4.800,00inadimplência");
+      await expect(tab.getByRole("row").nth(2)).toContainText("Noemi Bastos Carvalho");
+      await expect(tab.getByRole("row").last()).toContainText("R$ 5.800,00não soma");
+    } else {
+      const cartoes = page.getByRole("list", { name: "Por cliente" }).getByRole("listitem");
+      await expect(cartoes.first()).toContainText("Rita Fonseca");
+      await expect(cartoes.first()).toContainText("Baixado sem receberR$ 4.800,00inadimplência · não soma");
+    }
+    await expect(page.getByText("Baixado sem receber é o que faltava nas parcelas que tiveram baixa no período. Não soma em Entrou nem em Falta receber.")).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("rb-como: \"Como contamos\" com a regra nova, entre Falta receber e Rendeu", async ({ page }) => {
+    await simular(page, dona());
+    await page.goto(`${P}/financeiro/relatorios`);
+    const como = page.locator("details.re-como");
+    await expect(como.locator("dt")).toHaveText(["Entrou", "Falta receber", "Baixado sem receber", "Rendeu", "Contratado", "Comparação", "De terceiros"]);
+    await expect(como).toContainText("O que faltava nas parcelas que tiveram baixa sem receber no período, pelo dia da baixa. A renegociada e as custas não somam. Uma baixa desfeita depois não muda o período em que foi feita.");
+    await semViolacoes(page);
+  });
+
+  test("a planilha exportada tem a aba \"Baixas sem receber\", sem a explicação", async ({ page }) => {
+    await simular(page, dona({
+      [`POST ${R}/exportacoes`]: { status: 201, corpo: { periodo: PERIODO, formato: "XLSX", resumo: RESUMO, clientes: CLIENTES_RB.clientes, areas: AREAS.areas,
+        responsaveis: RESP.responsaveis, recebimentos: [], terceiros: [],
+        baixas: [{ dia: "2026-10-15", tipo: "BAIXA", motivo: "INADIMPLENCIA", custas: false, soma: true, valor: 100000, desfeitaEm: "2026-11-12",
+          cliente: "Noemi Bastos Carvalho", contrato: "C-2026-012", parcela: "Parcela 6/6", por: "Marina Ribeiro" }] } },
+    }));
+    await page.goto(`${P}/financeiro/relatorios`);
+    await page.getByRole("button", { name: "Exportar" }).click();
+    const baixa = page.waitForEvent("download");
+    await page.getByRole("dialog", { name: "Exportar o relatório" }).getByRole("button", { name: "Baixar planilha" }).click();
+    const arquivo = readFileSync((await (await baixa).path())!, "utf8");
+    expect(arquivo).toContain('name="Baixas sem receber"');
+    expect(arquivo).toContain("Baixa sem receber · desfeita em 12/11");
+    expect(arquivo).toContain("Baixado sem receber no período");
+    expect(arquivo).not.toContain(EXPL_N);
   });
 });
