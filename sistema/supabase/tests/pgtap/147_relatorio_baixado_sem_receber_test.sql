@@ -10,9 +10,10 @@
 --      não vem para o cliente excluído;
 --   7. a comparação "anterior";
 --   8. a exportação traz as baixas sem a explicação e vai ao histórico;
---   9. só a sócia dona, e o escritório B não vê as baixas do A.
+--   9. só a sócia dona, e o escritório B não vê as baixas do A;
+--  10. baixa, desfazer e baixa de novo da mesma parcela no mesmo mês: uma parcela só, valor bruto.
 begin;
-select plan(46);
+select plan(51);
 
 select ajustar_relogio(('2026-04-28 10:00-03'::timestamptz - now()));
 
@@ -212,6 +213,11 @@ select is((select (x ->> 'baixado')::bigint from pc, jsonb_array_elements(pc.j) 
   'FI-24: Sebastião, só com a renegociada, tem 0 na coluna');
 select is((select x -> 'baixadoMotivos' from pc, jsonb_array_elements(pc.j) x, cli where (x ->> 'id')::uuid = cli.rita), '["INADIMPLENCIA"]'::jsonb,
   'IN-04: a coluna diz o motivo');
+select is((select x -> 'responsaveis' from pc, jsonb_array_elements(pc.j) x, cli where (x ->> 'id')::uuid = cli.xav), '["Marina Ribeiro"]'::jsonb,
+  'IN-04: Xavier, só com a baixa, leva o responsável do contrato da baixa');
+select is((select x -> 'areas' from pc, jsonb_array_elements(pc.j) x, cli where (x ->> 'id')::uuid = cli.xav),
+  (select jsonb_build_array(relatorio_area(relatorio_caso_do_contrato(ct.xav))) from ct),
+  'IN-04: e a área dele (não some no filtro "Área")');
 select is((pg_temp.um(cli.noemi, '2026-10-01', '2026-10-31') -> 'baixas' -> 0 ->> 'explicacao'),
   'Noemi recusou pagar depois da perda; não vamos cobrar na Justiça.', 'PT-02: no relatório de Noemi, a explicação vem') from cli;
 select is((pg_temp.um(cli.noemi, '2026-10-01', '2026-10-31') -> 'baixas' -> 0 ->> 'desfeitaEm'), '2026-12-02',
@@ -252,6 +258,19 @@ select is((portal_relatorio_resumo(intrusa, outro, '2026-10-01', '2026-10-31', '
   'PT-01: o escritório B vê só a baixa dele') from ids;
 select is((teste.erro($$ select portal_relatorio_cliente(intrusa, outro, cli.noemi) from ids, cli $$)) ->> 'codigo', 'TC404',
   'PT-01: e não abre um cliente do escritório A');
+
+-- 10. Janeiro: a parcela 6/6 de Noemi tem baixa em 05/01, é desfeita em 06/01 e tem baixa de novo
+-- em 07/01. O número segue bruto (B2.2: as duas baixas somam, o desfazer fica ao lado), mas conta
+-- uma parcela só.
+select ajustar_relogio(('2027-01-05 10:00-03'::timestamptz - now()));
+select pg_temp.baixar(p.noemi6, 'INADIMPLENCIA', 'Noemi não pagou de novo', 100000) from p;
+select ajustar_relogio(('2027-01-06 10:00-03'::timestamptz - now()));
+select portal_financeiro_parcela_baixa_desfazer(socia, rm, p.noemi6, '{"explicacao":"Noemi prometeu pagar"}') from ids, p;
+select ajustar_relogio(('2027-01-07 10:00-03'::timestamptz - now()));
+select pg_temp.baixar(p.noemi6, 'INADIMPLENCIA', 'Não pagou', 100000) from p;
+select is((pg_temp.folha('2027-01-01', '2027-01-07') ->> 'n')::integer, 1, 'IN-04: baixa, desfazer e baixa de novo: uma parcela só');
+select is((pg_temp.folha('2027-01-01', '2027-01-07') ->> 'valor')::bigint, 200000::bigint, 'IN-04: o valor segue bruto (B2.2): as duas baixas somam');
+select is(pg_temp.folha('2027-01-01', '2027-01-07') -> 'desfeitas', '{"n": 1, "valor": 100000}'::jsonb, 'IN-04: e o desfazer fica ao lado, em desfeitas');
 
 select * from finish();
 rollback;

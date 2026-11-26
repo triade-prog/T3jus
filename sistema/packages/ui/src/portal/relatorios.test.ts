@@ -113,6 +113,8 @@ describe("F3.173: baixado sem receber (IN-04, IN-07)", () => {
     expect(num).toContainEqual(["  baixas desfeitas no período (voltaram para A receber)", { reais: 1000 }, null]);
     expect(num).toContainEqual(["  renegociado (não soma)", { reais: 500 }, null]);
     expect(num).toContainEqual(["  custas baixadas junto (não soma)", { reais: 412.3 }, null]);
+    expect(num).toContainEqual(["    custas desfeitas no período", { reais: 412.3 }, null]);
+    expect(JSON.stringify(num)).not.toContain("renegociado desfeito");
     expect(abas[1]!.linhas[0]).toContain("Baixado sem receber (não soma)");
     expect(abas[1]!.linhas[1]![5]).toEqual({ reais: 4800 });
     const bx = abas[5]!.linhas;
@@ -121,6 +123,11 @@ describe("F3.173: baixado sem receber (IN-04, IN-07)", () => {
     expect(bx[2]![5]).toBe("Renegociada (não soma)");
     expect(bx[3]![1]).toBe("Baixa desfeita · custas (não soma)");
     expect(JSON.stringify(abas)).not.toContain("explica");
+  });
+
+  it("escritório sem baixa nunca: a aba Números não ganha linhas zeradas", () => {
+    const nunca = { ...dados, resumo: { ...resumo, baixado: { ...resumo.baixado!, algum: false } } } as DadosRelatorioExportado;
+    expect(JSON.stringify(abasRelatorio(nunca)[0])).not.toContain("Baixado");
   });
 
   it("sem a 1101 no banco, a planilha fica como antes", () => {

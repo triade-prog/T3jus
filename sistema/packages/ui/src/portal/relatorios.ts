@@ -210,7 +210,7 @@ export function abasRelatorio(d: DadosRelatorioExportado): Aba[] {
       ["Falta receber (hoje)", r$(r.falta.valor), r.falta.anterior === null ? null : r$(r.falta.anterior)],
       ["  vencido", r$(r.falta.vencido), r.falta.vencidoAnterior === null ? null : r$(r.falta.vencidoAnterior)],
       ["RPV e precatório à parte (não soma)", r$(r.falta.aparte.valor), null],
-      ...(r.baixado ? linhasBaixado(r.baixado) : []),
+      ...(r.baixado?.algum ? linhasBaixado(r.baixado) : []),
       ["Despesas de caso adiantadas que não voltaram", r$(r.rendeu.adiantado), null],
       ["Rendeu", r$(r.rendeu.valor), r.rendeu.anterior === null ? null : r$(r.rendeu.anterior)],
       ["Contratado no período", r$(r.contratado), null],
@@ -274,7 +274,9 @@ function linhasBaixado(b: NonNullable<DadosRelatorioExportado["resumo"]["baixado
     ["Baixado sem receber no período", r$(b.valor), b.anterior === null ? null : r$(b.anterior)],
     ["  baixas desfeitas no período (voltaram para A receber)", r$(b.desfeitas.valor), null],
     ["  renegociado (não soma)", r$(b.renegociado.valor), null],
+    ...(b.renegociado.desfeitas.n ? [["    renegociado desfeito no período", r$(b.renegociado.desfeitas.valor), null] as Celula[]] : []),
     ["  custas baixadas junto (não soma)", r$(b.custas.valor), null],
+    ...(b.custas.desfeitas.n ? [["    custas desfeitas no período", r$(b.custas.desfeitas.valor), null] as Celula[]] : []),
   ];
 }
 

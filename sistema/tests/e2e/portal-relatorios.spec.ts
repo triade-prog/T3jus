@@ -350,10 +350,64 @@ test.describe("F3.173: Baixado sem receber nos Relatórios (IN-04, IN-07)", () =
     await expect(f).toContainText("de jun. a ago.");
     await expect(f).toContainText("Nenhuma baixa sem receber de jun. a ago.");
     await expect(f).toContainText("Não conta em Entrou nem em Falta receber.");
+    await expect(f.locator(".rb-cmp")).toHaveCount(0);
     await semViolacoes(page);
     await page.goto(`${P}/financeiro/relatorios?de=2026-06-01&ate=2026-08-30`);
     await expect(folha(page, "Rendeu")).toBeVisible();
     await expect(folha(page, "Baixado sem receber")).toHaveCount(0);
+  });
+
+  test("num período sem baixa, a comparação aparece quando o período anterior teve", async ({ page }) => {
+    const NOV = { ...PERIODO, de: "2026-11-01", ate: "2026-11-18", cde: "2026-10-01", cate: "2026-10-31" };
+    const zero = { valor: 0, n: 0 };
+    const nada = { valor: 0, n: 0, porMotivo: { PERDOADA: 0, INADIMPLENCIA: 0 }, desfeitas: zero, renegociado: { ...zero, desfeitas: zero },
+      custas: { ...zero, desfeitas: zero }, anterior: 205000, algum: true };
+    await simular(page, dona({ [`GET ${R}/resumo?de=2026-11-01&ate=2026-11-18`]: { corpo: { ...RESUMO, periodo: NOV, baixado: nada } } }));
+    await page.goto(`${P}/financeiro/relatorios?de=2026-11-01&ate=2026-11-18`);
+    const f = folha(page, "Baixado sem receber");
+    await expect(f).toContainText("Nenhuma baixa sem receber de nov.");
+    await expect(f.locator(".rb-cmp")).toContainText("R$ 2.050,00 em out.");
+  });
+
+  test("banco sem a 1101: a tela e a planilha ficam como antes, só o Como contamos traz a regra", async ({ page }, info) => {
+    const semResumo = { ...RESUMO } as Record<string, unknown>; delete semResumo.baixado;
+    const semCli = CLIENTES_RB.clientes.map((c) => { const x = { ...c } as Record<string, unknown>; delete x.baixado; delete x.baixadoMotivos; return x; });
+    const { baixado: _b, baixadoDesfeitas: _d, ...numeros } = UM_NOEMI.numeros;
+    const semUm = { ...UM_NOEMI, numeros } as Record<string, unknown>; delete semUm.baixas;
+    await simular(page, dona({
+      [`GET ${R}/resumo`]: { corpo: semResumo },
+      [`GET ${R}/clientes`]: { corpo: { periodo: PERIODO, clientes: semCli } },
+      [`GET ${R}/clientes/${NOEMI}`]: { corpo: semUm },
+      [`POST ${R}/exportacoes`]: { status: 201, corpo: { periodo: PERIODO, formato: "XLSX", resumo: semResumo, clientes: semCli, areas: AREAS.areas,
+        responsaveis: RESP.responsaveis, recebimentos: [], terceiros: [] } },
+    }));
+    await page.goto(`${P}/financeiro/relatorios`);
+    await expect(folha(page, "Rendeu")).toBeVisible();
+    await expect(folha(page, "Baixado sem receber")).toHaveCount(0);
+    await expect(page.locator("details.re-como dt")).toContainText(["Baixado sem receber"]);
+    await page.getByRole("button", { name: "Exportar" }).click();
+    const baixa = page.waitForEvent("download");
+    await page.getByRole("dialog", { name: "Exportar o relatório" }).getByRole("button", { name: "Baixar planilha" }).click();
+    const arquivo = readFileSync((await (await baixa).path())!, "utf8");
+    expect(arquivo).not.toContain('name="Baixas sem receber"');
+    expect(arquivo).not.toContain("Baixado sem receber");
+
+    await page.goto(`${P}/financeiro/relatorios/clientes`);
+    await expect(page.getByLabel("Ordenar por").locator("option", { hasText: "Baixado sem receber" })).toHaveCount(0);
+    await expect(page.getByText("Baixado sem receber é o que faltava")).toHaveCount(0);
+    if (info.project.name === "computador") {
+      const tab = page.getByRole("table", { name: /Por cliente/ });
+      await expect(tab.locator("thead th")).toHaveCount(6);
+      await expect(tab.getByRole("columnheader", { name: "Baixado sem receber" })).toHaveCount(0);
+    } else {
+      await expect(page.getByRole("list", { name: "Por cliente" }).getByRole("listitem").first()).not.toContainText("Baixado sem receber");
+    }
+
+    await page.goto(`${P}/financeiro/relatorios/clientes/${NOEMI}`);
+    await expect(page.getByRole("heading", { level: 1, name: "Noemi Bastos Carvalho" })).toBeVisible();
+    await expect(folha(page, "No período")).not.toContainText("Baixado sem receber");
+    await expect(page.getByRole("list", { name: "Baixas sem receber no período" })).toHaveCount(0);
+    await semViolacoes(page);
   });
 
   test("rb-mes-passado: Noemi em outubro, a baixa fica no mês dela, com o selo do desfazer", async ({ page }) => {

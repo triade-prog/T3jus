@@ -572,11 +572,18 @@ function FolhaBaixado({ b, periodo }: { b: BaixadoRelatorio; periodo: PeriodoRel
   const quando = periodoMeses(periodo.de, periodo.ate, periodo.hoje);
   const nada = !b.n && !b.desfeitas.n && !b.renegociado.n && !b.renegociado.desfeitas.n && !b.custas.n && !b.custas.desfeitas.n;
   const motivos = (["PERDOADA", "INADIMPLENCIA"] as const).filter((m) => b.porMotivo[m]);
+  // A comparação; num período sem baixa, aparece só quando o período anterior teve.
+  const cmp = b.anterior !== null && periodo.cde && periodo.cate ? (
+    <p className="rb-cmp"><Icone nome="historico" className="ico" /><span>{reais(b.anterior)} em {periodoMeses(periodo.cde, periodo.cate, periodo.hoje)}</span></p>
+  ) : null;
   return (
     <Folha id="t-baixado" titulo="Baixado sem receber" icone="seta" sub={`Parcelas que saíram de Em atraso sem que o dinheiro entrasse, de ${quando}`}
       ver={{ texto: "A receber", href: ROTAS_FINANCEIRO.receber }}>
       {nada ? (
-        <p className="rb-nada"><Icone nome="check" className="ico" /><span>Nenhuma baixa sem receber de <span className="rb-nq">{quando}</span></span></p>
+        <>
+          <p className="rb-nada"><Icone nome="check" className="ico" /><span>Nenhuma baixa sem receber de <span className="rb-nq">{quando}</span></span></p>
+          {cmp && b.anterior ? cmp : null}
+        </>
       ) : (
         <>
           <div className="rb-num">
@@ -584,9 +591,7 @@ function FolhaBaixado({ b, periodo }: { b: BaixadoRelatorio; periodo: PeriodoRel
             {motivos.length ? (
               <p className="rb-mot">{motivos.map((m, i) => <span key={m}>{i ? " · " : ""}{MOTIVOS_BAIXA[m]} <b className="num">{reais(b.porMotivo[m])}</b></span>)}</p>
             ) : null}
-            {b.anterior !== null && periodo.cde && periodo.cate ? (
-              <p className="rb-cmp"><Icone nome="historico" className="ico" /><span>{reais(b.anterior)} em {periodoMeses(periodo.cde, periodo.cate, periodo.hoje)}</span></p>
-            ) : null}
+            {cmp}
           </div>
           {b.desfeitas.n || b.renegociado.n || b.renegociado.desfeitas.n || b.custas.n || b.custas.desfeitas.n ? (
             <dl className="re-conta rb-lado">

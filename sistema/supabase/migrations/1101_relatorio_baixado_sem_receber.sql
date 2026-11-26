@@ -44,11 +44,12 @@ create index parcela_baixas_dia on parcela_baixas (escritorio_id, feito_em);
 -- 2. Os movimentos do período: uma linha por BAIXA ou DESFEITA feita entre p_de e p_ate (dia de
 -- Brasília). Na DESFEITA, o motivo e a marca de custas vêm da baixa desfeita. "soma" marca o que
 -- entra no número principal. "desfeita_em" é o dia em que a BAIXA foi desfeita, quando foi (em
--- qualquer dia, mesmo depois do período: é o selo "desfeita em", que não muda o número).
+-- qualquer dia, mesmo depois do período: é o selo "desfeita em", que não muda o número). Na DESFEITA,
+-- "baixa_em" é o dia da baixa que ela desfaz ("não tira de 15/10").
 create function relatorio_baixas(p_escritorio uuid, p_de date, p_ate date)
 returns table (id uuid, ordem bigint, dia date, tipo text, motivo text, custas boolean, soma boolean, valor bigint,
                parcela_id uuid, contrato_id uuid, cliente_id uuid, caso_id uuid, area text, responsavel_id uuid,
-               descricao text, por uuid, desfeita_em date)
+               descricao text, por uuid, desfeita_em date, baixa_em date)
 language sql stable
 set search_path = public
 as $$
@@ -56,7 +57,8 @@ as $$
     select b.id, b.ordem, (b.feito_em at time zone 'America/Sao_Paulo')::date dia, b.tipo,
            coalesce(b.motivo, o.motivo) motivo, coalesce(o.reembolso_conta_id, b.reembolso_conta_id) is not null custas,
            b.valor, b.parcela_id, b.feito_por,
-           case when b.tipo = 'BAIXA' then (select (d.feito_em at time zone 'America/Sao_Paulo')::date from parcela_baixas d where d.desfaz_id = b.id) end desfeita_em
+           case when b.tipo = 'BAIXA' then (select (d.feito_em at time zone 'America/Sao_Paulo')::date from parcela_baixas d where d.desfaz_id = b.id) end desfeita_em,
+           case when b.tipo = 'DESFEITA' then (o.feito_em at time zone 'America/Sao_Paulo')::date end baixa_em
       from parcela_baixas b
       left join parcela_baixas o on o.id = b.desfaz_id
      where b.escritorio_id = p_escritorio
@@ -65,7 +67,7 @@ as $$
   )
   select m.id, m.ordem, m.dia, m.tipo, m.motivo, m.custas,
          m.tipo = 'BAIXA' and not m.custas and m.motivo in ('PERDOADA', 'INADIMPLENCIA'),
-         m.valor, m.parcela_id, c.id, c.cliente_id, k.caso, relatorio_area(k.caso), c.responsavel_id, r.descricao, m.feito_por, m.desfeita_em
+         m.valor, m.parcela_id, c.id, c.cliente_id, k.caso, relatorio_area(k.caso), c.responsavel_id, r.descricao, m.feito_por, m.desfeita_em, m.baixa_em
     from m
     join recebimentos_previstos r on r.id = m.parcela_id
     join contratos c on c.id = r.contrato_id and c.estado in ('ATIVO', 'ENCERRADO')
@@ -74,6 +76,8 @@ $$;
 
 -- ---------------------------------------------------------------------------------------
 -- 3. A folha da visão geral. "algum": o escritório já teve alguma baixa (a folha só aparece aí).
+-- "n" conta parcelas distintas: a mesma parcela com baixa, desfeita e com baixa de novo no período
+-- é uma parcela só. O valor segue bruto (B2.2): as duas baixas somam, e o desfazer fica ao lado.
 create function relatorio_baixado_json(p_escritorio uuid, p_de date, p_ate date, p_cde date, p_cate date) returns jsonb
 language sql stable
 set search_path = public
@@ -82,9 +86,9 @@ as $$
   grupo as (
     select g, jsonb_build_object(
              'valor', coalesce(sum(b.valor) filter (where b.tipo = 'BAIXA'), 0),
-             'n', count(*) filter (where b.tipo = 'BAIXA'),
+             'n', count(distinct b.parcela_id) filter (where b.tipo = 'BAIXA'),
              'desfeitas', jsonb_build_object('valor', coalesce(sum(b.valor) filter (where b.tipo = 'DESFEITA'), 0),
-                                             'n', count(*) filter (where b.tipo = 'DESFEITA'))) j
+                                             'n', count(distinct b.parcela_id) filter (where b.tipo = 'DESFEITA'))) j
       from (values ('soma'), ('renegociado'), ('custas')) v(g)
       left join b on case v.g when 'custas' then b.custas
                               when 'renegociado' then not b.custas and b.motivo = 'RENEGOCIADA'
@@ -93,7 +97,7 @@ as $$
   )
   select jsonb_build_object(
     'valor', (select coalesce(sum(valor), 0) from b where soma),
-    'n', (select count(*) from b where soma),
+    'n', (select count(distinct parcela_id) from b where soma),
     'porMotivo', jsonb_build_object('PERDOADA', (select coalesce(sum(valor), 0) from b where soma and motivo = 'PERDOADA'),
                                     'INADIMPLENCIA', (select coalesce(sum(valor), 0) from b where soma and motivo = 'INADIMPLENCIA')),
     'desfeitas', (select j -> 'desfeitas' from grupo where g = 'soma'),
@@ -130,6 +134,16 @@ select t1101_trocar('relatorio_por_cliente(uuid,relatorio_periodo_t)',
   $q$      'aparte', coalesce((select jsonb_agg(jsonb_build_object('tipo', a.tipo, 'valor', a.valor) order by a.prazo) from apt a where a.cliente_id = k.id), '[]'::jsonb),
       'baixado', (select coalesce(sum(valor), 0) from bx where soma and cliente_id = k.id),
       'baixadoMotivos', coalesce((select jsonb_agg(distinct motivo order by motivo) from bx where soma and cliente_id = k.id), '[]'::jsonb)$q$);
+-- A área e o responsável da baixa também valem para o cliente (o que só teve baixa no período não
+-- fica sem área nem some no filtro "Área").
+select t1101_trocar('relatorio_por_cliente(uuid,relatorio_periodo_t)',
+  $q$      'responsaveis', coalesce((select jsonb_agg(distinct p.nome) from ctr c join pessoas p on p.id = c.responsavel_id where c.cliente_id = k.id), '[]'::jsonb),$q$,
+  $q$      'responsaveis', coalesce((select jsonb_agg(distinct p.nome) from pessoas p where p.id in (
+                 select c.responsavel_id from ctr c where c.cliente_id = k.id union select x.responsavel_id from bx x where x.soma and x.cliente_id = k.id)), '[]'::jsonb),$q$);
+select t1101_trocar('relatorio_por_cliente(uuid,relatorio_periodo_t)',
+  $q$                 union select relatorio_area(relatorio_caso_do_contrato(c.id)) from ctr c where c.cliente_id = k.id) a), '[]'::jsonb),$q$,
+  $q$                 union select relatorio_area(relatorio_caso_do_contrato(c.id)) from ctr c where c.cliente_id = k.id
+                 union select x.area from bx x where x.soma and x.cliente_id = k.id) a), '[]'::jsonb),$q$);
 
 -- ---------------------------------------------------------------------------------------
 -- 6. Um cliente: o número (só a tela decide mostrar quando é maior que zero) e a lista do período,
@@ -155,8 +169,7 @@ begin
              'id', b.id, 'dia', b.dia, 'tipo', b.tipo, 'motivo', b.motivo, 'custas', b.custas, 'soma', b.soma, 'valor', b.valor,
              'parcela', b.descricao, 'por', pessoa_ref(b.por), 'desfeitaEm', b.desfeita_em,
              -- No desfazer, o dia da baixa que ele desfaz ("não tira de 15/10").
-             'baixaEm', case when b.tipo = 'DESFEITA' then (select (o.feito_em at time zone 'America/Sao_Paulo')::date
-                                                               from parcela_baixas d join parcela_baixas o on o.id = d.desfaz_id where d.id = b.id) end,
+             'baixaEm', b.baixa_em,
              'explicacao', case when b.tipo = 'BAIXA' and not coalesce(v_excluido, false) then (select x.explicacao from parcela_baixas x where x.id = b.id) end)
            order by b.dia, b.ordem) from b), '[]'::jsonb))
   );
