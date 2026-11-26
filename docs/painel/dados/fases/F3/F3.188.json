@@ -1,0 +1,12 @@
+{
+  "id": "F3.188",
+  "texto": "Exclusão de quem tem um segundo cadastro ativo com o mesmo CPF (a decisão NOVO na importação): a janela não avisa nada e o outro cadastro continua com o nome e o CPF",
+  "peca": "S7",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1440,
+  "nota": "Revisão do plano da F3.158 (G1, fora do escopo). A F3.158 tira só a chave duplicado da linha NOVO.",
+  "proximo": "Decidir com a Carol se a janela de exclusão mostra o outro cadastro com o mesmo CPF (desenho) e o que acontece com ele"
+}

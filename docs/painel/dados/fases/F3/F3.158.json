@@ -6,7 +6,8 @@
     "PT-11",
     "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1174,
-  "proximo": "Limpar as linhas de importação na exclusão e decidir o que acontece com os documentos do caso e as petições quando o desfazer deixa o cliente sem caso (revisão da F3.141, M5). O desfazer também deixa excluível o cliente com levantamento no caso (levantamentos.cliente_id; revisão da F3.172, M2): o levantamento, as destinações, a requisição a caminho e a parte dos avisos REPASSE_* guardam o nome dele, e a rotina do atraso continua criando aviso (a F3.172 já troca o cliente desses avisos)"
+  "evidencia": "Decisão da Carol C2 = (a) (25/11/2026): o cliente com algo no processo continua no processo e só pode ser arquivado. Migration 1118 (importacao_apagar_do_excluido: saem as linhas do cliente, a PULAR e a de erro com o mesmo CPF e as de fora com o CPF dele no bruto ou nas correções; a NOVO de outro cadastro fica sem duplicado e a de outra pessoa com o telefone dele sem telefoneDe; imp_ligacao_mexida pelo catálogo no plano e no DELETE do desfazer dos processos, linha a linha; cliente_vinculos_lgpd com a regra (d): pedido de documento, levantamento, requisição e petição com ele nas partes; índices por escritório e cliente; inventário de importacao_linhas) e 1119 (só chama importacao_linhas_preencher_excluidos, sem volta). Testes em 26/11/2026: pgTAP 161_importacao_cliente_excluido_test.sql (31 testes) e 162_desfazer_ligacao_mexida_test.sql (33 testes, com a trava das 10 tabelas com caso_id e cliente_id); concorrência exclusao-desfazer-simultaneo.sh, cenários 5 e 6.",
+  "nota": "O M2 da F3.172 fica resolvido pelas regras (a) e (d). Limites no README (\"A importação\"): a linha que cita o cliente só pelo nome fica até 7 dias (R2); o desfazer dos clientes ao mesmo tempo que a exclusão pode falhar na primeira tentativa (m4). Ficam abertos a F3.185 (caso novo desfeito prende o cliente), a F3.187 e a F3.188; a F3.189 só se a contagem antes da 1119 achar alguém. Publicação na P21; os textos novos do inventário precisam do ok da Carol antes do merge."
 }

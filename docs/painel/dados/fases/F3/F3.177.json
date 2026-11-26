@@ -3,10 +3,11 @@
   "texto": "Histórico financeiro importado do cliente excluído a pedido do titular: a descrição livre de historico_financeiro_anterior (até 300 letras, da importação) fica ligada ao cliente e a exclusão não mexe nela; decidir se é prova de receita guardada pela obrigação fiscal, como a F3.156, e o que fazer com o texto",
   "peca": "S4",
   "refs": [
-    "PT-11"
+    "PT-11",
+    "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1330,
-  "nota": "Achado m12 da revisão do plano da F3.156 (project-files t3jus/f3-156/revisao.md), fora do escopo dela.",
-  "proximo": "Planejar com o coordenador a regra da descrição importada do cliente excluído (texto fixo na exclusão, como a F3.156, ou guardar até o marco fiscal) e levar à Carol se mudar a decisão da PT-11"
+  "nota": "Achado m12 da revisão do plano da F3.156. Plano e revisão em project-files t3jus/f3-177 (plano-v2.md e revisao-v2.md). Limites no README (\"O histórico do sistema antigo\"): a cópia do detalhe no evento cliente.lembrete_dispensado fica para sempre (R1, m-c); o lembrete aberto do excluído ninguém dispensa (F3.186). Publicação na P21; os textos novos do inventário precisam do ok da Carol antes do merge.",
+  "evidencia": "Decisão da Carol C1 (25/11/2026): guardar até o marco fiscal os lançamentos importados, pagos e em aberto, e o detalhe da dispensa; uma data só (o maior marco); o desfeito troca na hora. Migration 1116 (marco historico_anterior_guarda_ate: 1º de janeiro de ano + 2 + prazo_fiscal_anos, sem data pelo ano da importação; na exclusão, historico_anterior_apagar_do_excluido troca na hora o vencido e o desfeito por \"Lançamento do sistema antigo de cliente excluído\" e \"Detalhe apagado a pedido do titular\" e grava cliente.historico_anterior_guardado; prazo_fiscal_historico_aplicar na aplicar_prazos, sem depender da 1117; guardiões historico_anterior_guarda e lembrete_detalhe_guarda; M1: imp_desfazer_cf trava as linhas na mesma ordem; M2: dispensar e trazer recusam o excluído com CLIENTE_EXCLUIDO; M6: historico_anterior_nasce e lembrete_contrato_nasce com FOR SHARE; arquivosQueFicam.historico em portal_cliente; portal_cliente_anterior devolve anterior: null do excluído; inventário de historico_financeiro_anterior e lembrete_contrato) e 1117 (só chama historico_anterior_preencher_excluidos, sem volta). Tela na F3.184. Testes em 26/11/2026: pgTAP 160_historico_anterior_excluido_test.sql (72 testes), 009, 150 e 155 ajustados; concorrência exclusao-desfazer-simultaneo.sh, cenários 1 a 4 nas duas ordens. Com a F3.158 e a F3.184: pnpm test:db com 129 arquivos e 4071 testes, mais as 9 concorrências, tudo verde; pnpm test:deno 338 testes; pnpm test com 65 arquivos e 773 testes; e2e portal-exclusao.spec.ts com 44 testes; pnpm lint sem erro; typecheck só com os 5 erros antigos de packages/ui."
 }

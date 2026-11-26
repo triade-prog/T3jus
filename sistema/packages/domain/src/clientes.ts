@@ -542,6 +542,29 @@ export interface ArquivosQueFicam {
   pastas: number;
   /** O dia em que o T3jus apaga os arquivos (aaaa-mm-dd, 1º de janeiro); null sem arquivo ou com alguma despesa em aberto. */
   ate: string | null;
+  /**
+   * O histórico do sistema antigo que fica guardado (F3.177): só vem quando há lançamento que fica.
+   * Ausente (ou null) quando não há nada do sistema antigo a guardar.
+   */
+  historico?: HistoricoQueFica | null;
+}
+
+/**
+ * Os lançamentos importados do sistema antigo (Astrea, ADVBOX) que a exclusão guarda pela obrigação
+ * fiscal (F3.177): a descrição fica como veio até o marco e depois vira texto fixo; a data, o valor e
+ * se foi pago não mudam.
+ */
+export interface HistoricoQueFica {
+  /** Lançamentos cuja descrição fica, pagos e em aberto, sem os desfeitos e sem os que já venceram (trocados na exclusão). */
+  lancamentos: number;
+  /** Detalhes escritos ao dispensar o lembrete de contrato que ficam com eles. */
+  detalhes: number;
+  /** Quantos desses lançamentos vieram sem data (contam pela data da importação). */
+  semData: number;
+  /** De que sistema vieram, quando todos vieram do mesmo; null quando vieram de mais de um. */
+  origem: "ASTREA" | "ADVBOX_PLANILHA" | null;
+  /** O dia em que o T3jus troca a descrição e o detalhe por texto fixo (aaaa-mm-dd, 1º de janeiro): o maior marco. */
+  ate: string;
 }
 
 export interface Atendimento {

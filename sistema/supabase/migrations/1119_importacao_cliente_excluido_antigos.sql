@@ -1,0 +1,21 @@
+-- As linhas de importação dos clientes excluídos antes da 1118 (F3.158; PT-11, VA-05), à parte da
+-- estrutura, como a 0971, a 1093, a 1111, a 1115 e a 1117.
+--
+-- ATENÇÃO: isto não tem volta. Nas importações concluídas ou desfeitas que ainda têm linhas (o prazo
+-- de desfazer é de 7 dias), saem as linhas de cada cliente já EXCLUIDO (pelo cliente da linha ou do
+-- norm) e, nas importações de clientes, as que o apontavam como duplicado sem virar outro cadastro;
+-- as linhas de outra pessoa perdem a chave duplicado e a telefoneDe que citam o excluído. Só por id:
+-- o CPF dos já excluídos saiu da ficha, então a linha sem cliente que trazia o CPF dele fica até o
+-- fim do prazo de desfazer (limite do README).
+--
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P21):
+--   1. aplicar a 1118 (daqui em diante, toda exclusão apaga as linhas da importação);
+--   2. rodar a contagem só de leitura (project-files t3jus/f3-177/contagem-antes-1119.sql) e mostrar
+--      à Carol; ela também informa os clientes já excluídos com papel do processo (pergunta C3);
+--   3. com o ok dela, aplicar esta 1119 e conferir que importacao_linhas_preencher_excluidos()
+--      devolve {}.
+--
+-- A função é testada no pgTAP 161 e é idempotente: rodar de novo não muda nada. O resultado é a
+-- contagem por escritório ({escritório: {clientes, linhas, chaves}}).
+
+select importacao_linhas_preencher_excluidos() as preenchidos;

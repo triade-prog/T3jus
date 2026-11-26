@@ -1,0 +1,28 @@
+-- O histórico financeiro importado dos clientes excluídos antes da 1116 (F3.177; PT-11, VA-05), à
+-- parte da estrutura, como a 0971, a 1093, a 1111 e a 1115.
+--
+-- ATENÇÃO: isto não tem volta. Em cada cliente já EXCLUIDO, a descrição dos lançamentos do sistema
+-- antigo já vencidos (1º de janeiro do 7º ano depois do ano do lançamento, ou da importação quando
+-- ele veio sem data) ou desfeitos vira "Lançamento do sistema antigo de cliente excluído", e o
+-- detalhe escrito da dispensa já vencido (o maior marco dos lançamentos que ele explica) ou desfeito
+-- vira "Detalhe apagado a pedido do titular". A descrição e o detalhe ainda no prazo NÃO mudam:
+-- ficam guardados pela obrigação fiscal e trocam sozinhos no marco, pela rotina da noite.
+--
+-- A rotina da noite seguinte à 1116 já troca o que venceu, com ou sem esta 1117 (a lista vem do
+-- estado EXCLUIDO). Esta 1117 adianta a troca e grava, uma vez por cliente, o evento
+-- cliente.historico_anterior_guardado com antes: true, que prova até quando o dado fica. A contagem
+-- só de leitura de antes da 1116 mostra quantos são.
+--
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P21):
+--   1. conferir com list_migrations que a 1092 e a 1110 estão no ar, e a 1114, se a P20 já foi;
+--   2. rodar a contagem só de leitura (project-files t3jus/f3-177/contagem-antes-1116.sql) e mostrar
+--      à Carol (a primeira noite depois da 1116 já troca as descrições vencidas e desfeitas);
+--   3. com o ok dela, aplicar a 1116;
+--   4. aplicar esta 1117 e conferir que historico_anterior_preencher_excluidos() devolve {};
+--   5. seguir com a 1118 e a 1119 (F3.158).
+--
+-- A função é testada no pgTAP 160 (também com o escritório só de consulta e dois escritórios) e é
+-- idempotente: rodar de novo não muda nada. O resultado é a contagem por escritório ({escritório:
+-- {clientes, trocados, guardados, detalhesTrocados, detalhesGuardados}}).
+
+select historico_anterior_preencher_excluidos() as preenchidos;

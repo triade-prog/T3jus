@@ -1,0 +1,11 @@
+{
+  "id": "D37",
+  "texto": "Desenho da janela de exclusão a pedido do titular com a descrição dos lançamentos do sistema antigo (e o detalhe da dispensa do lembrete) guardada até o marco fiscal: a linha no quadro \"O que a lei obriga a guardar\", o quadro sem arquivo de despesa e a frase da faixa do escudo",
+  "peca": "S7",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "feito",
+  "ordem": 87,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-exclusao-historico/ (5 estados, computador e celular, axe sem violação), no molde do aprovado portal-exclusao-despesas, aprovado pela Carol em 26/11/2026 na alternativa A (o lançamento sem data conta pela data da importação); a alternativa B foi recusada e saiu da pasta"
+}
