@@ -4,6 +4,7 @@
 // na Meta, ajustar o texto recusado, desligar com motivo, e como a IA atende (salvar com versão,
 // palavras, respostas, ligar e pausar). A API é simulada; aqui se testa a tela, a
 // acessibilidade e o que ela manda.
+import { quadroAntesDoCommit } from "./quadro.ts";
 import { expect, test, type Page } from "@playwright/test";
 import { fixarRelogio, hojeAs, semViolacoes } from "./console-dados.ts";
 
@@ -334,4 +335,28 @@ test("PA-04: Escritório ganha a barra de seções com Dados do escritório e Wh
   const nav = page.getByRole("navigation", { name: "Seções do Escritório" });
   await expect(nav.getByRole("link", { name: "Dados do escritório" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "WhatsApp e IA" })).toHaveAttribute("href", "/meu-escritorio/whatsapp");
+});
+
+// F3.176 (focarPrimeiroErro com nova tentativa): com o quadro antes do commit, o erro só no "Como
+// receber o código" leva o foco ao primeiro rádio, e a nova tentativa não o tira de lá.
+test("PA-04: erro do servidor só em receber o código, com o quadro antes do commit: o foco fica no rádio", async ({ page }) => {
+  await quadroAntesDoCommit(page);
+  await simular(page, {
+    ...(await entrar(page)),
+    "GET /v1/escritorio/whatsapp": { corpo: BASE },
+    "GET /v1/escritorio/ia": { corpo: { ...IA, whatsapp: { situacao: "NAO_LIGADO", numero: null } } },
+    "POST /v1/escritorio/whatsapp/conferir-numero": {
+      status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["receberCodigo"], motivos: { receberCodigo: "FIXO_SEM_SMS" } } } },
+    },
+  });
+  await page.goto(`${P}/meu-escritorio/whatsapp?ligar=1`);
+  await page.getByLabel("Número do WhatsApp do escritório").fill("(11) 3032-4410");
+  await page.getByText("Confirmo que este número é do escritório").click();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page.getByText("Número fixo não recebe SMS. Escolha “Por ligação de voz”")).toBeVisible();
+  const sms = page.getByRole("radio", { name: /Por SMS/ });
+  await expect(sms).toBeFocused();
+  // Passadas as novas tentativas (até ~320 ms), o foco continua no rádio.
+  await page.waitForTimeout(500);
+  await expect(sms).toBeFocused();
 });

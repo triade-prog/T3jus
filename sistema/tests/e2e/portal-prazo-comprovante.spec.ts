@@ -2,6 +2,7 @@
 // docs/design/aprovadas/portal-prazo-comprovante: a folha "Prazo do comprovante" em Jurídico ›
 // Documentos para começar, a prévia do efeito, salvar, o erro, a falha, a equipe e o reflexo na
 // ficha do cliente. A API é simulada; aqui se testa a tela, a acessibilidade e o que vai ao servidor.
+import { quadroAntesDoCommit } from "./quadro.ts";
 import { expect, test, type Page } from "@playwright/test";
 import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
@@ -266,5 +267,33 @@ test.describe("Prazo do comprovante (F3.134, AP-08)", () => {
     await page.reload();
     await expect(folha).toContainText("Em dia · 20 dias");
     await expect(folha.getByRole("link", { name: "Mudar o prazo" })).toBeVisible();
+  });
+
+  // F3.176: com o quadro antes do commit, o rAF depois do await rodaria antes de o aviso da
+  // falha e o campo "Quantos dias" existirem. O foco vem de um efeito, por contador.
+  test("com o quadro antes do commit: o foco vai ao aviso da falha e, no 422, ao Quantos dias", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      [`GET ${DOCS_URL}`]: { corpo: LISTAS() },
+      [`GET ${PRAZO_URL}/previa?dias=60`]: { corpo: PREVIA() },
+      [`PUT ${PRAZO_URL}`]: [
+        { status: 500, corpo: { erro: { codigo: "INTERNAL_ERROR" } } },
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["validadeDias"] } } } },
+      ],
+    });
+    await page.goto(`${P}/juridico/casos/documentos`);
+    const folha = folhaPrazo(page);
+    await folha.getByRole("button", { name: "Mudar o prazo" }).click();
+    await folha.getByRole("radio", { name: /^60 dias/ }).check();
+    await folha.getByRole("button", { name: "Salvar o prazo" }).click();
+    const aviso = folha.getByRole("alert").filter({ hasText: "Não deu para salvar o prazo." });
+    await expect(aviso).toContainText("diga o código INTERNAL_ERROR");
+    await expect(folha.locator("div[tabindex='-1']").filter({ hasText: "Não deu para salvar o prazo." })).toBeFocused();
+
+    await folha.getByRole("button", { name: "Salvar o prazo" }).click();
+    await expect(folha.getByLabel("Quantos dias")).toHaveValue("60");
+    await expect(folha.getByLabel("Quantos dias")).toHaveAttribute("aria-invalid", "true");
+    await expect(folha.getByLabel("Quantos dias")).toBeFocused();
   });
 });

@@ -581,9 +581,18 @@ function JanelaAcao({ acao, f, aoFechar, aoFeito }: {
   const [conferi, setConferi] = useState(false);
   const [erros, setErros] = useState<{ motivo: boolean; conferi: boolean }>({ motivo: false, conferi: false });
   const [falha, setFalha] = useState<ErroApi | null>(null);
+  const [vezFalha, setVezFalha] = useState(0);
   const [limite, setLimite] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const botao = useRef<HTMLButtonElement>(null);
   const nome = primeiroNome(f.nome);
+
+  // Depois de cada falha, o foco vai ao "Tentar de novo" já habilitado, depois do commit
+  // (F3.176). Um rAF logo depois do await podia rodar antes, com o botão ainda desabilitado.
+  // O contador começa em 0 (não rouba o foco ao abrir) e muda a cada falha, mesmo repetida.
+  useEffect(() => {
+    if (vezFalha > 0) botao.current?.focus();
+  }, [vezFalha]);
   const tel = telefoneParaConferir(f);
   const mascarado = f.email ? mascararEmail(f.email) : "o e-mail cadastrado";
 
@@ -606,7 +615,7 @@ function JanelaAcao({ acao, f, aoFechar, aoFeito }: {
       }
       if (r.erro.codigo === "RATE_LIMITED" && acao === "senha") return setLimite(true);
       setFalha(r.erro);
-      requestAnimationFrame(() => raiz.current?.closest("dialog")?.querySelector<HTMLElement>("[data-tentar]")?.focus());
+      setVezFalha((n) => n + 1);
       return;
     }
     const ate = hora(new Date(Date.now() + 60 * 60 * 1000).toISOString());
@@ -647,7 +656,7 @@ function JanelaAcao({ acao, f, aoFechar, aoFeito }: {
           <button className="btn btn-fantasma" type="button" onClick={aoFechar} data-foco={a === "autenticador" && !nErros ? true : undefined}>
             Cancelar
           </button>
-          <button className={a === "autenticador" ? "btn btn-perigo" : "btn btn-pri"} type="submit" disabled={enviando}
+          <button ref={botao} className={a === "autenticador" ? "btn btn-perigo" : "btn btn-pri"} type="submit" disabled={enviando}
             aria-disabled={limite || undefined} aria-describedby={limite ? `${ids}-limite` : undefined} data-tentar={falha ? true : undefined}>
             {falha ? <Icone nome="reenviar" className="ico" /> : envio[a].icone ? <Icone nome={envio[a].icone} className="ico" /> : null}
             {enviando ? "Enviando…" : falha ? "Tentar de novo" : envio[a].texto}
