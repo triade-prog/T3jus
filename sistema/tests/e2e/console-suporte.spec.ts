@@ -2,12 +2,7 @@
 // A API é simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { quadroAntesDoCommit } from "./quadro.ts";
 import { expect, test } from "@playwright/test";
-import { C, CLIENTES, ficha, SESSAO, semViolacoes, simular } from "./console-dados.ts";
-
-// Este arquivo ainda usa o relógio real: com o relógio fixo, a corrida do foco do "Tentar de novo"
-// (F3.176) some do teste. Passa para fixarRelogio depois que a F3.176 for corrigida (F3.164).
-const h = (n: number) => new Date(Date.now() - n * 3600e3).toISOString();
-const d = (n: number) => h(n * 24);
+import { agora, C, CLIENTES, d, ficha, fixarRelogio, h, SESSAO, semViolacoes, simular } from "./console-dados.ts";
 
 const SUPORTE = { ...SESSAO, nome: "Bruno Seixas", funcoes: ["SUPORTE"], acoes: ["console.suporte.ver"] };
 const MARINA = "a0000000-0000-4000-8000-0000000000aa";
@@ -30,6 +25,9 @@ const HIST = {
   ],
 };
 const P = `/v1/suporte/pessoas/${MARINA}`;
+
+// O relógio do navegador fica em AGORA, o mesmo instante de onde os dados contam (F3.164).
+test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Console: suporte de acesso", () => {
   test("busca: só quem atende, com a situação, e sem resultado explica o alcance", async ({ page }) => {
@@ -71,7 +69,7 @@ test.describe("Console: suporte de acesso", () => {
       "/v1/sessao": { corpo: SUPORTE },
       [P]: [{ corpo: fichaMarina() }, { corpo: fichaMarina() }],
       [`${P}/historico`]: [{ corpo: HIST }, {
-        corpo: { eventos: [{ ocorridoEm: new Date().toISOString(), autor: { id: "x", nome: "Bruno Seixas" }, acao: "suporte.link_senha", dados: { motivo: "Pediu ao telefone" } }, ...HIST.eventos] },
+        corpo: { eventos: [{ ocorridoEm: new Date(agora).toISOString(), autor: { id: "x", nome: "Bruno Seixas" }, acao: "suporte.link_senha", dados: { motivo: "Pediu ao telefone" } }, ...HIST.eventos] },
       }],
       [`POST ${P}/link-senha`]: { corpo: { email: "ma***@ribeiromatos.adv.br" } },
     });

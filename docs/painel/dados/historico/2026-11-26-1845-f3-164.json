@@ -1,0 +1,10 @@
+{
+  "data": "26/11/2026",
+  "inicio": "18:45",
+  "fim": "18:57",
+  "texto": "Testes instáveis (F3.164) concluídos: o Suporte do Console passa ao relógio fixo depois da correção do foco (F3.176), e a trava não tem mais exceção; nenhum teste de tela usa a data real sem fixar o relógio.",
+  "refs": [
+    "F3.164",
+    "PT-18"
+  ]
+}
