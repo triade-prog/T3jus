@@ -5,7 +5,8 @@
     "EX-16",
     "EX-17"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 130,
-  "nota": "Ordem (seção 11 do plano de código, project-files t3jus/telas/portal-sino-caso-fechou/PLANO-CODIGO.md): 1) o PR A (a tela que sabe mostrar o tipo novo, com o default no sino) vai ao ar; 2) a 1020 só no dia seguinte, para nenhuma aba aberta antes do PR A rodar o código antigo; antes, conferir com list_migrations que a 0990 e a 1000 já estão no ar; 3) com o ok da Carol, aplicar a 1020 antes do merge do PR B, a partir do commit final aprovado dele; 4) só então o merge do PR B, que publica as duas frases. Sem a migration, o PR B não é mesclado. Se der errado: drop trigger caso_fechou_fim on fechamentos_caso."
+  "nota": "Ordem (seção 11 do plano de código, project-files t3jus/telas/portal-sino-caso-fechou/PLANO-CODIGO.md): 1) o PR A (a tela que sabe mostrar o tipo novo, com o default no sino) vai ao ar; 2) a 1020 só no dia seguinte, para nenhuma aba aberta antes do PR A rodar o código antigo; antes, conferir com list_migrations que a 0990 e a 1000 já estão no ar; 3) com o ok da Carol, aplicar a 1020 antes do merge do PR B, a partir do commit final aprovado dele; 4) só então o merge do PR B, que publica as duas frases. Sem a migration, o PR B não é mesclado. Se der errado: drop trigger caso_fechou_fim on fechamentos_caso.",
+  "evidencia": "A 1020 (1020_sino_caso_encerrado_financeiro) está aplicada no Supabase desde 24/11/2026 (list_migrations) e o Portal de produção na Vercel roda a main em 8e35f5b, que contém o merge do PR #176 (a104045); conferido em 26/11/2026"
 }
