@@ -1,0 +1,11 @@
+{
+  "id": "P20",
+  "texto": "Aplicar no Supabase a migration 1114 (as conversas do WhatsApp do cliente excluído, F3.157) e, com o ok da Carol depois da contagem, a 1115 (os já excluídos, sem volta)",
+  "refs": [
+    "PT-11",
+    "PA-05"
+  ],
+  "status": "pendente",
+  "ordem": 200,
+  "nota": "Ordem (cabeçalho da 1115 e README \"Arquivos do cliente excluído\"): 1) conferir com list_migrations que a 0970, a 1090, a 1092 e a 1110 estão no ar; 2) aplicar a 1114; daqui em diante, toda exclusão apaga as conversas; 3) rodar a contagem só de leitura (project-files t3jus/f3-157/contagem-antes-1115.sql), que usa as funções da 1114, e mostrar à Carol; 4) com o ok dela, aplicar a 1115 e conferir que conversas_preencher_excluidos() devolve {}. Nada a publicar no Portal, na api-console nem no Console. Os textos novos do inventário (no_fim de conversas, conversa_mensagens, ia_perguntas_sem_resposta, automacao_execucoes e avisos_sino) precisam do ok da Carol antes do merge. Se der errado: drop trigger conversas_apagar_do_excluido on clientes_escritorio; o resto pode ficar; o que já foi apagado não volta."
+}

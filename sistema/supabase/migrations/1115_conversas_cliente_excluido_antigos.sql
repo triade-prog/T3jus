@@ -1,0 +1,27 @@
+-- As conversas do WhatsApp dos clientes excluídos antes da 1114 (F3.157; PT-11, PA-05), à parte da
+-- estrutura, como a 0971, a 1091, a 1093 e a 1111.
+--
+-- ATENÇÃO: isto não tem volta. Em cada conversa ligada a cliente já EXCLUIDO, sem registro de outro
+-- cliente, saem o número, o nome e o papel de quem escreveu, o motivo escrito e a nota para a IA;
+-- o texto de cada mensagem vira "Mensagem apagada a pedido do titular" (o momento fica sem texto),
+-- o anexo fica só com o tipo e o tamanho, a mensagem ainda na fila não sai mais, a pergunta à IA sem
+-- resposta sai e a respondida fica com o texto fixo, e os avisos do sino da conversa perdem o texto.
+-- As execuções de automação do cliente em andamento param e o rótulo de todas vira
+-- "Cliente excluído". A conversa com registro de outro cliente fica e religa pela regra de sempre.
+-- Os números já saíram da ficha antes desta migration: a conversa sem cliente com um número do
+-- excluído não é achada (limite do README; em 25/11/2026 havia 0 cliente excluído em produção).
+--
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P20):
+--   1. conferir com list_migrations que a 0970, a 1090, a 1092 e a 1110 estão no ar;
+--   2. aplicar a 1114 (daqui em diante, toda exclusão apaga as conversas);
+--   3. rodar a contagem só de leitura (project-files t3jus/f3-157/contagem-antes-1115.sql) e
+--      mostrar à Carol;
+--   4. com o ok dela, aplicar esta 1115 e conferir que conversas_preencher_excluidos() devolve {}.
+-- Nada a publicar no Portal, na api-console nem no Console.
+--
+-- A função é testada no pgTAP 156 (também com o escritório só de consulta e o mesmo número em dois
+-- escritórios) e é idempotente: rodar de novo não muda nada. O resultado é a contagem por escritório
+-- ({escritório: {clientes, conversas, mensagens, naFila, ficaram, automacoes, rotulos, perguntas,
+-- avisos}}).
+
+select conversas_preencher_excluidos() as preenchidos;
