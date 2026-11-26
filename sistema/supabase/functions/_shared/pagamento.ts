@@ -6,7 +6,7 @@
 // Inter está abaixo, ainda sem credenciais; ela só liga com os segredos INTER_* nas funções e com
 // configuracoes.meio_pagamento = 'inter' no banco.
 
-import { ErroDominio } from "@t3jus/domain";
+import { diaBrasilia, ErroDominio } from "@t3jus/domain";
 
 /** O que o banco manda emitir (rotina_cobranca_codigos_pendentes). */
 export interface PedidoCobranca {
@@ -149,7 +149,7 @@ export function meioInter(cfg: ConfigInter, buscar: typeof fetch = fetch): MeioP
   }
 
   interface CobrancaInter {
-    cobranca?: { codigoSolicitacao?: string; situacao?: string; valorTotalRecebido?: number | string; dataSituacao?: string; origemRecebimento?: string };
+    cobranca?: { codigoSolicitacao?: string; situacao?: string; valorTotalRecebido?: number | string; dataSituacao?: string | null; origemRecebimento?: string };
     boleto?: { linhaDigitavel?: string; codigoBarras?: string };
     pix?: { pixCopiaECola?: string };
   }
@@ -160,7 +160,8 @@ export function meioInter(cfg: ConfigInter, buscar: typeof fetch = fetch): MeioP
     if (s === "RECEBIDO" || s === "MARCADO_RECEBIDO") {
       return {
         pagamentoId, situacao: "PAGA",
-        pagoEm: (j.cobranca?.dataSituacao ?? "").slice(0, 10),
+        // Não há documentação do formato no repositório: data pura ou instante, sai o dia de Brasília (F3.182).
+        pagoEm: diaBrasilia(j.cobranca?.dataSituacao ?? ""),
         valorPagoCentavos: centavos(j.cobranca?.valorTotalRecebido),
         forma: (j.cobranca?.origemRecebimento ?? "").toUpperCase() === "PIX" ? "PIX" : "BOLETO",
       };

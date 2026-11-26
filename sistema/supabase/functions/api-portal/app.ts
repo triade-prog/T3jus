@@ -37,6 +37,7 @@ import {
   abrirCasoDoContratoSchema, assinaturaComCasoSchema, type AssinaturaComCaso, type ContratosSemCaso, type OpcoesCasoContrato,
   encerrarCasoSchema,
   filtroLembretesSchema, pedidoDispensaSchema, registrarResultadoSchema, type ListaLembretes, type MudancaLembrete, type ResumoLembretes,
+  diaBrasilia,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -344,7 +345,8 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.post("/v1/escritorio/exportacao", async (c) => {
     const id = c.get("escritorioId");
     const dados = await deps.banco.rpc<Record<string, unknown>>("exportar_escritorio", { p_pessoa: c.get("sessao").pessoaId, p_escritorio: id });
-    const dia = String(dados.geradoEm ?? "").slice(0, 10) || "dados";
+    // O geradoEm é um timestamptz (a sessão do banco está em UTC): o nome leva o dia de Brasília (F3.182).
+    const dia = diaBrasilia(String(dados.geradoEm ?? "")) || "dados";
     c.header("Content-Disposition", `attachment; filename="t3jus-exportacao-${dia}.json"`);
     c.header("Cache-Control", "no-store");
     return c.json(dados);

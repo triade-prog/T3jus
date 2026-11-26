@@ -5,8 +5,8 @@
   "refs": [
     "PT-15"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1380,
-  "nota": "Achado na varredura da F3.175 (plano F3.175/F3.176, seção 2.4.4). A tela (Escritorio.tsx, nomeArquivoExportacao) já foi corrigida na F3.175; falta o servidor. É só servidor: deploy da api-portal, sem migration. Conferir no mesmo item o pagamento.ts:163 (dataSituacao.slice(0, 10) da API do Inter: certo se vier aaaa-mm-dd local, errado se vier data e hora em UTC). Registro da revisão: WhatsApp.tsx:1245 (agoraHora) usa a hora do navegador, sem timeZone.",
-  "proximo": "Montar o nome do arquivo da exportação com o dia de Brasília (Intl em America/Sao_Paulo, como proposta_docx.ts:18) na api-portal e conferir o pagamento.ts:163"
+  "nota": "Achado na varredura da F3.175 (plano F3.175/F3.176, seção 2.4.4). A tela (Escritorio.tsx, nomeArquivoExportacao) já foi corrigida na F3.175; falta o servidor. É só servidor: deploy da api-portal, sem migration. Conferir no mesmo item o pagamento.ts:163 (dataSituacao.slice(0, 10) da API do Inter: certo se vier aaaa-mm-dd local, errado se vier data e hora em UTC). Registro da revisão: WhatsApp.tsx:1245 (agoraHora) usa a hora do navegador, sem timeZone. Feito (26/11/2026): publicação na P23 (api-portal e api-console).",
+  "evidencia": "api-portal/app.ts monta o nome do arquivo da exportação com diaBrasilia(geradoEm) do domínio (F3.175), o dia do dado, não o do servidor; _shared/pagamento.ts lê o pagoEm do Inter com diaBrasilia(dataSituacao ?? \"\"), tratamento seguro porque não há documentação do formato (data pura e texto sem fuso saem iguais, instante com fuso vira o dia de Brasília). Testes Deno: o PT-15 (api-portal/app_test.ts) com o geradoEm como o banco manda, em UTC às 22h30 de Brasília (2026-11-19T01:30:00.123456+00:00), espera t3jus-exportacao-2026-11-18.json; o novo \"F3.182: o dia do pagamento do Inter...\" (api-console/pagamento_test.ts) confere a data pura, o texto sem fuso, o instante com -03:00, o instante em UTC e o dataSituacao null (pagoEm vazio). Os dois falhavam no código antigo (2 de 2) e passam no novo; pnpm test:deno verde (check, lint e 340 testes)."
 }

@@ -109,3 +109,31 @@ Deno.test("F1.21: peça do Inter: token, emissão do boleto com Pix, leitura do 
   assertEquals(inter.codigosDoAviso(new Request("https://x/aviso?chave=certa"), [{ codigoSolicitacao: "abc-123" }]), ["abc-123"]);
   assertEquals(inter.codigosDoAviso(new Request("https://x/aviso?chave=outra"), [{ codigoSolicitacao: "abc-123" }]), null);
 });
+
+Deno.test("F3.182: o dia do pagamento do Inter é o de Brasília, venha a data pura ou o instante", async () => {
+  // O buscar falso do teste acima, só com a leitura da cobrança, que devolve o dataSituacao dado.
+  const lerCom = (dataSituacao: string | null) => {
+    const buscar: typeof fetch = (url) => {
+      const u = String(url);
+      const json = (v: unknown) => Promise.resolve(new Response(JSON.stringify(v), { status: 200 }));
+      if (u.endsWith("/oauth/v2/token")) return json({ access_token: "tk", expires_in: 3600 });
+      if (u.endsWith("/cobranca/v3/cobrancas/abc-123")) {
+        return json({ cobranca: { situacao: "RECEBIDO", valorTotalRecebido: "431.00", dataSituacao, origemRecebimento: "PIX" } });
+      }
+      return Promise.resolve(new Response("", { status: 404 }));
+    };
+    return meioInter({ clientId: "id", clientSecret: "s", chaveAviso: "certa", conta: "123" }, buscar).consultar("abc-123");
+  };
+  const casos: [string | null, string][] = [
+    ["2026-12-08", "2026-12-08"],
+    ["2026-12-08T22:30:00", "2026-12-08"],
+    ["2026-12-08T22:30:00-03:00", "2026-12-08"],
+    // 22h30 de 08/12 em Brasília, em UTC: o slice antigo dava 2026-12-09.
+    ["2026-12-09T01:30:00Z", "2026-12-08"],
+    // Sem a data (o JSON pode mandar null): sai vazio, e o aviso não dá baixa (api-console/app.ts).
+    [null, ""],
+  ];
+  for (const [dataSituacao, dia] of casos) {
+    assertEquals(await lerCom(dataSituacao), { pagamentoId: "abc-123", situacao: "PAGA", pagoEm: dia, valorPagoCentavos: 43100, forma: "PIX" }, String(dataSituacao));
+  }
+});

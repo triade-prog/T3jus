@@ -133,7 +133,8 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     },
     exportar_escritorio: (a) => {
       if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
-      return { formato: "t3jus.exportacao.v1", geradoEm: "2026-11-18T10:00:00-03:00", escritorio: { id: a.p_escritorio }, pessoas: [], tabelas: {} };
+      // Como o banco manda um timestamptz (sessão em UTC): 22h30 de 18/11 em Brasília (F3.182).
+      return { formato: "t3jus.exportacao.v1", geradoEm: "2026-11-19T01:30:00.123456+00:00", escritorio: { id: a.p_escritorio }, pessoas: [], tabelas: {} };
     },
     escritorios_para_escolher: () => [
       { escritorio_id: BELA_VISTA, nome: "Bela Vista Advogados", cidade: "Salvador", uf: "BA", ultima_entrada: "2026-11-18T09:12:00-03:00" },
@@ -743,7 +744,7 @@ Deno.test("o cookie do Console não abre o Portal", async () => {
   assertEquals((await erro(await m.pedir("/v1/sessao", { cookie: deLa }))).codigo, "UNAUTHORIZED");
 });
 
-Deno.test("PT-15: a exportação sai do escritório da sessão, nunca de um id do navegador", async () => {
+Deno.test("PT-15: a exportação sai do escritório da sessão, nunca de um id do navegador, e o nome leva o dia de Brasília (F3.182)", async () => {
   const m = montar();
   const cookie = cookieDe(await m.pedir("/v1/auth/entrar", { corpo: ENTRAR }));
   assertEquals((await erro(await m.pedir("/v1/escritorio/exportacao", { metodo: "POST", corpo: {}, cookie }))).codigo, "ESCRITORIO_REQUIRED");
