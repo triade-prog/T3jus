@@ -1,0 +1,11 @@
+{
+  "id": "F2.11",
+  "texto": "Procedimento manual da troca de plano no meio do mês, escrito para a equipe, enquanto a CO-12 não existe no sistema, porque a página de preços já anuncia a regra",
+  "peca": "C1",
+  "refs": [
+    "CO-12",
+    "SC-07"
+  ],
+  "status": "pendente",
+  "ordem": 110
+}

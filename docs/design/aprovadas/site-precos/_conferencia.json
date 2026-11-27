@@ -1,0 +1,179 @@
+{
+ "quando": "2026-11-27T10:00:00-03:00",
+ "axe": "4.10.2",
+ "regras": "wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa",
+ "resultados": [
+  {
+   "estado": "página de hoje (sem formulário, sem teste, sem desconto)",
+   "tam": "computador",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "perguntas frequentes abertas",
+   "tam": "computador",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "página completa (teste, desconto, formulário e Inter ligados)",
+   "tam": "computador",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "prancha chaves",
+   "tam": "computador",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast",
+    "duplicate-id-aria"
+   ]
+  },
+  {
+   "estado": "prancha chamadas",
+   "tam": "computador",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "com movimento, rolada até a tabela",
+   "tam": "computador",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "página de hoje (sem formulário, sem teste, sem desconto)",
+   "tam": "celular",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "menu do celular aberto",
+   "tam": "celular",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "perguntas frequentes abertas",
+   "tam": "celular",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "página completa (teste, desconto, formulário e Inter ligados)",
+   "tam": "celular",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "prancha chaves",
+   "tam": "celular",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast",
+    "duplicate-id-aria"
+   ]
+  },
+  {
+   "estado": "prancha chamadas",
+   "tam": "celular",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": []
+  },
+  {
+   "estado": "com movimento, rolada até a tabela",
+   "tam": "celular",
+   "rolagem": 0,
+   "pequenos": [],
+   "largos": [],
+   "viol": [],
+   "incompletas": [
+    "color-contrast"
+   ]
+  },
+  {
+   "estado": "menu em 1440px",
+   "itens": [
+    "O sistema",
+    "Como funciona",
+    "Para quem é",
+    "Preços",
+    "Entrar",
+    "Pedir demonstração"
+   ],
+   "linhas": 1,
+   "direita": 1320,
+   "largura": 1440
+  },
+  {
+   "estado": "menu em 1021px",
+   "itens": [
+    "O sistema",
+    "Como funciona",
+    "Para quem é",
+    "Preços",
+    "Entrar",
+    "Pedir demonstração"
+   ],
+   "linhas": 1,
+   "direita": 973,
+   "largura": 1021
+  }
+ ],
+ "erros": []
+}
