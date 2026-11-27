@@ -19,7 +19,7 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC12). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Três frentes** (Carol, 17/11/2026): o **Portal do advogado** (o app que o escritório usa), o **Console T3jus** (sistema interno da equipe) e o **site comercial** (divulgação e entrada de novos clientes, como o site do TRÍADE Condo). A Base comum são as regras que o Portal e o Console seguem por baixo; não é mais um sistema.
 - **DC2 · O cliente é o escritório.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um escritório e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um escritório (PT-22).
@@ -32,6 +32,7 @@ As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer 
 - **DC9 · Rastreio até a ideia.** O `IDEIAS.md` é a fonte única. Cada entrega do painel cita em `refs` os códigos das ideias que atende; cada regra vira teste automático com o código da ideia no nome.
 - **DC10 · Identidade visual** (Carol, 17/11/2026). Vinho `#692746` para ação e destaque, âmbar `#DD9760` só como decoração e areia `#F1E6DF` como fundo de apoio. Títulos em serifa (Alegreya, confirmada pela Carol em 18/11/2026 no lugar da Libre Caslon Text), texto em Poppins e ícones de traço. A personalidade é elegante, sóbria, confiável, técnica e atual. A referência foi o manual de marca de um escritório de advocacia: dele vêm a paleta, a tipografia e o estilo, mas não o monograma nem as peças. Detalhes e regras de contraste estão em `docs/IDENTIDADE.md`. O logo do T3jus continua em aberto (E3).
 - **DC11 · Nome T3jus e domínio `t3jus.pro`** (Carol, 17/11/2026). O produto se chama **T3jus** (antes escrito "T3 Just"). O site comercial fica no próprio `t3jus.pro`, o Portal do advogado em `app.t3jus.pro` e o Console em `console.t3jus.pro` (aprovados pela Carol). Os e-mails do login saem como `T3jus <nao-responda@t3jus.pro>` pelo Resend (domínio verificado pela Carol em 20/11/2026; passo a passo em `docs/EMAILS.md`). O repositório no GitHub continua `triade-prog/t3just`; renomear é com a Carol.
+- **DC12 · Teste grátis de 7 dias** (Carol, 27/11/2026, CO-09; muda a decisão 3 da cobrança de 20/11/2026, que era sem período grátis). Os 7 dias contam do primeiro acesso de um sócio ao Portal. Nenhuma fatura sai no teste, e a primeira mensalidade é a do mês seguinte ao fim. Por agora, a equipe confirma a assinatura no Console depois do "Quero assinar" do Portal. No 8º dia sem assinatura, o Portal fica só para consulta, sem apagar nada. Sem assinatura, a Administração encerra como fim de contrato (30 dias de consulta), e os dados ficam guardados 12 meses depois do fechamento; os Termos de uso dizem isso antes de o teste ser ligado. Mais dias ou teste repetido só pela Administração, com motivo. Pilotos e fundadores têm o teste dispensado, e o combinado com eles fica no desconto. Plano em `t3jus/co-09/plano-v2.md` nos arquivos do projeto.
 
 ## Em aberto
 

@@ -1,0 +1,11 @@
+{
+  "id": "F1.34",
+  "texto": "Avisos do teste: e-mails ao sócio nos dias 1, 5, 7 e 8 e os avisos nos sinos do Portal e do Console (migration 1162)",
+  "peca": "C4",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.64,
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+}

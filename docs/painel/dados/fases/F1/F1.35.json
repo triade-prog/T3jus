@@ -1,0 +1,11 @@
+{
+  "id": "F1.35",
+  "texto": "Telas do teste no Console: carteira, quadro do teste na Assinatura, Prorrogar, Liberar, Dispensar e Confirmar a assinatura",
+  "peca": "C4",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.65,
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+}

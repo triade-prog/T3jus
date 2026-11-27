@@ -1,0 +1,11 @@
+{
+  "id": "F1.38",
+  "texto": "O sócio assina sozinho no Portal, com termo e aceite (depois da confirmação pelo Console)",
+  "peca": "C4",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.68,
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+}

@@ -1,0 +1,11 @@
+{
+  "id": "F1.37",
+  "texto": "Teste não assinado: encerramento como fim de contrato, com o motivo próprio e a guarda de 12 meses depois do fechamento (migration 1163)",
+  "peca": "B1",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.67,
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+}

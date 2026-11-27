@@ -1,0 +1,11 @@
+{
+  "id": "F1.33",
+  "texto": "Servidor das telas do teste: os blocos do teste na ficha e na carteira e o pedido \"Quero assinar\" do Portal (migration 1161)",
+  "peca": "C4",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.63,
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+}
