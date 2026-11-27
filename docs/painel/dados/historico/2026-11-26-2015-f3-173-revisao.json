@@ -1,0 +1,13 @@
+{
+  "data": "26/11/2026",
+  "inicio": "20:15",
+  "fim": "20:45",
+  "texto": "F3.173, as notas da revisão independente: o e2e do banco sem a 1101 e a tela de tabelas sem a coluna (faixas antigas medidas), o N parcelas contando parcelas distintas (valor bruto, como no plano B2.2, com o caso de baixa feita de novo no pgTAP 147), a área e o responsável do cliente só com baixa, a comparação num período sem baixa, a aba Números com as desfeitas e o baixa_em sem consulta repetida; P23 coerente com a P22 já feita.",
+  "refs": [
+    "F3.173",
+    "IN-04",
+    "IN-07",
+    "FI-24",
+    "P23"
+  ]
+}

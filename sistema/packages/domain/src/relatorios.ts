@@ -4,7 +4,7 @@
 import { z } from "zod";
 import type { PessoaRef } from "./clientes.ts";
 import type { AreaDireito } from "./juridico.ts";
-import type { FormaPagamento, TipoLevantamento } from "./financeiro.ts";
+import type { FormaPagamento, MotivoBaixa, TipoLevantamento } from "./financeiro.ts";
 
 /** A área do relatório: a do caso ligado ao contrato, ou "Sem caso ligado". */
 export type AreaRelatorio = AreaDireito | "SEM_CASO";
@@ -32,6 +32,45 @@ export interface NumerosRelatorio {
 
 type Faixa = { valor: number; n: number };
 
+/**
+ * F3.173 (1101): o "Baixado sem receber" do período, pelo dia da baixa (Brasília). O número soma só
+ * as baixas de parcela perdoadas e por inadimplência; as desfeitas, a renegociada e as custas ficam
+ * ao lado, sem somar. Um desfazer conta no dia dele e não muda o período da baixa.
+ */
+export interface BaixadoRelatorio {
+  valor: number;
+  n: number;
+  porMotivo: { PERDOADA: number; INADIMPLENCIA: number };
+  desfeitas: Faixa;
+  renegociado: Faixa & { desfeitas: Faixa };
+  custas: Faixa & { desfeitas: Faixa };
+  /** O mesmo número no período de comparação; nulo quando não compara. */
+  anterior: number | null;
+  /** O escritório já teve alguma baixa sem receber (a folha só aparece aí). */
+  algum: boolean;
+}
+
+/** Um movimento da lista "Baixas sem receber no período" do relatório de um cliente. */
+export interface BaixaDoRelatorio {
+  id: string;
+  dia: string;
+  tipo: "BAIXA" | "DESFEITA";
+  motivo: MotivoBaixa;
+  /** As custas que tiveram baixa junto com a parcela. */
+  custas: boolean;
+  /** Entra no número (baixa de parcela perdoada ou por inadimplência). */
+  soma: boolean;
+  valor: number;
+  parcela: string;
+  por: PessoaRef;
+  /** O dia em que a baixa foi desfeita, quando foi (mesmo depois do período). */
+  desfeitaEm: string | null;
+  /** No desfazer, o dia da baixa que ele desfaz. */
+  baixaEm: string | null;
+  /** Só na baixa, e nunca para o cliente excluído. */
+  explicacao: string | null;
+}
+
 export interface ResumoRelatorio {
   periodo: PeriodoRelatorio;
   algum: boolean;
@@ -55,6 +94,8 @@ export interface ResumoRelatorio {
     entrou: number; n: number; porTipo: Partial<Record<TipoLevantamento, number>>; repassado: number; clientesRepassados: string[];
     honorarios: number; reembolso: number; outros: number; naConta: number;
   };
+  /** F3.173; ausente enquanto a 1101 não estiver no banco. */
+  baixado?: BaixadoRelatorio;
 }
 
 export interface ClienteRelatorio extends NumerosRelatorio {
@@ -66,6 +107,9 @@ export interface ClienteRelatorio extends NumerosRelatorio {
   areas: AreaRelatorio[];
   contratado: number;
   aparte: { tipo: TipoLevantamento; valor: number }[];
+  /** F3.173: o baixado sem receber do cliente no período (ausente sem a 1101). */
+  baixado?: number;
+  baixadoMotivos?: MotivoBaixa[];
 }
 export interface RelatorioClientes { periodo: PeriodoRelatorio; clientes: ClienteRelatorio[] }
 
@@ -76,7 +120,7 @@ export interface RelatorioCliente {
     valor: number; n: number; dias: number;
     mais: { descricao: string; vencimento: string; contrato: string; prox: { data: string; oque: string; responsavel: PessoaRef } | null };
   } | null;
-  numeros: NumerosRelatorio & { contratado: number; entrouAnterior: number | null };
+  numeros: NumerosRelatorio & { contratado: number; entrouAnterior: number | null; baixado?: number; baixadoDesfeitas?: number };
   contratos: {
     id: string; numero: string; objeto: string; estado: string; caso: { id: string; nome: string } | null; area: AreaRelatorio;
     entrou: number; falta: number; parcelasAbertas: number;
@@ -91,6 +135,8 @@ export interface RelatorioCliente {
   }[];
   adiantadas: { id: string; descricao: string; valor: number; pagaEm: string; reembolsadoEm: string | null; como: string }[];
   terceiros: { id: string; tipo: TipoLevantamento; valor: number; entrouEm: string; caso: string; repasse: { valor: number; feitoEm: string | null; prazo: string } | null }[];
+  /** F3.173: as baixas e os desfazer do período (ausente sem a 1101). */
+  baixas?: BaixaDoRelatorio[];
 }
 
 export interface AreaDoRelatorio extends NumerosRelatorio {
@@ -127,6 +173,11 @@ export interface DadosRelatorioExportado {
     area: AreaRelatorio; cliente: string; contrato: string | null; responsavel: string | null;
   }[];
   terceiros: { entrouEm: string; tipo: TipoLevantamento; valor: number; cliente: string; caso: string; repassado: number; honorarios: number }[];
+  /** F3.173: a aba "Baixas sem receber", sem a explicação (ausente sem a 1101). */
+  baixas?: {
+    dia: string; tipo: "BAIXA" | "DESFEITA"; motivo: MotivoBaixa; custas: boolean; soma: boolean; valor: number; desfeitaEm: string | null;
+    cliente: string; contrato: string; parcela: string; por: string;
+  }[];
 }
 
 const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);

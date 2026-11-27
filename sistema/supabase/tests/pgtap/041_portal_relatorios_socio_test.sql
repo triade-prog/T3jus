@@ -152,7 +152,8 @@ select is((select r -> 'terceiros' from rs),
 create temp table rc as select portal_relatorio_clientes(socia, rm) -> 'clientes' c from ids;
 select is((select (c -> 1) - 'id' from rc),
   '{"nome": "Hélio Batista Corrêa", "areas": ["CIVEL"], "falta": 200000, "aparte": [], "entrou": 100000, "rendeu": 51500, "inativo": false,
-    "vencido": 200000, "adiantado": 48500, "contratos": 1, "contratado": 300000, "responsaveis": ["Diego Almeida"]}'::jsonb,
+    "vencido": 200000, "adiantado": 48500, "contratos": 1, "contratado": 300000, "responsaveis": ["Diego Almeida"],
+    "baixado": 0, "baixadoMotivos": []}'::jsonb,
   'IN-15: cada cliente com contratado, entrou, falta, adiantado e rendeu');
 select is((select sum((x ->> 'entrou')::bigint) from rc, jsonb_array_elements(c) x), 490000::numeric, 'a soma por cliente fecha com o Entrou');
 select is((select x -> 'aparte' from rc, jsonb_array_elements(c) x where x ->> 'nome' = 'Benedito Souza Lima'),
@@ -161,8 +162,9 @@ select is((select x -> 'aparte' from rc, jsonb_array_elements(c) x where x ->> '
 -- Um cliente.
 create temp table um as select portal_relatorio_cliente(socia, rm, cli.hel) c from ids, cli;
 select is((select c -> 'numeros' from um),
-  '{"falta": 200000, "entrou": 100000, "rendeu": 51500, "vencido": 200000, "adiantado": 48500, "contratado": 300000, "entrouAnterior": 0}'::jsonb,
-  'o relatório de um cliente traz os quatro números e a comparação');
+  '{"falta": 200000, "entrou": 100000, "rendeu": 51500, "vencido": 200000, "adiantado": 48500, "contratado": 300000, "entrouAnterior": 0,
+    "baixado": 0, "baixadoDesfeitas": 0}'::jsonb,
+  'o relatório de um cliente traz os quatro números e a comparação (e o baixado sem receber da 1101, F3.173)');
 select is((select c -> 'atraso' ->> 'dias' from um), '39', 'o atraso mais antigo, em dias');
 select is((select jsonb_agg(e ->> 'dia') from um, jsonb_array_elements(c -> 'entradas') e), '["2026-09-12"]'::jsonb, 'o que entrou, pelo dia');
 select is((select c -> 'contratos' -> 0 -> 'caso' ->> 'nome' from um), 'Corrêa x Banco Sul', 'contratos com o caso e a área');
