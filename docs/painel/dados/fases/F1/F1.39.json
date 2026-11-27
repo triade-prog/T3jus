@@ -1,0 +1,11 @@
+{
+  "id": "F1.39",
+  "texto": "A assistente do WhatsApp e as automações param depois do teste sem assinatura (depende da ligação com a Meta, F3.58)",
+  "peca": "B3",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.69,
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+}

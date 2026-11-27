@@ -1,0 +1,11 @@
+{
+  "id": "F1.31",
+  "texto": "Teste grátis no servidor: o dia 1 no primeiro acesso do sócio, a trava do dia 8, a repetição, a prorrogação e a dispensa, com a chave desligada (migration 1160, parte do teste)",
+  "peca": "C4",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.61,
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+}

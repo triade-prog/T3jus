@@ -1,0 +1,11 @@
+{
+  "id": "D42",
+  "texto": "Desenho do teste grátis de 7 dias no Console (carteira, quadro do teste na Assinatura, prorrogar, liberar, dispensar, confirmar a assinatura, sino) e no Portal (faixas do teste e do 8º dia, \"Quero assinar\", boas-vindas, Plano e faturas antes da assinatura, sino, e-mails)",
+  "peca": "C4",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "andamento",
+  "ordem": 92,
+  "proximo": "Especialista de frontend desenha; depois a Carol aprova (CO-09)."
+}
