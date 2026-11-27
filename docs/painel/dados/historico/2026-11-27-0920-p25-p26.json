@@ -1,0 +1,15 @@
+{
+  "data": "27/11/2026",
+  "inicio": "09:20",
+  "fim": "09:30",
+  "texto": "P25 e P26 feitas: 1130 a 1133 (F3.180, F3.187, F3.193) e 1135 a 1136 (F3.179) no Supabase, com o ok da Carol; 1130 e 1131 pelo apply_migration, as outras coladas por ela no SQL Editor; conferidos gatilhos, funções e inventário.",
+  "refs": [
+    "P25",
+    "P26",
+    "F3.179",
+    "F3.180",
+    "F3.187",
+    "F3.193",
+    "PT-11"
+  ]
+}
