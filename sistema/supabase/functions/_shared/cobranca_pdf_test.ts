@@ -2,8 +2,8 @@
 // aprovado, sem códigos depois de paga ou cancelada, e os marcadores "A DEFINIR" só sem emissor.
 import { assertEquals, assertRejects } from "@std/assert";
 import { PDFDocument } from "pdf-lib";
-import { arquivoCarne, arquivoDoc, identificadorParcela, numeroDoc, pdfDaFatura, pdfDoCarne, pdfDoReciboDaFatura } from "./cobranca_pdf.ts";
-import { BASE, CARNE, CARNES, ESTADOS } from "./cobranca_pdf_exemplos.ts";
+import { arquivoCarne, arquivoDoc, faixasEmTexto, identificadorParcela, numeroDoc, pdfDaFatura, pdfDoCarne, pdfDoReciboDaFatura } from "./cobranca_pdf.ts";
+import { BASE, CARNE, CARNE_DESCONTO, CARNES, ESTADOS } from "./cobranca_pdf_exemplos.ts";
 
 Deno.test("F1.21: a fatura sai numa página A4 em cada estado do desenho", async () => {
   for (const [nome, d] of Object.entries(ESTADOS)) {
@@ -40,4 +40,13 @@ Deno.test("F1.21: o carnê sai com a capa e as 12 parcelas em 5 folhas A4, em ca
 Deno.test("F1.21: o identificador da parcela e o nome do arquivo do carnê", () => {
   assertEquals(identificadorParcela("2026/2027", 3), "C20262027P03");
   assertEquals(arquivoCarne(CARNE), "carne-2026-2027.pdf");
+});
+
+Deno.test("F1.29 (CO-10): a capa do carnê diz as faixas; sem faixas, o valor único", () => {
+  assertEquals(faixasEmTexto(CARNE_DESCONTO.faixas, 12, 39920), "3 × R$ 399,20 e 9 × R$ 499,00");
+  assertEquals(faixasEmTexto(undefined, 12, 49000), "12 × R$ 490,00");
+  assertEquals(
+    faixasEmTexto([{ de: "a", ate: "a", quantidade: 1, valorCentavos: 39920 }, { de: "b", ate: "b", quantidade: 1, valorCentavos: 46820 }, { de: "c", ate: "c", quantidade: 10, valorCentavos: 56800 }], 12, 0),
+    "1 × R$ 399,20, 1 × R$ 468,20 e 10 × R$ 568,00",
+  );
 });

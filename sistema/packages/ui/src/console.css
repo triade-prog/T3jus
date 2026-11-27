@@ -2141,6 +2141,45 @@
   .co .cb-parcela-faixa{padding:14px 16px}
   .co .cb-parcela-faixa .acoes .btn{flex:1 1 100%}
 }
+/* D41 (CO-10): o valor de cada canhoto, o selo do desconto de entrada, as faixas, as prévias e a troca pelo desconto. */
+.co .cb-parcelas-valor{grid-template-columns:repeat(4,minmax(0,1fr))}
+.co .cb-parc .cb-parc-valor{font-family:var(--serifa);font-size:16px;font-weight:500;color:var(--texto);font-variant-numeric:lining-nums tabular-nums;margin-top:2px;line-height:1.2}
+.co .cb-selo-desc{display:inline-flex;align-items:flex-start;gap:4px;margin-top:3px;padding:2px 7px 2px 5px;border-radius:8px;background:var(--ambar-3);color:var(--vinho-escuro);font-size:11px;font-weight:500;line-height:1.3;width:fit-content;max-width:100%;white-space:normal}
+.co .cb-selo-desc>span{min-width:0}
+.co .cb-selo-desc .ico{width:13px;height:13px;flex:none;margin-top:1px}
+.co .cb-parc-paga .cb-selo-desc,.co .cb-parc-cancelada .cb-selo-desc{background:var(--papel)}
+.co .cb-parc-cancelada .cb-parc-valor{text-decoration:line-through;color:var(--texto-2)}
+.co .cb-parc-fora{display:grid;gap:2px;align-content:center;padding:9px 12px 10px;border-radius:10px;border:1px dashed var(--vinho-4);background:repeating-linear-gradient(135deg,var(--sal-2) 0 6px,var(--papel) 6px 12px);font-size:12px;color:var(--texto-2);min-width:0}
+.co .cb-parc-fora b{font-size:13px;font-weight:500;color:var(--texto)}
+.co .cb-faixas{padding:0 24px 14px;display:grid;gap:8px}
+.co .cb-tira{display:flex;gap:3px;height:10px;border-radius:5px;overflow:hidden}
+.co .cb-tira i{display:block;height:100%;background:var(--vinho-2)}
+.co .cb-tira i.cb-com{background:var(--ambar)}
+.co .cb-legenda{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px}
+.co .cb-legenda li{display:flex;align-items:baseline;gap:8px;min-width:0}
+.co .cb-legenda li::before{content:"";flex:none;width:12px;height:12px;border-radius:3px;background:var(--vinho-2);transform:translateY(1px)}
+.co .cb-legenda li.cb-com::before{background:var(--ambar)}
+.co .cb-legenda b{font-weight:600;font-variant-numeric:lining-nums tabular-nums}
+.co .cb-legenda span{color:var(--texto-2)}
+.co .cb-nota-carne{margin:0 24px 14px;display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5}
+.co .cb-nota-carne>.ico{width:18px;height:18px;flex:none;color:var(--vinho-2);margin-top:1px}
+.co .cb-selo-subst{background:var(--sal-2);color:var(--texto-2);box-shadow:inset 0 0 0 1px var(--vinho-4);vertical-align:3px;margin-left:8px}
+.co .cb-previa{grid-column:1/-1;border:1px solid var(--borda-folha);border-radius:var(--raio);padding:14px 16px;display:grid;gap:10px;background:var(--papel)}
+.co .cb-previa h3{margin:0;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--texto)}
+.co .cb-previa p{margin:0;font-size:13px}
+.co .cb-previa .cb-faixas{padding:0}
+.co .cb-mudam{list-style:none;margin:0;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:6px;font-size:13px}
+.co .cb-mudam li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:4px 10px;align-items:baseline}
+.co .cb-mudam li b{font-weight:600;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.co .cb-mudam li s{color:var(--texto-2);font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.co .cb-mudam .ico{width:14px;height:14px;color:var(--texto-2)}
+.co .cb-mudam li.cb-cab{font-size:12px;color:var(--texto-2)}
+.co .cb-motivo-srv{margin:0;padding:10px 14px;border-left:3px solid var(--ambar);background:var(--sal-2);border-radius:0 var(--raio) var(--raio) 0;font-size:13px}
+.co .cb-motivo-srv b{font-weight:600}
+.co .cb-compara-planos .cb-fx{font-weight:600;font-variant-numeric:lining-nums tabular-nums;color:var(--texto)}
+.co .cb-ajuda-desc{grid-column:1/-1;margin:-6px 0 0}
+.co .cb-itens .cb-motivo-item{font-style:italic;color:var(--texto)}
+@media (max-width:760px){.co .cb-parcelas-valor{grid-template-columns:repeat(2,minmax(0,1fr))}.co .cb-parc .cb-parc-valor{font-size:15px}.co .cb-faixas{padding:0 16px 12px}.co .cb-nota-carne{margin:0 16px 12px}.co .cb-legenda{flex-direction:column}.co .cb-mudam li{grid-template-columns:minmax(0,1fr) auto}.co .cb-mudam li .ico,.co .cb-mudam li s,.co .cb-mudam li.cb-cab{display:none}}
 .co-cobranca .grade{grid-template-columns:minmax(0,1fr) 340px;align-items:start}
 .co .cb-fat-cab{position:relative;overflow:hidden;isolation:isolate}
 .co .cb-fat-cab .estatua{position:absolute;right:40px;bottom:-30px;width:250px;height:250px;color:var(--vinho-2);z-index:-1;stroke-width:1.1}

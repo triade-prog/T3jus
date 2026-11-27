@@ -9,7 +9,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { CONTATO_T3JUS, mesPorExtenso } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
-import { Carregando, Estado, Janela } from "../console/pecas.tsx";
+import { Aviso, Carregando, Estado, Janela } from "../console/pecas.tsx";
 import { brl, competenciaCurta, dataBr, detalheFatura, type CarneCb, type FaturaCb } from "../console/cobranca.ts";
 import {
   BotaoBaixarDoc, CodigosPagamento, FolhaCarne, SeloFatura, SituacaoDoc, useBaixarDoc, type BaixarDoc, type PagamentoCb,
@@ -63,6 +63,11 @@ export interface PlanoFaturasPortal {
   documentos?: boolean;
   /** O carnê em PDF já sai: o meio de pagamento está ligado e os dados do T3jus, completos. */
   carnePdf?: boolean;
+  /**
+   * Os carnês substituídos (1171; D41, pergunta 2): à vista até a última parcela válida ser paga
+   * ou por 60 dias da troca; depois, em "Carnês anteriores", fechado.
+   */
+  carnesAnteriores?: (CarneCb & { aVista: boolean; substituidoPor: string | null })[];
 }
 
 /** Quem baixa o PDF da fatura e o recibo; null enquanto eles ainda não saem. */
@@ -488,8 +493,16 @@ export function PlanoEFaturas() {
         </div>
         <LadoDaFatura d={d} abertas={abertas} aoPagar={setPagar} nota={nota} />
       </div>
-      {carnes.map((c) => (
+      {carnes.map((c) => {
+        // O aviso de carnê trocado (D41, estado 13), em palavras simples: o motivo da troca é da equipe.
+        const trocado = (d.carnesAnteriores ?? []).find((x) => x.aVista && x.substituidoPor === c.numero && x.substituidoEm);
+        return (
         <FolhaCarne key={c.id} carne={c} classe="cb-carne-pt" nivel={3} titulo={`Seu carnê ${c.numero}`}
+          aviso={trocado ? (
+            <Aviso tom="info" icone="trocar" titulo={`Seu carnê mudou em ${dataBr(trocado.substituidoEm!)}: use o carnê ${c.numero} a partir de ${mesPorExtenso(c.primeiraCompetencia)}.`}>
+              As parcelas que faltavam do carnê {trocado.numero} foram canceladas e não devem ser pagas. Pode descartar essas páginas. O que já foi pago continua pago.
+            </Aviso>
+          ) : undefined}
           acoes={doc && d.carnePdf ? (
             <>
               <BotaoBaixarDoc doc={doc} chave={`carne-${c.id}`} caminho={`/v1/escritorio/assinatura/carnes/${c.id}/pdf`} rotulo="Baixar o carnê (PDF)" />
@@ -501,8 +514,23 @@ export function PlanoEFaturas() {
               Baixar o carnê (PDF)
             </button>
           )}
-          rodape="Cada parcela tem o próprio Pix e boleto. A fatura de cada mês sai 20 dias antes do vencimento, com os mesmos códigos da parcela." />
+          rodape="Cada parcela é a fatura do mês. Pode pagar qualquer parcela antes do vencimento, pelo Pix ou pelo boleto da página. Perdeu o carnê? Baixe de novo aqui." />
+        );
+      })}
+      {(d.carnesAnteriores ?? []).filter((c) => c.aVista).map((c) => (
+        <CarneAnterior key={c.id} c={c} doc={doc && d.carnePdf ? doc : null} />
       ))}
+      {(d.carnesAnteriores ?? []).some((c) => !c.aVista) ? (
+        <details className="cb-anteriores">
+          <summary>
+            <Icone nome="carne" className="ico" />
+            Carnês anteriores ({(d.carnesAnteriores ?? []).filter((c) => !c.aVista).length})
+          </summary>
+          {(d.carnesAnteriores ?? []).filter((c) => !c.aVista).map((c) => (
+            <CarneAnterior key={c.id} c={c} doc={doc && d.carnePdf ? doc : null} />
+          ))}
+        </details>
+      ) : null}
       <h3 className="sr">Faturas</h3>
       <ListaFaturas faturas={d.faturas} hoje={d.hoje} aoPagar={(f) => setPagar(f as FaturaPortal)} nota={nota} />
       {doc && chaveLista && daLista ? (
@@ -524,5 +552,25 @@ export function PlanoEFaturas() {
       <JanelaPagar f={pagar} aoFechar={() => setPagar(null)} />
     </Folha>
     </Docs.Provider>
+  );
+}
+
+/** Um carnê substituído, para consulta: as canceladas aparecem riscadas e o PDF diz "Não pague". */
+function CarneAnterior({ c, doc }: { c: CarneCb & { substituidoPor: string | null }; doc: BaixarDoc | null }) {
+  return (
+    <FolhaCarne carne={c} classe="cb-carne-pt" nivel={3} titulo={`Carnê ${c.numero}`}
+      selo={
+        <span className="selo cb-selo-subst">
+          <Icone nome="trocar" className="ico" />
+          Substituído
+        </span>
+      }
+      acoes={doc ? (
+        <>
+          <BotaoBaixarDoc doc={doc} chave={`carne-${c.id}`} caminho={`/v1/escritorio/assinatura/carnes/${c.id}/pdf`} rotulo="Baixar este carnê (PDF)" />
+          <SituacaoDoc doc={doc} chave={`carne-${c.id}`} de={`do carnê ${c.numero}`} nadaMudou="Nada mudou no carnê." contato={CONTATO_T3JUS} />
+        </>
+      ) : undefined}
+      rodape={`Substituído${c.substituidoEm ? ` em ${dataBr(c.substituidoEm)}` : ""}${c.substituidoPor ? ` pelo carnê ${c.substituidoPor}` : ""}. As parcelas canceladas não devem ser pagas; ficam aqui só para consulta.`} />
   );
 }

@@ -4,11 +4,11 @@
 // folha do carnê. O Pix e o boleto são um lugar reservado até o meio de pagamento ser escolhido.
 
 import { useId, useState, type CSSProperties, type ReactNode } from "react";
-import { FORMAS_ASSINATURA, mesPorExtenso } from "@t3jus/domain";
+import { FORMAS_ASSINATURA, mesPorExtenso, textoFaixas } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
 import {
   brl, competenciaCurta, dataBr, detalheFatura, diaMes, FORMA_ICONE, PASSO_REGUA, porDia, seloFatura, textoEvento,
-  type CarneCb, type EventoCb, type FaturaCb,
+  faixasDoCarneCb, type CarneCb, type EventoCb, type FaixaCb, type FaturaCb, type ParcelaCb,
 } from "./cobranca.ts";
 import { Aviso } from "./pecas.tsx";
 import { hora } from "./tempo.ts";
@@ -379,26 +379,92 @@ const SIT_PARCELA = {
   CANCELADA: { icone: "xis", texto: "Cancelada" },
 } as const;
 
-/** A folha do carnê: o resumo, as parcelas como canhotos e as ações (desenho, decisão 17). */
-export function FolhaCarne({ carne, aviso, acoes, rodape, classe = "folha", titulo, nivel = 2 }: {
+/** "dez/2026" a partir da competência. */
+const mesCurto = (c: string) => competenciaCurta(c).replace(/^(\w{3})\w*/, "$1");
+
+/** O mês seguinte ("2027-02-01" depois de "2027-01-01"). */
+function mesSeguinte(c: string): string {
+  const [a, m] = c.split("-").map(Number);
+  const t = (a ?? 2026) * 12 + (m ?? 1);
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}-01`;
+}
+
+/**
+ * As faixas do carnê (D41): a tira, só decorativa, e a legenda em texto, de que parcela a que
+ * parcela, quanto e por quê. Com um valor só, nada aparece (o subtítulo já diz).
+ */
+export function FaixasCarne({ faixas, parcelas, rotulo }: { faixas: FaixaCb[]; parcelas?: ParcelaCb[]; rotulo: string }) {
+  if (faixas.length < 2) return null;
+  let n = 0;
+  const linhas = faixas.map((f) => {
+    const de = n + 1;
+    n += f.quantidade;
+    const desc = parcelas ? parcelas.some((p) => p.competencia >= f.de && p.competencia <= f.ate && (p.descontoCentavos ?? 0) > 0) : false;
+    return { f, de, ate: n, desc };
+  });
+  return (
+    <div className="cb-faixas">
+      <div className="cb-tira" aria-hidden="true">
+        {linhas.map(({ f, desc }) => (
+          <i key={f.de} className={desc ? "cb-com" : undefined} style={{ flex: f.quantidade }} />
+        ))}
+      </div>
+      <ul className="cb-legenda" aria-label={rotulo}>
+        {linhas.map(({ f, de, ate, desc }) => (
+          <li key={f.de} className={desc ? "cb-com" : undefined}>
+            <b>
+              {f.quantidade} × {brl(f.valorCentavos)}
+            </b>
+            <span>
+              {f.quantidade === 1 ? `Parcela ${de}` : `Parcelas ${de} a ${ate}`} · {f.quantidade === 1 ? mesCurto(f.de) : `${mesCurto(f.de)} a ${mesCurto(f.ate)}`}
+              {parcelas ? ` · ${desc ? "com o desconto de entrada" : "valor cheio"}` : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** O selo do canhoto com desconto: ícone e texto, nunca só a cor (D41, pergunta 1). */
+export function SeloDesconto() {
+  return (
+    <span className="cb-selo-desc">
+      <Icone nome="desconto" className="ico" />
+      <span>com desconto de entrada</span>
+    </span>
+  );
+}
+
+/**
+ * A folha do carnê: o resumo, as faixas, as parcelas como canhotos, cada uma com o seu valor e o
+ * selo do desconto de entrada, e as ações (desenho console-cobranca, decisão 17; D41).
+ */
+export function FolhaCarne({ carne, aviso, nota, acoes, rodape, classe = "folha", titulo, nivel = 2, selo }: {
   carne: CarneCb;
   /** "Seu carnê 2026/2027" no Portal; no Console, "Carnê 2026/2027". */
   titulo?: string;
   /** No Portal, a folha do carnê fica dentro de "Plano e faturas" e o título é h3. */
   nivel?: 2 | 3;
   aviso?: ReactNode;
+  /** Uma nota curta sob o cabeçalho (ex.: o mês pulado por já ter fatura). */
+  nota?: ReactNode;
   acoes?: ReactNode;
   rodape: string;
   classe?: string;
+  /** Selo ao lado do título (ex.: "Substituído"). */
+  selo?: ReactNode;
 }) {
   const ids = useId();
   const T = `h${nivel}` as const;
-  const validas = carne.itens.filter((p) => p.situacao !== "CANCELADA");
+  const itens = [...carne.itens].sort((a, b) => a.numero - b.numero);
+  const validas = itens.filter((p) => p.situacao !== "CANCELADA");
   const pagas = validas.filter((p) => p.situacao === "PAGA");
   const falta = validas.length - pagas.length;
   const proxima = validas.find((p) => p.situacao === "A_VENCER");
   const somaPagas = pagas.reduce((s, p) => s + p.valorCentavos, 0);
   const somaFalta = validas.reduce((s, p) => s + p.valorCentavos, 0) - somaPagas;
+  const faixas = faixasDoCarneCb(carne);
   return (
     <section className={`${classe} cb-carne`} aria-labelledby={`${ids}-t`}>
       <div className="folha-cab">
@@ -406,14 +472,21 @@ export function FolhaCarne({ carne, aviso, acoes, rodape, classe = "folha", titu
           <T id={`${ids}-t`} className={nivel === 3 ? "cb-h3-carne" : undefined}>
             <Icone nome="carne" className="ico" />
             {titulo ?? `Carnê ${carne.numero}`}
+            {selo}
           </T>
           <p className="sub">
-            {carne.parcelas} parcelas de {brl(carne.valorParcelaCentavos)} · {mesPorExtenso(carne.primeiraCompetencia)} a {mesPorExtenso(carne.ultimaCompetencia)} · todo
-            dia {carne.diaVencimento} · gerado em {dataBr(carne.geradoEm)}
+            {textoFaixas(faixas)} · {mesPorExtenso(carne.primeiraCompetencia)} a {mesPorExtenso(carne.ultimaCompetencia)} · todo dia {carne.diaVencimento} · gerado em{" "}
+            {dataBr(carne.geradoEm)}
           </p>
         </div>
       </div>
       {aviso ? <div style={{ padding: "0 24px 14px" }}>{aviso}</div> : null}
+      {nota ? (
+        <p className="cb-nota-carne">
+          <Icone nome="ajuda" className="ico" />
+          <span>{nota}</span>
+        </p>
+      ) : null}
       <div className="cb-carne-res">
         <dl>
           <div>
@@ -437,31 +510,47 @@ export function FolhaCarne({ carne, aviso, acoes, rodape, classe = "folha", titu
           <i style={{ width: `${validas.length ? Math.round((pagas.length * 100) / validas.length) : 0}%` }} />
         </div>
       </div>
-      <ol className="cb-parcelas" aria-label={`Parcelas do carnê ${carne.numero}`}>
-        {carne.itens.map((p) => {
+      <FaixasCarne faixas={faixas} parcelas={itens} rotulo={`Faixas do carnê ${carne.numero}`} />
+      <ol className="cb-parcelas cb-parcelas-valor" aria-label={`Parcelas do carnê ${carne.numero}`}>
+        {itens.map((p, i) => {
           const chave = p.situacao === "PAGA" ? "PAGA" : p.situacao === "CANCELADA" ? "CANCELADA" : p.emAtraso ? "ATRASO" : p.id === proxima?.id ? "PROXIMA" : "A_VENCER";
           const s = SIT_PARCELA[chave];
           const cls = chave === "PAGA" ? "paga" : chave === "CANCELADA" ? "cancelada" : chave === "PROXIMA" || chave === "ATRASO" ? "proxima" : "avencer";
           const nota = chave === "PAGA" && p.pagaEm ? `em ${diaMes(p.pagaEm)}` : chave === "PROXIMA" && p.faturaId ? "fatura emitida" : "";
-          return (
+          const desc = p.descontoCentavos ?? 0;
+          // O mês que o carnê pulou por já ter fatura (paga adiantada noutro carnê; D41, estado 3).
+          const seguinte = itens[i + 1];
+          const pulou = seguinte && seguinte.competencia !== mesSeguinte(p.competencia) ? mesSeguinte(p.competencia) : null;
+          return [
             <li key={p.id} className={`cb-parc cb-parc-${cls}`} aria-current={chave === "PROXIMA" ? "step" : undefined}>
               <b>
                 {p.numero}
                 <small>de {carne.parcelas}</small>
               </b>
-              <span className="cb-parc-mes">{competenciaCurta(p.competencia).replace(/^(\w{3})\w*/, "$1")}</span>
-              <span>vence {diaMes(p.vencimento)}</span>
+              <span className="cb-parc-mes">{mesCurto(p.competencia)}</span>
+              <span aria-hidden="true">vence {diaMes(p.vencimento)}</span>
+              <span className="cb-parc-valor" aria-hidden="true">
+                {brl(p.valorCentavos)}
+              </span>
+              {desc > 0 ? <SeloDesconto /> : null}
               <span className="cb-parc-sit">
                 <Icone nome={s.icone} className="ico" />
                 {s.texto}
               </span>
               {nota && chave === "PAGA" ? <span className="cb-parc-nota">{nota}</span> : null}
               <span className="sr">
-                , vencimento {dataBr(p.vencimento)}
+                , vencimento {dataBr(p.vencimento)}, {brl(p.valorCentavos)}
+                {desc > 0 ? `, com ${brl(desc)} de desconto de entrada` : ""}
                 {nota ? `, ${nota}` : ""}
               </span>
-            </li>
-          );
+            </li>,
+            pulou ? (
+              <li key={`${p.id}-fora`} className="cb-parc-fora">
+                <b>{mesCurto(pulou)}</b>
+                <span>fora deste carnê · já tem fatura</span>
+              </li>
+            ) : null,
+          ];
         })}
       </ol>
       {acoes ? <div className="cb-carne-acoes">{acoes}</div> : null}
