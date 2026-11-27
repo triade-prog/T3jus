@@ -1,0 +1,11 @@
+{
+  "id": "F1.47",
+  "texto": "Telas do Console e PDF da fatura e do recibo com a implantação",
+  "peca": "C2",
+  "refs": [
+    "CO-08"
+  ],
+  "status": "pendente",
+  "ordem": 67.85,
+  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14."
+}

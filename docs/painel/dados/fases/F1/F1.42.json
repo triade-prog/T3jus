@@ -1,0 +1,12 @@
+{
+  "id": "F1.42",
+  "texto": "Regra global da implantação no servidor (valor, condição padrão, data de corte, prazo de 30 dias) e a implantação congelada por escritório (migration 1180)",
+  "peca": "C2",
+  "refs": [
+    "CO-08"
+  ],
+  "status": "pendente",
+  "ordem": 67.8,
+  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14. Só depois da 1160 do CO-09 aplicada.",
+  "proximo": "Programar a regra e a implantação congelada (1180) depois da 1160 do CO-09 aplicada (CO-08)."
+}

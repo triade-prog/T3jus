@@ -1,0 +1,11 @@
+{
+  "id": "F1.45",
+  "texto": "Treinos por pessoa, quem da equipe acompanha e a situação calculada no servidor (migration 1183)",
+  "peca": "C2",
+  "refs": [
+    "CO-08"
+  ],
+  "status": "pendente",
+  "ordem": 67.83,
+  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14."
+}

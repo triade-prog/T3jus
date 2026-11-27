@@ -1,0 +1,206 @@
+[
+ {
+  "nome": "im-aberta",
+  "url": "ficha.html?aba=implantacao&estado=im-aberta"
+ },
+ {
+  "nome": "im-perto",
+  "url": "ficha.html?aba=implantacao&estado=im-perto"
+ },
+ {
+  "nome": "im-hoje",
+  "url": "ficha.html?aba=implantacao&estado=im-hoje"
+ },
+ {
+  "nome": "im-passou",
+  "url": "ficha.html?aba=implantacao&estado=im-passou"
+ },
+ {
+  "nome": "im-registrar",
+  "url": "ficha.html?aba=implantacao&estado=im-registrar"
+ },
+ {
+  "nome": "im-registrar-erros",
+  "url": "ficha.html?aba=implantacao&estado=im-registrar-erros"
+ },
+ {
+  "nome": "im-desfazer",
+  "url": "ficha.html?aba=implantacao&estado=im-desfazer"
+ },
+ {
+  "nome": "im-trocar",
+  "url": "ficha.html?aba=implantacao&estado=im-trocar"
+ },
+ {
+  "nome": "im-prazo",
+  "url": "ficha.html?aba=implantacao&estado=im-prazo"
+ },
+ {
+  "nome": "im-pronta",
+  "url": "ficha.html?aba=implantacao&estado=im-pronta"
+ },
+ {
+  "nome": "im-concluir",
+  "url": "ficha.html?aba=implantacao&estado=im-concluir"
+ },
+ {
+  "nome": "im-concluir-co09",
+  "url": "ficha.html?aba=implantacao&estado=im-concluir-co09"
+ },
+ {
+  "nome": "im-concluir-conflito",
+  "url": "ficha.html?aba=implantacao&estado=im-concluir-conflito"
+ },
+ {
+  "nome": "im-concluida",
+  "url": "ficha.html?aba=implantacao&estado=im-concluida"
+ },
+ {
+  "nome": "im-cancelada",
+  "url": "ficha.html?aba=implantacao&estado=im-cancelada"
+ },
+ {
+  "nome": "im-financeiro",
+  "url": "ficha.html?aba=implantacao&estado=im-aberta&papel=financeiro"
+ },
+ {
+  "nome": "im-suporte",
+  "url": "ficha.html?aba=implantacao&estado=im-aberta&papel=suporte"
+ },
+ {
+  "nome": "im-carregando",
+  "url": "ficha.html?aba=implantacao&estado=im-carregando"
+ },
+ {
+  "nome": "im-erro",
+  "url": "ficha.html?aba=implantacao&estado=im-erro"
+ },
+ {
+  "nome": "im-sem-permissao",
+  "url": "ficha.html?aba=implantacao&estado=im-sem-permissao"
+ },
+ {
+  "nome": "im-regra",
+  "url": "cobranca.html?aba=planos&estado=im-regra"
+ },
+ {
+  "nome": "im-regra-editar",
+  "url": "cobranca.html?aba=planos&estado=im-regra-editar"
+ },
+ {
+  "nome": "im-regra-cobrada",
+  "url": "cobranca.html?aba=planos&estado=im-regra-cobrada"
+ },
+ {
+  "nome": "im-regra-erros",
+  "url": "cobranca.html?aba=planos&estado=im-regra-erros"
+ },
+ {
+  "nome": "im-regra-financeiro",
+  "url": "cobranca.html?aba=planos&estado=im-regra&papel=financeiro"
+ },
+ {
+  "nome": "im-ass-isenta",
+  "url": "ficha.html?aba=assinatura&estado=im-ass-isenta"
+ },
+ {
+  "nome": "im-ass-faturada",
+  "url": "ficha.html?aba=assinatura&estado=im-ass-faturada"
+ },
+ {
+  "nome": "im-ass-cobrada",
+  "url": "ficha.html?aba=assinatura&estado=im-ass-cobrada"
+ },
+ {
+  "nome": "im-ass-carne-recusa",
+  "url": "ficha.html?aba=assinatura&estado=im-ass-carne-recusa"
+ },
+ {
+  "nome": "im-ass-salvar-carne",
+  "url": "ficha.html?aba=assinatura&estado=im-ass-salvar-carne"
+ },
+ {
+  "nome": "im-ass-suporte",
+  "url": "ficha.html?aba=assinatura&estado=im-ass-isenta&papel=suporte"
+ },
+ {
+  "nome": "im-fatura-isenta",
+  "url": "cobranca.html?aba=fatura&estado=im-fatura-isenta"
+ },
+ {
+  "nome": "im-fatura-cobrada",
+  "url": "cobranca.html?aba=fatura&estado=im-fatura-cobrada"
+ },
+ {
+  "nome": "pdf-fatura-isenta",
+  "url": "fatura-a4.html?estado=im-isenta"
+ },
+ {
+  "nome": "pdf-fatura-cobrada",
+  "url": "fatura-a4.html?estado=im-cobrada"
+ },
+ {
+  "nome": "pdf-recibo-isenta",
+  "url": "recibo-a4.html?estado=im-isenta"
+ },
+ {
+  "nome": "im-sino",
+  "url": "ficha.html?aba=implantacao&estado=im-sino&sino=im-prazos"
+ },
+ {
+  "nome": "im-sino-rafael",
+  "url": "ficha.html?aba=implantacao&estado=im-sino&sino=im-rafael&papel=implantacao"
+ },
+ {
+  "nome": "im-sino-isencao",
+  "url": "cobranca.html?aba=planos&estado=im-sino&sino=im-isencao"
+ },
+ {
+  "nome": "im-contrato",
+  "url": "ficha.html?aba=contrato&estado=im-contrato"
+ },
+ {
+  "nome": "pt-impl",
+  "url": "portal-escritorio.html?estado=pt-impl"
+ },
+ {
+  "nome": "pt-impl-concluida",
+  "url": "portal-escritorio.html?estado=pt-impl-concluida"
+ },
+ {
+  "nome": "pt-impl-erro",
+  "url": "portal-escritorio.html?estado=pt-impl-erro"
+ },
+ {
+  "nome": "pt-inicio-socia",
+  "url": "portal-inicio.html?estado=pt-inicio-socia"
+ },
+ {
+  "nome": "pt-inicio-sem-treino",
+  "url": "portal-inicio.html?estado=pt-inicio-sem-treino"
+ },
+ {
+  "nome": "pt-inicio-treinada",
+  "url": "portal-inicio.html?estado=pt-inicio-treinada"
+ },
+ {
+  "nome": "pt-plano-isenta",
+  "url": "portal-escritorio.html?estado=pt-plano-isenta"
+ },
+ {
+  "nome": "pt-plano-pagar",
+  "url": "portal-escritorio.html?estado=pt-plano-pagar"
+ },
+ {
+  "nome": "pt-plano-cobrada",
+  "url": "portal-escritorio.html?estado=pt-plano-cobrada"
+ },
+ {
+  "nome": "pt-assinar",
+  "url": "portal-escritorio.html?estado=pt-assinar"
+ },
+ {
+  "nome": "pt-assinar-cobrada",
+  "url": "portal-escritorio.html?estado=pt-assinar-cobrada"
+ }
+]

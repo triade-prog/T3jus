@@ -1,0 +1,12 @@
+{
+  "id": "F1.44",
+  "texto": "Linhas da implantação e da isenção na 1ª fatura, atrás da chave implantacao_na_fatura, cobrança à vista pronta e carnê com implantação cobrada recusado (migration 1182)",
+  "peca": "C1",
+  "refs": [
+    "CO-08",
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67.82,
+  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14. Parte da cobranca_emitir da 1170 (CO-10), que precisa estar aplicada."
+}

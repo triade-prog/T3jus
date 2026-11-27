@@ -1,0 +1,11 @@
+{
+  "id": "F1.49",
+  "texto": "Pendente da implantação assistida: parcelar a implantação cobrada; implantação cobrada no carnê; uso do Portal por pessoa; contatos de acompanhamento; checklist marcado à mão; passagem automática para Ativo no fim do prazo; selo e filtro do prazo na carteira; isentar ou cobrar um escritório só",
+  "peca": "C2",
+  "refs": [
+    "CO-08"
+  ],
+  "status": "pendente",
+  "ordem": 67.87,
+  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14."
+}

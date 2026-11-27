@@ -1,0 +1,12 @@
+{
+  "id": "F1.43",
+  "texto": "Abertura da implantação no primeiro acesso do sócio, conclusão no Ativo, cancelamento no fim do contrato, reabertura e escritórios que já existem (migration 1181)",
+  "peca": "C2",
+  "refs": [
+    "CO-08",
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 67.81,
+  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14."
+}
