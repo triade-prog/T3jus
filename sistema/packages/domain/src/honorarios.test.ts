@@ -50,4 +50,11 @@ describe("condições de honorário (CH-06)", () => {
     expect(leituraCondicao({ tipo: "RECORRENTE", percentual: 3000, sobre: "Benefício mensal do cliente", etapa: "Benefício implantado", primeiro: null, dia: 10, meses: 12, diaLembrete: 5, quemLembrete: null, pedirWhats: false }).complemento)
       .toBe("do benefício mensal do cliente, por 12 meses");
   });
+
+  it("lê o sobre apagado a pedido do titular (F3.179, PT-11)", () => {
+    expect(leituraCondicao({ tipo: "EXITO", percentual: 3000, sobre: "Base apagada a pedido do titular", etapa: "Sentença", dias: 15 }).complemento)
+      .toBe("da base apagada a pedido do titular");
+    expect(textoGera({ tipo: "EXITO", percentual: 3000, sobre: "Base apagada a pedido do titular", etapa: "Sentença", dias: 15 }))
+      .toMatch(/^30% da base apagada a pedido do titular, /);
+  });
 });
