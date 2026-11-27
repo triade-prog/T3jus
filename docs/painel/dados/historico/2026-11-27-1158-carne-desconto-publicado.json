@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "11:58",
+  "fim": "12:05",
+  "texto": "Carnê com desconto de entrada no servidor: api-console v20 e api-portal v48 publicadas no 03594c0b (main com o PR #231), com a 1171 aplicada; P32 feito. As telas novas entram no ar quando a Vercel publicar a main.",
+  "refs": [
+    "P32",
+    "F1.29",
+    "CO-10"
+  ]
+}
