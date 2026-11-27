@@ -1,0 +1,11 @@
+{
+  "id": "F2.10",
+  "texto": "Catálogo do Console com os preços reais antes de publicar a página de preços: Essencial R$ 299, Escritório R$ 499, Banca R$ 749 e pessoa a mais R$ 69 (hoje R$ 39 no banco)",
+  "peca": "C1",
+  "refs": [
+    "SC-07",
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 100
+}
