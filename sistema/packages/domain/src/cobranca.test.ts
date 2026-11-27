@@ -35,4 +35,9 @@ describe("cobrança dos escritórios (CO-06)", () => {
     expect(r.success && r.data.trocarCarne).toBe(true);
     for (const m of ["CARNE_TROCA_CONFIRMAR", "CARNE_DESCONTO_ATE_99", "DESCONTO_JA_PASSOU"]) expect(TEXTOS_MOTIVO[m]).toBeTruthy();
   });
+  it("CO-09: os motivos do teste grátis têm texto", () => {
+    for (const m of ["TESTE_ENCERRADO", "SEM_ASSINATURA", "SEM_TESTE_GRATIS", "TESTE_JA_DISPENSADO", "TESTE_NAO_REPETIDO", "TESTE_NAO_COMECOU", "PRORROGAR_DATA"])
+      expect(TEXTOS_MOTIVO[m]).toBeTruthy();
+    expect(TEXTOS_MOTIVO.SEM_ASSINATURA).not.toMatch(/outro escritório|repetid/i);
+  });
 });
