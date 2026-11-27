@@ -5,12 +5,15 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { AbaAssinatura, FaixaSoConsulta } from "./AbaAssinatura.tsx";
+import { AbaImplantacao, type EstadoImplantacao } from "./AbaImplantacao.tsx";
+import { conclusaoNoPrazo, dicaDoCabecalho } from "./implantacao.ts";
 import type { AssinaturaResposta } from "./cobranca.ts";
 import {
   convidarPessoaSchema,
   ESTAGIOS,
   etapasImplantacao,
   TEXTO_CONVITE_CONTA_EXISTENTE,
+  type ConsoleImplantacao,
   type SocioCliente,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -27,6 +30,7 @@ import { formatarCnpj, type FichaDoCliente, type Nota } from "./ficha.ts";
 import { CARTEIRA, chamarConsole, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso as AvisoD2 } from "./pecas.tsx";
 import { dataHora, dataLonga, esperando, hora, iniciais } from "./tempo.ts";
+import { dataBr } from "./cobranca.ts";
 
 export { formatarCnpj, type FichaDoCliente } from "./ficha.ts";
 
@@ -42,8 +46,13 @@ function fichaParaTela(f: FichaDoCliente): FichaDoCliente {
   return soLeitura(f) ? { ...f, permissoes: f.permissoes.filter((p) => !MUDAM_A_FICHA.includes(p)) } : f;
 }
 
-function Cabecalho({ f }: { f: FichaDoCliente }) {
+function Cabecalho({ f, impl }: { f: FichaDoCliente; impl: ConsoleImplantacao | null }) {
   const ids = useId();
+  // Com a implantação assistida aberta, "Passar para ativo" vira "Concluir a implantação" e leva à
+  // aba Implantação (D43, NOTAS.md item 10); sem ela (escritório de antes), fica como era.
+  const i = impl?.implantacao ?? null;
+  const implAberta = i?.estado === "ABERTA";
+  const implConcluida = i?.estado === "CONCLUIDA" ? i : null;
   const e = etapasImplantacao({ situacoes: f.situacoes, socios: f.socios, equipe: f.equipe });
   const pode = f.permissoes.includes("console.estagio.mudar");
   const pronta = e.proxima === null;
@@ -92,10 +101,12 @@ function Cabecalho({ f }: { f: FichaDoCliente }) {
             Cliente ativo
           </p>
           <p className="grande">
-            Ativo<small>implantação concluída</small>
+            Ativo<small>{implConcluida?.concluidaEm ? `desde ${dataBr(implConcluida.concluidaEm)}` : "implantação concluída"}</small>
           </p>
           <p className="dica" style={{ fontSize: 13 }}>
-            O escritório já usa o Portal. O motivo da mudança está no histórico.
+            {implConcluida?.concluidaEm
+              ? `A implantação foi concluída${implConcluida.concluidaPor ? ` por ${implConcluida.concluidaPor}` : ""} em ${dataBr(implConcluida.concluidaEm)}, ${conclusaoNoPrazo(implConcluida.concluidaEm, implConcluida.prazoAte).replace(/ \(.*\)$/, "")}. O resumo está na aba Implantação.`
+              : "O escritório já usa o Portal. O motivo da mudança está no histórico."}
           </p>
         </section>
       ) : (
@@ -119,16 +130,26 @@ function Cabecalho({ f }: { f: FichaDoCliente }) {
           </ol>
           {pode ? (
             pronta ? (
-              <>
-                <a className="btn btn-sec" href={`/clientes/${f.escritorio.id}/contrato?mudar=1`} style={{ alignSelf: "flex-start" }}>
-                  Passar para ativo
-                </a>
-                <p className="dica">Tudo pronto. Pode concluir a implantação.</p>
-              </>
+              implAberta && i ? (
+                <>
+                  <a className="btn btn-sec" href={`/clientes/${f.escritorio.id}/implantacao?concluir=1`} style={{ alignSelf: "flex-start" }}>
+                    <Icone nome="check" className="ico" />
+                    Concluir a implantação
+                  </a>
+                  <p className="dica">{dicaDoCabecalho(i.prazoAte, impl!.situacao.hoje, impl!.situacao)}</p>
+                </>
+              ) : (
+                <>
+                  <a className="btn btn-sec" href={`/clientes/${f.escritorio.id}/contrato?mudar=1`} style={{ alignSelf: "flex-start" }}>
+                    Passar para ativo
+                  </a>
+                  <p className="dica">Tudo pronto. Pode concluir a implantação.</p>
+                </>
+              )
             ) : (
               <>
                 <button className="btn btn-sec" type="button" aria-disabled="true" aria-describedby={`${ids}-porque`}>
-                  Passar para ativo
+                  {implAberta ? "Concluir a implantação" : "Passar para ativo"}
                 </button>
                 <p className="dica" id={`${ids}-porque`}>
                   {falta.length === 1 && e.proxima === "SOCIO_NO_PORTAL"
@@ -472,7 +493,7 @@ function Lateral({ f, nota }: { f: FichaDoCliente; nota: Nota | null }) {
   );
 }
 
-export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta }: {
+export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta, concluir }: {
   id: string;
   aba: AbaFicha;
   /** Abrir a aba Ficha já editando (atalho de "Sem contato"). */
@@ -483,6 +504,8 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta }: {
   cadastrado?: boolean;
   /** Abrir a aba Assinatura já na janela de só consulta (atalho da fatura em atraso). */
   consulta?: boolean;
+  /** Abrir a aba Implantação já na janela de concluir (atalho do cabeçalho e da aba Contrato). */
+  concluir?: boolean;
 }) {
   const sessao = useSessaoConsole();
   const [f, setF] = useState<FichaDoCliente | null>(null);
@@ -491,6 +514,18 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta }: {
   const [agora, setAgora] = useState(() => new Date());
   const carregado = useRef(false);
   const [soConsulta, setSoConsulta] = useState<{ desde: string; por: string | null } | null>(null);
+  const [impl, setImpl] = useState<EstadoImplantacao>(null);
+
+  // A implantação assistida (CO-08, F1.47): o cabeçalho e a aba Implantação leem a mesma resposta.
+  const carregarImpl = useCallback(async (): Promise<ConsoleImplantacao | null> => {
+    const r = await chamarConsole<ConsoleImplantacao>(`/v1/clientes/${id}/implantacao`);
+    if (r.ok) {
+      setImpl({ dados: r.dados });
+      return r.dados;
+    }
+    if (r.status !== 401) setImpl({ erro: r.erro, status: r.status });
+    return null;
+  }, [id]);
 
   // O Portal só para consulta por atraso aparece numa faixa em todas as abas (CO-06).
   const carregarAcesso = useCallback(async () => {
@@ -509,11 +544,12 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta }: {
     }
     setF(fichaParaTela(r.dados));
     void carregarAcesso();
+    if (r.dados.permissoes.includes("console.implantacao.ver")) void carregarImpl();
     if (r.dados.permissoes.includes("console.notas.ver") && aba !== "notas") {
       const n = await chamarConsole<{ notas: Nota[] }>(`/v1/clientes/${id}/notas`);
       if (n.ok) setNotas(n.dados.notas);
     }
-  }, [id, aba, carregarAcesso]);
+  }, [id, aba, carregarAcesso, carregarImpl]);
 
   useEffect(() => {
     if (carregado.current) return;
@@ -579,7 +615,7 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta }: {
         </div>
       ) : (
         <>
-          <Cabecalho f={f} />
+          <Cabecalho f={f} impl={impl && "dados" in impl ? impl.dados : null} />
           <FaixaContrato f={f} />
           {soConsulta && aba !== "assinatura" ? <FaixaSoConsulta id={id} desde={soConsulta.desde} por={soConsulta.por} /> : null}
           <Abas id={id} aba={aba} f={f} notas={notas ? notas.length : null} />
@@ -607,9 +643,12 @@ export function FichaCliente({ id, aba, editar, mudar, cadastrado, consulta }: {
           ) : aba === "ficha" ? (
             <AbaFichaDados f={f} nota={nota} recarregar={recarregar} editarAoAbrir={editar} />
           ) : aba === "contrato" ? (
-            <AbaContrato f={f} recarregar={recarregar} mudarAoEntrar={mudar} />
+            <AbaContrato f={f} recarregar={recarregar} mudarAoEntrar={mudar} implantacaoAberta={!!impl && "dados" in impl && impl.dados.implantacao?.estado === "ABERTA"} />
           ) : aba === "equipe" ? (
             <AbaEquipe f={f} eu={sessao?.pessoaId ?? null} recarregar={recarregar} />
+          ) : aba === "implantacao" ? (
+            <AbaImplantacao id={id} f={f} estado={impl} recarregar={carregarImpl} aoConcluir={() => void carregar()} eu={sessao?.nome ?? null}
+              concluirAoAbrir={concluir} />
           ) : aba === "assinatura" ? (
             <AbaAssinatura id={id} nome={f.escritorio.nome} socio={f.socios[0]?.nome ?? null} consultaAoAbrir={consulta} aoMudarAcesso={() => void carregarAcesso()} />
           ) : aba === "notas" ? (

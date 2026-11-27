@@ -28,6 +28,9 @@ const SUAVE = rgb(0x5e / 255, 0x4a / 255, 0x54 / 255);
 const AMBAR = rgb(0xdd / 255, 0x97 / 255, 0x60 / 255);
 const SAL = rgb(0xf2 / 255, 0xec / 255, 0xe8 / 255);
 const FIO = rgb(0xdd / 255, 0xd0 / 255, 0xd6 / 255);
+const VINHO2 = rgb(0x87 / 255, 0x33 / 255, 0x5b / 255);
+const VINHO3 = rgb(0xac / 255, 0x3f / 255, 0x6b / 255);
+const VINHO4 = rgb(0xac / 255, 0x78 / 255, 0x8d / 255);
 const URGENTE = rgb(0x9b / 255, 0x1c / 255, 0x31 / 255);
 const PRETO = rgb(0, 0, 0);
 const BRANCO = rgb(1, 1, 1);
@@ -393,13 +396,30 @@ function dados(pena: Pena, y: number, d: DocumentoCobranca, forma: [string, stri
   return y - alto - 5 * MM;
 }
 
-/** O detalhe de cada item, como no Console. */
-function detalheItem(d: DocumentoCobranca, i: NonNullable<DocumentoCobranca["itens"]>[number]): string {
+/** O detalhe de cada item, como no Console. A implantação e a isenção (CO-08, F1.47; desenho D43,
+ * pdf_im.py) usam só a descrição do item, que é a da emissão, e um detalhe fixo. */
+export function detalheItem(d: DocumentoCobranca, i: NonNullable<DocumentoCobranca["itens"]>[number]): string {
   if (i.tipo === "MENSALIDADE") return `${mesPorExtenso(d.competencia)}${d.pessoasIncluidas ? ` · até ${d.pessoasIncluidas} pessoas` : ""} · todas as áreas do Portal`;
   if (i.tipo === "PESSOA_A_MAIS") {
     return `${i.quantidade} × ${reais(i.valorUnitarioCentavos)} · ${d.pessoasAtivas} pessoas ativas no dia da emissão (${dataBr(diaDe(d.emitidaEm))})${d.pessoasIncluidas ? `; o plano inclui ${d.pessoasIncluidas}` : ""}`;
   }
+  if (i.tipo === "IMPLANTACAO") {
+    const isenta = d.implantacao ? d.implantacao.condicao === "ISENTA" : (d.itens ?? []).some((x) => x.tipo === "ISENCAO");
+    return `uma vez só, na 1ª fatura${isenta ? "" : " · à vista"}`;
+  }
+  if (i.tipo === "ISENCAO") return "o valor aparece e a isenção também";
   return "";
+}
+
+/** O rótulo do tipo, em texto, na frente de cada linha da fatura com a implantação (D43): nunca
+ * "Desconto" para a implantação nem para a isenção. */
+export const ROTULO_TIPO_PDF: Record<TipoItemFatura, string> = {
+  MENSALIDADE: "Mensalidade", PESSOA_A_MAIS: "Pessoa a mais", DESCONTO: "Desconto", IMPLANTACAO: "Implantação", ISENCAO: "Isenção",
+};
+
+/** A fatura traz a implantação (1182): as linhas ganham o rótulo do tipo, como no desenho D43. */
+export function comRotulosDeTipo(d: Pick<DocumentoCobranca, "itens">): boolean {
+  return (d.itens ?? []).some((i) => i.tipo === "IMPLANTACAO" || i.tipo === "ISENCAO");
 }
 
 function itens(pena: Pena, y: number, d: DocumentoCobranca, o: { titulo: string; sub?: string; total: string }): number {
@@ -409,13 +429,22 @@ function itens(pena: Pena, y: number, d: DocumentoCobranca, o: { titulo: string;
   pena.linha(MARGEM, yy - 1, MARGEM + LARG, yy - 1, VINHO, 0.8);
   yy -= 2;
   const lista = d.itens ?? [];
+  const tipos = comRotulosDeTipo(d);
   lista.forEach((i, k) => {
     const topoItem = yy - 1.2 * MM;
     const valor = i.valorCentavos < 0 ? `- ${reais(-i.valorCentavos)}` : reais(i.valorCentavos);
-    pena.texto(valor, MARGEM + LARG, topoItem, { t: 9, dir: true });
-    let b = pena.texto(i.descricao, MARGEM, topoItem, { t: 9, largura: LARG - 35 * MM });
+    pena.texto(valor, MARGEM + LARG, topoItem, { t: 9, dir: true, cor: tipos && i.valorCentavos < 0 ? VINHO3 : undefined });
+    let x = MARGEM;
+    if (tipos) {
+      // O rótulo do tipo (D43): caixa fina, em maiúsculas, antes da descrição.
+      const r = ROTULO_TIPO_PDF[i.tipo].toUpperCase(), tr = 6.4, w = pena.largura(r, tr, "b") + 2 * MM;
+      pena.caixa(MARGEM, topoItem - 0.5, w, tr + 3.2, { borda: VINHO4, esp: 0.7 });
+      pena.texto(r, MARGEM + 1 * MM, topoItem - 1.6, { t: tr, f: "b", cor: VINHO2 });
+      x = MARGEM + w + 1.6 * MM;
+    }
+    let b = pena.texto(i.descricao, x, topoItem, { t: 9, largura: LARG - 35 * MM - (x - MARGEM) });
     const det = detalheItem(d, i);
-    if (det) b = pena.texto(det, MARGEM, b, { t: 7.2, cor: SUAVE, largura: LARG - 35 * MM });
+    if (det) b = pena.texto(det, x, b, { t: 7.2, cor: SUAVE, largura: LARG - 35 * MM - (x - MARGEM) });
     if (i.tipo === "DESCONTO" && d.motivoDesconto) {
       const fim = pena.texto(`“${d.motivoDesconto}”`, MARGEM + 4 * MM, b - 1, { t: 8.4, f: "si", largura: LARG - 40 * MM });
       pena.pg.drawRectangle({ x: MARGEM, y: fim, width: 1.1, height: b - 1 - fim, color: AMBAR });

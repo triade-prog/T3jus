@@ -8,13 +8,14 @@ const aviso = (tipo: AvisoConsole["tipo"], dados: AvisoConsole["dados"]): AvisoC
   ({ id: "a", tipo, dados, interessadoId: null, faturaId: null, em: "2026-12-09T11:00:00Z", lido: false, agora: null });
 
 describe("sino do Console: implantação", () => {
-  it("prazo a 7 dias: quem falta, quem acompanha e a ficha do escritório", () => {
+  it("prazo a 7 dias: quem falta, quem acompanha e a aba Implantação", () => {
     const x = descreverAvisoConsole(aviso("IMPLANTACAO_PRAZO", {
       escritorio: "Cedro & Lima", escritorioId: ESC, prazo: "2026-12-16", dias: 7, treinadas: 4, total: 6,
       faltam: ["Tiago Ramos", "Diego Alves"], responsavel: "Rafael Teles",
     }));
     expect(x.detalhe).toBe("Prazo: 16/12/2026. Faltam Tiago Ramos e Diego Alves. Quem acompanha: Rafael Teles.");
-    expect(x.href).toBe(`/clientes/${ESC}/contrato`);
+    expect(x.href).toBe(`/clientes/${ESC}/implantacao`);
+    expect(x.onde).toBe("Abrir a implantação");
     expect(x.selo).toEqual({ tom: "atencao", texto: "7 dias" });
   });
 

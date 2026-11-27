@@ -364,6 +364,11 @@ const DESENHOS = {
   pagar: <><path d="M3 6.5h18v11H3Z" /><path d="M3 10h18" /><path d="M6.5 14.5h4" /></>,
   // Etiqueta de preço com o ponto: o desconto de entrada (D41, CO-10).
   desconto: <><path d="M3.5 12.2 11.8 4h8.7v8.7l-8.3 8.3Z" /><circle cx="16.3" cy="8.2" r="1.6" /><path d="m8.6 15.4 4.2-4.2" /></>,
+  // Implantação assistida (CO-08, desenho D43 aprovado em 27/11/2026).
+  treino: <><path d="M3.5 6.5h12v9h-12Z" /><path d="m15.5 9.5 5-2.5v8l-5-2.5" /><path d="M7 19.5h5" /></>,
+  presencial: <><path d="M8 8.5a2.6 2.6 0 1 0 0-.1M16 8.5a2.6 2.6 0 1 0 0-.1" /><path d="M3.5 19.5c.4-3.2 2.2-5 4.5-5s4.1 1.8 4.5 5M11.5 19.5c.4-3.2 2.2-5 4.5-5s4.1 1.8 4.5 5" /></>,
+  prazo: <><path d="M4 5.5h16v15H4Z" /><path d="M4 9.5h16M8.5 3v4M15.5 3v4" /><path d="m9 15 2 2 4-4" /></>,
+  isencao: <><path d="M4 12.5 11.5 5H19v7.5L11.5 20Z" /><path d="M15 8.5h.01" /><path d="m7.5 16.5 9-9" /></>,
 } as const;
 
 export type NomeIcone = keyof typeof DESENHOS;

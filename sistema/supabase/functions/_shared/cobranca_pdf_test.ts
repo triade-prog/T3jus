@@ -2,8 +2,8 @@
 // aprovado, sem códigos depois de paga ou cancelada, e os marcadores "A DEFINIR" só sem emissor.
 import { assertEquals, assertRejects } from "@std/assert";
 import { PDFDocument } from "pdf-lib";
-import { arquivoCarne, arquivoDoc, faixasEmTexto, identificadorParcela, numeroDoc, pdfDaFatura, pdfDoCarne, pdfDoReciboDaFatura } from "./cobranca_pdf.ts";
-import { BASE, CARNE, CARNE_DESCONTO, CARNES, ESTADOS } from "./cobranca_pdf_exemplos.ts";
+import { arquivoCarne, arquivoDoc, comRotulosDeTipo, detalheItem, faixasEmTexto, ROTULO_TIPO_PDF, identificadorParcela, numeroDoc, pdfDaFatura, pdfDoCarne, pdfDoReciboDaFatura } from "./cobranca_pdf.ts";
+import { BASE, CARNE, CARNE_DESCONTO, CARNES, ESTADOS, IMPLANTACAO_PDF } from "./cobranca_pdf_exemplos.ts";
 
 Deno.test("F1.21: a fatura sai numa página A4 em cada estado do desenho", async () => {
   for (const [nome, d] of Object.entries(ESTADOS)) {
@@ -51,7 +51,7 @@ Deno.test("F1.29 (CO-10): a capa do carnê diz as faixas; sem faixas, o valor ú
   );
 });
 
-Deno.test("CO-08: a 1ª fatura com a implantação e a isenção (1182) sai numa página, sem mudar o visual", async () => {
+Deno.test("CO-08: a 1ª fatura com a implantação e a isenção (1182) sai numa página", async () => {
   const d = {
     ...BASE,
     itens: [
@@ -63,4 +63,28 @@ Deno.test("CO-08: a 1ª fatura com a implantação e a isenção (1182) sai numa
   };
   const pdf = await PDFDocument.load(await pdfDaFatura(d));
   assertEquals(pdf.getPageCount(), 1);
+});
+
+Deno.test("CO-08 (F1.47): a fatura e o recibo com a implantação saem numa página A4, isenta e cobrada", async () => {
+  for (const nome of ["isenta", "cobrada"] as const) {
+    const pdf = await PDFDocument.load(await pdfDaFatura(IMPLANTACAO_PDF[nome]));
+    assertEquals(pdf.getPageCount(), 1, nome);
+    assertEquals(pdf.getTitle(), "Fatura 2027/0004 do T3jus, Cedro & Lima Advocacia", nome);
+  }
+  const recibo = await PDFDocument.load(await pdfDoReciboDaFatura(IMPLANTACAO_PDF.recibo));
+  assertEquals(recibo.getPageCount(), 1);
+});
+
+Deno.test("CO-08 (F1.47): as linhas da implantação levam o rótulo do tipo, nunca Desconto", () => {
+  assertEquals(comRotulosDeTipo(IMPLANTACAO_PDF.isenta), true);
+  assertEquals(comRotulosDeTipo(BASE), false);
+  assertEquals(ROTULO_TIPO_PDF.IMPLANTACAO, "Implantação");
+  assertEquals(ROTULO_TIPO_PDF.ISENCAO, "Isenção");
+  assertEquals(ROTULO_TIPO_PDF.DESCONTO, "Desconto");
+  const [, , impl, isen] = IMPLANTACAO_PDF.isenta.itens!;
+  assertEquals(detalheItem(IMPLANTACAO_PDF.isenta, impl!), "uma vez só, na 1ª fatura");
+  assertEquals(detalheItem(IMPLANTACAO_PDF.isenta, isen!), "o valor aparece e a isenção também");
+  assertEquals(detalheItem(IMPLANTACAO_PDF.cobrada, IMPLANTACAO_PDF.cobrada.itens![2]!), "uma vez só, na 1ª fatura · à vista");
+  // A descrição do item é a da emissão: o PDF não busca nada ao vivo.
+  assertEquals(isen!.descricao, "Isenção da implantação · Oferta de lançamento");
 });

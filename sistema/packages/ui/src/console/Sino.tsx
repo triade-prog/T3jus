@@ -82,8 +82,8 @@ export function descreverAvisoConsole(a: AvisoConsole, hoje = hojeIso()): { icon
         icone: "relogio", titulo: <>A implantação do escritório{d.escritorio ? <> <b>{d.escritorio}</b></> : null} {quando}{treino}</>,
         detalhe: [d.prazo && dias > 0 ? `Prazo: ${dataBr(d.prazo)}.` : null, faltam, d.responsavel ? `Quem acompanha: ${d.responsavel}.` : "Ninguém acompanha ainda."]
           .filter(Boolean).join(" "),
-        // A aba Implantação entra com as telas (F1.47); até lá, a ficha abre no Contrato.
-        onde: "Abrir a ficha", href: d.escritorioId ? `/clientes/${d.escritorioId}/contrato` : CARTEIRA,
+        // A aba Implantação da ficha (F1.47).
+        onde: "Abrir a implantação", href: d.escritorioId ? `/clientes/${d.escritorioId}/implantacao` : CARTEIRA,
         selo: dias === 0 ? { tom: "urgente", texto: "Vence hoje" } : { tom: "atencao", texto: `${dias} dias` },
       };
     }

@@ -4,6 +4,7 @@ export const ABAS_FICHA = {
   ficha: "Ficha",
   socio: "Sócio",
   contrato: "Contrato e documentos",
+  implantacao: "Implantação",
   assinatura: "Assinatura",
   equipe: "Equipe T3jus",
   notas: "Notas internas",

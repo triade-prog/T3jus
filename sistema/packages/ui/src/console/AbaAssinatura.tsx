@@ -637,6 +637,8 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
   // A recusa CARNE_TROCA_CONFIRMAR (1170): mudar o desconto com o carnê em uso troca o carnê.
   const [troca, setTroca] = useState<TrocaPorDescontoCb | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // CO-08 (F1.47): Carnê com a implantação cobrada (IMPLANTACAO_COBRADA_NO_CARNE), preso à forma.
+  const [carneImpl, setCarneImpl] = useState(false);
   const muda = (k: keyof Formulario) => (valor: string) => setV((x) => ({ ...x, [k]: valor }));
   const carneEmUso = a?.forma === "CARNE" && (a.carne?.emUso.length ?? 0) > 0;
   const proxima = a?.proxima?.competencia ?? proximaCompetencia(r.hoje);
@@ -681,6 +683,7 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
 
   async function enviar(confirmado = false, versaoUsada = versao) {
     setFalha(null);
+    setCarneImpl(false);
     const e = conferir();
     setErros(e);
     if (e.size) return focarPrimeiroErro(corpo.current);
@@ -702,6 +705,13 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
       const d = res.erro.detalhes;
       if (res.status === 422 && d?.motivo === "CARNE_TROCA_CONFIRMAR" && d.previa && typeof d.previa === "object") {
         return setTroca(d.previa as TrocaPorDescontoCb);
+      }
+      if (d?.motivo === "IMPLANTACAO_COBRADA_NO_CARNE") {
+        setCarneImpl(true);
+        setErros(new Set(["forma"]));
+        // O foco vai para a forma marcada (Carnê), como no desenho D43 (im-ass-salvar-carne).
+        requestAnimationFrame(() => corpo.current?.querySelector<HTMLInputElement>(`input[name="${ids}-forma"]:checked`)?.focus());
+        return;
       }
       const campos = res.erro.detalhes?.campos;
       if (res.status === 422 && Array.isArray(campos) && campos.length) {
@@ -769,7 +779,16 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
         </div>
       </div>
       <div ref={corpo}>
-        {erros.size ? (
+        {carneImpl ? (
+          <div style={{ padding: "0 24px 16px" }}>
+            <Aviso tom="urgencia" titulo="Não deu para salvar: Carnê não combina com a implantação cobrada."
+              corpo={<p className="im-peq" style={{ marginTop: 6 }}>IMPLANTACAO_COBRADA_NO_CARNE</p>}>
+              A implantação da {nome} é cobrada à vista na 1ª fatura
+              {r.implantacao?.valorCentavos !== undefined ? ` (${brl(r.implantacao.valorCentavos)})` : ""}, e o carnê ainda não leva a implantação. Escolha Pix ou Boleto. Nada
+              foi salvo.
+            </Aviso>
+          </div>
+        ) : erros.size ? (
           <div style={{ padding: "0 24px 16px" }}>
             <Aviso tom="urgencia" titulo={faltaAcertar(erros.size)}>
               Nada foi salvo.
@@ -873,20 +892,24 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
               {carneEmUso ? "Com carnê, mudar o dia gera um carnê novo." : criar ? "As faturas vencem neste dia, todo mês." : "Muda a partir da próxima fatura."}
             </p>
           </div>
-          <fieldset className="grupo-opcoes c3" aria-invalid={inv("forma")}>
+          <fieldset className="grupo-opcoes c3" aria-invalid={inv("forma")} aria-describedby={carneImpl ? `${ids}-forma-e` : undefined}>
             <legend>
               Forma de pagamento
               {conflito && conflito.salvo.forma !== v.forma ? <span className="mudou">Mudou</span> : null}
             </legend>
             {(Object.keys(FORMAS_ASSINATURA) as FormaAssinatura[]).map((k) => (
               <label className="opcao" key={k}>
-                <input className="marcar" type="radio" name={`${ids}-forma`} checked={v.forma === k} onChange={() => muda("forma")(k)} />
+                <input className="marcar" type="radio" name={`${ids}-forma`} checked={v.forma === k} onChange={() => muda("forma")(k)}
+                  aria-invalid={carneImpl || undefined} aria-describedby={carneImpl ? `${ids}-forma-e` : undefined} />
                 <span>
                   {FORMAS_ASSINATURA[k]}
                   <small>{AJUDA_FORMA[k]}</small>
                 </span>
               </label>
             ))}
+            {carneImpl ? (
+              <ErroCampo id={`${ids}-forma-e`}>Com a implantação cobrada, a 1ª fatura sai por Pix ou boleto. O carnê fica para depois (pendente F1.49).</ErroCampo>
+            ) : null}
           </fieldset>
           {v.forma === "CARNE" ? (
             <>
@@ -1149,6 +1172,113 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
           </p>
         </Janela>
       ) : null}
+    </section>
+  );
+}
+
+/** O bloco da implantação assistida na assinatura (CO-08, F1.47; desenho D43: im-ass-isenta,
+ * im-ass-faturada, im-ass-cobrada, im-ass-carne-recusa e im-ass-suporte). O valor só para quem vê
+ * a cobrança (o banco já esconde). */
+function BlocoImplantacao({ id, r, aoMudarForma }: { id: string; r: AssinaturaResposta; aoMudarForma?: () => void }) {
+  const ids = useId();
+  const im = r.implantacao!;
+  const a = r.assinatura;
+  const isenta = im.condicao === "ISENTA";
+  const v = r.valores ? im.valorCentavos : undefined;
+  const texto = im.condicaoTexto ?? "Oferta de lançamento";
+  const recusa = !isenta && !im.faturada && a?.forma === "CARNE";
+  const linhas = (curta: boolean) => v === undefined ? null : (
+    <ul className="im-conta-l">
+      <li>
+        <span>{curta ? im.nome : `${im.nome} · ${im.descricao}`}</span>
+        <b>{brl(v)}</b>
+      </li>
+      {isenta ? (
+        <li className="im-neg">
+          <span>Isenção da implantação · {texto}</span>
+          <b>{brl(-v)}</b>
+        </li>
+      ) : null}
+      {isenta && !curta ? (
+        <li className="im-tot">
+          <span>Efeito na 1ª fatura</span>
+          <b>R$ 0,00</b>
+        </li>
+      ) : null}
+    </ul>
+  );
+  return (
+    <section className="im-ass" aria-labelledby={`${ids}-t`}>
+      <div className="im-ass-cab">
+        <h3 id={`${ids}-t`}>
+          <Icone nome="coluna" className="ico" />
+          {im.nome}{" "}
+          {isenta ? (
+            <span className="selo selo-isenta">
+              <Icone nome="isencao" className="ico" />
+              Isenta · {texto}
+            </span>
+          ) : (
+            <span className="selo selo-cobrada">
+              <Icone nome="fatura" className="ico" />
+              Cobrada à vista
+            </span>
+          )}
+        </h3>
+        <a className="btn btn-sec btn-compacto" href={`/clientes/${id}/implantacao`}>
+          <Icone nome="coluna" className="ico ico-s" />
+          Ver a implantação
+        </a>
+      </div>
+      <div className="im-ass-corpo">
+        {recusa ? (
+          <>
+            <Aviso tom="urgencia" titulo="Com Carnê, a 1ª fatura desta assinatura não sai."
+              corpo={<p className="im-peq" style={{ marginTop: 6 }}>IMPLANTACAO_COBRADA_NO_CARNE</p>}
+              acoes={aoMudarForma ? (
+                <button className="btn btn-pri btn-compacto" type="button" onClick={aoMudarForma}>
+                  <Icone nome="lapis" className="ico ico-s" />
+                  Mudar a forma de pagamento
+                </button>
+              ) : undefined}>
+              A implantação deste escritório é cobrada à vista, e o carnê ainda não leva a implantação. Ao concluir a implantação ou gerar o carnê, o sistema recusa. Mude a
+              forma de pagamento para Pix ou boleto.
+            </Aviso>
+            {linhas(false)}
+          </>
+        ) : im.faturada && im.faturaCompetencia ? (
+          <>
+            <p>
+              <b>Na fatura de {mesPorExtenso(im.faturaCompetencia)}</b>
+              {im.faturaId && r.valores ? (
+                <>
+                  {" "}(<a href={hrefFatura(id, im.faturaId)}>ver<span className="sr"> a fatura de {mesPorExtenso(im.faturaCompetencia)}</span></a>)
+                </>
+              ) : null}
+              , a 1ª.
+            </p>
+            {linhas(true)}
+            <p className="im-peq">A implantação só entra na 1ª fatura; as próximas não a trazem.</p>
+          </>
+        ) : (
+          <>
+            <p>
+              {isenta ? (
+                <>
+                  <b>Na 1ª fatura</b>, quando a cobrança começar: a linha da implantação e a da isenção, que somam zero.
+                </>
+              ) : (
+                <>
+                  <b>Na 1ª fatura</b>, à vista, por Pix ou boleto. Sem parcelamento nesta versão.
+                </>
+              )}
+            </p>
+            {linhas(false)}
+            {!im.naFatura ? <p className="im-peq">Por enquanto, a linha da implantação não entra na fatura: ela entra quando o Portal passar a mostrar a implantação.</p> : null}
+            {!isenta ? <p className="im-peq">O desconto de entrada vale só sobre a mensalidade, nunca sobre a implantação.</p> : null}
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -1604,10 +1734,16 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
               </div>
             ) : null}
             <Dados r={r} socio={socio} aoPreencher={podeEditar && !encerrado ? () => { setFeito(null); setEditando(true); } : undefined} />
+            {r.implantacao ? (
+              <BlocoImplantacao id={id} r={r} aoMudarForma={podeEditar ? () => { setFeito(null); setEditando(true); } : undefined} />
+            ) : null}
             {!r.valores ? (
               <p className="cb-so-ver">
                 <Icone nome="olho" className="ico" />
-                <span>Você vê o plano e a situação da cobrança. Valores, faturas e mudanças ficam com a Administração e o Financeiro.</span>
+                <span>
+                  Você vê o plano e a situação da cobrança{r.implantacao ? ", com a condição da implantação" : ""}. Valores, faturas e mudanças ficam com a Administração e o
+                  Financeiro.
+                </span>
               </p>
             ) : encerrado ? (
               <p className="cb-so-ver">

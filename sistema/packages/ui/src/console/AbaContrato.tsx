@@ -587,11 +587,28 @@ function Estagio({ f, recarregar, abrirAoEntrar }: { f: FichaDoCliente; recarreg
   );
 }
 
-export function AbaContrato({ f, recarregar, mudarAoEntrar }: { f: FichaDoCliente; recarregar: () => Promise<void>; mudarAoEntrar?: boolean }) {
+export function AbaContrato({ f, recarregar, mudarAoEntrar, implantacaoAberta }: {
+  f: FichaDoCliente; recarregar: () => Promise<void>; mudarAoEntrar?: boolean;
+  /** CO-08 (F1.47): com a implantação assistida aberta, passar para Ativo é "Concluir a implantação", na aba Implantação. */
+  implantacaoAberta?: boolean;
+}) {
   const ids = useId();
+  const concluir = !!implantacaoAberta && f.cliente.estagio === "IMPLANTACAO" && !f.encerramento;
   return (
     <div className="grade">
       <div className="col">
+        {concluir ? (
+          <Aviso tom="info" titulo="Passar para Ativo agora é “Concluir a implantação”."
+            acoes={f.permissoes.includes("console.estagio.mudar") ? (
+              <a className="btn btn-sec btn-compacto" href={`/clientes/${f.escritorio.id}/implantacao?concluir=1`}>
+                <Icone nome="check" className="ico ico-s" />
+                Concluir a implantação
+              </a>
+            ) : undefined}>
+            O botão do cabeçalho leva à aba Implantação, que pede o resumo e mostra o que acontece na cobrança. Quem passa para Ativo por outro caminho também conclui a
+            implantação.
+          </Aviso>
+        ) : null}
         <FolhaFim f={f} recarregar={recarregar} />
         <Referencia f={f} recarregar={recarregar} />
         <Documentos f={f} aoMudar={() => void recarregar()} />
@@ -632,7 +649,11 @@ export function AbaContrato({ f, recarregar, mudarAoEntrar }: { f: FichaDoClient
               </li>
               <li>
                 <Icone nome="pessoas" className="ico" />
-                <span>Para passar a Ativo, o escritório precisa ter sócio no Portal.</span>
+                <span>
+                  {concluir
+                    ? "Para passar a Ativo, conclua a implantação na aba Implantação, com o resumo para o escritório e o efeito na cobrança."
+                    : "Para passar a Ativo, o escritório precisa ter sócio no Portal."}
+                </span>
               </li>
               <li>
                 <Icone nome="historico" className="ico" />

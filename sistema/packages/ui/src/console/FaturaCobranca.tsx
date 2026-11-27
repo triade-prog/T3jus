@@ -8,7 +8,9 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { FORMAS_ASSINATURA, mesPorExtenso } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { brl, centavosDe, dataBr, diasEntre, lerDataBr, numeroFatura, reaisDe, rotuloItem, type FaturaAberta } from "./cobranca.ts";
+import {
+  brl, centavosDe, dataBr, diasEntre, etiquetaItem, implantacaoDaFatura, lerDataBr, numeroFatura, reaisDe, rotuloItem, temImplantacao, type FaturaAberta,
+} from "./cobranca.ts";
 import { formatarCnpj } from "./ficha.ts";
 import { CARTEIRA, chamarConsole, COBRANCA, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
@@ -379,6 +381,8 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
           const dias = diasEntre(f.hoje, f.vencimento);
           const formaTexto = f.parcela ? `Carnê · parcela ${f.parcela.numero} de ${f.parcela.de}` : FORMAS_ASSINATURA[f.forma];
           const rotulo = f.situacao === "PAGA" ? "Recebido" : f.situacao === "CANCELADA" ? "Valor cancelado" : f.situacao === "EM_ATRASO" ? "Em aberto" : "Total da fatura";
+          const comTipos = temImplantacao(f.itens);
+          const impl = implantacaoDaFatura(f.itens);
           return (
             <>
               <div className="cb-fat-cab">
@@ -505,7 +509,7 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
                     <div className="folha-cab">
                       <div>
                         <h2 id={`${ids}-itens`}>Itens da fatura</h2>
-                        <p className="sub">Em reais, com os centavos exatos. {f.pessoasAtivas} {f.pessoasAtivas === 1 ? "pessoa ativa" : "pessoas ativas"} no dia da emissão.</p>
+                        <p className="sub">Em reais, com os centavos exatos. {f.pessoasAtivas} {f.pessoasAtivas === 1 ? "pessoa ativa" : "pessoas ativas"} no dia da emissão.{comTipos ? " Cada linha diz o tipo." : ""}</p>
                       </div>
                     </div>
                     <table className="cb-itens">
@@ -521,14 +525,28 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
                       <tbody>
                         {f.itens.map((i, k) => (
                           <tr key={k} className={i.valorCentavos < 0 ? "cb-desc" : undefined}>
-                            <td>
-                              {rotuloItem(i.tipo)}
-                              <small>
+                            {comTipos ? (
+                              // A 1ª fatura com a implantação (desenho D43): cada linha diz o tipo, em texto.
+                              <td>
+                                <span className={`im-tipo${i.tipo === "IMPLANTACAO" ? " im-t-impl" : i.tipo === "ISENCAO" ? " im-t-isen" : ""}`}>{etiquetaItem(i.tipo)}</span>
                                 {i.descricao}
-                                {i.tipo === "PESSOA_A_MAIS" && i.valorUnitarioCentavos ? ` · ${i.quantidade} × ${brl(i.valorUnitarioCentavos)}` : ""}
-                              </small>
-                              {i.tipo === "DESCONTO" && i.motivo ? <small className="cb-motivo-item">“{i.motivo}”</small> : null}
-                            </td>
+                                <small>
+                                  {i.tipo === "IMPLANTACAO" ? "Uma vez só, na 1ª fatura" : i.tipo === "ISENCAO" ? "O valor aparece e a isenção também"
+                                    : i.tipo === "PESSOA_A_MAIS" && i.valorUnitarioCentavos ? `${i.quantidade} × ${brl(i.valorUnitarioCentavos)}`
+                                      : i.tipo === "DESCONTO" ? "Só sobre a mensalidade" : mesPorExtenso(f.competencia)}
+                                </small>
+                                {i.tipo === "DESCONTO" && i.motivo ? <small className="cb-motivo-item">“{i.motivo}”</small> : null}
+                              </td>
+                            ) : (
+                              <td>
+                                {rotuloItem(i.tipo)}
+                                <small>
+                                  {i.descricao}
+                                  {i.tipo === "PESSOA_A_MAIS" && i.valorUnitarioCentavos ? ` · ${i.quantidade} × ${brl(i.valorUnitarioCentavos)}` : ""}
+                                </small>
+                                {i.tipo === "DESCONTO" && i.motivo ? <small className="cb-motivo-item">“{i.motivo}”</small> : null}
+                              </td>
+                            )}
                             <td className="cb-valor">{brl(i.valorCentavos)}</td>
                           </tr>
                         ))}
@@ -707,6 +725,38 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
                       </a>
                     </div>
                   </section>
+                  {impl ? (
+                    <section className="folha" aria-labelledby={`${ids}-impl`}>
+                      <div className="folha-cab" style={{ paddingBottom: 6 }}>
+                        <h2 id={`${ids}-impl`} style={{ fontSize: 20 }}>
+                          Implantação
+                        </h2>
+                      </div>
+                      <dl className="cb-dl">
+                        <div>
+                          <dt>Condição</dt>
+                          <dd>{impl.isenta ? `Isenta${impl.texto ? ` · ${impl.texto}` : ""}` : "Cobrada à vista"}</dd>
+                        </div>
+                        <div>
+                          <dt>Valor</dt>
+                          <dd>
+                            {brl(impl.valorCentavos)}
+                            <small>congelado na abertura</small>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Só na 1ª fatura</dt>
+                          <dd>As próximas não a trazem</dd>
+                        </div>
+                      </dl>
+                      <div style={{ padding: "0 20px 18px" }}>
+                        <a className="btn btn-sec" href={`/clientes/${f.escritorio.id}/implantacao`} style={{ width: "100%" }}>
+                          <Icone nome="coluna" className="ico" />
+                          Ver a implantação
+                        </a>
+                      </div>
+                    </section>
+                  ) : null}
                 </aside>
               </div>
               {janela === "pagar" ? (
