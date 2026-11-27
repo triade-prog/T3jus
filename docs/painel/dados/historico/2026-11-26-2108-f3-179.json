@@ -1,0 +1,11 @@
+{
+  "data": "26/11/2026",
+  "inicio": "21:08",
+  "fim": "21:20",
+  "texto": "F3.179 (PR B): na exclusão a pedido do titular, o sobre das condições ÊXITO e RECORRENTE vira o texto fixo \"Base apagada a pedido do titular\" na proposta e na cópia do aviso PEDIDO_CONTRATO (migration 1135, com aviso_sino_dados_do_excluido recriada da 1114, e a 1136 sem volta para os já excluídos); honorario_condicoes passa a ter dado pessoal no inventário. pgTAP 168 (43), Vitest da frase e o cenário 3 no exclusao-sino-simultaneo.sh; P26 pendente.",
+  "refs": [
+    "F3.179",
+    "P26",
+    "PT-11"
+  ]
+}

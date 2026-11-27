@@ -38,7 +38,7 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-anexo-si
 # A despesa adiantada e o arquivo dela ao mesmo tempo que a exclusão (F3.156, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-conta-simultanea.sh"
 
-# O pedido de contrato e o aviso do sino ao mesmo tempo que a exclusão (F3.172, PT-11).
+# O pedido de contrato, o aviso do sino e a edição da proposta ao mesmo tempo que a exclusão (F3.172 e F3.179, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-sino-simultaneo.sh"
 
 # As conversas do WhatsApp, o webhook e o motor ao mesmo tempo que a exclusão (F3.157, PT-11).

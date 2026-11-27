@@ -1,0 +1,25 @@
+-- O "sobre" das condições ÊXITO e RECORRENTE dos clientes excluídos antes da 1135 (F3.179; PT-11), à
+-- parte da estrutura, como a 1091, a 1111, a 1115, a 1117, a 1119 e a 1133.
+--
+-- ATENÇÃO: isto não tem volta. Em cada condição ÊXITO ou RECORRENTE de proposta de cliente já
+-- EXCLUIDO, o "sobre" escrito vira o texto fixo "Base apagada a pedido do titular", e o .docx da
+-- última versão da proposta volta à fila arquivos_apagar, que a api-console apaga do Storage. Nos
+-- avisos PEDIDO_CONTRATO desses clientes, o "sobre" da cópia das condições vira o mesmo texto. O
+-- percentual, a etapa, os dias, os meses e as outras condições ficam. Hoje deve achar 0 (P21: 0
+-- clientes excluídos).
+--
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P26):
+--   1. conferir com list_migrations que a 1090, a 1110 e a 1114 estão no ar;
+--   2. rodar a contagem só de leitura (project-files t3jus/f3-180/contagem-antes-1136.sql) e mostrar
+--      à Carol;
+--   3. aplicar a 1135 (daqui em diante, toda exclusão troca o "sobre");
+--   4. com o ok da Carol, aplicar esta 1136 e conferir que as duas funções devolvem {} na segunda
+--      chamada (e que a contagem dá 0 nas colunas "a trocar").
+-- Nada a publicar no Portal, na api-portal nem na api-console: a api-console de hoje já apaga
+-- <esc>/propostas/<id>-v<n>.docx.
+--
+-- As funções são testadas no pgTAP 168 (também com o escritório só de consulta) e no 150, e são
+-- idempotentes: rodar de novo não muda nada. O resultado é a contagem por escritório
+-- ({escritório: {propostas, condicoes, docxReabertos}} e {escritório: {clientes, avisos}}).
+
+select honorario_sobre_preencher_excluidos() as condicoes, avisos_sino_preencher_excluidos() as avisos;

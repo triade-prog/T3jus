@@ -1,0 +1,10 @@
+{
+  "id": "P26",
+  "texto": "Aplicar no Supabase a migration 1135 (o sobre das condições ÊXITO e RECORRENTE do cliente excluído, F3.179) e, com o ok da Carol, a 1136 (sem volta)",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 260,
+  "nota": "Ordem (README, \"O sobre das condições ÊXITO e RECORRENTE\" em \"Arquivos do cliente excluído\"; cabeçalho da 1136): 1) conferir com list_migrations que a 1090, a 1110 e a 1114 estão no ar; 2) rodar a contagem só de leitura (project-files t3jus/f3-180/contagem-antes-1136.sql) e mostrar à Carol: corpo_1114 deve vir true antes da 1135 (aviso_sino_dados_do_excluido com o ramo das conversas e ainda sem a troca do sobre); 3) aplicar a 1135 (project-files t3jus/migrations-para-colar/1135_COLAR_NO_SQL_EDITOR.sql); 4) rodar a contagem de novo e, com o ok da Carol, aplicar a 1136 (1136_COLAR_NO_SQL_EDITOR.sql) e conferir que honorario_sobre_preencher_excluidos() e avisos_sino_preencher_excluidos() devolvem {} na segunda chamada. Nada a publicar na api-portal, na api-console nem no Portal. Se der errado: recriar comercial_apagar_do_excluido da 1090 e aviso_sino_dados_do_excluido da 1114. O que a 1136 trocou não volta."
+}
