@@ -196,7 +196,7 @@ test.describe("Clientes do Portal: cadastro (AP-01, AP-04)", () => {
   test("erros presos ao campo, CPF conferido, duplicado avisa sem bloquear; depois cadastra", async ({ page }) => {
     const pedidos = await simular(page, {
       "/v1/escritorio": { corpo: ESCRITORIO },
-      "GET /v1/escritorio/clientes/duplicados": { corpo: { duplicados: [{ id: cid(1), nome: "Antônia Ferreira Prado", situacao: "ATIVO", desde: h(24 * 22), por: "TELEFONE" }] } },
+      "GET /v1/escritorio/clientes/duplicados": { corpo: { duplicados: [{ id: cid(1), nome: "Antônia Ferreira Prado", situacao: "ARQUIVADO", desde: h(24 * 22), por: "TELEFONE" }] } },
       "POST /v1/escritorio/clientes": { status: 201, corpo: { id: cid(9), versao: 1 } },
       [`GET /v1/escritorio/clientes/${cid(9)}`]: { corpo: { ...FICHA, id: cid(9), nome: "Marcos Duarte", proxContato: null, atendimentos: 0, faltando: ["NACIONALIDADE", "ESTADO_CIVIL", "PROFISSAO", "RG", "ENDERECO"] } },
       "/v1/escritorio/pessoas": { corpo: { pessoas: PESSOAS } },
@@ -216,6 +216,8 @@ test.describe("Clientes do Portal: cadastro (AP-01, AP-04)", () => {
     await page.getByLabel(/^Telefone ou WhatsApp/).fill("(11) 98877-6601");
     await page.getByLabel(/^Telefone ou WhatsApp/).blur();
     await expect(page.getByText("Já existe um cliente com este telefone: Antônia Ferreira Prado.")).toBeVisible();
+    // D6 (com a F3.188): o arquivado a pedido aparece como tal, e não mais como "Inativo".
+    await expect(page.locator(".cl-dup")).toContainText("Arquivado a pedido, cliente desde");
     await expect(page.getByRole("link", { name: "Abrir a ficha de Antônia" })).toHaveAttribute("href", `/clientes/${cid(1)}`);
     await page.getByLabel(/^CPF/).fill("529.982.247-25");
     await page.getByLabel(/^CPF/).blur();

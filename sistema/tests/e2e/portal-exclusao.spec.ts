@@ -10,6 +10,8 @@
 // 26/11/2026, alternativa A).
 // F3.181, F3.186, F3.190, C9, F3.179 e F3.193: as linhas, as dicas e o aviso novos, pelo desenho
 // aprovado em docs/design/aprovadas/portal-exclusao-contratos-conversas (Carol, 27/11/2026).
+// F3.188 (o mesmo desenho, segunda entrega): o outro cadastro com o mesmo CPF nas janelas de excluir e
+// de arquivar, com a caixa da B' (C7, C8), a mensagem de feito (M3) e a faixa do outro cadastro (M4).
 import { expect, test, type Page } from "@playwright/test";
 import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
@@ -577,6 +579,151 @@ test.describe("O que sobra da exclusão (F3.181, F3.186, F3.190, PT-11)", () => 
     const li = j.locator(".pd-fica li");
     await expect(li.filter({ hasText: "O pedido de contrato da proposta P-2026-014 sai de Contratos" })).toHaveCount(1);
     await expect(li.last()).toContainText("O pedido fica registrado");
+    await semViolacoes(page);
+  });
+});
+
+// F3.188: o outro cadastro com o mesmo CPF (estados exc-mesmo-cpf, exc-mesmo-cpf-desmarcado,
+// exc-mesmo-cpf-pedido, exc-mesmo-cpf-varios, exc-feito-mesmo-cpf, arq-mesmo-cpf, ficha-pedido-mesmo-cpf e
+// ficha-pedido-mesmo-cpf-equipe).
+const OUTRO_ID = "c1000000-0000-4000-8000-000000000302";
+const OUTRO2_ID = "c1000000-0000-4000-8000-000000000303";
+const OUTRO = { id: OUTRO_ID, nome: "Antônia F. Prado", situacao: "ATIVO", desde: "2025-02-03T13:00:00+00:00", contratoOuProcesso: false, pedidoAberto: false };
+const OBS_MESMO = "Aberto pela sócia dona ao atender o pedido de outro cadastro com o mesmo CPF. Confira se é a mesma pessoa.";
+
+test.describe("O outro cadastro com o mesmo CPF (F3.188, PT-11)", () => {
+  test("C7 na B': a caixa vem marcada; desmarcar sugere corrigir o CPF; o pedido vai com os marcados e o feito não diz “atendido”", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA }, [`GET ${ficha}`]: [{ corpo: { ...FICHA, pedidoExclusao: PEDIDO, mesmoDocumento: [OUTRO], mesmoDocumentoMais: 0 } }, { corpo: EXCLUIDA }],
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`POST ${ficha}/exclusao`]: { corpo: { protocolo: "EXC-2026-0007", versao: 4, pedido: EXCLUIDA.exclusao, mesmoDocumento: [{ id: OUTRO_ID, nome: OUTRO.nome }] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Excluir os dados", exact: true }).click();
+    const j = page.getByRole("alertdialog", { name: "Excluir os dados de Antônia Ferreira Prado?" });
+    const aviso = j.getByRole("group", { name: "Outro cadastro com o mesmo CPF" });
+    await expect(aviso).toContainText("Há outro cadastro com o mesmo CPF: Antônia F. Prado.");
+    await expect(aviso).toContainText("Ativo, cliente desde 03/02/2025, sem contrato nem processo. Esta exclusão não mexe nele.");
+    // b13: o "Pedido registrado por…" vem antes do aviso do mesmo CPF (exc-mesmo-cpf-pedido).
+    const topo = j.locator(".pd-j > .pd-inteira");
+    await expect(topo.nth(0)).toContainText("Pedido registrado por Diego Almeida");
+    await expect(topo.nth(1)).toContainText("Há outro cadastro com o mesmo CPF");
+    const caixa = aviso.getByRole("checkbox", { name: /Abrir também um pedido de exclusão no cadastro de Antônia F. Prado/ });
+    await expect(caixa).toBeChecked();
+    const link = aviso.getByRole("link", { name: "Abrir a ficha de Antônia F. Prado (abre em outra aba)" });
+    await expect(link).toHaveAttribute("href", `/clientes/${OUTRO_ID}`);
+    await expect(link).toHaveAttribute("target", "_blank");
+    await semViolacoes(page);
+    await caixa.uncheck();
+    await expect(aviso).toContainText("Sem o pedido, o cadastro de Antônia F. Prado fica como está. Se for outra pessoa, o CPF de um dos dois está errado: corrija na ficha certa.");
+    await semViolacoes(page);
+    await caixa.check();
+    await expect(aviso.getByText(/Sem o pedido/)).toHaveCount(0);
+    await j.getByRole("checkbox", { name: /Conferi que o pedido veio do cliente/ }).check();
+    await j.getByLabel("Para confirmar, escreva o nome do cliente").fill("Antônia Ferreira Prado");
+    await j.getByRole("button", { name: "Excluir os dados para sempre" }).click();
+    const feito = page.getByRole("status").filter({ hasText: "Dados excluídos." });
+    await expect(feito).toContainText(
+      "Protocolo EXC-2026-0007. Antes de responder ao cliente, confira o cadastro de Antônia F. Prado, que ficou com um pedido de exclusão aberto. O pedido só está atendido por inteiro quando ele também for resolvido.");
+    await expect(feito).not.toContainText("Informe ao cliente que o pedido foi atendido");
+    await expect(feito.getByRole("link", { name: "Abrir a ficha de Antônia F. Prado" })).toHaveAttribute("href", `/clientes/${OUTRO_ID}`);
+    const post = pedidos.find((p) => p.metodo === "POST")!;
+    expect(post.corpo).toMatchObject({ abrirNoMesmoDocumento: [OUTRO_ID] });
+    expect(post.corpo).not.toHaveProperty("escritorioId");
+    await semViolacoes(page);
+  });
+
+  test("desmarcada, a exclusão vai sem o pedido; o cadastro que mudou volta como aviso de erro", async ({ page }) => {
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA }, [`GET ${ficha}`]: { corpo: { ...FICHA, mesmoDocumento: [OUTRO], mesmoDocumentoMais: 0 } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`POST ${ficha}/exclusao`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", mensagem: "Um dos outros cadastros mudou", detalhes: { campos: ["abrirNoMesmoDocumento"] } } } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const j = await abrirExcluir(page);
+    await j.getByRole("checkbox", { name: /Abrir também um pedido de exclusão/ }).uncheck();
+    await j.getByLabel("Como o pedido chegou").selectOption("EMAIL");
+    await j.getByRole("checkbox", { name: /Conferi que o pedido veio do cliente/ }).check();
+    await j.getByLabel("Para confirmar, escreva o nome do cliente").fill("Antônia Ferreira Prado");
+    await j.getByRole("button", { name: "Excluir os dados para sempre" }).click();
+    await expect(j.getByRole("alert")).toContainText("Um dos cadastros mudou. Feche e abra a janela de novo.");
+    expect(pedidos.find((p) => p.metodo === "POST")!.corpo).toMatchObject({ abrirNoMesmoDocumento: [] });
+  });
+
+  test("dois outros cadastros (exc-mesmo-cpf-varios): um com pedido já aberto, sem caixa; o outro com processo, com a caixa", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, mesmoDocumento: [{ ...OUTRO, situacao: "INATIVO", pedidoAberto: true },
+        { id: OUTRO2_ID, nome: "A. Ferreira Prado", situacao: "ATIVO", desde: "2026-07-15T13:00:00+00:00", contratoOuProcesso: true, pedidoAberto: false }], mesmoDocumentoMais: 0 } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const j = await abrirExcluir(page);
+    const aviso = j.getByRole("group", { name: "Outro cadastro com o mesmo CPF" });
+    await expect(aviso).toContainText("Há 2 outros cadastros com o mesmo CPF: Antônia F. Prado e A. Ferreira Prado.");
+    const cads = aviso.locator(".pd-mesmo-cads > li");
+    await expect(cads.nth(0)).toContainText("Inativo, cliente desde 03/02/2025, sem contrato nem processo.");
+    await expect(cads.nth(0)).toContainText("Já tem um pedido de exclusão aberto.");
+    await expect(cads.nth(0).getByRole("checkbox")).toHaveCount(0);
+    await expect(cads.nth(1)).toContainText("Tem contrato ou processo: o pedido dele vira arquivamento.");
+    await expect(cads.nth(1).getByRole("checkbox", { name: /neste cadastro/ })).toBeChecked();
+    await semViolacoes(page);
+  });
+
+  test("C8: a janela de arquivar mostra o mesmo aviso, com “Este arquivamento”, e manda os marcados", async ({ page }) => {
+    const VINC = { contratos: [{ id: "ct1", numero: "C-2026-031" }], processos: [] };
+    const arquivamento = { id: "p1", estado: "ARQUIVADO", pedidoEm: dia(0), canal: "WHATSAPP", quemPediu: "TITULAR", registradoPor: DIEGO, registradoEm: h(1),
+      resolvidoPor: MARINA, resolvidoEm: h(0.1), protocolo: "EXC-2026-0008", em: h(0.1) };
+    const pedidos = await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, pedidoExclusao: PEDIDO, vinculosLgpd: VINC, mesmoDocumento: [OUTRO], mesmoDocumentoMais: 0 } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+      [`POST ${ficha}/arquivar-lgpd`]: { corpo: { protocolo: "EXC-2026-0008", versao: 4, pedido: arquivamento, mesmoDocumento: [{ id: OUTRO_ID, nome: OUTRO.nome }] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Arquivar a pedido (LGPD)" }).click();
+    const j = page.getByRole("alertdialog", { name: "Arquivar Antônia Ferreira Prado a pedido (LGPD)?" });
+    const aviso = j.getByRole("group", { name: "Outro cadastro com o mesmo CPF" });
+    await expect(aviso).toContainText("Este arquivamento não mexe nele.");
+    await expect(aviso.getByRole("checkbox")).toBeChecked();
+    await semViolacoes(page);
+    await j.getByRole("checkbox", { name: /Conferi que o pedido veio do cliente/ }).check();
+    await j.getByRole("button", { name: "Arquivar a pedido (LGPD)" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Cliente arquivado a pedido (LGPD)." })).toContainText("confira o cadastro de Antônia F. Prado");
+    expect(pedidos.find((p) => p.metodo === "POST")!.corpo).toMatchObject({ abrirNoMesmoDocumento: [OUTRO_ID] });
+  });
+
+  test("M4: a ficha do outro cadastro, para a dona e para a equipe, sem protocolo nem observação", async ({ page }) => {
+    const pedido = { ...PEDIDO, registradoPor: MARINA, observacao: OBS_MESMO, origem: "MESMO_DOCUMENTO" };
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, pedidoExclusao: pedido } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const faixa = page.locator(".pd-faixa");
+    await expect(faixa).toContainText(`Pedido de exclusão aberto em ${br(dia(0)).slice(0, 5)}, ao atender outro cadastro com o mesmo CPF.`);
+    await expect(faixa).toContainText("Você atendeu o pedido de exclusão de outro cadastro com o mesmo CPF, e este ficou com um pedido aberto, com a mesma data e o mesmo canal (WhatsApp).");
+    await expect(faixa).not.toContainText("Observação");
+    await expect(faixa.getByRole("button", { name: "Excluir os dados" })).toBeVisible();
+    await expect(faixa.getByRole("button", { name: "Recusar o pedido" })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("M4: para a equipe, a faixa fica neutra", async ({ page }) => {
+    const pedido = { ...PEDIDO, registradoPor: MARINA, observacao: OBS_MESMO, origem: "MESMO_DOCUMENTO" };
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_DIEGO },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, dono: false, pedidoExclusao: pedido } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const faixa = page.locator(".pd-faixa");
+    await expect(faixa).toContainText(`Pedido de exclusão aberto em ${br(dia(0)).slice(0, 5)}, aguardando a sócia dona.`);
+    await expect(faixa).toContainText("Marina Ribeiro, a sócia dona, vai conferir este cadastro e decidir. Até lá, nada muda na ficha.");
+    await expect(faixa).not.toContainText("mesmo CPF");
+    await expect(faixa).not.toContainText("Observação");
+    await expect(faixa.getByRole("button")).toHaveCount(0);
     await semViolacoes(page);
   });
 });

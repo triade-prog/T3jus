@@ -1,6 +1,6 @@
 {
   "id": "F1.32",
-  "texto": "Cobrança só depois do teste: a primeira mensalidade no mês seguinte ao fim e a confirmação da assinatura pelo Console (migration 1160, parte da cobrança)",
+  "texto": "Cobrança só depois do teste: a primeira mensalidade no mês seguinte ao fim e a confirmação da assinatura pelo Console (migration 1161)",
   "peca": "C4",
   "refs": [
     "CO-09"

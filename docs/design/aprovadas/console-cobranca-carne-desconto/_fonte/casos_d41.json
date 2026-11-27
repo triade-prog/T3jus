@@ -1,0 +1,86 @@
+[
+ {
+  "nome": "carne-desconto",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne-desconto"
+ },
+ {
+  "nome": "carne-desconto-meio",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne-desconto-meio"
+ },
+ {
+  "nome": "carne-pulou-adiantada",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne-pulou-adiantada"
+ },
+ {
+  "nome": "editar-desconto",
+  "url": "ficha.html?aba=assinatura&estado=cb-editar-carne-desconto"
+ },
+ {
+  "nome": "editar-desconto-erros",
+  "url": "ficha.html?aba=assinatura&estado=cb-editar-carne-desconto-erros"
+ },
+ {
+  "nome": "desconto-troca",
+  "url": "ficha.html?aba=assinatura&estado=cb-desconto-troca"
+ },
+ {
+  "nome": "desconto-troca-feito",
+  "url": "ficha.html?aba=assinatura&estado=cb-desconto-troca-feito"
+ },
+ {
+  "nome": "desconto-troca-pessoas",
+  "url": "ficha.html?aba=assinatura&estado=cb-desconto-troca-pessoas"
+ },
+ {
+  "nome": "carne-novo-faixas",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne-novo-faixas"
+ },
+ {
+  "nome": "carne-valor-mudou",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne-valor-mudou"
+ },
+ {
+  "nome": "mudar-plano-carne",
+  "url": "ficha.html?aba=assinatura&estado=cb-mudar-plano-carne"
+ },
+ {
+  "nome": "carne-historico",
+  "url": "ficha.html?aba=assinatura&estado=cb-carne-historico"
+ },
+ {
+  "nome": "fatura-desconto",
+  "url": "cobranca.html?aba=fatura&estado=carne-desconto"
+ },
+ {
+  "nome": "fatura-desconto-pessoa",
+  "url": "cobranca.html?aba=fatura&estado=carne-desconto-pessoa"
+ },
+ {
+  "nome": "portal-desconto",
+  "url": "portal-escritorio.html?estado=cb-carne-desconto"
+ },
+ {
+  "nome": "portal-trocado",
+  "url": "portal-escritorio.html?estado=cb-carne-trocado-desconto"
+ },
+ {
+  "nome": "pdf-carne-desconto",
+  "url": "carne-a4.html?estado=carne-desconto"
+ },
+ {
+  "nome": "pdf-carne-trocado",
+  "url": "carne-a4.html?estado=carne-trocado-desconto"
+ },
+ {
+  "nome": "pdf-fatura-desconto",
+  "url": "fatura-a4.html?estado=fatura-carne-desconto"
+ },
+ {
+  "nome": "pdf-fatura-pessoa",
+  "url": "fatura-a4.html?estado=fatura-carne-desconto-pessoa"
+ },
+ {
+  "nome": "pdf-recibo-desconto",
+  "url": "recibo-a4.html?estado=recibo-carne-desconto"
+ }
+]

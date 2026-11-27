@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ArquivosParaApagar, ArquivosQueFicam, FichaCliente, HistoricoQueFica } from "@t3jus/domain";
-import type { AssinaPorOutro, ConversasParaApagar } from "@t3jus/domain";
+import type { AssinaPorOutro, ConversasParaApagar, MesmoDocumento, PedidoExclusao } from "@t3jus/domain";
+import { rotuloSituacao } from "./clientes.ts";
 import {
-  avisoLembrete, despesasDoExcluido, dicaAssinaPorOutro, dicaConversasQueFicam, linhaArquivosParaApagar, linhaBaixas, linhaConversas, linhaHistorico,
+  avisoLembrete, avisoMesmoDocumento, faixaPedidoMesmoDocumento, marcadosAoAbrir, situacaoMesmoDocumento, textoFeitoExclusao, despesasDoExcluido, dicaAssinaPorOutro, dicaConversasQueFicam, linhaArquivosParaApagar, linhaBaixas, linhaConversas, linhaHistorico,
   linhaPedidosContrato, linhaSobre, PE_GUARDA, SEM_DATA, type Pedaco,
 } from "./exclusao.ts";
 
@@ -347,5 +348,100 @@ describe("avisoLembrete (F3.186, C10 a)", () => {
   });
   it("sem lembrete, não há aviso", () => {
     expect(avisoLembrete(null, "Marina")).toBeNull();
+  });
+});
+
+// F3.188: os textos do desenho aprovado (portal-exclusao-contratos-conversas, NOTAS.md, itens 8 a 10; _fonte/f181.py).
+const OUTRO: MesmoDocumento = { id: "o1", nome: "Marina A. Coelho", situacao: "ATIVO", desde: "2025-02-03T13:00:00+00:00", contratoOuProcesso: false, pedidoAberto: false };
+const INATIVO_PEDIDO: MesmoDocumento = { ...OUTRO, situacao: "INATIVO", pedidoAberto: true };
+const PROCESSO: MesmoDocumento = { id: "o2", nome: "M. Alves Coelho", situacao: "ATIVO", desde: "2026-07-15T13:00:00+00:00", contratoOuProcesso: true, pedidoAberto: false };
+const QUASE = "Quase sempre é a mesma pessoa cadastrada duas vezes, mas pode ser outra pessoa com o CPF errado.";
+
+describe("rotuloSituacao (D6, AP-01)", () => {
+  it("o arquivado a pedido deixa de aparecer como Inativo", () => {
+    expect(["ATIVO", "INATIVO", "ARQUIVADO"].map((s) => rotuloSituacao(s as MesmoDocumento["situacao"]))).toEqual(["Ativo", "Inativo", "Arquivado a pedido"]);
+  });
+});
+
+describe("avisoMesmoDocumento (F3.188, C7 na B' e C8)", () => {
+  it("um cadastro ativo, sem contrato: o texto do exc-mesmo-cpf, com a caixa e a sugestão de corrigir", () => {
+    const a = avisoMesmoDocumento([OUTRO], 0, "PF", "excluir")!;
+    expect(a.titulo).toBe("Há outro cadastro com o mesmo CPF: Marina A. Coelho.");
+    expect(a.texto).toBe(`Ativo, cliente desde 03/02/2025, sem contrato nem processo. Esta exclusão não mexe nele. ${QUASE}`);
+    expect(a.cadastros[0]!.caixa).toBe("Abrir também um pedido de exclusão no cadastro de Marina A. Coelho");
+    expect(a.cadastros[0]!.sem).toBe("Sem o pedido, o cadastro de Marina A. Coelho fica como está. Se for outra pessoa, o CPF de um dos dois está errado: corrija na ficha certa.");
+    expect(a.varios).toBe(false);
+  });
+  it("na janela de arquivar (arq-mesmo-cpf), e na PJ, CNPJ", () => {
+    expect(avisoMesmoDocumento([OUTRO], 0, "PF", "arquivar")!.texto).toContain("Este arquivamento não mexe nele.");
+    expect(avisoMesmoDocumento([OUTRO], 0, "PJ", "excluir")!.titulo).toBe("Há outro cadastro com o mesmo CNPJ: Marina A. Coelho.");
+  });
+  it("com pedido já aberto, sem caixa; o arquivado também fica sem", () => {
+    const a = avisoMesmoDocumento([INATIVO_PEDIDO], 0, "PF", "excluir")!;
+    expect([a.cadastros[0]!.caixa, a.cadastros[0]!.ja]).toEqual([null, "Ele já tem um pedido de exclusão aberto."]);
+    const arq = avisoMesmoDocumento([{ ...OUTRO, situacao: "ARQUIVADO", contratoOuProcesso: true }], 0, "PF", "excluir")!;
+    expect(arq.cadastros[0]!.caixa).toBeNull();
+    expect(situacaoMesmoDocumento({ ...OUTRO, situacao: "ARQUIVADO" })).toBe("Arquivado a pedido, cliente desde 03/02/2025.");
+  });
+  it("dois cadastros (exc-mesmo-cpf-varios): um inativo com pedido e um ativo com processo", () => {
+    const a = avisoMesmoDocumento([INATIVO_PEDIDO, PROCESSO], 0, "PF", "excluir")!;
+    expect(a.titulo).toBe("Há 2 outros cadastros com o mesmo CPF: Marina A. Coelho e M. Alves Coelho.");
+    expect(a.texto).toBe("Esta exclusão não mexe neles. Confira cada um: quase sempre é a mesma pessoa cadastrada mais de uma vez, mas pode ser outra pessoa com o CPF errado.");
+    expect(a.cadastros.map((c) => [c.situacao, c.caixa, c.ja])).toEqual([
+      ["Inativo, cliente desde 03/02/2025, sem contrato nem processo.", null, "Já tem um pedido de exclusão aberto."],
+      ["Ativo, cliente desde 15/07/2026. Tem contrato ou processo: o pedido dele vira arquivamento.", "Abrir também um pedido de exclusão neste cadastro", null],
+    ]);
+  });
+  it("com mais de 5, o resto no título", () => {
+    expect(avisoMesmoDocumento([OUTRO], 2, "PF", "excluir")!.titulo).toBe("Há 3 outros cadastros com o mesmo CPF: Marina A. Coelho e mais 2 cadastros.");
+  });
+  it("sem outro cadastro, nada; a caixa vem marcada só onde ela aparece", () => {
+    expect(avisoMesmoDocumento([], 0, "PF", "excluir")).toBeNull();
+    expect(avisoMesmoDocumento(undefined, undefined, "PF", "excluir")).toBeNull();
+    expect(marcadosAoAbrir([INATIVO_PEDIDO, PROCESSO, { ...OUTRO, id: "o3", situacao: "ARQUIVADO" }])).toEqual(["o2"]);
+  });
+});
+
+describe("textoFeitoExclusao (F3.188, M3)", () => {
+  it("com outro cadastro aberto, não manda dizer que foi atendido (exc-feito-mesmo-cpf)", () => {
+    expect(textoFeitoExclusao("EXC-2026-0007", [{ id: "o1", nome: "Marina A. Coelho" }], "excluir")).toBe(
+      "Protocolo EXC-2026-0007. Antes de responder ao cliente, confira o cadastro de Marina A. Coelho, que ficou com um pedido de exclusão aberto. O pedido só está atendido por inteiro quando ele também for resolvido.");
+    expect(textoFeitoExclusao("EXC-2026-0007", [{ id: "o1", nome: "A" }, { id: "o2", nome: "B" }], "excluir")).toBe(
+      "Protocolo EXC-2026-0007. Antes de responder ao cliente, confira os cadastros de A e B, que ficaram com um pedido de exclusão aberto. O pedido só está atendido por inteiro quando eles também forem resolvidos.");
+  });
+  it("sem outro, o texto de antes; no arquivar, com “Nada foi apagado.”", () => {
+    expect(textoFeitoExclusao("EXC-2026-0007", [], "excluir")).toBe("Protocolo EXC-2026-0007. Informe ao cliente que o pedido foi atendido. O registro ficou no histórico do escritório.");
+    expect(textoFeitoExclusao("EXC-2026-0008", undefined, "arquivar")).toBe("Protocolo EXC-2026-0008. Informe ao cliente que o pedido foi atendido arquivando, e por quê. Nada foi apagado.");
+    expect(textoFeitoExclusao("EXC-2026-0008", [{ id: "o1", nome: "Marina A. Coelho" }], "arquivar")).toMatch(/quando ele também for resolvido\. Nada foi apagado\.$/);
+  });
+});
+
+describe("faixaPedidoMesmoDocumento (F3.188, M4)", () => {
+  const p: PedidoExclusao = {
+    id: "x", estado: "PENDENTE", pedidoEm: "2026-11-20", canal: "WHATSAPP", quemPediu: "TITULAR", origem: "MESMO_DOCUMENTO",
+    observacao: "Aberto pela sócia dona ao atender o pedido de outro cadastro com o mesmo CPF. Confira se é a mesma pessoa.",
+    registradoPor: { id: "d", nome: "Paula Reis" }, registradoEm: "2026-11-20T19:40:00+00:00",
+  };
+  const op = { tipo: "PF" as const, dona: true, eu: "Paula Reis", nomeDona: "Paula Reis", arquivar: false };
+  it("para a dona (ficha-pedido-mesmo-cpf), sem protocolo nem observação", () => {
+    expect(faixaPedidoMesmoDocumento(p, op)).toEqual({
+      titulo: "Pedido de exclusão aberto em 20/11, ao atender outro cadastro com o mesmo CPF.",
+      texto: "Você atendeu o pedido de exclusão de outro cadastro com o mesmo CPF, e este ficou com um pedido aberto, com a mesma data e o mesmo canal (WhatsApp). Confira se é a mesma pessoa. Se for, exclua os dados. Se não for, recuse o pedido e corrija o CPF na ficha certa.",
+    });
+  });
+  it("outra sócia dona atendeu: o nome dela; com contrato ou processo, arquivar", () => {
+    const f = faixaPedidoMesmoDocumento(p, { ...op, eu: "Carla Nunes", arquivar: true })!;
+    expect(f.texto).toMatch(/^Paula Reis atendeu/);
+    expect(f.texto).toContain("Se for, arquive a pedido, porque há contrato ou processo.");
+  });
+  it("para a equipe (ficha-pedido-mesmo-cpf-equipe), neutra", () => {
+    expect(faixaPedidoMesmoDocumento(p, { ...op, dona: false, eu: "Diego Martins" })).toEqual({
+      titulo: "Pedido de exclusão aberto em 20/11, aguardando a sócia dona.",
+      texto: "Paula Reis, a sócia dona, vai conferir este cadastro e decidir. Até lá, nada muda na ficha.",
+    });
+  });
+  it("o pedido comum fica com a faixa de antes", () => {
+    expect(faixaPedidoMesmoDocumento({ ...p, origem: undefined }, op)).toBeNull();
+    expect(faixaPedidoMesmoDocumento(null, op)).toBeNull();
   });
 });

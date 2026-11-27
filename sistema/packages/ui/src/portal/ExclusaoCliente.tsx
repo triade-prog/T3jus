@@ -17,9 +17,14 @@
 // 27/11/2026): a linha das conversas e a dica da conversa que fica (C5 e C6), a dica de quem ele assina
 // (C9), as linhas do "sobre" e da baixa, a proposta sem o pedido de contrato em "O que fica" e o aviso do
 // valor em aberto no topo (C10 a); na janela de arquivar, a linha do pedido de contrato (C2).
+// F3.188 (segunda entrega do mesmo desenho): o aviso do outro cadastro com o mesmo CPF, com a caixa já
+// marcada (C7 na B'), nas janelas de excluir e de arquivar (C8); a mensagem de feito que não manda dizer
+// "atendido" enquanto o outro estiver aberto (M3); a faixa do pedido aberto pelo mesmo CPF (M4).
 
 import { Fragment, useId, useRef, useState } from "react";
-import { CANAIS_PEDIDO, nomeConfere, QUEM_PEDIU, type CanalPedido, type FichaCliente, type PedidoExclusao, type QuemPediu } from "@t3jus/domain";
+import {
+  CANAIS_PEDIDO, nomeConfere, QUEM_PEDIU, type CanalPedido, type ExclusaoFeita, type FichaCliente, type PedidoExclusao, type PessoaRef, type QuemPediu,
+} from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
@@ -27,11 +32,11 @@ import { dataLonga, hora } from "../console/tempo.ts";
 import { agoraBrasilia, dataBr, lerData } from "./clientes.ts";
 import { primeiroNome } from "./equipe.ts";
 import {
-  avisoLembrete, despesasDoExcluido, dicaAssinaPorOutro, dicaConversasQueFicam, linhaArquivosParaApagar, linhaBaixas, linhaConversas, linhaPedidosContrato,
-  linhaSobre, PE_GUARDA, type Pedaco,
+  avisoLembrete, avisoMesmoDocumento, CAIXA_MESMO_DOCUMENTO, despesasDoExcluido, dicaAssinaPorOutro, dicaConversasQueFicam, faixaPedidoMesmoDocumento,
+  linhaArquivosParaApagar, linhaBaixas, linhaConversas, linhaPedidosContrato, linhaSobre, marcadosAoAbrir, PE_GUARDA, textoFeitoExclusao, type Pedaco,
 } from "./exclusao.ts";
 import type { Feito } from "./FichaCliente.tsx";
-import { chamarPortal } from "./Moldura.tsx";
+import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 
 const SOBRE = "Pedido do titular · LGPD";
 const CANAIS: [CanalPedido, string][] = [["EMAIL", "E-mail"], ["WHATSAPP", "WhatsApp"], ["PRESENCIAL", "Presencial"], ["TELEFONE", "Telefone"], ["CARTA", "Carta"]];
@@ -84,10 +89,16 @@ export function AcaoLgpd({ f, dona, aoExcluir, aoPedir }: { f: FichaCliente; don
   );
 }
 
-/** A faixa do pedido no alto da ficha, para todos; a dona vê as duas ações. */
-export function FaixaPedido({ f, aoExcluir, aoRecusar }: { f: FichaCliente; aoExcluir: () => void; aoRecusar: () => void }) {
+/**
+ * A faixa do pedido no alto da ficha, para todos; a dona vê as duas ações. O pedido aberto pelo mesmo CPF
+ * (F3.188, M4) tem o texto próprio, sem a observação; para a equipe, neutro.
+ */
+export function FaixaPedido({ f, eu, nomeDona, aoExcluir, aoRecusar }: {
+  f: FichaCliente; eu?: string | null; nomeDona?: string | null; aoExcluir: () => void; aoRecusar: () => void;
+}) {
   const p = f.pedidoExclusao;
   const r = f.ultimaRecusa;
+  const mesmo = faixaPedidoMesmoDocumento(p, { tipo: f.tipo, dona: f.dono, eu: eu ?? null, nomeDona: nomeDona ?? null, arquivar: !!f.vinculosLgpd });
   if (!p && r) {
     return (
       <div className="pd-faixa">
@@ -98,29 +109,20 @@ export function FaixaPedido({ f, aoExcluir, aoRecusar }: { f: FichaCliente; aoEx
     );
   }
   if (!p) return null;
+  const acoes = f.dono ? <AcoesDaDona f={f} aoExcluir={aoExcluir} aoRecusar={aoRecusar} /> : undefined;
+  if (mesmo) {
+    return (
+      <div className="pd-faixa">
+        <Aviso tom="atencao" icone="escudo" titulo={mesmo.titulo} acoes={acoes}>
+          {mesmo.texto}
+        </Aviso>
+      </div>
+    );
+  }
   return (
     <div className="pd-faixa">
       <Aviso tom="atencao" titulo={`Exclusão pedida em ${ddmm(p.pedidoEm)} por ${p.registradoPor.nome}, aguardando a sócia dona.`}
-        acoes={
-          f.dono ? (
-            <>
-              {f.vinculosLgpd ? (
-                <button className="btn btn-pri" type="button" onClick={aoExcluir}>
-                  <Icone nome="pasta" className="ico" />
-                  Arquivar a pedido (LGPD)
-                </button>
-              ) : (
-                <button className="btn btn-perigo" type="button" onClick={aoExcluir}>
-                  <Icone nome="escudo" className="ico" />
-                  Excluir os dados
-                </button>
-              )}
-              <button className="btn btn-sec" type="button" onClick={aoRecusar}>
-                Recusar o pedido
-              </button>
-            </>
-          ) : undefined
-        }>
+        acoes={acoes}>
         O pedido chegou por {canalMinusculo(p.canal)} em {dataBr(p.pedidoEm)}.{p.observacao ? ` Observação: “${p.observacao}”` : ""}
         {f.dono
           ? f.vinculosLgpd
@@ -129,6 +131,28 @@ export function FaixaPedido({ f, aoExcluir, aoRecusar }: { f: FichaCliente; aoEx
           : ""}
       </Aviso>
     </div>
+  );
+}
+
+/** As duas ações da dona na faixa do pedido. */
+function AcoesDaDona({ f, aoExcluir, aoRecusar }: { f: FichaCliente; aoExcluir: () => void; aoRecusar: () => void }) {
+  return (
+    <>
+      {f.vinculosLgpd ? (
+        <button className="btn btn-pri" type="button" onClick={aoExcluir}>
+          <Icone nome="pasta" className="ico" />
+          Arquivar a pedido (LGPD)
+        </button>
+      ) : (
+        <button className="btn btn-perigo" type="button" onClick={aoExcluir}>
+          <Icone nome="escudo" className="ico" />
+          Excluir os dados
+        </button>
+      )}
+      <button className="btn btn-sec" type="button" onClick={aoRecusar}>
+        Recusar o pedido
+      </button>
+    </>
   );
 }
 
@@ -211,6 +235,113 @@ function errosDoServidor(erro: ErroApi): Erros | null {
   const e: Erros = {};
   for (const c of campos) if (typeof c === "string" && m[c]) e[m[c][0]] = m[c][1];
   return Object.keys(e).length ? e : null;
+}
+
+/** F3.188: o servidor recusou um dos outros cadastros marcados (ele mudou enquanto a janela estava aberta). */
+function mudouMesmoDocumento(erro: ErroApi | null): boolean {
+  const c = erro?.detalhes?.campos;
+  return Array.isArray(c) && c.includes("abrirNoMesmoDocumento");
+}
+const MUDOU_MESMO_DOCUMENTO = "Um dos cadastros mudou. Feche e abra a janela de novo.";
+
+/** F3.188 (M3): o botão para a ficha de cada outro cadastro que ficou com pedido aberto. */
+function acoesFeito(outros: PessoaRef[] | undefined) {
+  if (!outros?.length) return undefined;
+  return (
+    <>
+      {outros.map((o) => (
+        <a key={o.id} className="btn btn-sec" href={`${ROTAS_PORTAL.clientes}/${o.id}`}>
+          <Icone nome="pessoas" className="ico" />
+          Abrir a ficha de {o.nome}
+        </a>
+      ))}
+    </>
+  );
+}
+
+/** Os outros cadastros marcados na janela; a caixa já vem marcada (B'). */
+function useMarcados(f: FichaCliente) {
+  const [marcados, setMarcados] = useState<string[]>(() => marcadosAoAbrir(f.mesmoDocumento));
+  const marcar = (id: string, sim: boolean) => setMarcados((m) => (sim ? [...m.filter((x) => x !== id), id] : m.filter((x) => x !== id)));
+  // Sem a chave na ficha (o banco de antes), o corpo vai como antes.
+  const corpo = f.mesmoDocumento ? { abrirNoMesmoDocumento: marcados } : {};
+  return { marcados, marcar, corpo };
+}
+
+/** F3.188 (C7 na B', C8): o aviso do outro cadastro com o mesmo CPF, no topo das janelas de excluir e de arquivar. */
+function AvisoMesmoDocumento({ f, modo, marcados, aoMarcar }: {
+  f: FichaCliente; modo: "excluir" | "arquivar"; marcados: string[]; aoMarcar: (id: string, sim: boolean) => void;
+}) {
+  const a = avisoMesmoDocumento(f.mesmoDocumento, f.mesmoDocumentoMais, f.tipo, modo);
+  if (!a) return null;
+  const doc = f.tipo === "PJ" ? "CNPJ" : "CPF";
+  const href = (id: string) => `${ROTAS_PORTAL.clientes}/${id}`;
+  type Cad = (typeof a.cadastros)[number];
+  const caixa = (c: Cad) =>
+    c.caixa ? (
+      <label className="opcao pd-mesmo-caixa">
+        <input className="marcar" type="checkbox" checked={marcados.includes(c.o.id)} onChange={(e) => aoMarcar(c.o.id, e.target.checked)} />
+        <span>
+          {c.caixa}
+          <small>{CAIXA_MESMO_DOCUMENTO}</small>
+        </span>
+      </label>
+    ) : null;
+  const sem = (c: Cad) =>
+    c.caixa && !marcados.includes(c.o.id) ? (
+      <p className="pd-mesmo-sem">
+        <Icone nome="alerta" className="ico" />
+        <span>{c.sem}</span>
+      </p>
+    ) : null;
+  const um = a.cadastros[0]!;
+  return (
+    <div className="pd-inteira">
+      <div className="aviso aviso-atencao pd-mesmo" role="group" aria-label={`Outro cadastro com o mesmo ${doc}`}>
+        <Icone nome="pessoas" className="ico" />
+        <div>
+          <strong className="aviso-titulo">{a.titulo}</strong>
+          <p>{a.texto}</p>
+          {a.varios ? (
+            <ul className="pd-mesmo-cads">
+              {a.cadastros.map((c) => (
+                <li key={c.o.id}>
+                  <p className="pd-mesmo-nome">
+                    <a href={href(c.o.id)} target="_blank" rel="noopener">
+                      {c.o.nome}
+                      <span className="sr"> (abre em outra aba)</span>
+                    </a>
+                    <small>{c.situacao}</small>
+                  </p>
+                  {c.ja ? (
+                    <p className="pd-mesmo-ja">
+                      <Icone nome="check" className="ico" />
+                      <span>{c.ja}</span>
+                    </p>
+                  ) : null}
+                  {caixa(c)}
+                  {sem(c)}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              {um.ja ? <p>{um.ja}</p> : null}
+              {caixa(um)}
+              {sem(um)}
+              <div className="aviso-acoes">
+                <a className="btn btn-sec" href={href(um.o.id)} target="_blank" rel="noopener">
+                  <Icone nome="pessoas" className="ico" />
+                  Abrir a ficha de {um.o.nome}
+                  <span className="sr"> (abre em outra aba)</span>
+                </a>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** Quem não é a dona registra o pedido para ela (decisão 2). */
@@ -366,6 +497,7 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
   const baixas = linhaBaixas(f.baixasComExplicacao);
   const pedidos = linhaPedidosContrato(f.saiDeContratos?.pedidos, "fica");
   const lembrete = avisoLembrete(f.saiDeContratos?.lembretes, primeiro);
+  const mesmo = useMarcados(f);
 
   async function enviar() {
     setErro(null);
@@ -376,12 +508,16 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
     setErros(e);
     if (Object.keys(e).length) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
-    const r = await chamarPortal<{ protocolo: string; versao: number }>(`/v1/escritorio/clientes/${f.id}/exclusao`, {
-      corpo: { versao: f.versao, pedidoEm, canal: c.canal, quemPediu: quem, conferido: true, nomeConfirmado: nome, observacao: c.obs.trim() || p?.observacao || null },
+    const r = await chamarPortal<ExclusaoFeita>(`/v1/escritorio/clientes/${f.id}/exclusao`, {
+      corpo: {
+        versao: f.versao, pedidoEm, canal: c.canal, quemPediu: quem, conferido: true, nomeConfirmado: nome, observacao: c.obs.trim() || p?.observacao || null,
+        ...mesmo.corpo,
+      },
     });
     setEnviando(false);
     if (!r.ok) {
       if (r.erro.codigo === "VERSION_CONFLICT") return aoConflito();
+      if (mudouMesmoDocumento(r.erro)) return setErro(r.erro);
       const s = errosDoServidor(r.erro);
       if (s) {
         setErros(s);
@@ -389,7 +525,7 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
       }
       return setErro(r.erro);
     }
-    aoFeito({ titulo: "Dados excluídos.", texto: `Protocolo ${r.dados.protocolo}. Informe ao cliente que o pedido foi atendido. O registro ficou no histórico do escritório.` });
+    aoFeito({ titulo: "Dados excluídos.", texto: textoFeitoExclusao(r.dados.protocolo, r.dados.mesmoDocumento, "excluir"), acoes: acoesFeito(r.dados.mesmoDocumento) });
   }
 
   const nErros = Object.keys(erros).length;
@@ -421,7 +557,9 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
             <Aviso tom="urgencia" titulo="A exclusão não foi feita, e nada foi apagado.">
               {erro.detalhes?.motivo === "CLIENTE_EXCLUIDO"
                 ? "Os dados deste cliente já foram excluídos."
-                : `A exclusão acontece inteira ou não acontece, então os dados de ${primeiro} estão como antes. ${textoDoErro(erro)}`}
+                : mudouMesmoDocumento(erro)
+                  ? MUDOU_MESMO_DOCUMENTO
+                  : `A exclusão acontece inteira ou não acontece, então os dados de ${primeiro} estão como antes. ${textoDoErro(erro)}`}
             </Aviso>
           </div>
         ) : p ? (
@@ -431,6 +569,7 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
             </Aviso>
           </div>
         ) : null}
+        <AvisoMesmoDocumento f={f} modo="excluir" marcados={mesmo.marcados} aoMarcar={mesmo.marcar} />
         {lembrete ? (
           <div className="pd-inteira">
             <Aviso tom="atencao" icone="carteira" titulo={lembrete.titulo}>
@@ -652,6 +791,7 @@ export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito 
   const v = f.vinculosLgpd ?? { contratos: [], processos: [] };
   // F3.181 (C2): o arquivar também tira o pedido de contrato da lista de Contratos.
   const pedidos = linhaPedidosContrato(f.saiDeContratos?.pedidos, "arquivar");
+  const mesmo = useMarcados(f);
 
   async function enviar() {
     setErro(null);
@@ -661,12 +801,13 @@ export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito 
     setErros(e);
     if (Object.keys(e).length) return focarPrimeiroErro(corpo.current);
     setEnviando(true);
-    const r = await chamarPortal<{ protocolo: string; versao: number }>(`/v1/escritorio/clientes/${f.id}/arquivar-lgpd`, {
-      corpo: { versao: f.versao, pedidoEm, canal: c.canal, quemPediu: quem, conferido: true, observacao: c.obs.trim() || p?.observacao || null },
+    const r = await chamarPortal<ExclusaoFeita>(`/v1/escritorio/clientes/${f.id}/arquivar-lgpd`, {
+      corpo: { versao: f.versao, pedidoEm, canal: c.canal, quemPediu: quem, conferido: true, observacao: c.obs.trim() || p?.observacao || null, ...mesmo.corpo },
     });
     setEnviando(false);
     if (!r.ok) {
       if (r.erro.codigo === "VERSION_CONFLICT") return aoConflito();
+      if (mudouMesmoDocumento(r.erro)) return setErro(r.erro);
       const s = errosDoServidor(r.erro);
       if (s) {
         if (s.conf) s.conf = "Confirme quem pediu antes de arquivar.";
@@ -675,7 +816,10 @@ export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito 
       }
       return setErro(r.erro);
     }
-    aoFeito({ titulo: "Cliente arquivado a pedido (LGPD).", texto: `Protocolo ${r.dados.protocolo}. Informe ao cliente que o pedido foi atendido arquivando, e por quê. Nada foi apagado.` });
+    aoFeito({
+      titulo: "Cliente arquivado a pedido (LGPD).", texto: textoFeitoExclusao(r.dados.protocolo, r.dados.mesmoDocumento, "arquivar"),
+      acoes: acoesFeito(r.dados.mesmoDocumento),
+    });
   }
 
   const nErros = Object.keys(erros).length;
@@ -712,7 +856,9 @@ export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito 
                 ? "Este cliente já foi arquivado a pedido."
                 : erro.detalhes?.motivo === "SEM_CONTRATO_OU_PROCESSO"
                   ? "O cliente não tem mais contrato nem processo. Feche e abra a ficha de novo para atender o pedido excluindo os dados."
-                  : `Nada mudou nos dados de ${primeiro}. ${textoDoErro(erro)}`}
+                  : mudouMesmoDocumento(erro)
+                    ? MUDOU_MESMO_DOCUMENTO
+                    : `Nada mudou nos dados de ${primeiro}. ${textoDoErro(erro)}`}
             </Aviso>
           </div>
         ) : p ? (
@@ -722,6 +868,7 @@ export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito 
             </Aviso>
           </div>
         ) : null}
+        <AvisoMesmoDocumento f={f} modo="arquivar" marcados={mesmo.marcados} aoMarcar={mesmo.marcar} />
         <div className="pd-col">
           <div className="pd-lado pd-fica">
             <h3>

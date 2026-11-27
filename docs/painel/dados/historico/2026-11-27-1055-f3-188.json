@@ -1,0 +1,12 @@
+{
+  "data": "27/11/2026",
+  "inicio": "10:55",
+  "fim": "11:45",
+  "texto": "F3.188 feita (segunda entrega do desenho portal-exclusao-contratos-conversas): as janelas de excluir e de arquivar mostram o outro cadastro com o mesmo CPF, com a caixa já marcada que abre nele um pedido de exclusão com a mesma data e o mesmo canal, sem protocolo e sem nada que aponte o excluído; a mensagem de feito não diz mais atendido enquanto ele estiver aberto, e a ficha dele ganha a faixa própria para a dona e para a equipe; o arquivado a pedido deixa de aparecer como Inativo no aviso de duplicado (migration 1143, pgTAP 173 e 174, concorrência do mesmo CPF); P33 pendente, com a api-portal.",
+  "refs": [
+    "F3.188",
+    "P33",
+    "PT-11",
+    "AP-01"
+  ]
+}
