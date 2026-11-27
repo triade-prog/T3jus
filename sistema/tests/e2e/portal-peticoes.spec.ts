@@ -7,6 +7,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { criarDocx } from "../../packages/domain/src/docx.ts";
 import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
+import { quadroAntesDoCommit } from "./quadro.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -332,6 +333,27 @@ test.describe("Jurídico › Petições (EX-09)", () => {
     expect(pedidos.find((p) => p.caminho.endsWith("/gerar"))!.corpo).toMatchObject({ enviar: true, recado: "O prazo vence hoje.", modelo: { padrao: "JUNTADA", modeloId: null } });
     expect((pedidos.find((p) => p.caminho.endsWith("/gerar"))!.corpo as Record<string, unknown>).valorCausa).toBeUndefined();
     await semViolacoes(page);
+  });
+
+  // F3.183: depois do await da prévia, o quadro chega antes do commit que troca o passo atual.
+  test("a prévia com o quadro antes do commit: o foco vai ao passo 4", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      ...comuns("Beatriz Nogueira", false),
+      "GET /v1/escritorio/juridico/casos": { corpo: { hoje: "2026-11-18", etapas: [], totais: { andamento: 0, encerrados: 0, prazoHoje: 0 }, responsaveis: [], souDono: false, casos: [] } },
+      "GET /v1/escritorio/peticoes/modelos": { corpo: MODELOS },
+      [`GET /v1/escritorio/peticoes/casos/${CASO}/dados`]: { corpo: dados(MARINA, null) },
+      [`POST /v1/escritorio/peticoes/casos/${CASO}/previa`]: { corpo: previa(MARINA, null) },
+    });
+    await page.goto(`${P}/juridico/peticoes/nova?caso=${CASO}`);
+    await expect(page.getByRole("list", { name: "Passo 2 de 4" })).toBeVisible();
+    await page.getByRole("radio", { name: /Juntada de documentos/ }).check();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("list", { name: "Passo 3 de 4" })).toBeVisible();
+    await page.getByRole("button", { name: "Ver a prévia" }).click();
+    const passos = page.getByRole("list", { name: "Passo 4 de 4" });
+    await expect(passos).toBeVisible();
+    await expect(passos.locator("li[aria-current='step'] .pe-pi")).toBeFocused();
   });
 
   test("F3.106: nome completo de Sua conta, [ADVOGADOS_QUALIFICACAO] e o que falta de cada advogado", async ({ page }) => {

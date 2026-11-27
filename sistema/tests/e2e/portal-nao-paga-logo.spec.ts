@@ -5,6 +5,7 @@
 import { deflateSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
 import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
+import { quadroAntesDoCommit } from "./quadro.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -317,6 +318,26 @@ test.describe("Logo do escritório no carnê e no recibo (F3.81, F3.19)", () => 
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect.poll(() => pedidos.filter((p) => p.metodo === "PUT").length).toBe(2);
     expect(pedidos.filter((p) => p.metodo === "PUT")[1]!.corpo).toMatchObject({ versao: 4, marca: "LOGO", logoId: CLARO, logoCor: "UMA_COR" });
+  });
+
+  // F3.183: depois do await, o quadro chega antes do commit que marca a forma do logo.
+  test("logo sem contraste com o quadro antes do commit: o foco vai à forma marcada", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      "GET /v1/escritorio/recebimento": { corpo: RECEB },
+      "POST /v1/escritorio/recebimento/logo": { status: 201, corpo: logoGuardado(CLARO, false) },
+      "PUT /v1/escritorio/recebimento": { corpo: { versao: 4, desatualizados: 0, naoSalvo: { marca: "LOGO_SEM_CONTRASTE", contraste: 1.2 } } },
+      [`GET /v1/escritorio/logos/${CLARO}`]: { corpo: null, png: PNG_CLARO },
+    });
+    await page.goto(`${P}/meu-escritorio/recebimento`);
+    const folha = page.getByRole("region", { name: "Marca e timbrado" });
+    await folha.getByRole("radio", { name: /O logo do escritório/ }).check();
+    await folha.locator("#lg-arq").setInputFiles({ name: "logo-dourado.png", mimeType: "image/png", buffer: PNG_CLARO });
+    await expect(folha.getByRole("list", { name: "Conferência do logo para impressão" })).toContainText("Contraste com o papel: 1,2:1.");
+    await page.getByRole("button", { name: "Salvar" }).click();
+    await expect(folha.getByText("A marca não foi salva: o logo some no papel.")).toBeVisible();
+    await expect(folha.getByRole("radio", { name: /Nas cores do arquivo/ })).toBeFocused();
   });
 
   test("remover o logo pede confirmação; quem não é dono vê a marca e a OAB só para ler", async ({ page }) => {

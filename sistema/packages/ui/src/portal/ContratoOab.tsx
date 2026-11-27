@@ -243,7 +243,7 @@ export function JanelaInscricoes({ f, aberta, aoFechar, aoFeito }: { f: FichaCon
     const vazios = advs.filter(({ x }) => !(escolha[x.pessoaId] ?? []).length).map(({ x }) => `inscricoes.${x.pessoaId}`);
     if (vazios.length) {
       setErros(vazios);
-      return requestAnimationFrame(() => focarPrimeiroErro(corpo.current));
+      return focarPrimeiroErro(corpo.current);
     }
     setErros([]);
     setFalha(null);
@@ -259,7 +259,7 @@ export function JanelaInscricoes({ f, aberta, aoFechar, aoFeito }: { f: FichaCon
         const campos = r.erro.detalhes?.campos;
         if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
           setErros(campos.map(String));
-          return requestAnimationFrame(() => focarPrimeiroErro(corpo.current));
+          return focarPrimeiroErro(corpo.current);
         }
         return setFalha(r.erro.codigo === "VERSION_CONFLICT" ? "Alguém mudou este contrato agora há pouco. Feche, recarregue a página e tente de novo." : textoDoErro(r.erro));
       }

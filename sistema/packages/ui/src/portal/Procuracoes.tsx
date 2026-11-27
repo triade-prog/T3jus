@@ -17,7 +17,7 @@ import {
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
+import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { hora, iniciais } from "../console/tempo.ts";
 import { lerDia } from "./agenda.ts";
 import { abrirAnexo, enviarAnexo } from "./Anexos.tsx";
@@ -1745,6 +1745,7 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
   const [progresso, setProgresso] = useState<number | null>(null);
   const [feitos, setFeitos] = useState<string[]>([]);
   const corpo = useRef<HTMLDivElement>(null);
+  const focar = useFocoDepoisDoCommit();
 
   const pronto = dados && dados !== "erro" ? dados : null;
   const docs = pronto ? (() => {
@@ -1774,7 +1775,7 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
     if (!escolhidos.length && docs[0]) e[`${docs[0].chave}:arq`] = "Escolha o arquivo de ao menos um documento assinado.";
     if (ativa && !caso.validar()) e.caso = "Confira o caso em Jurídico.";
     setErros(e);
-    if (Object.keys(e).length) return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
+    if (Object.keys(e).length) return focar(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
     // Várias fotos viram um PDF só antes de enviar qualquer coisa (F3.99): o assinado continua
     // sendo um arquivo por documento.
     const arquivos = new Map<string, File>();
@@ -1789,7 +1790,7 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
     if (Object.keys(naoJuntou).length) {
       setEnviando(null);
       setErros(naoJuntou);
-      return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
+      return focar(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
     }
     const ok: string[] = [...feitos];
     let ativou = false;
@@ -1818,7 +1819,7 @@ export function JanelaAssinados({ contrato, so, aoFechar, aoFeito }: {
           setEnviando(null);
           setFeitos(ok);
           if (r.erro.codigo === "VALIDATION_ERROR" && caso.doServidor(r.erro.detalhes?.campos)) {
-            requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+            focar(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
             return setFalha("O arquivo do contrato ficou guardado, mas a assinatura não foi registrada e o caso não foi aberto: os dois andam juntos. O contrato continua em elaboração, e o que você escolheu continua aqui.");
           }
           return setFalha(r.erro.codigo === "VERSION_CONFLICT"

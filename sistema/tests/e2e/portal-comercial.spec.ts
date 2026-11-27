@@ -4,6 +4,7 @@
 // acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
 import { AGORA, fixarRelogio, semViolacoes } from "./console-dados.ts";
+import { quadroAntesDoCommit } from "./quadro.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -410,6 +411,20 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await expect(page.getByRole("alert").filter({ hasText: "Falta acertar 2 pontos" })).toBeVisible();
     await expect(page.getByLabel("Cliente", { exact: true })).toHaveAttribute("aria-invalid", "true");
     expect(pedidos.find((p) => p.metodo === "POST")?.corpo).toMatchObject({ rascunho: true, retorno: null, condicoes: [] });
+  });
+
+  // F3.183: depois do await, o quadro chega antes do commit que cria o resumo de erros.
+  test("422 do servidor com o quadro antes do commit: o foco vai ao primeiro ponto do resumo", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      ...comuns(),
+      "POST /v1/escritorio/propostas": { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["clienteId", "servico"] } } } },
+    });
+    await page.goto(`${P}/comercial/propostas/nova`);
+    await expect(page.getByRole("heading", { level: 1, name: "Nova proposta" })).toBeVisible();
+    await page.getByRole("button", { name: "Salvar rascunho" }).click();
+    const resumo = page.getByRole("alert").filter({ hasText: "Falta acertar 2 pontos" });
+    await expect(resumo.getByRole("link", { name: /Cliente/ })).toBeFocused();
   });
 
   test("Editar a proposta vem preenchida e salva com a versão lida", async ({ page }) => {

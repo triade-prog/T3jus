@@ -20,7 +20,7 @@ import {
 import { textoDoErro } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { Simbolo } from "../Marca.tsx";
-import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
+import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { contar, diaCurto, nomeDoMes } from "./agenda.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { Toast, type Feito } from "./FichaCliente.tsx";
@@ -1090,6 +1090,7 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
   const [erroMarca, setErroMarca] = useState(false);
   const [remover, setRemover] = useState(false);
   const form = useRef<HTMLFormElement>(null);
+  const focar = useFocoDepoisDoCommit();
   const mudarMarca = (m: Partial<EstadoMarca>) => {
     setMarca((x) => ({ ...x, ...m }));
     if (m.marca || m.logo) setErroMarca(false);
@@ -1159,7 +1160,7 @@ function FormRecebimento({ r, escritorio, aoSalvo }: { r: RecebimentoEscritorio;
       // Pergunta 7: o resto foi salvo e a marca não; a página fica aberta para escolher outra forma.
       setVersao(res.dados.versao);
       setNaoSalvo(res.dados.naoSalvo.contraste);
-      return requestAnimationFrame(() => document.querySelector<HTMLElement>('input[name="lg-c"][aria-invalid="true"]')?.focus());
+      return focar(() => document.querySelector<HTMLElement>('input[name="lg-c"][aria-invalid="true"]')?.focus());
     }
     if (res.ok) return aoSalvo(res.dados, trocaChave(), semLogo ? "remover" : m.marca === "LOGO" && (r.marca !== "LOGO" || r.logo?.id !== m.logo?.id) ? "logo" : null);
     const c = res.erro.detalhes?.campos;

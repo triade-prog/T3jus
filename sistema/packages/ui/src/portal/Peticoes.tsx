@@ -15,7 +15,7 @@ import {
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
+import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, focarPrimeiroErro, Janela, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { Busca, Chips, Selo, useCarga } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
@@ -989,6 +989,7 @@ function NovaConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
   const [busca, setBusca] = useState("");
   const [outras, setOutras] = useState(false);
   const topo = useRef<HTMLDivElement>(null);
+  const focar = useFocoDepoisDoCommit();
   const casos = useCarga<ListaCasos>("/v1/escritorio/juridico/casos?situacao=ANDAMENTO");
   const modelos = useCarga<ListaModelos>(`${API}/modelos`);
 
@@ -1012,7 +1013,7 @@ function NovaConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
     setFalha(null);
     setErroEscolha(false);
     setPasso(n);
-    requestAnimationFrame(() => {
+    focar(() => {
       topo.current?.scrollIntoView({ block: "start" });
       topo.current?.querySelector<HTMLElement>(".pe-passos li[aria-current] .pe-pi")?.focus();
     });

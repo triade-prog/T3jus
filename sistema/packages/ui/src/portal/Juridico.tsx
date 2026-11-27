@@ -15,7 +15,7 @@ import {
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
+import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { contar, diaCurto, lerDia } from "./agenda.ts";
 import { Busca, CabAmbar, Chips, Selo, useCarga } from "./Comercial.tsx";
@@ -406,6 +406,7 @@ function NovoCaso({ escritorio }: { escritorio: EscritorioPortal }) {
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const topo = useRef<HTMLDivElement>(null);
+  const focar = useFocoDepoisDoCommit();
 
   useEffect(() => {
     void chamarPortal<OpcoesCaso>("/v1/escritorio/juridico/opcoes").then((x) => {
@@ -435,7 +436,7 @@ function NovoCaso({ escritorio }: { escritorio: EscritorioPortal }) {
     if (erroDoMais(docs)) e.push("documentos.mais");
     if (e.length) {
       setErros(e);
-      requestAnimationFrame(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
+      focar(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
       return;
     }
     setEnviando(true);
@@ -452,7 +453,7 @@ function NovoCaso({ escritorio }: { escritorio: EscritorioPortal }) {
     const campos = x.erro.detalhes?.campos;
     if (x.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length && !x.erro.detalhes?.motivo) {
       setErros(campos.map(String));
-      requestAnimationFrame(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
+      focar(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
       return;
     }
     setErros(Array.isArray(campos) ? campos.map(String) : []);

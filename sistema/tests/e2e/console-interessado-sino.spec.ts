@@ -3,6 +3,7 @@
 // acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
 import { agora, C, CA, fixarRelogio, IN, semViolacoes, SESSAO, simular } from "./console-dados.ts";
+import { quadroAntesDoCommit } from "./quadro.ts";
 
 const ADM = { ...SESSAO, acoes: ["console.interessados.ver"] };
 const SUP = { ...SESSAO, nome: "Bruno Seixas", funcoes: ["SUPORTE"], acoes: ["console.suporte.ver"] };
@@ -111,6 +112,28 @@ test.describe("Console: cadastrar interessado à mão", () => {
     await expect(j.getByLabel("Responsável")).toHaveAttribute("aria-invalid", "true");
     await expect(j.getByText("Só quem vê Interessados pode ser responsável.")).toBeVisible();
     await semViolacoes(page);
+  });
+
+  // F3.183: depois do await, o quadro chega antes do commit que mostra o aviso. Depois do 422 do
+  // "cadastrar mesmo assim", ficam dois avisos na tela: o foco vai ao primeiro, o dos erros.
+  test("repetido e depois 422 com o quadro antes do commit: o foco vai ao aviso que acabou de aparecer", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      "/v1/interessados": { corpo: LISTA },
+      "POST /v1/interessados": [
+        { corpo: { repetido: REPETIDO } },
+        { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["responsavel"] } } } },
+      ],
+    });
+    await page.goto(`${C}/interessados`);
+    await page.getByRole("button", { name: "Cadastrar interessado" }).first().click();
+    const j = await preencher(page);
+    await j.getByRole("button", { name: "Cadastrar interessado" }).click();
+    await expect(j.locator(".ci-resumo").filter({ hasText: "Já existe um interessado com este WhatsApp." })).toBeFocused();
+    await j.getByRole("button", { name: "É outro escritório: cadastrar mesmo assim" }).click();
+    await expect(j.locator(".ci-resumo")).toHaveCount(2);
+    await expect(j.locator(".ci-resumo").filter({ hasText: "Falta acertar" })).toBeFocused();
   });
 });
 

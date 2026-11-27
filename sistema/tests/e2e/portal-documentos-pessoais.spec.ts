@@ -5,6 +5,7 @@
 // tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
 import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
+import { quadroAntesDoCommit } from "./quadro.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -145,6 +146,24 @@ test.describe("Documentos pessoais na ficha do cliente (AP-08)", () => {
     await expect(j.getByRole("list", { name: "Fotos, na ordem das páginas" }).getByRole("listitem")).toHaveCount(11);
     expect(pedidos.filter((p) => p.metodo === "POST")).toHaveLength(0);
     await semViolacoes(page);
+  });
+
+  // F3.183: depois do await, o quadro chega antes do commit que marca o campo recusado.
+  test("422 do servidor com o quadro antes do commit: o foco vai ao campo que o servidor recusou", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      ...comuns(),
+      [`POST /v1/escritorio/clientes/${CLI}/documentos`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["dataDocumento"] } } } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: /^Anexar\s*: certidão de casamento$/ }).click();
+    const j = page.getByRole("dialog", { name: "Anexar documento" });
+    const [seletor] = await Promise.all([page.waitForEvent("filechooser"), j.getByRole("button", { name: "Escolher arquivo" }).click()]);
+    await seletor.setFiles([{ name: "IMG_0001.png", mimeType: "image/png", buffer: FOTO }]);
+    await j.getByLabel(/Data do documento/).fill("14/05/2019");
+    await j.getByRole("button", { name: "Guardar na ficha" }).click();
+    await expect(j.getByText("Confira a data do documento.").first()).toBeVisible();
+    await expect(j.getByLabel(/Data do documento/)).toBeFocused();
   });
 
   test("ficha sem documentos: o que quase todo caso pede e o pedido pelo WhatsApp, sem registrar", async ({ page }) => {

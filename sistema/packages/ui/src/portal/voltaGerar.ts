@@ -253,6 +253,9 @@ export function faltasDaParte(r: RascunhoCliente, parte: ParteFicha, hoje: strin
     add("repNome", parte === "pj" ? "o nome" : "quem assina");
     add("repCargo", "o cargo");
     add("repDocumento", parte === "pj" ? "o CPF" : "o CPF de quem assina");
+    // Gerar conta os dois como 1 dado, "a qualificação de quem assina" (REP_QUALIFICACAO); aqui, campo a campo (F3.178).
+    add("repEstadoCivil", parte === "pj" ? "o estado civil" : "o estado civil de quem assina");
+    add("repProfissao", parte === "pj" ? "a profissão" : "a profissão de quem assina");
     return f;
   }
   const cap = r.capacidade;
