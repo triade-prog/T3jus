@@ -242,6 +242,12 @@ export function conflitoDoExito(d: Record<string, unknown> | undefined, hojeDia:
   const em = typeof d.em === "string" ? d.em : null;
   const quando = em ? (diaDoInstante(em) === hojeDia ? ` às ${horaDoInstante(em)}` : ` em ${diaCurto(diaDoInstante(em))}, às ${horaDoInstante(em)}`) : "";
   const pn = primeiroNome(cliente);
+  // F3.191 (enc-conflito): o êxito marcado como não cobrado com a janela aberta.
+  if (d.tipo === "NAO_COBRADO") {
+    return { titulo: `${por} marcou o êxito de ${pn} como não cobrado${quando}.`, texto: "Nada foi registrado. Veja a divisão refeita: ela fica sem os honorários do êxito." };
+  }
+  // F3.191: o não cobrado que a tela viu saiu (contrato cancelado ou importação desfeita).
+  if (d.tipo === "CONFERENCIA") return { titulo: `O êxito de ${pn} mudou enquanto você dividia.`, texto: "Nada foi registrado. Veja a divisão refeita antes de registrar." };
   return {
     titulo: d.tipo === "BAIXA"
       ? `${por} deu baixa sem receber no êxito de ${pn}${quando}.`

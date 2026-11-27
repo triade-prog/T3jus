@@ -1756,6 +1756,47 @@ Deno.test("F3.174, FI-24: o êxito baixado no registrar chega ao banco, e os doi
   }
 });
 
+Deno.test("F3.191, CH-07: o êxito não cobrado no registrar chega ao banco, e os 409 e 400 (TC422) voltam com o detalhe", async () => {
+  const X = "7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d";
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const corpo = { tipo: "ALVARA", casoId: CLIENTE, clienteId: CLIENTE, valor: 1500000, entrouEm: "2026-11-18", exitoBaixadoVisto: [],
+    divisao: [{ para: "CLIENTE", valor: 1200000 }, { para: "HONORARIOS", nome: "Honorários de êxito", valor: 300000 }] };
+  const cobrar = { exitoId: X, explicacao: "Sebastião aceitou pagar o êxito com este alvará", clienteConcordou: true };
+  // Os dois campos chegam ao banco, inclusive clienteConcordou.
+  assertEquals((await m.pedir("/v1/escritorio/financeiro/repasses", { corpo: { ...corpo, exitoNaoCobradoVisto: [X], cobrarExitoNaoCobrado: cobrar }, cookie })).status, 201);
+  const d = m.chamadas.find((c) => c.funcao === "portal_financeiro_levantamento_registrar")!.args.p_dados as Record<string, unknown>;
+  assertEquals([d.exitoNaoCobradoVisto, d.cobrarExitoNaoCobrado], [[X], cobrar]);
+  // clienteConcordou só true, mais de um não cobrado visto e o combinado acima de 1.000 letras nem chegam ao banco.
+  for (const [extra, campo] of [
+    [{ cobrarExitoNaoCobrado: { ...cobrar, clienteConcordou: false } }, "cobrarExitoNaoCobrado"],
+    [{ cobrarExitoNaoCobrado: { ...cobrar, clienteConcordou: "true" } }, "cobrarExitoNaoCobrado"],
+    [{ cobrarExitoNaoCobrado: { ...cobrar, explicacao: "a".repeat(1001) } }, "cobrarExitoNaoCobrado"],
+    [{ exitoNaoCobradoVisto: [X, X] }, "exitoNaoCobradoVisto"],
+  ] as const) {
+    m.chamadas.length = 0;
+    assertEquals((await erro(await m.pedir("/v1/escritorio/financeiro/repasses", { corpo: { ...corpo, ...extra }, cookie }))).detalhes?.campos, [campo]);
+    assertEquals(m.chamadas.some((c) => c.funcao === "portal_financeiro_levantamento_registrar"), false);
+  }
+  // Os 409 e os 422 do banco (400 na API) voltam com o detalhe para a tela.
+  const rpc = m.banco.rpc.bind(m.banco);
+  for (const [codigo, detalhe, status, api] of [
+    ["TC409", { motivo: "EXITO_MUDOU", tipo: "NAO_COBRADO", por: { id: X, nome: "Marina Ribeiro" }, em: "2026-11-18T13:13:00Z" }, 409, "VERSION_CONFLICT"],
+    ["TC409", { motivo: "EXITO_NAO_COBRADO", exito: X }, 409, "VERSION_CONFLICT"],
+    ["TC409", { motivo: "EXITO_INDEVIDO", exito: X }, 409, "VERSION_CONFLICT"],
+    ["TC422", { motivo: "COMBINADO_OBRIGATORIO", campos: ["cobrarExitoNaoCobrado.explicacao", "cobrarExitoNaoCobrado.clienteConcordou"] }, 400, "VALIDATION_ERROR"],
+    ["TC422", { motivo: "EXITO_ACIMA_DO_CALCULADO", campos: ["honorarios"], limite: 300000 }, 400, "VALIDATION_ERROR"],
+    ["TC422", { motivo: "COBRAR_SEM_HONORARIOS", campos: ["honorarios"] }, 400, "VALIDATION_ERROR"],
+  ] as const) {
+    m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) =>
+      (f === "portal_financeiro_levantamento_registrar" ? new Promise<T>(() => erroBanco(codigo, detalhe)) : rpc<T>(f, a));
+    const r = await m.pedir("/v1/escritorio/financeiro/repasses", { corpo: { ...corpo, exitoNaoCobradoVisto: [X], cobrarExitoNaoCobrado: cobrar }, cookie });
+    assertEquals(r.status, status);
+    const e = await erro(r);
+    assertEquals([e.codigo, e.detalhes], [api, detalhe]);
+  }
+});
+
 Deno.test("FI-05: tipos de levantamento e destinações do domínio são os mesmos do banco", async () => {
   const { TIPOS_LEVANTAMENTO, PARA_DESTINACAO, PRAZO_REPASSE_DIAS, somarDiasUteis } = await import("@t3jus/domain");
   const sql = await Deno.readTextFile(new URL("../../migrations/0280_portal_financeiro_repasses.sql", import.meta.url));

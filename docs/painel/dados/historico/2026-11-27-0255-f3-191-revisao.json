@@ -1,0 +1,13 @@
+{
+  "data": "27/11/2026",
+  "inicio": "02:55",
+  "fim": "03:28",
+  "texto": "Notas da revisão de código da F3.191 (REVISAO-CODIGO-F3-191): os e2e dos estados 8 a 12 do D40 (sino, De onde veio, acerto, ficha do cliente e resumo do fechado, com Larissa sem o Financeiro), cobradoNoAlvara sem o levantamento, o tipo e o dia para quem não tem o Financeiro, o \"Cobrar\" sem a parte de honorários recusado (COBRAR_SEM_HONORARIOS) e com erro na janela, o Indevido antes da falta da escolha, o exitoId em minúsculas, o sino só a quem tem vínculo ativo, a conta do percentual uma vez, a regra da PJ e a F3.201 com destinacoes.regra e destinacoes.nome.",
+  "refs": [
+    "F3.191",
+    "F3.201",
+    "P30",
+    "CH-07",
+    "FI-05"
+  ]
+}

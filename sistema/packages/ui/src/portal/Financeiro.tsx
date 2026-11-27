@@ -12,7 +12,7 @@ import {
   cnpjValido, cpfValido, dataBr, FORMAS_PAGAMENTO, hojeBrasilia, numeroRecibo, razaoSocialEmBranco, reais, TIPOS_COBRANCA,
   type FormaPagamento, type ListaReceber, type MostrarReceber, type ParcelaDoContrato, type ParcelaLinha, type ParcelasContrato,
   type RecebimentoRegistrado, type TipoCobranca, type Anexo, type PagamentoRecebido, type ContaPagar, CATEGORIAS_SAIDA,
-  type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type FechamentoNoContrato, type PessoaRef,
+  type ExitoParaConferir, type ExitosParaConferir, type AcertoCaso, type EventoDeOrigem, type FechamentoNoContrato, type PessoaRef, type TipoLevantamento,
 } from "@t3jus/domain";
 import { abrirAnexo, CampoAnexo, enviarAnexo, useAnexosFinanceiro } from "./Anexos.tsx";
 import { textoDoErro } from "../api.ts";
@@ -31,6 +31,7 @@ import { primeiroNome } from "./equipe.ts";
 import { Toast } from "./FichaCliente.tsx";
 import { BlocoExitos, JanelaConferir, JanelaNaoCobrar } from "./FinanceiroExito.tsx";
 import { confirmacaoLancado } from "./exito_alvara.ts";
+import { contratoExitoCobrado } from "./exito_nao_cobrado.ts";
 import { comoVolta, gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela, textoCobranca } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { juntarComE } from "./clientes.ts";
@@ -829,8 +830,10 @@ type FechamentoComAcerto = Extract<FechamentoNoContrato, { acerto: AcertoCaso }>
 const comAcerto = (x: FechamentoNoContrato): x is FechamentoComAcerto => !x.comLevantamento && !x.resumo;
 
 /** O âmbar da ficha (F3.132, estados 7, 11, 12, 13 e 14): o fechamento do caso, quando é ele o que falta. */
-function dirDoFechamento({ f, fp, fechado, comLev, aoEncerrar }: {
+function dirDoFechamento({ f, fp, fechado, comLev, cobrado, aoEncerrar }: {
   f: ParcelasContrato; fp: FechamentoComAcerto | null; fechado: FechamentoComAcerto | null; comLev: boolean; aoEncerrar: (b: HTMLButtonElement) => void;
+  /** F3.191: o êxito deste contrato, não cobrado na conferência, foi cobrado num alvará. */
+  cobrado?: EventoDeOrigem | null;
 }): ReactNode {
   const dir = (sobre: string, selo: ReactNode, oque: ReactNode, botao?: ReactNode) => (
     <section className="dir campo-ambar" aria-labelledby="t-dir">
@@ -869,6 +872,13 @@ function dirDoFechamento({ f, fp, fechado, comLev, aoEncerrar }: {
       <><b>{reais(f.totais.recebido)}{c?.ultimaRecebidaEm ? ` recebidos, o último em ${diaCurto(c.ultimaRecebidaEm)}` : " recebidos"}.</b><br />
         Contrato encerrado{c?.encerradoEm ? ` em ${diaOuInstante(c.encerradoEm)}` : ""}{c?.encerradoPor ? ` por ${primeiroNome(c.encerradoPor.nome)}` : ""}.
         {outro ? ` O que falta no caso está no contrato de ${primeiroNome(outro.cliente.nome)}.` : ""}</>);
+  }
+  if (comLev && !fp && cobrado && !f.parcelas.length) {
+    // F3.191 (enc-caso-historico): o contrato só de êxito, com o êxito cobrado no alvará.
+    const lev = typeof cobrado.dados.levantamento === "string" ? cobrado.dados.levantamento : null;
+    return dir("Nada em parcelas", <Selo tom="ok" icone="check">Só êxito</Selo>,
+      contratoExitoCobrado({ tipo: String(cobrado.dados.tipo ?? "ALVARA") as TipoLevantamento, entrouEm: String(cobrado.dados.entrouEm ?? cobrado.em) }).ambar,
+      lev ? <a className="btn btn-pri" href={ROTAS_FINANCEIRO.repasse(lev)}><Icone nome="enviar" className="ico" />Abrir o repasse</a> : undefined);
   }
   if (comLev && !fp) {
     return dir("Nada a receber", <Selo tom="ok" icone="check">Tudo recebido</Selo>,
@@ -1125,6 +1135,8 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
     setFechar(x);
   }
   const soExito = !f.parcelas.length && f.condicoes.length > 0 && f.condicoes.every((c) => c.tipo === "EXITO") && fp?.acerto.caso?.resultado === "PERDA";
+  // F3.191: o êxito deste contrato, não cobrado na conferência, cobrado num alvará do caso.
+  const cobrado = comLev.flatMap((x) => x.origem).find((e) => e.acao === "financeiro.exito_cobrado_no_alvara" && e.dados.doContrato === true) ?? null;
   return (
     <div className="fi">
       <div className="ficha-cab">
@@ -1148,7 +1160,7 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
           </div>
         </div>
         <DirParcelas f={f} hoje={hoje} aoRegistrar={(p) => setRegistrar(p)}
-          fechamento={dirDoFechamento({ f, fp, fechado: fechados[0] ?? null, comLev: comLev.length > 0, aoEncerrar: () => { if (fp) encerrar(fp); } })} />
+          fechamento={dirDoFechamento({ f, fp, fechado: fechados[0] ?? null, comLev: comLev.length > 0, cobrado, aoEncerrar: () => { if (fp) encerrar(fp); } })} />
       </div>
       {abertos.map((x, i) => (
         <QuadroFechamentoContrato key={x.casoId} casoId={x.casoId} acerto={x.acerto} contratoId={f.id} hoje={hoje} primeira={x.casoId === primeiroFecha}
@@ -1248,6 +1260,12 @@ function ParcelasConteudo({ id, escritorio, aoNome }: { id: string; escritorio: 
                   })}
                 </tbody>
               </table>
+            ) : cobrado ? (
+              <div className="fs-vazio" role="status">
+                <Estado icone="moeda" titulo="Nenhuma parcela">
+                  {contratoExitoCobrado({ tipo: String(cobrado.dados.tipo ?? "ALVARA") as TipoLevantamento, entrouEm: String(cobrado.dados.entrouEm ?? cobrado.em) }).vazio}
+                </Estado>
+              </div>
             ) : soExito ? (
               <div className="fs-vazio" role="status">
                 <Estado icone="moeda" titulo="Nenhuma parcela">O contrato era só de êxito e o caso terminou com perda. Com a base zero, o êxito não é criado.</Estado>

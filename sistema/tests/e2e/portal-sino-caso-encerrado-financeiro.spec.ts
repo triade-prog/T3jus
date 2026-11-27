@@ -308,3 +308,48 @@ test.describe("Aviso de caso encerrado no financeiro (F3.150: EX-16, EX-17, PT-0
     await semViolacoes(page);
   });
 });
+
+// F3.191 (CH-07, FI-05; PT-02), desenho D40 (docs/design/aprovadas/portal-exito-nao-cobrado-alvara,
+// estados 8 e 8b): o aviso de que o êxito não cobrado foi cobrado na divisão do alvará. Quem recebe e
+// as chaves de cada um são regra do servidor e ficam no pgTAP 151.
+test.describe("F3.191: o êxito não cobrado cobrado no alvará, no sino (CH-07, PT-02)", () => {
+  const LEV = "1e000000-0000-4000-8000-000000000191";
+  const COMB = "Sebastião aceitou pagar o êxito com este alvará, por telefone em 17/11.";
+  const cobrou = (n: number, extra: Record<string, unknown>) => ({
+    id: avId(n), tipo: "EXITO_COBRADO_NO_ALVARA", origem: "levantamentos", origemId: LEV, em: em(0, "10:14"), lido: false,
+    dados: { quem: "Diego Almeida", cliente: "Sebastião Prado", caso: "Prado x Seguradora Lince", casoId: caso(9), levantamentoId: LEV,
+      motivo: "PERDOADO", tipo: "ALVARA", ...extra },
+  });
+  const nb = (s: string) => s.replace(/\u00a0/g, " ");
+
+  test("enc-sino: com o Financeiro, o valor, o calculado e o combinado, e Abrir o repasse", async ({ page }) => {
+    await simular(page, comuns(ESCRITORIO, { corpo: lista(cobrou(40, { valor: 300000, calculado: 300000, combinado: COMB })) }));
+    await page.goto(`${P}/clientes`);
+    const d = await abrirSino(page);
+    const item = itemDe(page, "Sebastião Prado");
+    await expect(item.locator(".si-tit")).toContainText("Diego Almeida cobrou no alvará os honorários do êxito de Sebastião Prado");
+    expect(nb((await item.locator(".si-det").textContent()) ?? "")).toContain(
+      `Estava como não cobrado (perdoado). R$ 3.000,00 de R$ 3.000,00 calculados. Combinado: ${COMB}`);
+    await expect(item.locator(".si-det q")).toHaveText(COMB);
+    await expect(item.locator(".si-det")).toContainText("Prado x Seguradora Lince.");
+    await expect(item.locator(".selo")).toHaveText("Cobrado no alvará");
+    await expect(item.locator(".si-onde")).toHaveText("Abrir o repasse");
+    await expect(d.getByRole("link").filter({ hasText: "Sebastião Prado" })).toHaveAttribute("href", `/financeiro/repasses/${LEV}`);
+    await semViolacoes(page);
+  });
+
+  test("enc-sino-larissa: sem o Financeiro, sem valor, sem calculado e sem combinado, e Abrir o caso", async ({ page }) => {
+    await simular(page, comuns(SESSAO_LARISSA, { corpo: lista(cobrou(41, {})) }));
+    await page.goto(`${P}/juridico/casos`);
+    const d = await abrirSino(page);
+    const item = itemDe(page, "Sebastião Prado");
+    await expect(item.locator(".si-tit")).toContainText("Diego Almeida cobrou no alvará os honorários do êxito de Sebastião Prado, que estava como não cobrado");
+    await expect(item.locator(".si-det")).toHaveText("Na conferência, o motivo foi perdoado. Prado x Seguradora Lince. Os valores ficam com o Financeiro.");
+    await expect(item).not.toContainText("R$");
+    await expect(item).not.toContainText("Combinado");
+    await expect(item.locator(".selo")).toHaveText("Cobrado no alvará");
+    await expect(item.locator(".si-onde")).toHaveText("Abrir o caso");
+    await expect(d.getByRole("link").filter({ hasText: "Sebastião Prado" })).toHaveAttribute("href", `/juridico/casos/${caso(9)}`);
+    await semViolacoes(page);
+  });
+});

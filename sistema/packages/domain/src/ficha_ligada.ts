@@ -8,7 +8,7 @@ import type { PessoaRef } from "./clientes.ts";
 import type { ContratoLinha } from "./contratos.ts";
 import type { PropostaLinha } from "./comercial.ts";
 import type { AreaDireito, LinhaCaso, MensagemAviso, PapelCaso } from "./juridico.ts";
-import type { EsperaAcerto } from "./financeiro.ts";
+import type { CobradoNoAlvara, EsperaAcerto } from "./financeiro.ts";
 
 export type TipoPassoCliente =
   | "SEM_PROPOSTA" | "PROPOSTA_RASCUNHO" | "PROPOSTA_ANDAMENTO" | "PROPOSTA_ACEITA"
@@ -29,6 +29,8 @@ export interface PassoFechamento {
   valor?: number | null;
   percentual?: number | null;
   naoCobrado?: boolean;
+  /** F3.191: o êxito não cobrado que foi cobrado num alvará. O valor só vem com o Financeiro. */
+  cobradoNoAlvara?: CobradoNoAlvara | null;
   prazo?: string | null;
   levantamentoId?: string | null;
   entrou?: { tipo: string; valor: number; em: string } | null;

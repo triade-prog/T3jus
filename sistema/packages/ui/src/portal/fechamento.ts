@@ -12,6 +12,7 @@ import { diasEntre } from "./comercial.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { primeiroNome } from "./equipe.ts";
 import { ROTAS_FINANCEIRO } from "./financeiro.ts";
+import { origemExitoCobrado } from "./exito_nao_cobrado.ts";
 
 /** O que o atalho da janela de pendência faz (decisão 8). */
 export type Atalho =
@@ -430,6 +431,9 @@ export function textoOrigem(e: EventoDeOrigem, caso: string): { fez: string; det
         detalhe: [MOTIVO_NAO_COBRAR[s("motivo")] ? MOTIVO_NAO_COBRAR[s("motivo")]!.replace(/^./, (x) => x.toUpperCase()) : "", s("explicacao") ? `“${s("explicacao")}”` : ""].filter(Boolean).join(" · ") };
     case "financeiro.caso_encerrado":
       return { fez: "encerrou o caso no financeiro", detalhe: caso };
+    // F3.191 (enc-caso-historico): o êxito não cobrado cobrado na divisão do alvará.
+    case "financeiro.exito_cobrado_no_alvara":
+      return origemExitoCobrado(d);
     case "contrato.encerrado":
     case "contrato.encerrado_com_caso":
       return { fez: d.deste ? "encerrou este contrato" : `encerrou o contrato ${s("contrato")}${s("cliente_contrato") ? `, de ${primeiroNome(s("cliente_contrato"))}` : ""}`,

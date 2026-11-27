@@ -269,6 +269,49 @@ export type ExitoSituacao =
   | { situacao: "CANCELADO"; valor: number }
   | { situacao: "NAO_COBRADO" };
 
+/** O êxito do cliente marcado como não cobrado na conferência, na divisão do alvará (F3.191; CH-07;
+ *  1104, exito_nao_cobrado). A proposta vem sem a linha de honorários, e a janela pede "Deixar sem"
+ *  ou "Cobrar". */
+export interface ExitoNaoCobrado {
+  exitoId: string;
+  calculado: number;
+  percentual: number;
+  sobre: string;
+  motivo: MotivoNaoCobrar;
+  conferido: { por: PessoaRef | null; em: string | null };
+  contrato: { id: string; numero: string };
+  /** A explicação da conferência. null para o cliente excluído. */
+  explicacao: string | null;
+  /** false com Indevido, ou quando o calculado já foi todo cobrado em alvarás. */
+  podeCobrar: boolean;
+  /** O que já foi cobrado deste êxito em outros alvarás (partes não dispensadas). */
+  jaCobrado: number;
+  /** O teto do "Cobrar" neste alvará: o calculado menos o já cobrado. */
+  limite: number;
+  cobrancas: { levantamentoId: string; tipo: TipoLevantamento; entrouEm: string; valor: number }[];
+  /** Quem recebe o aviso se cobrar: quem conferiu, quem encerrou e o responsável, sem quem pede. */
+  avisados: PessoaRef[];
+  /** A regra da linha cobrada, escrita pelo servidor. */
+  regra: string;
+  /** A linha de honorários que o "Cobrar" põe de volta. null com Indevido ou sem o que cobrar. */
+  honorarios: { para: "HONORARIOS"; nome: string; regra: string; valor: number } | null;
+}
+
+/** O êxito não cobrado que foi cobrado num alvará (F3.191; 1104, exito_cobrado_no_alvara). O tipo
+ *  vem para todos (D40); o levantamento, o dia em que entrou e o valor, só com o Financeiro (PT-02). */
+export interface CobradoNoAlvara {
+  em: string;
+  por: PessoaRef | null;
+  levantamentoId: string | null;
+  tipo: TipoLevantamento;
+  entrouEm: string | null;
+  valor?: number | null;
+}
+
+/** O limite do combinado com o cliente, ao cobrar o êxito não cobrado (F3.191). */
+export const COMBINADO_MIN = 3;
+export const COMBINADO_MAX = 1000;
+
 export interface ExitosParaConferir { total: number; n: number; itens: ExitoParaConferir[] }
 
 export const lancarExitoSchema = z.object({
@@ -613,6 +656,17 @@ export const registrarLevantamentoSchema = z.object({
   exitoBaixadoVisto: z.array(z.string().uuid()).max(5).nullish(),
   /** F3.174: "Desfazer a baixa antes de dividir", na mesma transação do registrar. */
   desfazerBaixa: z.object({ baixaId: z.string().uuid(), explicacao: z.string().max(1000) }).nullish(),
+  /** F3.191: o êxito não cobrado que a tela viu na proposta ([] quando não viu nenhum). O servidor
+   *  recusa com EXITO_MUDOU se o que está em vigor for outro. Sem o campo, o passo é pulado. */
+  exitoNaoCobradoVisto: z.array(z.string().uuid()).max(1).nullish(),
+  /** F3.191 (C1): "Cobrar os honorários neste alvará", com o combinado e a confirmação do cliente.
+   *  O servidor confere de novo: 3 a 1.000 letras, clienteConcordou só true, nunca Indevido nem
+   *  acima do calculado. */
+  cobrarExitoNaoCobrado: z.object({
+    exitoId: z.string().uuid(),
+    explicacao: z.string().max(COMBINADO_MAX),
+    clienteConcordou: z.literal(true),
+  }).nullish(),
 });
 export type RegistrarLevantamento = z.input<typeof registrarLevantamentoSchema>;
 
@@ -634,6 +688,8 @@ export interface PropostaRepasse {
   exitoBaixado?: ExitoBaixado[];
   /** Onde está o êxito do cliente no caso (F3.199). null: o contrato não tem êxito. Sem a 1102, não vem. */
   exitoSituacao?: ExitoSituacao | null;
+  /** O êxito marcado como não cobrado (F3.191). null quando não há; sem a 1104, não vem. */
+  exitoNaoCobrado?: ExitoNaoCobrado | null;
 }
 
 /** Uma parcela do êxito com baixa sem receber, na divisão do alvará (F3.174; FI-24). */

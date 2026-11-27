@@ -18,7 +18,9 @@ import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 import { valorDaProposta } from "./comercial.ts";
 import { juntarComE } from "./clientes.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
-import { nomeDaParcela } from "./baixa.ts";
+import { nomeDaParcela, nomeDoLevantamento } from "./baixa.ts";
+import { MOTIVO_CURTO } from "./exito_nao_cobrado.ts";
+import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 import { linkFechamentoContrato } from "./fechamento.ts";
 import { ROTAS_PASSO } from "./fichaLigada.ts";
 import { ROTAS_JURIDICO } from "./juridico.ts";
@@ -472,6 +474,26 @@ export function descreverAviso(a: AvisoSino, agora: Date = new Date(), areas?: r
         detalhe: <>{d.motivo && d.motivo in MOTIVOS_NAO_COBRAR ? `${MOTIVOS_NAO_COBRAR[d.motivo as MotivoNaoCobrar]}. ` : ""}{d.explicacao ? fala(d.explicacao) : null}{d.caso ? ` ${d.caso}.` : ""}</>,
         onde: "Abrir o caso", href: ROTAS_JURIDICO.caso(a.origemId), selo: { tom: "neutro", texto: "Não cobrado" },
       };
+    case "EXITO_COBRADO_NO_ALVARA": {
+      // F3.191 (enc-sino, enc-sino-larissa): o êxito não cobrado foi cobrado na divisão do alvará. Com o
+      // Financeiro, o valor, o calculado e o combinado, e o repasse; sem, só o caso (PT-02).
+      const m = d.motivo && d.motivo in MOTIVO_CURTO ? MOTIVO_CURTO[d.motivo as MotivoNaoCobrar] : null;
+      const comValor = typeof d.valor === "number";
+      const oQue = nomeDoLevantamento(d.tipo);
+      const selo = { tom: "atencao" as const, texto: `Cobrado no ${oQue}` };
+      if (comValor) {
+        return {
+          icone: "balanca", titulo: <><b>{d.quem ?? "Alguém do Financeiro"}</b> cobrou no {oQue} os honorários do êxito de {d.cliente ?? "um cliente"}</>,
+          detalhe: <>{m ? `Estava como não cobrado (${m}). ` : "Estava como não cobrado. "}{reais(d.valor!)}{typeof d.calculado === "number" ? ` de ${reais(d.calculado)} calculados` : ""}.{d.combinado ? <> Combinado: {fala(d.combinado)}</> : null}{d.caso ? ` ${d.caso}.` : ""}</>,
+          onde: "Abrir o repasse", href: ROTAS_FINANCEIRO.repasse(d.levantamentoId ?? a.origemId), selo,
+        };
+      }
+      return {
+        icone: "balanca", titulo: <><b>{d.quem ?? "Alguém do Financeiro"}</b> cobrou no {oQue} os honorários do êxito de {d.cliente ?? "um cliente"}, que estava como não cobrado</>,
+        detalhe: `${m ? `Na conferência, o motivo foi ${m}. ` : ""}${d.caso ? `${d.caso}. ` : ""}Os valores ficam com o Financeiro.`,
+        onde: "Abrir o caso", href: d.casoId ? ROTAS_JURIDICO.caso(d.casoId) : ROTAS_PORTAL.inicio, selo,
+      };
+    }
     case "CASO_ABERTO_NA_ASSINATURA":
       return {
         icone: "balanca", titulo: <><b>{d.quem ?? "Alguém da equipe"}</b> registrou a assinatura de {d.cliente ?? "um cliente"}, e o caso abriu com você</>,

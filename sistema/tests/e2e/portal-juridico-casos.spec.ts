@@ -314,6 +314,45 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     await semViolacoes(page);
   });
 
+  // F3.191 (CH-07; PT-02), desenho D40, estados 10 e 10b (enc-acerto, enc-acerto-larissa).
+  const COBRADO = { em: "2026-11-18T13:14:00Z", por: { id: "a0000000-0000-4000-8000-000000000102", nome: "Diego Almeida" } };
+  const exitoCobrado = (comValores: boolean) => ({
+    cliente: JOANA.nome, feito: true, naoCobrado: true, em: "2026-11-10T19:40:00Z", por: MARINA, valor: null,
+    cobradoNoAlvara: comValores ? { ...COBRADO, levantamentoId: "1e000000-0000-4000-8000-000000000001", tipo: "ALVARA", entrouEm: "2026-11-18", valor: 300000 }
+      : { ...COBRADO, levantamentoId: null, tipo: "ALVARA", entrouEm: null, valor: null },
+  });
+  test("enc-acerto: o êxito não cobrado e cobrado no alvará, com o valor para quem tem o Financeiro", async ({ page }) => {
+    const acerto = {
+      pendente: true, fechado: null, comValores: true, levantamentoId: "1e000000-0000-4000-8000-000000000001",
+      entrou: { tipo: "ALVARA", em: "2026-11-18", valor: 1500000 }, exitos: [exitoCobrado(true)],
+      repasses: [{ cliente: JOANA.nome, feito: false, em: null, prazo: "2026-11-23", valor: 1200000 }], outros: [], faltaOutros: false, contratos: [],
+    };
+    const ficha = { ...FICHA, situacao: "ENCERRADO", resultado: "ACORDO", encerradoEm: "2026-11-10T19:30:00Z", etapa: etapa(8), acerto };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    const q = page.getByRole("region", { name: "Acerto no Financeiro" });
+    await expect(q).toContainText("Êxito não cobrado · cobrado no alvará");
+    expect(((await q.textContent()) ?? "").replace(/\u00a0/g, " ")).toContain("Não cobrado por Marina em 10/11 · R$ 3.000,00 cobrados por Diego em 18/11");
+    await semViolacoes(page);
+  });
+
+  test("enc-acerto-larissa: sem o Financeiro, o mesmo acerto sem valores", async ({ page }) => {
+    const acerto = {
+      pendente: true, fechado: null, comValores: false, levantamentoId: null, entrou: { tipo: "ALVARA", em: "2026-11-18", valor: null }, exitos: [exitoCobrado(false)],
+      repasses: [{ cliente: JOANA.nome, feito: false, em: null, prazo: "2026-11-23", valor: null }], outros: null, faltaOutros: false, contratos: [],
+      quemCuida: ["Marina Ribeiro"],
+    };
+    const ficha = { ...FICHA, situacao: "ENCERRADO", resultado: "ACORDO", encerradoEm: "2026-11-10T19:30:00Z", etapa: etapa(8), acerto };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
+    await page.goto(`${P}/juridico/casos/${CASO}`);
+    const q = page.getByRole("region", { name: "Acerto no Financeiro" });
+    // Revisão, M2: sem o Financeiro, sem o levantamento e o dia; o tipo vem, como no D40.
+    await expect(q).toContainText("Êxito não cobrado · cobrado no alvará");
+    await expect(q).toContainText("Não cobrado por Marina em 10/11 · cobrado por Diego em 18/11");
+    await expect(q).not.toContainText("R$");
+    await semViolacoes(page);
+  });
+
   test("EX-17: sem a área Financeiro, o quadro mostra o que falta sem valores e quem cuida", async ({ page }) => {
     const acerto = {
       pendente: true, fechado: null, comValores: false, levantamentoId: null,

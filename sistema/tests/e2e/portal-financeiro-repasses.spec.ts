@@ -181,7 +181,8 @@ test.describe("Financeiro do Portal, Repasses (FI-05, FI-06, FI-12)", () => {
     expect(pedidos.find((p) => p.metodo === "POST" && p.caminho === "/v1/escritorio/financeiro/repasses")?.corpo).toEqual({
       tipo: "ALVARA", casoId: CASO.id, clienteId: BEN.id, valor: 1270000, entrouEm: dia(0),
       // F3.174, nota 12: sem êxito baixado, o corpo leva exitoBaixadoVisto: [].
-      exitoBaixadoVisto: [],
+      // F3.191: sem êxito não cobrado, também exitoNaoCobradoVisto: [].
+      exitoBaixadoVisto: [], exitoNaoCobradoVisto: [],
       divisao: [
         { para: "CLIENTE", valor: 800000 },
         { para: "HONORARIOS", nome: "Honorários de êxito", regra: PROPOSTA.linhas[0]!.regra, valor: 381000, contaId: null },
@@ -878,6 +879,296 @@ test.describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07
     const fecha = page.getByRole("region", { name: "Fechamento do caso" });
     expect(nbsp(await fecha.innerText())).toContain("Êxito do contrato C-2026-027: R$ 3.000,00 pagos por este alvará");
     await expect(fecha).not.toContainText("pago por este alvará");
+    await semViolacoes(page);
+  });
+});
+
+// F3.191 (CH-07, FI-05): o êxito marcado como não cobrado na divisão do alvará, desenho aprovado em
+// docs/design/aprovadas/portal-exito-nao-cobrado-alvara (D40), estados enc-proposta, enc-indevido,
+// enc-sem, enc-cobrar, enc-erro, enc-erro-cobrar, enc-conflito, enc-historico e enc-historico-sem,
+// com a C1 = (a), "Cobrar com motivo escrito".
+const SEB = { id: "be000000-0000-4000-8000-000000000041", nome: "Sebastião Prado" };
+const CASO_S = { id: "ca000000-0000-4000-8000-000000000041", nome: "Prado x Seguradora Lince" };
+const X_SEB = "e1000000-0000-4000-8000-000000000041";
+const LARISSA = { id: "aa000000-0000-4000-8000-000000000004", nome: "Larissa Costa" };
+const LISTA_S = { ...LISTA, casos: [{ id: CASO_S.id, nome: CASO_S.nome, parteContraria: "Seguradora Lince", clientes: [SEB] }] };
+const REGRA_S = "20% · acordo · contrato C-2026-034 · combinado com Sebastião";
+const COMB_S = "Sebastião aceitou pagar o êxito com este alvará, por telefone em 17/11.";
+const CONF_EM = `${dia(-14)}T19:40:00Z`;
+const NC_S = {
+  exitoId: X_SEB, calculado: 300000, percentual: 2000, sobre: "acordo", motivo: "PERDOADO",
+  conferido: { por: MARINA, em: CONF_EM }, contrato: { id: "c0000000-0000-4000-8000-000000000034", numero: "C-2026-034" },
+  explicacao: "Sebastião indicou três clientes; combinamos não cobrar o êxito.",
+  podeCobrar: true, jaCobrado: 0, limite: 300000, cobrancas: [], avisados: [MARINA, LARISSA], regra: REGRA_S,
+  honorarios: { para: "HONORARIOS", nome: "Honorários de êxito", regra: REGRA_S, valor: 300000 },
+};
+const propS = (nc: Record<string, unknown> = {}) => ({
+  contrato: { id: NC_S.contrato.id, numero: "C-2026-034" }, linhas: [], cliente: 1500000, falta: 0, exito: [], exitoBaixado: [],
+  exitoSituacao: { situacao: "NAO_COBRADO" }, exitoNaoCobrado: { ...NC_S, ...nc },
+});
+
+async function abrirSebastiao(page: Page, titulo = "O êxito de Sebastião foi marcado como não cobrado.") {
+  await page.goto(`${P}/financeiro/repasses`);
+  await page.getByRole("button", { name: "Registrar alvará ou RPV" }).first().click();
+  const j = page.getByRole("dialog", { name: "Registrar alvará ou RPV" });
+  await j.getByLabel("O que entrou").selectOption("ALVARA");
+  await j.getByLabel("Valor levantado").fill("15.000,00");
+  await expect(j.getByRole("heading", { name: titulo })).toBeVisible();
+  return j;
+}
+
+test.describe("F3.191: o êxito marcado como não cobrado na divisão do alvará (CH-07, FI-05)", () => {
+  test("enc-proposta, enc-erro, enc-cobrar e enc-erro-cobrar: cobrar com o combinado e a confirmação", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_S),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: propS() },
+      [POST_REP]: { status: 201, corpo: { id: id(3), exitoBaixado: [], baixaDesfeita: false, exitoCobrado: true } },
+    });
+    const j = await abrirSebastiao(page);
+    const tab = j.getByRole("table", { name: "Para quem vai cada parte" });
+    // enc-proposta: sem a linha de honorários; o aviso e a escolha abaixo da tabela, sem nada marcado.
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(0);
+    await expect(tab.getByRole("row", { name: /Sebastião Prado/ })).toContainText("R$ 15.000,00");
+    expect(nbsp(await j.locator("#eb-aviso").innerText())).toContain(
+      `Êxito · Prado x Seguradora Lince · 20% · R$ 3.000,00 calculados · perdoado, por Marina Ribeiro em ${br(-14)}.`);
+    await expect(j.getByText("Sebastião indicou três clientes; combinamos não cobrar o êxito.")).toBeVisible();
+    await expect(j.getByText("Por isso, a divisão veio sem os honorários do êxito. Escolha se fica assim ou se eles são cobrados neste alvará, com o acordo de Sebastião.")).toBeVisible();
+    const grupo = j.getByRole("group", { name: "O que fazer com os honorários do êxito de Sebastião" });
+    await expect(grupo.getByRole("radio", { checked: true })).toHaveCount(0);
+    await expect(grupo.getByRole("radio", { name: /Cobrar os honorários neste alvará/ }))
+      .toHaveAccessibleName(/Marina Ribeiro e Larissa Costa recebem um aviso\. Se o combinado virou parcelas novas em Contratos, cobrar aqui cobra duas vezes\./);
+    await expect(j.getByRole("group", { name: /Divisão proposta pelo contrato C-2026-034/ })).toHaveAttribute("aria-describedby", "eb-aviso");
+    await semViolacoes(page);
+    // enc-erro: registrar sem escolher.
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(j.getByRole("alert").filter({ hasText: "Falta acertar 1 coisa." })).toContainText("Escolha o que fazer com os honorários do êxito de Sebastião.");
+    await expect(grupo.getByText("Escolha o que fazer com os honorários do êxito de Sebastião: deixar sem ou cobrar neste alvará.")).toBeVisible();
+    await expect(grupo).toHaveAttribute("aria-describedby", "enc-ops-er");
+    const sem = grupo.getByRole("radio", { name: /Deixar sem os honorários/ });
+    await expect(sem).toBeFocused();
+    await semViolacoes(page);
+    expect(postsRep(pedidos)).toHaveLength(0);
+    // enc-cobrar: a linha volta com a regra do servidor e o teto; abre o combinado e a caixa.
+    await grupo.getByRole("radio", { name: /Cobrar os honorários neste alvará/ }).check();
+    const hon = tab.getByRole("row", { name: /Honorários de êxito/ });
+    await expect(hon).toContainText(REGRA_S);
+    expect(nbsp((await hon.textContent()) ?? "")).toContain("Até R$ 3.000,00, o êxito calculado na conferência.");
+    const valorHon = tab.getByLabel("Valor de Honorários de êxito");
+    await expect(valorHon).toHaveValue("3.000,00");
+    await expect(valorHon).toHaveAttribute("aria-describedby", "enc-teto");
+    await expect(tab.getByRole("row", { name: /Sebastião Prado/ })).toContainText("R$ 12.000,00");
+    const comb = j.getByLabel("O que foi combinado com Sebastião");
+    await expect(comb).toHaveAttribute("aria-describedby", "enc-comb-aj");
+    await expect(comb).toHaveValue("");
+    const caixa = j.getByRole("checkbox", { name: "Sebastião concordou com a cobrança destes honorários." });
+    await expect(caixa).not.toBeChecked();
+    await semViolacoes(page);
+    // enc-erro-cobrar: acima do calculado, sem o combinado e sem a caixa.
+    await valorHon.fill("3.500,00");
+    await j.getByRole("button", { name: "Registrar" }).click();
+    const resumo = j.getByRole("alert").filter({ hasText: "Falta acertar 3 coisas." });
+    await expect(resumo.getByRole("link")).toHaveText([
+      "Os honorários passam do êxito calculado na conferência.", "Escreva o que foi combinado com Sebastião.", "Confirme que Sebastião concordou com a cobrança.",
+    ]);
+    await expect(valorHon).toBeFocused();
+    await expect(valorHon).toHaveAttribute("aria-invalid", "true");
+    await expect(valorHon).toHaveAttribute("aria-describedby", "enc-teto enc-v-er");
+    expect(nbsp((await hon.textContent()) ?? "")).toContain("Os honorários passam do êxito calculado na conferência (R$ 3.000,00).");
+    await expect(j.getByText("Escreva o que foi combinado com Sebastião, com pelo menos 3 letras.")).toBeVisible();
+    await expect(comb).toHaveAttribute("aria-describedby", "enc-comb-aj enc-comb-er");
+    await expect(caixa).toHaveAttribute("aria-invalid", "true");
+    await semViolacoes(page);
+    expect(postsRep(pedidos)).toHaveLength(0);
+    await resumo.getByRole("link", { name: "Escreva o que foi combinado com Sebastião." }).click();
+    await expect(comb).toBeFocused();
+    // Acertado: o corpo leva o não cobrado visto e o "Cobrar", com o combinado e clienteConcordou.
+    await valorHon.fill("3.000,00");
+    await comb.fill(COMB_S);
+    await caixa.check();
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alvará registrado." }))
+      .toContainText("Os honorários do êxito foram cobrados, e o combinado ficou na ficha do repasse.");
+    expect(postsRep(pedidos)).toHaveLength(1);
+    expect(postsRep(pedidos)[0]!.corpo).toMatchObject({
+      exitoBaixadoVisto: [], exitoNaoCobradoVisto: [X_SEB],
+      cobrarExitoNaoCobrado: { exitoId: X_SEB, explicacao: COMB_S, clienteConcordou: true },
+      divisao: [{ para: "CLIENTE", valor: 1200000 }, { para: "HONORARIOS", nome: "Honorários de êxito", regra: REGRA_S, valor: 300000 }],
+    });
+  });
+
+  test("enc-sem: \"Deixar sem os honorários\" deixa tudo com Sebastião, e o corpo vai sem o \"Cobrar\"", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_S),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: propS() },
+      [POST_REP]: { status: 201, corpo: { id: id(3), exitoBaixado: [], baixaDesfeita: false, exitoCobrado: false } },
+    });
+    const j = await abrirSebastiao(page);
+    const tab = j.getByRole("table", { name: "Para quem vai cada parte" });
+    // Cobrar e depois deixar sem: a linha que voltou sai de novo.
+    await j.getByRole("radio", { name: /Cobrar os honorários neste alvará/ }).check();
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(1);
+    await j.getByRole("radio", { name: /Deixar sem os honorários/ }).check();
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(0);
+    await expect(j.getByRole("status").filter({ hasText: "Os honorários ficam fora da divisão." }))
+      .toHaveText("Os honorários ficam fora da divisão. O êxito de Sebastião continua não cobrado, e isso fica no histórico do repasse.");
+    await expect(j.getByLabel("O que foi combinado com Sebastião")).toHaveCount(0);
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Registrar" }).click();
+    const st = page.getByRole("status").filter({ hasText: "Alvará registrado." });
+    await expect(st).toBeVisible();
+    await expect(st).not.toContainText("foram cobrados");
+    const corpo = postsRep(pedidos)[0]!.corpo as Record<string, unknown>;
+    expect([corpo.exitoNaoCobradoVisto, "cobrarExitoNaoCobrado" in corpo, corpo.divisao]).toEqual([[X_SEB], false, [{ para: "CLIENTE", valor: 1500000 }]]);
+  });
+
+  test("revisão M3: \"Cobrar\" com a linha de honorários tirada dá erro no grupo, e nada vai ao servidor", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_S),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: propS() },
+      [POST_REP]: { status: 201, corpo: { id: id(3), exitoBaixado: [], baixaDesfeita: false, exitoCobrado: false } },
+    });
+    const j = await abrirSebastiao(page);
+    const tab = j.getByRole("table", { name: "Para quem vai cada parte" });
+    const grupo = j.getByRole("group", { name: "O que fazer com os honorários do êxito de Sebastião" });
+    await grupo.getByRole("radio", { name: /Cobrar os honorários neste alvará/ }).check();
+    await j.getByLabel("O que foi combinado com Sebastião").fill(COMB_S);
+    await j.getByRole("checkbox", { name: "Sebastião concordou com a cobrança destes honorários." }).check();
+    await tab.getByRole("button", { name: "Tirar Honorários de êxito da divisão" }).click();
+    await expect(tab.getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(0);
+    await j.getByRole("button", { name: "Registrar" }).click();
+    const resumo = j.getByRole("alert").filter({ hasText: "Falta acertar 1 coisa." });
+    await expect(resumo.getByRole("link")).toHaveText(["Ponha a linha de honorários de volta ou escolha deixar sem."]);
+    await expect(grupo.getByText("Você escolheu cobrar, mas tirou a linha de honorários. Ponha a linha de volta ou escolha deixar sem.")).toBeVisible();
+    await expect(grupo).toHaveAttribute("aria-describedby", "enc-ops-er");
+    await semViolacoes(page);
+    expect(postsRep(pedidos)).toHaveLength(0);
+    // Escolher de novo "Cobrar" põe a linha de volta.
+    await grupo.getByRole("radio", { name: /Deixar sem os honorários/ }).check();
+    await grupo.getByRole("radio", { name: /Cobrar os honorários neste alvará/ }).check();
+    await expect(tab.getByLabel("Valor de Honorários de êxito")).toHaveValue("3.000,00");
+  });
+
+  test("enc-indevido: sem a escolha, e o caminho é falar com quem conferiu", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_S),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: propS({ motivo: "INDEVIDO", podeCobrar: false, honorarios: null,
+        explicacao: "O acordo foi só sobre danos morais, que o contrato não cobre." }) },
+      [POST_REP]: { status: 201, corpo: { id: id(3), exitoBaixado: [], exitoCobrado: false } },
+    });
+    const j = await abrirSebastiao(page, "O êxito de Sebastião foi marcado como não devido na conferência.");
+    expect(nbsp(await j.locator("#eb-aviso").innerText())).toContain("calculados · indevido, por Marina Ribeiro em");
+    await expect(j.getByText("Por isso, a divisão não tem os honorários do êxito, e eles não podem ser cobrados neste alvará.")).toBeVisible();
+    await expect(j.getByText("Se foi um engano, fale com Marina Ribeiro. Por enquanto, o T3jus não refaz a conferência: registre o alvará assim e não lance os honorários como “Outro”.")).toBeVisible();
+    await expect(j.getByRole("radio")).toHaveCount(0);
+    await semViolacoes(page);
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alvará registrado." })).toBeVisible();
+    expect((postsRep(pedidos)[0]!.corpo as Record<string, unknown>).exitoNaoCobradoVisto).toEqual([X_SEB]);
+  });
+
+  test("enc-conflito: Marina marcou o êxito como não cobrado com a janela aberta; a divisão vem refeita, sem os honorários", async ({ page }) => {
+    const PROP_ANTES = { contrato: { id: NC_S.contrato.id, numero: "C-2026-034" },
+      linhas: [{ para: "HONORARIOS", nome: "Honorários de êxito", regra: "20% · acordo · contrato C-2026-034", valor: 300000 }],
+      cliente: 1200000, falta: 0, exito: [], exitoBaixado: [], exitoSituacao: { situacao: "PARA_CONFERIR", calculado: 300000 }, exitoNaoCobrado: null };
+    const pedidos = await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_S),
+      "POST /v1/escritorio/financeiro/repasses/proposta": [{ corpo: PROP_ANTES }, { corpo: propS() }],
+      [POST_REP]: { status: 409, corpo: { erro: { codigo: "VERSION_CONFLICT", detalhes: {
+        motivo: "EXITO_MUDOU", tipo: "NAO_COBRADO", por: MARINA, em: `${dia(0)}T13:13:00Z` } } } },
+    });
+    await page.goto(`${P}/financeiro/repasses`);
+    await page.getByRole("button", { name: "Registrar alvará ou RPV" }).first().click();
+    const j = page.getByRole("dialog", { name: "Registrar alvará ou RPV" });
+    await j.getByLabel("O que entrou").selectOption("ALVARA");
+    await j.getByLabel("Valor levantado").fill("15.000,00");
+    await expect(j.getByRole("table", { name: "Para quem vai cada parte" }).getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(1);
+    await j.getByRole("button", { name: "Registrar" }).click();
+    const alerta = j.getByRole("alert").filter({ hasText: "Marina Ribeiro" });
+    await expect(alerta).toContainText("Marina Ribeiro marcou o êxito de Sebastião como não cobrado às 10h13.");
+    await expect(alerta).toContainText("Nada foi registrado. Veja a divisão refeita: ela fica sem os honorários do êxito.");
+    await expect(j.getByText("A divisão saiu daqui porque o êxito de Sebastião mudou. O que entrou, o caso, o valor e o dia continuam como você escreveu.")).toBeVisible();
+    const refeita = j.getByRole("button", { name: "Ver a divisão refeita" });
+    await expect(refeita).toBeFocused();
+    await semViolacoes(page);
+    expect((postsRep(pedidos)[0]!.corpo as Record<string, unknown>).exitoNaoCobradoVisto).toEqual([]);
+    await refeita.click();
+    await expect(j.getByRole("heading", { name: "O êxito de Sebastião foi marcado como não cobrado." })).toBeVisible();
+    await expect(j.getByRole("table", { name: "Para quem vai cada parte" }).getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(0);
+    await expect(j.getByLabel("Valor levantado")).toHaveValue("15.000,00");
+    expect(postsRep(pedidos)).toHaveLength(1);
+  });
+
+  test("a recusa do servidor ao combinado volta aos campos do \"Cobrar\"", async ({ page }) => {
+    await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_S),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: propS() },
+      [POST_REP]: { status: 400, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: {
+        motivo: "COMBINADO_OBRIGATORIO", campos: ["cobrarExitoNaoCobrado.explicacao"] } } } },
+    });
+    const j = await abrirSebastiao(page);
+    await j.getByRole("radio", { name: /Cobrar os honorários neste alvará/ }).check();
+    const comb = j.getByLabel("O que foi combinado com Sebastião");
+    await comb.fill("Combinado por telefone.");
+    await j.getByRole("checkbox", { name: "Sebastião concordou com a cobrança destes honorários." }).check();
+    await j.getByRole("button", { name: "Registrar" }).click();
+    await expect(j.getByText("Escreva o que foi combinado com Sebastião, com pelo menos 3 letras.")).toBeVisible();
+    await expect(comb).toBeFocused();
+  });
+
+  test("enc-historico e enc-historico-sem: a ficha do repasse com \"Cobrar\" e com \"Deixar sem\"", async ({ page }) => {
+    const dadosNc = { tipo: "ALVARA", exito: X_SEB, motivo: "PERDOADO", calculado: 300000, conferidoPor: MARINA, conferidoEm: CONF_EM, contrato: "C-2026-034" };
+    const cobrado = { ...FICHA, cliente: SEB, tipo: "ALVARA", valor: 1500000, entrouEm: dia(0), destinacoes: [
+      parte(10, "CLIENTE", SEB.nome, 1200000),
+      parte(11, "HONORARIOS", "Honorários de êxito", 300000, { regra: REGRA_S }),
+    ], historico: [
+      { acao: "financeiro.levantamento_exito_cobrado", em: `${dia(0)}T13:14:00Z`, por: DIEGO,
+        dados: { ...dadosNc, cobranca: id(20), honorarios: 300000, combinado: COMB_S } },
+      { acao: "financeiro.levantamento", em: `${dia(0)}T13:14:00Z`, por: DIEGO, dados: { tipo: "ALVARA", valor: 1500000, seguiuProposta: false } },
+    ] };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: [{ corpo: cobrado }] });
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    await expect(page.getByText("Com os honorários do êxito, cobrados por Diego com o combinado com Sebastião.")).toBeVisible();
+    await expect(page.getByRole("row", { name: /Honorários de êxito/ }).first()).toContainText(REGRA_S);
+    const h = page.getByRole("region", { name: "Histórico" });
+    await expect(h).toContainText(`Honorários do êxito cobrados neste alvará, com o combinado com Sebastião: ${COMB_S} Na conferência, o êxito tinha sido marcado como não cobrado (perdoado, por Marina Ribeiro em ${ddmm(-14)}).`);
+    await expect(h.locator("q")).toHaveText(COMB_S); // as aspas vêm do <q>, como no desenho
+    await expect(h).toContainText("Diego Almeida, ao registrar o alvará · Sebastião concordou, segundo Diego");
+    await expect(h).toContainText("com os honorários do êxito cobrados");
+    await expect(h).not.toContainText("divisão ajustada à mão");
+    const fecha = page.getByRole("region", { name: "Fechamento do caso" });
+    await expect(fecha).toContainText(`Êxito de Sebastião cobrado no alvará de ${ddmm(0)} (não cobrado na conferência)`);
+    expect(nbsp(await fecha.innerText())).toContain(`R$ 3.000,00 · por Diego Almeida, com o combinado com Sebastião · na conferência: perdoado, por Marina Ribeiro em ${ddmm(-14)}`);
+    await semViolacoes(page);
+
+    // enc-historico-sem.
+    const semH = { ...cobrado, destinacoes: [parte(10, "CLIENTE", SEB.nome, 1500000)], historico: [
+      { acao: "financeiro.levantamento_exito_nao_cobrado", em: `${dia(0)}T13:14:00Z`, por: DIEGO, dados: dadosNc },
+      { acao: "financeiro.levantamento", em: `${dia(0)}T13:14:00Z`, por: DIEGO, dados: { tipo: "ALVARA", valor: 1500000, seguiuProposta: true } },
+    ] };
+    await page.unrouteAll();
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: semH } });
+    await page.reload();
+    await expect(page.getByText("Sem os honorários do êxito: o êxito foi marcado como não cobrado na conferência.")).toBeVisible();
+    const h2 = page.getByRole("region", { name: "Histórico" });
+    await expect(h2).toContainText(`Registrado sem os honorários do êxito: o êxito de Sebastião foi marcado como não cobrado na conferência (perdoado, por Marina Ribeiro em ${ddmm(-14)}).`);
+    await expect(h2).toContainText("Diego Almeida, ao registrar o alvará");
+    await expect(h2).toContainText("divisão do contrato aceita sem mudança");
+    await expect(h2).not.toContainText("Sebastião indicou");
+    const fecha2 = page.getByRole("region", { name: "Fechamento do caso" });
+    await expect(fecha2).toContainText("Êxito do contrato C-2026-034: não cobrado");
+    await expect(fecha2).toContainText(`perdoado, por Marina Ribeiro em ${ddmm(-14)} · deixado fora do alvará ao registrar`);
+    await semViolacoes(page);
+
+    // enc-resumo-fechado (D40, estado 11): o caso encerrado; a linha do êxito fica na folha "Fechamento do caso".
+    const fechado = { ...cobrado, acerto: { ...ACERTO, pendencias: [], falta: 0, faltaPagar: 0, destinadoPago: 1500000, fechado: { em: `${dia(0)}T19:20:00Z`, por: MARINA } } };
+    await page.unrouteAll();
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: fechado } });
+    await page.reload();
+    const fecha3 = page.getByRole("region", { name: "Fechamento do caso" });
+    await expect(fecha3).toContainText(`Caso encerrado no financeiro em ${ddmm(0)}, por Marina Ribeiro.`);
+    await expect(fecha3).toContainText(`Êxito de Sebastião cobrado no alvará de ${ddmm(0)} (não cobrado na conferência)`);
+    expect(nbsp((await fecha3.textContent()) ?? "")).toContain(`R$ 3.000,00 · por Diego Almeida, com o combinado com Sebastião · na conferência: perdoado, por Marina Ribeiro em ${ddmm(-14)}`);
+    await expect(fecha3.getByRole("button", { name: "Encerrar o caso no financeiro" })).toHaveCount(0);
     await semViolacoes(page);
   });
 });

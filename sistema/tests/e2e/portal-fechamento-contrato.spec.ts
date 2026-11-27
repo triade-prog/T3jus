@@ -292,6 +292,30 @@ test.describe("Fechamento do caso na ficha do contrato (F3.132: EX-16, EX-17, FI
     await semViolacoes(page);
   });
 
+  // F3.191 (CH-07, FI-05), desenho D40, estado 9 (enc-caso-historico): o contrato só de êxito, com o
+  // êxito não cobrado na conferência e cobrado no alvará do caso.
+  test("enc-caso-historico: o De onde veio com a cobrança no alvará, o âmbar Só êxito e o vazio das parcelas", async ({ page }) => {
+    const COMB = "Sebastião aceitou pagar o êxito com este alvará, por telefone em 17/11.";
+    const cobrou = { acao: "financeiro.exito_cobrado_no_alvara", em: em(0, "10:14"), por: DIEGO,
+      dados: { levantamento: "lv1", tipo: "ALVARA", entrouEm: dia(0), valor: 300000, doContrato: true, motivo: "PERDOADO", cliente: "Sebastião Prado", combinado: COMB } };
+    const ficha = { ...FICHA_N, condicoes: [{ tipo: "EXITO", percentual: 2000 }], totais: { contratado: 0, recebido: 0, atraso: 0, aVencer: 0 }, parcelas: [],
+      fechamentos: [{ casoId: CASO, comLevantamento: true, levantamentoId: "lv1", caso: { nome: "Prado x Seguradora Lince", resultado: "ACORDO", encerradoEm: em(-8, "16:30") },
+        fechado: null, falta: 0, origem: [cobrou, { acao: "juridico.etapa", em: em(-8, "16:30"), por: MARINA, dados: { resultado: "ACORDO" } }] }] };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/contratos/${CT_N}`]: { corpo: ficha } });
+    await page.goto(`${P}/financeiro/a-receber/contratos/${CT_N}`);
+    const orig = page.getByRole("region", { name: "De onde veio" });
+    await expect(orig).toContainText(`Diego Almeida cobrou no alvará de ${curto(0)} os honorários do êxito de Sebastião, que estava como não cobrado`);
+    expect(((await orig.textContent()) ?? "").replace(/\u00a0/g, " ")).toContain(`R$ 3.000,00 · “${COMB}”`);
+    const dir = page.locator("#t-dir").locator("..");
+    await expect(dir).toContainText("Nada em parcelas");
+    await expect(dir).toContainText("Só êxito");
+    await expect(dir).toContainText(`O êxito foi cobrado no alvará de ${curto(0)}. Os honorários vão ao caixa pela ficha do repasse.`);
+    await expect(dir.getByRole("link", { name: "Abrir o repasse" })).toHaveAttribute("href", "/financeiro/repasses/lv1");
+    await expect(page.getByRole("status").filter({ hasText: "Nenhuma parcela" })).toContainText(
+      `O contrato é só de êxito. O êxito foi marcado como não cobrado na conferência, e os honorários foram cobrados no alvará de ${curto(0)}, na ficha do repasse.`);
+    await semViolacoes(page);
+  });
+
   test("estado 16 (pergunta 1): o êxito a vencer, sem tom de atraso", async ({ page }) => {
     const exito = { ...P6, nome: "Noemi Bastos Carvalho · Êxito", descricao: "Êxito", valor: 840000, vencimento: dia(27), exito: true };
     const acerto = { ...ACERTO, pendencias: [exito], falta: 840000, aVencer: { vencimento: dia(27), descricao: "Êxito", cliente: NOEMI.nome, exito: true },

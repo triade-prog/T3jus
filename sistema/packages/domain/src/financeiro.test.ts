@@ -1,7 +1,7 @@
 // Dias úteis do prazo do repasse (F3.46): o mesmo cálculo do banco (0552).
 import { describe, expect, it } from "vitest";
 import {
-  CATEGORIAS_LANCAR, CATEGORIAS_SAIDA, custoEmprestimo, registrarLevantamentoSchema, diasUteisEntre, estimadaSugerida, feriadoNacional, parcelasDoEmprestimo, somarDiasUteis,
+  CATEGORIAS_LANCAR, CATEGORIAS_SAIDA, COMBINADO_MAX, COMBINADO_MIN, custoEmprestimo, registrarLevantamentoSchema, diasUteisEntre, estimadaSugerida, feriadoNacional, parcelasDoEmprestimo, somarDiasUteis,
   sugerirParcelasAntes, vencimentoDaParcela,
 } from "./financeiro.ts";
 
@@ -86,5 +86,26 @@ describe("F3.174: o êxito baixado no registrar (FI-24, FI-05)", () => {
     expect(registrarLevantamentoSchema.safeParse({ ...base, exitoBaixadoVisto: Array(6).fill(B) }).success).toBe(false);
     expect(registrarLevantamentoSchema.safeParse({ ...base, exitoBaixadoVisto: ["nao-e-id"] }).success).toBe(false);
     expect(registrarLevantamentoSchema.safeParse({ ...base, desfazerBaixa: { baixaId: B, explicacao: "x".repeat(1001) } }).success).toBe(false);
+  });
+});
+
+describe("F3.191: o êxito não cobrado no registrar (CH-07, FI-05)", () => {
+  const base = { tipo: "ALVARA", casoId: "c", clienteId: "k", valor: 1500000, entrouEm: "2026-11-18", divisao: [{ para: "CLIENTE", valor: 1500000 }] };
+  const X = "7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d";
+  const cobrar = { exitoId: X, explicacao: "Sebastião aceitou pagar o êxito com este alvará.", clienteConcordou: true };
+  it("o schema aceita exitoNaoCobradoVisto (também []) e cobrarExitoNaoCobrado", () => {
+    const r = registrarLevantamentoSchema.parse({ ...base, exitoNaoCobradoVisto: [X], cobrarExitoNaoCobrado: cobrar });
+    expect([r.exitoNaoCobradoVisto, r.cobrarExitoNaoCobrado]).toEqual([[X], cobrar]);
+    expect(registrarLevantamentoSchema.parse({ ...base, exitoNaoCobradoVisto: [] }).exitoNaoCobradoVisto).toEqual([]);
+    expect(registrarLevantamentoSchema.parse(base).cobrarExitoNaoCobrado).toBeUndefined();
+  });
+  it("C1: clienteConcordou só true; o combinado até 1.000 letras; um não cobrado visto só", () => {
+    for (const c of [false, "true", 1, null, undefined]) {
+      expect(registrarLevantamentoSchema.safeParse({ ...base, cobrarExitoNaoCobrado: { ...cobrar, clienteConcordou: c } }).success).toBe(false);
+    }
+    expect(registrarLevantamentoSchema.safeParse({ ...base, cobrarExitoNaoCobrado: { ...cobrar, explicacao: "x".repeat(COMBINADO_MAX + 1) } }).success).toBe(false);
+    expect(registrarLevantamentoSchema.safeParse({ ...base, cobrarExitoNaoCobrado: { ...cobrar, exitoId: "nao-e-id" } }).success).toBe(false);
+    expect(registrarLevantamentoSchema.safeParse({ ...base, exitoNaoCobradoVisto: [X, X] }).success).toBe(false);
+    expect([COMBINADO_MIN, COMBINADO_MAX]).toEqual([3, 1000]);
   });
 });
