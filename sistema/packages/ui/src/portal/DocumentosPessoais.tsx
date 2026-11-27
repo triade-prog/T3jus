@@ -20,7 +20,7 @@ import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { enviarArquivo, tipoDoArquivo } from "../console/documentos.ts";
 import { formatarTelefone } from "../console/ficha.ts";
-import { Aviso, descritoPor, ErroAoCarregar, ErroCampo, Estado, Janela } from "../console/pecas.tsx";
+import { Aviso, descritoPor, ErroAoCarregar, ErroCampo, Estado, Janela, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { lerDia } from "./agenda.ts";
 import { TIPOS_NO_SELETOR } from "./clientes.ts";
 import { useCarga } from "./Comercial.tsx";
@@ -332,6 +332,7 @@ export function JanelaAnexarDocumento({ f, dados, inicial, aoFechar, aoFeito }: 
   const foto = useRef<HTMLInputElement>(null);
   const escolher = useRef<HTMLInputElement>(null);
   const corpo = useRef<HTMLDivElement>(null);
+  const focar = useFocoDepoisDoCommit();
   const pedido = tipo ? (inicial.pedido?.tipoPessoal === tipo ? inicial.pedido : dados.pedidos.find((p) => p.tipoPessoal === tipo)) : undefined;
   const anterior = inicial.substitui && inicial.substitui.tipo === tipo ? inicial.substitui : undefined;
   const fotos = arquivos.length > 1 || arquivos.some((a) => /^image\//.test(a.arq.type) || /\.(jpe?g|png)$/i.test(a.arq.name));
@@ -359,13 +360,13 @@ export function JanelaAnexarDocumento({ f, dados, inicial, aoFechar, aoFeito }: 
     else if (dia && dia > hoje) e.data = `Confira a data: ela não pode ser depois de hoje (${dataBr(hoje)}).`;
     else if (!dia && tipo === "COMPROVANTE_RESIDENCIA") e.data = "Escreva a data da conta: é ela que conta os dias do comprovante.";
     setErros(e);
-    if (Object.keys(e).length) return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
+    if (Object.keys(e).length) return focar(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
     setEnviando(true);
     const arquivo = lista.length > 1 ? await juntarFotos(ordenarFotos(lista)) : lista[0]!;
     if (typeof arquivo === "string") {
       setEnviando(false);
       setErros({ arquivo });
-      return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>("[data-erro]")?.focus());
+      return focar(() => corpo.current?.querySelector<HTMLElement>("[data-erro]")?.focus());
     }
     const arquivoTipo = tipoDoArquivo(arquivo.name, arquivo.type);
     if (!arquivoTipo) {
@@ -391,7 +392,7 @@ export function JanelaAnexarDocumento({ f, dados, inicial, aoFechar, aoFeito }: 
           else m.arquivo = "Arquivo não aceito. Envie PDF ou foto, até 10 MB.";
         }
         setErros(m);
-        return requestAnimationFrame(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
+        return focar(() => corpo.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-erro]')?.focus());
       }
       return setFalha(textoDoErro(ini.erro));
     }

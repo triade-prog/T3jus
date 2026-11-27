@@ -21,7 +21,7 @@ import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { dataBrInteira, lerDataBr } from "./interessados.ts";
 import { chamarConsole, INTERESSADOS } from "./Moldura.tsx";
-import { Aviso, ErroCampo, faltaAcertar, Janela } from "./pecas.tsx";
+import { Aviso, ErroCampo, faltaAcertar, Janela, useFocoDepoisDoCommit } from "./pecas.tsx";
 import { dataLonga } from "./tempo.ts";
 
 const TAMANHOS: [string, string, string][] = [["SO_EU", "Só eu", "Advogado sozinho"], ["DE_2_A_5", "2 a 5", "pessoas"], ["DE_6_A_10", "6 a 10", "pessoas"], ["MAIS_DE_10", "Mais de 10", "pessoas"]];
@@ -148,6 +148,7 @@ export function JanelaCadastrarInteressado({ aberta, hoje, eu, pessoas, aoFechar
   const [repetido, setRepetido] = useState<InteressadoRepetido | null>(null);
   const [enviando, setEnviando] = useState(false);
   const topo = useRef<HTMLDivElement>(null);
+  const focar = useFocoDepoisDoCommit();
   const mudar = (k: keyof Form) => (v: string) => {
     setF((x) => ({ ...x, [k]: v }));
     // Mudou o e-mail ou o WhatsApp: o repetido precisa ser conferido de novo.
@@ -156,7 +157,7 @@ export function JanelaCadastrarInteressado({ aberta, hoje, eu, pessoas, aoFechar
   const ro = enviando;
 
   function focarTopo() {
-    requestAnimationFrame(() => topo.current?.querySelector<HTMLElement>("[tabindex='-1']")?.focus());
+    focar(() => topo.current?.querySelector<HTMLElement>("[tabindex='-1']")?.focus());
   }
 
   function corpo() {

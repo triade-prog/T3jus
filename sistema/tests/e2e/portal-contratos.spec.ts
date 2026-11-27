@@ -4,6 +4,7 @@
 // simulada; aqui se testa a tela, a acessibilidade e o que ela manda ao servidor.
 import { expect, test, type Page } from "@playwright/test";
 import { agora, fixarRelogio, semViolacoes } from "./console-dados.ts";
+import { quadroAntesDoCommit } from "./quadro.ts";
 
 const P = "http://localhost:3000";
 const ESC = "e0000000-0000-4000-8000-0000000000a1";
@@ -262,6 +263,20 @@ test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
     expect([corpo.clienteId, corpo.propostaId, corpo.advogados, corpo.responsavelId]).toEqual([cli(33), prop(14), [MARINA.id], DIEGO.id]);
     expect(corpo.inscricoes).toEqual({ [MARINA.id]: [OAB_MA.id] });
     expect(corpo.condicoes).toEqual([PARC, EXITO]);
+  });
+
+  // F3.183: depois do await, o quadro chega antes do commit que cria o resumo de erros.
+  test("422 do servidor com o quadro antes do commit: o foco vai ao primeiro ponto do resumo", async ({ page }) => {
+    await quadroAntesDoCommit(page);
+    await simular(page, {
+      ...comuns(),
+      "POST /v1/escritorio/contratos": { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["advogados"] } } } },
+    });
+    await page.goto(`${P}/contratos/contratos/novo?proposta=${prop(14)}`);
+    await expect(page.getByLabel("Objeto do contrato")).toHaveValue("Aposentadoria por idade");
+    await page.getByRole("button", { name: "Criar contrato" }).click();
+    const erro = page.getByRole("alert").filter({ hasText: "Falta acertar 1 ponto" });
+    await expect(erro.getByRole("link", { name: /Advogados no contrato/ })).toBeFocused();
   });
 
   test("Novo contrato direto: escolhe o cliente e os tipos; o resumo soma o valor certo", async ({ page }) => {

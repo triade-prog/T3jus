@@ -12,7 +12,7 @@ import {
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar } from "../console/pecas.tsx";
+import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { diaCurto } from "./agenda.ts";
 import { resumoContrato, ROTAS_CONTRATOS } from "./contratos.ts";
@@ -141,6 +141,7 @@ function Formulario({ escritorio, ficha, proposta, clienteInicial = null }: {
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const topo = useRef<HTMLDivElement>(null);
+  const focar = useFocoDepoisDoCommit();
   const eu = escritorio.pessoa;
   const ativo = ficha?.situacao === "ATIVO";
 
@@ -182,7 +183,7 @@ function Formulario({ escritorio, ficha, proposta, clienteInicial = null }: {
     const campos = x.erro.detalhes?.campos;
     if (x.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       setErros(campos.map(String));
-      requestAnimationFrame(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
+      focar(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
       return;
     }
     setErros([]);

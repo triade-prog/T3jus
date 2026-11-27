@@ -2,7 +2,7 @@
 // Peças das telas do Console v1 (docs/design/aprovadas/console-v1): aviso, estado (vazio e
 // erro), janela, campo com erro preso e esqueleto de carregando. Seguem o design system D2.
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { pararVigiaDoFoco, pistaDoFoco, vigiarFoco, type PistaDoFoco } from "./foco.ts";
 
@@ -191,4 +191,29 @@ export function focarPrimeiroErro(raiz: HTMLElement | null, tentativas = 20) {
     else if (n > 0) setTimeout(() => ir(n - 1), 16);
   };
   requestAnimationFrame(() => ir(tentativas));
+}
+
+/**
+ * Pede o foco para depois do commit (F3.183, o padrão da F3.176). Depois de um await, o quadro pode
+ * chegar antes de o React criar ou marcar o alvo; aqui o foco roda num efeito disparado por um
+ * contador, que muda no mesmo lote do setState que cria o alvo. Começa em 0: nada roda ao abrir (nem
+ * na montagem dupla do StrictMode). Cada pedido muda o contador, então pedir de novo com o mesmo alvo
+ * foca de novo. A função guardada lê o DOM na hora do efeito, e a ref é limpa depois de usada: o Fast
+ * Refresh ou um efeito repetido não focam um alvo velho. No caminho síncrono (um clique), o React
+ * aplica o efeito no fim do mesmo commit, então nada muda ali. Chame junto dos outros useState, antes
+ * de qualquer return cedo.
+ */
+export function useFocoDepoisDoCommit(): (focar: () => void) => void {
+  const [vez, setVez] = useState(0);
+  const alvo = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (vez === 0) return;
+    const f = alvo.current;
+    alvo.current = null;
+    f?.();
+  }, [vez]);
+  return useCallback((focar: () => void) => {
+    alvo.current = focar;
+    setVez((n) => n + 1);
+  }, []);
 }

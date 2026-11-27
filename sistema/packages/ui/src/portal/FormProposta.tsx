@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { dataBr, ORIGENS, type ClienteLinha, type FichaProposta, type ListaClientes } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar } from "../console/pecas.tsx";
+import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { lerDia } from "./agenda.ts";
 import { ROTAS_COMERCIAL } from "./comercial.ts";
@@ -69,6 +69,7 @@ function Formulario({ escritorio, ficha, clienteInicial }: { escritorio: Escrito
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState<"rascunho" | "proposta" | null>(null);
   const topo = useRef<HTMLDivElement>(null);
+  const focar = useFocoDepoisDoCommit();
   const eu = escritorio.pessoa;
 
   useEffect(() => {
@@ -110,7 +111,7 @@ function Formulario({ escritorio, ficha, clienteInicial }: { escritorio: Escrito
     if (x.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       const lista = campos.map(String).filter((c) => c !== "retorno.oque");
       setErros(lista);
-      requestAnimationFrame(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
+      focar(() => topo.current?.querySelector<HTMLElement>("a[data-primeiro]")?.focus());
       return;
     }
     setErros([]);
