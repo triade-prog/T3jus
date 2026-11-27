@@ -220,15 +220,20 @@ begin
   foreach e in array v_lista loop
     perform entrar_escritorio_servico(e);
     -- Com a trava: quem espera outra transação (a confirmação ou o Ativo) relê a linha e não começa
-    -- de novo; a cobrança contada é só a que esta rotina começou.
+    -- de novo; a cobrança contada é só a que esta rotina começou. Um escritório com erro não para
+    -- os outros nem a rotina de sempre: fica para o dia seguinte, com o aviso no log.
     select * into a from assinaturas where escritorio_id = e for update;
     continue when a.id is null or a.inicio_cobranca is not null or a.assinada_em is null
                or contrato_situacao(e) not in ('ABERTO', 'MARCADO');
-    perform cobranca_comecar(e);
-    if (select inicio_cobranca from assinaturas where id = a.id) is not null then
-      v_comecou := v_comecou + 1;
-      v_emitidas := v_emitidas + (select count(*)::int from faturas where assinatura_id = a.id);
-    end if;
+    begin
+      perform cobranca_comecar(e);
+      if (select inicio_cobranca from assinaturas where id = a.id) is not null then
+        v_comecou := v_comecou + 1;
+        v_emitidas := v_emitidas + (select count(*)::int from faturas where assinatura_id = a.id);
+      end if;
+    exception when others then
+      raise warning 'cobranca_rotina: teste do escritorio % nao comecou: %', e, sqlerrm;
+    end;
   end loop;
   perform limpar_contexto();
   v := cobranca_rotina_sem_teste();
