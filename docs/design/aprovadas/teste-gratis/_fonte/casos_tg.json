@@ -1,0 +1,170 @@
+[
+ {
+  "nome": "assinatura-previsto",
+  "url": "ficha.html?aba=assinatura&estado=tg-previsto"
+ },
+ {
+  "nome": "assinatura-em-teste",
+  "url": "ficha.html?aba=assinatura&estado=tg-em-teste"
+ },
+ {
+  "nome": "assinatura-quer-assinar",
+  "url": "ficha.html?aba=assinatura&estado=tg-quer-assinar"
+ },
+ {
+  "nome": "assinatura-confirmar",
+  "url": "ficha.html?aba=assinatura&estado=tg-confirmar"
+ },
+ {
+  "nome": "assinatura-confirmar-erros",
+  "url": "ficha.html?aba=assinatura&estado=tg-confirmar-erros"
+ },
+ {
+  "nome": "assinatura-assinado",
+  "url": "ficha.html?aba=assinatura&estado=tg-assinado"
+ },
+ {
+  "nome": "assinatura-prorrogar",
+  "url": "ficha.html?aba=assinatura&estado=tg-prorrogar"
+ },
+ {
+  "nome": "assinatura-prorrogar-erros",
+  "url": "ficha.html?aba=assinatura&estado=tg-prorrogar-erros"
+ },
+ {
+  "nome": "assinatura-prorrogado",
+  "url": "ficha.html?aba=assinatura&estado=tg-prorrogado"
+ },
+ {
+  "nome": "assinatura-acabou",
+  "url": "ficha.html?aba=assinatura&estado=tg-acabou"
+ },
+ {
+  "nome": "assinatura-dispensar",
+  "url": "ficha.html?aba=assinatura&estado=tg-dispensar"
+ },
+ {
+  "nome": "assinatura-dispensado",
+  "url": "ficha.html?aba=assinatura&estado=tg-dispensado"
+ },
+ {
+  "nome": "assinatura-repetido",
+  "url": "ficha.html?aba=assinatura&estado=tg-repetido"
+ },
+ {
+  "nome": "assinatura-liberar",
+  "url": "ficha.html?aba=assinatura&estado=tg-liberar"
+ },
+ {
+  "nome": "assinatura-financeiro",
+  "url": "ficha.html?aba=assinatura&estado=tg-quer-assinar&papel=financeiro"
+ },
+ {
+  "nome": "assinatura-suporte",
+  "url": "ficha.html?aba=assinatura&estado=tg-em-teste&papel=suporte"
+ },
+ {
+  "nome": "historico-ribeiro",
+  "url": "ficha.html?aba=historico&estado=tg-ribeiro"
+ },
+ {
+  "nome": "historico-ipe",
+  "url": "ficha.html?aba=historico&estado=tg-ipe"
+ },
+ {
+  "nome": "notas-ribeiro",
+  "url": "ficha.html?aba=notas&estado=tg-ribeiro"
+ },
+ {
+  "nome": "carteira",
+  "url": "carteira.html?estado=tg-ver"
+ },
+ {
+  "nome": "carteira-em-teste",
+  "url": "carteira.html?estado=tg-em-teste"
+ },
+ {
+  "nome": "carteira-acabou",
+  "url": "carteira.html?estado=tg-acabou"
+ },
+ {
+  "nome": "carteira-quer",
+  "url": "carteira.html?estado=tg-quer"
+ },
+ {
+  "nome": "sino-admin",
+  "url": "carteira.html?estado=tg-ver&sino=tg-admin"
+ },
+ {
+  "nome": "sino-financeiro",
+  "url": "carteira.html?estado=tg-ver&papel=financeiro&sino=tg-financeiro"
+ },
+ {
+  "nome": "portal-dia1",
+  "url": "inicio.html?estado=tg-dia1"
+ },
+ {
+  "nome": "portal-equipe",
+  "url": "inicio.html?estado=tg-equipe"
+ },
+ {
+  "nome": "portal-dona",
+  "url": "inicio.html?estado=tg-dona"
+ },
+ {
+  "nome": "portal-quero",
+  "url": "inicio.html?estado=tg-quero"
+ },
+ {
+  "nome": "portal-pedido",
+  "url": "inicio.html?estado=tg-pedido"
+ },
+ {
+  "nome": "portal-ultimo",
+  "url": "inicio.html?estado=tg-ultimo"
+ },
+ {
+  "nome": "portal-dia8",
+  "url": "inicio.html?estado=tg-dia8"
+ },
+ {
+  "nome": "portal-dia8-equipe",
+  "url": "inicio.html?estado=tg-dia8-equipe"
+ },
+ {
+  "nome": "portal-sino",
+  "url": "inicio.html?estado=tg-dia8&sino=tg-socio"
+ },
+ {
+  "nome": "plano-teste",
+  "url": "portal-escritorio.html?estado=tg-plano"
+ },
+ {
+  "nome": "plano-pedido",
+  "url": "portal-escritorio.html?estado=tg-plano-pedido"
+ },
+ {
+  "nome": "plano-assinado",
+  "url": "portal-escritorio.html?estado=tg-plano-assinado"
+ },
+ {
+  "nome": "plano-dia8",
+  "url": "portal-escritorio.html?estado=tg-plano-dia8"
+ },
+ {
+  "nome": "email-dia1",
+  "url": "emails.html?estado=dia1"
+ },
+ {
+  "nome": "email-dia5",
+  "url": "emails.html?estado=dia5"
+ },
+ {
+  "nome": "email-dia7",
+  "url": "emails.html?estado=dia7"
+ },
+ {
+  "nome": "email-dia8",
+  "url": "emails.html?estado=dia8"
+ }
+]

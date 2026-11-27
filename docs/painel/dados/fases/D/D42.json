@@ -5,7 +5,7 @@
   "refs": [
     "CO-09"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 92,
-  "proximo": "Especialista de frontend desenha; depois a Carol aprova (CO-09)."
+  "evidencia": "Desenho em docs/design/aprovadas/teste-gratis/ (42 estados, computador e celular, contraste, toque de 44 px e rolagem lateral conferidos em _conferencia.json), feito pela especialista de frontend sobre o plano revisado (t3jus/co-09/plano-v2.md) e aprovado pela Carol em 27/11/2026 às 11h01 (Bahia) com \"aprovado\", com as 8 recomendações do NOTAS.md. Programa-se em F1.33 a F1.36."
 }
