@@ -1,0 +1,12 @@
+{
+  "id": "F1.29",
+  "texto": "Telas e PDF do carnê com desconto de entrada (Console: folha do carnê, canhotos com valor e selo, aviso de valor mudado, carnê novo, troca pelo desconto, editar e mudar de plano; Portal: carnê da sócia dona; PDF do carnê, da fatura e do recibo)",
+  "peca": "C1",
+  "refs": [
+    "CO-10"
+  ],
+  "status": "pendente",
+  "ordem": 67.42,
+  "nota": "O servidor (F1.28) já devolve faixas, descontoCentavos, valorCarneCentavos, previaNovo e a prévia da troca. Programa-se depois do desenho D41 aprovado pela Carol, com a publicação da api-console e da api-portal (P32). Só então cai a regra provisória \"desconto só com Pix e boleto\".",
+  "proximo": "Desenhar as telas do carnê com desconto (D41) e levar à Carol"
+}

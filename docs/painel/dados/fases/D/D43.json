@@ -1,0 +1,11 @@
+{
+  "id": "D43",
+  "texto": "Desenho da implantação assistida no Console (aba Implantação na ficha, regra em Cobrança › Planos, Assinatura, fatura, PDF da fatura e do recibo, sino, aba Contrato) e no Portal (Escritório › Implantação, Início, Plano e faturas, linha na página Assinar do CO-09)",
+  "peca": "C2",
+  "refs": [
+    "CO-08"
+  ],
+  "status": "feito",
+  "ordem": 93,
+  "evidencia": "docs/design/aprovadas/console-implantacao/ (51 estados, computador e celular); aprovado pela Carol em 27/11/2026 com as 6 recomendações do NOTAS.md (DC14)."
+}

@@ -1,0 +1,15 @@
+{
+  "data": "27/11/2026",
+  "inicio": "10:30",
+  "fim": "10:55",
+  "texto": "Carnê com o valor de cada parcela no servidor (migration 1170): o desconto de entrada só nas parcelas das primeiras faturas, a troca do carnê confirmada ao mudar o desconto, o carnê novo sem mês faltando nem repetido e o desconto contado da 1ª fatura; telas no D41 e F1.29.",
+  "refs": [
+    "F1.28",
+    "F1.29",
+    "F1.30",
+    "D41",
+    "P32",
+    "CO-10",
+    "CO-06"
+  ]
+}
