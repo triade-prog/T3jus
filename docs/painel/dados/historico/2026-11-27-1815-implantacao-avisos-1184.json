@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "18:15",
+  "fim": "18:55",
+  "texto": "Avisos da implantação assistida no sino do Console: aos 7, 3 e 0 dias do prazo, uma vez cada e contando do prazo de agora, para quem acompanha e a Administração, com \"X de Y\" e quem falta treinar; 30 dias antes do fim da isenção, para a Administração; e o escritório que a rotina pulou por ter a implantação cobrada no carnê; numa rotina própria do pg_cron, que não muda estado nenhum (DC14), e com os avisos saindo junto com a implantação no fim da guarda (migration 1184); falta aplicar (P35).",
+  "refs": [
+    "F1.46",
+    "P35",
+    "CO-08"
+  ]
+}
