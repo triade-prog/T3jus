@@ -181,7 +181,8 @@ select ok(exists (select 1 from pg_constraint where conrelid = 'implantacoes'::r
                                       (select attnum from pg_attribute where attrelid = 'implantacoes'::regclass and attname = 'id')]::int2[]),
   'CO-08: unique (escritorio_id, id) para as chaves compostas das tabelas filhas');
 select is((select array_agg(polname::text order by polname) from pg_policy where polrelid = 'implantacoes'::regclass),
-  array['fim_da_guarda', 'isolamento_escritorio'], 'CO-08: a implantação tem o isolamento e sai no fim da guarda (0540)');
+  array['fim_da_guarda', 'isolamento_escritorio', 'rotina_prazos_ler', 'rotina_prazos_mudar'],
+  'CO-08: a implantação tem o isolamento, sai no fim da guarda (0540) e a rotina do fim do contrato a cancela (1181)');
 select is((select row(exportar, prazo, situacao)::text from inventario_dados where tabela = 'implantacoes'),
   row(true, 'Enquanto o escritório for cliente do T3jus e 5 anos depois do fim do contrato', 'APROVADO')::text,
   'CO-08: no inventário, exportada e guardada 5 anos depois do fim do contrato');

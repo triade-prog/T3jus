@@ -241,6 +241,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   TESTE_NAO_REPETIDO: "Só o teste repetido espera ser liberado.",
   TESTE_NAO_COMECOU: "Só dá para prorrogar o teste que já começou.",
   PRORROGAR_DATA: "Escolha um último dia depois do último dia de agora, a partir de hoje.",
+  // CO-08 (1181): a implantação assistida.
+  IMPLANTACAO_NAO_ABERTA: "Este escritório não tem implantação em andamento. Recarregue a página para ver como está.",
+  PRAZO_INVALIDO: "Escolha um prazo diferente do de agora, a partir de hoje e até um ano depois da abertura.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

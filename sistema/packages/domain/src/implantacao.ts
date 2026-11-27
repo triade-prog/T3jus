@@ -40,3 +40,19 @@ export const implantacaoRegraSchema = z.object({
   prazoDias: z.number().int(),
 });
 export type ImplantacaoRegraEntrada = z.infer<typeof implantacaoRegraSchema>;
+
+/** POST /v1/clientes/:id/implantacao/concluir (F1.43): as duas versões lidas e o resumo, que o sócio lê. */
+export const implantacaoConcluirSchema = z.object({
+  versaoCliente: z.number().int().min(1),
+  versaoImplantacao: z.number().int().min(1),
+  resumo: z.string().max(4000).nullable().optional(),
+});
+export type ImplantacaoConcluirEntrada = z.infer<typeof implantacaoConcluirSchema>;
+
+/** PUT /v1/clientes/:id/implantacao/prazo (F1.43): só a Administração, com motivo. */
+export const implantacaoPrazoSchema = z.object({
+  versao: z.number().int().min(1),
+  prazoAte: dataIso,
+  motivo: z.string().max(600),
+});
+export type ImplantacaoPrazoEntrada = z.infer<typeof implantacaoPrazoSchema>;
