@@ -294,3 +294,136 @@ test.describe("Êxito para conferir e reembolso junto (F3.14, F3.85)", () => {
     await semViolacoes(page);
   });
 });
+
+// F3.199 (CH-07, FI-05): o êxito lançado depois do alvará já nasce pago, desenho aprovado em
+// docs/design/aprovadas/portal-exito-alvara-conferir (D39), estados ea-conferir, ea-conferir-sobra,
+// ea-conferir-dois, ea-nao-cobrar e ea-lancado.
+const LEV_A = "f5000000-0000-4000-8000-000000000301";
+const COM_ALVARA = { ...X, honorariosAlvara: [{ levantamentoId: LEV_A, tipo: "ALVARA", entrouEm: dia(-6), livre: 840000 }], honorariosAlvaraTotal: 840000 };
+const nbsp = (s: string) => s.replace(/\u00a0/g, " ");
+
+test.describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07, FI-05)", () => {
+  test("ea-conferir e ea-lancado: o aviso acima do Lançar, o link para o alvará e lançar pelo teclado", async ({ page }) => {
+    const paga = { ...LANCADA, recebido: 840000, falta: 0, situacao: "PAGA", pagaEm: dia(-6) };
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": [{ corpo: { ...EXITOS, itens: [COM_ALVARA] } }, { corpo: SEM_EXITOS }],
+      "GET /v1/escritorio/financeiro/receber": [{ corpo: lista([]) }, { corpo: lista([paga]) }],
+      [`POST /v1/escritorio/financeiro/exitos/${EXITO}/lancar`]: { status: 201, corpo: {
+        ...COM_ALVARA, situacao: "LANCADO", parcela: paga, pagoPeloAlvara: [{ tipo: "ALVARA", entrouEm: dia(-6), valor: 840000, levantamentoId: LEV_A }],
+      } },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Conferir o êxito de Joana Pereira/ }).click();
+    const j = page.getByRole("dialog", { name: "Conferir o êxito" });
+    const aviso = j.locator("#cf-alvara");
+    await expect(aviso).toBeVisible();
+    expect(nbsp(await aviso.innerText())).toContain(`Já entraram R$ 8.400,00 de honorários do êxito de Joana, pelo alvará de ${br(-6)}.`);
+    await expect(aviso).toContainText("Ao lançar, a parcela do êxito nasce paga por esses honorários. Se o valor lançado for maior, o resto fica em A receber.");
+    await expect(aviso.getByRole("link", { name: `Ver o alvará de ${br(-6).slice(0, 5)} em Repasses` })).toHaveAttribute("href", new RegExp(LEV_A));
+    // A frase de sempre (o honorário sai na divisão) dá lugar ao aviso.
+    await expect(j).not.toContainText("o honorário sai na divisão de Repasses");
+    const lancar = j.getByRole("button", { name: "Lançar em A receber" });
+    await expect(lancar).toHaveAttribute("aria-describedby", "cf-alvara");
+    await semViolacoes(page);
+    // Lançar pelo teclado.
+    await lancar.focus();
+    await page.keyboard.press("Enter");
+    const ok = page.getByRole("status").filter({ hasText: "Êxito lançado e pago em" });
+    await expect(ok).toContainText(`Êxito lançado e pago em ${br(-6).slice(0, 5)}, pelo alvará.`);
+    expect(nbsp(await ok.innerText())).toContain("Nada ficou em A receber. R$ 8.400,00 de Joana Pereira, pagos pelos honorários do alvará.");
+    expect(pedidos.filter((p) => p.metodo === "POST")).toHaveLength(1);
+    await expect(page.getByRole("region", { name: "Êxito para conferir" })).toHaveCount(0);
+    // A parcela paga pelo alvará não aparece como "Novo" em aberto.
+    await expect(page.getByRole("row", { name: /Joana Pereira/ })).not.toContainText("Novo");
+    await semViolacoes(page);
+  });
+
+  test("ea-conferir-sobra: lançado abaixo do que entrou vira atenção e pede a devolução", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": { corpo: { ...EXITOS, itens: [COM_ALVARA] } },
+      "GET /v1/escritorio/financeiro/receber": { corpo: lista([]) },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Conferir o êxito de Joana Pereira/ }).click();
+    const j = page.getByRole("dialog", { name: "Conferir o êxito" });
+    await j.getByLabel("Honorário de êxito").fill("6.000,00");
+    const aviso = j.locator("#cf-alvara");
+    await expect(aviso).toContainText("Esse valor foi descontado de Joana além do êxito.");
+    expect(nbsp(await aviso.innerText())).toContain("Os honorários do alvará passam do êxito lançado em R$ 2.400,00.");
+    await expect(aviso).toContainText("Combine com Joana a devolução, que ainda é feita fora do T3jus.");
+    await semViolacoes(page);
+  });
+
+  test("ea-conferir-dois: dois alvarás, um item para cada, do mais antigo", async ({ page }) => {
+    const dois = { ...X, honorariosAlvara: [
+      { levantamentoId: LEV_A, tipo: "ALVARA", entrouEm: dia(-13), livre: 300000 },
+      { levantamentoId: "f5000000-0000-4000-8000-000000000302", tipo: "ALVARA", entrouEm: dia(-6), livre: 540000 },
+    ], honorariosAlvaraTotal: 840000 };
+    await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": { corpo: { ...EXITOS, itens: [dois] } },
+      "GET /v1/escritorio/financeiro/receber": { corpo: lista([]) },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Conferir o êxito de Joana Pereira/ }).click();
+    const j = page.getByRole("dialog", { name: "Conferir o êxito" });
+    const aviso = j.locator("#cf-alvara");
+    await expect(aviso).toBeVisible();
+    expect(nbsp(await aviso.innerText())).toContain("Já entraram R$ 8.400,00 de honorários do êxito de Joana, por 2 alvarás.");
+    const itens = aviso.getByRole("list", { name: "Honorários que já entraram" }).getByRole("listitem");
+    await expect(itens).toHaveCount(2);
+    await expect(itens.nth(0)).toContainText(`Alvará de ${br(-13)}`);
+    await expect(itens.nth(1)).toContainText(`Alvará de ${br(-6)}`);
+    await expect(aviso).toContainText("a começar pelo alvará mais antigo");
+    await expect(aviso.getByRole("link")).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("ea-nao-cobrar: a recusa (C2), sem mandar nada, e Voltar para conferir", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": { corpo: { ...EXITOS, itens: [COM_ALVARA] } },
+      "GET /v1/escritorio/financeiro/receber": { corpo: lista([]) },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Conferir o êxito de Joana Pereira/ }).click();
+    await page.getByRole("button", { name: "Não cobrar este êxito" }).click();
+    const n = page.getByRole("dialog", { name: "Não cobrar este êxito" });
+    await expect(n).toContainText("Este êxito não pode ficar sem cobrança, porque os honorários dele já entraram. Volte para conferir e lance o êxito de Joana.");
+    expect(nbsp(await n.locator("#nc-recusa").innerText())).toContain(`Os honorários deste êxito já entraram pelo alvará de ${br(-6).slice(0, 5)} (R$ 8.400,00).`);
+    await expect(n.getByRole("radio")).toHaveCount(0);
+    const voltar = n.getByRole("button", { name: "Voltar para conferir" });
+    await expect(voltar).toBeFocused();
+    const nao = n.getByRole("button", { name: "Não cobrar", exact: true });
+    await expect(nao).toHaveAttribute("aria-disabled", "true");
+    // aria-disabled: o Playwright não clica num botão desabilitado; o clique vai direto, e nada é mandado.
+    await nao.dispatchEvent("click");
+    expect(pedidos.some((p) => p.metodo === "POST")).toBe(false);
+    await semViolacoes(page);
+    await voltar.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog", { name: "Conferir o êxito" })).toBeVisible();
+  });
+
+  test("Celular: o aviso e os botões do pé cabem na janela de conferir", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": { corpo: { ...EXITOS, itens: [COM_ALVARA] } },
+      "GET /v1/escritorio/financeiro/receber": { corpo: lista([]) },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Conferir o êxito de Joana Pereira/ }).click();
+    const j = page.getByRole("dialog", { name: "Conferir o êxito" });
+    await expect(j.locator("#cf-alvara")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    // Revisão do desenho: nenhum botão do pé corta o texto.
+    const botoes = j.locator(".janela-pe .btn");
+    await expect(botoes).toHaveCount(3);
+    const cortados = await botoes.evaluateAll((bs) => bs.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent));
+    expect(cortados).toEqual([]);
+    await semViolacoes(page);
+  });
+});

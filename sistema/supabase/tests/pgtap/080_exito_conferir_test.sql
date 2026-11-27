@@ -175,7 +175,10 @@ create temp table pj as select r.id from recebimentos_previstos r, ex where r.ex
 create temp table prop as select portal_financeiro_repasse_proposta(diego, rm, jsonb_build_object('casoId', cs.id, 'clienteId', cli.joana, 'valor', 2800000)) v
   from ids, cs, cli;
 select is((select v -> 'exito' -> 0 ->> 'falta' from prop), '700000', 'CH-07: a divisão proposta diz qual parcela do êxito vai ser baixada');
-select is((select v -> 'linhas' -> 0 ->> 'valor' from prop), '840000', 'e o honorário pelo contrato');
+-- Com a 1102 (F3.199, C3), o honorário fica limitado aos R$ 7.000,00 que faltam do êxito lançado;
+-- os 30% do contrato (R$ 8.400,00) vão em semLimite.
+select is((select jsonb_build_array(v -> 'linhas' -> 0 -> 'valor', v -> 'linhas' -> 0 -> 'semLimite') from prop), '[700000, 840000]'::jsonb,
+  'e o honorário pelo contrato, limitado ao que falta do êxito (C3)');
 create temp table cx as select caixa_entradas(rm, '-infinity', '2026-12-28') antes from ids;
 create temp table lv as select portal_financeiro_levantamento_registrar(diego, rm, jsonb_build_object('tipo', 'ALVARA', 'casoId', cs.id, 'clienteId', cli.joana,
   'valor', 2800000, 'entrouEm', '2026-12-20', 'divisao', jsonb_build_array(

@@ -5,11 +5,13 @@
 // quando há algo e fica fora dos números do alto (decisão 2), a janela "Conferir o êxito", que
 // lança a parcela em A receber (decisão 1: sempre que for cobrar) e pede o motivo quando o valor
 // muda (decisão 3), e a janela "Não cobrar este êxito", com motivo e explicação.
+// F3.199 (D39, docs/design/aprovadas/portal-exito-alvara-conferir): com honorários do alvará já
+// entrados, a janela de conferir avisa que a parcela nasce paga, e o "Não cobrar" é recusado (C2).
 
 import { useRef, useState } from "react";
 import {
   dataBr, FORMAS_PAGAMENTO, MOTIVOS_NAO_COBRAR, percentual, reais, RESULTADOS_CASO,
-  type ExitoParaConferir, type ExitosParaConferir, type FormaPagamento, type MotivoNaoCobrar, type ParcelaLinha,
+  type ExitoLancado, type ExitoParaConferir, type ExitosParaConferir, type FormaPagamento, type MotivoNaoCobrar,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -20,6 +22,8 @@ import { primeiroNome } from "./equipe.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { diaDaSemanaCurto, ROTAS_JURIDICO } from "./juridico.ts";
 import { chamarPortal } from "./Moldura.tsx";
+import { AVISO_NAO_COBRAR_ALVARA, avisoConferir, fraseDinheiroPeloEscritorio, recusaNaoCobrar } from "./exito_alvara.ts";
+import { ROTAS_FINANCEIRO } from "./financeiro.ts";
 
 const fuso = { timeZone: "America/Sao_Paulo" } as const;
 const diaDoInstante = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
@@ -87,7 +91,7 @@ export function BlocoExitos({ dados, aoConferir }: { dados: ExitosParaConferir; 
 
 /** "Conferir o êxito": lança a parcela em A receber, ou leva a "Não cobrar este êxito". */
 export function JanelaConferir({ x, aoFechar, aoNaoCobrar, aoFeito }: {
-  x: ExitoParaConferir; aoFechar: () => void; aoNaoCobrar: () => void; aoFeito: (p: ParcelaLinha, valor: number) => void;
+  x: ExitoParaConferir; aoFechar: () => void; aoNaoCobrar: () => void; aoFeito: (r: ExitoLancado, valor: number) => void;
 }) {
   const [valor, setValor] = useState(paraCampo(x.calculado));
   const [venc, setVenc] = useState(diaBr(x.previstoEm));
@@ -101,6 +105,8 @@ export function JanelaConferir({ x, aoFechar, aoNaoCobrar, aoFeito }: {
   const c = lerCentavos(valor);
   const mudou = c !== null && c > 0 && c !== x.calculado;
   const nome = primeiroNome(x.cliente.nome);
+  // F3.199 (ea-conferir): os honorários do alvará que já entraram pagam a parcela ao lançar.
+  const alvara = avisoConferir(x, c);
 
   async function enviar() {
     const e: string[] = [];
@@ -113,11 +119,11 @@ export function JanelaConferir({ x, aoFechar, aoNaoCobrar, aoFeito }: {
       return focarPrimeiroErro(corpo.current);
     }
     setEnviando(true);
-    const r = await chamarPortal<ExitoParaConferir & { parcela: ParcelaLinha }>(`/v1/escritorio/financeiro/exitos/${x.id}/lancar`, {
+    const r = await chamarPortal<ExitoLancado>(`/v1/escritorio/financeiro/exitos/${x.id}/lancar`, {
       metodo: "POST", corpo: { valor: c, vencimento: lerDia(venc), forma, motivoAjuste: mudou ? motivo.trim() : null },
     });
     setEnviando(false);
-    if (r.ok) return aoFeito(r.dados.parcela, c!);
+    if (r.ok) return aoFeito(r.dados, c!);
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       setErros(campos.map(String));
@@ -134,7 +140,7 @@ export function JanelaConferir({ x, aoFechar, aoNaoCobrar, aoFeito }: {
           <button className="btn btn-fantasma ex-nao" type="button" onClick={aoNaoCobrar}>Não cobrar este êxito</button>
           <span className="ex-pe-dir">
             <button className="btn btn-sec" type="button" onClick={aoFechar}>Cancelar</button>
-            <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined}>
+            <button className="btn btn-pri" type="submit" disabled={enviando} aria-busy={enviando || undefined} aria-describedby={alvara ? "cf-alvara" : undefined}>
               <Icone nome="check" className="ico" />Lançar em A receber
             </button>
           </span>
@@ -212,14 +218,29 @@ export function JanelaConferir({ x, aoFechar, aoNaoCobrar, aoFeito }: {
             <p className="ex-fixo"><b>{x.contrato.responsavel.nome}</b><small>O responsável pelo contrato {x.contrato.numero}, como nas outras parcelas.</small></p>
           </div>
         </div>
-        <p className="fi-ref">
-          <Icone nome="ajuda" className="ico" />
-          <span>Se o dinheiro do {x.caso.resultado === "ACORDO" ? "acordo" : "processo"} entrar <b>pelo escritório</b> (alvará ou depósito na conta), o honorário sai na divisão de Repasses.</span>
-        </p>
+        {alvara ? null : (
+          <p className="fi-ref">
+            <Icone nome="ajuda" className="ico" />
+            <span>{fraseDinheiroPeloEscritorio(x.caso.resultado)}</span>
+          </p>
+        )}
         <p className="fi-caixa-fixa">
           <Icone nome="coluna" className="ico" />
           <span>Entra no caixa <b>do escritório</b>: é honorário.</span>
         </p>
+        {alvara ? (
+          // F3.199: no fim do corpo, logo acima do "Lançar", onde a pessoa decide.
+          <Aviso tom={alvara.tom} id="cf-alvara" className="ea-aviso" titulo={alvara.titulo}
+            corpo={<>
+              {alvara.lista.length ? (
+                <ul className="ea-lista" aria-label="Honorários que já entraram">
+                  {alvara.lista.map((l) => <li key={l.rotulo}><span>{l.rotulo}</span><b>{reais(l.valor)}</b></li>)}
+                </ul>
+              ) : null}
+              {alvara.paras.map((t) => <p key={t}>{t}</p>)}
+            </>}
+            acoes={alvara.link ? <a className="ea-ir" href={ROTAS_FINANCEIRO.repasse(alvara.link.levantamentoId)}><Icone nome="enviar" className="ico" />{alvara.link.texto}</a> : undefined} />
+        ) : null}
       </div>
     </Janela>
   );
@@ -234,8 +255,11 @@ export function JanelaNaoCobrar({ x, aoVoltar, aoFeito }: { x: ExitoParaConferir
   const [enviando, setEnviando] = useState(false);
   const corpo = useRef<HTMLDivElement>(null);
   const tem = (c: string) => erros.includes(c);
+  // F3.199 (C2): com os honorários já entrados, a janela recusa antes de enviar.
+  const recusa = recusaNaoCobrar(x);
 
   async function enviar() {
+    if (recusa) return;
     const e: string[] = [];
     if (!motivo) e.push("motivo");
     if (explicacao.trim().length < 3) e.push("explicacao");
@@ -256,6 +280,32 @@ export function JanelaNaoCobrar({ x, aoVoltar, aoFeito }: { x: ExitoParaConferir
       return focarPrimeiroErro(corpo.current);
     }
     setFalha(textoDoErro(r.erro));
+  }
+
+  if (recusa) {
+    return (
+      <Janela id="j-nao-cobrar" aberta aoFechar={aoVoltar} sobretitulo={`${x.cliente.nome} · ${reais(x.calculado)}`} titulo="Não cobrar este êxito" descricao="j-nao-cobrar-d"
+        aoEnviar={aoVoltar}
+        pe={
+          <div className="ea-recusa-pe">
+            <button className="btn btn-sec" type="button" aria-disabled="true" aria-describedby="nc-recusa">Não cobrar</button>
+            <button className="btn btn-pri" type="button" onClick={aoVoltar} data-foco=""><Icone nome="esquerda" className="ico" />Voltar para conferir</button>
+          </div>
+        }>
+        <div style={{ display: "grid", gap: 16 }}>
+          <p id="j-nao-cobrar-d">{recusa.descricao}</p>
+          <Aviso tom="atencao" id="nc-recusa" className="ea-aviso" titulo={recusa.titulo}>{recusa.texto}</Aviso>
+          <div className="fi-alvo">
+            <Icone nome="balanca" className="ico" />
+            <div>
+              <strong>{x.cliente.nome} · honorário de êxito</strong>
+              <small>{x.caso.nome} · {contaDoExito(x)}</small>
+            </div>
+            <span className="fi-v num">{reais(x.calculado)}</span>
+          </div>
+        </div>
+      </Janela>
+    );
   }
 
   return (
@@ -288,9 +338,7 @@ export function JanelaNaoCobrar({ x, aoVoltar, aoFeito }: { x: ExitoParaConferir
           <p className="ajuda" id="nc-expl-aj">Ex.: renegociado com {primeiroNome(x.cliente.nome)} em troca de pagar as parcelas fixas em dia.</p>
           {tem("explicacao") ? <ErroCampo id="nc-expl-er">Escreva a explicação, de 3 a 1.000 letras.</ErroCampo> : null}
         </div>
-        <Aviso tom="info" icone="ajuda" titulo="Se o dinheiro vier por alvará, lance o êxito.">
-          Ele fica em A receber e é baixado na divisão do alvará, em Repasses. O caso continua “Encerrado · acerto pendente” no Jurídico até tudo ser recebido e repassado.
-        </Aviso>
+        <Aviso tom="info" icone="ajuda" titulo={AVISO_NAO_COBRAR_ALVARA.titulo}>{AVISO_NAO_COBRAR_ALVARA.texto}</Aviso>
       </div>
     </Janela>
   );

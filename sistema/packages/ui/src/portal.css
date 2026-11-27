@@ -5024,6 +5024,31 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 }
 
 /* ==========================================================================
+   F3.199 · o êxito lançado depois do alvará já nasce pago (CH-07, FI-05), do desenho aprovado em
+   docs/design/aprovadas/portal-exito-alvara-conferir (D39). Prefixo ea-. Os avisos são o Aviso do D2.
+   ========================================================================== */
+.ea-aviso .aviso-titulo{line-height:1.45}
+.ea-aviso p+p{margin-top:6px}
+.ea-lista{list-style:none;margin:8px 0 4px;padding:0;display:grid;gap:0;border-top:1px solid var(--borda-folha)}
+.ea-lista li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--borda-folha);font-size:13px}
+.ea-lista li b{font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ea-ir{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:500;color:var(--vinho)}
+.ea-ir .ico{width:16px;height:16px}
+.fi-quem .ea-cel{display:flex;gap:6px;align-items:flex-start;color:var(--texto);line-height:1.45}
+.fi-quem .ea-cel .ico{flex:none;width:14px;height:14px;margin-top:3px;color:var(--vinho)}
+.ea-hist-novo p{font-weight:400}
+.ea-pago-l{display:flex;gap:6px;align-items:flex-start;margin-top:2px;font-size:12px;color:var(--vinho)}
+.ea-pago-l .ico{flex:none;width:14px;height:14px;margin-top:2px}
+.janela .ea-recusa-pe{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;width:100%}
+@media (max-width:760px){
+  .janela .ea-recusa-pe{display:grid;grid-template-columns:minmax(0,1fr)}
+  .janela .ea-recusa-pe .btn{width:100%;justify-content:center}
+  /* Revisão do desenho, nota 4: o .janela.fi-larga .janela-pe .btn{width:100%} divide o ex-pe-dir em duas
+     metades iguais e cortava "Lançar em A receber" a 390. Cada botão fica com a largura do texto. */
+  .janela.fi-larga .ex-pe-dir .btn{width:auto;flex:1 1 auto}
+}
+
+/* ==========================================================================
    Plano e faturas e as faixas da cobrança (F1.20, CO-06), do desenho aprovado em
    docs/design/aprovadas/console-cobranca/portal-escritorio.html. O resto (tabela, selos,
    carnê, Pix e boleto) vem das regras .co da Cobrança no console.css.

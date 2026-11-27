@@ -11,7 +11,7 @@ export type TomAviso = "urgencia" | "atencao" | "sucesso" | "info";
 const ICONE_AVISO: Record<TomAviso, NomeIcone> = { urgencia: "alerta", atencao: "relogio", sucesso: "check", info: "ajuda" };
 
 /** Aviso do D2. Urgência é `alert`; o resto, `status`. */
-export function Aviso({ tom, titulo, children, acoes, className, icone }: {
+export function Aviso({ tom, titulo, children, acoes, className, icone, id, corpo }: {
   tom: TomAviso;
   /** Outro ícone no lugar do padrão do tom. */
   icone?: NomeIcone;
@@ -19,13 +19,18 @@ export function Aviso({ tom, titulo, children, acoes, className, icone }: {
   children?: ReactNode;
   acoes?: ReactNode;
   className?: string;
+  /** Para o aria-describedby de quem o aviso explica (F3.199). */
+  id?: string;
+  /** Blocos depois do texto (uma lista, mais parágrafos), fora do <p> (F3.199). */
+  corpo?: ReactNode;
 }) {
   return (
-    <div className={`aviso aviso-${tom}${className ? ` ${className}` : ""}`} role={tom === "urgencia" ? "alert" : "status"}>
+    <div className={`aviso aviso-${tom}${className ? ` ${className}` : ""}`} id={id} role={tom === "urgencia" ? "alert" : "status"}>
       <Icone nome={icone ?? ICONE_AVISO[tom]} className="ico" />
       <div>
         {titulo ? <strong className="aviso-titulo">{titulo}</strong> : null}
         {children ? <p>{children}</p> : null}
+        {corpo}
         {acoes ? <div className="aviso-acoes">{acoes}</div> : null}
       </div>
     </div>

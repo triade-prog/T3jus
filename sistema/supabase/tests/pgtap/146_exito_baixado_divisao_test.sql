@@ -3,7 +3,7 @@
 -- (seção A6), com as respostas A1 (não registrar os honorários com o êxito baixado: desfazer ou
 -- manter e tirar os honorários; renegociada só desfazer) e A2 (sim: as custas voltam como reembolso).
 begin;
-select plan(57);
+select plan(59);
 
 create function pg_temp.fim() returns void language plpgsql as $$
 begin
@@ -177,10 +177,16 @@ rollback to savepoint desfazer;
 
 -- ---------------------------------------------------------------------------------------
 -- 4. Paga em parte: recebidos R$ 1.000,00, baixa de R$ 3.800,00; a divisão paga R$ 3.800,00.
+-- Com a 1102 (F3.199, C3), a proposta já limita os honorários ao que falta do êxito: R$ 3.800,00,
+-- e não mais os R$ 4.800,00 do percentual (Tiago fica com R$ 1.000,00 a mais).
 savepoint parcial;
 select is((select b -> 'baixa' ->> 'recebidoAntes' from ids, cs, cli, jsonb_array_elements(exito_parcelas_baixadas(ids.rm, cs.id, cli.tiago)) b),
   '100000', 'FI-24: a baixa de Tiago diz o que já tinha entrado');
-select pg_temp.reg(ids.diego, cli.tiago, pg_temp.hon(),
+create temp table prop_t as select repasse_proposta(rm, cs.id, cli.tiago, 1600000) v from ids, cs, cli;
+select is((select jsonb_build_array(v -> 'linhas' -> 0 -> 'valor', v -> 'linhas' -> 0 -> 'semLimite', v -> 'cliente') from prop_t),
+  '[380000, 480000, 1220000]'::jsonb, 'FI-24 (F3.199, C3): a proposta limita os honorários aos R$ 3.800,00 que faltam, com semLimite');
+select ok((select v -> 'linhas' -> 0 ->> 'regra' like '% · até o que falta do êxito' from prop_t), 'e a regra diz "até o que falta do êxito"');
+select pg_temp.reg(ids.diego, cli.tiago, pg_temp.hon(380000),
   pg_temp.visto(bx.tiago) || jsonb_build_object('desfazerBaixa', jsonb_build_object('baixaId', bx.tiago, 'explicacao', 'O alvará paga o êxito.'))) from ids, cli, bx;
 select pg_temp.fim();
 select is((select valor from pagamentos_recebidos x, p where x.parcela_id = p.tiago and x.destinacao_id is not null), 380000::bigint,

@@ -33,6 +33,7 @@ import {
   type EscolhaExito,
 } from "./baixa.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
+import { avisoLimiteDoExito, fechamentoPagou, linhaCurtaDoExito, textoLancadoDepois, textoPagou } from "./exito_alvara.ts";
 import { atrasada, FolhaQuemCuida, JanelaAnotarAtraso, JanelaTrocarResponsavel, NotaAtraso, SeloAtraso } from "./RepasseCuida.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -385,6 +386,8 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
   const [dia, setDia] = useState(diaBr(hoje));
   const [div, setDiv] = useState<{
     chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[]; base: LinhaTela[]; exito?: PropostaRepasse["exito"]; exitoBaixado: ExitoBaixado[];
+    /** F3.199: a situação do êxito e as linhas como vieram (com semLimite), para a linha curta e o aviso do limite. */
+    proposta?: Pick<PropostaRepasse, "exitoSituacao" | "linhas">;
   } | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [futuro, setFuturo] = useState(false);
@@ -419,6 +422,9 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
   const txEb = eb ? textoExitoBaixado(eb, nomeCliente, tipo || null) : null;
   const msgEb = eb ? errosDoExito(null, "", nomeCliente, soDesfazer).exito : undefined;
   const honProposto = div?.base.find((x) => x.para === "HONORARIOS");
+  // F3.199 (ea-proposta, ea-exito-pago, ea-exito-falta): sem êxito baixado, a linha curta e o aviso do limite (C3).
+  const curta = linhas && !eb ? linhaCurtaDoExito(div!.proposta?.exitoSituacao, nomeCliente) : null;
+  const limite = linhas && !eb && div!.proposta ? avisoLimiteDoExito(div!.proposta, nomeCliente, tipo || null) : null;
 
   // A proposta pelo contrato, quando o caso, o cliente e o valor estão escritos.
   useEffect(() => {
@@ -440,7 +446,8 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
       setPorque(g?.porque ?? "");
       setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null,
         linhas: escolhaVolta && ebNovo ? linhasDaEscolha(comManuais, linhasProposta, escolhaVolta, ebNovo) : comManuais, base: linhasProposta,
-        exito: r.ok ? r.dados.exito : undefined, exitoBaixado });
+        exito: r.ok ? r.dados.exito : undefined, exitoBaixado,
+        proposta: r.ok ? { exitoSituacao: r.dados.exitoSituacao, linhas: r.dados.linhas } : undefined });
     });
   }, [chaveAtual, casoId, clienteId, total, recarga]);
 
@@ -638,7 +645,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
             </p>
           </fieldset>
         ) : (
-        <fieldset className="rp-div" aria-describedby={descritoPor(!!eb && "eb-aviso", tem("divisao") && "rp-div-er")}>
+        <fieldset className="rp-div" aria-describedby={descritoPor(!!eb && "eb-aviso", !!limite && "ea-limite", tem("divisao") && "rp-div-er")}>
           <legend>Divisão {contrato ? `proposta pelo contrato ${contrato.numero}` : "do valor"}</legend>
           {!linhas ? (
             <p className="ajuda">{buscando ? "Calculando a divisão pelo contrato…" : "Escolha o caso e escreva o valor para ver a divisão."}</p>
@@ -665,7 +672,10 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
                             ) : x.para === "HONORARIOS" && div?.exito?.length
                               /* F3.94: a parte "honorários" baixa a parcela do êxito do cliente no caso. */
                               ? <small className="rp-baixa"><Icone nome="check" className="ico" />Dá baixa na parcela {div.exito.map((e) => `“${e.descricao}” (falta ${reais(e.falta)})`).join(" e ")}</small>
-                              : null}
+                              : x.para === "HONORARIOS" && curta
+                                /* F3.199 (ea-proposta): o êxito ainda sem valor conferido; não é alerta. */
+                                ? <small className="ea-cel"><Icone nome="relogio" className="ico" />{curta}</small>
+                                : null}
                           </div>
                         ) : (
                           <div className="rp-manual">
@@ -754,6 +764,10 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
                     ) : null}
                   </fieldset>
                 </section>
+              ) : null}
+              {limite ? (
+                // F3.199 (C3): abaixo da tabela, dentro do quadro "Divisão", como o aviso do D38.
+                <Aviso tom="info" id="ea-limite" className="ea-aviso" titulo={comValores(limite.titulo)}>{comValores(limite.texto)}</Aviso>
               ) : null}
               <button className="btn btn-sec btn-compacto" type="button" onClick={acrescentar} style={{ justifySelf: "start" }}>
                 <Icone nome="mais" className="ico" />Acrescentar perito, parceiro ou outro
@@ -1080,6 +1094,17 @@ function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
                   </li>
                 );
               }
+              // F3.199 (ea-repasse): o êxito lançado depois do alvará, pago por esta parte.
+              if (e.acao === "financeiro.levantamento_exito_lancado_depois") {
+                const t = textoLancadoDepois(e.dados, f.cliente.nome, e.em, e.por);
+                return (
+                  <li key={`${e.em}-${i}`} className="ea-hist-novo">
+                    <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
+                    <span className="pto" aria-hidden="true" />
+                    <div><p>{comValores(t.texto)}</p><small>{t.quem}</small></div>
+                  </li>
+                );
+              }
               const det = detalheHistorico(e.acao, e.dados);
               return (
                 <li key={`${e.em}-${i}`}>
@@ -1233,6 +1258,9 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
                         <small>{quemE(d)}</small>
                         {d.dispensa ? <small>Dispensado por {d.dispensa.por.nome}: {d.dispensa.motivo}</small> : null}
                         {d.feitoPor ? <small>Registrado por {d.feitoPor.nome}</small> : null}
+                        {(d.pagou ?? []).map((p) => (
+                          <span key={p.parcelaId} className="ea-pago-l"><Icone nome="check" className="ico" />{textoPagou(p)}</span>
+                        ))}
                       </div>
                     </td>
                     <td data-r="Situação">
@@ -1310,6 +1338,11 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
               {mantido ? fechamentoExitoMantido(mantido.dados, f.tipo).map((x, i) => (
                 <li key={`eb-f-${i}`}><Icone nome="check" className="ico" /><span>{x.titulo}<small>{x.detalhe}</small></span></li>
               )) : null}
+              {f.destinacoes.flatMap((d) => (d.pagou ?? []).map((p) => ({ d, p }))).map(({ d, p }) => {
+                // F3.199: o êxito pago por este levantamento, nos dois caminhos.
+                const x = fechamentoPagou(p, f.tipo);
+                return <li key={`ea-f-${d.id}-${p.parcelaId}`}><Icone nome="check" className="ico" /><span>{x.titulo}<small>{x.detalhe}</small></span></li>;
+              })}
               {f.destinacoes.map((d) => (
                 <li key={d.id} className={pendente(d) ? "falta" : undefined}>
                   <Icone nome={pendente(d) ? "alerta" : "check"} className="ico" />

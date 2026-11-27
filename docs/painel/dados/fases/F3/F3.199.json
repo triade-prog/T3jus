@@ -6,8 +6,8 @@
     "CH-07",
     "FI-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1530,
   "nota": "Plano F3.194/F3.192/F3.191 (v5, Parte A; nota 1 da primeira revisão, alta), onde este item se chama F3.194: o número foi tomado na main por outra frente (PR #208), e o item virou F3.199. Hoje portal_financeiro_exito_lancar (0640:276-327) cria a parcela EXITO aberta sem olhar levantamentos nem destinacoes, e o cliente que já pagou pelo alvará fica em A receber e Em atraso (CC, arts. 876 e 940). A entrega usa o resultado da etapa final (EX-08) sem mudá-lo, por isso o EX-08 não vai em refs. Migration 1102, pgTAP 148, desenho D39 e publicação P29 (a P24 do plano é do #207). A C2 foi decidida (a janela recusa o \"Não cobrar\" com honorários já entrados); a C3 também: \"Limitar ao que falta\" (Carol, 26/11/2026), e a proposta limita a linha de honorários ao que falta do êxito lançado, também nos alvarás seguintes (A2.8, com o estado ea-exito-pago e o teste 146 refeito).",
-  "proximo": "Programar a 1102 e o pgTAP 148 pelo D39 aprovado (26/11/2026)"
+  "evidencia": "Migration 1102_exito_lancado_pago_pelo_alvara.sql (exito_honorarios_livres, exito_situacao, destinacao_pagou; lançar paga a parcela com os honorários livres, do levantamento mais antigo, como pagamento TERCEIROS ligado à destinação; \"Não cobrar\" recusa com HONORARIOS_JA_ENTRARAM (C2); a proposta limita os honorários ao que falta do êxito lançado, com semLimite (C3); o registrar trava exitos_conferir com for share e o Dispensar trava a destinação). pgTAP 148 (66 testes) e 146 refeito para a C3 (59), 080 ajustado à C3; tests/concorrencia/exito-lancado-pelo-alvara.sh (quatro corridas); pnpm test:db com 136 arquivos e 4377 testes, todos ok. Vitest 801 (exito_alvara.test.ts, 10 novos). Playwright: 5 testes novos em portal-financeiro-exito.spec.ts (ea-conferir, ea-conferir-sobra, ea-conferir-dois, ea-nao-cobrar, ea-lancado pelo teclado, e os botões do pé a 390) e 3 em portal-financeiro-repasses.spec.ts (ea-proposta, ea-exito-falta e ea-exito-pago, ea-repasse), com axe, nos dois projetos; as duas specs inteiras com 76 ok. Telas pelo D39 aprovado. Publicação na P29."
 }

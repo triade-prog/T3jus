@@ -142,6 +142,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   // estes são a reserva.
   EXITO_BAIXADO: "O êxito deste cliente está com baixa sem receber. Desfaça a baixa antes de dividir ou tire os honorários da divisão.",
   EXITO_MUDOU: "O êxito deste cliente mudou enquanto você dividia. Nada foi registrado. Veja a divisão refeita.",
+  // O êxito lançado depois do alvará (F3.199, C2): a janela já sabe antes de enviar; este é o texto da corrida.
+  HONORARIOS_JA_ENTRARAM: "Os honorários deste êxito já entraram pela divisão do alvará. Lance o êxito: ele nasce pago.",
   PARCELA_NAO_BAIXADA: "Esta parcela não está mais baixada. Recarregue a página para ver como ela está.",
   RENEGOCIADA_CONTRATO_ENCERRADO: "O contrato foi encerrado enquanto a janela estava aberta, e a renegociação não vale mais. Escolha outro motivo ou deixe a parcela em atraso.",
   // O logo do escritório (F3.81).

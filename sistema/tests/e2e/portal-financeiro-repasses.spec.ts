@@ -779,3 +779,88 @@ test.describe("F3.174: o êxito com baixa sem receber na divisão do alvará (FI
     await semViolacoes(page);
   });
 });
+
+// F3.199 (CH-07, FI-05): o êxito lançado depois do alvará já nasce pago, desenho aprovado em
+// docs/design/aprovadas/portal-exito-alvara-conferir (D39), estados ea-proposta, ea-exito-pago,
+// ea-exito-falta (C3: os honorários limitados ao que falta do êxito) e ea-repasse.
+const HELENA = { id: "be000000-0000-4000-8000-000000000031", nome: "Helena Duarte" };
+const CASO_H = { id: "ca000000-0000-4000-8000-000000000031", nome: "Duarte x Construtora Atlas" };
+const LISTA_H = { ...LISTA, casos: [{ id: CASO_H.id, nome: CASO_H.nome, parteContraria: "Construtora Atlas", clientes: [HELENA] }] };
+const HON_H = { para: "HONORARIOS", nome: "Honorários de êxito", regra: "30% · acordo · contrato C-2026-027", valor: 300000 };
+const propH = (extra: Record<string, unknown>) => ({ contrato: { id: "c0000000-0000-4000-8000-000000000027", numero: "C-2026-027" },
+  linhas: [HON_H], cliente: 700000, falta: 0, exito: [], exitoBaixado: [], ...extra });
+const nbsp = (s: string) => s.replace(/\u00a0/g, " ");
+
+async function abrirHelena(page: Page) {
+  await page.goto(`${P}/financeiro/repasses`);
+  await page.getByRole("button", { name: "Registrar alvará ou RPV" }).first().click();
+  const j = page.getByRole("dialog", { name: "Registrar alvará ou RPV" });
+  await j.getByLabel("O que entrou").selectOption("ALVARA");
+  await j.getByLabel("Valor levantado").fill("10.000,00");
+  await expect(j.getByRole("table", { name: "Para quem vai cada parte" })).toBeVisible();
+  return j;
+}
+
+test.describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07, FI-05)", () => {
+  test("ea-proposta: o êxito ainda não lançado ganha só a linha curta na célula, sem alerta", async ({ page }) => {
+    await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_H),
+      "POST /v1/escritorio/financeiro/repasses/proposta": { corpo: propH({ exitoSituacao: { situacao: "PARA_CONFERIR", calculado: 300000 } }) },
+    });
+    const j = await abrirHelena(page);
+    const hon = j.getByRole("table", { name: "Para quem vai cada parte" }).getByRole("row", { name: /Honorários de êxito/ });
+    await expect(hon).toContainText("O êxito de Helena ainda não foi lançado. Estes honorários pagam a parcela quando ela for lançada.");
+    await expect(j.locator("#ea-limite")).toHaveCount(0);
+    await expect(j.getByRole("alert")).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("ea-exito-falta e ea-exito-pago: o aviso do limite abaixo da tabela, só quando o limite valeu", async ({ page }) => {
+    await simular(page, {
+      ...comuns(ESCRITORIO, LISTA_H),
+      "POST /v1/escritorio/financeiro/repasses/proposta": [
+        { corpo: propH({ exitoSituacao: { situacao: "LANCADO", valor: 480000, falta: 180000 },
+          linhas: [{ ...HON_H, regra: `${HON_H.regra} · até o que falta do êxito`, valor: 180000, semLimite: 300000 }], cliente: 820000 }) },
+        { corpo: propH({ exitoSituacao: { situacao: "PAGO", valor: 480000, falta: 0, pagoEm: dia(-6) }, linhas: [], cliente: 1000000 }) },
+      ],
+    });
+    const j = await abrirHelena(page);
+    const aviso = j.locator("#ea-limite");
+    await expect(aviso).toBeVisible();
+    expect(nbsp(await aviso.innerText())).toContain("Falta R$ 1.800,00 do êxito de Helena.");
+    expect(nbsp(await aviso.innerText())).toContain("Os honorários deste alvará ficam limitados a esse valor. Pelos 30% do contrato, seriam R$ 3.000,00.");
+    await expect(j.getByRole("group", { name: /Divisão proposta pelo contrato C-2026-027/ })).toHaveAttribute("aria-describedby", /ea-limite/);
+    await expect(j.getByRole("table", { name: "Para quem vai cada parte" }).getByLabel("Valor de Honorários de êxito")).toHaveValue("1.800,00");
+    await semViolacoes(page);
+    // Outro valor refaz a proposta: agora o êxito já está pago e não há honorários.
+    await j.getByLabel("Valor levantado").fill("10.000,01");
+    await expect(aviso).toContainText("já foi pago");
+    expect(nbsp(await aviso.innerText())).toContain(`O êxito de Helena já foi pago (R$ 4.800,00, em ${br(-6).slice(0, 5)}).`);
+    await expect(aviso).toContainText("Por isso, este alvará não tem honorários do êxito.");
+    await expect(j.getByRole("table", { name: "Para quem vai cada parte" }).getByRole("row", { name: /Honorários de êxito/ })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("ea-repasse: na ficha, a parte de honorários que pagou o êxito, o fechamento e o histórico", async ({ page }) => {
+    const pagou = [{ parcelaId: "f6000000-0000-4000-8000-000000000031", descricao: "Êxito · Duarte x Construtora Atlas", valor: 300000,
+      lancadaEm: `${dia(0)}T13:20:00Z`, pagaEm: dia(-6), contrato: "C-2026-027", lancadaPor: DIEGO }];
+    const ficha = { ...FICHA, cliente: HELENA, tipo: "ALVARA", destinacoes: [
+      parte(10, "CLIENTE", HELENA.nome, 700000, { situacao: "FEITO", feitoEm: dia(-5), feitoPor: MARINA }),
+      parte(11, "HONORARIOS", "Honorários de êxito", 300000, { regra: "30% · acordo · contrato C-2026-027", pagou }),
+    ], historico: [
+      { acao: "financeiro.levantamento_exito_lancado_depois", em: `${dia(0)}T13:20:00Z`, por: DIEGO,
+        dados: { tipo: "ALVARA", valor: 300000, contrato: "C-2026-027" } },
+      { acao: "financeiro.levantamento", em: `${dia(-6)}T19:12:00Z`, por: MARINA, dados: { tipo: "ALVARA", valor: 1000000, seguiuProposta: true } },
+    ] };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: ficha } });
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    await expect(page.getByRole("row", { name: /Honorários de êxito/ }).first()).toContainText(`Pagou a parcela do êxito, lançada em ${ddmm(0)}`);
+    const fecha = page.getByRole("region", { name: "Fechamento do caso" });
+    await expect(fecha).toContainText("Êxito do contrato C-2026-027: pago por este alvará");
+    await expect(fecha).toContainText(`lançado por Diego Almeida em ${ddmm(0)} · pago em ${ddmm(-6)}`);
+    const h = page.getByRole("region", { name: "Histórico" });
+    expect(nbsp(await h.innerText())).toContain(`A parcela do êxito de Helena foi lançada em ${ddmm(0)} por Diego e paga por esta parte de honorários (R$ 3.000,00).`);
+    await expect(h).toContainText("Diego Almeida, ao conferir o êxito em A receber");
+    await semViolacoes(page);
+  });
+});
