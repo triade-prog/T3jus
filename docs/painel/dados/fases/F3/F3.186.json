@@ -6,8 +6,8 @@
     "PT-11",
     "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1420,
   "nota": "Revisão do plano da F3.177 (M2). Até sair, a tela mostra o texto do servidor na recusa.",
-  "proximo": "Planejar e desenhar junto com a F3.181 (pergunta C4 à Carol): o que a lista de lembretes mostra do excluído e como ele sai dela"
+  "evidencia": "Decisões da Carol C4 = A (o lembrete do excluído sai de todas as listas) e C10 a (aviso do valor em aberto no topo da janela). Desenho aprovado pela Carol em 27/11/2026, com todas as recomendações (docs/design/aprovadas/portal-exclusao-contratos-conversas). Migration 1140_contratos_cliente_excluido.sql: lembrete_visivel(l, k), a condição única de lembretes_totais, portal_contratos_lembretes e portal_contratos_lembretes_resumo (0921), sem o lembrete do cliente excluído nos abertos, nos que viraram contrato, nos dispensados, nos totais e na faixa; \"De onde vieram\" continua contando todos (revisão, b8); o lembrete do arquivado fica (R7). cliente_lembretes_que_saem ({n, valor, lancamentos, origem}) na ficha, em saiDeContratos.lembretes (1142). pgTAP 170_contratos_cliente_excluido_test.sql (44 testes). Tela: o aviso \"Há R$ … em aberto no Astrea.\" no topo da janela de excluir (avisoLembrete em exclusao.ts) e, com a página aberta antes, a janela de dispensar e o trazer de volta com CLIENTE_EXCLUIDO dizem que o lembrete saiu da lista (lembretes.ts, Vitest em lembretes.test.ts; e2e em portal-exclusao e portal-lembretes-contrato). Publicação: P31."
 }

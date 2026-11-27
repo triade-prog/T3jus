@@ -6,6 +6,9 @@
 // trazido-resolvido e busca-vazia-viraram). A página mora em Contratos › Contratos: o que ficou em
 // aberto no sistema antigo, para criar o contrato ou dispensar com o motivo. O banco confere a
 // área, a permissão e o escritório da sessão; aqui a tela só mostra e pede.
+// F3.186 (desenho portal-exclusao-contratos-conversas): o lembrete do cliente excluído sai das listas
+// no servidor; dispensar e trazer de volta com a página aberta antes recebem CLIENTE_EXCLUIDO e mostram
+// que o lembrete já saiu da lista.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -22,7 +25,8 @@ import { ROTAS_PASSO } from "./fichaLigada.ts";
 import { ROTAS_IMPORTACAO } from "./importacao.ts";
 import { SeloOrigem } from "./Importacao.tsx";
 import {
-  avisoDispensado, avisoTrazido, buscaVazia, conflitoDispensa, contagemLembretes, grupoDoEndereco, grupoVazio, nomeSistema, primeiroNome,
+  avisoDispensado, avisoTrazido, buscaVazia, conflitoDispensa, contagemLembretes, DISPENSA_EXCLUIDO, grupoDoEndereco, grupoVazio, nomeSistema, primeiroNome,
+  trazerExcluido,
   quandoCriado, quandoDispensado, ROTAS_LEMBRETES, textoCaso, textoLancamentos,
 } from "./lembretes.ts";
 import { chamarPortal, soConsulta } from "./Moldura.tsx";
@@ -58,7 +62,7 @@ export function JanelaDispensar({ alvo, aoFechar, aoFeito, aoAtualizar, id = "ja
   const [motivo, setMotivo] = useState<MotivoDispensa | "">("");
   const [detalhe, setDetalhe] = useState("");
   const [erros, setErros] = useState<("motivo" | "detalhe")[]>([]);
-  const [conflito, setConflito] = useState<{ titulo: string; texto: string } | null>(null);
+  const [conflito, setConflito] = useState<{ titulo: string; texto: string; abertura?: string } | null>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const corpo = useRef<HTMLDivElement>(null);
@@ -86,6 +90,8 @@ export function JanelaDispensar({ alvo, aoFechar, aoFeito, aoAtualizar, id = "ja
     if (r.erro.codigo === "VERSION_CONFLICT" && (d.motivo === "JA_RESOLVIDO" || d.motivo === "JA_DISPENSADO")) {
       return setConflito(conflitoDispensa(d as Parameters<typeof conflitoDispensa>[0], alvo.cliente));
     }
+    // F3.186: o cliente foi excluído com a janela aberta; o lembrete já saiu da lista.
+    if (r.erro.codigo === "VALIDATION_ERROR" && d.motivo === "CLIENTE_EXCLUIDO") return setConflito(DISPENSA_EXCLUIDO);
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(d.campos)) {
       setErros((d.campos as string[]).filter((c): c is "motivo" | "detalhe" => c === "motivo" || c === "detalhe"));
       return focarPrimeiroErro(corpo.current);
@@ -130,7 +136,7 @@ export function JanelaDispensar({ alvo, aoFechar, aoFeito, aoAtualizar, id = "ja
         </>
       )}>
       <div ref={corpo}>
-        <p id={`${id}-d`}>{conflito ? "Alguém mexeu neste lembrete enquanto a janela estava aberta." : "Use quando o escritório não vai cobrar este valor pelo T3jus. Para cobrar, crie o contrato."}</p>
+        <p id={`${id}-d`}>{conflito ? (conflito.abertura ?? "Alguém mexeu neste lembrete enquanto a janela estava aberta.") : "Use quando o escritório não vai cobrar este valor pelo T3jus. Para cobrar, crie o contrato."}</p>
         {topo}
         {lemb}
         {conflito ? null : (
@@ -236,6 +242,8 @@ function LembretesConteudo({ consulta }: { consulta: boolean }) {
   const [toast, setToast] = useState<Toast | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
+  // F3.186: o trazer de volta de cliente excluído com a página aberta; o aviso fica no topo da lista.
+  const [saiu, setSaiu] = useState<{ titulo: string; texto: string } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setQ(busca.trim()), 250);
@@ -292,9 +300,14 @@ function LembretesConteudo({ consulta }: { consulta: boolean }) {
   async function trazer(l: Pick<LembreteContrato, "id" | "cliente">) {
     setOcupado(l.id);
     setFalha(null);
+    setSaiu(null);
     const r = await chamarPortal<MudancaLembrete>(`/v1/escritorio/contratos/lembretes/${l.id}/trazer`, { metodo: "POST" });
     setOcupado(null);
     if (!r.ok) {
+      if (r.erro.codigo === "VALIDATION_ERROR" && r.erro.detalhes?.motivo === "CLIENTE_EXCLUIDO") {
+        recarregar();
+        return setSaiu(trazerExcluido(l.cliente.nome));
+      }
       if (r.erro.codigo === "VERSION_CONFLICT") recarregar();
       return setFalha(r.erro.codigo === "VERSION_CONFLICT" ? "Este lembrete já tinha voltado ou mudado. A lista foi atualizada." : `${textoDoErro(r.erro)} O lembrete continua dispensado.`);
     }
@@ -324,7 +337,7 @@ function LembretesConteudo({ consulta }: { consulta: boolean }) {
   const numeros = (d: ListaLembretes | null) => {
     const item = (s: SituacaoLembrete, n: number | null, disco: string, sub: string, soma?: string) => (
       <a key={s} href={ROTAS_LEMBRETES.grupo(s, q)} aria-current={situacao === s ? "true" : undefined}
-        onClick={(e) => { e.preventDefault(); setSituacao(s); setDados(null); }}>
+        onClick={(e) => { e.preventDefault(); setSituacao(s); setDados(null); setSaiu(null); }}>
         <span className={`disco${disco}`} aria-hidden="true"><span>{n === null ? "–" : n.toLocaleString("pt-BR")}</span></span>
         <span className="r"><b>{SITUACOES_LEMBRETE[s]}</b>{sub}{soma ? <span className="il-soma num">{soma}</span> : null}</span>
         <span className="sr">: {n ?? "carregando"}</span>
@@ -458,6 +471,7 @@ function LembretesConteudo({ consulta }: { consulta: boolean }) {
           <div className="hn-col">
             <section className="folha" aria-labelledby="t-ill" style={{ overflow: "hidden" }}>
               <h2 id="t-ill" className="sr">Lista de lembretes</h2>
+              {saiu ? <div className="il-topo-lista"><Aviso tom="urgencia" titulo={saiu.titulo}>{saiu.texto}</Aviso></div> : null}
               {corpo}
             </section>
           </div>

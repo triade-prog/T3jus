@@ -6,7 +6,7 @@
     "PT-11",
     "PA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1173.5,
-  "proximo": "Desenhar a linha com o agente de frontend (docs/IDENTIDADE.md e conceito-gabinete), levar à Carol e, aprovada, programar: a ficha traz a contagem das conversas (como arquivosParaApagar) e linhaConversas em packages/ui/src/portal/exclusao.ts (decisão C4 da Carol, 25/11/2026)"
+  "evidencia": "Decisões da Carol C5 = A (o que fica da conversa vai na própria linha) e C6 = A (a conversa que fica com outro cliente ganha uma dica com o nome dele). Desenho aprovado pela Carol em 27/11/2026, com todas as recomendações (docs/design/aprovadas/portal-exclusao-contratos-conversas). Migration 1141_conversas_para_apagar.sql: conversa_outros_clientes, a fonte única dos outros clientes da conversa; conversa_de_outro_cliente (1114) recriada como \"existe algum\" sobre ela, com o mesmo resultado; cliente_conversas_para_apagar pelo mesmo predicado de conversas_apagar (conversas, naFila, automacoes, ficam, ficamCom até 3 em ordem de nome, ficamComMais). A ficha traz conversasParaApagar (1142). pgTAP 171_conversas_para_apagar_test.sql (17 testes, compara a contagem da janela com o evento cliente.conversas_apagadas da exclusão) e 172_ficha_janela_exclusao_test.sql (15 testes: as chaves só para a dona, a C9, a F3.179 e a F3.193). Tela: linhaConversas e dicaConversasQueFicam em exclusao.ts (logo depois dos contatos; sem conversa que sai, a dica vai nos contatos), com a dica de quem ele assina por outro cliente (C9) e as linhas do sobre (F3.179) e da baixa (F3.193); Vitest em exclusao.test.ts e e2e em portal-exclusao.spec.ts. Publicação: P31."
 }

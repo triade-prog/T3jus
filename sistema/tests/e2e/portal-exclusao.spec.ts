@@ -8,6 +8,8 @@
 // F3.177 (F3.184): a descrição dos lançamentos do sistema antigo no quadro "O que a lei obriga a
 // guardar", pelo desenho aprovado em docs/design/aprovadas/portal-exclusao-historico (Carol,
 // 26/11/2026, alternativa A).
+// F3.181, F3.186, F3.190, C9, F3.179 e F3.193: as linhas, as dicas e o aviso novos, pelo desenho
+// aprovado em docs/design/aprovadas/portal-exclusao-contratos-conversas (Carol, 27/11/2026).
 import { expect, test, type Page } from "@playwright/test";
 import { agora, fixarRelogio, h, semViolacoes } from "./console-dados.ts";
 
@@ -511,6 +513,70 @@ test.describe("O histórico do sistema antigo na janela de exclusão (F3.177, PT
     await expect(linha.nth(0).locator("small")).toHaveText("fica como veio na importação. Um deles veio sem data e conta pela data da importação. "
       + `O T3jus troca sozinho por um texto fixo em 01/01/2033. ${FIM_H}`);
     await expect(j.locator(".pt-comuns b")).toHaveText("Fora essas descrições, nada aqui precisa ser guardado por lei.");
+    await semViolacoes(page);
+  });
+});
+
+const CHAVES_181 = {
+  arquivosParaApagar: { documentos: 0, curatela: false, tutela: false, propostas: 0 },
+  saiDeContratos: { pedidos: ["P-2026-014"], lembretes: { n: 1, valor: 184000, lancamentos: 3, origem: "ASTREA" } },
+  conversasParaApagar: { conversas: 1, naFila: 1, automacoes: 0, ficam: 1, ficamCom: [{ id: "r", nome: "Rosa Alves Coelho" }], ficamComMais: 0 },
+  assinaPorOutro: [{ id: "j", nome: "João Coelho", tipo: "PF", papel: "como mãe e responsável legal", feminino: true }],
+  basesDeCondicao: ["P-2026-014"],
+  baixasComExplicacao: 0,
+};
+
+test.describe("O que sobra da exclusão (F3.181, F3.186, F3.190, PT-11)", () => {
+  test("conversas, quem ela assina, o sobre, o pedido de contrato e o valor em aberto (o estado exc-tudo)", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, ...CHAVES_181 } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const j = await abrirExcluir(page);
+    await expect(j.getByRole("status").filter({ hasText: "Há R$ 1.840,00 em aberto no Astrea." }))
+      .toContainText("É o lembrete de contrato de Antônia, com 3 lançamentos.");
+    const some = j.locator(".pd-some > ul > li");
+    await expect(some.nth(0).locator(".pd-dica")).toHaveText(
+      "Antônia também assina por João Coelho, como mãe e responsável legal. O nome e o CPF dela continuam na ficha dele, porque servem ao contrato e à procuração dele.");
+    await expect(some.nth(1)).toContainText("Sobre o que se cobra o êxito, na proposta P-2026-014");
+    await expect(some.nth(2)).toContainText("Os 2 contatos");
+    await expect(some.nth(3)).toContainText("A conversa do WhatsApp");
+    await expect(some.nth(3).locator("small")).toContainText("A mensagem que ainda ia sair não sai mais.");
+    await expect(some.nth(3).locator(".pd-dica b")).toHaveText("Rosa Alves Coelho");
+    await expect(j.locator(".pd-fica li").filter({ hasText: "A proposta P-2026-014, sem o pedido de contrato" })).toHaveCount(1);
+    await semViolacoes(page);
+  });
+
+  test("sem conversa que sai, a dica da que fica vai na linha dos contatos", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, ...CHAVES_181, saiDeContratos: { pedidos: [], lembretes: null },
+        conversasParaApagar: { ...CHAVES_181.conversasParaApagar, conversas: 0, naFila: 0 } } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    const j = await abrirExcluir(page);
+    await expect(j.locator(".pd-some li").filter({ hasText: "conversa do WhatsApp" })).toHaveCount(0);
+    await expect(j.locator(".pd-some > ul > li").filter({ hasText: "Os 2 contatos" }).locator(".pd-dica")).toContainText("1 conversa fica como está");
+    await expect(j.getByText(/em aberto no Astrea/)).toHaveCount(0);
+    await expect(j.locator(".pd-fica li").filter({ hasText: "sem o pedido de contrato" })).toHaveCount(0);
+  });
+
+  test("C2: na janela de arquivar, o pedido de contrato sai de Contratos", async ({ page }) => {
+    const VINC = { contratos: [{ id: "ct1", numero: "C-2026-031" }], processos: [] };
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESC_MARINA },
+      [`GET ${ficha}`]: { corpo: { ...FICHA, pedidoExclusao: PEDIDO, vinculosLgpd: VINC, saiDeContratos: { pedidos: ["P-2026-014"], lembretes: null } } },
+      "GET /v1/escritorio/pessoas": { corpo: { pessoas: [DIEGO, MARINA] } },
+    });
+    await page.goto(`${P}/clientes/${CLI}`);
+    await page.getByRole("button", { name: "Arquivar a pedido (LGPD)" }).click();
+    const j = page.getByRole("alertdialog", { name: "Arquivar Antônia Ferreira Prado a pedido (LGPD)?" });
+    const li = j.locator(".pd-fica li");
+    await expect(li.filter({ hasText: "O pedido de contrato da proposta P-2026-014 sai de Contratos" })).toHaveCount(1);
+    await expect(li.last()).toContainText("O pedido fica registrado");
     await semViolacoes(page);
   });
 });

@@ -3,6 +3,10 @@
 // docs/design/aprovadas/portal-comercial-contratos (decisões 2 a 7): cabeçalho vinho com a
 // situação, âmbar com o retorno (ou "Falta o contrato"), condições de honorário em leitura, o
 // que está incluído e o histórico. "Registrar resposta" é uma janela com três saídas.
+// F3.181 (desenho portal-exclusao-contratos-conversas, Carol 27/11/2026): a proposta aceita de cliente
+// excluído ou arquivado a pedido do titular "Não vira contrato", sem botões nem selo; no excluído, o que
+// está incluído e o arquivo Word dizem que foram apagados. O pedir recusado (CLIENTE_EXCLUIDO ou
+// CLIENTE_ARQUIVADO) ganha um aviso próprio e a página recarrega.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -303,6 +307,19 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
         </button>
       </>
     );
+  } else if (f.situacao === "ACEITA" && saiuACliente(f)) {
+    titulo = `Aceita${f.respondidaEm ? ` em ${diaCurto(f.respondidaEm)}` : ""}`;
+    const em = f.clienteSaiuEm ? ` em ${dataBr(diaDoInstante(f.clienteSaiuEm))}` : "";
+    corpo = (
+      <>
+        <p className="grande" style={{ fontSize: 30 }}>Não vira contrato</p>
+        <p className="hn-oque">
+          {f.clienteSituacao === "EXCLUIDO"
+            ? `O cliente foi excluído a pedido do titular${em}. A proposta fica só como registro.`
+            : `O cliente foi arquivado a pedido do titular${em}. Cliente arquivado não ganha contrato novo. A proposta fica só como registro.`}
+        </p>
+      </>
+    );
   } else if (f.situacao === "ACEITA") {
     titulo = `Aceita${f.respondidaEm ? ` em ${diaCurto(f.respondidaEm)}` : ""}`;
     const nomes = f.quemTemContratos.filter((n) => n !== eu);
@@ -374,11 +391,16 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
   );
 }
 
+/** F3.181: o cliente foi excluído ou arquivado a pedido do titular; a proposta aceita não vira contrato. */
+function saiuACliente(f: FichaProposta): boolean {
+  return f.clienteSituacao === "EXCLUIDO" || f.clienteSituacao === "ARQUIVADO";
+}
+
 function juntar(nomes: string[]): string {
   return nomes.length <= 1 ? (nomes[0] ?? "") : `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
 }
 
-function Escopo({ texto }: { texto: string | null }) {
+function Escopo({ texto, apagado }: { texto: string | null; apagado?: boolean }) {
   const partes = (texto ?? "").split(/\n\s*\n|\n/).map((p) => p.trim()).filter(Boolean);
   return (
     <section className="folha" aria-labelledby="t-es">
@@ -386,7 +408,8 @@ function Escopo({ texto }: { texto: string | null }) {
         <div><h2 id="t-es">O que está incluído</h2></div>
       </div>
       <div className="cm-escopo">
-        {partes.length ? partes.map((p, i) => <p key={i}>{p}</p>) : <p className="hn-nota">Ainda não escrito. Edite a proposta para escrever.</p>}
+        {partes.length ? partes.map((p, i) => <p key={i}>{p}</p>)
+          : <p className="hn-nota">{apagado ? "Apagado a pedido do titular." : "Ainda não escrito. Edite a proposta para escrever."}</p>}
       </div>
     </section>
   );
@@ -399,6 +422,8 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
   const [janela, setJanela] = useState(false);
   const [feito, setFeito] = useState<Feito | null>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
+  // F3.181: o pedir recusado porque o cliente saiu enquanto a página estava aberta.
+  const [recusa, setRecusa] = useState<"EXCLUIDO" | "ARQUIVADO" | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const hoje = hojeBrasilia();
 
@@ -437,9 +462,17 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
   async function acao(caminho: string, ok: Feito, corpo?: unknown) {
     setOcupado(true);
     setFalha(null);
+    setRecusa(null);
     const r = await chamarPortal(`/v1/escritorio/propostas/${ficha.id}/${caminho}`, { metodo: "POST", corpo: corpo ?? {} });
     setOcupado(false);
-    if (!r.ok) return setFalha(r.erro);
+    if (!r.ok) {
+      const motivo = r.erro.codigo === "VALIDATION_ERROR" ? r.erro.detalhes?.motivo : undefined;
+      if (caminho === "pedir-contrato" && (motivo === "CLIENTE_EXCLUIDO" || motivo === "CLIENTE_ARQUIVADO")) {
+        setRecusa(motivo === "CLIENTE_EXCLUIDO" ? "EXCLUIDO" : "ARQUIVADO");
+        return void carregar();
+      }
+      return setFalha(r.erro);
+    }
     setFeito(ok);
     await carregar();
   }
@@ -451,7 +484,10 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
       Editar
     </a>
   );
-  const semContratos = f.situacao === "ACEITA" && !f.podeContrato;
+  // F3.181: a proposta aceita de cliente excluído ou arquivado fica só como registro.
+  const registro = f.situacao === "ACEITA" && saiuACliente(f);
+  const apagada = registro && f.clienteSituacao === "EXCLUIDO";
+  const semContratos = f.situacao === "ACEITA" && !f.podeContrato && !registro;
   const dono = escritorio.socios[0];
 
   return (
@@ -480,7 +516,11 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
           aoEnviada={() => void acao("enviada", { titulo: "Proposta marcada como enviada", texto: "O retorno dela é o próximo contato do cliente, em Atendimentos e na ficha." }, { versao: ficha.versao })}
           aoPedir={() => void acao("pedir-contrato", { titulo: "Contrato pedido.", texto: f.quemTemContratos.length ? `${juntar(f.quemTemContratos)} ${f.quemTemContratos.length === 1 ? "recebeu" : "receberam"} o aviso, com o link desta proposta.` : "O pedido fica na proposta, com seu nome e a hora, para quem tem a área Contratos." })} />
       </div>
-      {falha ? (
+      {recusa ? (
+        <Aviso tom="urgencia" titulo="Não deu para pedir o contrato.">
+          O cliente foi {recusa === "EXCLUIDO" ? "excluído" : "arquivado"} a pedido do titular agora há pouco. A proposta abaixo já mostra como ficou: ela não vira contrato.
+        </Aviso>
+      ) : falha ? (
         <Aviso tom="urgencia" titulo="Não deu para concluir.">
           {falha.codigo === "VERSION_CONFLICT" ? "Alguém mudou esta proposta agora há pouco. Recarregue a página e tente de novo." : textoDoErro(falha)}
         </Aviso>
@@ -493,9 +533,9 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
               {dono ? ` Quem libera áreas é ${dono}, sócio dono.` : ""}
             </Aviso>
           ) : null}
-          <CondicoesLeitura condicoes={f.condicoes} sub={f.situacao === "CONTRATO" ? "Passaram para o contrato." : "Passam para o contrato como estão."}
+          <CondicoesLeitura condicoes={f.condicoes} sub={f.situacao === "CONTRATO" ? "Passaram para o contrato." : registro ? "Ficam como registro." : "Passam para o contrato como estão."}
             acoes={editavel ? editar : undefined} gera={geraNaProposta} />
-          <Escopo texto={f.escopo} />
+          <Escopo texto={f.escopo} apagado={apagada} />
           <Historico eventos={f.historico} hoje={hoje} />
         </div>
         <aside className="hn-col" aria-label="Sobre a proposta">
@@ -512,11 +552,15 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
             {bx.falha ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso></div> : null}
             <div className="hn-folha-acao">
               {/* AP-05: o arquivo no timbrado do escritório; o escritório envia como já envia (decisão 4). */}
-              <button className="btn btn-sec" type="button" onClick={() => void bx.baixar(`/v1/escritorio/propostas/${f.id}/docx`)}
-                disabled={!!bx.baixando} aria-busy={!!bx.baixando || undefined}>
-                <Icone nome="baixar" className="ico" />
-                Baixar a proposta (.docx)
-              </button>
+              {apagada ? (
+                <p>O arquivo Word da proposta foi apagado com os dados do cliente.</p>
+              ) : (
+                <button className="btn btn-sec" type="button" onClick={() => void bx.baixar(`/v1/escritorio/propostas/${f.id}/docx`)}
+                  disabled={!!bx.baixando} aria-busy={!!bx.baixando || undefined}>
+                  <Icone nome="baixar" className="ico" />
+                  Baixar a proposta (.docx)
+                </button>
+              )}
               {editavel ? (
                 <a data-muda className="btn btn-sec" href={ROTAS_COMERCIAL.editar(f.id)}>
                   <Icone nome="lapis" className="ico" />
@@ -525,7 +569,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
               ) : null}
             </div>
           </section>
-          <section className="explica campo-ambar" aria-labelledby="t-pex">
+          {registro ? null : <section className="explica campo-ambar" aria-labelledby="t-pex">
             <p className="sobretitulo">Sem redigitar</p>
             <h2 id="t-pex">A proposta aceita vira contrato.</h2>
             <ul>
@@ -533,7 +577,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
               <li><Icone nome="relogio" className="ico" /><span>O retorno da proposta é o próximo contato do cliente: aparece na ficha e em Atendimentos.</span></li>
               <li><Icone nome="historico" className="ico" /><span>Mudou o valor? Edite a proposta. A versão anterior fica no histórico.</span></li>
             </ul>
-          </section>
+          </section>}
         </aside>
       </div>
       <JanelaResposta key={janela ? "aberta" : "fechada"} aberta={janela} f={f} aoFechar={() => setJanela(false)}

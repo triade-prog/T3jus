@@ -4,6 +4,9 @@
 // decisões 11 a 17): uma página em quatro passos (cliente e casos, responsáveis, condições e
 // cláusulas) com o resumo "O que este contrato gera" ao lado (no celular, antes do botão).
 // Vindo da proposta aceita, tudo chega preenchido. Mudar um contrato ativo pede o motivo.
+// F3.181 (desenho portal-exclusao-contratos-conversas): a proposta de cliente excluído ou arquivado a
+// pedido do titular não vira contrato (CLIENTE_EXCLUIDO, CLIENTE_ARQUIVADO), com um aviso no molde do
+// "Esta proposta não está aceita".
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -407,12 +410,13 @@ function Formulario({ escritorio, ficha, proposta, clienteInicial = null }: {
 }
 
 function CarregarProposta({ propostaId, escritorio, clienteId }: { propostaId: string | null; escritorio: EscritorioPortal; clienteId: string | null }) {
-  const [p, setP] = useState<PropostaParaContrato | null | "erro" | "nao" | "nao-aceita">(propostaId ? null : "nao");
+  const [p, setP] = useState<PropostaParaContrato | null | "erro" | "nao" | "nao-aceita" | "excluido" | "arquivado">(propostaId ? null : "nao");
   const [vez, setVez] = useState(0);
   useEffect(() => {
     if (!propostaId) return;
     void chamarPortal<PropostaParaContrato>(`/v1/escritorio/contratos/da-proposta/${propostaId}`).then((r) =>
-      setP(r.ok ? r.dados : r.status === 404 ? "nao" : r.erro.detalhes?.motivo === "PROPOSTA_NAO_ACEITA" ? "nao-aceita" : "erro"));
+      setP(r.ok ? r.dados : r.status === 404 ? "nao" : r.erro.detalhes?.motivo === "PROPOSTA_NAO_ACEITA" ? "nao-aceita"
+        : r.erro.detalhes?.motivo === "CLIENTE_EXCLUIDO" ? "excluido" : r.erro.detalhes?.motivo === "CLIENTE_ARQUIVADO" ? "arquivado" : "erro"));
   }, [propostaId, vez]);
   if (!propostaId) return <Formulario escritorio={escritorio} ficha={null} proposta={null} clienteInicial={clienteId} />;
   if (p === "erro") return <ErroAoCarregar oque="a proposta" aoTentar={() => setVez((v) => v + 1)} />;
@@ -422,6 +426,16 @@ function CarregarProposta({ propostaId, escritorio, clienteId }: { propostaId: s
       <Aviso tom="info" titulo="Esta proposta não está aceita ou já virou contrato."
         acoes={<a className="btn btn-sec" href={ROTAS_CONTRATOS.proposta(propostaId)}><Icone nome="esquerda" className="ico" />Voltar para a proposta</a>}>
         Só a proposta aceita vira contrato, e uma vez só. Se já virou, o contrato está na lista de Contratos.
+      </Aviso>
+    );
+  }
+  if (p === "excluido" || p === "arquivado") {
+    return (
+      <Aviso tom="info" titulo={`O cliente desta proposta foi ${p === "excluido" ? "excluído" : "arquivado"} a pedido do titular.`}
+        acoes={<a className="btn btn-sec" href={ROTAS_CONTRATOS.contratos}><Icone nome="esquerda" className="ico" />Voltar para Contratos</a>}>
+        {p === "excluido"
+          ? "A proposta não vira contrato. O pedido saiu da lista de Contratos e a proposta fica no Comercial só como registro, sem os dados do cliente."
+          : "A proposta não vira contrato: cliente arquivado não ganha contrato novo. O pedido saiu da lista de Contratos e a proposta fica no Comercial como registro."}
       </Aviso>
     );
   }

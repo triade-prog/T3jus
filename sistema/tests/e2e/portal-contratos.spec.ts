@@ -158,6 +158,22 @@ const comuns = (escritorio: unknown = ESCRITORIO) => ({
 test.beforeEach(async ({ page }) => { await fixarRelogio(page); });
 
 test.describe("Contratos do Portal (CH-01 a CH-04, CH-06, IN-01)", () => {
+  // F3.181 (desenho portal-exclusao-contratos-conversas, estados novo-contrato-cliente-excluido e -arquivado).
+  for (const [motivo, texto] of [
+    ["CLIENTE_EXCLUIDO", "A proposta não vira contrato. O pedido saiu da lista de Contratos e a proposta fica no Comercial só como registro, sem os dados do cliente."],
+    ["CLIENTE_ARQUIVADO", "A proposta não vira contrato: cliente arquivado não ganha contrato novo. O pedido saiu da lista de Contratos e a proposta fica no Comercial como registro."],
+  ] as const) {
+    test(`F3.181: novo contrato pela proposta com ${motivo} diz que ela não vira contrato`, async ({ page }) => {
+      await simular(page, { ...comuns(), [`GET /v1/escritorio/contratos/da-proposta/${prop(14)}`]: { status: 422,
+        corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo } } } } });
+      await page.goto(`${P}/contratos/contratos/novo?proposta=${prop(14)}`);
+      const aviso = page.getByRole("status").filter({ hasText: `O cliente desta proposta foi ${motivo === "CLIENTE_EXCLUIDO" ? "excluído" : "arquivado"} a pedido do titular.` });
+      await expect(aviso).toContainText(texto);
+      await expect(aviso.getByRole("link", { name: "Voltar para Contratos" })).toHaveAttribute("href", "/contratos/contratos");
+      await semViolacoes(page);
+    });
+  }
+
   test("Lista: honorários, próximo recebimento, base a pedir e situação; filtro e busca vão ao servidor", async ({ page }) => {
     const pedidos = await simular(page, comuns());
     await page.goto(`${P}/contratos`);

@@ -97,9 +97,9 @@ select is((select proposta_linha(p) ->> 'servico' from propostas p, pr where p.i
 select is((select portal_proposta(socia, rm, pr.hel) ->> 'servico' from ids, pr), servico_apagado_texto(),
   'PT-11 F3.159: a ficha da proposta traz o texto fixo');
 select ok((select portal_proposta(socia, rm, pr.hel) -> 'escopo' = 'null'::jsonb from ids, pr), 'PT-11 F3.159: a ficha vem sem o escopo');
-select is((select x -> 'proposta' ->> 'servico' || ' · ' || (x -> 'cliente' ->> 'nome')
-             from ids, pr, jsonb_array_elements(portal_contratos_pedidos(socia, rm)) x where (x -> 'proposta' ->> 'id')::uuid = pr.ana),
-  'Serviço apagado a pedido do titular · Cliente excluído', 'PT-11 F3.159: o pedido de contrato traz o texto fixo e o cliente excluído');
+-- Desde a F3.181 (1140), o pedido do cliente excluído sai do bloco de Contratos; a proposta fica.
+select is((select count(*)::int from ids, pr, jsonb_array_elements(portal_contratos_pedidos(socia, rm)) x where (x -> 'proposta' ->> 'id')::uuid = pr.ana),
+  0, 'PT-11 F3.159 F3.181: o pedido de contrato do cliente excluído sai de Contratos');
 select is((select count(*)::int from propostas p, pr where p.id = pr.ana and p.estado = 'ACEITA' and p.contrato_pedido_em is not null), 1,
   'PT-11 F3.159: a proposta aceita continua aceita e com o pedido (o UPDATE não mexe no estado)');
 

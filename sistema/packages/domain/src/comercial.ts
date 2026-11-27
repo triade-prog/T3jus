@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import type { Condicao } from "./honorarios.ts";
-import type { Origem, PessoaRef } from "./clientes.ts";
+import type { Origem, PessoaRef, SituacaoCliente } from "./clientes.ts";
 
 export const SITUACOES_PROPOSTA = {
   RASCUNHO: "Rascunho",
@@ -132,6 +132,10 @@ export interface FichaProposta extends PropostaLinha {
   podeContrato: boolean;
   quemTemContratos: string[];
   contratoPedidoEm: string | null;
+  /** A situação do cliente (F3.181): excluído ou arquivado a pedido, a proposta não vira contrato. */
+  clienteSituacao: SituacaoCliente;
+  /** Quando o cliente foi excluído ou arquivado a pedido; null nos outros. */
+  clienteSaiuEm: string | null;
   historico: EventoProposta[];
 }
 

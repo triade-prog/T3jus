@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# F3.172 e F3.179 (PT-11; plano da F3.172, seção 4, e da F3.180, seção 6.4) com duas conexões de verdade: pedir o contrato da proposta
-# aceita ao mesmo tempo que a exclusão a pedido do titular não deixa o nome no aviso do sino, e
-# nenhuma das duas termina em deadlock.
-#  1. A exclusão chega primeiro e segura a transação: o pedido espera a proposta e, quando a exclusão
-#     confirma, o aviso nasce com "Cliente excluído" e o serviço com o texto fixo.
+# F3.172, F3.179 e F3.181 (PT-11; plano da F3.172, seção 4, da F3.180, seção 6.4, e da F3.181, seção 7.3) com duas conexões de
+# verdade: pedir o contrato da proposta aceita ao mesmo tempo que a exclusão a pedido do titular não
+# deixa o nome no aviso do sino, e nenhuma das duas termina em deadlock.
+#  1. A exclusão chega primeiro e segura a transação: o pedido espera o cliente (FOR SHARE, 1140) e,
+#     quando a exclusão confirma, é recusado com CLIENTE_EXCLUIDO, sem aviso novo (F3.181). Antes da
+#     1140, o pedido entrava e o aviso nascia com o texto fixo.
 #  2. O pedido chega primeiro e segura a transação: a exclusão espera a proposta e, quando o pedido
 #     confirma, o UPDATE dos avisos já vê o aviso confirmado e o troca.
 #  3. (F3.179) A edição da proposta chega primeiro, com um "sobre" novo na condição de ÊXITO, e segura a
 #     transação: a exclusão espera a proposta e, quando a edição confirma, o UPDATE das condições (uma
 #     instrução depois da das propostas, a ordem da edição) troca o "sobre" gravado pela edição.
-# Nos cenários 1 e 2 o aviso também confere o "sobre" da cópia das condições (F3.179). O contrário do
+# No cenário 2 o aviso também confere o "sobre" da cópia das condições (F3.179). A exclusão de verdade
+# (portal_cliente_excluir_dados) e o contrato pela proposta ficam em exclusao-pedido-contrato-simultaneo.sh. O contrário do
 # 3 (a exclusão primeiro) já é coberto: a edição cai em conflito de versão, porque a exclusão sobe a
 # versão da proposta (1090).
 # Os avisos de conversa ficam para a F3.157 (revisão, M4), então não há o cenário da conversa.
@@ -59,7 +61,7 @@ avisos="select count(*) || ' ' || coalesce(string_agg(distinct (dados ->> 'clien
                                                      || ' / ' || (dados -> 'condicoes' -> 1 ->> 'sobre'), ','), '')
           from avisos_sino where origem_id = (select %s from teste.sino_ids)"
 
-# 1. A exclusão primeiro; o pedido espera e o aviso nasce com o texto fixo.
+# 1. A exclusão primeiro; o pedido espera e é recusado (F3.181).
 "${PSQL[@]}" > "$DIR/um" 2>&1 <<SQL &
 begin;
 $excluir where id = (select um from teste.sino_ids);
@@ -109,14 +111,16 @@ tres=$("${PSQL[@]}" -c "select count(*) || ' ' || string_agg((params ->> 'sobre'
                          from honorario_condicoes where dono_tipo = 'PROPOSTA' and dono_id = (select prop_tres from teste.sino_ids)")
 tres_cliente=$("${PSQL[@]}" -c "select estado from clientes_escritorio where id = (select tres from teste.sino_ids)")
 
+esperado_um="0 "
 esperado="1 Cliente excluído / Serviço apagado a pedido do titular / Base apagada a pedido do titular"
 esperado_tres="1 Base apagada a pedido do titular / Trânsito em julgado"
-if [ "$um" != "$esperado" ] || [ "$dois" != "$esperado" ] || [ "$dois_cliente" != "EXCLUIDO" ] \
+if [ "$um" != "$esperado_um" ] || ! grep -q "CLIENTE_EXCLUIDO" "$DIR/um-pedido" || [ "$dois" != "$esperado" ] || [ "$dois_cliente" != "EXCLUIDO" ] \
    || [ "$tres" != "$esperado_tres" ] || [ "$tres_cliente" != "EXCLUIDO" ] \
-   || grep -qi "deadlock\|ERROR" "$DIR/um" "$DIR/um-pedido" "$DIR/dois" "$DIR/dois-pedido" "$DIR/tres" "$DIR/tres-edicao"; then
+   || grep -qi "deadlock" "$DIR/um-pedido" \
+   || grep -qi "deadlock\|ERROR" "$DIR/um" "$DIR/dois" "$DIR/dois-pedido" "$DIR/tres" "$DIR/tres-edicao"; then
   echo "Exclusão com pedido de contrato e edição simultâneos: falhou (exclusão antes: $um; pedido antes: $dois, cliente $dois_cliente;" \
        "edição antes: $tres, cliente $tres_cliente;" \
        "$(cat "$DIR/um" "$DIR/um-pedido" "$DIR/dois" "$DIR/dois-pedido" "$DIR/tres" "$DIR/tres-edicao"))"
   exit 1
 fi
-echo "Exclusão com pedido de contrato e edição simultâneos: ok (antes ou depois da exclusão, o aviso e as condições ficam com o texto fixo e não há deadlock)"
+echo "Exclusão com pedido de contrato e edição simultâneos: ok (o pedido depois da exclusão é recusado; o de antes e a edição ficam com o texto fixo; sem deadlock)"

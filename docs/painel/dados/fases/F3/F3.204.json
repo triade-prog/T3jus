@@ -1,0 +1,14 @@
+{
+  "id": "F3.204",
+  "texto": "Proposta aceita e pedida de cliente excluído no Funil: continua contando como aceita, sem virar contrato nem ser recusada, e o Funil não diz que o cliente foi excluído",
+  "peca": "S2",
+  "refs": [
+    "PT-11",
+    "AP-03",
+    "AP-05"
+  ],
+  "status": "pendente",
+  "ordem": 1580,
+  "nota": "Plano das F3.181/F3.186/F3.190 (C3), fora do escopo da primeira entrega: a F3.181 tira o pedido do excluído de Contratos, mas a proposta continua ACEITA no Comercial e no Funil.",
+  "proximo": "Levar à Carol: a proposta aceita do cliente excluído sai da conta de aceitas do Funil, vira um estado próprio, ou fica como está"
+}
