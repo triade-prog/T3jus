@@ -5,7 +5,8 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1360,
-  "proximo": "Ler o cliente com FOR SHARE no INSERT do contrato, como cliente_documento_nasce (0970), e testar com duas conexões (revisão da F3.172, m9)"
+  "evidencia": "Migration 1130_contrato_cliente_excluido.sql: gatilho contrato_nasce (BEFORE INSERT em contratos, FOR SHARE no cliente na consulta que lê o estado; CLIENTE_EXCLUIDO) e portal_contrato_criar recriada da 0200 com a ordem trava do escritório contratos: → cliente FOR SHARE → contrato_conferir → proposta FOR UPDATE. pgTAP 165_nascer_cliente_excluido_test.sql (30 testes, com F3.187): a tela recusa pelo campo clienteId e nada grava; o INSERT direto recusa com CLIENTE_EXCLUIDO; outro escritório recusa; a importação com JUNTAR de quem foi excluído entre a prévia e o importar volta inteira com PREVIA_MUDOU (revisão, M5); a ordem das travas conferida no pg_get_functiondef; o caminho feliz com o sino CONTRATO_GERADO. Concorrência tests/concorrencia/exclusao-contrato-simultaneo.sh (c1 a c5, a exclusão de verdade, no test-db.sh). O vermelho, rodado antes da 1130: c2 deixou nascer contrato para o cliente excluído (a proposta virou CONTRATO) e c3 caiu com 40P01 (\"Process … waits for ShareLock on transaction …\") e também gravou o contrato. Depois da 1130, as cinco rodadas sem deadlock. README: \"O que não nasce mais\" em \"Arquivos do cliente excluído\" e a ordem em \"Contratos do Portal\". Publicação: P23.",
+  "nota": "Plano e revisão em project-files t3jus/f3-180 (PR A). Achado novo: F3.194 (as outras tabelas com cliente_id que ainda nascem sem trava)."
 }

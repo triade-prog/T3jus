@@ -5,8 +5,8 @@
   "refs": [
     "PT-11"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1470,
   "nota": "Achado na revisão do plano da F3.174 (nota 18). Até lá, a tela não mostra a explicação de cliente excluído. O plano chamava este item de F3.180. Renumerado de novo ao juntar com a main, porque F3.184 a F3.186 também foram tomados.",
-  "proximo": "Planejar a limpeza da explicação da baixa na exclusão do cliente"
+  "evidencia": "Decisão da Carol D5: fazer a limpeza, mesmo sendo defesa. Migrations 1132_baixas_cliente_excluido.sql (texto fixo \"Explicação apagada a pedido do titular\", o guardião parcela_baixas_guarda no lugar do financeiro_so_acrescenta só nesta tabela, criado antes do drop do antigo, a troca na exclusão pelo gatilho financeiro_baixas_apagar_do_excluido, parcela_baixas_preencher_excluidos e o inventário) e 1133_baixas_cliente_excluido_antigos.sql (sem volta). pgTAP 166_baixas_cliente_excluido_test.sql (22 testes): as cinco linhas (as BAIXA, a das custas juntas e os DESFEITA) trocadas e o resto igual, o cliente ativo não muda, o guardião (cliente ativo, outra coluna junto, outro texto, DELETE, linha já trocada), a ficha do contrato, parcela_linha e \"De onde veio\" com o texto fixo, o preenchimento com o escritório só de consulta e {} na segunda chamada. pgTAP 150 e 155 com a lista nova dos gatilhos da exclusão (revisão, M2). README: \"A explicação da baixa sem receber\", com o que fica (cobranca_eventos, o aviso BAIXA_RENEGOCIADA, a linha das custas de outro cliente). Publicação: P23."
 }

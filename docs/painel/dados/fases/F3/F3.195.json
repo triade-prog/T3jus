@@ -1,0 +1,13 @@
+{
+  "id": "F3.195",
+  "texto": "Contrato de importação desfeita prende o cliente: o desfazer dos clientes encerra o contrato da planilha (\"Importação desfeita: …\"), que continua contando em cliente_vinculos_lgpd (contrato de qualquer situação), e a exclusão é recusada",
+  "peca": "S7",
+  "refs": [
+    "PT-11",
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 1490,
+  "nota": "Achado do plano da F3.180 (seção 7). Irmã da F3.185, mas muda a regra \"contrato de qualquer situação prende\" (0460), então pede decisão da Carol. Se o contrato soltar, entram juntos as parcelas, as condições, as anotações de cobrança (cobranca_eventos.texto) e o aviso BAIXA_RENEGOCIADA desse contrato (README, \"A explicação da baixa sem receber\").",
+  "proximo": "Perguntar à Carol se o contrato encerrado pelo desfazer da importação deixa de prender o cliente e, se sim, planejar a limpeza do que é do contrato"
+}

@@ -6,8 +6,8 @@
     "PT-11",
     "VA-05"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 1430,
-  "nota": "Revisão do plano da F3.177 (M6, a parte de caso_clientes). Irmã da F3.180.",
-  "proximo": "Um gatilho BEFORE INSERT em caso_clientes com FOR SHARE no cliente, no molde de historico_anterior_nasce (1116), com o roteiro de concorrência"
+  "nota": "Revisão do plano da F3.177 (M6, a parte de caso_clientes). Irmã da F3.180. Plano e revisão em project-files t3jus/f3-180 (PR A).",
+  "evidencia": "Migration 1131_caso_cliente_excluido.sql: gatilho caso_cliente_nasce (BEFORE INSERT em caso_clientes, FOR SHARE no cliente; CLIENTE_EXCLUIDO), cobrindo as seis escritas (cadastrar, adicionar, as duas do contrato da 0740 e a importação dos processos); portal_juridico_caso_cliente recriada da 0240 com a ordem cliente → caso; juridico_caso_criar_sem_docs recriada com os clientes da lista em FOR SHARE em ordem de id antes do caso (revisão, M4). pgTAP 165 (30 testes, com F3.180): adicionar ao caso um cliente já excluído recusa (o buraco pela API, sem corrida: antes da 1131 a ligação nascia, conferido no banco de desenvolvimento), cadastrar caso com um excluído na lista recusa e o caso não nasce, o INSERT direto recusa, outro escritório recusa, a importação dos processos volta inteira com PREVIA_MUDOU (M5), as travas de ordem e a trava de catálogo das 21 tabelas com chave para clientes_escritorio em quatro classes. Concorrência tests/concorrencia/exclusao-caso-simultaneo.sh (k1 a k5, no test-db.sh); antes da 1131, k2, k3 e k5 deixavam nascer a ligação ou o caso para a excluída. O ciclo possível com quem atualiza dois dos mesmos clientes em outra ordem ficou escrito no README (M4). Publicação: P23."
 }
