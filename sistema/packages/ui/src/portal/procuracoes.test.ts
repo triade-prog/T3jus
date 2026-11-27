@@ -511,9 +511,14 @@ describe("Editar a ficha vindo de Gerar documentos (F3.160)", () => {
   it("D9 na empresa: o cursor em quem assina e o nome inteiro", () => {
     const far = { ...rascunhoVazio("PJ"), nome: "Farmácia Bom Jesus Ltda.", repNome: "Rita de Cássia Moura", repCargo: "", repDocumento: "" };
     expect(campoDoCursor(far, "pj", "2026-11-22")).toBe("repCargo");
-    expect(campoDoCursor({ ...far, repCargo: "Sócia", repDocumento: "1" }, "pj", "2026-11-22")).toBe("repNome");
+    // Sem estado civil e profissão de quem assina, o cursor vai ao estado civil (F3.178); completo, ao nome.
+    expect(campoDoCursor({ ...far, repCargo: "Sócia", repDocumento: "1" }, "pj", "2026-11-22")).toBe("repEstadoCivil");
+    expect(campoDoCursor({ ...far, repCargo: "Sócia", repDocumento: "1", repEstadoCivil: "CASADO" }, "pj", "2026-11-22")).toBe("repProfissao");
+    expect(campoDoCursor({ ...far, repCargo: "Sócia", repDocumento: "1", repEstadoCivil: "CASADO", repProfissao: "farmacêutica" }, "pj", "2026-11-22")).toBe("repNome");
+    expect(faltasDaParte(far, "pj", "2026-11-22").map((x) => x.curta)).toEqual(["o cargo", "o CPF", "o estado civil", "a profissão"]);
     expect(textoVeioDeGerar(far, "pj", "2026-11-22")).toBe("O cursor já está em “Quem assina pela empresa”. Ao salvar, você volta para lá, com a prévia já com os dados novos.");
-    expect(textoVeioDeGerar({ ...far, documento: "" }, "cliente", "2026-11-22")).toMatch(/^Faltam o CNPJ, o endereço, o cargo e o CPF de quem assina de Farmácia Bom Jesus Ltda\.: o cursor já está no CNPJ\./);
+    expect(textoVeioDeGerar({ ...far, documento: "" }, "cliente", "2026-11-22")).toMatch(
+      /^Faltam o CNPJ, o endereço, o cargo, o CPF de quem assina, o estado civil de quem assina e a profissão de quem assina de Farmácia Bom Jesus Ltda\.: o cursor já está no CNPJ\./);
   });
 
   it("D8: a ficha salva com o primeiro nome, e a empresa com o nome inteiro", () => {

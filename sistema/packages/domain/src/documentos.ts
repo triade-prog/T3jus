@@ -418,16 +418,21 @@ function estadoCivil(e: EstadoCivil | null): string | null {
   return e ? ESTADOS_CIVIS[e].toLowerCase() : null;
 }
 
-/** A qualificação de quem assina pela empresa: cargo, estado civil, profissão e CPF. */
+// As marcas do estado civil e da profissão de quem assina pela empresa (F3.178), escritas só aqui:
+// o .docx e a prévia usam estas mesmas strings. "DO REPRESENTANTE", como a do CPF ao lado.
+const MARCA_REP_ESTADO_CIVIL = falta("ESTADO CIVIL DO REPRESENTANTE");
+const MARCA_REP_PROFISSAO = falta("PROFISSÃO DO REPRESENTANTE");
+
+/** A qualificação de quem assina pela empresa: cargo, estado civil, profissão e CPF. O que falta sai
+ *  marcado ([ESTADO CIVIL DO REPRESENTANTE: falta]), como o resto (F3.178). */
 export function qualificacaoDoRepresentante(c: ClienteDoDocumento): string {
   if (c.tipo !== "PJ") return "";
-  const partes = [
+  return [
     c.repCargo?.trim().toLowerCase() || falta("CARGO"),
-    estadoCivil(c.repEstadoCivil),
-    c.repProfissao?.trim().toLowerCase(),
+    estadoCivil(c.repEstadoCivil) ?? MARCA_REP_ESTADO_CIVIL,
+    c.repProfissao?.trim().toLowerCase() || MARCA_REP_PROFISSAO,
     `inscrito(a) no CPF sob o nº ${c.repDocumento ? formatarDocumento(c.repDocumento) : falta("CPF DO REPRESENTANTE")}`,
-  ].filter((x): x is string => !!x);
-  return partes.join(", ");
+  ].join(", ");
 }
 
 /** A qualificação do cliente no documento (AP-01), com quem representa a empresa (decisão 14) ou
@@ -490,6 +495,8 @@ export function faltasNoDocumento(c: ClienteDoDocumento, hoje: string = hojeBras
     else {
       if (!c.repCargo?.trim()) f.push("o cargo de quem assina");
       if (!c.repDocumento) f.push("o CPF de quem assina");
+      // 1 dado, como REP_QUALIFICACAO na ficha, com 1 ou 2 marcas no .docx (F3.178).
+      if (!c.repEstadoCivil || !c.repProfissao?.trim()) f.push("a qualificação de quem assina");
     }
     return f;
   }

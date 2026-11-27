@@ -2,7 +2,7 @@
 // marcado, os modelos padrão e a conferência do modelo do escritório.
 import { describe, expect, it } from "vitest";
 import {
-  camposDoPadraoDocumento, campoConhecidoDocumento, condicoesNoDocumento, conferenciaModeloDocumento, fraseMudancas, marcadosDoModeloDocumento,
+  camposDoPadraoDocumento, campoConhecidoDocumento, condicoesNoDocumento, conferenciaModeloDocumento, faltasNoDocumento, fraseMudancas, marcadosDoModeloDocumento,
   MODELOS_PADRAO_DOCUMENTO, modeloPadraoDocumento, montarValoresDocumento, nomeArquivoDocumento, nomeZipDocumentos, padraoDoTipo,
   previaDocumento, trechoPoderes, escolhasDocumentosSchema, type DadosDocumentos, type EscolhasDocumentos,
 } from "./documentos.ts";
@@ -77,6 +77,35 @@ describe("os valores dos campos", () => {
     expect(v.valores.CLIENTE_RG).toBe("");
     const com = montarValoresDocumento({ ...pj, cliente: { ...pj.cliente, repNome: "Marta Lima", repCargo: "Sócia administradora" } }, ESCOLHAS);
     expect(com.valores.CLIENTE_ASSINATURA).toContain("por MARTA LIMA, sócia administradora");
+  });
+
+  it("empresa: o estado civil e a profissão de quem assina saem marcados e contam 1 dado, como a ficha (F3.178)", () => {
+    const pj = {
+      ...DADOS.cliente, tipo: "PJ" as const, nome: "Farmácia Bem Estar Ltda", documento: "11222333000181",
+      repNome: "Marta Lima", repCargo: "Sócia administradora", repDocumento: "52998224725", repEstadoCivil: null, repProfissao: null,
+    };
+    const v = montarValoresDocumento({ ...DADOS, cliente: pj }, ESCOLHAS);
+    const trecho = "sócia administradora, [ESTADO CIVIL DO REPRESENTANTE: falta], [PROFISSÃO DO REPRESENTANTE: falta], inscrito(a) no CPF sob o nº 529.982.247-25";
+    expect(v.valores.REPRESENTANTE_QUALIFICACAO).toBe(trecho);
+    expect(v.valores.CLIENTE_QUALIFICACAO).toContain(`neste ato representada por MARTA LIMA, ${trecho}`);
+    expect(faltasNoDocumento(pj)).toEqual(["a qualificação de quem assina"]);
+    expect(v.marcados).toContain("Qualificação de quem assina de Farmácia Bem Estar Ltda");
+
+    const semProfissao = { ...pj, repEstadoCivil: "CASADO" as const };
+    const sp = montarValoresDocumento({ ...DADOS, cliente: semProfissao }, ESCOLHAS);
+    expect(sp.valores.REPRESENTANTE_QUALIFICACAO).toBe(
+      "sócia administradora, casado(a), [PROFISSÃO DO REPRESENTANTE: falta], inscrito(a) no CPF sob o nº 529.982.247-25");
+    expect(sp.valores.REPRESENTANTE_QUALIFICACAO).not.toContain("[ESTADO CIVIL DO REPRESENTANTE: falta]");
+    expect(faltasNoDocumento(semProfissao)).toEqual(["a qualificação de quem assina"]);
+
+    const completa = { ...semProfissao, repProfissao: "farmacêutica" };
+    const c = montarValoresDocumento({ ...DADOS, cliente: completa }, ESCOLHAS);
+    expect(c.valores.REPRESENTANTE_QUALIFICACAO).not.toContain(": falta]");
+    expect(faltasNoDocumento(completa)).toEqual([]);
+    expect(c.marcados.filter((m) => m.includes("Farmácia"))).toEqual([]);
+
+    // Sem quem assina, a falta continua só "quem assina pela empresa".
+    expect(faltasNoDocumento({ ...pj, repNome: null })).toEqual(["quem assina pela empresa"]);
   });
 
   it("o escritório sem CNPJ só marca nos documentos que usam o CNPJ", () => {

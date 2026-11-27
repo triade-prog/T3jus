@@ -1,10 +1,13 @@
 {
   "id": "P23",
-  "texto": "Publicar a api-portal (o nome do arquivo da exportação, F3.182) e a api-console (o dia do pagamento do Inter, F3.182) a partir do commit mesclado na main",
+  "texto": "Publicar a api-portal (o nome do arquivo da exportação, F3.182, e as marcas de quem assina pela empresa, F3.178) e a api-console (o dia do pagamento do Inter, F3.182) a partir do commit final aprovado e só então mesclar o PR, que publica o Portal e o Console (F3.183 e F3.178)",
   "refs": [
-    "PT-15"
+    "PT-15",
+    "PT-10",
+    "CH-08",
+    "AP-01"
   ],
   "status": "pendente",
   "ordem": 230,
-  "nota": "Sem migration e sem texto novo, então sem o ok da Carol. A ordem com o merge não importa: a tela da exportação já monta o próprio nome (nomeArquivoExportacao, F3.175), e a api-console só muda a leitura do pagamento do Inter, que ainda não está ligado. O Portal e o Console (F3.183) vão sozinhos pela Vercel no merge. Fica feito quando as versões novas das duas funções forem conferidas, num commit à parte, como a P21. A F3.178 (api-portal antes do merge, com o ok da Carol nas marcas) não entra aqui e volta com o PR dela."
+  "nota": "Sem migration. Ordem: 1) publicar a api-portal a partir do commit final aprovado, antes do merge: com a api-portal nova e o Portal velho, o .docx e a prévia já saem com as marcas [ESTADO CIVIL DO REPRESENTANTE: falta] e [PROFISSÃO DO REPRESENTANTE: falta], e a faixa da prévia (que vem do servidor) as conta; só o aviso da tela ainda não conta, e nenhuma promessa fica quebrada; 2) publicar a api-console (a ordem dela com o merge não importa: só muda a leitura do pagamento do Inter, que ainda não está ligado); 3) mesclar o PR: o Portal e o Console vão ao ar pela Vercel. A ordem inversa deixaria, por um tempo, o aviso de Gerar dizendo que o dado sai marcado sobre um .docx da api-portal velha que ainda o omite. A tela da exportação já monta o próprio nome (nomeArquivoExportacao, F3.175). O ok da Carol nos rótulos da F3.178 já veio. Fica feito quando as versões novas das duas funções e o commit da Vercel forem conferidos, num commit à parte, como a P21."
 }
