@@ -46,6 +46,7 @@ import {
   planoSalvarSchema,
   planoArquivarSchema,
   pessoaAMaisSchema,
+  implantacaoRegraSchema,
   assinaturaSalvarSchema,
   mudarPlanoSchema,
   motivoCobrancaSchema,
@@ -846,6 +847,13 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.put("/v1/cobranca/pessoa-a-mais", async (c) => {
     const d = await lerCorpo(c, pessoaAMaisSchema);
     return c.json(await rpc("console_pessoa_a_mais", { p_pessoa: pessoa(c), p_versao: d.versao, p_centavos: d.centavos }));
+  });
+  // A regra da implantação assistida (CO-08, F1.42): Administração e Financeiro leem, só a
+  // Administração muda. Vale só para as implantações que abrirem depois; o autor vem da sessão.
+  app.get("/v1/cobranca/implantacao", async (c) => c.json(await rpc("console_implantacao_regras", { p_pessoa: pessoa(c) })));
+  app.put("/v1/cobranca/implantacao", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, implantacaoRegraSchema);
+    return c.json(await rpc("console_implantacao_regras_salvar", { p_pessoa: pessoa(c), p_versao: versao, p_dados: d }));
   });
 
   // A fatura aberta e o que se faz nela. O escritório vai na rota: o banco confere se a pessoa o

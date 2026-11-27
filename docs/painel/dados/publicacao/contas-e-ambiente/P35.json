@@ -1,0 +1,10 @@
+{
+  "id": "P35",
+  "texto": "Aplicar no Supabase a migration 1180 (regra da implantação assistida e a implantação congelada, F1.42) e publicar a api-console, só com o ok da Carol",
+  "refs": [
+    "CO-08"
+  ],
+  "status": "pendente",
+  "ordem": 350,
+  "nota": "Ordem (README, \"Implantação assistida\"): 1) conferir com list_migrations o que está no ar (a 1180 não depende da 1160 do CO-09 nem da 1170; só cria tabelas e funções novas e não recria nenhuma função que existe); 2) com o ok da Carol, aplicar a 1180 (project-files t3jus/migrations-para-colar/1180_implantacao_regras.sql, que já registra em schema_migrations, ou apply_migration com o nome 1180_implantacao_regras); um supabase db push futuro vai pedir --include-all; 3) conferir: select * from implantacao_regras (uma linha, 149000, ISENTA, isencao_ate nula, 30) e configuracoes.implantacao_na_fatura = false; 4) publicar a api-console (GET e PUT /v1/cobranca/implantacao). Sem tela ainda: nada muda para quem usa. A api-console nova aguenta o banco velho só sem chamar as rotas novas (dão 500 até a 1180). Se der errado: drop das funções console_implantacao_regras, console_implantacao_regras_salvar, implantacao_regra_json, implantacao_condicao, implantacao_congelar, implantacao_so_muda_o_permitido e implantacao_na_fatura, das tabelas implantacoes e implantacao_regras (só sem implantação de verdade), das linhas em estados_iniciais, transicoes_permitidas, inventario_dados, tabelas_sem_escritorio, funcao_acoes (console.implantacao.*, portal.implantacao.ver) e configuracoes (implantacao_na_fatura)."
+}
