@@ -53,6 +53,13 @@ import {
   mudarPlanoSchema,
   motivoCobrancaSchema,
   pagamentoManualSchema,
+  confirmarAssinaturaSchema,
+  contarFiltrosTeste,
+  filtrarPorTeste,
+  filtroTesteSchema,
+  motivoTesteSchema,
+  prorrogarTesteSchema,
+  type TesteCarteira,
 } from "@t3jus/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { VALIDADE_LEITURA_S, type Arquivos } from "../_shared/arquivos.ts";
@@ -393,28 +400,38 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Carteira (CO-01): só os clientes atribuídos.
   app.get("/v1/clientes", async (c) => {
-    const [linhas, cobranca] = await Promise.all([
+    // F1.33 (CO-09): ?teste=EM_TESTE|ACABOU|QUER_ASSINAR filtra pelo teste grátis.
+    const filtro = c.req.query("teste");
+    const filtroTeste = filtro === undefined ? null : filtroTesteSchema.safeParse(filtro);
+    if (filtroTeste && !filtroTeste.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["teste"] });
+    const [linhas, cobranca, testes] = await Promise.all([
       rpc<LinhaCarteira[]>("console_carteira", { p_pessoa: pessoa(c) }),
       rpc<{ escritorioId: string; atrasoDias: number | null; soConsultaDesde: string | null }[]>("console_carteira_cobranca", { p_pessoa: pessoa(c) }),
+      rpc<(TesteCarteira & { escritorioId: string })[]>("console_carteira_teste", { p_pessoa: pessoa(c) }),
     ]);
     // F1.18: "Fatura em atraso · N dias" e o só consulta por atraso (só os dias, sem valor).
     const porEscritorio = new Map(cobranca.map((x) => [x.escritorioId, { atrasoDias: x.atrasoDias, soConsultaDesde: x.soConsultaDesde }]));
+    // F1.33: a situação do teste na coluna Pendências.
+    const testePor = new Map(testes.map(({ escritorioId, ...t }) => [escritorioId, t]));
+    const clientes = linhas.map((l) => ({
+      id: l.escritorio_id,
+      nome: l.nome,
+      cidade: l.cidade,
+      uf: l.uf,
+      estagio: l.estagio,
+      funcoes: l.funcoes,
+      situacoes: l.situacoes,
+      criadoEm: l.criado_em,
+      socios: l.socios,
+      equipe: l.equipe,
+      ultimaAtividade: l.ultima_atividade,
+      encerramento: l.encerramento,
+      cobranca: porEscritorio.get(l.escritorio_id) ?? null,
+      teste: testePor.get(l.escritorio_id) ?? null,
+    }));
     return c.json({
-      clientes: linhas.map((l) => ({
-        id: l.escritorio_id,
-        nome: l.nome,
-        cidade: l.cidade,
-        uf: l.uf,
-        estagio: l.estagio,
-        funcoes: l.funcoes,
-        situacoes: l.situacoes,
-        criadoEm: l.criado_em,
-        socios: l.socios,
-        equipe: l.equipe,
-        ultimaAtividade: l.ultima_atividade,
-        encerramento: l.encerramento,
-        cobranca: porEscritorio.get(l.escritorio_id) ?? null,
-      })),
+      clientes: filtroTeste ? filtrarPorTeste(clientes, filtroTeste.data) : clientes,
+      filtrosTeste: contarFiltrosTeste(clientes),
     });
   });
 
@@ -927,8 +944,39 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(r);
   });
 
-  // A aba Assinatura da ficha.
-  app.get("/v1/clientes/:id/assinatura", async (c) => c.json(await rpc("console_assinatura", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") })));
+  // A aba Assinatura da ficha, com o quadro do teste grátis (F1.33; CO-09).
+  app.get("/v1/clientes/:id/assinatura", async (c) => {
+    const quem = { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") };
+    const [assinatura, teste] = await Promise.all([rpc<Record<string, unknown>>("console_assinatura", quem), rpc("console_teste", quem)]);
+    return c.json({ ...assinatura, teste });
+  });
+  // F1.33 (CO-09): o quadro do teste e as ações. O banco confere quem pode (prorrogar, liberar e
+  // dispensar: a Administração; confirmar: a Administração e o Financeiro) e devolve o bloco novo.
+  app.get("/v1/clientes/:id/teste", async (c) => c.json(await rpc("console_teste", { p_pessoa: pessoa(c), p_escritorio: idDaRota(c, "id") })));
+  const comBloco = async (c: Context<VarsSessao>, id: string, r: Record<string, unknown>) =>
+    ({ ...r, teste: await rpc("console_teste", { p_pessoa: pessoa(c), p_escritorio: id }) });
+  app.post("/v1/clientes/:id/teste/prorrogar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, prorrogarTesteSchema);
+    const r = await rpc<Record<string, unknown>>("console_teste_prorrogar", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_fim: d.fim, p_motivo: d.motivo });
+    return c.json(await comBloco(c, id, r));
+  });
+  for (const acao of ["liberar", "dispensar"] as const) {
+    app.post(`/v1/clientes/:id/teste/${acao}`, async (c) => {
+      const id = idDaRota(c, "id");
+      const d = await lerCorpo(c, motivoTesteSchema);
+      const r = await rpc<Record<string, unknown>>(`console_teste_${acao}`, { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_motivo: d.motivo });
+      return c.json(await comBloco(c, id, r));
+    });
+  }
+  app.post("/v1/clientes/:id/assinatura/confirmar", async (c) => {
+    const id = idDaRota(c, "id");
+    const { versao, ...d } = await lerCorpo(c, confirmarAssinaturaSchema);
+    const r = await rpc<Record<string, unknown>>("console_assinatura_confirmar", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: versao, p_dados: d });
+    // A dispensada ou o teste acabado começam a cobrar na hora: a fatura emitida já pode sair.
+    await enviarSemEsperar();
+    return c.json(await comBloco(c, id, r));
+  });
   app.put("/v1/clientes/:id/assinatura", async (c) => {
     const id = idDaRota(c, "id");
     const { versao, ...d } = await lerCorpo(c, assinaturaSalvarSchema);

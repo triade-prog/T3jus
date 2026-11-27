@@ -1,0 +1,16 @@
+{
+  "id": "F2.8",
+  "texto": "Página de planos e preços no site (D44): três planos, tabela por tamanho de equipe, o que todo plano inclui, teste, implantação, desconto de entrada, pagamento e condições, perguntas frequentes; valores numa fonte única e blocos com chave",
+  "peca": "W1",
+  "refs": [
+    "SC-07",
+    "SC-03",
+    "SC-06",
+    "CO-08",
+    "CO-09",
+    "CO-10"
+  ],
+  "status": "pendente",
+  "ordem": 80,
+  "proximo": "Programar a página do desenho D44 só depois de F2.9 e F2.10, do valor de R$ 1.490 confirmado como definitivo, da nota fiscal resolvida com o contador e da leitura da advogada parceira (VA-07)."
+}

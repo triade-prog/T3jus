@@ -87,3 +87,7 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exito-nao-cobrado
 
 # O primeiro acesso de duas sócias ao mesmo tempo, a repetição e o dia 8 como a API (F1.31, CO-09).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/primeiro-acesso-simultaneo.sh"
+
+# Duas confirmações da assinatura ao mesmo tempo, e o Ativo e a confirmação com a rotina da
+# cobrança ao mesmo tempo, depois do teste grátis (F1.32, CO-09).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/assinatura-confirmar-simultanea.sh"
