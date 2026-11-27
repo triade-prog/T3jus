@@ -1,0 +1,12 @@
+{
+  "id": "F3.201",
+  "texto": "Exclusão a pedido do titular: limpar também o texto livre do êxito (exitos_conferir.explicacao, o combinado da cobrança no alvará e as chaves explicacao e combinado dos avisos do sino do êxito)",
+  "peca": "B2",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1550,
+  "nota": "Plano F3.194/F3.192/F3.191 (v5; nota 9 da primeira revisão, C3 da Parte C e LGPD), que pedia para ampliar a nota da F3.193. A F3.193 foi feita na main (PR #208, 1132 e 1133) só com parcela_baixas.explicacao, então o resto vira este item: exitos_conferir.explicacao; o combinado da cobrança no alvará (exito_cobrancas_alvara.combinado, tabela da F3.191 que só aceita inserção: a exceção da anonimização entra aqui, no molde do guardião da 1110 e da 1132, com o valor novo calculado do antigo e só com o cliente EXCLUIDO); a chave combinado do sino EXITO_COBRADO_NO_ALVARA; e a explicacao do sino EXITO_NAO_COBRADO. Até lá, como já acontece com exitos_conferir.explicacao, a exclusão do titular não limpa esses textos.",
+  "proximo": "Planejar junto com a F3.191 (a tabela exito_cobrancas_alvara nasce lá) a limpeza dos textos livres do êxito na exclusão do cliente"
+}

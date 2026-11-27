@@ -1,0 +1,12 @@
+{
+  "id": "P28",
+  "texto": "Aplicar no Supabase a migration 1103 (a custa adiantada com baixa sem receber volta a descontar do Rendeu, F3.192), só com o ok da Carol",
+  "refs": [
+    "FI-07",
+    "FI-25",
+    "IN-15"
+  ],
+  "status": "pendente",
+  "ordem": 280,
+  "nota": "Ordem (plano F3.194/F3.192/F3.191, v5, B5; README \"Relatórios do sócio\"): 1) conferir com list_migrations que a 0410, a 0555 e a 1010 estão no ar, e guardar o pg_get_functiondef de relatorio_adiantadas(uuid,date,date): a 1103 troca um trecho exato e para se ele não aparecer exatamente uma vez; 2) rodar a consulta só de leitura, que traz por mês as custas adiantadas pagas que já tiveram baixa sem receber, inclusive as desfeitas: select c.escritorio_id, date_trunc('month', c.paga_em)::date mes, count(*), sum(c.valor_pago) from contas_pagar c where c.cliente_id is not null and c.paga_em is not null and exists (select 1 from parcela_baixas b where b.reembolso_conta_id = c.id and b.tipo = 'BAIXA') group by 1, 2 order by 1, 2; hoje deve dar 0; se der algo, levar a lista por mês à Carol, porque o Rendeu desses meses muda uma vez e um relatório exportado antes vai divergir do novo; 3) com o ok da Carol, aplicar a 1103 pelo apply_migration do MCP (ou pela Carol no SQL Editor, registrando em schema_migrations), com o conteúdo do arquivo direto, fora de ordem: em produção já há migrations de número maior (confira na hora com o list_migrations); não há código para publicar, porque a forma do JSON não muda; 4) se der errado, recriar relatorio_adiantadas com a definição guardada no passo 1; nada de tabela muda."
+}

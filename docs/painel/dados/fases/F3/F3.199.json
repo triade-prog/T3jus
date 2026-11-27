@@ -1,0 +1,13 @@
+{
+  "id": "F3.199",
+  "texto": "Alvará antes da conferência do êxito: com o êxito ainda para conferir, ou ainda não calculado, a parcela lançada na conferência já nasce paga pelos honorários que entraram na divisão, para o cliente não ser cobrado duas vezes",
+  "peca": "S4",
+  "refs": [
+    "CH-07",
+    "FI-05"
+  ],
+  "status": "pendente",
+  "ordem": 1530,
+  "nota": "Plano F3.194/F3.192/F3.191 (v5, Parte A; nota 1 da primeira revisão, alta), onde este item se chama F3.194: o número foi tomado na main por outra frente (PR #208), e o item virou F3.199. Hoje portal_financeiro_exito_lancar (0640:276-327) cria a parcela EXITO aberta sem olhar levantamentos nem destinacoes, e o cliente que já pagou pelo alvará fica em A receber e Em atraso (CC, arts. 876 e 940). A entrega usa o resultado da etapa final (EX-08) sem mudá-lo, por isso o EX-08 não vai em refs. Migration 1102, pgTAP 148, desenho D39 e publicação P29 (a P24 do plano é do #207). A C2 foi decidida (a janela recusa o \"Não cobrar\" com honorários já entrados); a C3 também: \"Limitar ao que falta\" (Carol, 26/11/2026), e a proposta limita a linha de honorários ao que falta do êxito lançado, também nos alvarás seguintes (A2.8, com o estado ea-exito-pago e o teste 146 refeito).",
+  "proximo": "Desenhar o D39 (estados ea-, com o ea-exito-pago da C3) e levar à Carol; depois programar a 1102 e o pgTAP 148"
+}

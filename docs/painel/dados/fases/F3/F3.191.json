@@ -1,6 +1,6 @@
 {
   "id": "F3.191",
-  "texto": "Na divisão do alvará, avisar o êxito marcado como \"não cobrado\" na conferência, que hoje não aparece na proposta (0640:352)",
+  "texto": "Na divisão do alvará, o êxito marcado como não cobrado na conferência sai da proposta, e a janela pede a escolha: deixar sem ou cobrar com o combinado com o cliente (nunca para Indevido), com sino e registro no caso (0640:352)",
   "peca": "S4",
   "refs": [
     "CH-07",
@@ -8,6 +8,6 @@
   ],
   "status": "pendente",
   "ordem": 1450,
-  "nota": "Achado no plano da F3.174 (docs/design/aprovadas/portal-exito-baixado-alvara/PLANO.md). O plano chamava este item de F3.178, número já tomado por outra frente. Renumerado de novo ao juntar com a main, porque F3.184 a F3.186 também foram tomados.",
-  "proximo": "Planejar o aviso do êxito não cobrado na divisão do alvará (pede desenho)"
+  "nota": "Achado no plano da F3.174 (docs/design/aprovadas/portal-exito-baixado-alvara/PLANO.md). O plano chamava este item de F3.178, número já tomado por outra frente. Renumerado de novo ao juntar com a main, porque F3.184 a F3.186 também foram tomados. Carol decidiu em 26/11/2026 (Brasília) a C1 do plano F3.194/F3.192/F3.191 (v5, Parte C): (a), \"Cobrar com motivo escrito\". Ao ser feito: refs CH-07 e FI-05; migration 1104, pgTAP 151, desenho D40 e publicação P30.",
+  "proximo": "Desenhar o D40 (12 estados enc-) e levar à Carol; programar depois da F3.192"
 }

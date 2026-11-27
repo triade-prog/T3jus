@@ -1,0 +1,17 @@
+{
+  "data": "26/11/2026",
+  "inicio": "21:45",
+  "fim": "21:55",
+  "texto": "F3.192, as notas da revisão de código: F3.196 pendente (Indevido marcado por engano), P28 na ordem 280, F3.199 com a P29 e F3.191 com a P30, a data da decisão em Brasília, o pgTAP 149 com 35 testes (a proteção da regra em todas as funções dos Relatórios e em quem lê relatorio_adiantadas, o caminho comparar, o dono, a ACL e os atributos); C3 decidida (limitar ao que falta) na F3.199, e a F3.197 só com a devolução.",
+  "refs": [
+    "F3.192",
+    "FI-07",
+    "FI-25",
+    "IN-15",
+    "P28",
+    "F3.191",
+    "F3.196",
+    "F3.197",
+    "F3.199"
+  ]
+}

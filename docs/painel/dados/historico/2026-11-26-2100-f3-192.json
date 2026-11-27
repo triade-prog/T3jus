@@ -1,0 +1,20 @@
+{
+  "data": "26/11/2026",
+  "inicio": "21:00",
+  "fim": "21:37",
+  "texto": "F3.192: a custa adiantada com baixa sem receber volta a descontar do Rendeu (a 1103 tira de relatorio_adiantadas a condição da 1010, por troca de trecho exato; pgTAP 149 com o mês fechado que não muda); P28 pendente; no painel, os pendentes novos do plano v5 com os números livres na main (F3.199 e F3.200, que o plano chama de F3.194 e F3.195, F3.196, F3.197, F3.198 e F3.201, com o que o plano punha na nota da F3.193, já feita) e o texto novo da F3.191.",
+  "refs": [
+    "F3.192",
+    "FI-07",
+    "FI-25",
+    "IN-15",
+    "P28",
+    "F3.191",
+    "F3.196",
+    "F3.197",
+    "F3.198",
+    "F3.199",
+    "F3.200",
+    "F3.201"
+  ]
+}
