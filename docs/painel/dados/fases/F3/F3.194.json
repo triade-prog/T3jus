@@ -1,0 +1,12 @@
+{
+  "id": "F3.194",
+  "texto": "Proposta, retorno, atendimento, compromisso, saída do funil, execução de automação e cliente sem avisos novos para o cliente que acabou de ser excluído: a conferência do ATIVO é sem trava e a chave estrangeira só pede FOR KEY SHARE (como na F3.180). A proposta que nasce assim também leva o serviço e o sobre das condições em texto livre",
+  "peca": "S3",
+  "refs": [
+    "PT-11"
+  ],
+  "status": "pendente",
+  "ordem": 1480,
+  "nota": "Achado do plano da F3.180 (seção 7; revisão, m8). portal_proposta_criar confere o ATIVO em proposta_conferir (0190) e insere sem trava; o mesmo vale para atendimento_de_cliente_valido (0460) e as demais. Decisão da Carol D8: item à parte. Dúvida D6 (revisão): o cliente ARQUIVADO pode ser ligado a um caso novo? Hoje pode (caso_cliente_nasce recusa só o EXCLUIDO); se a Carol decidir que não, a conferência vai em caso_clientes_erros, pelo campo.",
+  "proximo": "Um gatilho BEFORE INSERT com FOR SHARE no cliente em cada tabela, no molde da 1130, e esvaziar a lista \"pendente, F3.194\" do pgTAP 165; levar a dúvida D6 (ARQUIVADO no caso) à Carol"
+}

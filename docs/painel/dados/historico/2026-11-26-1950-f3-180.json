@@ -1,0 +1,16 @@
+{
+  "data": "26/11/2026",
+  "inicio": "19:50",
+  "fim": "21:07",
+  "texto": "F3.180, F3.187 e F3.193 (PR A): contrato e ligação a caso não nascem mais para o cliente excluído (gatilhos com FOR SHARE, ordem trava do escritório → cliente → proposta no contrato e cliente → caso na tela, migrations 1130 e 1131, com o deadlock da proposta fechado) e a explicação da baixa sem receber vira texto fixo na exclusão (1132 e a 1133 sem volta). pgTAP 165 (30) e 166 (22), roteiros exclusao-contrato-simultaneo.sh e exclusao-caso-simultaneo.sh; F3.194, F3.195 e P23 pendentes.",
+  "refs": [
+    "F3.180",
+    "F3.187",
+    "F3.193",
+    "F3.194",
+    "F3.195",
+    "P25",
+    "PT-11",
+    "VA-05"
+  ]
+}

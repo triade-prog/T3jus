@@ -1,0 +1,22 @@
+-- As explicações das baixas sem receber dos clientes excluídos antes da 1132 (F3.193; PT-11), à parte
+-- da estrutura, como a 1111, a 1115, a 1117 e a 1119.
+--
+-- ATENÇÃO: isto não tem volta. Em cada baixa sem receber (BAIXA, DESFEITA e a linha das custas
+-- juntas) de parcela de contrato de cliente já EXCLUIDO, a explicação escrita vira o texto fixo
+-- "Explicação apagada a pedido do titular". A baixa não se apaga: o motivo, o valor, quem fez e
+-- quando ficam. Hoje deve achar 0 (o contrato impede a exclusão; P21: 0 clientes excluídos).
+--
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P25):
+--   1. conferir com list_migrations que a 1092, a 1110, a 1116 e a 1118 estão no ar;
+--   2. rodar a contagem só de leitura (project-files t3jus/f3-180/contagem-antes-1133.sql); se achar
+--      contrato ou ligação a caso de cliente EXCLUIDO, parar e avisar a Carol (é a corrida da F3.180
+--      ou da F3.187 que já aconteceu);
+--   3. aplicar a 1130, a 1131 e a 1132;
+--   4. com o ok da Carol, aplicar esta 1133 e conferir que parcela_baixas_preencher_excluidos()
+--      devolve {} na segunda chamada.
+-- Nada a publicar no Portal, na api-portal nem na api-console.
+--
+-- A função é testada no pgTAP 166 (também com o escritório só de consulta) e é idempotente: rodar de
+-- novo não muda nada. O resultado é a contagem por escritório ({escritório: {clientes, baixas}}).
+
+select parcela_baixas_preencher_excluidos() as preenchidos;

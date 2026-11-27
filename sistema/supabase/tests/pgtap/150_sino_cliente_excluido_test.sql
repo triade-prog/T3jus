@@ -255,9 +255,9 @@ select ok((select bool_and(a.dados = b.dados) from avisos_sino a join antes b us
 -- 7. O gatilho no lugar certo.
 select is((select array_agg(tgname::text order by tgname) from pg_trigger
             where tgrelid = 'clientes_escritorio'::regclass and not tgisinternal and tgname ~ '(apagar_do_excluido|excluido_arquivos)$'),
-  array['comercial_apagar_do_excluido', 'conversas_apagar_do_excluido', 'financeiro_apagar_do_excluido',
+  array['comercial_apagar_do_excluido', 'conversas_apagar_do_excluido', 'financeiro_apagar_do_excluido', 'financeiro_baixas_apagar_do_excluido',
         'historico_anterior_apagar_do_excluido', 'importacao_apagar_do_excluido', 'sino_apagar_do_excluido', 'z_cliente_excluido_arquivos'],
-  'PT-11 F3.172: sino_apagar_do_excluido roda entre financeiro_ e z_, pela ordem do nome (com o conversas_ da F3.157 e o historico_anterior_ e o importacao_ da F3.177 e da F3.158)');
+  'PT-11 F3.172: sino_apagar_do_excluido roda entre financeiro_ e z_, pela ordem do nome (com o conversas_ da F3.157, o historico_anterior_ e o importacao_ da F3.177 e da F3.158 e o financeiro_baixas_ da F3.193)');
 select ok((select pg_get_triggerdef(oid) like '%AFTER UPDATE OF estado ON public.clientes_escritorio FOR EACH ROW WHEN (((new.estado = ''EXCLUIDO''::text) AND (old.estado <> ''EXCLUIDO''::text)))%'
              from pg_trigger where tgname = 'sino_apagar_do_excluido'),
   'PT-11 F3.172: o gatilho é AFTER UPDATE OF estado, só na passagem a EXCLUIDO');
