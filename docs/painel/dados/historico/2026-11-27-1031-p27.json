@@ -1,0 +1,12 @@
+{
+  "data": "27/11/2026",
+  "inicio": "10:31",
+  "fim": "10:35",
+  "texto": "P27 feita: 1134 (F3.185, caso de importação desfeita solta o cliente; levantamento_nasce) no Supabase, colada pela Carol no SQL Editor; conferidos gatilhos, funções e inventário. Frente das brechas da exclusão no servidor concluída.",
+  "refs": [
+    "P27",
+    "F3.185",
+    "PT-11",
+    "VA-05"
+  ]
+}
