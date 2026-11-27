@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "11:15",
+  "fim": "11:20",
+  "texto": "Migration 1170 (carnê com o valor de cada parcela) aplicada no Supabase e conferida; falta publicar as funções depois das telas (F1.29).",
+  "refs": [
+    "P32",
+    "F1.28",
+    "CO-10"
+  ]
+}
