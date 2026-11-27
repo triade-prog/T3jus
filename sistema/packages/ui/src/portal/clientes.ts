@@ -4,7 +4,7 @@
 
 import {
   CAPACIDADES, MODOS_CURATELA, PAPEIS_RESPONSAVEL, cadastrarClienteSchema, cpfValido, cnpjValido, diaBrasilia, diasEntre, ESTADOS_CIVIS, FALTANDO_QUALIFICACAO, formatarDocumento, hojeBrasilia, nascimentoNoFuturo, ORIGENS, TIPOS_DOCUMENTO_PESSOAL, TOTAL_QUALIFICACAO,
-  type DadosCliente, type FichaCliente, type ProxContato, type TipoCliente, type TipoDocumentoPessoal,
+  type DadosCliente, type FichaCliente, type ProxContato, type SituacaoCliente, type TipoCliente, type TipoDocumentoPessoal,
 } from "@t3jus/domain";
 import { formatarTelefone } from "../console/ficha.ts";
 
@@ -147,6 +147,15 @@ const TEXTOS: Partial<Record<CampoTexto | "contatos", string>> = {
   curProcesso: "Confira o número do processo.",
   curVara: "Escreva a vara e a comarca.",
 };
+
+/**
+ * O rótulo da situação do cadastro (D6 da revisão das F3.181 a F3.190, junto com a F3.188, AP-01): o mesmo
+ * no aviso de duplicado do cadastro e no aviso do mesmo CPF da janela de exclusão. Antes, o aviso de
+ * duplicado mostrava o arquivado a pedido como "Inativo".
+ */
+export function rotuloSituacao(s: SituacaoCliente): string {
+  return s === "ATIVO" ? "Ativo" : s === "INATIVO" ? "Inativo" : s === "ARQUIVADO" ? "Arquivado a pedido" : "Excluído a pedido";
+}
 
 export function textoDocumento(tipo: TipoCliente): string {
   return tipo === "PJ"

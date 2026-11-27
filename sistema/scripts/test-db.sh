@@ -44,6 +44,10 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-sino-sim
 # O pedido de contrato ao mesmo tempo que a exclusão de verdade e que o contrato pela proposta (F3.181, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-pedido-contrato-simultaneo.sh"
 
+# Duas exclusões de cadastros com o mesmo CPF e a edição do outro cadastro ao mesmo tempo que a
+# exclusão que abre o pedido nele (F3.188, PT-11).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-mesmo-documento-simultaneo.sh"
+
 # As conversas do WhatsApp, o webhook e o motor ao mesmo tempo que a exclusão (F3.157, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-conversa-simultanea.sh"
 

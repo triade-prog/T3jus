@@ -17,7 +17,7 @@ import { problemaDoArquivo } from "../console/documentos.ts";
 import { formatarTelefone } from "../console/ficha.ts";
 import { dataLonga } from "../console/tempo.ts";
 import {
-  campoDoServidor, conferirCliente, dataBr, diferencasCliente, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato, TEXTO_DATA_NO_FUTURO,
+  campoDoServidor, conferirCliente, dataBr, diferencasCliente, lerData, documentoConfere, errosDosCaminhos, MAX_CONTATOS_CLIENTE, novaChaveContato, rotuloSituacao, TEXTO_DATA_NO_FUTURO,
   type ErrosCliente, type RascunhoCliente,
 } from "./clientes.ts";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
@@ -305,7 +305,7 @@ export function FormularioCliente({ modo, inicial, comercial, versao, idCliente,
               Abrir a ficha de {d.nome.split(/\s+/)[0]}
             </a>
           }>
-          {`${d.situacao === "ATIVO" ? "Ativo" : "Inativo"}, cliente desde ${dataLonga(d.desde)}. Se for a mesma pessoa, abra a ficha para não ter dois cadastros. `}
+          {`${rotuloSituacao(d.situacao)}, cliente desde ${dataLonga(d.desde)}. Se for a mesma pessoa, abra a ficha para não ter dois cadastros. `}
           {duplicados.por === "telefone"
             ? "Se for outra pessoa (um parente que usa o mesmo número, por exemplo), pode cadastrar normalmente."
             : "Se tiver certeza de que é outro cliente, pode seguir."}

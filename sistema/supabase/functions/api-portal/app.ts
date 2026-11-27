@@ -33,7 +33,7 @@ import {
   type RelatorioResponsaveis, type ResumoRelatorio,
   deInicioSchema, responsavelRepasseSchema, type InicioContratos, type InicioFinanceiro, type InicioJuridico, type ResumoInicio, type AudienciasInicio,
   arquivarLgpdSchema, contatosInicioSchema, excluirDadosSchema, pedirExclusaoSchema, recusarExclusaoSchema,
-  type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
+  type Atendimento, type DatasContrato, type ContatosDoInicio, type DadosCliente, type PedidoExclusao, type ExclusaoFeita, type FichaCliente, type ListaClientes, type PessoaEquipePortal, type PossivelDuplicado,
   abrirCasoDoContratoSchema, assinaturaComCasoSchema, type AssinaturaComCaso, type ContratosSemCaso, type OpcoesCasoContrato,
   encerrarCasoSchema,
   filtroLembretesSchema, pedidoDispensaSchema, registrarResultadoSchema, type ListaLembretes, type MudancaLembrete, type ResumoLembretes,
@@ -448,16 +448,18 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.post("/v1/escritorio/clientes/:id/exclusao", async (c) => {
     const { versao, ...d } = await lerCorpo(c, excluirDadosSchema);
-    const r = await deps.banco.rpc<{ protocolo: string; versao: number; pedido: PedidoExclusao }>("portal_cliente_excluir_dados", {
+    const r = await deps.banco.rpc<ExclusaoFeita>("portal_cliente_excluir_dados", {
       ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: versao, p_dados: d,
     });
     return c.json(r);
   });
 
+  // F3.188 (C7 na B', C8): o corpo da exclusão e do arquivamento leva abrirNoMesmoDocumento, os outros
+  // cadastros com o mesmo CPF marcados na janela; o banco confere cada id com o escritório da sessão.
   // Com contrato ou processo, não exclui: arquiva a pedido (F1.16, decisão 5). Só a dona.
   app.post("/v1/escritorio/clientes/:id/arquivar-lgpd", async (c) => {
     const { versao, ...d } = await lerCorpo(c, arquivarLgpdSchema);
-    const r = await deps.banco.rpc<{ protocolo: string; versao: number; pedido: PedidoExclusao }>("portal_cliente_arquivar_lgpd", {
+    const r = await deps.banco.rpc<ExclusaoFeita>("portal_cliente_arquivar_lgpd", {
       ...quem(c), p_cliente: idDaRota(c, "id"), p_versao: versao, p_dados: d,
     });
     return c.json(r);

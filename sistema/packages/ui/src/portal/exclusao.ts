@@ -8,8 +8,14 @@
 // F3.181, F3.186, F3.190, C9, F3.179 e F3.193: as linhas, as dicas e o aviso novos, pelo desenho aprovado
 // em docs/design/aprovadas/portal-exclusao-contratos-conversas (NOTAS.md; _fonte/f181.py). O cadastro
 // não guarda gênero: onde o desenho segue o gênero do cliente, fica o masculino genérico ("outro cliente").
-import type { ArquivosParaApagar, ArquivosQueFicam, AssinaPorOutro, ConversasParaApagar, HistoricoQueFica, LembretesQueSaem } from "@t3jus/domain";
-import { reais } from "@t3jus/domain";
+// F3.188 (segunda entrega do mesmo desenho; NOTAS.md, itens 8 a 10): o aviso do outro cadastro com o mesmo
+// CPF com a caixa da B' (C7), a mensagem de feito (M3) e a faixa do pedido aberto pelo mesmo CPF (M4).
+import type {
+  ArquivosParaApagar, ArquivosQueFicam, AssinaPorOutro, CanalPedido, ConversasParaApagar, HistoricoQueFica, LembretesQueSaem, MesmoDocumento, PedidoExclusao,
+  PessoaRef, TipoCliente,
+} from "@t3jus/domain";
+import { CANAIS_PEDIDO, diaBrasilia, reais } from "@t3jus/domain";
+import { rotuloSituacao } from "./clientes.ts";
 
 export const EXPLICACAO_UM = "o arquivo é apagado do T3jus. Fica só que existiu: tipo, tamanho e datas, sem o nome do arquivo.";
 export const EXPLICACAO_VARIOS = "os arquivos são apagados do T3jus. Fica só que existiram: tipo, tamanho e datas, sem o nome dos arquivos.";
@@ -234,5 +240,115 @@ export function avisoLembrete(l: LembretesQueSaem | null | undefined, nome: stri
   return {
     titulo,
     texto: `${qual}Depois da exclusão, não dá mais para saber de quem é esse valor, e o lembrete sai de Contratos › Lembretes. Se o escritório vai cobrar, crie o contrato antes: aí o pedido se atende arquivando, sem apagar.`,
+  };
+}
+
+// ---------------------------------------------------------------------------------------
+// F3.188: o outro cadastro com o mesmo CPF (C7 na B', C8, M3 e M4).
+
+const ddmmaaaa = (iso: string) => dma(diaBrasilia(iso));
+const ddmm = (iso: string) => dma(diaBrasilia(iso)).slice(0, 5);
+const doc = (tipo: TipoCliente) => (tipo === "PJ" ? "CNPJ" : "CPF");
+
+/** O texto da caixa da B' e a explicação dela. */
+export const CAIXA_MESMO_DOCUMENTO = "Com a mesma data e o mesmo canal. Depois você confere se é a mesma pessoa e atende ou recusa. Desmarque só se tiver certeza de que é outra pessoa.";
+
+/** A situação do outro cadastro: "Ativo, cliente desde 03/02/2025, sem contrato nem processo." */
+export function situacaoMesmoDocumento(o: MesmoDocumento): string {
+  let t = `${rotuloSituacao(o.situacao)}, cliente desde ${ddmmaaaa(o.desde)}`;
+  if (o.contratoOuProcesso) t += ". Tem contrato ou processo: o pedido dele vira arquivamento";
+  else if (o.situacao !== "ARQUIVADO") t += ", sem contrato nem processo";
+  return `${t}.`;
+}
+
+/** O outro cadastro pode ganhar o pedido (a caixa aparece): ativo ou inativo, sem pedido aberto. */
+export const temCaixa = (o: MesmoDocumento) => !o.pedidoAberto && o.situacao !== "ARQUIVADO";
+
+/** Os ids que vêm marcados ao abrir a janela (a B': a caixa já vem marcada). */
+export const marcadosAoAbrir = (lista: MesmoDocumento[] | null | undefined): string[] => (lista ?? []).filter(temCaixa).map((o) => o.id);
+
+export interface AvisoMesmoDocumento {
+  titulo: string;
+  texto: string;
+  /** Um cadastro só: a caixa no próprio aviso; dois ou mais: um cartão por cadastro. */
+  varios: boolean;
+  cadastros: { o: MesmoDocumento; situacao: string; caixa: string | null; sem: string; ja: string | null }[];
+}
+
+/** F3.188 (C7 na B', C8): o aviso do topo das janelas de excluir e de arquivar; null sem outro cadastro. */
+export function avisoMesmoDocumento(lista: MesmoDocumento[] | null | undefined, mais: number | null | undefined, tipo: TipoCliente,
+                                    modo: "excluir" | "arquivar"): AvisoMesmoDocumento | null {
+  if (!lista?.length) return null;
+  const d = doc(tipo);
+  const acao = modo === "excluir" ? "Esta exclusão" : "Este arquivamento";
+  const k = inteiro(mais ?? 0);
+  if (lista.length === 1 && !k) {
+    const o = lista[0]!;
+    return {
+      titulo: `Há outro cadastro com o mesmo ${d}: ${o.nome}.`,
+      texto: `${situacaoMesmoDocumento(o)} ${acao} não mexe nele. Quase sempre é a mesma pessoa cadastrada duas vezes, mas pode ser outra pessoa com o ${d} errado.`,
+      varios: false,
+      cadastros: [{
+        o, situacao: situacaoMesmoDocumento(o),
+        caixa: temCaixa(o) ? `Abrir também um pedido de exclusão no cadastro de ${o.nome}` : null,
+        sem: `Sem o pedido, o cadastro de ${o.nome} fica como está. Se for outra pessoa, o ${d} de um dos dois está errado: corrija na ficha certa.`,
+        ja: o.pedidoAberto ? "Ele já tem um pedido de exclusão aberto." : null,
+      }],
+    };
+  }
+  const nomes = lista.map((o) => o.nome);
+  if (k) nomes.push(`mais ${k} ${k === 1 ? "cadastro" : "cadastros"}`);
+  return {
+    titulo: `Há ${lista.length + k} outros cadastros com o mesmo ${d}: ${junta(nomes)}.`,
+    texto: `${acao} não mexe neles. Confira cada um: quase sempre é a mesma pessoa cadastrada mais de uma vez, mas pode ser outra pessoa com o ${d} errado.`,
+    varios: true,
+    cadastros: lista.map((o) => ({
+      o, situacao: situacaoMesmoDocumento(o),
+      caixa: temCaixa(o) ? "Abrir também um pedido de exclusão neste cadastro" : null,
+      sem: `Sem o pedido, este cadastro fica como está. Se for outra pessoa, o ${d} de um dos dois está errado: corrija na ficha certa.`,
+      ja: o.pedidoAberto ? "Já tem um pedido de exclusão aberto." : null,
+    })),
+  };
+}
+
+/**
+ * F3.188 (M3): o texto de feito. Com outro cadastro com pedido aberto, não manda mais dizer ao cliente que
+ * o pedido foi atendido; sem ele, é o texto de antes.
+ */
+export function textoFeitoExclusao(protocolo: string, outros: PessoaRef[] | null | undefined, modo: "excluir" | "arquivar"): string {
+  if (!outros?.length) {
+    return modo === "excluir"
+      ? `Protocolo ${protocolo}. Informe ao cliente que o pedido foi atendido. O registro ficou no histórico do escritório.`
+      : `Protocolo ${protocolo}. Informe ao cliente que o pedido foi atendido arquivando, e por quê. Nada foi apagado.`;
+  }
+  const um = outros.length === 1;
+  const t = um
+    ? `Protocolo ${protocolo}. Antes de responder ao cliente, confira o cadastro de ${outros[0]!.nome}, que ficou com um pedido de exclusão aberto. O pedido só está atendido por inteiro quando ele também for resolvido.`
+    : `Protocolo ${protocolo}. Antes de responder ao cliente, confira os cadastros de ${junta(outros.map((o) => o.nome))}, que ficaram com um pedido de exclusão aberto. O pedido só está atendido por inteiro quando eles também forem resolvidos.`;
+  return modo === "excluir" ? t : `${t} Nada foi apagado.`;
+}
+
+/**
+ * F3.188 (M4): a faixa do pedido aberto pelo mesmo CPF na ficha do outro cadastro. Sem protocolo, sem o
+ * cadastro excluído e sem a observação (A1). Para a equipe, neutra. null no pedido comum.
+ */
+export function faixaPedidoMesmoDocumento(p: PedidoExclusao | null | undefined, opcoes: {
+  tipo: TipoCliente; dona: boolean; eu: string | null; nomeDona: string | null; arquivar: boolean;
+}): { titulo: string; texto: string } | null {
+  if (!p || p.origem !== "MESMO_DOCUMENTO") return null;
+  const d = doc(opcoes.tipo);
+  const em = ddmm(p.registradoEm);
+  if (!opcoes.dona) {
+    return {
+      titulo: `Pedido de exclusão aberto em ${em}, aguardando a sócia dona.`,
+      texto: `${opcoes.nomeDona ? `${opcoes.nomeDona}, a sócia dona, vai` : "A sócia dona vai"} conferir este cadastro e decidir. Até lá, nada muda na ficha.`,
+    };
+  }
+  const quem = opcoes.eu && p.registradoPor.nome === opcoes.eu ? "Você" : p.registradoPor.nome;
+  const canal = CANAIS_PEDIDO[p.canal as CanalPedido] ?? p.canal;
+  const se = opcoes.arquivar ? "Se for, arquive a pedido, porque há contrato ou processo." : "Se for, exclua os dados.";
+  return {
+    titulo: `Pedido de exclusão aberto em ${em}, ao atender outro cadastro com o mesmo ${d}.`,
+    texto: `${quem} atendeu o pedido de exclusão de outro cadastro com o mesmo ${d}, e este ficou com um pedido aberto, com a mesma data e o mesmo canal (${canal}). Confira se é a mesma pessoa. ${se} Se não for, recuse o pedido e corrija o ${d} na ficha certa.`,
   };
 }
