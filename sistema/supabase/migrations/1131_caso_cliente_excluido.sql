@@ -34,7 +34,7 @@
 --
 -- Testes: pgTAP 165 (165_nascer_cliente_excluido_test.sql, com a trava de catálogo das tabelas com
 -- chave para clientes_escritorio) e a concorrência tests/concorrencia/exclusao-caso-simultaneo.sh
--- (k1 a k5). Ordem da publicação (painel, P24): conferir com pg_get_functiondef que a produção tem os
+-- (k1 a k5). Ordem da publicação (painel, P25): conferir com pg_get_functiondef que a produção tem os
 -- corpos da 0240 em portal_juridico_caso_cliente e juridico_caso_criar_sem_docs; aplicar depois da
 -- 1130. Se for preciso voltar: drop trigger caso_cliente_nasce on caso_clientes.
 --

@@ -47,7 +47,7 @@
 -- Testes: pgTAP 166 (166_baixas_cliente_excluido_test.sql). Sem roteiro de concorrência: para haver
 -- baixa a limpar o cliente teria contrato, e aí a exclusão é recusada; a corrida que abriria a porta
 -- é a da F3.180 (exclusao-contrato-simultaneo.sh).
--- Ordem da publicação (painel, P24): depois da 1130 e da 1131; a contagem só de leitura (project-files
+-- Ordem da publicação (painel, P25): depois da 1130 e da 1131; a contagem só de leitura (project-files
 -- t3jus/f3-180/contagem-antes-1133.sql); com o ok da Carol, a 1133. Se for preciso voltar:
 -- drop trigger financeiro_baixas_apagar_do_excluido on clientes_escritorio (o guardião novo pode ficar).
 --

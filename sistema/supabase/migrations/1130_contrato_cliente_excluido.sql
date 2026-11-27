@@ -41,7 +41,7 @@
 --
 -- Testes: pgTAP 165 (165_nascer_cliente_excluido_test.sql) e a concorrência
 -- tests/concorrencia/exclusao-contrato-simultaneo.sh (c1 a c5, com o deadlock de hoje no c3).
--- Ordem da publicação (painel, P24): conferir com pg_get_functiondef que a produção tem o corpo da
+-- Ordem da publicação (painel, P25): conferir com pg_get_functiondef que a produção tem o corpo da
 -- 0200 em portal_contrato_criar; aplicar esta 1130, a 1131 e a 1132. Se for preciso voltar:
 -- drop trigger contrato_nasce on contratos (a ordem nova de portal_contrato_criar pode ficar).
 --
