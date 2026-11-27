@@ -1,0 +1,13 @@
+{
+  "id": "F3.200",
+  "texto": "Um cliente: a custa adiantada com baixa sem receber mostra \"Baixa sem receber\" em vez de \"A reembolsar\"",
+  "peca": "S4",
+  "refs": [
+    "FI-25",
+    "IN-15"
+  ],
+  "status": "pendente",
+  "ordem": 1540,
+  "nota": "Plano F3.194/F3.192/F3.191 (v5, B2.5; nota 4 da primeira revisão), onde este item se chama F3.195: o número foi tomado na main por outra frente (PR #208), e o item virou F3.200. Com a F3.192, a custa baixada continua no Rendeu (não voltou), mas não vai ser cobrada (1010:176, :917-926); a tela Um cliente ainda mostra \"ainda não voltou\" e o selo \"A reembolsar\" (Relatorios.tsx, com o PR #206: :962, :1119-1120 e :1126; releia antes do PR). É barato no banco (o JSON adiantadas é jsonb e ganha 'baixada' sem drop), mas muda uma tela aprovada e pede desenho.",
+  "proximo": "Desenhar o selo da custa baixada em Um cliente e levar à Carol"
+}

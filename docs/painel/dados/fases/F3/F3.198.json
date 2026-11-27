@@ -1,0 +1,13 @@
+{
+  "id": "F3.198",
+  "texto": "Sino do êxito: os avisos antigos EXITO_NAO_COBRADO e EXITO_VALOR_MUDOU passam a esconder valor, calculado e explicação de quem não tem a área Financeiro (0640:264-267, Sino.tsx:463-474)",
+  "peca": "S4",
+  "refs": [
+    "PT-02",
+    "CH-07"
+  ],
+  "status": "pendente",
+  "ordem": 1520,
+  "nota": "Plano F3.194/F3.192/F3.191 (v5, C7; nota 3 da terceira revisão). Hoje exito_avisar manda calculado e a explicação a todos os avisados, com ou sem o Financeiro; a 0640 aprovou o jeito de hoje (decisão 3), e a Carol aprovou a mudança: valores e explicação só a quem tem o Financeiro com financeiro.ver (PT-02). Não segura a F3.191: o sino novo EXITO_COBRADO_NO_ALVARA já nasce com a regra.",
+  "proximo": "Planejar depois da publicação da F3.191"
+}
