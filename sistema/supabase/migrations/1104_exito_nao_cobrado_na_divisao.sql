@@ -120,7 +120,7 @@ as $$
 $$;
 
 -- Quem o sino da cobrança avisa (C3.6), uma vez cada, na ordem do texto: quem conferiu, quem
--- encerrou o caso e o responsável por ele.
+-- encerrou o caso e o responsável por ele, só com vínculo ativo no escritório (quem saiu não recebe).
 create function exito_quem_avisar(p_escritorio uuid, p_exito uuid) returns table (pessoa_id uuid, ordem integer)
 language sql stable
 set search_path = public
@@ -132,6 +132,8 @@ as $$
       union all select m.por, 2 from caso_etapa_mudancas m where m.id = x.etapa_mudanca_id and m.escritorio_id = p_escritorio
       union all select s.responsavel_id, 3 from casos s where s.id = x.caso_id and s.escritorio_id = p_escritorio) t
    where x.escritorio_id = p_escritorio and x.id = p_exito and t.p is not null
+     and exists (select 1 from vinculos v where v.pessoa_id = t.p and v.escritorio_id = p_escritorio
+                    and v.funcao in ('SOCIO', 'EQUIPE') and v.revogado_em is null)
    group by t.p
    order by min(t.o), t.p
 $$;
@@ -146,7 +148,9 @@ language sql stable
 set search_path = public
 as $$
   with x as (
-    select x.*, c.numero contrato_numero, k.estado cliente_estado, k.nome cliente_nome
+    select x.*, c.numero contrato_numero, k.estado cliente_estado, k.nome cliente_nome,
+           -- Na regra: o primeiro nome da pessoa física e o nome inteiro da empresa.
+           case when k.tipo = 'PJ' then btrim(k.nome) else split_part(btrim(k.nome), ' ', 1) end cliente_curto
       from exitos_conferir x
       join contratos c on c.id = x.contrato_id and c.escritorio_id = p_escritorio and c.estado in ('ATIVO', 'ENCERRADO')
       join clientes_escritorio k on k.id = x.cliente_id and k.escritorio_id = p_escritorio
@@ -174,23 +178,26 @@ as $$
                                    where c.escritorio_id = p_escritorio and c.exito_id = j.id), '[]'::jsonb),
            'avisados', coalesce((select jsonb_agg(pessoa_ref(q.pessoa_id) order by q.ordem, q.pessoa_id) from exito_quem_avisar(p_escritorio, j.id) q), '[]'::jsonb),
            -- A regra que o servidor grava na parte cobrada (C3.5.5), no limite de 200 letras da parte.
-           'regra', left(coalesce(j.hon ->> 'regra', '') || ' · combinado com ' || split_part(btrim(j.cliente_nome), ' ', 1), 200),
+           'regra', left(concat_ws(' · ', j.hon ->> 'regra', 'combinado com ' || j.cliente_curto), 200),
            'honorarios', case when p_valor is not null and j.hon is not null and j.motivo_nao_cobrar <> 'INDEVIDO'
                                    and least((j.hon ->> 'valor')::bigint, j.calculado - j.ja) > 0 then
              jsonb_build_object('para', 'HONORARIOS', 'nome', 'Honorários de êxito',
-                                'regra', left(coalesce(j.hon ->> 'regra', '') || ' · combinado com ' || split_part(btrim(j.cliente_nome), ' ', 1), 200),
+                                'regra', left(concat_ws(' · ', j.hon ->> 'regra', 'combinado com ' || j.cliente_curto), 200),
                                 'valor', least((j.hon ->> 'valor')::bigint, j.calculado - j.ja)) end)
     from j
    limit 1
 $$;
 
 -- A última cobrança no alvará do êxito, para as telas do caso: {em, por, levantamentoId, tipo,
--- entrouEm, valor}, com o valor só com p_valores (PT-02). null sem cobrança.
+-- entrouEm, valor}. O levantamento, o tipo, o dia em que entrou e o valor só com p_valores (PT-02),
+-- como cliente_fechamento e caso_resumo_acerto já fazem (0900). null sem cobrança.
 create function exito_cobrado_no_alvara(p_escritorio uuid, p_exito uuid, p_valores boolean) returns jsonb
 language sql stable
 set search_path = public
 as $$
-  select jsonb_build_object('em', c.criado_em, 'por', pessoa_ref(c.autor_id), 'levantamentoId', l.id, 'tipo', l.tipo, 'entrouEm', l.entrou_em,
+  select jsonb_build_object('em', c.criado_em, 'por', pessoa_ref(c.autor_id),
+                            'levantamentoId', case when p_valores then l.id end, 'tipo', case when p_valores then l.tipo end,
+                            'entrouEm', case when p_valores then l.entrou_em end,
                             'valor', case when p_valores then c.valor end)
     from exito_cobrancas_alvara c
     join levantamentos l on l.id = c.levantamento_id and l.escritorio_id = p_escritorio
@@ -229,18 +236,23 @@ $$;
 -- 3. A divisão proposta (C3.1): a linha de honorários sai com o êxito não cobrado, a conta do
 -- percentual passa a ser a de exito_honorarios_do_contrato, e a proposta traz exitoNaoCobrado.
 select t1104_trocar('repasse_proposta_sem_exito(uuid,uuid,uuid,bigint)',
+  $q$  v_hon bigint;$q$,
+  $q$  v_hon bigint;
+  v_hon_j jsonb;$q$);
+select t1104_trocar('repasse_proposta_sem_exito(uuid,uuid,uuid,bigint)',
   $q$    if v_exito.id is not null then$q$,
   $q$    -- F3.191: com o êxito marcado como não cobrado, a linha sai; a janela pede a escolha.
     if v_exito.id is not null and exito_nao_cobrado(p_escritorio, p_caso, p_cliente) is null then$q$);
 select t1104_trocar('repasse_proposta_sem_exito(uuid,uuid,uuid,bigint)',
   $q$      v_hon := round(p_valor * (v_exito.params ->> 'percentual')::bigint / 10000.0);$q$,
-  $q$      -- F3.191: a única conta do percentual.
-      v_hon := (exito_honorarios_do_contrato(p_escritorio, p_caso, p_cliente, p_valor) ->> 'valor')::bigint;$q$);
+  $q$      -- F3.191: a única conta do percentual, feita uma vez (valor e regra).
+      v_hon_j := exito_honorarios_do_contrato(p_escritorio, p_caso, p_cliente, p_valor);
+      v_hon := (v_hon_j ->> 'valor')::bigint;$q$);
 select t1104_trocar('repasse_proposta_sem_exito(uuid,uuid,uuid,bigint)',
   $q$format('%s%% · %s · contrato %s',
                                replace(rtrim(rtrim(to_char((v_exito.params ->> 'percentual')::numeric / 100, 'FM9990.00'), '0'), '.'), '.', ','),
                                v_exito.params ->> 'sobre', v_contrato.numero)$q$,
-  $q$(exito_honorarios_do_contrato(p_escritorio, p_caso, p_cliente, p_valor) ->> 'regra')$q$);
+  $q$(v_hon_j ->> 'regra')$q$);
 
 select t1104_trocar('repasse_proposta(uuid,uuid,uuid,bigint)',
   $q$'exitoSituacao', exito_situacao(p_escritorio, p_caso, p_cliente))$q$,
@@ -353,7 +365,7 @@ select t1104_trocar(t1104_achar('exito_parcelas_abertas(p_escritorio, l.caso_id,
     if (jsonb_typeof(v_nc_visto) = 'array'
         and (select coalesce(array_agg(distinct lower(t) order by lower(t)), '{}') from jsonb_array_elements_text(v_nc_visto) t)
             is distinct from case when v_nc is null then '{}'::text[] else array[v_nc ->> 'exitoId'] end)
-       or (jsonb_typeof(v_cobrar) = 'object' and (v_nc is null or v_cobrar ->> 'exitoId' is distinct from v_nc ->> 'exitoId')) then
+       or (jsonb_typeof(v_cobrar) = 'object' and (v_nc is null or lower(v_cobrar ->> 'exitoId') is distinct from lower(v_nc ->> 'exitoId'))) then
       raise exception 'O êxito deste cliente mudou enquanto você dividia' using errcode = 'TC409',
         detail = (jsonb_build_object('motivo', 'EXITO_MUDOU', 'tipo', case when v_nc is not null then 'NAO_COBRADO' else 'CONFERENCIA' end)
                   || coalesce((select jsonb_build_object('por', pessoa_ref(x.conferido_por), 'em', x.conferido_em)
@@ -377,16 +389,20 @@ select t1104_trocar(t1104_achar('exito_parcelas_abertas(p_escritorio, l.caso_id,
   if v_nc is not null then
     select * into v_nc_x from exitos_conferir where id = (v_nc ->> 'exitoId')::uuid and escritorio_id = p_escritorio;
     v_hon := coalesce((select sum(x.valor) from destinacoes x where x.levantamento_id = l.id and x.para = 'HONORARIOS' and x.valor > 0), 0);
+    -- C3.5.1: Indevido não se cobra, nem pela escolha nem pela parte posta à mão (revisão, L1).
+    if v_nc_x.motivo_nao_cobrar = 'INDEVIDO' and (v_hon > 0 or jsonb_typeof(v_cobrar) = 'object') then
+      raise exception 'O êxito deste cliente foi marcado como não devido' using errcode = 'TC409',
+        detail = jsonb_build_object('motivo', 'EXITO_INDEVIDO', 'exito', v_nc_x.id)::text;
+    end if;
     if v_hon > 0 and jsonb_typeof(v_cobrar) is distinct from 'object' then
       -- Sem a escolha: também a parte mandada à mão e a do Portal antigo.
       raise exception 'O êxito deste cliente foi marcado como não cobrado' using errcode = 'TC409',
         detail = jsonb_build_object('motivo', 'EXITO_NAO_COBRADO', 'exito', v_nc_x.id)::text;
+    elsif v_hon = 0 and jsonb_typeof(v_cobrar) = 'object' then
+      -- "Cobrar" sem a parte de honorários (revisão, M3): o corpo não pode virar "Deixar sem" calado.
+      raise exception 'Escolheu cobrar, mas a divisão não tem os honorários do êxito' using errcode = 'TC422',
+        detail = jsonb_build_object('motivo', 'COBRAR_SEM_HONORARIOS', 'campos', jsonb_build_array('honorarios'))::text;
     elsif v_hon > 0 then
-      -- C3.5.1: Indevido não se cobra.
-      if v_nc_x.motivo_nao_cobrar = 'INDEVIDO' then
-        raise exception 'O êxito deste cliente foi marcado como não devido' using errcode = 'TC409',
-          detail = jsonb_build_object('motivo', 'EXITO_INDEVIDO', 'exito', v_nc_x.id)::text;
-      end if;
       -- C3.5.2: o combinado escrito e a confirmação estrita de que o cliente concordou.
       v_combinado := btrim(coalesce(case when jsonb_typeof(v_cobrar -> 'explicacao') = 'string' then v_cobrar ->> 'explicacao' end, ''));
       if char_length(v_combinado) not between 3 and 1000 then v_nc_campos := v_nc_campos || 'cobrarExitoNaoCobrado.explicacao'::text; end if;

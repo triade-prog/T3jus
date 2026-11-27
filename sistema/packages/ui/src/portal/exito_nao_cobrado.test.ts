@@ -5,7 +5,7 @@ import type { AvisoSino, ExitoNaoCobrado, PassoFechamento, ResumoAcertoCaso } fr
 import { itensDoAcerto } from "./acertoCaso.ts";
 import { conflitoDoExito } from "./baixa.ts";
 import {
-  acertoExitoCobrado, ajudasDaEscolha, CONFIRMACAO_COBRADO, contratoExitoCobrado, errosDoNaoCobrado, fechamentoExitoCobrado, fechamentoExitoNaoCobrado,
+  acertoExitoCobrado, ajudasDaEscolha, COBRAR_SEM_LINHA, CONFIRMACAO_COBRADO, contratoExitoCobrado, errosDoNaoCobrado, fechamentoExitoCobrado, fechamentoExitoNaoCobrado,
   listaDeNomes, notaDeixarSem, origemExitoCobrado, passoExitoCobrado, resumoDoNaoCobrado, subtituloNaoCobrado, tetoDoExito, textoExitoCobradoHist,
   textoExitoNaoCobrado, textoExitoNaoCobradoHist,
 } from "./exito_nao_cobrado.ts";
@@ -96,6 +96,11 @@ describe("F3.191: os erros (enc-erro, enc-erro-cobrar) e o conflito (enc-conflit
     ]);
     expect(errosDoNaoCobrado(NC, "COBRAR", COMB, true, 300000, SEB)).toEqual({});
   });
+  it("revisão M3: \"Cobrar\" com a linha de honorários tirada é erro no grupo, e não \"Deixar sem\" calado", () => {
+    const e = errosDoNaoCobrado(NC, "COBRAR", COMB, true, 0, SEB);
+    expect(e).toEqual({ grupo: COBRAR_SEM_LINHA });
+    expect(resumoDoNaoCobrado(e, SEB)).toEqual([{ campo: "grupo", texto: "Ponha a linha de honorários de volta ou escolha deixar sem." }]);
+  });
   it("enc-conflito: Marina marcou o êxito como não cobrado às 10h13", () => {
     const d = { motivo: "EXITO_MUDOU", tipo: "NAO_COBRADO", por: MARINA, em: "2026-11-18T13:13:00Z" };
     expect(conflitoDoExito(d, "2026-11-18", SEB)).toEqual({
@@ -137,6 +142,7 @@ describe("F3.191: a ficha do repasse (enc-historico, enc-historico-sem, enc-resu
 
 describe("F3.191: as telas do caso e o sino", () => {
   const cobrado = { em: "2026-11-18T13:14:00Z", por: DIEGO, levantamentoId: "l1", tipo: "ALVARA" as const, entrouEm: "2026-11-18" };
+  const semFin = { ...cobrado, levantamentoId: null, tipo: null, entrouEm: null };
   it("enc-caso-historico: o \"De onde veio\", pelo textoOrigem", () => {
     const d = { levantamento: "l1", tipo: "ALVARA", entrouEm: "2026-11-18", valor: 300000, doContrato: true, motivo: "PERDOADO", cliente: SEB, combinado: COMB };
     const t = textoOrigem({ acao: "financeiro.exito_cobrado_no_alvara", em: "2026-11-18T13:14:00Z", por: DIEGO, dados: d }, CASO);
@@ -154,12 +160,16 @@ describe("F3.191: as telas do caso e o sino", () => {
     expect(acertoExitoCobrado({ ...cobrado, valor: 300000 }, { por: MARINA, em: CONFERIDO_EM }).texto).toBe("Êxito não cobrado · cobrado no alvará");
     expect(nb(acertoExitoCobrado({ ...cobrado, valor: 300000 }, { por: MARINA, em: CONFERIDO_EM }).sub)).toBe("Não cobrado por Marina em 10/11 · R$ 3.000,00 cobrados por Diego em 18/11");
     expect(acertoExitoCobrado(cobrado, { por: MARINA, em: CONFERIDO_EM }).sub).toBe("Não cobrado por Marina em 10/11 · cobrado por Diego em 18/11");
+    // Revisão, M2: sem o Financeiro, o tipo, o levantamento e o dia não vêm.
+    expect(acertoExitoCobrado(semFin, { por: MARINA, em: CONFERIDO_EM })).toEqual({
+      texto: "Êxito não cobrado · cobrado num levantamento", sub: "Não cobrado por Marina em 10/11 · cobrado por Diego em 18/11",
+    });
     const a = {
       comValores: false, levantamentoId: "l1", entrou: { tipo: "ALVARA", em: "2026-11-18", valor: null }, repasses: [], outros: [], contratos: [], semExito: false,
-      exitos: [{ cliente: SEB, feito: true, naoCobrado: true, em: CONFERIDO_EM, por: MARINA, valor: null, cobradoNoAlvara: cobrado }],
+      exitos: [{ cliente: SEB, feito: true, naoCobrado: true, em: CONFERIDO_EM, por: MARINA, valor: null, cobradoNoAlvara: semFin }],
     } as unknown as ResumoAcertoCaso;
     expect(itensDoAcerto(a, { encerradoEm: "2026-11-10", resultado: "ACORDO" }, "2026-11-18")[0]).toEqual({
-      tom: "ok", texto: "Êxito não cobrado · cobrado no alvará", sub: "Não cobrado por Marina em 10/11 · cobrado por Diego em 18/11",
+      tom: "ok", texto: "Êxito não cobrado · cobrado num levantamento", sub: "Não cobrado por Marina em 10/11 · cobrado por Diego em 18/11",
     });
   });
   it("enc-ficha-cliente: o passo \"Conferir o êxito\"", () => {
@@ -167,6 +177,8 @@ describe("F3.191: as telas do caso e o sino", () => {
     const p: PassoFechamento = { tipo: "EXITO", area: "FINANCEIRO", feito: true, em: CONFERIDO_EM, por: MARINA, naoCobrado: true, cobradoNoAlvara: cobrado };
     expect(detalheDoPassoFechamento(p, [p])).toBe("Não cobrado, por Marina em 10/11 · cobrado no alvará de 18/11, por Diego");
     expect(detalheDoPassoFechamento({ ...p, cobradoNoAlvara: null }, [p])).toBe("Não cobrado, por Marina em 10/11");
+    // Revisão, M2: sem o Financeiro, cai para o dia em que foi cobrado.
+    expect(passoExitoCobrado(semFin, { por: MARINA, em: CONFERIDO_EM })).toBe("Não cobrado, por Marina em 10/11 · cobrado num levantamento em 18/11, por Diego");
   });
   it("enc-sino e enc-sino-larissa: o destino, o selo e, sem o Financeiro, o texto sem valores (PT-02)", () => {
     const base: AvisoSino = {

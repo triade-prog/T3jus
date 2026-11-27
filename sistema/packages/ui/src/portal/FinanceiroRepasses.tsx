@@ -588,7 +588,9 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
       // A explicação do desfazer (o banco a confere no desfazer que já existe) volta ao "Por que desfazer".
       // F3.191: o combinado, a caixa e o valor acima do calculado voltam aos campos do "Cobrar".
       const CAMPOS_NC: Record<string, string> = {
-        "cobrarExitoNaoCobrado.explicacao": "enc-comb", "cobrarExitoNaoCobrado.clienteConcordou": "enc-conc", cobrarExitoNaoCobrado: "enc-conc", honorarios: "enc-valor",
+        "cobrarExitoNaoCobrado.explicacao": "enc-comb", "cobrarExitoNaoCobrado.clienteConcordou": "enc-conc", cobrarExitoNaoCobrado: "enc-conc",
+        // Sem a linha de honorários (COBRAR_SEM_HONORARIOS, revisão M3), o erro volta ao grupo da escolha.
+        honorarios: iHonNc >= 0 ? "enc-valor" : "enc-grupo",
       };
       setErros(campos.map((x) => (x === "clienteId" ? "casoId" : x === "explicacao" ? "porque" : CAMPOS_NC[String(x)] ?? String(x))));
       setFuturo(false);
@@ -600,7 +602,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
   // F3.191 (enc-erro, enc-erro-cobrar): o resumo, com um link para cada campo.
   const ID_NC = { grupo: "enc-op-sem", valor: `rp-v-${iHonNc}`, combinado: "enc-comb", concordou: "enc-conc" } as const;
   const errosNc = nc ? resumoDoNaoCobrado({
-    grupo: tem("enc-grupo") ? "x" : undefined, valor: tem("enc-valor") ? "x" : undefined,
+    grupo: tem("enc-grupo") ? msgNc.grupo ?? "x" : undefined, valor: tem("enc-valor") ? "x" : undefined,
     combinado: tem("enc-comb") ? "x" : undefined, concordou: tem("enc-conc") ? "x" : undefined,
   }, nomeCliente).map((x) => ({ id: ID_NC[x.campo], texto: x.texto })) : [];
   const errosEb = [tem("exito") && { id: "eb-op-desfazer", texto: `Escolha o que fazer com o êxito de ${pn}.` },

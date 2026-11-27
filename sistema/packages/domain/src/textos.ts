@@ -150,6 +150,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   EXITO_INDEVIDO: "O êxito deste cliente foi marcado como não devido na conferência, e os honorários não podem ser cobrados neste alvará.",
   EXITO_ACIMA_DO_CALCULADO: "Os honorários passam do êxito calculado na conferência.",
   COMBINADO_OBRIGATORIO: "Escreva o que foi combinado com o cliente e confirme que ele concordou com a cobrança.",
+  COBRAR_SEM_HONORARIOS: "Você escolheu cobrar, mas a divisão está sem os honorários do êxito. Ponha a linha de volta ou escolha deixar sem.",
   PARCELA_NAO_BAIXADA: "Esta parcela não está mais baixada. Recarregue a página para ver como ela está.",
   RENEGOCIADA_CONTRATO_ENCERRADO: "O contrato foi encerrado enquanto a janela estava aberta, e a renegociação não vale mais. Escolha outro motivo ou deixe a parcela em atraso.",
   // O logo do escritório (F3.81).

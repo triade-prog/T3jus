@@ -1786,6 +1786,7 @@ Deno.test("F3.191, CH-07: o êxito não cobrado no registrar chega ao banco, e o
     ["TC409", { motivo: "EXITO_INDEVIDO", exito: X }, 409, "VERSION_CONFLICT"],
     ["TC422", { motivo: "COMBINADO_OBRIGATORIO", campos: ["cobrarExitoNaoCobrado.explicacao", "cobrarExitoNaoCobrado.clienteConcordou"] }, 400, "VALIDATION_ERROR"],
     ["TC422", { motivo: "EXITO_ACIMA_DO_CALCULADO", campos: ["honorarios"], limite: 300000 }, 400, "VALIDATION_ERROR"],
+    ["TC422", { motivo: "COBRAR_SEM_HONORARIOS", campos: ["honorarios"] }, 400, "VALIDATION_ERROR"],
   ] as const) {
     m.banco.rpc = <T>(f: string, a?: Record<string, unknown>) =>
       (f === "portal_financeiro_levantamento_registrar" ? new Promise<T>(() => erroBanco(codigo, detalhe)) : rpc<T>(f, a));

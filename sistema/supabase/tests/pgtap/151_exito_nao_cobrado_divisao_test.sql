@@ -4,7 +4,7 @@
 -- pede "Deixar sem" ou "Cobrar", e o "Cobrar" exige o combinado escrito e a confirmação do cliente,
 -- nunca para Indevido e nunca acima do êxito calculado.
 begin;
-select plan(85);
+select plan(95);
 
 create function pg_temp.fim() returns void language plpgsql as $$
 begin
@@ -148,6 +148,28 @@ select is((select jsonb_agg(a ->> 'nome' order by o) from cli, jsonb_array_eleme
 select is((select jsonb_agg(a ->> 'nome' order by o) from cli, jsonb_array_elements(pg_temp.prop(cli.ursula, 1500000) -> 'exitoNaoCobrado' -> 'avisados') with ordinality t(a, o)),
   '["Felipe Matos", "Marina Ribeiro", "Larissa Costa"]'::jsonb, 'com quem conferiu diferente de quem encerrou, três avisados, na ordem do texto');
 select is((select requisicao_parte(ids.rm, cs.id, cli.seb, 1500000) ->> 'valor' from ids, cs, cli), '0', 'FI-05: o "A caminho" não estima esses honorários');
+-- Revisão, L3: quem saiu do escritório não é avisado.
+savepoint saiu;
+set local session_replication_role = replica;
+update vinculos set revogado_em = now(), revogado_por = (select socia from ids) where pessoa_id = (select larissa from ids) and revogado_em is null;
+set local session_replication_role = origin;
+select is((select jsonb_agg(a ->> 'nome' order by o) from prop_seb, cli, jsonb_array_elements(pg_temp.prop(cli.seb, 1500000) -> 'exitoNaoCobrado' -> 'avisados') with ordinality t(a, o)),
+  '["Marina Ribeiro"]'::jsonb, 'revisão L3: com o vínculo de Larissa revogado, ela sai dos avisados');
+rollback to savepoint saiu;
+-- Revisão, L5: a empresa pelo nome inteiro, e sem o " · " solto quando o contrato não tem a condição de êxito.
+savepoint pj;
+set local session_replication_role = replica;
+update clientes_escritorio set tipo = 'PJ', nome = 'Banco Aurora S.A.' where id = (select seb from cli);
+set local session_replication_role = origin;
+select is((select pg_temp.prop(seb, 1500000) -> 'exitoNaoCobrado' ->> 'regra' from cli),
+  '20% · acordo · contrato ' || (select numero from contratos, ct where id = ct.seb) || ' · combinado com Banco Aurora S.A.',
+  'revisão L5: para a PJ, a regra diz o nome inteiro');
+set local session_replication_role = replica;
+update honorario_condicoes set dono_id = gen_random_uuid() where dono_tipo = 'CONTRATO' and dono_id = (select seb from ct) and tipo = 'EXITO';
+set local session_replication_role = origin;
+select is((select pg_temp.prop(seb, 1500000) -> 'exitoNaoCobrado' ->> 'regra' from cli), 'combinado com Banco Aurora S.A.',
+  'e, sem a condição de êxito no contrato, a regra começa no combinado');
+rollback to savepoint pj;
 
 -- ---------------------------------------------------------------------------------------
 -- 2. "Deixar sem" (Úrsula, Outro): passa, sem explicação no histórico, e seguiuProposta.
@@ -184,6 +206,10 @@ select ok(pg_temp.nada_mudou(), 'e nada é gravado');
 -- 5. Salvaguardas (antes do "Cobrar" que passa).
 select is((teste.erro($$ select pg_temp.reg(cli.tania, 1500000, 300000, pg_temp.cobrar(cli.tania)) from cli $$)) -> 'detalhe',
   jsonb_build_object('motivo', 'EXITO_INDEVIDO', 'exito', (select pg_temp.exito(tania) from cli)), 'CH-07 (C1): Indevido não se cobra');
+select is((teste.erro($$ select pg_temp.reg(cli.tania, 1500000, 300000, pg_temp.visto(cli.tania)) from cli $$)) -> 'detalhe' ->> 'motivo',
+  'EXITO_INDEVIDO', 'revisão L1: a parte posta à mão sem a escolha, com Indevido, recusa pelo Indevido (e não manda escolher cobrar)');
+select is((teste.erro($$ select pg_temp.reg(cli.tania, 1500000, 0, pg_temp.cobrar(cli.tania)) from cli $$)) -> 'detalhe' ->> 'motivo',
+  'EXITO_INDEVIDO', 'e o "Cobrar" de um Indevido, mesmo sem a linha, também');
 select is((select pg_temp.prop(tania, 1500000) -> 'exitoNaoCobrado' -> 'podeCobrar' from cli), 'false'::jsonb, 'e a proposta diz podeCobrar false');
 select is((select pg_temp.prop(tania, 1500000) -> 'exitoNaoCobrado' -> 'honorarios' from cli), 'null'::jsonb, 'sem a linha do "Cobrar"');
 select is((teste.erro($$ select pg_temp.reg(cli.seb, 1500000, 300000, pg_temp.cobrar(cli.seb, 'ab')) from cli $$)),
@@ -195,6 +221,12 @@ select is((select array_agg((teste.erro(format($f$ select pg_temp.reg(cli.seb, 1
                              -> 'detalhe' -> 'campos' ->> 0) order by c) from unnest(array['false', '"true"', '1', 'null']) c),
   array_fill('cobrarExitoNaoCobrado.clienteConcordou'::text, array[4]),
   'clienteConcordou falso, "true" em texto, 1 ou ausente recusa');
+select is((teste.erro($$ select pg_temp.reg(cli.seb, 1500000, 0, pg_temp.cobrar(cli.seb)) from cli $$)),
+  jsonb_build_object('codigo', 'TC422', 'detalhe', jsonb_build_object('motivo', 'COBRAR_SEM_HONORARIOS', 'campos', jsonb_build_array('honorarios'))),
+  'revisão M3: "Cobrar" com a linha de honorários tirada recusa, e não vira "Deixar sem" calado');
+select is((teste.erro($$ select pg_temp.reg(cli.seb, 1500000, 300000, pg_temp.visto(cli.seb) || jsonb_build_object('cobrarExitoNaoCobrado',
+             jsonb_build_object('exitoId', upper(pg_temp.exito(cli.seb)::text), 'explicacao', 'ab', 'clienteConcordou', true))) from cli $$)) -> 'detalhe' ->> 'motivo',
+  'COMBINADO_OBRIGATORIO', 'revisão L2: o exitoId em maiúsculas é o mesmo êxito (passa da corrida e para no combinado)');
 select is((teste.erro($$ select pg_temp.reg(cli.seb, 1500000, 350000, pg_temp.cobrar(cli.seb)) from cli $$)),
   jsonb_build_object('codigo', 'TC422', 'detalhe', jsonb_build_object('motivo', 'EXITO_ACIMA_DO_CALCULADO', 'campos', jsonb_build_array('honorarios'), 'limite', 300000)),
   'acima do calculado recusa, com o limite');
@@ -316,11 +348,18 @@ select is((select jsonb_build_array(j -> 'naoCobrado', j -> 'cobradoNoAlvara' ->
   'CH-07: o passo do fechamento diz cobrado no alvará, com naoCobrado ainda true');
 select is((select j -> 'cobradoNoAlvara' -> 'valor' from cli, lateral pg_temp.passo(cli.seb, false) j), 'null'::jsonb,
   'PT-02: sem o Financeiro, o passo vem sem o valor');
+select is((select array_agg(k order by k) from cli, lateral pg_temp.passo(cli.seb, false) j, jsonb_object_keys(jsonb_strip_nulls(j -> 'cobradoNoAlvara')) k),
+  array['em', 'por'], 'revisão M2: e sem o levantamento, o tipo e o dia em que o dinheiro entrou, como o passo do repasse');
+select is((select j -> 'cobradoNoAlvara' ->> 'entrouEm' from cli, lateral pg_temp.passo(cli.seb, true) j), '2026-11-18',
+  'com o Financeiro, o dia em que entrou vem');
 select is((select x -> 'cobradoNoAlvara' -> 'valor' from ids, cs, jsonb_array_elements(caso_resumo_acerto(ids.diego, ids.rm, cs.id) -> 'exitos') x
             where x ->> 'cliente' = 'Sebastião Prado'), '300000'::jsonb, 'o acerto da ficha do caso também, com o valor para quem tem o Financeiro');
 select is((select jsonb_build_array(x -> 'naoCobrado', x -> 'cobradoNoAlvara' -> 'valor', x -> 'cobradoNoAlvara' -> 'por' ->> 'nome')
              from ids, cs, jsonb_array_elements(caso_resumo_acerto(ids.larissa, ids.rm, cs.id) -> 'exitos') x where x ->> 'cliente' = 'Sebastião Prado'),
   '[true, null, "Diego Almeida"]'::jsonb, 'PT-02: para Larissa, sem o valor');
+select is((select array_agg(k order by k) from ids, cs, jsonb_array_elements(caso_resumo_acerto(ids.larissa, ids.rm, cs.id) -> 'exitos') x,
+             jsonb_object_keys(jsonb_strip_nulls(x -> 'cobradoNoAlvara')) k where x ->> 'cliente' = 'Sebastião Prado'),
+  array['em', 'por'], 'revisão M2: e sem o levantamento, o tipo e o dia');
 select is((select x -> 'cobradoNoAlvara' from ids, cs, jsonb_array_elements(caso_resumo_acerto(ids.diego, ids.rm, cs.id) -> 'exitos') x
             where x ->> 'cliente' = 'Úrsula Prado'), 'null'::jsonb, 'sem cobrança, cobradoNoAlvara é null');
 select ok((select strpos(prosrc, 'cobradoNoAlvara') = 0 from pg_proc where oid = 'caso_acerto_quadro(uuid,uuid)'::regprocedure),
@@ -416,7 +455,7 @@ select is((select jsonb_build_array(exito_nao_cobrado(ids.outro, cs.id, cli.seb,
                                     exito_cobrado_no_alvara(ids.outro, pg_temp.exito(cli.seb), true), exito_honorarios_do_contrato(ids.outro, cs.id, cli.seb, 1500000),
                                     (select count(*) from exito_quem_avisar(ids.outro, pg_temp.exito(cli.seb))))
              from ids, cs, cli), '[null, 0, null, null, 0]'::jsonb, 'PT-01: as peças novas filtram o escritório');
-select is((select jsonb_build_array(exito_ja_cobrado(ids.rm, pg_temp.exito(cli.seb)), exito_cobrado_no_alvara(ids.rm, pg_temp.exito(cli.seb), false) ->> 'tipo')
+select is((select jsonb_build_array(exito_ja_cobrado(ids.rm, pg_temp.exito(cli.seb)), exito_cobrado_no_alvara(ids.rm, pg_temp.exito(cli.seb), true) ->> 'tipo')
              from ids, cli), '[300000, "ALVARA"]'::jsonb, 'e, no escritório certo, acham a cobrança');
 select is((select array_agg(p.proname::text order by p.proname) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prosecdef
             and p.proname in ('exito_honorarios_do_contrato', 'exito_ja_cobrado', 'exito_quem_avisar', 'exito_nao_cobrado', 'exito_cobrado_no_alvara',

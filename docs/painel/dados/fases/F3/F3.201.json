@@ -1,12 +1,12 @@
 {
   "id": "F3.201",
-  "texto": "Exclusão a pedido do titular: limpar também o texto livre do êxito (exitos_conferir.explicacao, o combinado da cobrança no alvará e as chaves explicacao e combinado dos avisos do sino do êxito)",
+  "texto": "Exclusão a pedido do titular: limpar também o texto livre do êxito (exitos_conferir.explicacao, o combinado da cobrança no alvará e as chaves explicacao e combinado dos avisos do sino do êxito) e decidir junto o nome do cliente nas partes do alvará (destinacoes.regra e destinacoes.nome da parte CLIENTE)",
   "peca": "B2",
   "refs": [
     "PT-11"
   ],
   "status": "pendente",
   "ordem": 1550,
-  "nota": "Plano F3.194/F3.192/F3.191 (v5; nota 9 da primeira revisão, C3 da Parte C e LGPD), que pedia para ampliar a nota da F3.193. A F3.193 foi feita na main (PR #208, 1132 e 1133) só com parcela_baixas.explicacao, então o resto vira este item: exitos_conferir.explicacao; o combinado da cobrança no alvará (exito_cobrancas_alvara.combinado, tabela da F3.191 que só aceita inserção: a exceção da anonimização entra aqui, no molde do guardião da 1110 e da 1132, com o valor novo calculado do antigo e só com o cliente EXCLUIDO); a chave combinado do sino EXITO_COBRADO_NO_ALVARA; e a explicacao do sino EXITO_NAO_COBRADO. Até lá, como já acontece com exitos_conferir.explicacao, a exclusão do titular não limpa esses textos.",
-  "proximo": "Planejar a limpeza dos textos livres do êxito na exclusão do cliente, agora com a tabela exito_cobrancas_alvara e o sino EXITO_COBRADO_NO_ALVARA já no repositório (1104, F3.191)"
+  "nota": "Plano F3.194/F3.192/F3.191 (v5; nota 9 da primeira revisão, C3 da Parte C e LGPD), que pedia para ampliar a nota da F3.193. A F3.193 foi feita na main (PR #208, 1132 e 1133) só com parcela_baixas.explicacao, então o resto vira este item: exitos_conferir.explicacao; o combinado da cobrança no alvará (exito_cobrancas_alvara.combinado, tabela da F3.191 que só aceita inserção: a exceção da anonimização entra aqui, no molde do guardião da 1110 e da 1132, com o valor novo calculado do antigo e só com o cliente EXCLUIDO); a chave combinado do sino EXITO_COBRADO_NO_ALVARA; e a explicacao do sino EXITO_NAO_COBRADO. Até lá, como já acontece com exitos_conferir.explicacao, a exclusão do titular não limpa esses textos. Revisão de código da F3.191 (REVISAO-CODIGO-F3-191, L6): a regra que o servidor grava na parte de honorários cobrada leva o primeiro nome do cliente (\"combinado com Sebastião\"; o nome inteiro para PJ), o mesmo tipo de dado da destinacoes.nome da parte CLIENTE, que já guarda o nome inteiro (0280:377) e que nenhuma exclusão limpa hoje; não é vazamento novo, mas a limpeza das duas colunas é decidida aqui.",
+  "proximo": "Planejar a limpeza dos textos livres do êxito na exclusão do cliente (exito_cobrancas_alvara.combinado e os sinos, já no repositório pela 1104) e decidir junto destinacoes.regra e destinacoes.nome da parte CLIENTE"
 }

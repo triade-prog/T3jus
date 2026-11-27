@@ -93,25 +93,33 @@ export function tetoDoExito(nc: Pick<ExitoNaoCobrado, "limite" | "jaCobrado">): 
 
 export interface ErrosNaoCobrado { grupo?: string; valor?: string; combinado?: string; concordou?: string }
 
+/** "Cobrar" com a linha de honorários tirada (revisão, M3): erro no grupo, e não "Deixar sem" calado. */
+export const COBRAR_SEM_LINHA = "Você escolheu cobrar, mas tirou a linha de honorários. Ponha a linha de volta ou escolha deixar sem.";
+const COBRAR_SEM_LINHA_CURTO = "Ponha a linha de honorários de volta ou escolha deixar sem.";
+
 /** Os erros antes de enviar (enc-erro, enc-erro-cobrar). `honorarios`: a soma das linhas de honorários. */
 export function errosDoNaoCobrado(nc: ExitoNaoCobrado, escolha: EscolhaNaoCobrado | null, combinado: string, concordou: boolean,
   honorarios: number, cliente: string): ErrosNaoCobrado {
   const pn = primeiroNome(cliente);
+  // Sem a escolha possível, a proposta não traz a linha, e a tela não acrescenta honorários à mão
+  // (PARA_ACRESCENTAR): a parte mandada por fora é recusada no servidor (revisão, L1).
   if (!nc.podeCobrar) return {};
   if (!escolha) return { grupo: `Escolha o que fazer com os honorários do êxito de ${pn}: deixar sem ou cobrar neste alvará.` };
   if (escolha === "SEM") return {};
   const e: ErrosNaoCobrado = {};
+  if (honorarios <= 0) e.grupo = COBRAR_SEM_LINHA;
   if (honorarios > nc.limite) e.valor = `Os honorários passam do êxito calculado na conferência (${reais(nc.limite)}).`;
   if (combinado.trim().length < COMBINADO_MIN) e.combinado = `Escreva o que foi combinado com ${pn}, com pelo menos 3 letras.`;
   if (!concordou) e.concordou = `Confirme que ${pn} concordou com a cobrança.`;
   return e;
 }
 
-/** Os links do resumo no topo, na ordem dos campos. */
+/** Os links do resumo no topo, na ordem dos campos. Com a mensagem do grupo, o link diz o caso certo
+ *  (a linha tirada no "Cobrar"). */
 export function resumoDoNaoCobrado(e: ErrosNaoCobrado, cliente: string): { campo: keyof ErrosNaoCobrado; texto: string }[] {
   const pn = primeiroNome(cliente);
   return [
-    e.grupo ? { campo: "grupo" as const, texto: `Escolha o que fazer com os honorários do êxito de ${pn}.` } : null,
+    e.grupo ? { campo: "grupo" as const, texto: e.grupo === COBRAR_SEM_LINHA ? COBRAR_SEM_LINHA_CURTO : `Escolha o que fazer com os honorários do êxito de ${pn}.` } : null,
     e.valor ? { campo: "valor" as const, texto: "Os honorários passam do êxito calculado na conferência." } : null,
     e.combinado ? { campo: "combinado" as const, texto: `Escreva o que foi combinado com ${pn}.` } : null,
     e.concordou ? { campo: "concordou" as const, texto: `Confirme que ${pn} concordou com a cobrança.` } : null,
@@ -194,12 +202,15 @@ export function origemExitoCobrado(d: Record<string, unknown>): { fez: string; d
   };
 }
 
+/** Onde foi cobrado: "no alvará"; sem o Financeiro, o tipo não vem (revisão, M2) e fica "num levantamento". */
+const noLevantamento = (tipo: string | null | undefined) => (tipo ? `no ${nomeDoLevantamento(tipo)}` : "num levantamento");
+
 /** O acerto na ficha do caso (enc-acerto, enc-acerto-larissa). */
 export function acertoExitoCobrado(c: CobradoNoAlvara, conferido: { por: PessoaRef | null; em: string | null }): { texto: string; sub: string } {
   const nc = `Não cobrado${conferido.por ? ` por ${primeiroNome(conferido.por.nome)}` : ""}${conferido.em ? ` em ${curto(conferido.em)}` : ""}`;
   const quem = `${c.por ? ` por ${primeiroNome(c.por.nome)}` : ""} em ${curto(c.em)}`;
   return {
-    texto: "Êxito não cobrado · cobrado no alvará".replace("alvará", nomeDoLevantamento(c.tipo)),
+    texto: `Êxito não cobrado · cobrado ${noLevantamento(c.tipo)}`,
     sub: `${nc} · ${typeof c.valor === "number" ? `${reais(c.valor)} cobrados` : "cobrado"}${quem}`,
   };
 }
@@ -207,11 +218,13 @@ export function acertoExitoCobrado(c: CobradoNoAlvara, conferido: { por: PessoaR
 /** O passo "Conferir o êxito" da ficha do cliente (enc-ficha-cliente). */
 export function passoExitoCobrado(c: CobradoNoAlvara, conferido: { por: PessoaRef | null; em: string | null }): string {
   const nc = `Não cobrado${conferido.por ? `, por ${primeiroNome(conferido.por.nome)}` : ""}${conferido.em ? ` em ${curto(conferido.em)}` : ""}`;
-  return `${nc} · cobrado no ${nomeDoLevantamento(c.tipo)} de ${curto(c.entrouEm)}${c.por ? `, por ${primeiroNome(c.por.nome)}` : ""}`;
+  // Sem o Financeiro, entrouEm não vem: fica o dia em que foi cobrado (revisão, M2).
+  const quando = c.entrouEm ? ` de ${curto(c.entrouEm)}` : ` em ${curto(c.em)}`;
+  return `${nc} · cobrado ${noLevantamento(c.tipo)}${quando}${c.por ? `, por ${primeiroNome(c.por.nome)}` : ""}`;
 }
 
 /** A ficha do contrato só de êxito (enc-caso-historico): o âmbar e o vazio das parcelas. */
-export function contratoExitoCobrado(c: Pick<CobradoNoAlvara, "tipo" | "entrouEm">): { ambar: string; vazio: string } {
+export function contratoExitoCobrado(c: { tipo: CobradoNoAlvara["tipo"]; entrouEm: string }): { ambar: string; vazio: string } {
   const onde = `no ${nomeDoLevantamento(c.tipo)} de ${curto(c.entrouEm)}`;
   return {
     ambar: `O êxito foi cobrado ${onde}. Os honorários vão ao caixa pela ficha do repasse.`,
