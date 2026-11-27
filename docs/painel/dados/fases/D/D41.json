@@ -6,7 +6,7 @@
     "CO-10",
     "CO-06"
   ],
-  "status": "andamento",
+  "status": "feito",
   "ordem": 91,
-  "nota": "14 estados (plano-v2, seção 4.2), feitos pela especialista de frontend em project-files t3jus/co-10-carne/desenho/; depois da aprovação da Carol, a cópia vai para docs/design/aprovadas/console-cobranca-carne-desconto/."
+  "nota": "APROVADO pela Carol em 27/11/2026 (\"ok\"), com as 5 recomendações do NOTAS.md: selo \"com desconto de entrada\" por extenso; carnê substituído à vista no Portal até a última parcela válida paga ou 60 dias, depois em \"Carnês anteriores\"; motivo do desconto visível ao escritório na fatura, no recibo e no Portal; PDF do carnê antigo disponível com as canceladas \"Cancelada. Não pague.\"; pessoa a mais de R$ 69,00 nos exemplos e testes. 14 estados em docs/design/aprovadas/console-cobranca-carne-desconto/ (desenho publicado em https://claude.ai/artifact/2gUSNth5m1MFAjP5qyYg4x)."
 }
