@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import {
   contaPrestacao, dataBr, hojeBrasilia, TIPOS_REQUISICAO, MOTIVOS_ATRASO_REPASSE, PARA_ACRESCENTAR, PARA_DESTINACAO, reais, somarDiasUteis, textoPrestacaoContas, TIPOS_LEVANTAMENTO,
-  type Destinacao, type ExitoBaixado, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
+  type Destinacao, type ExitoBaixado, type ExitoNaoCobrado, type MotivoAtrasoRepasse, type RequisicaoACaminho, type FichaRepasse, type PendenciaCaso, type Levantamento, type ListaRepasses, type ParaDestinacao, type PropostaRepasse, type TipoLevantamento,
 } from "@t3jus/domain";
 import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -34,6 +34,11 @@ import {
 } from "./baixa.ts";
 import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { avisoLimiteDoExito, fechamentoPagou, linhaCurtaDoExito, textoLancadoDepois, textoPagou } from "./exito_alvara.ts";
+import {
+  ajudasDaEscolha, CONFIRMACAO_COBRADO, errosDoNaoCobrado, fechamentoExitoCobrado, fechamentoExitoNaoCobrado, notaDeixarSem, REGISTRO_COM_COBRANCA,
+  resumoDoNaoCobrado, subtituloNaoCobrado, tetoDoExito, textoExitoCobradoHist, textoExitoNaoCobrado, textoExitoNaoCobradoHist,
+  type EscolhaNaoCobrado,
+} from "./exito_nao_cobrado.ts";
 import { atrasada, FolhaQuemCuida, JanelaAnotarAtraso, JanelaTrocarResponsavel, NotaAtraso, SeloAtraso } from "./RepasseCuida.tsx";
 
 type Feito = { titulo: string; texto: string };
@@ -366,6 +371,19 @@ function linhasDaEscolha(ls: LinhaTela[], base: LinhaTela[], escolha: EscolhaExi
   return [...hon, ...ls, ...custas];
 }
 
+/** A linha de honorários que o "Cobrar" põe de volta (F3.191, enc-cobrar), com a regra do servidor. */
+const HON_NC = "enc-hon";
+
+/** F3.191 (enc-sem, enc-cobrar): "Deixar sem" tira a linha que o "Cobrar" pôs; "Cobrar" a põe no topo,
+ *  com o valor que o servidor propôs (limitado ao que falta do calculado). */
+function linhasDaEscolhaNc(ls: LinhaTela[], escolha: EscolhaNaoCobrado, nc: Pick<ExitoNaoCobrado, "honorarios">): LinhaTela[] {
+  const sem = ls.filter((x) => x.chave !== HON_NC);
+  if (escolha === "SEM" || !nc.honorarios) return sem;
+  if (ls.some((x) => x.chave === HON_NC)) return ls;
+  const h = nc.honorarios;
+  return [{ chave: HON_NC, para: "HONORARIOS", nome: h.nome, regra: h.regra, valor: paraCampo(h.valor), proposta: true }, ...sem];
+}
+
 /** O "R$" nunca se separa do número (NOTAS do desenho, acessibilidade). */
 function comValores(t: string) {
   return t.split(/(R\$\s?[\d.]+,\d{2})/).map((x, i) => (i % 2 ? <span key={i} className="eb-num">{x}</span> : x));
@@ -388,6 +406,8 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
     chave: string; contrato: PropostaRepasse["contrato"]; linhas: LinhaTela[]; base: LinhaTela[]; exito?: PropostaRepasse["exito"]; exitoBaixado: ExitoBaixado[];
     /** F3.199: a situação do êxito e as linhas como vieram (com semLimite), para a linha curta e o aviso do limite. */
     proposta?: Pick<PropostaRepasse, "exitoSituacao" | "linhas">;
+    /** F3.191: o êxito marcado como não cobrado (null quando não há). */
+    nc: ExitoNaoCobrado | null;
   } | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [futuro, setFuturo] = useState(false);
@@ -398,6 +418,10 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
   const [porque, setPorque] = useState("");
   const [conflito, setConflito] = useState<{ titulo: string; texto: string } | null>(null);
   const [recarga, setRecarga] = useState(0);
+  // F3.191 (enc-): "Deixar sem" ou "Cobrar", o combinado com o cliente e a caixa "concordou".
+  const [escolhaNc, setEscolhaNc] = useState<EscolhaNaoCobrado | null>(null);
+  const [combinado, setCombinado] = useState("");
+  const [concordou, setConcordou] = useState(false);
   // "Ver a divisão refeita" guarda o que a pessoa já tinha feito, para pôr de volta na divisão nova.
   const guardado = useRef<{ escolha: EscolhaExito | null; baixaId: string | null; porque: string; manuais: LinhaTela[] } | null>(null);
   // Nota 6 da revisão: o clique em "Registrar" com a divisão ainda sendo calculada é anunciado.
@@ -425,6 +449,14 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
   // F3.199 (ea-proposta, ea-exito-pago, ea-exito-falta): sem êxito baixado, a linha curta e o aviso do limite (C3).
   const curta = linhas && !eb ? linhaCurtaDoExito(div!.proposta?.exitoSituacao, nomeCliente) : null;
   const limite = linhas && !eb && div!.proposta ? avisoLimiteDoExito(div!.proposta, nomeCliente, tipo || null) : null;
+  // F3.191 (enc-proposta): o êxito marcado como não cobrado. Nunca vem junto com o êxito baixado.
+  const nc = linhas && !eb ? div!.nc : null;
+  const nomeCaso = casos.find((c) => c.id === casoId)?.nome ?? "";
+  const txNc = nc ? textoExitoNaoCobrado(nc, nomeCliente, nomeCaso, tipo || null) : null;
+  const ajNc = nc ? ajudasDaEscolha(nc, nomeCliente, total ?? 0) : null;
+  const honNc = (linhas ?? []).filter((x) => x.para === "HONORARIOS").reduce((t, x) => t + (lerCentavos(x.valor) ?? 0), 0);
+  const msgNc = nc ? errosDoNaoCobrado(nc, escolhaNc, combinado, concordou, honNc, nomeCliente) : {};
+  const iHonNc = (linhas ?? []).findIndex((x) => x.chave === HON_NC);
 
   // A proposta pelo contrato, quando o caso, o cliente e o valor estão escritos.
   useEffect(() => {
@@ -444,10 +476,13 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
       const comManuais = [...linhasProposta, ...(g?.manuais ?? [])];
       setEscolha(escolhaVolta);
       setPorque(g?.porque ?? "");
+      // F3.191: a escolha do não cobrado recomeça com cada proposta; o combinado e a caixa ficam.
+      setEscolhaNc(null);
       setDiv({ chave: chaveAtual, contrato: r.ok ? r.dados.contrato : null,
         linhas: escolhaVolta && ebNovo ? linhasDaEscolha(comManuais, linhasProposta, escolhaVolta, ebNovo) : comManuais, base: linhasProposta,
         exito: r.ok ? r.dados.exito : undefined, exitoBaixado,
-        proposta: r.ok ? { exitoSituacao: r.dados.exitoSituacao, linhas: r.dados.linhas } : undefined });
+        proposta: r.ok ? { exitoSituacao: r.dados.exitoSituacao, linhas: r.dados.linhas } : undefined,
+        nc: r.ok && !ebNovo ? r.dados.exitoNaoCobrado ?? null : null });
     });
   }, [chaveAtual, casoId, clienteId, total, recarga]);
 
@@ -468,6 +503,12 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
     setErros((es) => es.filter((c) => c !== "exito" && (x === "DESFAZER" || c !== "porque")));
     if (x === "DESFAZER" && !porque.trim()) setPorque(porQueDesfazer(tipo || null, total, lerDia(dia)));
     setLinhas((ls) => linhasDaEscolha(ls, div.base, x, eb));
+  };
+  const escolherNc = (x: EscolhaNaoCobrado) => {
+    if (!nc) return;
+    setEscolhaNc(x);
+    setErros((es) => es.filter((c) => c !== "enc-grupo" && (x === "COBRAR" || !c.startsWith("enc-"))));
+    setLinhas((ls) => linhasDaEscolhaNc(ls, x, nc));
   };
   const verRefeita = () => {
     guardado.current = { escolha, baixaId: eb?.baixa.id ?? null, porque, manuais: (linhas ?? []).filter((x) => !x.proposta) };
@@ -496,6 +537,12 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
       if (ee.exito) e.push("exito");
       if (ee.porque) e.push("porque");
     }
+    if (nc) {
+      if (msgNc.grupo) e.push("enc-grupo");
+      if (msgNc.valor) e.push("enc-valor");
+      if (msgNc.combinado) e.push("enc-comb");
+      if (msgNc.concordou) e.push("enc-conc");
+    }
     setFuturo(!!d && d > hoje);
     setFalha(null);
     if (e.length) {
@@ -512,9 +559,13 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
     // Nota 12: exitoBaixadoVisto vai sempre, com [] quando a tela não viu baixa.
     const exitoBaixadoVisto = (div?.exitoBaixado ?? []).map((b) => b.baixa.id);
     const desfazerBaixa = eb && escolha === "DESFAZER" ? { baixaId: eb.baixa.id, explicacao: porque.trim() } : undefined;
-    const r = await chamarPortal<{ id: string; exitoBaixado?: { parcelaId?: string; descricao: string; valor: number; paga: boolean }[]; baixaDesfeita?: boolean }>("/v1/escritorio/financeiro/repasses", {
+    // F3.191: exitoNaoCobradoVisto vai sempre, com [] quando a tela não viu não cobrado.
+    const exitoNaoCobradoVisto = div?.nc ? [div.nc.exitoId] : [];
+    const cobrarExitoNaoCobrado = nc && escolhaNc === "COBRAR" ? { exitoId: nc.exitoId, explicacao: combinado.trim(), clienteConcordou: true as const } : undefined;
+    const r = await chamarPortal<{ id: string; exitoBaixado?: { parcelaId?: string; descricao: string; valor: number; paga: boolean }[]; baixaDesfeita?: boolean; exitoCobrado?: boolean }>("/v1/escritorio/financeiro/repasses", {
       metodo: "POST",
-      corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, exitoBaixadoVisto, ...(desfazerBaixa ? { desfazerBaixa } : {}), ...(de ? { requisicaoId: de.id } : {}) },
+      corpo: { tipo, casoId, clienteId, valor: total, entrouEm: d, divisao, exitoBaixadoVisto, exitoNaoCobradoVisto, ...(desfazerBaixa ? { desfazerBaixa } : {}),
+        ...(cobrarExitoNaoCobrado ? { cobrarExitoNaoCobrado } : {}), ...(de ? { requisicaoId: de.id } : {}) },
     });
     saindo.current = false;
     setEnviando(false);
@@ -526,7 +577,8 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
         texto: `${reais(total!)} de terceiros. ${reais(doCliente)} para ${nomeCliente}, até ${dataBr(somarDiasUteis(d!, prazoDias))}.${de ? " Saiu de “A caminho” e da previsão do Caixa." : ""}`
           + (r.dados.baixaDesfeita
             ? ` ${textoExitoDesfeito(pagoNoExito, Math.max((eb?.baixa.valor ?? 0) - pagoNoExito, 0))}`
-            : (r.dados.exitoBaixado ?? []).map((b) => ` A parcela “${b.descricao}” ${b.paga ? "foi baixada" : `recebeu ${reais(b.valor)}`} pela divisão.`).join("")),
+            : (r.dados.exitoBaixado ?? []).map((b) => ` A parcela “${b.descricao}” ${b.paga ? "foi baixada" : `recebeu ${reais(b.valor)}`} pela divisão.`).join(""))
+          + (r.dados.exitoCobrado ? ` ${CONFIRMACAO_COBRADO}` : ""),
       });
     }
     const c = conflitoDoExito(r.erro.detalhes, hoje, nomeCliente);
@@ -534,15 +586,25 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       // A explicação do desfazer (o banco a confere no desfazer que já existe) volta ao "Por que desfazer".
-      setErros(campos.map((x) => (x === "clienteId" ? "casoId" : x === "explicacao" ? "porque" : String(x))));
+      // F3.191: o combinado, a caixa e o valor acima do calculado voltam aos campos do "Cobrar".
+      const CAMPOS_NC: Record<string, string> = {
+        "cobrarExitoNaoCobrado.explicacao": "enc-comb", "cobrarExitoNaoCobrado.clienteConcordou": "enc-conc", cobrarExitoNaoCobrado: "enc-conc", honorarios: "enc-valor",
+      };
+      setErros(campos.map((x) => (x === "clienteId" ? "casoId" : x === "explicacao" ? "porque" : CAMPOS_NC[String(x)] ?? String(x))));
       setFuturo(false);
       return focarPrimeiroErro(corpo.current);
     }
     setFalha(textoDoErro(r.erro));
   }
 
+  // F3.191 (enc-erro, enc-erro-cobrar): o resumo, com um link para cada campo.
+  const ID_NC = { grupo: "enc-op-sem", valor: `rp-v-${iHonNc}`, combinado: "enc-comb", concordou: "enc-conc" } as const;
+  const errosNc = nc ? resumoDoNaoCobrado({
+    grupo: tem("enc-grupo") ? "x" : undefined, valor: tem("enc-valor") ? "x" : undefined,
+    combinado: tem("enc-comb") ? "x" : undefined, concordou: tem("enc-conc") ? "x" : undefined,
+  }, nomeCliente).map((x) => ({ id: ID_NC[x.campo], texto: x.texto })) : [];
   const errosEb = [tem("exito") && { id: "eb-op-desfazer", texto: `Escolha o que fazer com o êxito de ${pn}.` },
-    tem("porque") && { id: "eb-porque", texto: "Escreva por que desfazer." }].filter(Boolean) as { id: string; texto: string }[];
+    tem("porque") && { id: "eb-porque", texto: "Escreva por que desfazer." }, ...errosNc].filter(Boolean) as { id: string; texto: string }[];
   const ir = (id: string) => (ev: MouseEvent) => {
     ev.preventDefault();
     document.getElementById(id)?.focus();
@@ -645,7 +707,7 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
             </p>
           </fieldset>
         ) : (
-        <fieldset className="rp-div" aria-describedby={descritoPor(!!eb && "eb-aviso", !!limite && "ea-limite", tem("divisao") && "rp-div-er")}>
+        <fieldset className="rp-div" aria-describedby={descritoPor((!!eb || !!nc) && "eb-aviso", !!limite && "ea-limite", tem("divisao") && "rp-div-er")}>
           <legend>Divisão {contrato ? `proposta pelo contrato ${contrato.numero}` : "do valor"}</legend>
           {!linhas ? (
             <p className="ajuda">{buscando ? "Calculando a divisão pelo contrato…" : "Escolha o caso e escreva o valor para ver a divisão."}</p>
@@ -664,6 +726,14 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
                         {x.proposta ? (
                           <div className="fi-quem">
                             <strong>{x.nome}</strong>{x.regra ? <small>{x.regra}</small> : null}
+                            {/* F3.191 (enc-cobrar): o teto e, no erro, a mensagem presa à linha. */}
+                            {x.chave === HON_NC && nc ? (
+                              <>
+                                <small className="enc-teto" id="enc-teto"><Icone nome="ajuda" className="ico" />{comValores(tetoDoExito(nc))}</small>
+                                {tem("enc-valor") && msgNc.valor
+                                  ? <p className="erro-msg enc-er-v" id="enc-v-er"><Icone nome="alerta" className="ico ico-s" />{comValores(msgNc.valor)}</p> : null}
+                              </>
+                            ) : null}
                             {/* F3.174 (nota 1): na célula, só a linha curta; o aviso fica abaixo da tabela. */}
                             {x.para === "HONORARIOS" && eb ? (
                               escolha === "DESFAZER"
@@ -698,7 +768,9 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
                         <div className="rp-valor-in">
                         <label className="sr" htmlFor={`rp-v-${i}`}>Valor de {x.nome || "esta parte"}</label>
                         <input className="entrada num" id={`rp-v-${i}`} type="text" inputMode="decimal" autoComplete="off" value={x.valor}
-                          onChange={(e) => mudar(x.chave, "valor", e.target.value)} />
+                          onChange={(e) => mudar(x.chave, "valor", e.target.value)}
+                          aria-describedby={x.chave === HON_NC && nc ? descritoPor("enc-teto", tem("enc-valor") && "enc-v-er") : undefined}
+                          aria-invalid={(x.chave === HON_NC && tem("enc-valor")) || undefined} />
                         <button className="btn btn-fantasma btn-compacto" type="button" onClick={() => setLinhas((ls) => ls.filter((y) => y.chave !== x.chave))}>
                           <Icone nome="xis" className="ico" /><span className="sr">Tirar {x.nome || "esta parte"} da divisão</span>
                         </button>
@@ -763,6 +835,62 @@ function JanelaRegistrar({ casos, prazoDias, de, temContratos, aoFechar, aoFeito
                       </p>
                     ) : null}
                   </fieldset>
+                </section>
+              ) : null}
+              {nc && txNc && ajNc ? (
+                // F3.191 (enc-proposta, enc-indevido): o aviso e a escolha, no molde do eb-, abaixo da tabela.
+                <section className="eb-aviso" aria-labelledby="eb-aviso-t">
+                  <div className="eb-txt" id="eb-aviso">
+                    <h3 id="eb-aviso-t"><Icone nome="alerta" className="ico" />{txNc.titulo}</h3>
+                    <p className="eb-det">{comValores(txNc.detalhe)}</p>
+                    {txNc.parcial ? <p className="eb-det">{comValores(txNc.parcial)}</p> : null}
+                    {txNc.explicacao ? <p className="eb-expl"><q>{txNc.explicacao}</q></p> : null}
+                    <p>{txNc.texto}</p>
+                    {txNc.semEscolha ? <p className="enc-sem-ops"><Icone nome="pessoas" className="ico" /><span>{txNc.semEscolha}</span></p> : null}
+                  </div>
+                  {nc.podeCobrar ? (
+                    <fieldset className="eb-ops" aria-describedby={tem("enc-grupo") ? "enc-ops-er" : undefined}>
+                      <legend>O que fazer com os honorários do êxito de {pn}</legend>
+                      {tem("enc-grupo") && msgNc.grupo ? <ErroCampo id="enc-ops-er">{msgNc.grupo}</ErroCampo> : null}
+                      <div className="eb-ops-l">
+                        <label className="opcao">
+                          <input className="marcar" type="radio" name="enc-exito" id="enc-op-sem" value="SEM" checked={escolhaNc === "SEM"}
+                            onChange={() => escolherNc("SEM")} aria-invalid={tem("enc-grupo") || undefined} />
+                          <span>Deixar sem os honorários<small>{comValores(ajNc.sem)}</small></span>
+                        </label>
+                        <label className="opcao">
+                          <input className="marcar" type="radio" name="enc-exito" id="enc-op-cobrar" value="COBRAR" checked={escolhaNc === "COBRAR"}
+                            onChange={() => escolherNc("COBRAR")} aria-invalid={tem("enc-grupo") || undefined} />
+                          <span>Cobrar os honorários neste {nomeDoLevantamento(tipo || null)}<small>{ajNc.cobrar}</small></span>
+                        </label>
+                      </div>
+                      {escolhaNc === "SEM" ? (
+                        <p className="eb-nota" role="status">
+                          <Icone nome="historico" className="ico" />
+                          <span>{notaDeixarSem(nomeCliente)}</span>
+                        </p>
+                      ) : null}
+                      {escolhaNc === "COBRAR" ? (
+                        <div className="enc-cobrar">
+                          <div className="campo">
+                            <label htmlFor="enc-comb">O que foi combinado com {pn}</label>
+                            <textarea className="entrada" id="enc-comb" maxLength={1000} value={combinado} onChange={(e) => setCombinado(e.target.value)}
+                              aria-invalid={tem("enc-comb") || undefined} aria-describedby={descritoPor("enc-comb-aj", tem("enc-comb") && "enc-comb-er")} />
+                            <p className="ajuda" id="enc-comb-aj">Fica na ficha do repasse e na ficha do contrato. O cliente vê os honorários na prestação de contas.</p>
+                            {tem("enc-comb") ? <ErroCampo id="enc-comb-er">Escreva o que foi combinado com {pn}, com pelo menos 3 letras.</ErroCampo> : null}
+                          </div>
+                          <div>
+                            <label className="opcao">
+                              <input className="marcar" type="checkbox" id="enc-conc" checked={concordou} onChange={(e) => setConcordou(e.target.checked)}
+                                aria-invalid={tem("enc-conc") || undefined} aria-describedby={tem("enc-conc") ? "enc-conc-er" : undefined} />
+                              <span>{pn} concordou com a cobrança destes honorários.</span>
+                            </label>
+                            {tem("enc-conc") ? <ErroCampo id="enc-conc-er">Confirme que {pn} concordou com a cobrança.</ErroCampo> : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </fieldset>
+                  ) : null}
                 </section>
               ) : null}
               {limite ? (
@@ -1049,7 +1177,9 @@ const FRASES: Record<string, (d: Record<string, unknown>) => string> = {
   "financeiro.repasse_atraso": (d) => `anotou o atraso de ${String(d.parte ?? "uma parte")}: ${MOTIVOS_ATRASO_REPASSE[d.motivo as MotivoAtrasoRepasse]?.curto ?? "motivo"}`,
 };
 
-function detalheHistorico(acao: string, d: Record<string, unknown>): string | null {
+function detalheHistorico(acao: string, d: Record<string, unknown>, cobrouExito = false): string | null {
+  // F3.191 (enc-historico): com "Cobrar", a linha volta por escolha, e não por ajuste à mão.
+  if (acao === "financeiro.levantamento" && cobrouExito) return REGISTRO_COM_COBRANCA;
   if (acao === "financeiro.levantamento") return d.seguiuProposta ? "divisão do contrato aceita sem mudança" : "divisão ajustada à mão";
   if (acao === "financeiro.repasse_dispensado") return String(d.motivo ?? "");
   if (acao === "financeiro.repasse_feito" && d.feitoEm) return `dinheiro saiu em ${dataBr(String(d.feitoEm))}`;
@@ -1065,6 +1195,7 @@ function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
     [f.responsavel.id, f.responsavel.nome],
   ]);
   const dias: { dia: string; itens: FichaRepasse["historico"] }[] = [];
+  const cobrouExito = f.historico.some((h) => h.acao === "financeiro.levantamento_exito_cobrado");
   for (const e of f.historico) {
     const dia = diaDoInstante(e.em);
     const ult = dias[dias.length - 1];
@@ -1094,6 +1225,32 @@ function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
                   </li>
                 );
               }
+              // F3.191 (enc-historico, enc-historico-sem): o êxito não cobrado, ao registrar.
+              if (e.acao === "financeiro.levantamento_exito_cobrado") {
+                const t = textoExitoCobradoHist(e.dados, f.cliente.nome, e.por, String(e.dados.tipo ?? f.tipo));
+                return (
+                  <li key={`${e.em}-${i}`} className="eb-hist-novo enc-hist">
+                    <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
+                    <span className="pto" aria-hidden="true" />
+                    <div>
+                      <p>{t.antes}{t.combinado ? <> <q>{t.combinado}</q></> : null} {t.depois}</p>
+                      <small>{t.quem}</small>
+                    </div>
+                  </li>
+                );
+              }
+              if (e.acao === "financeiro.levantamento_exito_nao_cobrado") {
+                return (
+                  <li key={`${e.em}-${i}`} className="eb-hist-novo">
+                    <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
+                    <span className="pto" aria-hidden="true" />
+                    <div>
+                      <p>{textoExitoNaoCobradoHist(e.dados, f.cliente.nome)}</p>
+                      <small>{quemRegistrou(e.por?.nome, String(e.dados.tipo ?? f.tipo))}</small>
+                    </div>
+                  </li>
+                );
+              }
               // F3.199 (ea-repasse): o êxito lançado depois do alvará, pago por esta parte.
               if (e.acao === "financeiro.levantamento_exito_lancado_depois") {
                 const t = textoLancadoDepois(e.dados, f.cliente.nome, e.em, e.por);
@@ -1105,7 +1262,7 @@ function HistoricoRepasse({ f, hoje }: { f: FichaRepasse; hoje: string }) {
                   </li>
                 );
               }
-              const det = detalheHistorico(e.acao, e.dados);
+              const det = detalheHistorico(e.acao, e.dados, cobrouExito);
               return (
                 <li key={`${e.em}-${i}`}>
                   <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
@@ -1159,6 +1316,9 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
   if (!dados) return <Carregando rotulo="Carregando o repasse…" linhas={5} />;
   const f = dados;
   const mantido = f.historico.find((h) => h.acao === "financeiro.levantamento_exito_mantido");
+  // F3.191: o êxito não cobrado, cobrado ou deixado fora ao registrar.
+  const ncCobrado = f.historico.find((h) => h.acao === "financeiro.levantamento_exito_cobrado");
+  const ncSem = f.historico.find((h) => h.acao === "financeiro.levantamento_exito_nao_cobrado");
   const abertas = f.destinacoes.filter(pendente);
   const faltaPagar = abertas.reduce((s, d) => s + d.valor, 0);
   const pago = f.destinacoes.filter((d) => d.situacao === "FEITO").reduce((s, d) => s + d.valor, 0);
@@ -1230,7 +1390,10 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
                 {/* F3.174 (eb-historico): registrado com "Manter", sem os honorários do êxito. */}
                 {mantido
                   ? <p className="sub">Sem os honorários do êxito: {mantido.por?.nome ?? f.autor.nome} manteve a baixa sem receber ao registrar.</p>
-                  : <p className="sub">A divisão foi registrada por {f.autor.nome} em {diaCurto(diaDoInstante(f.criadoEm))}.</p>}
+                  : ncCobrado || ncSem
+                    /* F3.191 (enc-historico, enc-historico-sem). */
+                    ? <p className="sub">{subtituloNaoCobrado(!!ncCobrado, ncCobrado?.por ?? null, f.cliente.nome)}</p>
+                    : <p className="sub">A divisão foi registrada por {f.autor.nome} em {diaCurto(diaDoInstante(f.criadoEm))}.</p>}
               </div>
             </div>
             <div className="fi-split">
@@ -1338,6 +1501,13 @@ function RepasseConteudo({ id, aoNome }: { id: string; aoNome: (n: string) => vo
               {mantido ? fechamentoExitoMantido(mantido.dados, f.tipo).map((x, i) => (
                 <li key={`eb-f-${i}`}><Icone nome="check" className="ico" /><span>{x.titulo}<small>{x.detalhe}</small></span></li>
               )) : null}
+              {ncCobrado || ncSem ? (() => {
+                // F3.191 (enc-historico, enc-resumo-fechado): o êxito cobrado no alvará, ou deixado fora.
+                const x = ncCobrado
+                  ? fechamentoExitoCobrado(ncCobrado.dados, f.cliente.nome, ncCobrado.por, f.entrouEm, f.tipo)
+                  : fechamentoExitoNaoCobrado(ncSem!.dados, f.tipo);
+                return <li className={ncCobrado ? "enc-cobrado" : undefined}><Icone nome="check" className="ico" /><span>{x.titulo}<small>{x.detalhe}</small></span></li>;
+              })() : null}
               {f.destinacoes.flatMap((d) => (d.pagou ?? []).map((p) => ({ d, p }))).map(({ d, p }) => {
                 // F3.199: o êxito pago por este levantamento, nos dois caminhos.
                 const x = fechamentoPagou(p, f.tipo);

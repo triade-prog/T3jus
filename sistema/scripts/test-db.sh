@@ -69,3 +69,7 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exito-baixado-div
 
 # O êxito lançado, a divisão do alvará e o "Dispensar" ao mesmo tempo, com commit de verdade (F3.199, CH-07).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exito-lancado-pelo-alvara.sh"
+
+# O êxito não cobrado, o "Não cobrar" e dois "Cobrar" do mesmo êxito na divisão do alvará ao mesmo
+# tempo, com commit de verdade (F3.191, CH-07).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exito-nao-cobrado-divisao.sh"

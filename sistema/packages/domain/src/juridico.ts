@@ -10,6 +10,7 @@ import type { SituacaoContrato } from "./contratos.ts";
 import { TAMANHO_MAXIMO_DOCUMENTO, TIPOS_DOCUMENTO, type TipoDocumento } from "./console.ts";
 import { documentosDoCasoSchema, type InicioDoCaso, type TipoDocumentoPessoal } from "./documentos_pessoais.ts";
 import type { OrigemDados } from "./importacao.ts";
+import type { CobradoNoAlvara } from "./financeiro.ts";
 
 export const AREAS_DIREITO = {
   TRABALHISTA: "Trabalhista",
@@ -220,7 +221,11 @@ export interface ResumoAcertoCaso {
   comValores: boolean;
   levantamentoId: string | null;
   entrou: { tipo: string; em: string; valor: number | null } | null;
-  exitos: { cliente: string; feito: boolean; naoCobrado: boolean; em: string | null; por: PessoaRef | null; valor: number | null }[];
+  exitos: {
+    cliente: string; feito: boolean; naoCobrado: boolean; em: string | null; por: PessoaRef | null; valor: number | null;
+    /** F3.191: o êxito não cobrado que foi cobrado num alvará. O valor só vem com o Financeiro. */
+    cobradoNoAlvara?: CobradoNoAlvara | null;
+  }[];
   repasses: { cliente: string; feito: boolean; em: string | null; prazo: string | null; valor: number | null }[];
   outros: {
     nome: string; valor: number | null; prazo: string | null;

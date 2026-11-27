@@ -9,7 +9,8 @@
 #  c. o lançar segura (já pagou com a parte); o "Dispensar" da mesma parte espera e recusa com BAIXOU_EXITO;
 #  d. o "Dispensar" segura; o lançar espera, pula a parte dispensada, e a parcela nasce aberta;
 #  e. o registrar segura; o "Não cobrar" espera e recusa com HONORARIOS_JA_ENTRARAM (C2);
-#  f. o "Não cobrar" segura; o registrar espera e registra depois, com o êxito já não cobrado.
+#  f. o "Não cobrar" segura; o registrar espera e, com o êxito já não cobrado, recusa os honorários com
+#     EXITO_NAO_COBRADO (1104, F3.191: honorários de êxito não cobrado só com o "Cobrar" e o combinado).
 set -euo pipefail
 PSQL=("${PSQL_BIN:-psql}" -v ON_ERROR_STOP=1 -q -X -tA)
 DIR="$(mktemp -d)"
@@ -120,11 +121,12 @@ select pg_temp.r(xa) || ' ' || pg_temp.r(xb) || ' ' || pg_temp.r(xc) || ' ' || p
 SQL
 )
 
-esperado="1/300000/PAGA 1/300000/PAGA 1/300000/PAGA 0/0/A_VENCER false true PARA_CONFERIR/1 NAO_COBRADO/1"
+esperado="1/300000/PAGA 1/300000/PAGA 1/300000/PAGA 0/0/A_VENCER false true PARA_CONFERIR/1 NAO_COBRADO/0"
 if [ "$resultado" != "$esperado" ] || ! grep -q "BAIXOU_EXITO" "$DIR/c-2" || ! grep -q "HONORARIOS_JA_ENTRARAM" "$DIR/e-2" \
-   || grep -qi "error\|deadlock" "$DIR/a-1" "$DIR/a-2" "$DIR/b-1" "$DIR/b-2" "$DIR/c-1" "$DIR/d-1" "$DIR/d-2" "$DIR/e-1" "$DIR/f-1" "$DIR/f-2"; then
-  echo "exito-lancado-pelo-alvara: esperava '$esperado', BAIXOU_EXITO e HONORARIOS_JA_ENTRARAM; veio '$resultado'"
+   || ! grep -q "EXITO_NAO_COBRADO" "$DIR/f-2" \
+   || grep -qi "error\|deadlock" "$DIR/a-1" "$DIR/a-2" "$DIR/b-1" "$DIR/b-2" "$DIR/c-1" "$DIR/d-1" "$DIR/d-2" "$DIR/e-1" "$DIR/f-1" || grep -qi "deadlock" "$DIR/f-2"; then
+  echo "exito-lancado-pelo-alvara: esperava '$esperado', BAIXOU_EXITO, HONORARIOS_JA_ENTRARAM e EXITO_NAO_COBRADO; veio '$resultado'"
   for f in a-1 a-2 b-1 b-2 c-1 c-2 d-1 d-2 e-1 e-2 f-1 f-2; do echo "--- $f"; cat "$DIR/$f"; done
   exit 1
 fi
-echo "Êxito lançado e divisão ao mesmo tempo: ok (lançar e registrar nas duas ordens pagam a parcela uma vez; lançar antes do \"Dispensar\" recusa com BAIXOU_EXITO; \"Dispensar\" antes deixa a parcela aberta; o \"Não cobrar\" depois do registrar recusa com HONORARIOS_JA_ENTRARAM, e antes dele o registrar espera)"
+echo "Êxito lançado e divisão ao mesmo tempo: ok (lançar e registrar nas duas ordens pagam a parcela uma vez; lançar antes do \"Dispensar\" recusa com BAIXOU_EXITO; \"Dispensar\" antes deixa a parcela aberta; o \"Não cobrar\" depois do registrar recusa com HONORARIOS_JA_ENTRARAM, e antes dele o registrar espera e recusa os honorários com EXITO_NAO_COBRADO)"

@@ -73,7 +73,8 @@ export type TipoAvisoSino =
   | "REPASSE_PASSADO" | "REPASSE_ATRASADO" | "REPASSE_PROXIMA_ACAO"
   | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
   | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18"
-  | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR" | "CASO_ENCERRADO_FINANCEIRO" | "BAIXA_RENEGOCIADA";
+  | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR" | "CASO_ENCERRADO_FINANCEIRO" | "BAIXA_RENEGOCIADA"
+  | "EXITO_COBRADO_NO_ALVARA";
 
 /** Quem recebe o aviso de caso encerrado no financeiro (F3.150): quem encerra contratos ou a responsável. */
 export type PapelCasoFechou = "CONTRATOS" | "RESPONSAVEL";
@@ -117,6 +118,9 @@ export interface AvisoSino {
     exito?: "NAO_COBRADO" | "PAGO"; reembolso?: string; contratoEncerrado?: string; outroCaso?: string; contratoSegue?: string;
     /** Baixa sem receber (F3.139): a parcela e o cliente dela, no caso pronto; o combinado, na renegociação. */
     clienteParcela?: string; combinado?: string;
+    /** O êxito não cobrado cobrado no alvará (F3.191): o caso e o levantamento dos links e o tipo dele.
+     *  valor, calculado e combinado só vêm para quem tem o Financeiro (PT-02). */
+    casoId?: string; levantamentoId?: string; tipo?: string;
     /** Caso encerrado no financeiro (F3.150): o papel de quem recebe, o primeiro cliente do caso, os
      *  contratos que ficaram abertos, os encerrados junto, os que já estavam encerrados, os que seguem
      *  com outro caso e, para a responsável com contrato aberto, quem encerra contratos. Sem valor (PT-02). */

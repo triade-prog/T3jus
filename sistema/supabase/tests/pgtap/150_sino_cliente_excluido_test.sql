@@ -100,10 +100,12 @@ select is((select array_agg(m[1] order by m[1]) from pg_constraint c, regexp_mat
             where c.conname = 'avisos_sino_tipo_check'),
   array['AUTOMACAO_SUGESTAO', 'BAIXA_RENEGOCIADA', 'BASE_DO_MES', 'CARNE_DESATUALIZADO', 'CASO_ABERTO_NA_ASSINATURA',
         'CASO_ENCERRADO_FINANCEIRO', 'CASO_PRONTO_FECHAR', 'CLIENTE_FEZ_18', 'CONTRATO_GERADO', 'CONVERSA_ASSUMIDA', 'CONVERSA_IA',
-        'CONVERSA_PASSADA', 'DOCUMENTOS_INICIO_CHEGARAM', 'DOCUMENTO_CHEGOU', 'EXITO_NAO_COBRADO', 'EXITO_VALOR_MUDOU', 'EXPORTAR_CONTADOR',
+        'CONVERSA_PASSADA', 'DOCUMENTOS_INICIO_CHEGARAM', 'DOCUMENTO_CHEGOU', 'EXITO_COBRADO_NO_ALVARA', 'EXITO_NAO_COBRADO', 'EXITO_VALOR_MUDOU', 'EXPORTAR_CONTADOR',
         'MODELO_APROVADO', 'MODELO_RECUSADO', 'PEDIDO_CHAVE_PIX', 'PEDIDO_CONTRATO', 'PETICAO_DECIDIDA', 'PETICAO_PASSADA',
         'PETICAO_REVISAR', 'PRAZO_2_DIAS', 'REPASSE_ATRASADO', 'REPASSE_PASSADO', 'REPASSE_PROXIMA_ACAO'],
-  'PT-11 F3.172: os 28 tipos do sino são os da varredura (tipo novo decide se cita cliente excluível)');
+  -- F3.191 (1104): EXITO_COBRADO_NO_ALVARA tem origem levantamentos, que já aponta para cliente
+  -- excluível; o cliente sai pela regra geral, e o combinado fica para a F3.201.
+  'PT-11 F3.172: os 29 tipos do sino são os da varredura (tipo novo decide se cita cliente excluível)');
 select is((select array_agg(m[1] order by m[1]) from pg_constraint c, regexp_matches(pg_get_constraintdef(c.oid), '''([a-z_]+)''', 'g') m
             where c.conname = 'avisos_sino_origem_tabela_check'),
   array['automacoes', 'casos', 'clientes', 'contratos', 'conversas', 'escritorios', 'levantamentos', 'peticoes', 'prazos', 'propostas'],

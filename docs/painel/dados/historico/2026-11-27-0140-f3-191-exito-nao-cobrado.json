@@ -1,0 +1,13 @@
+{
+  "data": "27/11/2026",
+  "inicio": "01:40",
+  "fim": "02:51",
+  "texto": "F3.191: na divisão do alvará, o êxito marcado como não cobrado na conferência sai da proposta, e a janela pede a escolha entre deixar sem e cobrar com o combinado com o cliente (nunca para Indevido, nunca acima do calculado), com sino, registro no caso, ficha do repasse e De onde veio (migration 1104, pgTAP 151, corrida nova, telas pelo D40). Publicação na P30; a limpeza do combinado na exclusão do titular segue na F3.201.",
+  "refs": [
+    "F3.191",
+    "F3.201",
+    "P30",
+    "CH-07",
+    "FI-05"
+  ]
+}

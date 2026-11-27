@@ -7,6 +7,7 @@ import { diaCurto } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
 import { juntarComE } from "./clientes.ts";
 import { parcelaCurta } from "./fechamento.ts";
+import { passoExitoCobrado } from "./exito_nao_cobrado.ts";
 
 export type AbaLigada = "propostas" | "contratos" | "casos";
 
@@ -240,7 +241,10 @@ export function detalheDoPassoFechamento(x: PassoFechamento, todos: PassoFechame
   const numeros = juntarComE((x.contratos ?? []).map((c) => c.numero));
   if (x.feito) {
     switch (x.tipo) {
-      case "EXITO": return quem ? `${quem}${x.em ? ` em ${dia(x.em)}` : ""}` : x.naoCobrado ? "Não cobrado" : "Conferido";
+      case "EXITO":
+        // F3.191 (enc-ficha-cliente): o êxito não cobrado que foi cobrado num alvará.
+        if (x.naoCobrado && x.cobradoNoAlvara) return passoExitoCobrado(x.cobradoNoAlvara, { por: x.por ?? null, em: x.em });
+        return quem ? `${quem}${x.em ? ` em ${dia(x.em)}` : ""}` : x.naoCobrado ? "Não cobrado" : "Conferido";
       case "REPASSE": return x.em ? `Repassado em ${dia(x.em)}` : "Repassado";
       case "FINANCEIRO": return quem ? `${quem}${x.em ? ` em ${dia(x.em)}` : ""}` : "Encerrado";
       case "CONTRATO": return x.em ? `Encerrado em ${dia(x.em)}${x.comFinanceiro ? ", junto com o financeiro" : ""}` : "Encerrado";

@@ -10,6 +10,7 @@ import { diasEntre } from "./comercial.ts";
 import { primeiroNome } from "./equipe.ts";
 import { dia, parcelaCurta } from "./fechamento.ts";
 import { ROTAS_FINANCEIRO } from "./financeiro.ts";
+import { acertoExitoCobrado } from "./exito_nao_cobrado.ts";
 
 const LEV: Record<string, string> = { RPV: "RPV recebida", ALVARA: "Alvará levantado", PRECATORIO: "Precatório recebido", ACORDO: "Acordo recebido" };
 const RES: Record<string, string> = { GANHO: "ganho", PERDA: "perda", ACORDO: "acordo" };
@@ -67,6 +68,11 @@ export function itensDoAcerto(a: ResumoAcertoCaso, caso: { encerradoEm: string |
     }
   }
   for (const x of a.exitos) {
+    // F3.191 (enc-acerto, enc-acerto-larissa): o êxito não cobrado que foi cobrado num alvará.
+    if (x.feito && x.naoCobrado && x.cobradoNoAlvara) {
+      itens.push({ tom: "ok", ...acertoExitoCobrado(x.cobradoNoAlvara, { por: x.por, em: x.em }) });
+      continue;
+    }
     itens.push(x.feito
       ? { tom: "ok", texto: x.naoCobrado ? "Êxito não cobrado" : "Êxito conferido",
           sub: v ? [x.valor ? reais(x.valor) : null, x.por ? `por ${primeiroNome(x.por.nome)}` : null, x.em ? `em ${dia(x.em)}` : null].filter(Boolean).join(" · ") : undefined }
