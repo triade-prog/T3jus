@@ -1,0 +1,425 @@
+{
+ "resumo": {
+  "capturas": 42,
+  "violacoes_axe": 0,
+  "rolagem_lateral": 0,
+  "erros_de_script": 0,
+  "alvos_menores_que_44": 0,
+  "contraste_ok": true,
+  "qr_ok": true,
+  "pdfs": [
+   {
+    "pdf": "carne-desconto-exemplo.pdf",
+    "paginas": 5,
+    "tamanho": "594.96 x 841.92 pts (A4)",
+    "qr_esperados": 12,
+    "qr_lidos": 12,
+    "qr_iguais_ao_copia_e_cola": 12
+   },
+   {
+    "pdf": "fatura-carne-desconto-exemplo.pdf",
+    "paginas": 1,
+    "tamanho": "594.96 x 841.92 pts (A4)",
+    "qr_esperados": 1,
+    "qr_lidos": 1,
+    "qr_iguais_ao_copia_e_cola": 1
+   },
+   {
+    "pdf": "recibo-carne-desconto-exemplo.pdf",
+    "paginas": 1,
+    "tamanho": "594.96 x 841.92 pts (A4)",
+    "qr_esperados": 0,
+    "qr_lidos": 0,
+    "qr_iguais_ao_copia_e_cola": 0
+   }
+  ]
+ },
+ "contraste": [
+  {
+   "par": "selo “com desconto de entrada”: #4F1D35 sobre #F2CDB3",
+   "razao": 9.08,
+   "minimo": 4.5,
+   "ok": true
+  },
+  {
+   "par": "selo no canhoto pago: #4F1D35 sobre branco",
+   "razao": 13.46,
+   "minimo": 4.5,
+   "ok": true
+  },
+  {
+   "par": "valor da parcela: #2A1A22 sobre branco",
+   "razao": 16.54,
+   "minimo": 4.5,
+   "ok": true
+  },
+  {
+   "par": "valor cancelado (riscado): #6E5562 sobre #F2ECE8",
+   "razao": 5.72,
+   "minimo": 4.5,
+   "ok": true
+  },
+  {
+   "par": "nota e legenda das faixas: #6E5562 sobre branco",
+   "razao": 6.69,
+   "minimo": 4.5,
+   "ok": true
+  },
+  {
+   "par": "motivo escrito pelo sistema: #2A1A22 sobre #F2ECE8",
+   "razao": 14.13,
+   "minimo": 4.5,
+   "ok": true
+  },
+  {
+   "par": "selo “Substituído”: #6E5562 sobre #F2ECE8",
+   "razao": 5.72,
+   "minimo": 4.5,
+   "ok": true
+  },
+  {
+   "par": "PDF, marca “desc.”: #4F1D35 sobre #F2CDB3",
+   "razao": 9.08,
+   "minimo": 4.5,
+   "ok": true
+  }
+ ],
+ "capturas": [
+  {
+   "nome": "carne-desconto",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-desconto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-desconto-meio",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-desconto-meio",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-pulou-adiantada",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-pulou-adiantada",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "editar-desconto",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "editar-desconto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "editar-desconto-erros",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "editar-desconto-erros",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "desconto-troca",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "desconto-troca",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "desconto-troca-feito",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "desconto-troca-feito",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "desconto-troca-pessoas",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "desconto-troca-pessoas",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-novo-faixas",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-novo-faixas",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-valor-mudou",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-valor-mudou",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "mudar-plano-carne",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "mudar-plano-carne",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-historico",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "carne-historico",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-desconto",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-desconto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-desconto-pessoa",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "fatura-desconto-pessoa",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "portal-desconto",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "portal-desconto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "portal-trocado",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "portal-trocado",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-carne-desconto",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-carne-desconto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-carne-trocado",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-carne-trocado",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-fatura-desconto",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-fatura-desconto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-fatura-pessoa",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-fatura-pessoa",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-recibo-desconto",
+   "tam": "computador",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  },
+  {
+   "nome": "pdf-recibo-desconto",
+   "tam": "celular",
+   "rolagem": 0,
+   "viol": [],
+   "erros": [],
+   "pequenos": []
+  }
+ ]
+}
