@@ -5,7 +5,7 @@
 -- clientes excluídos antes da 1110 entram pela função da 1111, também com o escritório só de
 -- consulta (revisão, M1). Os avisos de conversa ficam para a F3.157 (revisão, M4; teste 155).
 begin;
-select plan(47);
+select plan(48);
 
 select ajustar_relogio(('2026-11-25 10:00-03'::timestamptz - now()));
 
@@ -194,10 +194,14 @@ select is((teste.erro($$ update avisos_sino set dados = dados || '{"cliente": "C
   'TC023', 'PT-03 F3.172: em aviso de cliente ativo, os dados continuam sem mudar');
 
 -- 5. O aviso que nasce de cliente já excluído nasce com a troca.
-select portal_proposta_pedir_contrato(diego, rm, pr.hel_sem_pedido) from ids, pr;
+-- Desde a F3.181 (1140), pedir o contrato do cliente excluído é recusado, e nenhum aviso nasce. A
+-- defesa do nascer continua provada pelo UPDATE direto da proposta (revisão da F3.181, b7).
+select is((teste.erro($$ select portal_proposta_pedir_contrato(diego, rm, pr.hel_sem_pedido) from ids, pr $$)) -> 'detalhe' ->> 'motivo',
+  'CLIENTE_EXCLUIDO', 'PT-11 F3.181: pedir o contrato da proposta aceita do cliente já excluído é recusado, sem aviso novo');
+update propostas set contrato_pedido_em = app_now(), contrato_pedido_por = (select diego from ids) where id = (select hel_sem_pedido from pr);
 select ok((select count(*) = 2 and bool_and(dados ->> 'cliente' = 'Cliente excluído' and dados ->> 'servico' = servico_apagado_texto())
              from avisos_sino, pr where origem_id = pr.hel_sem_pedido),
-  'PT-11 F3.172: pedir o contrato da proposta aceita do cliente já excluído gera o aviso com o texto fixo (A1 fica na F3.181)');
+  'PT-11 F3.172: o aviso que nasce de pedido de cliente já excluído (pelo UPDATE direto) nasce com o texto fixo');
 select aviso_sino(rm, diego, null, 'CONTRATO_GERADO', 'propostas', pr.hel,
   jsonb_build_object('contrato', 7, 'proposta', 9, 'servico', 'Divórcio de Helena', 'cliente', 'Helena Prado Souza', 'quem', 'Bianca Torres')) from ids, pr;
 select is((select dados from avisos_sino, pr where tipo = 'CONTRATO_GERADO' and origem_id = pr.hel),

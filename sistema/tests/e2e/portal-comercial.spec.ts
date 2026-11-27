@@ -69,7 +69,7 @@ const ficha = (l: typeof L16, extra: Record<string, unknown> = {}) => ({
   ...l, escopo: "Petição de divórcio consensual com partilha de um apartamento.\nCustas e taxas de cartório ficam por conta da cliente.", validaAte: dia(12), enviadaEm: em(-6, "16:40"),
   respondidaEm: null, motivoRecusa: null, origem: "INDICACAO_CLIENTE", versao: 3,
   retornoCompleto: l.retorno ? { ...(l.retorno as object), oque: "Responder à contraproposta: ela pediu 5 parcelas", responsavel: l.responsavel } : null,
-  podeContrato: true, quemTemContratos: ["Marina Ribeiro", "Felipe Matos"], contratoPedidoEm: null,
+  podeContrato: true, quemTemContratos: ["Marina Ribeiro", "Felipe Matos"], contratoPedidoEm: null, clienteSituacao: "ATIVO", clienteSaiuEm: null,
   historico: [
     { em: em(0, "09:12"), acao: "proposta.resposta", autor: "Marina Ribeiro", dados: { resposta: "MUDANCA", em: dia(0), canal: "WHATSAPP", motivo: null, observacao: "Gabriela pediu 5 parcelas no lugar de 4." } },
     { em: em(0, "09:12"), acao: "estado.mudou", autor: "Marina Ribeiro", dados: { de: "ENVIADA", para: "NEGOCIACAO" } },
@@ -310,6 +310,43 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await expect(page.locator(".dir .pc-pedido")).toContainText("Contrato pedido");
     await expect(page.getByRole("button", { name: "Pedir o contrato" })).toHaveCount(0);
     expect(pedidos.some((p) => p.metodo === "POST" && p.caminho.endsWith("/pedir-contrato"))).toBe(true);
+  });
+
+  // F3.181 (desenho portal-exclusao-contratos-conversas, estados proposta-aceita-excluido e -arquivado).
+  test("F3.181: a proposta aceita de cliente excluído não vira contrato, sem botões, sem o Word", async ({ page }) => {
+    await simular(page, {
+      ...comuns(DIEGO_ESC),
+      [`GET /v1/escritorio/propostas/${prop(14)}`]: { corpo: { ...F14, podeContrato: false, contratoPedidoEm: AGORA.toISOString(), escopo: null,
+        clienteSituacao: "EXCLUIDO", clienteSaiuEm: "2026-11-20T13:00:00Z" } },
+    });
+    await page.goto(`${P}/comercial/propostas/${prop(14)}`);
+    await expect(page.locator(".dir")).toContainText("Não vira contrato");
+    await expect(page.locator(".dir")).toContainText("O cliente foi excluído a pedido do titular em 20/11/2026. A proposta fica só como registro.");
+    await expect(page.locator(".dir .pc-pedido")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Pedir o contrato" })).toHaveCount(0);
+    await expect(page.getByText("Você vê a proposta, mas não cria o contrato.")).toHaveCount(0);
+    await expect(page.getByText("Ficam como registro.")).toBeVisible();
+    await expect(page.getByText("Apagado a pedido do titular.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Baixar a proposta (.docx)" })).toHaveCount(0);
+    await expect(page.getByText("O arquivo Word da proposta foi apagado com os dados do cliente.")).toBeVisible();
+    await expect(page.getByText("A proposta aceita vira contrato.")).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("F3.181: o pedir recusado porque o cliente foi arquivado agora há pouco recarrega a proposta", async ({ page }) => {
+    await simular(page, {
+      ...comuns(DIEGO_ESC),
+      [`GET /v1/escritorio/propostas/${prop(14)}`]: [{ corpo: { ...F14, podeContrato: false } },
+        { corpo: { ...F14, podeContrato: false, clienteSituacao: "ARQUIVADO", clienteSaiuEm: "2026-11-20T13:00:00Z" } }],
+      [`POST /v1/escritorio/propostas/${prop(14)}/pedir-contrato`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", mensagem: "Cliente arquivado", detalhes: { motivo: "CLIENTE_ARQUIVADO" } } } },
+    });
+    await page.goto(`${P}/comercial/propostas/${prop(14)}`);
+    await page.getByRole("button", { name: "Pedir o contrato" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Não deu para pedir o contrato." }))
+      .toContainText("O cliente foi arquivado a pedido do titular agora há pouco. A proposta abaixo já mostra como ficou: ela não vira contrato.");
+    await expect(page.locator(".dir")).toContainText("Cliente arquivado não ganha contrato novo.");
+    await expect(page.getByRole("button", { name: "Baixar a proposta (.docx)" })).toBeVisible();
+    await semViolacoes(page);
   });
 
   test("Quem tem Contratos gera o contrato da proposta aceita", async ({ page }) => {

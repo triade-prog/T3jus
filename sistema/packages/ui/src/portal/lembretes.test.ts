@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avisoDispensado, avisoTrazido, buscaVazia, conflitoDispensa, contagemLembretes, grupoDoEndereco, grupoVazio, ROTAS_LEMBRETES, textoCaso, textoLancamentos } from "./lembretes.ts";
+import { avisoDispensado, avisoTrazido, buscaVazia, conflitoDispensa, contagemLembretes, DISPENSA_EXCLUIDO, grupoDoEndereco, grupoVazio, ROTAS_LEMBRETES, textoCaso, textoLancamentos, trazerExcluido } from "./lembretes.ts";
 import { resumoEncerrados, textoComoEncerrou, textoOrigemCaso } from "./juridico.ts";
 
 const marina = { id: "p1", nome: "Marina Ribeiro" };
@@ -78,5 +78,22 @@ describe("o caso que veio de outro sistema (F3.143, F3.148)", () => {
 describe("F3.175: o dia da importação no grupo vazio", () => {
   it("uma importação às 22h30 de Brasília é do próprio dia", () => {
     expect(grupoVazio("ABERTO", 1, "ASTREA", "2026-11-25T01:30:00+00:00").texto).toContain("importação do Astrea de 24/11 virou contrato");
+  });
+});
+
+// F3.186: o cliente excluído com a página aberta (desenho portal-exclusao-contratos-conversas, NOTAS.md, 13).
+describe("cliente excluído com a página aberta (F3.186)", () => {
+  it("a janela de dispensar", () => {
+    expect(DISPENSA_EXCLUIDO).toEqual({
+      abertura: "Os dados do cliente foram excluídos enquanto a janela estava aberta.",
+      titulo: "O cliente foi excluído a pedido do titular.",
+      texto: "O lembrete saiu da lista. Não há o que dispensar, e nada foi gravado. Feche a janela para ver a lista atualizada.",
+    });
+  });
+  it("o trazer de volta, com o primeiro nome", () => {
+    expect(trazerExcluido("Marina Alves Coelho")).toEqual({
+      titulo: "Não deu para trazer de volta. O cliente foi excluído a pedido do titular.",
+      texto: "O lembrete de Marina saiu da lista. Não há o que trazer de volta. A lista abaixo já está atualizada.",
+    });
   });
 });

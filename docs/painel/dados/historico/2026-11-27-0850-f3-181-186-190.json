@@ -1,0 +1,20 @@
+{
+  "data": "27/11/2026",
+  "inicio": "08:50",
+  "fim": "10:50",
+  "texto": "F3.181, F3.186 e F3.190 feitas (primeira entrega do desenho portal-exclusao-contratos-conversas): o pedido de contrato do cliente excluído ou arquivado sai de Contratos e o pedir recusa; a proposta diz que não vira contrato; o lembrete do excluído sai das listas e a janela avisa o valor em aberto; a janela de exclusão conta as conversas do WhatsApp, diz em quem ele assina e traz as linhas do sobre e da baixa (migrations 1140 a 1142, pgTAP 170 a 172, concorrência do pedido de contrato); F3.188 fica para a segunda entrega; F3.204 nova (o Funil); P31 pendente.",
+  "refs": [
+    "F3.181",
+    "F3.186",
+    "F3.190",
+    "F3.188",
+    "F3.204",
+    "P31",
+    "PT-11",
+    "IN-01",
+    "VA-05",
+    "PA-05",
+    "AP-03",
+    "AP-05"
+  ]
+}

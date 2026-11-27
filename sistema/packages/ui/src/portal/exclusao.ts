@@ -5,7 +5,11 @@
 // F3.177 (F3.184): a descrição dos lançamentos do sistema antigo, pelo desenho aprovado em
 // docs/design/aprovadas/portal-exclusao-historico (alternativa A; _fonte/f177.py, linha_historico,
 // guarda e nota_pe).
-import type { ArquivosParaApagar, ArquivosQueFicam, HistoricoQueFica } from "@t3jus/domain";
+// F3.181, F3.186, F3.190, C9, F3.179 e F3.193: as linhas, as dicas e o aviso novos, pelo desenho aprovado
+// em docs/design/aprovadas/portal-exclusao-contratos-conversas (NOTAS.md; _fonte/f181.py). O cadastro
+// não guarda gênero: onde o desenho segue o gênero do cliente, fica o masculino genérico ("outro cliente").
+import type { ArquivosParaApagar, ArquivosQueFicam, AssinaPorOutro, ConversasParaApagar, HistoricoQueFica, LembretesQueSaem } from "@t3jus/domain";
+import { reais } from "@t3jus/domain";
 
 export const EXPLICACAO_UM = "o arquivo é apagado do T3jus. Fica só que existiu: tipo, tamanho e datas, sem o nome do arquivo.";
 export const EXPLICACAO_VARIOS = "os arquivos são apagados do T3jus. Fica só que existiram: tipo, tamanho e datas, sem o nome dos arquivos.";
@@ -108,4 +112,127 @@ export function despesasDoExcluido(q: ArquivosQueFicam | null | undefined): Desp
     faixa = a ? `Fora ${arq} e ${desc}, nada aqui precisa ser guardado por lei.` : `Fora ${desc}, nada aqui precisa ser guardado por lei.`;
   }
   return { descricao, guarda: { arquivos, pasta, historico }, faixa };
+}
+
+// ---------------------------------------------------------------------------------------
+// F3.190, C6, C9, F3.179, F3.193, F3.181 e F3.186.
+
+/** Um pedaço de texto da dica; negrito nos nomes. */
+export type Pedaco = { texto: string; negrito?: boolean };
+
+/** F3.190: a linha das conversas, logo depois dos contatos; null sem conversa que sai. */
+export function linhaConversas(c: ConversasParaApagar | null | undefined): Linha | null {
+  const n = inteiro(c?.conversas);
+  if (!c || !n) return null;
+  let sub = n === 1
+    ? "o número, os nomes de quem escreveu e todas as mensagens e arquivos saem, e ela some de Conversas."
+    : "os números, os nomes de quem escreveu e todas as mensagens e arquivos saem, e elas somem de Conversas.";
+  sub += " Ficam só as datas, quem da equipe atendeu e os momentos (passou, assumiu, devolveu).";
+  const f = inteiro(c.naFila);
+  if (f) sub += f === 1 ? " A mensagem que ainda ia sair não sai mais." : ` As ${f} mensagens que ainda iam sair não saem mais.`;
+  const a = inteiro(c.automacoes);
+  if (a) sub += a === 1 ? " A automação em andamento para." : ` As ${a} automações em andamento param.`;
+  return { texto: n === 1 ? "A conversa do WhatsApp" : `As ${n} conversas do WhatsApp`, explicacao: sub };
+}
+
+/**
+ * C6: a dica da conversa que fica, porque guarda o registro de outro cliente. Vai dentro da linha das
+ * conversas; sem conversa que sai, dentro da linha dos contatos. null sem conversa que fica.
+ */
+export function dicaConversasQueFicam(c: ConversasParaApagar | null | undefined, nome: string): Pedaco[] | null {
+  const k = inteiro(c?.ficam);
+  if (!c || !k) return null;
+  const nomes = (c.ficamCom ?? []).map((x) => x.nome);
+  const mais = inteiro(c.ficamComMais);
+  if (mais) nomes.push(`mais ${mais} ${mais === 1 ? "cliente" : "clientes"}`);
+  // Sem o nome (não deveria acontecer: a conversa fica justamente por causa de outro cliente).
+  if (!nomes.length) nomes.push("outro cliente");
+  const outro = nomes.length === 1 && !mais ? "outro cliente" : "outros clientes";
+  return k === 1
+    ? [{ texto: "1 conversa fica como está, com as mensagens, porque guarda o registro de " }, { texto: junta(nomes), negrito: true },
+       { texto: `, ${outro}. As mensagens de ${nome} nessa conversa também ficam.` }]
+    : [{ texto: `${k} conversas ficam como estão, com as mensagens, porque guardam o registro de ` }, { texto: junta(nomes), negrito: true },
+       { texto: `, ${outro}. As mensagens de ${nome} nessas conversas também ficam.` }];
+}
+
+/** C9: a dica dentro da linha da qualificação; null sem ninguém. */
+export function dicaAssinaPorOutro(lista: AssinaPorOutro[] | null | undefined, nome: string): Pedaco[] | null {
+  if (!lista?.length) return null;
+  // O gênero de quem assina vem do papel (mãe, tutora); pela empresa não diz, e aí vai o nome.
+  const fem = [...new Set(lista.map((x) => x.feminino).filter((x): x is boolean => x !== null))];
+  const dela = fem.length === 1 && lista.every((x) => x.feminino !== null) ? (fem[0] ? "dela" : "dele") : `de ${nome}`;
+  const p: Pedaco[] = [{ texto: `${nome} também assina por ` }];
+  if (lista.length === 1) {
+    const o = lista[0]!;
+    const dele = o.tipo === "PJ" ? "dela" : "dele";
+    p.push({ texto: o.nome, negrito: true },
+      { texto: `, ${o.papel}. O nome e o CPF ${dela} continuam na ficha ${dele}, porque servem ao contrato e à procuração ${dele}.` });
+    return p;
+  }
+  lista.forEach((o, i) => {
+    if (i) p.push({ texto: i === lista.length - 1 ? " e " : ", " });
+    p.push({ texto: o.nome, negrito: true }, { texto: ` (${o.papel})` });
+  });
+  p.push({ texto: `. O nome e o CPF ${dela} continuam nessas fichas, porque servem aos contratos e às procurações delas.` });
+  return p;
+}
+
+/** F3.179: a linha do "sobre" do êxito; null sem proposta com ele. */
+export function linhaSobre(numeros: string[] | null | undefined): Linha | null {
+  if (!numeros?.length) return null;
+  return {
+    texto: numeros.length === 1 ? `Sobre o que se cobra o êxito, na proposta ${numeros[0]}` : `Sobre o que se cobra o êxito, nas propostas ${junta(numeros)}`,
+    explicacao: "o texto livre, como “dos atrasados que a cliente receber”, vira “Base apagada a pedido do titular”. O percentual e as outras condições ficam como estão.",
+  };
+}
+
+/** F3.193: a linha da explicação da baixa sem receber; null sem baixa. */
+export function linhaBaixas(n: number | null | undefined): Linha | null {
+  const k = inteiro(n ?? 0);
+  if (!k) return null;
+  return k === 1
+    ? { texto: "A explicação da baixa sem receber", explicacao: "vira “Explicação apagada a pedido do titular”. A parcela, o valor e a data da baixa continuam no Financeiro." }
+    : { texto: `As explicações das ${k} baixas sem receber`, explicacao: "viram “Explicação apagada a pedido do titular”. A parcela, o valor e a data da baixa continuam no Financeiro." };
+}
+
+/**
+ * F3.181: o pedido de contrato que sai de Contratos. Na janela de excluir, em "O que fica, sem dado
+ * pessoal" (antes da origem); na de arquivar, em "O que acontece" (antes de "O pedido fica registrado").
+ */
+export function linhaPedidosContrato(numeros: string[] | null | undefined, onde: "fica" | "arquivar"): Linha | null {
+  if (!numeros?.length) return null;
+  const n = numeros.length;
+  if (onde === "arquivar") {
+    const fim = "Cliente arquivado não ganha contrato novo, e ninguém consegue pedir de novo.";
+    return n === 1
+      ? { texto: `O pedido de contrato da proposta ${numeros[0]} sai de Contratos`, explicacao: `a proposta fica no Comercial, aceita, como registro. ${fim}` }
+      : { texto: `Os ${n} pedidos de contrato (${junta(numeros)}) saem de Contratos`, explicacao: `as propostas ficam no Comercial, aceitas, como registro. ${fim}` };
+  }
+  const marcas = "com “Cliente excluído” e “Serviço apagado a pedido do titular”.";
+  return n === 1
+    ? { texto: `A proposta ${numeros[0]}, sem o pedido de contrato`,
+        explicacao: `fica no Comercial como registro, ${marcas} O pedido sai de Contratos, porque cliente excluído não ganha contrato.` }
+    : { texto: `As propostas ${junta(numeros)}, sem os pedidos de contrato`,
+        explicacao: `ficam no Comercial como registro, ${marcas} Os pedidos saem de Contratos, porque cliente excluído não ganha contrato.` };
+}
+
+const NO_SISTEMA: Record<string, string> = { ASTREA: "no Astrea", ADVBOX_PLANILHA: "no ADVBOX" };
+const DO_SISTEMA_LEMBRETE: Record<string, string> = { ASTREA: "do Astrea", ADVBOX_PLANILHA: "do ADVBOX" };
+
+/** F3.186 (C10 a): o aviso do valor em aberto, no topo da janela de excluir; null sem lembrete aberto. */
+export function avisoLembrete(l: LembretesQueSaem | null | undefined, nome: string): { titulo: string; texto: string } | null {
+  const n = inteiro(l?.n);
+  if (!l || !n) return null;
+  const valor = inteiro(l.valor);
+  const no = (l.origem && NO_SISTEMA[l.origem]) || "no sistema antigo";
+  const titulo = !valor
+    ? n === 1 ? `Há um lembrete de contrato ${(l.origem && DO_SISTEMA_LEMBRETE[l.origem]) || "do sistema antigo"}, sem valor.`
+      : `Há ${n} lembretes de contrato ${(l.origem && DO_SISTEMA_LEMBRETE[l.origem]) || "do sistema antigo"}, sem valor.`
+    : n === 1 ? `Há ${reais(valor)} em aberto ${no}.` : `Há ${reais(valor)} em aberto ${no}, em ${n} lembretes de contrato.`;
+  const lanc = inteiro(l.lancamentos);
+  const qual = n === 1 ? `É o lembrete de contrato de ${nome}, com ${lanc === 1 ? "1 lançamento" : `${lanc} lançamentos`}. ` : "";
+  return {
+    titulo,
+    texto: `${qual}Depois da exclusão, não dá mais para saber de quem é esse valor, e o lembrete sai de Contratos › Lembretes. Se o escritório vai cobrar, crie o contrato antes: aí o pedido se atende arquivando, sem apagar.`,
+  };
 }

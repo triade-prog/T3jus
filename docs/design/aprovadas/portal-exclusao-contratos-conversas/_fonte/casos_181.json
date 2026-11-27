@@ -1,0 +1,114 @@
+[
+ {
+  "nome": "exc-conversas-uma",
+  "url": "exclusao.html?estado=exc-conversas-uma"
+ },
+ {
+  "nome": "exc-conversas-varias",
+  "url": "exclusao.html?estado=exc-conversas-varias"
+ },
+ {
+  "nome": "exc-conversas-e-fica",
+  "url": "exclusao.html?estado=exc-conversas-e-fica"
+ },
+ {
+  "nome": "exc-so-fica",
+  "url": "exclusao.html?estado=exc-so-fica"
+ },
+ {
+  "nome": "exc-conversas-alternativa-fica",
+  "url": "exclusao.html?estado=exc-conversas-alternativa-fica"
+ },
+ {
+  "nome": "exc-pedido-contrato",
+  "url": "exclusao.html?estado=exc-pedido-contrato"
+ },
+ {
+  "nome": "exc-lembrete",
+  "url": "exclusao.html?estado=exc-lembrete"
+ },
+ {
+  "nome": "exc-lembrete-alternativa-linha",
+  "url": "exclusao.html?estado=exc-lembrete-alternativa-linha"
+ },
+ {
+  "nome": "exc-mesmo-cpf",
+  "url": "exclusao.html?estado=exc-mesmo-cpf"
+ },
+ {
+  "nome": "exc-mesmo-cpf-desmarcado",
+  "url": "exclusao.html?estado=exc-mesmo-cpf-desmarcado"
+ },
+ {
+  "nome": "exc-mesmo-cpf-pedido",
+  "url": "exclusao.html?estado=exc-mesmo-cpf-pedido"
+ },
+ {
+  "nome": "exc-mesmo-cpf-varios",
+  "url": "exclusao.html?estado=exc-mesmo-cpf-varios"
+ },
+ {
+  "nome": "arq-mesmo-cpf",
+  "url": "exclusao.html?estado=arq-mesmo-cpf"
+ },
+ {
+  "nome": "exc-feito-mesmo-cpf",
+  "url": "exclusao.html?estado=exc-feito-mesmo-cpf"
+ },
+ {
+  "nome": "ficha-pedido-mesmo-cpf",
+  "url": "exclusao.html?estado=ficha-pedido-mesmo-cpf"
+ },
+ {
+  "nome": "ficha-pedido-mesmo-cpf-equipe",
+  "url": "exclusao.html?estado=ficha-pedido-mesmo-cpf-equipe"
+ },
+ {
+  "nome": "exc-assina-por-outro",
+  "url": "exclusao.html?estado=exc-assina-por-outro"
+ },
+ {
+  "nome": "exc-sobre-condicao",
+  "url": "exclusao.html?estado=exc-sobre-condicao"
+ },
+ {
+  "nome": "exc-baixa-explicacao",
+  "url": "exclusao.html?estado=exc-baixa-explicacao"
+ },
+ {
+  "nome": "exc-tudo",
+  "url": "exclusao.html?estado=exc-tudo"
+ },
+ {
+  "nome": "arq-pedido-contrato",
+  "url": "exclusao.html?estado=arq-pedido-contrato"
+ },
+ {
+  "nome": "proposta-aceita-excluido",
+  "url": "comercial.html?estado=proposta-aceita-excluido"
+ },
+ {
+  "nome": "proposta-aceita-arquivado",
+  "url": "comercial.html?estado=proposta-aceita-arquivado"
+ },
+ {
+  "nome": "proposta-pedir-recusado",
+  "url": "comercial.html?estado=proposta-pedir-recusado"
+ },
+ {
+  "nome": "novo-contrato-cliente-excluido",
+  "url": "contratos.html?estado=novo-contrato-cliente-excluido"
+ },
+ {
+  "nome": "novo-contrato-cliente-arquivado",
+  "url": "contratos.html?estado=novo-contrato-cliente-arquivado"
+ },
+ {
+  "nome": "lembrete-excluido-na-hora",
+  "url": "lembretes.html?estado=lembrete-excluido-na-hora"
+ },
+ {
+  "nome": "trazer-excluido-na-hora",
+  "url": "lembretes.html?estado=trazer-excluido-na-hora"
+ }
+]

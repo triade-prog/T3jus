@@ -138,6 +138,23 @@ export function conflitoDispensa(d: ConflitoDispensa, cliente: string, agora: Da
   };
 }
 
+/**
+ * F3.186 (desenho portal-exclusao-contratos-conversas): o cliente foi excluído a pedido do titular com a
+ * página aberta (CLIENTE_EXCLUIDO). O lembrete saiu da lista; na janela de dispensar, a frase de abertura
+ * e o aviso; no trazer de volta, o aviso do topo da lista. Sem gênero no cadastro, vai "o cliente".
+ */
+export const DISPENSA_EXCLUIDO = {
+  abertura: "Os dados do cliente foram excluídos enquanto a janela estava aberta.",
+  titulo: "O cliente foi excluído a pedido do titular.",
+  texto: "O lembrete saiu da lista. Não há o que dispensar, e nada foi gravado. Feche a janela para ver a lista atualizada.",
+};
+export function trazerExcluido(cliente: string): { titulo: string; texto: string } {
+  return {
+    titulo: "Não deu para trazer de volta. O cliente foi excluído a pedido do titular.",
+    texto: `O lembrete de ${primeiroNome(cliente)} saiu da lista. Não há o que trazer de volta. A lista abaixo já está atualizada.`,
+  };
+}
+
 /** "Dispensado hoje por Marina Ribeiro" ou "Dispensado em 22/11 por …". */
 export function quandoDispensado(em: string, por: PessoaRef | null, hoje: string): string {
   const dia = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));

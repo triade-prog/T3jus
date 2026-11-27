@@ -144,9 +144,10 @@ select is((select portal_proposta(diego, rm, pr.hel) -> 'condicoes' -> 1 ->> 'so
   'PT-11 F3.179: a ficha da proposta traz o texto fixo');
 select is((select proposta_linha(p) -> 'condicoes' -> 2 ->> 'sobre' from propostas p, pr where p.id = pr.hel), condicao_sobre_apagado_texto(),
   'PT-11 F3.179: a linha da lista do Comercial traz o texto fixo');
-select is((select x -> 'condicoes' -> 1 ->> 'sobre' from ids, pr, jsonb_array_elements(portal_contratos_pedidos(bianca, rm)) x
+-- Desde a F3.181 (1140), o pedido do cliente excluído sai do bloco de Contratos; a cópia nas condições da proposta fica com o texto fixo.
+select is((select count(*)::int from ids, pr, jsonb_array_elements(portal_contratos_pedidos(bianca, rm)) x
             where (x -> 'proposta' ->> 'id')::uuid = pr.hel),
-  condicao_sobre_apagado_texto(), 'PT-11 F3.179: o pedido de contrato em Contratos traz o texto fixo');
+  0, 'PT-11 F3.179 F3.181: o pedido de contrato do cliente excluído sai de Contratos');
 select is((select count(*)::int from historico where dados::text like '%Helena Prado%'), 0,
   'PT-03 F3.179: a exclusão não leva o sobre para o histórico');
 

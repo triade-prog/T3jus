@@ -13,8 +13,12 @@
 // F3.177 (F3.184; desenho portal-exclusao-historico, Carol 26/11/2026, alternativa A): a descrição dos
 // lançamentos do sistema antigo entra no fim do quadro "O que a lei obriga a guardar" (sem arquivo, o
 // quadro vem só com ela), com a data da troca por texto fixo; a frase em negrito da faixa a cita.
+// F3.181, F3.186, F3.190, C9, F3.179 e F3.193 (desenho portal-exclusao-contratos-conversas, Carol
+// 27/11/2026): a linha das conversas e a dica da conversa que fica (C5 e C6), a dica de quem ele assina
+// (C9), as linhas do "sobre" e da baixa, a proposta sem o pedido de contrato em "O que fica" e o aviso do
+// valor em aberto no topo (C10 a); na janela de arquivar, a linha do pedido de contrato (C2).
 
-import { useId, useRef, useState } from "react";
+import { Fragment, useId, useRef, useState } from "react";
 import { CANAIS_PEDIDO, nomeConfere, QUEM_PEDIU, type CanalPedido, type FichaCliente, type PedidoExclusao, type QuemPediu } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
@@ -22,7 +26,10 @@ import { Aviso, descritoPor, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela 
 import { dataLonga, hora } from "../console/tempo.ts";
 import { agoraBrasilia, dataBr, lerData } from "./clientes.ts";
 import { primeiroNome } from "./equipe.ts";
-import { despesasDoExcluido, linhaArquivosParaApagar, PE_GUARDA } from "./exclusao.ts";
+import {
+  avisoLembrete, despesasDoExcluido, dicaAssinaPorOutro, dicaConversasQueFicam, linhaArquivosParaApagar, linhaBaixas, linhaConversas, linhaPedidosContrato,
+  linhaSobre, PE_GUARDA, type Pedaco,
+} from "./exclusao.ts";
 import type { Feito } from "./FichaCliente.tsx";
 import { chamarPortal } from "./Moldura.tsx";
 
@@ -351,6 +358,14 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
   const n = f.atendimentos ?? 0;
   const arquivos = linhaArquivosParaApagar(f.arquivosParaApagar);
   const despesas = despesasDoExcluido(f.arquivosQueFicam);
+  // F3.190, C6, C9, F3.179, F3.193, F3.181 e F3.186 (desenho portal-exclusao-contratos-conversas).
+  const conversas = linhaConversas(f.conversasParaApagar);
+  const ficam = dicaConversasQueFicam(f.conversasParaApagar, primeiro);
+  const assina = dicaAssinaPorOutro(f.assinaPorOutro, primeiro);
+  const sobre = linhaSobre(f.basesDeCondicao);
+  const baixas = linhaBaixas(f.baixasComExplicacao);
+  const pedidos = linhaPedidosContrato(f.saiDeContratos?.pedidos, "fica");
+  const lembrete = avisoLembrete(f.saiDeContratos?.lembretes, primeiro);
 
   async function enviar() {
     setErro(null);
@@ -416,6 +431,13 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
             </Aviso>
           </div>
         ) : null}
+        {lembrete ? (
+          <div className="pd-inteira">
+            <Aviso tom="atencao" icone="carteira" titulo={lembrete.titulo}>
+              {lembrete.texto}
+            </Aviso>
+          </div>
+        ) : null}
         <div className="pd-col">
           <div className="pd-lado pd-some">
             <h3>
@@ -425,6 +447,7 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
               <li>
                 Nome, {f.tipo === "PJ" ? "CNPJ, o representante" : "CPF, RG"} e a qualificação
                 <small>{f.tipo === "PJ" ? "endereço da sede e quem assina pela empresa" : "nacionalidade, estado civil, profissão e endereço"}</small>
+                {assina ? <Dica pedacos={assina} /> : null}
               </li>
               {arquivos ? (
                 <li>
@@ -438,10 +461,30 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
                   <small>{despesas.descricao.explicacao}</small>
                 </li>
               ) : null}
+              {sobre ? (
+                <li>
+                  {sobre.texto}
+                  <small>{sobre.explicacao}</small>
+                </li>
+              ) : null}
+              {baixas ? (
+                <li>
+                  {baixas.texto}
+                  <small>{baixas.explicacao}</small>
+                </li>
+              ) : null}
               <li>
                 {contatos.length === 1 ? "O contato" : `Os ${contatos.length} contatos`}
                 <small>{contatos.map((x) => x.nome).join(", ")}, com telefones e e-mails</small>
+                {ficam && !conversas ? <Dica pedacos={ficam} /> : null}
               </li>
+              {conversas ? (
+                <li>
+                  {conversas.texto}
+                  <small>{conversas.explicacao}</small>
+                  {ficam ? <Dica pedacos={ficam} /> : null}
+                </li>
+              ) : null}
               {f.origemIndicacao ? (
                 <li>
                   Quem indicou<small>{f.origemIndicacao}</small>
@@ -473,6 +516,12 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
                     <Icone nome="alerta" className="ico" />
                     <span>O resumo fica como foi escrito. Resumo de atendimento não deve ter dado pessoal desnecessário, como CPF, endereço ou saúde.</span>
                   </span>
+                </li>
+              ) : null}
+              {pedidos ? (
+                <li>
+                  {pedidos.texto}
+                  <small>{pedidos.explicacao}</small>
                 </li>
               ) : null}
               {f.origem ? (
@@ -575,6 +624,16 @@ export function JanelaExcluir({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }
   );
 }
 
+/** A dica com o ícone de alerta dentro de uma linha (C6 e C9), com os nomes em negrito. */
+function Dica({ pedacos }: { pedacos: Pedaco[] }) {
+  return (
+    <span className="pd-dica">
+      <Icone nome="alerta" className="ico" />
+      <span>{pedacos.map((x, i) => (x.negrito ? <b key={i}>{x.texto}</b> : <Fragment key={i}>{x.texto}</Fragment>))}</span>
+    </span>
+  );
+}
+
 /** Com contrato ou processo, a dona arquiva a pedido (decisão 5, F1.16): nada é apagado. */
 export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito }: {
   aberta: boolean; f: FichaCliente; hoje: string; aoFechar: () => void; aoFeito: (x: Feito) => void; aoConflito: () => void;
@@ -591,6 +650,8 @@ export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito 
   const primeiro = primeiroNome(f.nome);
   const prox = f.proxContato;
   const v = f.vinculosLgpd ?? { contratos: [], processos: [] };
+  // F3.181 (C2): o arquivar também tira o pedido de contrato da lista de Contratos.
+  const pedidos = linhaPedidosContrato(f.saiDeContratos?.pedidos, "arquivar");
 
   async function enviar() {
     setErro(null);
@@ -681,6 +742,12 @@ export function JanelaArquivar({ aberta, f, hoje, aoFechar, aoFeito, aoConflito 
                 <li>
                   O próximo contato de {ddmm(prox.em)} é encerrado
                   <small>sai também do Início de {prox.responsavel.nome}</small>
+                </li>
+              ) : null}
+              {pedidos ? (
+                <li>
+                  {pedidos.texto}
+                  <small>{pedidos.explicacao}</small>
                 </li>
               ) : null}
               <li>

@@ -504,6 +504,19 @@ export interface FichaCliente {
   arquivosParaApagar?: ArquivosParaApagar;
   /** Só para a sócia dona, nas mesmas condições de arquivosParaApagar (F3.156): o que fica guardado pela lei fiscal. */
   arquivosQueFicam?: ArquivosQueFicam;
+  /**
+   * O que sai de Contratos (F3.181, F3.186): só para a sócia dona, no cliente que ela pode excluir. Na janela de
+   * arquivar (com contrato ou processo) também vem, só com os pedidos e lembretes null (C2; o lembrete do arquivado fica).
+   */
+  saiDeContratos?: SaiDeContratos;
+  /** As conversas do WhatsApp que a exclusão apaga (F3.190), nas mesmas condições de arquivosParaApagar. */
+  conversasParaApagar?: ConversasParaApagar;
+  /** C9: os outros clientes em que ele assina (mãe, tutora, quem assina pela empresa, quem assinava até os 18). */
+  assinaPorOutro?: AssinaPorOutro[];
+  /** F3.179: números das propostas com o "sobre" de ÊXITO ou RECORRENTE, que vira "Base apagada a pedido do titular". */
+  basesDeCondicao?: string[];
+  /** F3.193: quantas explicações de baixa sem receber viram texto fixo (hoje sempre 0: o contrato prende o cliente). */
+  baixasComExplicacao?: number;
   /** O próximo passo, as contagens das abas e o "No escritório" (F3.110). Não vêm no excluído nem no arquivado. */
   passo?: PassoCliente;
   contagens?: ContagensCliente;
@@ -513,6 +526,48 @@ export interface FichaCliente {
 export interface VinculosLgpd {
   contratos: { id: string; numero: string }[];
   processos: { id: string; nome: string; numeroCnj: string | null }[];
+}
+
+/** O que sai de Contratos na exclusão (F3.181, F3.186): só para a sócia dona, no cliente que ela pode excluir. */
+export interface SaiDeContratos {
+  /** Números das propostas aceitas, pedidas e sem contrato (o pedido sai do bloco de Contratos). */
+  pedidos: string[];
+  /** Lembretes de contrato abertos do sistema antigo; null sem lembrete aberto (e sempre null na janela de arquivar). */
+  lembretes: LembretesQueSaem | null;
+}
+export interface LembretesQueSaem {
+  n: number;
+  /** Em centavos. */
+  valor: number;
+  /** Lançamentos somados dos lembretes (para "com 3 lançamentos", com um lembrete só). */
+  lancamentos: number;
+  /** null com lembretes de sistemas diferentes. */
+  origem: "ASTREA" | "ADVBOX_PLANILHA" | null;
+}
+
+/** As conversas do WhatsApp que a exclusão apaga (F3.190), pelo mesmo critério de conversas_apagar (1114). */
+export interface ConversasParaApagar {
+  /** Conversas que saem (somem de Conversas). */
+  conversas: number;
+  /** Mensagens na fila que não saem mais. */
+  naFila: number;
+  /** Automações do cliente em andamento que param. */
+  automacoes: number;
+  /** Conversas que ficam como estão, porque guardam o registro de outro cliente (C3 da F3.157). */
+  ficam: number;
+  /** Os outros clientes dessas conversas, até 3, em ordem de nome. */
+  ficamCom: PessoaRef[];
+  /** Quantos outros clientes além dos de ficamCom. */
+  ficamComMais: number;
+}
+
+/** C9: outro cliente em que ele assina; esses dados ficam na ficha do outro, porque servem ao contrato dele. */
+export interface AssinaPorOutro extends PessoaRef {
+  tipo: TipoCliente;
+  /** Em texto: "como mãe e responsável legal", "como tutora", "pela empresa", "assinava até os 18". */
+  papel: string;
+  /** O gênero de quem assina, quando o papel o mostra (null pela empresa). */
+  feminino: boolean | null;
 }
 
 /** O que a exclusão a pedido do titular apaga (F3.155): só para a sócia dona, no cliente que ela pode excluir. */

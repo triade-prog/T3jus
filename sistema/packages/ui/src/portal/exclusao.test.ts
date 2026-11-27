@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { ArquivosParaApagar, ArquivosQueFicam, FichaCliente, HistoricoQueFica } from "@t3jus/domain";
-import { despesasDoExcluido, linhaArquivosParaApagar, linhaHistorico, PE_GUARDA, SEM_DATA } from "./exclusao.ts";
+import type { AssinaPorOutro, ConversasParaApagar } from "@t3jus/domain";
+import {
+  avisoLembrete, despesasDoExcluido, dicaAssinaPorOutro, dicaConversasQueFicam, linhaArquivosParaApagar, linhaBaixas, linhaConversas, linhaHistorico,
+  linhaPedidosContrato, linhaSobre, PE_GUARDA, SEM_DATA, type Pedaco,
+} from "./exclusao.ts";
 
 // F3.155: os textos do desenho aprovado (docs/design/aprovadas/portal-exclusao-arquivos, _fonte/f155.py).
 const UM = "o arquivo é apagado do T3jus. Fica só que existiu: tipo, tamanho e datas, sem o nome do arquivo.";
@@ -205,5 +209,143 @@ describe("despesasDoExcluido com o histórico do sistema antigo (F3.177)", () =>
     expect(d.descricao!.texto).toBe("A descrição da despesa adiantada");
     expect(d.guarda!.arquivos).toBeNull();
     expect(d.faixa).toBe("Fora essas descrições, nada aqui precisa ser guardado por lei.");
+  });
+});
+
+// F3.181, F3.186, F3.190, C9, F3.179 e F3.193: os textos do desenho aprovado
+// (docs/design/aprovadas/portal-exclusao-contratos-conversas, NOTAS.md e _fonte/f181.py).
+const conv = (o: Partial<ConversasParaApagar> = {}): ConversasParaApagar => ({ conversas: 0, naFila: 0, automacoes: 0, ficam: 0, ficamCom: [], ficamComMais: 0, ...o });
+const texto = (p: Pedaco[] | null) => p?.map((x) => (x.negrito ? `**${x.texto}**` : x.texto)).join("") ?? null;
+const FICAM_SO = " Ficam só as datas, quem da equipe atendeu e os momentos (passou, assumiu, devolveu).";
+
+describe("linhaConversas (F3.190)", () => {
+  it("uma conversa, sem fila nem automação", () => {
+    expect(linhaConversas(conv({ conversas: 1 }))).toEqual({
+      texto: "A conversa do WhatsApp",
+      explicacao: `o número, os nomes de quem escreveu e todas as mensagens e arquivos saem, e ela some de Conversas.${FICAM_SO}`,
+    });
+  });
+  it("várias, com a fila e as automações no plural", () => {
+    expect(linhaConversas(conv({ conversas: 3, naFila: 2, automacoes: 2 }))).toEqual({
+      texto: "As 3 conversas do WhatsApp",
+      explicacao: `os números, os nomes de quem escreveu e todas as mensagens e arquivos saem, e elas somem de Conversas.${FICAM_SO} As 2 mensagens que ainda iam sair não saem mais. As 2 automações em andamento param.`,
+    });
+  });
+  it("uma mensagem na fila e uma automação, no singular", () => {
+    expect(linhaConversas(conv({ conversas: 2, naFila: 1, automacoes: 1 }))?.explicacao).toMatch(/ A mensagem que ainda ia sair não sai mais\. A automação em andamento para\.$/);
+  });
+  it("sem conversa que sai, ou sem o campo, não há linha", () => {
+    expect(linhaConversas(conv({ ficam: 1 }))).toBeNull();
+    expect(linhaConversas(undefined)).toBeNull();
+  });
+});
+
+describe("dicaConversasQueFicam (C6)", () => {
+  it("uma conversa com um outro cliente", () => {
+    expect(texto(dicaConversasQueFicam(conv({ ficam: 1, ficamCom: [{ id: "r", nome: "Rosa Alves Coelho" }] }), "Marina"))).toBe(
+      "1 conversa fica como está, com as mensagens, porque guarda o registro de **Rosa Alves Coelho**, outro cliente. As mensagens de Marina nessa conversa também ficam.");
+  });
+  it("várias, com dois clientes", () => {
+    expect(texto(dicaConversasQueFicam(conv({ ficam: 2, ficamCom: [{ id: "p", nome: "Pedro Lima" }, { id: "r", nome: "Rosa Alves Coelho" }] }), "Marina"))).toBe(
+      "2 conversas ficam como estão, com as mensagens, porque guardam o registro de **Pedro Lima e Rosa Alves Coelho**, outros clientes. As mensagens de Marina nessas conversas também ficam.");
+  });
+  it("com mais de 3 clientes, termina em “e mais”", () => {
+    const c = conv({ ficam: 4, ficamCom: [{ id: "a", nome: "Ana" }, { id: "b", nome: "Bia" }, { id: "c", nome: "Caio" }], ficamComMais: 1 });
+    expect(texto(dicaConversasQueFicam(c, "Marina"))).toContain("**Ana, Bia, Caio e mais 1 cliente**, outros clientes.");
+    expect(texto(dicaConversasQueFicam({ ...c, ficamComMais: 2 }, "Marina"))).toContain("e mais 2 clientes**");
+  });
+  it("sem conversa que fica, não há dica", () => {
+    expect(dicaConversasQueFicam(conv({ conversas: 2 }), "Marina")).toBeNull();
+  });
+});
+
+describe("dicaAssinaPorOutro (C9)", () => {
+  const joao: AssinaPorOutro = { id: "j", nome: "João Coelho", tipo: "PF", papel: "como mãe e responsável legal", feminino: true };
+  const pedro: AssinaPorOutro = { id: "p", nome: "Pedro Coelho", tipo: "PF", papel: "assinava até os 18", feminino: true };
+  const padaria: AssinaPorOutro = { id: "e", nome: "Padaria Estrela Ltda", tipo: "PJ", papel: "pela empresa", feminino: null };
+  it("um só, como no desenho", () => {
+    expect(texto(dicaAssinaPorOutro([joao], "Marina"))).toBe(
+      "Marina também assina por **João Coelho**, como mãe e responsável legal. O nome e o CPF dela continuam na ficha dele, porque servem ao contrato e à procuração dele.");
+  });
+  it("dois, com o papel entre parênteses", () => {
+    expect(texto(dicaAssinaPorOutro([joao, pedro], "Marina"))).toBe(
+      "Marina também assina por **João Coelho** (como mãe e responsável legal) e **Pedro Coelho** (assinava até os 18). O nome e o CPF dela continuam nessas fichas, porque servem aos contratos e às procurações delas.");
+  });
+  it("pela empresa: a ficha é dela, e sem gênero vai o nome", () => {
+    expect(texto(dicaAssinaPorOutro([padaria], "Marina"))).toBe(
+      "Marina também assina por **Padaria Estrela Ltda**, pela empresa. O nome e o CPF de Marina continuam na ficha dela, porque servem ao contrato e à procuração dela.");
+  });
+  it("o pai: dele", () => {
+    expect(texto(dicaAssinaPorOutro([{ ...joao, papel: "como pai e responsável legal", feminino: false }], "Carlos"))).toContain("O nome e o CPF dele continuam na ficha dele");
+  });
+  it("sem ninguém, não há dica", () => {
+    expect(dicaAssinaPorOutro([], "Marina")).toBeNull();
+    expect(dicaAssinaPorOutro(undefined, "Marina")).toBeNull();
+  });
+});
+
+describe("linhaSobre (F3.179) e linhaBaixas (F3.193)", () => {
+  it("uma proposta e várias", () => {
+    expect(linhaSobre(["P-2026-014"])?.texto).toBe("Sobre o que se cobra o êxito, na proposta P-2026-014");
+    expect(linhaSobre(["P-2026-014", "P-2026-019"])).toEqual({
+      texto: "Sobre o que se cobra o êxito, nas propostas P-2026-014 e P-2026-019",
+      explicacao: "o texto livre, como “dos atrasados que a cliente receber”, vira “Base apagada a pedido do titular”. O percentual e as outras condições ficam como estão.",
+    });
+    expect(linhaSobre([])).toBeNull();
+  });
+  it("uma baixa e várias", () => {
+    expect(linhaBaixas(1)).toEqual({ texto: "A explicação da baixa sem receber",
+      explicacao: "vira “Explicação apagada a pedido do titular”. A parcela, o valor e a data da baixa continuam no Financeiro." });
+    expect(linhaBaixas(2)?.texto).toBe("As explicações das 2 baixas sem receber");
+    expect(linhaBaixas(2)?.explicacao).toMatch(/^viram /);
+    expect(linhaBaixas(0)).toBeNull();
+    expect(linhaBaixas(undefined)).toBeNull();
+  });
+});
+
+describe("linhaPedidosContrato (F3.181)", () => {
+  it("na janela de excluir, em “O que fica”", () => {
+    expect(linhaPedidosContrato(["P-2026-014"], "fica")).toEqual({
+      texto: "A proposta P-2026-014, sem o pedido de contrato",
+      explicacao: "fica no Comercial como registro, com “Cliente excluído” e “Serviço apagado a pedido do titular”. O pedido sai de Contratos, porque cliente excluído não ganha contrato.",
+    });
+    expect(linhaPedidosContrato(["P-2026-014", "P-2026-019"], "fica")).toEqual({
+      texto: "As propostas P-2026-014 e P-2026-019, sem os pedidos de contrato",
+      explicacao: "ficam no Comercial como registro, com “Cliente excluído” e “Serviço apagado a pedido do titular”. Os pedidos saem de Contratos, porque cliente excluído não ganha contrato.",
+    });
+  });
+  it("na janela de arquivar, em “O que acontece” (C2)", () => {
+    expect(linhaPedidosContrato(["P-2026-014"], "arquivar")).toEqual({
+      texto: "O pedido de contrato da proposta P-2026-014 sai de Contratos",
+      explicacao: "a proposta fica no Comercial, aceita, como registro. Cliente arquivado não ganha contrato novo, e ninguém consegue pedir de novo.",
+    });
+    expect(linhaPedidosContrato(["P-2026-014", "P-2026-019"], "arquivar")?.texto).toBe("Os 2 pedidos de contrato (P-2026-014 e P-2026-019) saem de Contratos");
+  });
+  it("sem pedido, não há linha", () => {
+    expect(linhaPedidosContrato([], "fica")).toBeNull();
+    expect(linhaPedidosContrato(undefined, "arquivar")).toBeNull();
+  });
+});
+
+describe("avisoLembrete (F3.186, C10 a)", () => {
+  const FIM = "Depois da exclusão, não dá mais para saber de quem é esse valor, e o lembrete sai de Contratos › Lembretes. Se o escritório vai cobrar, crie o contrato antes: aí o pedido se atende arquivando, sem apagar.";
+  it("um lembrete do Astrea, como no desenho", () => {
+    expect(avisoLembrete({ n: 1, valor: 184000, lancamentos: 3, origem: "ASTREA" }, "Marina")).toEqual({
+      titulo: "Há R$ 1.840,00 em aberto no Astrea.",
+      texto: `É o lembrete de contrato de Marina, com 3 lançamentos. ${FIM}`,
+    });
+  });
+  it("dois lembretes, sem a primeira frase; sistemas diferentes leem “no sistema antigo”", () => {
+    expect(avisoLembrete({ n: 2, valor: 230000, lancamentos: 5, origem: null }, "Marina")).toEqual({
+      titulo: "Há R$ 2.300,00 em aberto no sistema antigo, em 2 lembretes de contrato.", texto: FIM,
+    });
+  });
+  it("sem valor", () => {
+    expect(avisoLembrete({ n: 1, valor: 0, lancamentos: 1, origem: "ASTREA" }, "Marina")).toEqual({
+      titulo: "Há um lembrete de contrato do Astrea, sem valor.", texto: `É o lembrete de contrato de Marina, com 1 lançamento. ${FIM}`,
+    });
+  });
+  it("sem lembrete, não há aviso", () => {
+    expect(avisoLembrete(null, "Marina")).toBeNull();
   });
 });

@@ -22,7 +22,7 @@ describe("PT-11 F3.159: o Word da proposta do cliente excluído", () => {
     servico: "Serviço apagado a pedido do titular", responsavel: { id: "r1", nome: "Marina Ribeiro" }, situacao: "ACEITA",
     vencida: false, condicoes: [], retorno: null, criadaEm: "2026-11-20T10:00:00-03:00", escopo: null, validaAte: null,
     enviadaEm: null, respondidaEm: null, motivoRecusa: null, origem: null, versao: 5, retornoCompleto: null,
-    podeContrato: true, quemTemContratos: [], contratoPedidoEm: null, historico: [],
+    podeContrato: true, quemTemContratos: [], contratoPedidoEm: null, clienteSituacao: "ATIVO", clienteSaiuEm: null, historico: [],
   };
   const escritorio = { nome: "Ribeiro & Matos", cnpj: null, endereco: null, cidade: "São Paulo", uf: "SP" };
 

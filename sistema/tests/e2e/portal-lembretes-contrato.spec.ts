@@ -141,6 +141,39 @@ test.describe("Lembretes de contrato (F3.144, F3.145)", () => {
     await semViolacoes(page);
   });
 
+  // F3.186 (desenho portal-exclusao-contratos-conversas, estados lembrete- e trazer-excluido-na-hora).
+  test("F3.186: dispensar o lembrete de quem foi excluído com a janela aberta diz que ele saiu da lista", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      "GET /v1/escritorio/contratos/lembretes": { corpo: lista("ABERTO", ABERTOS) },
+      [`POST /v1/escritorio/contratos/lembretes/${lid(3)}/dispensar`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_EXCLUIDO" } } } },
+    });
+    await page.goto(`${P}/contratos/contratos/lembretes`);
+    await page.getByRole("button", { name: "Dispensar o lembrete de Osvaldo Pereira Lins" }).click();
+    const j = page.getByRole("alertdialog", { name: "Dispensar o lembrete de Osvaldo?" });
+    await j.getByRole("radio", { name: "O escritório perdoou o valor" }).check();
+    await j.getByRole("button", { name: "Dispensar o lembrete" }).click();
+    await expect(j).toContainText("Os dados do cliente foram excluídos enquanto a janela estava aberta.");
+    await expect(j).toContainText("O cliente foi excluído a pedido do titular.");
+    await expect(j).toContainText("O lembrete saiu da lista. Não há o que dispensar, e nada foi gravado.");
+    await expect(j.getByRole("button", { name: "Ver a lista atualizada" })).toBeVisible();
+    await semViolacoes(page);
+  });
+
+  test("F3.186: trazer de volta o lembrete de quem foi excluído agora há pouco mostra o aviso, mesmo com a lista vazia", async ({ page }) => {
+    await simular(page, {
+      "/v1/escritorio": { corpo: ESCRITORIO },
+      "GET /v1/escritorio/contratos/lembretes": [{ corpo: lista("DISPENSADO", DISPENSADOS) }, { corpo: lista("DISPENSADO", []) }],
+      [`POST /v1/escritorio/contratos/lembretes/${lid(4)}/trazer`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_EXCLUIDO" } } } },
+    });
+    await page.goto(`${P}/contratos/contratos/lembretes?mostrar=dispensados`);
+    await page.getByRole("button", { name: "Trazer de volta o lembrete de Jorge Batista" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Não deu para trazer de volta. O cliente foi excluído a pedido do titular." }))
+      .toContainText("O lembrete de Jorge saiu da lista. Não há o que trazer de volta. A lista abaixo já está atualizada.");
+    await expect(page.getByRole("table", { name: "Lembretes dispensados" })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
   test("Dispensados: o motivo com quem e quando; trazer de volta já resolvido leva a Viraram contrato", async ({ page }) => {
     const pedidos = await simular(page, {
       "/v1/escritorio": { corpo: ESCRITORIO },
