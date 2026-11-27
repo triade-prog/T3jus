@@ -5,8 +5,8 @@
   "refs": [
     "CO-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 67.8,
-  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14. Só depois da 1160 do CO-09 aplicada.",
-  "proximo": "Programar a regra e a implantação congelada (1180) depois da 1160 do CO-09 aplicada (CO-08)."
+  "nota": "Plano em docs/design/aprovadas/console-implantacao/PLANO.md (revisado em REVISAO.md); decisões da Carol em DC14. Não depende da 1160 do CO-09: a abertura no primeiro acesso, que usa testes_gratis, é o F1.43 (1181). A coluna responsavel_id ficou para a 1183 (F1.45), junto com a regra de quem pode ser e a passagem de quem sai da equipe (teste 046, EX-10). Publicação no P35.",
+  "evidencia": "Migration 1180_implantacao_regras.sql: implantacao_regras (uma linha, global, versão, sem exclusão; R$ 1.490,00, ISENTA, isencao_ate nula, \"Oferta de lançamento\", 30 dias), implantacao_condicao(dia) com a data de corte separada da condição padrão, implantacoes (escritorio_id, proteger_tabela_escritorio, guardião com estado inicial ABERTA e ABERTA→CONCLUIDA/CANCELADA, unique (escritorio_id, id), uma aberta por escritório, gatilho que congela nome, descrição, valor e condição da regra do dia, trava do congelado, concluida_por sempre de contexto_pessoa()), console_implantacao_regras e console_implantacao_regras_salvar (só console.implantacao.regras; evento implantacao.regra_mudou em planos_eventos com autor e antes/depois; 409 com a regra salva), 9 permissões novas, inventário (implantacoes exportada, 5 anos depois do fim do contrato) e a chave implantacao_na_fatura desligada. api-console: GET e PUT /v1/cobranca/implantacao (implantacaoRegraSchema em packages/domain). Testes: pgTAP 190 (57), 008 com implantacoes na exportação, api-console/implantacao_test.ts (5) e implantacao.test.ts (3); os 145 arquivos pgTAP passam."
 }

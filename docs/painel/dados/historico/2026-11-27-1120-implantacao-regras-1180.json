@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "11:20",
+  "fim": "11:51",
+  "texto": "Regra global da implantação assistida e a implantação congelada por escritório no servidor (migration 1180, rotas GET e PUT /v1/cobranca/implantacao), com a chave implantacao_na_fatura desligada; falta aplicar e publicar (P35).",
+  "refs": [
+    "F1.42",
+    "P35",
+    "CO-08"
+  ]
+}
