@@ -1,7 +1,7 @@
 {
   "data": "27/11/2026",
   "inicio": "03:35",
-  "fim": "03:34",
+  "fim": "03:40",
   "texto": "F3.191: o tipo do levantamento volta para todos em cobradoNoAlvara, como no D40 aprovado (o acerto e a ficha do cliente de quem não tem o Financeiro dizem \"cobrado no alvará\", igual ao sino); o id do levantamento e o dia em que entrou continuam só com o Financeiro.",
   "refs": [
     "F3.191",
