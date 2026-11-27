@@ -233,6 +233,14 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   SEM_ATRASO_30: "Só dá para passar o Portal para só consulta com uma fatura em atraso há 30 dias ou mais.",
   NAO_ESTA_SO_CONSULTA: "O Portal deste escritório não está só para consulta.",
   PORTAL_SO_CONSULTA: "O Portal está só para consulta por uma pendência com o T3jus. Você continua vendo tudo, mas não cria nem muda nada.",
+  // CO-09 (1160): o teste grátis de 7 dias.
+  TESTE_ENCERRADO: "O teste grátis terminou e o Portal está só para consulta. Seus dados estão guardados. Para continuar, fale com a equipe do T3jus.",
+  SEM_ASSINATURA: "A equipe do T3jus está liberando o seu acesso. Enquanto isso, o Portal fica só para consulta.",
+  SEM_TESTE_GRATIS: "Este escritório não tem teste grátis.",
+  TESTE_JA_DISPENSADO: "O teste deste escritório já foi dispensado.",
+  TESTE_NAO_REPETIDO: "Só o teste repetido espera ser liberado.",
+  TESTE_NAO_COMECOU: "Só dá para prorrogar o teste que já começou.",
+  PRORROGAR_DATA: "Escolha um último dia depois do último dia de agora, a partir de hoje.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
