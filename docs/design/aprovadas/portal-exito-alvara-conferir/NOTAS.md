@@ -209,3 +209,19 @@ Elas só valiam quando o alvará vinha depois da conferência (A1.5). O trecho e
 5. **No `ea-exito-falta`, o segundo alvará é de R$ 10.000,00, e não de R$ 5.000,00.** Com R$ 5.000,00, os 30% dariam R$ 1.500,00, abaixo dos R$ 1.800,00 que faltam, e o limite não apareceria.
 6. **Na célula do `ea-exito-falta`** ficou a frase de hoje ("Dá baixa na parcela…", `FinanceiroRepasses.tsx:667`). O D38 pede "Paga a parcela" e nunca "dá baixa". Vale trocar também essa frase no PR, para ler "Paga a parcela “Êxito · …” (falta R$ 1.800,00)". Fica para a Carol confirmar.
 7. **A descrição da janela de recusa é nova:** "Este êxito não pode ficar sem cobrança…". A de hoje diz que o êxito sai da lista, o que não acontece na recusa.
+
+## Depois da aprovação, na programação (F3.199)
+
+Duas diferenças entre o código e o desenho aprovado, registradas aqui pela revisão de código
+(`REVISAO-CODIGO-F3-199`). Ficam para a Carol confirmar na próxima rodada.
+
+1. **`ea-conferir-sobra`: "Combine com {nome} a devolução"** no lugar de "Combine com ela a
+   devolução". O texto aprovado vale para o exemplo (Helena); o cliente pode ser homem ou empresa,
+   e o nome serve para todos.
+2. **A parte que pagou só um pedaço da parcela** (o desenho mostrou só a parcela inteira). Com o
+   alvará de R$ 3.000,00 e o êxito lançado de R$ 4.800,00, a ficha do repasse diz:
+   - na linha da parte: "Pagou R$ 3.000,00 da parcela do êxito, lançada em 18/11";
+   - no fechamento do caso: "Êxito do contrato C-2026-027: R$ 3.000,00 pagos por este alvará".
+
+   Com a parcela inteira, ficam os textos aprovados ("Pagou a parcela do êxito…", "pago por este
+   alvará").

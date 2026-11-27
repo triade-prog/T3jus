@@ -156,16 +156,27 @@ export function avisoLimiteDoExito(p: Pick<PropostaRepasse, "exitoSituacao" | "l
   return null;
 }
 
-/** Na linha da parte de honorários da ficha: "Pagou a parcela do êxito, lançada em 18/11". */
-export function textoPagou(p: Pick<PagouDaParte, "lancadaEm">): string {
-  return `Pagou a parcela do êxito, lançada em ${diaCurto(diaDoInstante(p.lancadaEm))}`;
+/** A parte pagou só um pedaço da parcela (revisão de código da F3.199, nota 3). */
+const emParte = (p: Pick<PagouDaParte, "valor" | "parcelaValor">) => typeof p.parcelaValor === "number" && p.valor < p.parcelaValor;
+
+/**
+ * Na linha da parte de honorários da ficha: "Pagou a parcela do êxito, lançada em 18/11", ou, em
+ * parte, "Pagou R$ 3.000,00 da parcela do êxito, lançada em 18/11".
+ */
+export function textoPagou(p: Pick<PagouDaParte, "lancadaEm" | "valor" | "parcelaValor">): string {
+  const dia = diaCurto(diaDoInstante(p.lancadaEm));
+  return emParte(p) ? `Pagou ${reais(p.valor)} da parcela do êxito, lançada em ${dia}` : `Pagou a parcela do êxito, lançada em ${dia}`;
 }
 
-/** O item do "Fechamento do caso": "Êxito do contrato C-2026-027: pago por este alvará". */
+/**
+ * O item do "Fechamento do caso": "Êxito do contrato C-2026-027: pago por este alvará", ou, em
+ * parte, "Êxito do contrato C-2026-027: R$ 3.000,00 pagos por este alvará".
+ */
 export function fechamentoPagou(p: PagouDaParte, tipo: string | null | undefined): { titulo: string; detalhe: string } {
   const partes = [p.lancadaPor ? `lançado por ${p.lancadaPor.nome} em ${diaCurto(diaDoInstante(p.lancadaEm))}` : `lançado em ${diaCurto(diaDoInstante(p.lancadaEm))}`,
     p.pagaEm ? `pago em ${diaCurto(p.pagaEm)}` : null].filter(Boolean);
-  return { titulo: `Êxito${p.contrato ? ` do contrato ${p.contrato}` : ""}: pago por este ${nomeDoLevantamento(tipo)}`, detalhe: partes.join(" · ") };
+  const pago = emParte(p) ? `${reais(p.valor)} pagos` : "pago";
+  return { titulo: `Êxito${p.contrato ? ` do contrato ${p.contrato}` : ""}: ${pago} por este ${nomeDoLevantamento(tipo)}`, detalhe: partes.join(" · ") };
 }
 
 /** A linha do histórico do repasse quando o êxito foi lançado depois do alvará (ea-repasse). */

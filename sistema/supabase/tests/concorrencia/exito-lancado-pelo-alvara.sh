@@ -7,7 +7,9 @@
 #  a. o lançar segura; o registrar espera e, na 0651, paga a parcela nova uma vez só;
 #  b. o registrar segura; o lançar espera e paga a parcela com a parte nova uma vez só;
 #  c. o lançar segura (já pagou com a parte); o "Dispensar" da mesma parte espera e recusa com BAIXOU_EXITO;
-#  d. o "Dispensar" segura; o lançar espera, pula a parte dispensada, e a parcela nasce aberta.
+#  d. o "Dispensar" segura; o lançar espera, pula a parte dispensada, e a parcela nasce aberta;
+#  e. o registrar segura; o "Não cobrar" espera e recusa com HONORARIOS_JA_ENTRARAM (C2);
+#  f. o "Não cobrar" segura; o registrar espera e registra depois, com o êxito já não cobrado.
 set -euo pipefail
 PSQL=("${PSQL_BIN:-psql}" -v ON_ERROR_STOP=1 -q -X -tA)
 DIR="$(mktemp -d)"
@@ -50,26 +52,30 @@ begin
     'previstoEm', hoje_brasilia() + 20, 'valores', jsonb_build_object(v_cli, 1000000)));
   return v_caso;
 end $$;
-alter table teste.ela add column ka uuid, add column kb uuid, add column kc uuid, add column kd uuid;
+alter table teste.ela add column ka uuid, add column kb uuid, add column kc uuid, add column kd uuid, add column ke uuid, add column kf uuid;
 update teste.ela set ka = pg_temp.caso('Lançar Antes', '+5511984220201', false), kb = pg_temp.caso('Registrar Antes', '+5511984220202', false),
-                     kc = pg_temp.caso('Lançar Antes Dispensa', '+5511984220203', true), kd = pg_temp.caso('Dispensar Antes', '+5511984220204', true);
+                     kc = pg_temp.caso('Lançar Antes Dispensa', '+5511984220203', true), kd = pg_temp.caso('Dispensar Antes', '+5511984220204', true),
+                     ke = pg_temp.caso('Registrar Antes de Não Cobrar', '+5511984220205', false), kf = pg_temp.caso('Não Cobrar Antes', '+5511984220206', false);
 alter table teste.ela add column ca uuid, add column cb uuid, add column xa uuid, add column xb uuid, add column xc uuid, add column xd uuid,
-  add column hc uuid, add column hd uuid;
+  add column hc uuid, add column hd uuid, add column ce uuid, add column cf uuid, add column xe uuid, add column xf uuid;
 update teste.ela set ca = (select cliente_id from caso_clientes where caso_id = ka), cb = (select cliente_id from caso_clientes where caso_id = kb),
   xa = (select id from exitos_conferir where caso_id = ka), xb = (select id from exitos_conferir where caso_id = kb),
   xc = (select id from exitos_conferir where caso_id = kc), xd = (select id from exitos_conferir where caso_id = kd),
   hc = (select d.id from destinacoes d join levantamentos l on l.id = d.levantamento_id where l.caso_id = kc and d.para = 'HONORARIOS'),
-  hd = (select d.id from destinacoes d join levantamentos l on l.id = d.levantamento_id where l.caso_id = kd and d.para = 'HONORARIOS');
+  hd = (select d.id from destinacoes d join levantamentos l on l.id = d.levantamento_id where l.caso_id = kd and d.para = 'HONORARIOS'),
+  ce = (select cliente_id from caso_clientes where caso_id = ke), cf = (select cliente_id from caso_clientes where caso_id = kf),
+  xe = (select id from exitos_conferir where caso_id = ke), xf = (select id from exitos_conferir where caso_id = kf);
 grant usage on schema teste to service_role;
 commit;
 SQL
 
-read -r E D B KA KB CA CB XA XB XC XD HC HD <<<"$("${PSQL[@]}" -F ' ' -c "select e, d, b, ka, kb, ca, cb, xa, xb, xc, xd, hc, hd from teste.ela")"
+read -r E D B KA KB CA CB XA XB XC XD HC HD KE KF CE CF XE XF <<<"$("${PSQL[@]}" -F ' ' -c "select e, d, b, ka, kb, ca, cb, xa, xb, xc, xd, hc, hd, ke, kf, ce, cf, xe, xf from teste.ela")"
 HOJE=$("${PSQL[@]}" -c "select hoje_brasilia()")
 lancar() { echo "select portal_financeiro_exito_lancar('$D', '$E', '$1', jsonb_build_object('valor', 300000, 'vencimento', '$HOJE'::date + 20, 'forma', 'PIX')) is not null;"; }
 registrar() { echo "select portal_financeiro_levantamento_registrar('$D', '$E', jsonb_build_object('tipo', 'ALVARA', 'casoId', '$1', 'clienteId', '$2',
   'valor', 1000000, 'entrouEm', '$HOJE', 'exitoBaixadoVisto', '[]'::jsonb, 'divisao', jsonb_build_array(
     jsonb_build_object('para', 'CLIENTE', 'valor', 700000), jsonb_build_object('para', 'HONORARIOS', 'nome', 'Honorários de êxito', 'valor', 300000)))) is not null;"; }
+nao_cobrar() { echo "select portal_financeiro_exito_nao_cobrar('$B', '$E', '$1', '{\"motivo\": \"PERDOADO\", \"explicacao\": \"Renegociado com o cliente\"}') is not null;"; }
 dispensar() { echo "select portal_financeiro_destinacao_dispensar('$B', '$E', '$1', 'Combinado com o cliente') is not null;"; }
 
 # Um segura (com pg_sleep) e o outro chega 0,7 s depois.
@@ -95,6 +101,8 @@ corrida a "$(lancar "$XA")" "$(registrar "$KA" "$CA")"
 corrida b "$(registrar "$KB" "$CB")" "$(lancar "$XB")"
 corrida c "$(lancar "$XC")" "$(dispensar "$HC")"
 corrida d "$(dispensar "$HD")" "$(lancar "$XD")"
+corrida e "$(registrar "$KE" "$CE")" "$(nao_cobrar "$XE")"
+corrida f "$(nao_cobrar "$XF")" "$(registrar "$KF" "$CF")"
 
 resultado=$("${PSQL[@]}" <<'SQL'
 -- Para cada caso: quantos recebimentos pela divisão a parcela do êxito tem, a soma e a situação da parcela.
@@ -105,15 +113,18 @@ create function pg_temp.r(p_exito uuid) returns text language sql as $$
 $$;
 select pg_temp.r(xa) || ' ' || pg_temp.r(xb) || ' ' || pg_temp.r(xc) || ' ' || pg_temp.r(xd) || ' '
     || (select (dispensado_em is not null)::text from destinacoes where id = hc) || ' '
-    || (select (dispensado_em is not null)::text from destinacoes where id = hd)
+    || (select (dispensado_em is not null)::text from destinacoes where id = hd) || ' '
+    || (select situacao from exitos_conferir where id = xe) || '/' || (select count(*) from levantamentos where caso_id = ke) || ' '
+    || (select situacao from exitos_conferir where id = xf) || '/' || (select count(*) from levantamentos where caso_id = kf)
   from teste.ela;
 SQL
 )
 
-esperado="1/300000/PAGA 1/300000/PAGA 1/300000/PAGA 0/0/A_VENCER false true"
-if [ "$resultado" != "$esperado" ] || ! grep -q "BAIXOU_EXITO" "$DIR/c-2" || grep -qi "error\|deadlock" "$DIR/a-1" "$DIR/a-2" "$DIR/b-1" "$DIR/b-2" "$DIR/c-1" "$DIR/d-1" "$DIR/d-2"; then
-  echo "exito-lancado-pelo-alvara: esperava '$esperado' e BAIXOU_EXITO; veio '$resultado'"
-  for f in a-1 a-2 b-1 b-2 c-1 c-2 d-1 d-2; do echo "--- $f"; cat "$DIR/$f"; done
+esperado="1/300000/PAGA 1/300000/PAGA 1/300000/PAGA 0/0/A_VENCER false true PARA_CONFERIR/1 NAO_COBRADO/1"
+if [ "$resultado" != "$esperado" ] || ! grep -q "BAIXOU_EXITO" "$DIR/c-2" || ! grep -q "HONORARIOS_JA_ENTRARAM" "$DIR/e-2" \
+   || grep -qi "error\|deadlock" "$DIR/a-1" "$DIR/a-2" "$DIR/b-1" "$DIR/b-2" "$DIR/c-1" "$DIR/d-1" "$DIR/d-2" "$DIR/e-1" "$DIR/f-1" "$DIR/f-2"; then
+  echo "exito-lancado-pelo-alvara: esperava '$esperado', BAIXOU_EXITO e HONORARIOS_JA_ENTRARAM; veio '$resultado'"
+  for f in a-1 a-2 b-1 b-2 c-1 c-2 d-1 d-2 e-1 e-2 f-1 f-2; do echo "--- $f"; cat "$DIR/$f"; done
   exit 1
 fi
-echo "Êxito lançado e divisão ao mesmo tempo: ok (lançar e registrar nas duas ordens pagam a parcela uma vez; lançar antes do \"Dispensar\" recusa com BAIXOU_EXITO; \"Dispensar\" antes deixa a parcela aberta)"
+echo "Êxito lançado e divisão ao mesmo tempo: ok (lançar e registrar nas duas ordens pagam a parcela uma vez; lançar antes do \"Dispensar\" recusa com BAIXOU_EXITO; \"Dispensar\" antes deixa a parcela aberta; o \"Não cobrar\" depois do registrar recusa com HONORARIOS_JA_ENTRARAM, e antes dele o registrar espera)"

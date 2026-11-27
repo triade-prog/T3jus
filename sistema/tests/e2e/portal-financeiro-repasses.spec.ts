@@ -863,4 +863,21 @@ test.describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07
     await expect(h).toContainText("Diego Almeida, ao conferir o êxito em A receber");
     await semViolacoes(page);
   });
+
+  test("ea-repasse em parte (revisão de código, nota 3): a parte que pagou um pedaço diz quanto", async ({ page }) => {
+    const pagou = [{ parcelaId: "f6000000-0000-4000-8000-000000000032", descricao: "Êxito · Duarte x Construtora Atlas", valor: 300000, parcelaValor: 480000,
+      lancadaEm: `${dia(0)}T13:20:00Z`, pagaEm: dia(-6), contrato: "C-2026-027", lancadaPor: DIEGO }];
+    const ficha = { ...FICHA, cliente: HELENA, tipo: "ALVARA", destinacoes: [
+      parte(10, "CLIENTE", HELENA.nome, 700000, { situacao: "FEITO", feitoEm: dia(-5), feitoPor: MARINA }),
+      parte(11, "HONORARIOS", "Honorários de êxito", 300000, { regra: "30% · acordo · contrato C-2026-027", pagou }),
+    ] };
+    await simular(page, { ...comuns(), [`GET /v1/escritorio/financeiro/repasses/${id(1)}`]: { corpo: ficha } });
+    await page.goto(`${P}/financeiro/repasses/${id(1)}`);
+    const hon = page.getByRole("row", { name: /Honorários de êxito/ }).first();
+    expect(nbsp(await hon.innerText())).toContain(`Pagou R$ 3.000,00 da parcela do êxito, lançada em ${ddmm(0)}`);
+    const fecha = page.getByRole("region", { name: "Fechamento do caso" });
+    expect(nbsp(await fecha.innerText())).toContain("Êxito do contrato C-2026-027: R$ 3.000,00 pagos por este alvará");
+    await expect(fecha).not.toContainText("pago por este alvará");
+    await semViolacoes(page);
+  });
 });

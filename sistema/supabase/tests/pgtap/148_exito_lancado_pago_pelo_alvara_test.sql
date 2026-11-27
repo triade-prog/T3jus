@@ -3,7 +3,7 @@
 -- Parte A, e desenho D39 aprovados pela Carol em 26/11/2026, com a C2 (o "Não cobrar" recusa com
 -- honorários já entrados) e a C3 (a proposta limita os honorários ao que falta do êxito lançado).
 begin;
-select plan(66);
+select plan(74);
 
 create function pg_temp.fim() returns void language plpgsql as $$
 begin
@@ -129,16 +129,26 @@ select is((select v -> 'exitoSituacao' from prop_sem), '{"situacao": "SEM_CONFER
 select is((select v -> 'exitoSituacao' from prop_conf), '{"situacao": "PARA_CONFERIR", "calculado": 480000}'::jsonb,
   'CH-07: com o êxito para conferir, PARA_CONFERIR com o calculado');
 select is((select pg_temp.prop(nadia, 1000000) -> 'exitoSituacao' from cli), 'null'::jsonb, 'sem contrato com êxito, exitoSituacao é null');
+-- Revisão de código, nota 2: o caso encerrado sem a linha do êxito (sem valores, calculado 0 ou
+-- antes da 0640) diz SEM_EXITO, e não "ainda não foi encerrado".
+savepoint sem_exito;
+set local session_replication_role = replica;
+delete from exitos_conferir where id = (select pg_temp.exito(luis) from cli);
+set local session_replication_role = origin;
+select is((select pg_temp.prop(luis, 1000000) -> 'exitoSituacao' from cli), '{"situacao": "SEM_EXITO"}'::jsonb,
+  'CH-07: com o caso encerrado e sem êxito para conferir, SEM_EXITO');
+select is((select pg_temp.prop(luis, 1000000) -> 'linhas' -> 0 -> 'valor' from cli), '300000'::jsonb, 'e os honorários seguem o percentual, sem limite');
+rollback to savepoint sem_exito;
 select is((select jsonb_build_array(v -> 'linhas' -> 0 ->> 'valor', v -> 'linhas' -> 0 -> 'semLimite') from prop_conf), '["480000", null]'::jsonb,
   'C3: sem êxito lançado, os honorários não são limitados (sem semLimite)');
 
 -- ---------------------------------------------------------------------------------------
 -- 8. A linha do êxito traz os honorários que já entraram.
-select is((select jsonb_build_array(x -> 'honorariosAlvaraTotal', x -> 'honorariosAlvara' -> 0 -> 'livre', x -> 'honorariosAlvara' -> 0 ->> 'tipo',
+select is((select jsonb_build_array(x ? 'honorariosAlvaraTotal', x -> 'honorariosAlvara' -> 0 -> 'livre', x -> 'honorariosAlvara' -> 0 ->> 'tipo',
                                     x -> 'honorariosAlvara' -> 0 ->> 'entrouEm', x -> 'honorariosAlvara' -> 0 ->> 'levantamentoId')
              from ids, lateral jsonb_array_elements(portal_financeiro_exitos(ids.diego, ids.rm) -> 'itens') x, cli
             where x -> 'cliente' ->> 'id' = cli.helena::text),
-  (select jsonb_build_array(480000, 480000, 'ALVARA', '2026-11-12', lev.helena ->> 'id') from lev),
+  (select jsonb_build_array(false, 480000, 'ALVARA', '2026-11-12', lev.helena ->> 'id') from lev),
   'CH-07: o êxito de Helena para conferir traz os honorários do alvará de 12/11');
 select is((select jsonb_array_length(x -> 'honorariosAlvara') from ids, lateral jsonb_array_elements(portal_financeiro_exitos(ids.diego, ids.rm) -> 'itens') x, cli
             where x -> 'cliente' ->> 'id' = cli.katia::text), 2, 'os dois alvarás de Kátia, do mais antigo para o mais novo');
@@ -193,7 +203,7 @@ select is((select pg_temp.prop(helena, 500000) -> 'exitoSituacao' from cli), '{"
 -- 15. pagou, na linha da parte (o lançar depois do alvará).
 select is((select d -> 'pagou' from ids, lev, jsonb_array_elements(portal_financeiro_repasse(ids.socia, ids.rm, (lev.helena ->> 'id')::uuid) -> 'destinacoes') d
             where d ->> 'para' = 'HONORARIOS'),
-  (select jsonb_build_array(jsonb_build_object('parcelaId', ph.id, 'descricao', 'Êxito · Duarte x Construtora Atlas', 'valor', 480000,
+  (select jsonb_build_array(jsonb_build_object('parcelaId', ph.id, 'descricao', 'Êxito · Duarte x Construtora Atlas', 'valor', 480000, 'parcelaValor', 480000,
                                               'lancadaEm', r.criado_em, 'pagaEm', '2026-11-12', 'contrato', c.numero, 'lancadaPor', pessoa_ref(ids.diego)))
      from ph, ids, recebimentos_previstos r join contratos c on c.id = r.contrato_id where r.id = ph.id),
   'FI-05: a parte de honorários diz que pagou a parcela, lançada hoje por Diego');
@@ -247,6 +257,8 @@ select portal_financeiro_destinacao_dispensar(diego, rm, pg_temp.hon(lev.igor), 
 create temp table ld as select pg_temp.lancar(igor) v from cli;
 select is((select jsonb_build_array(v -> 'parcela' ->> 'situacao', v -> 'pagoPeloAlvara', pg_temp.pagos((v -> 'parcela' ->> 'id')::uuid)) from ld),
   '["A_VENCER", [], []]'::jsonb, 'FI-05: com a parte de honorários dispensada, a parcela nasce aberta');
+select is((select destinacao_linha(d) -> 'pagou' from destinacoes d, lev where d.id = pg_temp.hon(lev.igor)), 'null'::jsonb,
+  'A5.15: e a parte dispensada não traz pagou');
 rollback to savepoint dispensada;
 
 -- ---------------------------------------------------------------------------------------
@@ -261,6 +273,8 @@ select is((select pg_temp.prop(joana, 1000000) -> 'exitoSituacao' from cli), '{"
   'CH-07: a proposta diz LANCADO, com o que falta');
 select is((select d -> 'pagou' -> 0 -> 'valor' from ids, lev, jsonb_array_elements(portal_financeiro_repasse(ids.socia, ids.rm, (lev.joana ->> 'id')::uuid) -> 'destinacoes') d
             where d ->> 'para' = 'HONORARIOS'), '300000'::jsonb, 'FI-05: e a parte diz que pagou R$ 3.000,00');
+select is((select d -> 'pagou' -> 0 -> 'parcelaValor' from ids, lev, jsonb_array_elements(portal_financeiro_repasse(ids.socia, ids.rm, (lev.joana ->> 'id')::uuid) -> 'destinacoes') d
+            where d ->> 'para' = 'HONORARIOS'), '480000'::jsonb, 'revisão de código, nota 3: com o valor da parcela, para a ficha dizer "em parte"');
 
 -- 14. C3: o segundo alvará de Joana (R$ 10.000,00) fica limitado ao que falta.
 create temp table pl as select pg_temp.prop(joana, 1000000) v from cli;
@@ -308,6 +322,16 @@ select is((select portal_financeiro_receber(diego, rm) -> 'totais' -> 'recebidoM
 create temp table ll as select pg_temp.lancar(luis) v from cli;
 select is((select jsonb_build_array(v -> 'parcela' ->> 'situacao', v -> 'pagoPeloAlvara', v -> 'honorariosAlvara') from ll), '["A_VENCER", [], []]'::jsonb,
   'sem alvará, a parcela de Luís nasce aberta, como antes');
+-- Revisão de código, nota 1: encerrar o contrato cancela a parcela do êxito ainda aberta
+-- (contrato_cancelar_futuros). Nada foi pago: a proposta não diz PAGO e não corta os honorários.
+savepoint encerrado;
+select is((select portal_contrato_encerrar(socia, rm, ct.luis, (select versao from contratos where id = ct.luis), 'Cliente mudou de escritório') ->> 'cancelados'
+             from ids, ct), '1', 'o encerramento do contrato cancela a parcela do êxito de Luís');
+select is((select pg_temp.prop(luis, 1000000) -> 'exitoSituacao' from cli), '{"situacao": "CANCELADO", "valor": 480000}'::jsonb,
+  'CH-07: sem parcela em vigor, CANCELADO, sem falta (e não PAGO)');
+select is((select jsonb_build_array(v -> 'linhas' -> 0 -> 'valor', v -> 'linhas' -> 0 -> 'semLimite', v -> 'cliente') from cli, lateral (select pg_temp.prop(luis, 1000000) v) p),
+  '[300000, null, 700000]'::jsonb, 'FI-05: e os honorários voltam ao percentual, como antes da 1102');
+rollback to savepoint encerrado;
 create temp table lv as select pg_temp.reg(luis, 1600000, '2026-11-18') v from cli;
 select pg_temp.fim();
 select is((select parcela_linha(r) ->> 'situacao' from recebimentos_previstos r, ll where r.id = (ll.v -> 'parcela' ->> 'id')::uuid), 'PAGA',
@@ -323,9 +347,19 @@ select is((select pg_temp.prop(luis, 1000000) -> 'exitoSituacao' ->> 'situacao' 
 select is((select count(*)::integer from ids, cs, cli, exito_honorarios_livres(ids.outro, cs.id, cli.katia)), 0,
   'PT-01: exito_honorarios_livres filtra o escritório');
 select is((select exito_situacao(outro, cs.id, cli.helena) from ids, cs, cli), null::jsonb, 'PT-01: exito_situacao filtra o escritório');
-select is((select destinacao_pagou(d) from destinacoes d, lev where d.id = pg_temp.hon(lev.helena)
-            and not exists (select 1 from pagamentos_recebidos p where p.destinacao_id = d.id and p.escritorio_id = d.escritorio_id)), null,
+-- Um pagamento com o escritório errado apontando para a parte de Helena (só montável sem os
+-- gatilhos): destinacao_pagou não o soma. Os testes rodam como superusuário, que ignora o RLS, então
+-- é o filtro explícito que se prova aqui.
+savepoint intruso;
+create temp table pagou_antes as select destinacao_pagou(d) v from destinacoes d, lev where d.id = pg_temp.hon(lev.helena);
+set local session_replication_role = replica;
+insert into pagamentos_recebidos (escritorio_id, parcela_id, valor, recebido_em, forma, caixa, autor_id, destinacao_id)
+  select ids.outro, pj.id, 99900, '2026-11-18', 'PIX', 'TERCEIROS', ids.intrusa, pg_temp.hon(lev.helena) from ids, pj, lev;
+set local session_replication_role = origin;
+select ok((select count(*) = 2 from pagamentos_recebidos p, lev where p.destinacao_id = pg_temp.hon(lev.helena)), 'o pagamento intruso está na tabela');
+select is((select destinacao_pagou(d) from destinacoes d, lev where d.id = pg_temp.hon(lev.helena)), (select v from pagou_antes),
   'PT-01: destinacao_pagou lê só os pagamentos do escritório da parte');
+rollback to savepoint intruso;
 select is((teste.erro($$ select portal_financeiro_exito_lancar(ids.intrusa, ids.outro, pg_temp.exito(cli.igor), '{"valor": 480000, "vencimento": "2026-12-15"}') from ids, cli $$)) ->> 'codigo',
   'TC404', 'PT-01: o êxito do outro escritório não é encontrado');
 select is((teste.erro($$ select portal_financeiro_exito_lancar(ids.intrusa, ids.rm, pg_temp.exito(cli.igor), '{"valor": 480000, "vencimento": "2026-12-15"}') from ids, cli $$)) ->> 'codigo',

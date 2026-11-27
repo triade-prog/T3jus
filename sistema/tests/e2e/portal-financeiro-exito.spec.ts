@@ -299,7 +299,7 @@ test.describe("Êxito para conferir e reembolso junto (F3.14, F3.85)", () => {
 // docs/design/aprovadas/portal-exito-alvara-conferir (D39), estados ea-conferir, ea-conferir-sobra,
 // ea-conferir-dois, ea-nao-cobrar e ea-lancado.
 const LEV_A = "f5000000-0000-4000-8000-000000000301";
-const COM_ALVARA = { ...X, honorariosAlvara: [{ levantamentoId: LEV_A, tipo: "ALVARA", entrouEm: dia(-6), livre: 840000 }], honorariosAlvaraTotal: 840000 };
+const COM_ALVARA = { ...X, honorariosAlvara: [{ levantamentoId: LEV_A, tipo: "ALVARA", entrouEm: dia(-6), livre: 840000 }] };
 const nbsp = (s: string) => s.replace(/\u00a0/g, " ");
 
 test.describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07, FI-05)", () => {
@@ -360,7 +360,7 @@ test.describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07
     const dois = { ...X, honorariosAlvara: [
       { levantamentoId: LEV_A, tipo: "ALVARA", entrouEm: dia(-13), livre: 300000 },
       { levantamentoId: "f5000000-0000-4000-8000-000000000302", tipo: "ALVARA", entrouEm: dia(-6), livre: 540000 },
-    ], honorariosAlvaraTotal: 840000 };
+    ] };
     await simular(page, {
       ...comuns(),
       "GET /v1/escritorio/financeiro/exitos": { corpo: { ...EXITOS, itens: [dois] } },
@@ -405,6 +405,29 @@ test.describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07
     await voltar.focus();
     await page.keyboard.press("Enter");
     await expect(page.getByRole("dialog", { name: "Conferir o êxito" })).toBeVisible();
+  });
+
+  test("ea-nao-cobrar pelo servidor: com a lista velha, o alvará entrou depois e a recusa vem do banco", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/financeiro/exitos": { corpo: EXITOS },
+      "GET /v1/escritorio/financeiro/receber": { corpo: lista([]) },
+      [`POST /v1/escritorio/financeiro/exitos/${EXITO}/nao-cobrar`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "HONORARIOS_JA_ENTRARAM" } } } },
+    });
+    await page.goto(`${P}/financeiro/a-receber`);
+    await page.getByRole("button", { name: /Conferir o êxito de Joana Pereira/ }).click();
+    await page.getByRole("button", { name: "Não cobrar este êxito" }).click();
+    const n = page.getByRole("dialog", { name: "Não cobrar este êxito" });
+    // Sem honorariosAlvara na lista, a janela é a de sempre.
+    await expect(n.getByRole("radio")).toHaveCount(3);
+    await n.getByRole("radio", { name: /Perdoado ou renegociado/ }).check();
+    await n.getByLabel("Explique").fill("Renegociado com Joana em troca de pagar as parcelas fixas em dia.");
+    await n.getByRole("button", { name: "Não cobrar" }).click();
+    await expect(n).toContainText("Os honorários deste êxito já entraram pela divisão do alvará. Lance o êxito: ele nasce pago.");
+    await expect(page.getByRole("status").filter({ hasText: "Êxito não cobrado." })).toHaveCount(0);
+    await expect(n).toBeVisible();
+    expect(pedidos.filter((p) => p.metodo === "POST")).toHaveLength(1);
+    await semViolacoes(page);
   });
 
   test("Celular: o aviso e os botões do pé cabem na janela de conferir", async ({ page }) => {

@@ -246,7 +246,6 @@ export interface ExitoParaConferir {
   conferido: { por: PessoaRef; em: string } | null;
   /** F3.199: as partes de honorários do alvará que já entraram e ainda estão livres (sem a 1102, não vem). */
   honorariosAlvara?: HonorariosDoAlvara[];
-  honorariosAlvaraTotal?: number;
 }
 
 /** Uma parte de honorários de um levantamento do cliente no caso, ainda livre (F3.199; CH-07). */
@@ -261,9 +260,13 @@ export type ExitoLancado = ExitoParaConferir & {
 /** Onde está o êxito do cliente no caso, para a divisão do alvará (F3.199; 1102, exito_situacao). */
 export type ExitoSituacao =
   | { situacao: "SEM_CONFERENCIA" }
+  /** O caso encerrado sem êxito para conferir (sem valores, calculado 0 ou antes da 0640). */
+  | { situacao: "SEM_EXITO" }
   | { situacao: "PARA_CONFERIR"; calculado: number }
   | { situacao: "LANCADO"; valor: number; falta: number }
   | { situacao: "PAGO"; valor: number; falta: 0; pagoEm: string | null }
+  /** Lançado, mas sem parcela em vigor (cancelada no encerramento do contrato): não limita. */
+  | { situacao: "CANCELADO"; valor: number }
   | { situacao: "NAO_COBRADO" };
 
 export interface ExitosParaConferir { total: number; n: number; itens: ExitoParaConferir[] }
@@ -665,6 +668,8 @@ export interface Destinacao {
 /** Uma parcela do êxito paga por uma parte de honorários (F3.199; destinacao_pagou). */
 export interface PagouDaParte {
   parcelaId: string; descricao: string; valor: number; lancadaEm: string;
+  /** O valor da parcela: com valor menor, a parte pagou só um pedaço dela. */
+  parcelaValor?: number | null;
   pagaEm?: string | null; contrato?: string | null; lancadaPor?: PessoaRef | null;
 }
 

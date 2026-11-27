@@ -94,4 +94,20 @@ describe("F3.199: o êxito lançado depois do alvará já nasce pago (CH-07, FI-
     expect(nb(h.texto)).toBe("A parcela do êxito de Helena foi lançada em 18/11 por Diego e paga por esta parte de honorários (R$ 4.800,00).");
     expect(h.quem).toBe("Diego Almeida, ao conferir o êxito em A receber");
   });
+  it("revisão de código, nota 3: a parte que pagou só um pedaço da parcela diz quanto", () => {
+    const p = { parcelaId: "p", descricao: "Êxito · Duarte x Construtora Atlas", valor: 300000, parcelaValor: 480000, lancadaEm: "2026-11-18T13:20:00Z",
+      pagaEm: "2026-11-12", contrato: "C-2026-027", lancadaPor: DIEGO };
+    expect(nb(textoPagou(p))).toBe("Pagou R$ 3.000,00 da parcela do êxito, lançada em 18/11");
+    expect(nb(fechamentoPagou(p, "ALVARA").titulo)).toBe("Êxito do contrato C-2026-027: R$ 3.000,00 pagos por este alvará");
+    // Inteira, ou sem o valor da parcela (o banco sem a correção), o texto aprovado.
+    expect(textoPagou({ ...p, valor: 480000 })).toBe("Pagou a parcela do êxito, lançada em 18/11");
+    expect(fechamentoPagou({ ...p, parcelaValor: null }, "ALVARA").titulo).toBe("Êxito do contrato C-2026-027: pago por este alvará");
+  });
+  it("revisão de código, notas 1 e 2: SEM_EXITO e CANCELADO não têm linha curta nem aviso de pago", () => {
+    expect(linhaCurtaDoExito({ situacao: "SEM_EXITO" }, "Luís Duarte")).toBeNull();
+    expect(linhaCurtaDoExito({ situacao: "CANCELADO", valor: 480000 }, "Luís Duarte")).toBeNull();
+    const linha = { para: "HONORARIOS" as const, nome: "Honorários de êxito", regra: "30% · acordo · contrato C-2026-027", valor: 300000 };
+    expect(avisoLimiteDoExito({ exitoSituacao: { situacao: "CANCELADO", valor: 480000 }, linhas: [linha] }, "Luís Duarte", "ALVARA")).toBeNull();
+    expect(avisoLimiteDoExito({ exitoSituacao: { situacao: "CANCELADO", valor: 480000 }, linhas: [] }, "Luís Duarte", "ALVARA")).toBeNull();
+  });
 });

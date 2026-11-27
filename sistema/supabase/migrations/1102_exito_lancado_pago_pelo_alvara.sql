@@ -74,10 +74,18 @@ as $$
 $$;
 
 -- Onde está o êxito do cliente no caso, para a divisão do alvará (nota 3 da segunda revisão):
--- null sem condição de êxito no contrato; senão SEM_CONFERENCIA, PARA_CONFERIR (com o
--- calculado), LANCADO (com o valor e a falta), PAGO (falta 0, com o dia do último pagamento) ou
--- NAO_COBRADO. A falta soma o que falta das parcelas do êxito abertas ou com baixa sem receber em
--- vigor (F3.174: a baixa não é pagamento).
+-- null sem condição de êxito no contrato; senão
+--   SEM_CONFERENCIA: o caso ainda em andamento, sem a linha de exitos_conferir;
+--   SEM_EXITO: o caso encerrado sem a linha (sem valores, calculado 0 ou antes da 0640);
+--   PARA_CONFERIR (com o calculado) ou NAO_COBRADO;
+--   LANCADO (com o valor e a falta);
+--   PAGO (falta 0, com o dia do último pagamento): só com parcela em vigor e paga de verdade;
+--   CANCELADO: lançado, mas sem parcela em vigor (por exemplo, cancelada por
+--     contrato_cancelar_futuros no encerramento do contrato). Não traz falta, e a proposta não
+--     limita (revisão de código da F3.199, nota 1).
+-- A falta soma o que falta das parcelas do êxito abertas ou com baixa sem receber em vigor (F3.174:
+-- a baixa não é pagamento), com o contrato ATIVO ou ENCERRADO, o mesmo filtro de
+-- exito_parcelas_abertas (0651), que é quem paga a parcela pela divisão (nota 4).
 create function exito_situacao(p_escritorio uuid, p_caso uuid, p_cliente uuid) returns jsonb
 language sql stable
 set search_path = public
@@ -91,20 +99,27 @@ as $$
      where x.escritorio_id = p_escritorio and x.caso_id = p_caso and x.cliente_id = p_cliente
      order by x.criado_em desc, x.id desc limit 1
   ), r as (
-    select coalesce(sum(greatest(r.valor - parcela_recebido(r.id), 0)), 0)::bigint falta,
+    select count(*) n, coalesce(sum(r.valor), 0)::bigint total,
+           coalesce(sum(least(parcela_recebido(r.id), r.valor)), 0)::bigint recebido,
+           coalesce(sum(greatest(r.valor - parcela_recebido(r.id), 0)), 0)::bigint falta,
            (select max(p.recebido_em) from pagamentos_recebidos p join recebimentos_previstos q on q.id = p.parcela_id
-             where q.exito_id = (select id from x) and p.escritorio_id = p_escritorio) pago_em
+             where q.exito_id = (select id from x) and q.escritorio_id = p_escritorio and p.escritorio_id = p_escritorio) pago_em
       from recebimentos_previstos r
+      join contratos ct on ct.id = r.contrato_id and ct.estado in ('ATIVO', 'ENCERRADO')
      where r.escritorio_id = p_escritorio and r.exito_id = (select id from x)
        and r.valor is not null and (r.cancelado_em is null or r.baixa_id is not null)
   )
   select case
     when not exists (select 1 from c) then null
-    when not exists (select 1 from x) then jsonb_build_object('situacao', 'SEM_CONFERENCIA')
+    when not exists (select 1 from x) then
+      case when exists (select 1 from casos k where k.id = p_caso and k.escritorio_id = p_escritorio and k.situacao = 'ANDAMENTO')
+           then jsonb_build_object('situacao', 'SEM_CONFERENCIA') else jsonb_build_object('situacao', 'SEM_EXITO') end
     when (select situacao from x) = 'PARA_CONFERIR' then jsonb_build_object('situacao', 'PARA_CONFERIR', 'calculado', (select calculado from x))
     when (select situacao from x) = 'NAO_COBRADO' then jsonb_build_object('situacao', 'NAO_COBRADO')
-    when (select falta from r) > 0 then jsonb_build_object('situacao', 'LANCADO', 'valor', (select valor_lancado from x), 'falta', (select falta from r))
-    else jsonb_build_object('situacao', 'PAGO', 'valor', (select valor_lancado from x), 'falta', 0, 'pagoEm', (select pago_em from r))
+    when (select n from r) = 0 then jsonb_build_object('situacao', 'CANCELADO', 'valor', (select valor_lancado from x))
+    when (select falta from r) = 0 and (select recebido from r) >= (select total from r)
+      then jsonb_build_object('situacao', 'PAGO', 'valor', (select valor_lancado from x), 'falta', 0, 'pagoEm', (select pago_em from r))
+    else jsonb_build_object('situacao', 'LANCADO', 'valor', (select valor_lancado from x), 'falta', (select falta from r))
   end
 $$;
 
@@ -114,13 +129,13 @@ create function destinacao_pagou(d destinacoes) returns jsonb
 language sql stable
 set search_path = public
 as $$
-  select jsonb_agg(jsonb_build_object('parcelaId', r.id, 'descricao', r.descricao, 'valor', t.valor, 'lancadaEm', r.criado_em,
+  select jsonb_agg(jsonb_build_object('parcelaId', r.id, 'descricao', r.descricao, 'valor', t.valor, 'parcelaValor', r.valor, 'lancadaEm', r.criado_em,
                                       'pagaEm', t.pago_em, 'contrato', ct.numero,
                                       'lancadaPor', (select pessoa_ref(x.conferido_por) from exitos_conferir x where x.id = r.exito_id and x.conferido_por is not null))
                    order by r.criado_em, r.id)
     from (select p.parcela_id, sum(p.valor)::bigint valor, max(p.recebido_em) pago_em from pagamentos_recebidos p
            where p.destinacao_id = d.id and p.escritorio_id = d.escritorio_id group by p.parcela_id) t
-    join recebimentos_previstos r on r.id = t.parcela_id
+    join recebimentos_previstos r on r.id = t.parcela_id and r.escritorio_id = d.escritorio_id
     left join contratos ct on ct.id = r.contrato_id
 $$;
 
@@ -199,8 +214,7 @@ as $$
   select exito_linha_sem_alvara(x) || jsonb_build_object(
     'honorariosAlvara', coalesce((select jsonb_agg(jsonb_build_object('levantamentoId', h.levantamento_id, 'tipo', h.tipo, 'entrouEm', h.entrou_em, 'livre', h.livre)
                                                    order by h.entrou_em, h.destinacao_id)
-                                    from exito_honorarios_livres(x.escritorio_id, x.caso_id, x.cliente_id) h), '[]'::jsonb),
-    'honorariosAlvaraTotal', coalesce((select sum(h.livre) from exito_honorarios_livres(x.escritorio_id, x.caso_id, x.cliente_id) h), 0))
+                                    from exito_honorarios_livres(x.escritorio_id, x.caso_id, x.cliente_id) h), '[]'::jsonb))
 $$;
 
 -- ---------------------------------------------------------------------------------------

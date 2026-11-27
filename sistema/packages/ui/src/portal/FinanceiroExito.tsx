@@ -8,7 +8,7 @@
 // F3.199 (D39, docs/design/aprovadas/portal-exito-alvara-conferir): com honorários do alvará já
 // entrados, a janela de conferir avisa que a parcela nasce paga, e o "Não cobrar" é recusado (C2).
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   dataBr, FORMAS_PAGAMENTO, MOTIVOS_NAO_COBRAR, percentual, reais, RESULTADOS_CASO,
   type ExitoLancado, type ExitoParaConferir, type ExitosParaConferir, type FormaPagamento, type MotivoNaoCobrar,
@@ -105,8 +105,16 @@ export function JanelaConferir({ x, aoFechar, aoNaoCobrar, aoFeito }: {
   const c = lerCentavos(valor);
   const mudou = c !== null && c > 0 && c !== x.calculado;
   const nome = primeiroNome(x.cliente.nome);
-  // F3.199 (ea-conferir): os honorários do alvará que já entraram pagam a parcela ao lançar.
-  const alvara = avisoConferir(x, c);
+  // F3.199 (ea-conferir): os honorários do alvará que já entraram pagam a parcela ao lançar. O
+  // aviso é uma região viva (role="status"): o valor dele só muda quando a pessoa para de digitar,
+  // para o leitor de tela ler o aviso uma vez, e não a cada tecla (revisão de código, nota 7).
+  const [cAviso, setCAviso] = useState(c);
+  useEffect(() => {
+    if (c === cAviso) return;
+    const t = setTimeout(() => setCAviso(c), 600);
+    return () => clearTimeout(t);
+  }, [c, cAviso]);
+  const alvara = avisoConferir(x, cAviso);
 
   async function enviar() {
     const e: string[] = [];
