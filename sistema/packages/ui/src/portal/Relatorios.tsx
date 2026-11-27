@@ -1,15 +1,16 @@
 "use client";
 // Financeiro do Portal, Relatórios do sócio (F3.70; IN-02 a IN-05, IN-07, IN-08, IN-09, IN-12,
 // IN-14, IN-15; FI-06, FI-07), desenho aprovado em docs/design/aprovadas/portal-relatorios
-// (Carol, 20/11/2026). Só a sócia dona vê; Entrou pelo dia em que o dinheiro entrou; Rendeu é o
+// (Carol, 20/11/2026). O "Baixado sem receber" (F3.173; IN-04, IN-07, FI-24) segue os estados rb-
+// de docs/design/aprovadas/portal-exito-baixado-alvara (Carol, 26/11/2026). Só a sócia dona vê; Entrou pelo dia em que o dinheiro entrou; Rendeu é o
 // que entrou menos as despesas de caso adiantadas que não voltaram; abre nos últimos 3 meses,
 // contra os 3 anteriores. Terceiros só na folha âmbar, nunca somados. Os números vêm prontos do
 // servidor; aqui só se escreve, se ordena e se monta a planilha.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  reais, TIPOS_LEVANTAMENTO, TIPOS_REQUISICAO,
-  type AreaRelatorio, type ClienteRelatorio, type CompararCom, type DadosRelatorioExportado, type FormatoRelatorio, type PeriodoRelatorio,
+  MOTIVOS_BAIXA, reais, TIPOS_LEVANTAMENTO, TIPOS_REQUISICAO,
+  type AreaRelatorio, type BaixaDoRelatorio, type BaixadoRelatorio, type ClienteRelatorio, type CompararCom, type DadosRelatorioExportado, type FormatoRelatorio, type PeriodoRelatorio,
   type RelatorioAreas, type RelatorioCliente, type RelatorioClientes, type RelatorioResponsaveis, type ResumoRelatorio, type VisaoRelatorio,
 } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
@@ -25,8 +26,8 @@ import { MolduraArea } from "./MolduraArea.tsx";
 import { mesAno } from "./ACaminho.tsx";
 import { planilhaXlsx } from "./planilha.ts";
 import {
-  abasRelatorio, atalho, atalhoAtual, comparacao, comparaTexto, conferirPeriodo, consultaPeriodo, diaBr, filtrarClientes, fimDoMes, nomeArea,
-  nomeArquivoRelatorio, nomeDoMesLongo, ORDENS_CLIENTES, periodoCurto, periodoTexto, reaisComSinal, ROTAS_RELATORIOS, rotuloComparacao,
+  abasRelatorio, atalho, atalhoAtual, comparacao, comparaTexto, conferirPeriodo, consultaPeriodo, desfeitaEm, diaBr, filtrarClientes, fimDoMes, nomeArea,
+  nomeArquivoRelatorio, nomeDoMesLongo, ORDENS_CLIENTES, periodoCurto, periodoMeses, periodoTexto, reaisComSinal, ROTAS_RELATORIOS, rotuloComparacao,
   totaisClientes, type OrdemClientes,
 } from "./relatorios.ts";
 
@@ -141,6 +142,7 @@ function Como({ aberto, periodo }: { aberto: boolean; periodo: PeriodoRelatorio 
       <dl>
         <div><dt>Entrou</dt><dd>Honorários que entraram no caixa do escritório no período, <b>pelo dia em que o dinheiro entrou</b>. A parcela de um mês paga no mês seguinte conta no mês em que foi paga. Nunca inclui dinheiro de terceiros.</dd></div>
         <div><dt>Falta receber</dt><dd>Parcelas em aberto hoje: as <b>vencidas</b>, por idade, e as <b>a vencer até o fim de cada contrato</b>. Mensalidade sem data de fim conta só até este mês. A parte do escritório em RPV e precatório fica <b>à parte</b>.</dd></div>
+        <div><dt>Baixado sem receber</dt><dd>O que faltava nas parcelas que tiveram baixa sem receber no período, <b>pelo dia da baixa</b>. A renegociada e as custas não somam. Uma baixa desfeita depois não muda o período em que foi feita.</dd></div>
         <div><dt>Rendeu</dt><dd>O que entrou <b>menos as despesas de caso que o escritório adiantou</b> (custas, perícia) e que ainda não voltaram. Não desconta aluguel, salários nem outras despesas fixas: essa conta é a DRE, que depende do contador.</dd></div>
         <div><dt>Contratado</dt><dd>Parcelas e mensalidades que venceram ou vencem no período, pelos contratos. O êxito entra quando acontece.</dd></div>
         <div><dt>Comparação</dt><dd>{cmp}{periodo?.aberto ? " O mês de hoje ainda está aberto, e isso aparece escrito." : ""}</dd></div>
@@ -288,6 +290,7 @@ function Carregando({ pedido, visao }: { pedido: Pedido; visao: VisaoRelatorio }
             </div>
             <div className="fi-col">
               <FolhaCarregando id="t-c3" titulo="Falta receber" icone="alerta" n={4} />
+              <FolhaCarregando id="t-c5" titulo="Baixado sem receber" icone="seta" n={3} />
               <FolhaCarregando id="t-c4" titulo="Rendeu" icone="funcoes" n={3} />
             </div>
           </div>
@@ -555,6 +558,65 @@ function FolhaFalta({ r }: { r: ResumoRelatorio }) {
   );
 }
 
+/** "R$ 412,30 desfeitos", embaixo do valor de uma linha ao lado, quando houve desfazer no período. */
+function Desfeitos({ v }: { v: number }) {
+  return v ? <small>{reais(v)} desfeitos</small> : null;
+}
+
+/**
+ * F3.173: a folha "Baixado sem receber" (estados rb-visao e rb-visao-nenhuma). Pelo dia da baixa: um
+ * desfazer depois aparece no mês dele e não muda o mês da baixa. Ao lado, sem somar, as desfeitas,
+ * a renegociada e as custas, cada uma com "não soma" escrito.
+ */
+function FolhaBaixado({ b, periodo }: { b: BaixadoRelatorio; periodo: PeriodoRelatorio }) {
+  const quando = periodoMeses(periodo.de, periodo.ate, periodo.hoje);
+  const nada = !b.n && !b.desfeitas.n && !b.renegociado.n && !b.renegociado.desfeitas.n && !b.custas.n && !b.custas.desfeitas.n;
+  const motivos = (["PERDOADA", "INADIMPLENCIA"] as const).filter((m) => b.porMotivo[m]);
+  // A comparação; num período sem baixa, aparece só quando o período anterior teve.
+  const cmp = b.anterior !== null && periodo.cde && periodo.cate ? (
+    <p className="rb-cmp"><Icone nome="historico" className="ico" /><span>{reais(b.anterior)} em {periodoMeses(periodo.cde, periodo.cate, periodo.hoje)}</span></p>
+  ) : null;
+  return (
+    <Folha id="t-baixado" titulo="Baixado sem receber" icone="seta" sub={`Parcelas que saíram de Em atraso sem que o dinheiro entrasse, de ${quando}`}
+      ver={{ texto: "A receber", href: ROTAS_FINANCEIRO.receber }}>
+      {nada ? (
+        <>
+          <p className="rb-nada"><Icone nome="check" className="ico" /><span>Nenhuma baixa sem receber de <span className="rb-nq">{quando}</span></span></p>
+          {cmp && b.anterior ? cmp : null}
+        </>
+      ) : (
+        <>
+          <div className="rb-num">
+            <p className="rb-v"><b>{reais(b.valor)}</b><span>· {contar(b.n, "parcela", "parcelas")}</span></p>
+            {motivos.length ? (
+              <p className="rb-mot">{motivos.map((m, i) => <span key={m}>{i ? " · " : ""}{MOTIVOS_BAIXA[m]} <b className="num">{reais(b.porMotivo[m])}</b></span>)}</p>
+            ) : null}
+            {cmp}
+          </div>
+          {b.desfeitas.n || b.renegociado.n || b.renegociado.desfeitas.n || b.custas.n || b.custas.desfeitas.n ? (
+            <dl className="re-conta rb-lado">
+              {b.desfeitas.n ? <div><dt>Baixas desfeitas no período<small>voltaram para A receber</small></dt><dd className="num">{reais(b.desfeitas.valor)}</dd></div> : null}
+              {b.renegociado.n || b.renegociado.desfeitas.n ? (
+                <div>
+                  <dt>Renegociado no período<small>vira parcelas novas em Contratos e <span className="rb-nao">não soma</span></small></dt>
+                  <dd className="num">{reais(b.renegociado.valor)}<Desfeitos v={b.renegociado.desfeitas.valor} /></dd>
+                </div>
+              ) : null}
+              {b.custas.n || b.custas.desfeitas.n ? (
+                <div>
+                  <dt>Custas baixadas junto<small>despesas do escritório e <span className="rb-nao">não soma</span></small></dt>
+                  <dd className="num">{reais(b.custas.valor)}<Desfeitos v={b.custas.desfeitas.valor} /></dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+        </>
+      )}
+      <p className="pt-pe-folha"><Icone nome="ajuda" className="ico" /><span>Não conta em Entrou nem em Falta receber. Cada baixa fica no mês em que foi feita. Se for desfeita depois, o desfazer aparece no mês dele.</span></p>
+    </Folha>
+  );
+}
+
 function FolhaRendeu({ r }: { r: ResumoRelatorio }) {
   const d = r.rendeu.despesas;
   const quais = d.slice(0, 3).map((x) => `${x.descricao} de ${x.cliente} (${reais(x.valor)})`).join(", ");
@@ -635,8 +697,9 @@ function VisaoConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido; q:
                 <FolhaTopClientes r={r} q={q} />
                 <FolhaTopAreas r={r} q={q} />
               </div>
-              <aside className="fi-col" aria-label="Falta receber, rendeu e terceiros">
+              <aside className="fi-col" aria-label={r.baixado?.algum ? "Falta receber, baixado sem receber, rendeu e terceiros" : "Falta receber, rendeu e terceiros"}>
                 <FolhaFalta r={r} />
+                {r.baixado?.algum ? <FolhaBaixado b={r.baixado} periodo={r.periodo} /> : null}
                 <FolhaRendeu r={r} />
                 <FolhaTerceiros r={r} />
               </aside>
@@ -658,6 +721,17 @@ function FaltaCliente({ c }: { c: ClienteRelatorio }) {
       {c.aparte.map((a, i) => (
         <span className="re-aparte-txt" key={i}><Icone nome="balanca" className="ico" /><span>{TIPOS_LEVANTAMENTO[a.tipo]}: {reais(a.valor)}, à parte</span></span>
       ))}
+    </>
+  );
+}
+
+/** F3.173: a célula "Baixado sem receber" de um cliente, com o motivo escrito. */
+function BaixadoCliente({ c }: { c: ClienteRelatorio }) {
+  if (!c.baixado) return <span className="fi-pq">—</span>;
+  return (
+    <>
+      <b className="num">{reais(c.baixado)}</b>
+      {c.baixadoMotivos?.length ? <small>{c.baixadoMotivos.map((m) => MOTIVOS_BAIXA[m].toLowerCase()).join(" e ")}</small> : null}
     </>
   );
 }
@@ -694,13 +768,19 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
           const t = totaisClientes(lista);
           const negativos = lista.filter((c) => c.rendeu < 0);
           const ordemTexto = ORDENS_CLIENTES.find((o) => o.v === ordem)!.t.toLowerCase();
+          // F3.173: a coluna só aparece quando o servidor já manda o número (a 1101 aplicada).
+          const comBaixado = d.clientes.some((c) => c.baixado !== undefined);
+          const ordens = comBaixado ? ORDENS_CLIENTES : ORDENS_CLIENTES.filter((o) => o.v !== "baixado");
+          const contaOrdem = ordem === "baixado" ? "do que mais teve baixa sem receber para o que menos teve" : ordemTexto;
           const rotuloCol = (k: OrdemClientes) => (ordem === k ? (k === "rendeu" || k === "nome" ? "ascending" : "descending") : undefined);
           return (
             <section className="folha" aria-labelledby="t-cli" style={{ overflow: "hidden" }}>
               <div className="folha-cab">
                 <div>
                   <h2 id="t-cli"><Icone nome="pessoas" className="ico" />Por cliente</h2>
-                  <p className="sub">Cada cliente com o que foi contratado, o que entrou, o que falta e o que rendeu no período.</p>
+                  <p className="sub">{comBaixado
+                    ? "Cada cliente com o que foi contratado, o que entrou, o que falta, o que teve baixa sem receber e o que rendeu no período."
+                    : "Cada cliente com o que foi contratado, o que entrou, o que falta e o que rendeu no período."}</p>
                 </div>
                 <div className="acoes"><a className="ver" href={ROTAS_FINANCEIRO.receber}>Cobrar em A receber<Icone nome="dir" className="ico ico-s" /></a></div>
               </div>
@@ -715,7 +795,7 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
                 <div className="campo">
                   <label htmlFor="re-ordem">Ordenar por</label>
                   <select className="entrada" id="re-ordem" value={ordem} onChange={(e) => setOrdem(e.target.value as OrdemClientes)}>
-                    {ORDENS_CLIENTES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
+                    {ordens.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
                   </select>
                 </div>
                 <div className="campo">
@@ -726,18 +806,20 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
                   </select>
                 </div>
               </form>
-              <p className="re-cont" role="status"><b>{busca || area ? contar(lista.length, "cliente encontrado", "clientes encontrados") : contar(lista.length, "cliente", "clientes")}</b>{busca || area ? "" : " com contrato no período"} · {ordemTexto}</p>
+              <p className="re-cont" role="status"><b>{busca || area ? contar(lista.length, "cliente encontrado", "clientes encontrados") : contar(lista.length, "cliente", "clientes")}</b>{busca || area ? "" : " com contrato no período"} · {contaOrdem}</p>
               {lista.length ? (
                 <>
-                  <table className="so-pc fi-tab re-tab" data-prio-tabela="relatorio-clientes" data-sai3="880" data-sai2="760" data-cartoes="640">
+                  <table className={comBaixado ? "so-pc fi-tab re-tab rb-tab" : "so-pc fi-tab re-tab"} data-prio-tabela="relatorio-clientes"
+                    data-sai3={comBaixado ? "960" : "880"} data-sai2={comBaixado ? "720" : "760"} data-cartoes={comBaixado ? "560" : "640"}>
                     <caption className="sr">Por cliente, de {periodoTexto(d.periodo.de, d.periodo.ate)}, ordenado por {ordemTexto}</caption>
-                    <colgroup>{["27%", "13%", "13%", "19%", "13%", "15%"].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+                    <colgroup>{(comBaixado ? ["21%", "11%", "11%", "17%", "13%", "13%", "14%"] : ["27%", "13%", "13%", "19%", "13%", "15%"]).map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
                     <thead>
                       <tr>
                         <th scope="col" aria-sort={rotuloCol("nome")}>Cliente</th>
                         <th scope="col" className="v">Contratado</th>
                         <th scope="col" className="v" aria-sort={rotuloCol("entrou")}>Entrou{ordem === "entrou" ? <Icone nome="baixo" className="ico" /> : null}</th>
                         <th scope="col" className="v" aria-sort={rotuloCol("falta") ?? rotuloCol("vencido")}>Falta receber</th>
+                        {comBaixado ? <th scope="col" className="v" aria-sort={rotuloCol("baixado")}>Baixado sem receber{ordem === "baixado" ? <Icone nome="baixo" className="ico" /> : null}</th> : null}
                         <th scope="col" className="v">Despesas não reembolsadas</th>
                         <th scope="col" className="v" aria-sort={rotuloCol("rendeu")}>Rendeu</th>
                       </tr>
@@ -755,6 +837,7 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
                           <td className="v num">{reais(c.contratado)}</td>
                           <td className="v num"><b style={{ fontWeight: 600 }}>{reais(c.entrou)}</b></td>
                           <td className="v"><FaltaCliente c={c} /></td>
+                          {comBaixado ? <td className="v rb-col" data-r="Baixado sem receber"><BaixadoCliente c={c} /></td> : null}
                           <td className="v num">{c.adiantado ? reais(c.adiantado) : <span className="fi-pq">—</span>}</td>
                           <td className="v re-rend"><Rendeu v={c.rendeu} /></td>
                         </tr>
@@ -766,6 +849,7 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
                         <td className="num">{reais(t.contratado)}</td>
                         <td className="num">{reais(t.entrou)}</td>
                         <td className="num">{reais(t.falta)}<small><span className="num">{reais(t.vencido)}</span> vencidos{t.aparte ? <> · mais <span className="num">{reais(t.aparte)}</span> à parte</> : null}</small></td>
+                        {comBaixado ? <td className="num">{reais(t.baixado)}<small>não soma</small></td> : null}
                         <td className="num">{reais(t.adiantado)}</td>
                         <td className="num">{reaisComSinal(t.rendeu)}</td>
                       </tr>
@@ -784,6 +868,12 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
                         <dl className="c-dados">
                           <dt>Contratado</dt><dd className="num">{reais(c.contratado)}</dd>
                           <dt>Falta receber</dt><dd className="num">{reais(c.falta)}{c.aparte.map((a, i) => <small key={i}>{TIPOS_LEVANTAMENTO[a.tipo]}: {reais(a.valor)}, à parte</small>)}</dd>
+                          {comBaixado ? (
+                            <>
+                              <dt>Baixado sem receber</dt>
+                              <dd className="num">{c.baixado ? <>{reais(c.baixado)}<small>{[...(c.baixadoMotivos ?? []).map((m) => MOTIVOS_BAIXA[m].toLowerCase()), "não soma"].join(" · ")}</small></> : "—"}</dd>
+                            </>
+                          ) : null}
                           <dt>Despesas não reembolsadas</dt><dd className="num">{reais(c.adiantado)}</dd>
                           <dt>Rendeu</dt><dd className="num">{reaisComSinal(c.rendeu)}</dd>
                         </dl>
@@ -805,11 +895,16 @@ function ClientesConteudo({ pedido, q, definirPeriodo, topo }: { pedido: Pedido;
                   <dl className="fi-dl so-cel" style={{ paddingTop: 12, borderTop: "1px solid var(--divisor)" }}>
                     <div><dt>Entrou, {contar(lista.length, "cliente", "clientes")}</dt><dd className="num">{reais(t.entrou)}</dd></div>
                     <div><dt>Falta receber</dt><dd className="num">{reais(t.falta)}<br /><span className="fi-pq">{reais(t.vencido)} vencidos</span></dd></div>
+                    {comBaixado ? <div><dt>Baixado sem receber</dt><dd className="num">{reais(t.baixado)}<br /><span className="fi-pq">não soma</span></dd></div> : null}
                     <div><dt>Rendeu</dt><dd className="num">{reaisComSinal(t.rendeu)}</dd></div>
                   </dl>
-                  {negativos.length ? (
+                  {negativos.length || t.baixado ? (
                     <p className="pt-pe-folha"><Icone nome="ajuda" className="ico" />
-                      <span>{negativos.map((c) => c.nome.split(" ")[0]).join(" e ")} {negativos.length === 1 ? "rendeu" : "renderam"} menos que zero: o escritório adiantou despesas de caso e o dinheiro ainda não voltou. O reembolso está combinado em A pagar.</span>
+                      <span>
+                        {t.baixado ? "Baixado sem receber é o que faltava nas parcelas que tiveram baixa no período. Não soma em Entrou nem em Falta receber." : null}
+                        {t.baixado && negativos.length ? " " : null}
+                        {negativos.length ? `${negativos.map((c) => c.nome.split(" ")[0]).join(" e ")} ${negativos.length === 1 ? "rendeu" : "renderam"} menos que zero: o escritório adiantou despesas de caso e o dinheiro ainda não voltou. O reembolso está combinado em A pagar.` : null}
+                      </span>
                     </p>
                   ) : null}
                 </>
@@ -907,17 +1002,25 @@ function ClienteRelatorioTela({ d, q, barra }: { d: RelatorioCliente; q: string;
       {barra}
       <div className="fi-grade pt-desce">
         <div className="fi-col">
-          <Folha id="t-num" titulo="No período" icone="funcoes" sub="Contratado, entrou, falta receber e rendeu, como nas outras visões.">
+          <Folha id="t-num" titulo="No período" icone="funcoes"
+            sub={n.baixado ? "Contratado, entrou, falta receber, rendeu e o que teve baixa sem receber." : "Contratado, entrou, falta receber e rendeu, como nas outras visões."}>
             <dl className="fi-quatro">
               <div><dt>Contratado no período</dt><dd className="num">{reais(n.contratado)}</dd></div>
               <div><dt>Entrou</dt><dd className="num">{reais(n.entrou)}</dd></div>
               <div><dt>Falta receber</dt><dd className={n.vencido ? "num urg" : "num"}>{reais(n.falta)}</dd></div>
               <div><dt>Rendeu</dt><dd className="num">{reaisComSinal(n.rendeu)}</dd></div>
+              {n.baixado ? (
+                <div className="rb-baixado">
+                  <dt>Baixado sem receber</dt>
+                  <dd className="num">{reais(n.baixado)}{n.baixadoDesfeitas ? <small>{reais(n.baixadoDesfeitas)} de baixas desfeitas no período</small> : null}</dd>
+                </div>
+              ) : null}
             </dl>
             {ant && n.entrouAnterior !== null ? (
               <p className="re-leitura" style={{ marginTop: 14 }}><Icone nome="historico" className="ico" /><span>Entrou <b>{comparaTexto(n.entrou, n.entrouAnterior, ant)}</b> ({reais(n.entrouAnterior)}).</span></p>
             ) : null}
           </Folha>
+          {d.baixas?.length ? <FolhaBaixasCliente baixas={d.baixas} total={n.baixado ?? 0} /> : null}
           <Folha id="t-ct" titulo="Contratos e casos" icone="pena" sub="O que o cliente contratou e de onde veio cada valor."
             acoes={<a className="btn btn-sec" href={rotaFichaCliente(d.cliente.id)}><Icone nome="pessoas" className="ico" />Ficha do cliente</a>}>
             {d.contratos.length ? (
@@ -1044,6 +1147,54 @@ function ClienteRelatorioTela({ d, q, barra }: { d: RelatorioCliente; q: string;
         </aside>
       </div>
     </>
+  );
+}
+
+/**
+ * F3.173: as baixas sem receber e os desfazer do período, cada um no seu dia (estados rb-mes-passado
+ * e rb-cliente). As custas que foram junto ficam numa linha abaixo da lista, porque não somam. A
+ * explicação vem entre aspas, menos para o cliente excluído (o servidor não a manda).
+ */
+function FolhaBaixasCliente({ baixas, total }: { baixas: BaixaDoRelatorio[]; total: number }) {
+  const itens = baixas.filter((b) => !b.custas);
+  const custas = baixas.filter((b) => b.custas);
+  const daBaixa = new Set(custas.filter((b) => b.tipo === "BAIXA").map((b) => b.desfeitaEm));
+  const frases = [
+    ...custas.filter((b) => b.tipo === "BAIXA").map((b) => `As custas de ${reais(b.valor)} tiveram baixa junto em ${diaCurto(b.dia)}${b.desfeitaEm ? ` e voltaram a ser cobradas em ${diaCurto(b.desfeitaEm)}` : ""}.`),
+    ...custas.filter((b) => b.tipo === "DESFEITA" && !daBaixa.has(b.dia)).map((b) => `As custas de ${reais(b.valor)} voltaram a ser cobradas em ${diaCurto(b.dia)}.`),
+  ];
+  return (
+    <Folha id="t-bx" titulo="Baixas sem receber no período" icone="seta" sub="Pelo dia da baixa. Desfazer depois não muda o mês em que a baixa foi feita.">
+      {itens.length ? (
+        <ul className="rb-lista" aria-label="Baixas sem receber no período">
+          {itens.map((b) => b.tipo === "BAIXA" ? (
+            <li key={b.id}>
+              <time dateTime={b.dia}>{diaCurto(b.dia)}</time>
+              <div>
+                <strong>Baixa sem receber · {b.parcela}</strong>
+                <small>{MOTIVOS_BAIXA[b.motivo].toLowerCase()} · por {b.por.nome}{b.soma ? "" : " · não soma"}</small>
+                {b.explicacao ? <p className="rb-q"><q>{b.explicacao}</q></p> : null}
+                {b.desfeitaEm ? <Selo tom="neutro">{desfeitaEm(b.desfeitaEm)}</Selo> : null}
+              </div>
+              <span className="fi-v num">{reais(b.valor)}</span>
+            </li>
+          ) : (
+            <li key={b.id} className="rb-desf">
+              <time dateTime={b.dia}>{diaCurto(b.dia)}</time>
+              <div>
+                <strong>Baixa desfeita · {b.parcela}</strong>
+                <small>por {b.por.nome} · voltou para A receber</small>
+              </div>
+              <span className="fi-v num">{reais(b.valor)}{b.baixaEm ? <small>não tira de {diaCurto(b.baixaEm)}</small> : null}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {frases.length ? (
+        <p className="rb-custas"><Icone nome="reenviar" className="ico" /><span>{frases.join(" ")} Não somam: são despesa do escritório.</span></p>
+      ) : null}
+      <p className="fi-total"><span>Baixado sem receber no período</span><b className="num">{reais(total)}</b></p>
+    </Folha>
   );
 }
 

@@ -20,7 +20,7 @@
   "a-pagar": { "3": ["Origem"], "2": ["Categoria", "Nota ou guia"] },
   "recorrentes": { "3": ["Desde"], "2": ["Categoria"] },
   "faturas": { "2": ["Vencimento"] },
-  "relatorio-clientes": { "3": ["Despesas não reembolsadas"], "2": ["Contratado"] },
+  "relatorio-clientes": { "3": ["Despesas não reembolsadas", "Baixado sem receber"], "2": ["Contratado"] },
   "relatorio-areas": { "3": ["Casos no período"], "2": ["Rendeu por caso"] },
   "relatorio-responsaveis": { "3": ["Despesas não reembolsadas"] },
   "relatorio-cliente": { "2": ["Caso e área"] }
