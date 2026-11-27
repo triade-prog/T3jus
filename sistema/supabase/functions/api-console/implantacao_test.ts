@@ -1,4 +1,4 @@
-// Implantação assistida (CO-08, F1.42): a regra global no Console. As rotas pedem a sessão completa,
+// Implantação assistida (CO-08, F1.42 e F1.43): a regra global no Console, concluir e mudar o prazo. As rotas pedem a sessão completa,
 // mandam ao banco a pessoa da sessão (nunca a do corpo) e a versão lida, e o banco decide quem pode
 // (Administração e Financeiro leem; só a Administração muda) e confere os campos.
 import { assertEquals } from "@std/assert";
@@ -8,6 +8,8 @@ import { adminFalso, arquivosFalsos, authFalso, bancoFalso, CODIGO_CERTO, cookie
 const CAROL = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const OUTRA = "1c8d4f1f-6e2b-4d3c-8f9a-2b3c4d5e6f70";
 const ENTRAR = { email: "carol@t3jus.exemplo", senha: "senha-forte-da-equipe" };
+const ESC = "2d9e5a2a-7f3c-4e4d-9a0b-3c4d5e6f7081";
+const OUTRO_ESC = "3e0f6b3b-8a4d-4f5e-8b1c-4d5e6f708192";
 const REGRA = {
   nome: "Implantação assistida", descricao: "treino de toda a equipe e acompanhamento por 30 dias", valorCentavos: 149000,
   condicaoPadrao: "ISENTA", isencaoAte: "2027-05-31", isencaoTexto: "Oferta de lançamento", prazoDias: 30,
@@ -25,6 +27,16 @@ function montar() {
       if ((a.p_dados as { prazoDias: number }).prazoDias > 90) erroBanco("TC422", { campos: ["prazoDias"] });
       if ((a.p_dados as { valorCentavos: number }).valorCentavos === 0) erroBanco("TC401");
       return { versao: 3, mudou: true };
+    },
+    console_implantacao_concluir: (a) => {
+      if (a.p_versao_implantacao === 1) erroBanco("TC409", { versao: 2 });
+      if (a.p_versao_cliente === 9) erroBanco("TC422", { motivo: "IMPLANTACAO_NAO_ABERTA" });
+      return { versaoCliente: 4, implantacao: { estado: "CONCLUIDA", resumo: a.p_resumo } };
+    },
+    console_implantacao_prazo: (a) => {
+      if (a.p_prazo_ate === "2026-01-01") erroBanco("TC422", { motivo: "PRAZO_INVALIDO", campos: ["prazoAte"] });
+      if (a.p_pessoa !== CAROL) erroBanco("TC401");
+      return { versao: 3, implantacao: { prazoAte: a.p_prazo_ate } };
     },
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
@@ -86,4 +98,56 @@ Deno.test("CO-08: quem não é da Administração recebe 403 do banco", async ()
   const cookie = await entrar(m);
   const r = await m.pedir("/v1/cobranca/implantacao", { metodo: "PUT", corpo: { ...REGRA, versao: 2, valorCentavos: 0 }, cookie });
   assertEquals(r.status, 403);
+});
+
+Deno.test("CO-08: concluir e mudar o prazo pedem a sessão completa", async () => {
+  const m = montar();
+  assertEquals((await erro(await m.pedir(`/v1/clientes/${ESC}/implantacao/concluir`, { corpo: { versaoCliente: 3, versaoImplantacao: 2 } }))).codigo, "UNAUTHORIZED");
+  assertEquals((await erro(await m.pedir(`/v1/clientes/${ESC}/implantacao/prazo`, { metodo: "PUT", corpo: { versao: 2, prazoAte: "2027-01-20", motivo: "x" } }))).codigo,
+    "UNAUTHORIZED");
+  assertEquals(m.chamadas.filter((c) => c.funcao.startsWith("console_implantacao")).length, 0);
+});
+
+Deno.test("CO-08: concluir manda as duas versões e o resumo, com o escritório da rota e a pessoa da sessão", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/clientes/${ESC}/implantacao/concluir`, {
+    corpo: { versaoCliente: 3, versaoImplantacao: 2, resumo: "Equipe treinada", p_pessoa: OUTRA, escritorioId: OUTRO_ESC }, cookie,
+  });
+  assertEquals(r.status, 200);
+  assertEquals((await r.json()).implantacao.estado, "CONCLUIDA");
+  assertEquals(m.chamadas.find((c) => c.funcao === "console_implantacao_concluir")?.args, {
+    p_pessoa: CAROL, p_escritorio: ESC, p_versao_cliente: 3, p_versao_implantacao: 2, p_resumo: "Equipe treinada",
+  });
+  const semResumo = await m.pedir(`/v1/clientes/${ESC}/implantacao/concluir`, { corpo: { versaoCliente: 3, versaoImplantacao: 2 }, cookie });
+  assertEquals(semResumo.status, 200);
+  assertEquals(m.chamadas.filter((c) => c.funcao === "console_implantacao_concluir").at(-1)?.args.p_resumo, null);
+});
+
+Deno.test("CO-08: concluir sem as versões é 400, com id que não é do formato é 404; versão velha é 409; sem implantação aberta volta o motivo", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  assertEquals((await m.pedir(`/v1/clientes/${ESC}/implantacao/concluir`, { corpo: { versaoCliente: 3 }, cookie })).status, 400);
+  assertEquals((await m.pedir(`/v1/clientes/nao-e-id/implantacao/concluir`, { corpo: { versaoCliente: 3, versaoImplantacao: 2 }, cookie })).status, 404);
+  assertEquals(m.chamadas.some((c) => c.funcao === "console_implantacao_concluir"), false);
+  assertEquals((await m.pedir(`/v1/clientes/${ESC}/implantacao/concluir`, { corpo: { versaoCliente: 3, versaoImplantacao: 1 }, cookie })).status, 409);
+  const fechada = await m.pedir(`/v1/clientes/${ESC}/implantacao/concluir`, { corpo: { versaoCliente: 9, versaoImplantacao: 2 }, cookie });
+  assertEquals(fechada.status, 400);
+  assertEquals((await erro(fechada)).detalhes, { motivo: "IMPLANTACAO_NAO_ABERTA" });
+});
+
+Deno.test("CO-08: mudar o prazo leva a data, o motivo e a versão; a data fora do formato é 400 e a recusada volta com o campo", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/clientes/${ESC}/implantacao/prazo`, {
+    metodo: "PUT", corpo: { versao: 2, prazoAte: "2027-01-20", motivo: "Sócia viajou", autor: OUTRA }, cookie,
+  });
+  assertEquals(r.status, 200);
+  assertEquals(m.chamadas.find((c) => c.funcao === "console_implantacao_prazo")?.args, {
+    p_pessoa: CAROL, p_escritorio: ESC, p_prazo_ate: "2027-01-20", p_motivo: "Sócia viajou", p_versao: 2,
+  });
+  assertEquals((await m.pedir(`/v1/clientes/${ESC}/implantacao/prazo`, { metodo: "PUT", corpo: { versao: 2, prazoAte: "20/01/2027", motivo: "x" }, cookie })).status, 400);
+  const antes = await m.pedir(`/v1/clientes/${ESC}/implantacao/prazo`, { metodo: "PUT", corpo: { versao: 2, prazoAte: "2026-01-01", motivo: "x" }, cookie });
+  assertEquals(antes.status, 400);
+  assertEquals((await erro(antes)).detalhes, { motivo: "PRAZO_INVALIDO", campos: ["prazoAte"] });
 });

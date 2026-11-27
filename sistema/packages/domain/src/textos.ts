@@ -241,6 +241,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   TESTE_NAO_REPETIDO: "Só o teste repetido espera ser liberado.",
   TESTE_NAO_COMECOU: "Só dá para prorrogar o teste que já começou.",
   PRORROGAR_DATA: "Escolha um último dia depois do último dia de agora, a partir de hoje.",
+  // CO-08 (1181): a implantação assistida.
+  IMPLANTACAO_NAO_ABERTA: "Este escritório não tem implantação em andamento. Recarregue a página para ver como está.",
+  PRAZO_INVALIDO: "Escolha um prazo diferente do de agora, a partir de hoje e até um ano depois da abertura.",
   // CO-09 (1161): a confirmação da assinatura e a cobrança depois do teste.
   JA_ASSINADO: "A assinatura deste escritório já foi confirmada. Recarregue a página para ver quem confirmou.",
   ASSINATURA_NAO_PREPARADA: "Prepare a assinatura antes de confirmar: plano, dia e forma de pagamento.",

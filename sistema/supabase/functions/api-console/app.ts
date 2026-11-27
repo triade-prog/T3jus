@@ -46,6 +46,8 @@ import {
   planoSalvarSchema,
   planoArquivarSchema,
   pessoaAMaisSchema,
+  implantacaoConcluirSchema,
+  implantacaoPrazoSchema,
   implantacaoRegraSchema,
   assinaturaSalvarSchema,
   mudarPlanoSchema,
@@ -465,6 +467,25 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json({
       versao: await rpc<number>("console_mudar_estagio", { p_pessoa: pessoa(c), p_escritorio: id, p_versao: d.versao, p_estagio: d.estagio, p_motivo: d.motivo }),
     });
+  });
+
+  // Implantação assistida (CO-08, F1.43). Concluir passa a Ativo pelo caminho do estágio
+  // (console.estagio.mudar) e fecha a implantação; o prazo muda só pela Administração, com motivo.
+  // O escritório vai na rota e o autor é sempre a pessoa da sessão.
+  app.post("/v1/clientes/:id/implantacao/concluir", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, implantacaoConcluirSchema);
+    return c.json(await rpc("console_implantacao_concluir", {
+      p_pessoa: pessoa(c), p_escritorio: id, p_versao_cliente: d.versaoCliente, p_versao_implantacao: d.versaoImplantacao,
+      p_resumo: d.resumo ?? null,
+    }));
+  });
+  app.put("/v1/clientes/:id/implantacao/prazo", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, implantacaoPrazoSchema);
+    return c.json(await rpc("console_implantacao_prazo", {
+      p_pessoa: pessoa(c), p_escritorio: id, p_prazo_ate: d.prazoAte, p_motivo: d.motivo, p_versao: d.versao,
+    }));
   });
 
   // Fim do contrato (F0.14, PT-11): só a Administração. Encerrar confere a data, o motivo e o
