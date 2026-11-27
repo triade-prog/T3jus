@@ -1,0 +1,12 @@
+{
+  "id": "D39",
+  "texto": "Desenho do êxito lançado depois do alvará (aviso ao conferir, confirmação, não cobrar com honorários já entrados, célula da divisão, histórico do repasse e o êxito já pago ou limitado na divisão), com a variação \"paga em parte\" do eb-proposta revista",
+  "peca": "S4",
+  "refs": [
+    "CH-07",
+    "FI-05"
+  ],
+  "status": "feito",
+  "ordem": 89,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-exito-alvara-conferir/ (11 estados ea- e a variação eb-proposta-parte, computador e celular, axe sem violação nos 22 casos), feito pelo plano F3.194/F3.192/F3.191 v5 (Parte A) e revisado por um especialista independente (REVISAO-DESENHO.md: nenhuma grave, 4 médias, duas corrigidas no desenho e duas levadas ao plano como os campos semLimite e pagou), aprovado pela Carol em 26/11/2026 às 22h11 (Bahia) com \"Aprovado\", com a C2 (o \"Não cobrar\" é recusado quando os honorários já entraram pelo alvará) e a C3 (limitar ao que falta do êxito lançado). No plano, a entrega se chama F3.194; no painel, F3.199"
+}
