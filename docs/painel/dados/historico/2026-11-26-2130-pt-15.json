@@ -1,0 +1,12 @@
+{
+  "data": "26/11/2026",
+  "inicio": "21:30",
+  "fim": "21:42",
+  "texto": "P24 feita: api-portal v45 e api-console v19 no ar antes do merge do #207, e Portal e Console publicados pela Vercel depois",
+  "refs": [
+    "PT-15",
+    "PT-10",
+    "CH-08",
+    "AP-01"
+  ]
+}
