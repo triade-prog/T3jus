@@ -249,6 +249,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ASSINATURA_NAO_PREPARADA: "Prepare a assinatura antes de confirmar: plano, dia e forma de pagamento.",
   TESTE_SEM_PRIMEIRO_ACESSO: "O teste ainda não começou: confirme depois do primeiro acesso de um sócio, ou dispense o teste.",
   TESTE_REPETIDO: "O teste repetido espera a decisão da Administração: libere ou dispense o teste antes de confirmar.",
+  // CO-09 (1162): "Quero assinar" no Portal.
+  QUERO_ASSINAR_FORA_DO_TESTE: "O pedido para assinar vale durante o teste grátis ou depois do fim. Para assinar agora, fale com a equipe do T3jus.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
