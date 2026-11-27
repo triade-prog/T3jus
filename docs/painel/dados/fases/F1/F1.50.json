@@ -1,0 +1,11 @@
+{
+  "id": "F1.50",
+  "texto": "Console: mostrar a folha do carnê substituído (hoje a ficha só mostra o número e o motivo da troca, e o histórico)",
+  "peca": "C1",
+  "refs": [
+    "CO-10"
+  ],
+  "status": "pendente",
+  "ordem": 67.44,
+  "nota": "Sobra do F1.29: o servidor devolve só id, número e motivo dos carnês substituídos. O Portal já mostra o carnê antigo com o PDF; a Administração vê a troca no histórico da assinatura."
+}

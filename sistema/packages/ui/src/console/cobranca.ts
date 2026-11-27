@@ -2,7 +2,7 @@
 // que elas calculam deles. Telas aprovadas em docs/design/aprovadas/console-cobranca. Módulo
 // simples (sem "use client"), para os testes e as páginas do servidor usarem.
 
-import { diaBrasilia, dinheiro, ErroDinheiro, formatar, lerReais, mesPorExtenso, type FormaAssinatura, type SituacaoFatura } from "@t3jus/domain";
+import { diaBrasilia, dinheiro, ErroDinheiro, faixasDoCarne, formatar, lerReais, mesPorExtenso, textoFaixas, type FormaAssinatura, type SituacaoFatura } from "@t3jus/domain";
 import type { NomeIcone } from "../Icone.tsx";
 
 /** As abas de Cobrança (fora do componente de cliente para a página do servidor conferir). */
@@ -66,6 +66,8 @@ export interface ItemFatura {
   quantidade: number;
   valorUnitarioCentavos?: number;
   valorCentavos: number;
+  /** O motivo do desconto, como estava na emissão (1170/1171). */
+  motivo?: string | null;
 }
 
 /** GET /v1/clientes/:id/faturas/:fatura. */
@@ -118,6 +120,91 @@ export interface ParcelaCb {
   pagaEm: string | null;
   emAtraso: boolean;
   canceladaMotivo: string | null;
+  /** O desconto de entrada desta parcela, em centavos (0 sem desconto; 1170, CO-10). */
+  descontoCentavos?: number;
+  /** As pessoas ativas no dia em que o carnê nasceu. */
+  pessoas?: number;
+}
+
+/** Parcelas seguidas de mesmo valor (carne_faixas, 1170). */
+export interface FaixaCb {
+  de: string;
+  ate: string;
+  quantidade: number;
+  valorCentavos: number;
+}
+
+/** A prévia de um carnê que ainda não existe (carne_previa, 1170). */
+export interface PreviaCarneCb {
+  primeiraCompetencia: string;
+  ultimaCompetencia: string;
+  parcelas: number;
+  pessoas: number;
+  faixas: FaixaCb[];
+  totalCentavos: number;
+}
+
+/** A recusa CARNE_TROCA_CONFIRMAR (1170): o que a troca do carnê pelo desconto faz. */
+export interface TrocaPorDescontoCb {
+  parcelas: number;
+  competencias: string[];
+  pessoasCarne: number;
+  pessoasHoje: number;
+  previa: PreviaCarneCb;
+}
+
+/** "3 × R$ 399,20 e 9 × R$ 499,00" (D41: a comparação Hoje → Novo e o PDF). */
+export function textoFaixasX(faixas: readonly Pick<FaixaCb, "quantidade" | "valorCentavos">[]): string {
+  const partes = faixas.map((f) => `${f.quantidade} × ${brl(f.valorCentavos)}`);
+  return partes.length > 1 ? `${partes.slice(0, -1).join(", ")} e ${partes[partes.length - 1]}` : (partes[0] ?? "");
+}
+
+/** O nome do carnê, como o banco dá: o ano, ou os dois anos ("2026/2027"). */
+export function nomeDoCarne(primeira: string, ultima: string): string {
+  const a = primeira.slice(0, 4);
+  const b = ultima.slice(0, 4);
+  return a === b ? a : `${a}/${b}`;
+}
+
+/** As competências de cada faixa, mês a mês (para a comparação; o mês pulado não entra na conta). */
+export function mesesDasFaixas(faixas: readonly FaixaCb[]): { competencia: string; valorCentavos: number }[] {
+  const lista: { competencia: string; valorCentavos: number }[] = [];
+  for (const f of faixas) {
+    let c = f.de;
+    for (let i = 0; i < f.quantidade; i++) {
+      lista.push({ competencia: c, valorCentavos: f.valorCentavos });
+      const [a, m] = c.split("-").map(Number);
+      const t = (a ?? 2026) * 12 + (m ?? 1);
+      c = `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}-01`;
+    }
+  }
+  return lista;
+}
+
+/**
+ * A prévia do carnê feita na tela (D41, estado 4), com a mesma conta do servidor: mensalidade +
+ * pessoas a mais − desconto (sobre a mensalidade, até a competência dita). Só para conferir.
+ */
+export function previaCarneNaTela(o: {
+  inicio: string; parcelas: number; precoCentavos: number; incluidas: number; pessoas: number; pessoaAMaisCentavos: number;
+  pct: number | null; ate: string | null;
+}): { competencia: string; valorCentavos: number; descontoCentavos: number }[] {
+  const mais = Math.max(o.pessoas - o.incluidas, 0);
+  const desc = o.pct ? Math.round((o.precoCentavos * o.pct) / 100) : 0;
+  return mesesDasFaixas([{ de: o.inicio, ate: o.inicio, quantidade: o.parcelas, valorCentavos: 0 }]).map(({ competencia }) => {
+    const d = o.pct && o.ate && competencia <= o.ate ? desc : 0;
+    return { competencia, valorCentavos: Math.max(o.precoCentavos + mais * o.pessoaAMaisCentavos - d, 0), descontoCentavos: d };
+  });
+}
+
+/** "20% até a fatura de fevereiro de 2027" ou "sem desconto" (desconto_texto, 1170). */
+export function textoDoDesconto(pct: number | null | undefined, ate: string | null | undefined): string {
+  return pct && ate ? `${pct}% até a fatura de ${mesPorExtenso(ate)}` : "sem desconto";
+}
+
+/** As faixas de um carnê; sem elas (API de antes), contadas das parcelas. */
+export function faixasDoCarneCb(c: Pick<CarneCb, "itens" | "faixas">): FaixaCb[] {
+  return c.faixas && c.faixas.length ? c.faixas : faixasDoCarne([...c.itens].sort((a, b) => a.numero - b.numero));
 }
 
 export interface CarneCb {
@@ -134,6 +221,8 @@ export interface CarneCb {
   substituidoMotivo: string | null;
   pdf: boolean;
   itens: ParcelaCb[];
+  faixas?: FaixaCb[];
+  totalCentavos?: number;
 }
 
 export interface PreviaPlano {
@@ -142,6 +231,8 @@ export interface PreviaPlano {
   itens: ItemFatura[];
   pessoas: number;
   totalCentavos: number;
+  /** Com Carnê em uso: o carnê novo neste plano (1170). */
+  carne?: PreviaCarneCb;
 }
 
 export type SituacaoAssinaturaCb = "SEM_COBRANCA" | "EM_DIA" | "EM_ATRASO" | "SO_CONSULTA";
@@ -174,7 +265,16 @@ export interface AssinaturaCb {
   soConsulta?: { desde: string; motivo: string; por: string | null } | null;
   proxima?: PreviaPlano;
   abertas?: { faturas: number; totalCentavos: number };
-  carne?: { emUso: CarneCb[]; substituidos: { id: string; numero: string; substituidoEm: string; motivo: string }[]; valorHojeCentavos: number | null } | null;
+  carne?: {
+    emUso: CarneCb[];
+    substituidos: { id: string; numero: string; substituidoEm: string; motivo: string }[];
+    /** A mensalidade de hoje da próxima competência sem fatura. */
+    valorHojeCentavos: number | null;
+    /** A parcela desse mesmo mês no carnê em uso (1170): o aviso compara as duas. */
+    valorCarneCentavos?: number | null;
+    /** O carnê novo, se a equipe gerar hoje (1170). */
+    previaNovo?: PreviaCarneCb | null;
+  } | null;
   faturas?: FaturaCb[];
   mudancas?: EventoCb[];
 }
@@ -420,10 +520,18 @@ export function textoEvento(e: EventoCb): { quem: string; acao: string; detalhe?
         ...base, forte: true, acao: `mudou o plano de ${txt(d.de)} para ${txt(d.para)}`,
         detalhe: `vale a partir da fatura de ${mesPorExtenso(txt(d.valeEm))} · ${brl(num(d.precoParaCentavos))} por mês`, motivo: txt(d.motivo),
       };
-    case "carne.gerado":
+    case "carne.gerado": {
+      // Desde a 1170, o evento traz as faixas: "3 parcelas de R$ 399,20 e 9 de R$ 499,00".
+      const fx = Array.isArray(d.faixas) && d.faixas.length ? (d.faixas as FaixaCb[]) : null;
       return {
         ...base, acao: `gerou o carnê ${txt(d.numero)}`,
-        detalhe: `${num(d.parcelas)} parcelas de ${brl(num(d.valorParcelaCentavos))}, de ${mesPorExtenso(txt(d.de))} a ${mesPorExtenso(txt(d.ate))}`,
+        detalhe: `${fx ? textoFaixas(fx) : `${num(d.parcelas)} parcelas de ${brl(num(d.valorParcelaCentavos))}`}, de ${mesPorExtenso(txt(d.de))} a ${mesPorExtenso(txt(d.ate))}`,
+      };
+    }
+    case "assinatura.desconto_ajustado":
+      return {
+        ...base, acao: `ajustou o desconto de entrada para até a fatura de ${mesPorExtenso(txt(d.para))}`,
+        detalhe: `${num(d.meses)} ${num(d.meses) === 1 ? "mês" : "meses"} a partir da 1ª fatura${txt(d.de) ? ` (era até ${mesPorExtenso(txt(d.de))})` : ""}`,
       };
     case "carne.parcelas_canceladas":
       return { ...base, acao: `cancelou ${num(d.parcelas)} ${num(d.parcelas) === 1 ? "parcela" : "parcelas"} do carnê`, detalhe: "Nada foi apagado: ficam como Canceladas", motivo: txt(d.motivo) };

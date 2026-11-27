@@ -522,11 +522,12 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
                         {f.itens.map((i, k) => (
                           <tr key={k} className={i.valorCentavos < 0 ? "cb-desc" : undefined}>
                             <td>
-                              {i.tipo === "MENSALIDADE" ? "Mensalidade" : i.tipo === "PESSOA_A_MAIS" ? "Pessoa a mais" : "Desconto"}
+                              {i.tipo === "MENSALIDADE" ? "Mensalidade" : i.tipo === "PESSOA_A_MAIS" ? "Pessoa a mais" : "Desconto de entrada"}
                               <small>
                                 {i.descricao}
                                 {i.tipo === "PESSOA_A_MAIS" && i.valorUnitarioCentavos ? ` · ${i.quantidade} × ${brl(i.valorUnitarioCentavos)}` : ""}
                               </small>
+                              {i.tipo === "DESCONTO" && i.motivo ? <small className="cb-motivo-item">“{i.motivo}”</small> : null}
                             </td>
                             <td className="cb-valor">{brl(i.valorCentavos)}</td>
                           </tr>
