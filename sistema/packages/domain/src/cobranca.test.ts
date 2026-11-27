@@ -40,4 +40,10 @@ describe("cobrança dos escritórios (CO-06)", () => {
       expect(TEXTOS_MOTIVO[m]).toBeTruthy();
     expect(TEXTOS_MOTIVO.SEM_ASSINATURA).not.toMatch(/outro escritório|repetid/i);
   });
+  it("CO-09: os motivos da confirmação da assinatura têm texto", () => {
+    for (const m of ["JA_ASSINADO", "ASSINATURA_NAO_PREPARADA", "TESTE_SEM_PRIMEIRO_ACESSO", "TESTE_REPETIDO", "SEM_TESTE_GRATIS"])
+      expect(TEXTOS_MOTIVO[m]).toBeTruthy();
+    expect(TEXTOS_MOTIVO.SEM_TESTE_GRATIS).toMatch(/regra antiga/);
+    expect(TEXTOS_MOTIVO).not.toHaveProperty("CARNE_COM_DESCONTO");
+  });
 });
