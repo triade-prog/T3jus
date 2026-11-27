@@ -236,11 +236,16 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   // CO-09 (1160): o teste grátis de 7 dias.
   TESTE_ENCERRADO: "O teste grátis terminou e o Portal está só para consulta. Seus dados estão guardados. Para continuar, fale com a equipe do T3jus.",
   SEM_ASSINATURA: "A equipe do T3jus está liberando o seu acesso. Enquanto isso, o Portal fica só para consulta.",
-  SEM_TESTE_GRATIS: "Este escritório não tem teste grátis.",
+  SEM_TESTE_GRATIS: "Este escritório não tem teste grátis: segue a regra antiga, e a cobrança começa ao passar para Ativo.",
   TESTE_JA_DISPENSADO: "O teste deste escritório já foi dispensado.",
   TESTE_NAO_REPETIDO: "Só o teste repetido espera ser liberado.",
   TESTE_NAO_COMECOU: "Só dá para prorrogar o teste que já começou.",
   PRORROGAR_DATA: "Escolha um último dia depois do último dia de agora, a partir de hoje.",
+  // CO-09 (1161): a confirmação da assinatura e a cobrança depois do teste.
+  JA_ASSINADO: "A assinatura deste escritório já foi confirmada. Recarregue a página para ver quem confirmou.",
+  ASSINATURA_NAO_PREPARADA: "Prepare a assinatura antes de confirmar: plano, dia e forma de pagamento.",
+  TESTE_SEM_PRIMEIRO_ACESSO: "O teste ainda não começou: confirme depois do primeiro acesso de um sócio, ou dispense o teste.",
+  TESTE_REPETIDO: "O teste repetido espera a decisão da Administração: libere ou dispense o teste antes de confirmar.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
