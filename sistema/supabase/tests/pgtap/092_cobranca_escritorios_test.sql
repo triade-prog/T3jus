@@ -208,14 +208,16 @@ select console_parcela_pagamento_manual(fin, pequi, id, jsonb_build_object('pago
   from ids, c, assinatura_carne_parcelas where carne_id = (select id from ca) and numero = 3;
 select is((select p.situacao || '|' || f.situacao from assinatura_carne_parcelas p join faturas f on f.id = p.fatura_id where p.carne_id = (select id from ca) and p.numero = 3),
   'PAGA|PAGA', 'a parcela paga adiantada cria a fatura do mês já paga');
--- Carnê novo: cancela as parcelas sem fatura, começa depois da última com fatura.
+-- Carnê novo: cancela as parcelas sem fatura e começa no primeiro mês cancelado, pulando o mês
+-- pago adiantado (CO-10, pergunta 5: nenhum mês sem parcela nem em dois carnês).
 select is((teste.erro($$ select console_carne_novo(fin, pequi, pg_temp.ver(pequi), '') from ids, c $$)) -> 'detalhe' ->> 'motivo', 'MOTIVO_OBRIGATORIO',
   'o carnê novo pede motivo');
 create temp table cn as select console_carne_novo(fin, pequi, pg_temp.ver(pequi), 'Passou para 9 pessoas') as r from ids, c;
 select is((select (r ->> 'canceladas')::int from cn), 10, 'as parcelas 2 e 4 a 12, sem fatura, são canceladas');
-select is((select primeira_competencia from assinatura_carnes where id = (select (r ->> 'carneNovoId')::uuid from cn)),
-  (select (max(competencia) + interval '1 month')::date from faturas where escritorio_id = (select pequi from c)),
-  'o carnê novo começa na competência seguinte à última com fatura');
+select is((select array_agg(p.competencia order by p.numero) from assinatura_carne_parcelas p where p.carne_id = (select (r ->> 'carneNovoId')::uuid from cn)),
+  (select array_agg(g::date order by g) from ca, generate_series((ca.primeira_competencia + interval '1 month')::date, (ca.primeira_competencia + interval '13 months')::date, interval '1 month') g
+    where g::date <> (ca.primeira_competencia + interval '2 months')::date),
+  'o carnê novo começa no mês da parcela 2 e pula o da parcela 3, paga adiantada: 12 parcelas, nenhum mês faltando nem repetido');
 select is((select situacao from assinatura_carne_parcelas where carne_id = (select id from ca) and numero = 3), 'PAGA', 'a parcela paga continua paga');
 select is((select substituido_motivo from assinatura_carnes where id = (select id from ca)), 'Passou para 9 pessoas', 'o carnê antigo fica como substituído, com o motivo');
 select is((teste.erro($$ delete from assinatura_carne_parcelas where carne_id = (select id from ca) $$)) ->> 'codigo', 'TC010', 'parcela não se apaga');

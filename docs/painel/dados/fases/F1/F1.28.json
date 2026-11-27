@@ -1,0 +1,13 @@
+{
+  "id": "F1.28",
+  "texto": "Carnê com o valor de cada parcela no servidor: o desconto de entrada só nas parcelas do prazo, itens e motivo na fatura da parcela, troca confirmada ao mudar o desconto, carnê novo sem mês faltando nem repetido, trava contra duas trocas e o desconto que conta da 1ª fatura",
+  "peca": "C1",
+  "refs": [
+    "CO-10",
+    "CO-06"
+  ],
+  "status": "feito",
+  "ordem": 67.41,
+  "nota": "Plano em project-files t3jus/co-10-carne/plano-v2.md, revisado por outro especialista (revisao.md), com as 5 recomendações aprovadas pela Carol em 27/11/2026 (troca com confirmação, pessoa a mais contada no dia do carnê, \"Desconto de entrada\", desconto contado da 1ª fatura, carnê novo de 12 sem lacuna). Substitui a regra \"o valor da parcela fica fixo [...] o mesmo vale para o fim de um desconto\" do desenho console-cobranca (o desenho novo é o D41). Até as telas (F1.29), a regra provisória continua: desconto de entrada só com Pix e boleto; mudar o desconto com o carnê em uso recebe o erro CARNE_TROCA_CONFIRMAR com texto claro. O plano anual (CO-07) vai precisar de outro campo de desconto, para não brigar com o de entrada.",
+  "evidencia": "Migration 1170_carne_desconto_por_parcela.sql: colunas pessoas e itens em assinatura_carne_parcelas (travadas), motivo em fatura_itens e desconto_meses em assinaturas; funções novas carne_faixas, carne_faixas_de, carne_competencias, carne_parcelas_calc, carne_previa, carne_inicio_troca, carne_troca_por_desconto, carne_desconto_de e desconto_texto; recriadas cobranca_itens (\"Desconto de entrada\"), cobranca_gerar_carne, cobranca_trocar_carne (começa no 1º mês cancelado e pula os meses com fatura; corrige o mês sem parcela depois da parcela adiantada), cobranca_emitir, cobranca_comecar, carne_json, carnes_da_assinatura (valorCarneCentavos e previaNovo), previa_no_plano (carne), cobranca_carne_documento_json, cobranca_documento_json (motivo do item), assinatura_dados (99% no carnê), console_assinatura_salvar_sem_endereco (trocarCarne, DESCONTO_JA_PASSOU, for update), console_assinatura_mudar_plano e console_carne_novo (for update). Domínio: faixasDoCarne, textoFaixas, trocarCarne no assinaturaSalvarSchema e os textos dos motivos. Testes: pgTAP 180 (25), 181 (22) e 182 (13), 092 reescrito no carnê trocado, supabase/tests/concorrencia/carne-troca-simultanea.sh e cobranca.test.ts; os 140 arquivos pgTAP passam."
+}

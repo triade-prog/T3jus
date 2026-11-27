@@ -1,0 +1,12 @@
+{
+  "id": "D41",
+  "texto": "Desenho do carnê com desconto de entrada nas primeiras parcelas (faixas, canhotos com valor e selo, troca confirmada pelo desconto, carnê que pula o mês pago adiantado, aviso de valor mudado, Portal e PDFs). Substitui as regras \"todas com o mesmo valor\" e \"o valor da parcela fica fixo [...] fim de um desconto\" do console-cobranca",
+  "peca": "C1",
+  "refs": [
+    "CO-10",
+    "CO-06"
+  ],
+  "status": "andamento",
+  "ordem": 91,
+  "nota": "14 estados (plano-v2, seção 4.2), feitos pela especialista de frontend em project-files t3jus/co-10-carne/desenho/; depois da aprovação da Carol, a cópia vai para docs/design/aprovadas/console-cobranca-carne-desconto/."
+}

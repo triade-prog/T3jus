@@ -5,6 +5,7 @@
 // diferente da fatura, plano arquivado...) são conferidos no banco, que devolve todos juntos.
 
 import { z } from "zod";
+import { dinheiro, formatar } from "./dinheiro.ts";
 
 export const FORMAS_ASSINATURA = { PIX: "Pix", BOLETO: "Boleto", CARNE: "Carnê" } as const;
 export type FormaAssinatura = keyof typeof FORMAS_ASSINATURA;
@@ -98,7 +99,52 @@ export const assinaturaSalvarSchema = z.object({
   }).partial().nullable().optional(),
   /** PA-07 (0860): "O mesmo endereço da sede". Com true, o endereço acima é ignorado. */
   mesmoDaSede: z.boolean().optional(),
+  /**
+   * CO-10 (1170): mudar o desconto com o carnê em uso troca o carnê só com a confirmação da tela.
+   * Sem ela, o banco recusa com CARNE_TROCA_CONFIRMAR e devolve a prévia no detalhe.
+   */
+  trocarCarne: z.boolean().optional(),
 });
+
+/** Uma faixa do carnê: as parcelas seguidas de mesmo valor (CO-10). */
+export interface FaixaCarne {
+  de: string;
+  ate: string;
+  quantidade: number;
+  valorCentavos: number;
+}
+
+/**
+ * As parcelas seguidas de mesmo valor, juntas, como `carne_faixas_de` no banco (1170). Usada só
+ * para mostrar (a prévia da tela); o carnê de verdade vem do servidor.
+ */
+export function faixasDoCarne(parcelas: readonly { competencia: string; valorCentavos: number }[]): FaixaCarne[] {
+  const faixas: FaixaCarne[] = [];
+  for (const p of parcelas) {
+    const ultima = faixas[faixas.length - 1];
+    if (ultima && ultima.valorCentavos === p.valorCentavos) {
+      ultima.ate = p.competencia;
+      ultima.quantidade += 1;
+    } else {
+      faixas.push({ de: p.competencia, ate: p.competencia, quantidade: 1, valorCentavos: p.valorCentavos });
+    }
+  }
+  return faixas;
+}
+
+/**
+ * "3 parcelas de R$ 399,20 e 9 de R$ 499,00"; com um valor só, "12 parcelas de R$ 499,00".
+ * O mesmo texto no Console, no Portal e no PDF (CO-10).
+ */
+export function textoFaixas(faixas: readonly Pick<FaixaCarne, "quantidade" | "valorCentavos">[]): string {
+  const partes = faixas.map((f, i) => {
+    const valor = formatar(dinheiro(f.valorCentavos));
+    if (i === 0) return `${f.quantidade} ${f.quantidade === 1 ? "parcela" : "parcelas"} de ${valor}`;
+    return `${f.quantidade} de ${valor}`;
+  });
+  if (partes.length <= 1) return partes[0] ?? "";
+  return `${partes.slice(0, -1).join(", ")} e ${partes[partes.length - 1]}`;
+}
 
 export const mudarPlanoSchema = z.object({ versao, planoId: z.string().uuid(), motivo });
 export const motivoCobrancaSchema = z.object({ versao, motivo });

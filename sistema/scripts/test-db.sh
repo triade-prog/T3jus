@@ -56,6 +56,9 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-contrato
 # de importação desfeita, com o levantamento (F3.187 e F3.185, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-caso-simultaneo.sh"
 
+# Duas trocas do carnê ao mesmo tempo (F1.28, CO-10).
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/carne-troca-simultanea.sh"
+
 # Dispensar, trazer de volta e o contrato novo do mesmo cliente ao mesmo tempo (F3.145, VA-05).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/dispensar-contrato.sh"
 
