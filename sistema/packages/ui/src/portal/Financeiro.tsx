@@ -30,6 +30,7 @@ import { ROTAS_CONTRATOS } from "./contratos.ts";
 import { primeiroNome } from "./equipe.ts";
 import { Toast } from "./FichaCliente.tsx";
 import { BlocoExitos, JanelaConferir, JanelaNaoCobrar } from "./FinanceiroExito.tsx";
+import { confirmacaoLancado } from "./exito_alvara.ts";
 import { comoVolta, gruposPorCliente, gruposPorVencimento, mesReferencia, quandoAcao, ROTAS_FINANCEIRO, seloParcela, textoCobranca } from "./financeiro.ts";
 import { centavos as lerCentavos } from "./honorarios.ts";
 import { juntarComE } from "./clientes.ts";
@@ -148,11 +149,13 @@ function ReceberConteudo({ escritorio }: { escritorio: EscritorioPortal }) {
     <>
       {conferir ? (
         <JanelaConferir x={conferir} aoFechar={() => setConferir(null)} aoNaoCobrar={() => { setNaoCobrar(conferir); setConferir(null); }}
-          aoFeito={(p, v) => {
+          aoFeito={(r, v) => {
             const x = conferir;
+            const p = r.parcela;
             setConferir(null);
-            setNovas((n) => [...n, p.id]);
-            setFeito({ titulo: "Êxito lançado em A receber.", texto: `${reais(v)} de ${x.cliente.nome}, para ${dataBr(p.vencimento)}. Ficou no histórico do caso e do contrato.` });
+            // F3.199 (ea-lancado): a parcela paga pelo alvará não entra como "lançada agora" em aberto.
+            if (p.situacao !== "PAGA") setNovas((n) => [...n, p.id]);
+            setFeito(confirmacaoLancado(x.cliente.nome, v, p.vencimento, r.pagoPeloAlvara));
             exitos.recarregar();
             recarregar();
           }} />

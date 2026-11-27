@@ -1,0 +1,14 @@
+{
+  "data": "27/11/2026",
+  "inicio": "01:20",
+  "fim": "01:36",
+  "texto": "Notas da revisão de código da F3.199 (REVISAO-CODIGO-F3-199): o êxito com a parcela cancelada não vira PAGO nem corta os honorários, SEM_EXITO para o caso encerrado sem êxito, a ficha diz quando a parte pagou só um pedaço, o aviso lido uma vez, os testes que faltavam e os pendentes F3.202 e F3.203.",
+  "refs": [
+    "F3.199",
+    "F3.202",
+    "F3.203",
+    "P29",
+    "CH-07",
+    "FI-05"
+  ]
+}

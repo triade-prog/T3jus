@@ -244,7 +244,30 @@ export interface ExitoParaConferir {
   explicacao: string | null;
   recebimentoId: string | null;
   conferido: { por: PessoaRef; em: string } | null;
+  /** F3.199: as partes de honorários do alvará que já entraram e ainda estão livres (sem a 1102, não vem). */
+  honorariosAlvara?: HonorariosDoAlvara[];
 }
+
+/** Uma parte de honorários de um levantamento do cliente no caso, ainda livre (F3.199; CH-07). */
+export interface HonorariosDoAlvara { levantamentoId: string; tipo: TipoLevantamento; entrouEm: string; livre: number }
+
+/** O que o lançar respondeu: a linha do êxito, a parcela e o que o alvará já pagou dela (F3.199). */
+export type ExitoLancado = ExitoParaConferir & {
+  parcela: ParcelaLinha;
+  pagoPeloAlvara?: { levantamentoId: string; tipo: TipoLevantamento; entrouEm: string; valor: number }[];
+};
+
+/** Onde está o êxito do cliente no caso, para a divisão do alvará (F3.199; 1102, exito_situacao). */
+export type ExitoSituacao =
+  | { situacao: "SEM_CONFERENCIA" }
+  /** O caso encerrado sem êxito para conferir (sem valores, calculado 0 ou antes da 0640). */
+  | { situacao: "SEM_EXITO" }
+  | { situacao: "PARA_CONFERIR"; calculado: number }
+  | { situacao: "LANCADO"; valor: number; falta: number }
+  | { situacao: "PAGO"; valor: number; falta: 0; pagoEm: string | null }
+  /** Lançado, mas sem parcela em vigor (cancelada no encerramento do contrato): não limita. */
+  | { situacao: "CANCELADO"; valor: number }
+  | { situacao: "NAO_COBRADO" };
 
 export interface ExitosParaConferir { total: number; n: number; itens: ExitoParaConferir[] }
 
@@ -598,13 +621,19 @@ export const destinacaoDispensarSchema = z.object({ motivo: txt(600) });
 
 export interface PropostaRepasse {
   contrato: { id: string; numero: string } | null;
-  linhas: { para: "HONORARIOS" | "REEMBOLSO"; nome: string; regra: string; valor: number; contaId?: string }[];
+  linhas: {
+    para: "HONORARIOS" | "REEMBOLSO"; nome: string; regra: string; valor: number; contaId?: string;
+    /** F3.199 (C3): o valor pelo percentual do contrato, só quando o limite ao que falta do êxito foi aplicado. */
+    semLimite?: number | null;
+  }[];
   cliente: number;
   falta: number;
   /** As parcelas do êxito do cliente no caso que a parte "honorários" vai baixar (F3.94). */
   exito?: { id: string; descricao: string; vencimento: string; falta: number }[];
   /** As parcelas do êxito com baixa sem receber em vigor (F3.174). Sem a 1100, não vem. */
   exitoBaixado?: ExitoBaixado[];
+  /** Onde está o êxito do cliente no caso (F3.199). null: o contrato não tem êxito. Sem a 1102, não vem. */
+  exitoSituacao?: ExitoSituacao | null;
 }
 
 /** Uma parcela do êxito com baixa sem receber, na divisão do alvará (F3.174; FI-24). */
@@ -632,6 +661,16 @@ export interface Destinacao {
   contaId: string | null;
   /** A anotação mais nova do atraso (F3.46), quando há. */
   atraso?: AtrasoRepasse | null;
+  /** F3.199: as parcelas do êxito que esta parte pagou (nos dois caminhos). null sem pagamento. */
+  pagou?: PagouDaParte[] | null;
+}
+
+/** Uma parcela do êxito paga por uma parte de honorários (F3.199; destinacao_pagou). */
+export interface PagouDaParte {
+  parcelaId: string; descricao: string; valor: number; lancadaEm: string;
+  /** O valor da parcela: com valor menor, a parte pagou só um pedaço dela. */
+  parcelaValor?: number | null;
+  pagaEm?: string | null; contrato?: string | null; lancadaPor?: PessoaRef | null;
 }
 
 export type MotivoAtrasoRepasse = "DOCUMENTO" | "SEM_RESPOSTA" | "DECISAO" | "OUTRO";

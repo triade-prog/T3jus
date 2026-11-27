@@ -1,0 +1,57 @@
+[
+ {
+  "nome": "ea-conferir",
+  "url": "financeiro.html?estado=ea-conferir",
+  "rotulo": "Conferir o êxito: os honorários do alvará já entraram"
+ },
+ {
+  "nome": "ea-conferir-sobra",
+  "url": "financeiro.html?estado=ea-conferir-sobra",
+  "rotulo": "Lançado menor que os honorários: o aviso pede a devolução"
+ },
+ {
+  "nome": "ea-conferir-dois",
+  "url": "financeiro.html?estado=ea-conferir-dois",
+  "rotulo": "Dois alvarás: a lista, do mais antigo ao mais novo"
+ },
+ {
+  "nome": "ea-nao-cobrar",
+  "url": "financeiro.html?estado=ea-nao-cobrar",
+  "rotulo": "“Não cobrar” recusado: os honorários já entraram (C2)"
+ },
+ {
+  "nome": "ea-lancado",
+  "url": "financeiro.html?estado=ea-lancado",
+  "rotulo": "Depois de lançar: o êxito nasce pago, nada em A receber"
+ },
+ {
+  "nome": "ea-proposta",
+  "url": "financeiro.html?estado=ea-proposta",
+  "rotulo": "Divisão do alvará com o êxito para conferir: a linha curta"
+ },
+ {
+  "nome": "ea-proposta-sem-conferencia",
+  "url": "financeiro.html?estado=ea-proposta-sem-conferencia",
+  "rotulo": "Divisão do alvará com o caso em andamento: a linha curta"
+ },
+ {
+  "nome": "ea-repasse",
+  "url": "financeiro.html?estado=ea-repasse",
+  "rotulo": "Marina, na ficha do repasse: a linha do histórico"
+ },
+ {
+  "nome": "ea-exito-pago",
+  "url": "financeiro.html?estado=ea-exito-pago",
+  "rotulo": "Segundo alvará com o êxito já pago: sem honorários (C3)"
+ },
+ {
+  "nome": "ea-exito-falta",
+  "url": "financeiro.html?estado=ea-exito-falta",
+  "rotulo": "Segundo alvará com parte do êxito em aberto: limitado ao que falta (C3)"
+ },
+ {
+  "nome": "eb-proposta-parte",
+  "url": "financeiro.html?estado=eb-proposta-parte",
+  "rotulo": "eb-proposta revisto, “paga em parte”: R$ 3.800,00 no lugar de R$ 4.800,00 (C3)"
+ }
+]

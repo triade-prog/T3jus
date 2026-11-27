@@ -1,0 +1,12 @@
+{
+  "id": "D40",
+  "texto": "Desenho do êxito marcado como não cobrado na divisão do alvará (a divisão sem os honorários, \"Deixar sem\" ou \"Cobrar neste alvará\" com o combinado escrito, o Indevido, o erro, o conflito, a ficha do repasse, o sino e as telas do caso)",
+  "peca": "S4",
+  "refs": [
+    "CH-07",
+    "FI-05"
+  ],
+  "status": "feito",
+  "ordem": 90,
+  "evidencia": "Desenho em docs/design/aprovadas/portal-exito-nao-cobrado-alvara/ (16 estados enc-, computador e celular, axe sem violação nos 32 casos), feito pelo plano F3.194/F3.192/F3.191 v5 (Parte C, com a C1 = a, \"Cobrar com motivo escrito\") e revisado por um especialista independente (REVISAO-DESENHO.md, notas aplicadas ao plano), aprovado pela Carol em 26/11/2026 às 22h11 (Bahia) com \"Aprovado\". Programa-se na F3.191"
+}

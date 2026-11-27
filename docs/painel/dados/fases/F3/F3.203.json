@@ -1,0 +1,13 @@
+{
+  "id": "F3.203",
+  "texto": "Encerrar o contrato com o êxito lançado e ainda em aberto: pedir confirmação ou deixar a parcela do êxito fora do contrato_cancelar_futuros, para o êxito não ser cancelado sem ninguém decidir",
+  "peca": "S4",
+  "refs": [
+    "CH-07",
+    "EX-16"
+  ],
+  "status": "pendente",
+  "ordem": 1570,
+  "nota": "Revisão de código da F3.199 (REVISAO-CODIGO-F3-199, nota 1, \"para a Carol, fora deste PR\"). portal_contrato_encerrar (0200:525-550) chama contrato_cancelar_futuros, que cancela a parcela do êxito sem pagamento e sem baixa. A F3.199 corrigiu o efeito na divisão do alvará: sem parcela em vigor, exito_situacao diz CANCELADO, sem falta, e a proposta volta ao percentual (teste no 148). O cancelamento em si continua, e o êxito cancelado deixa de ser cobrado em A receber.",
+  "proximo": "Levar à Carol: encerrar o contrato com o êxito em aberto pede confirmação, ou o êxito fica de fora do cancelamento"
+}

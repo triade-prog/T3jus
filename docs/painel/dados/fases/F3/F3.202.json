@@ -1,0 +1,13 @@
+{
+  "id": "F3.202",
+  "texto": "Automação \"pagamento recebido\": decidir se o recebimento pela divisão do alvará (caixa TERCEIROS) dispara a mensagem ao cliente, que hoje sai no dia em que o recebimento é registrado, com o valor que já foi descontado no alvará",
+  "peca": "S4",
+  "refs": [
+    "PA-03",
+    "FI-05"
+  ],
+  "status": "pendente",
+  "ordem": 1560,
+  "nota": "Revisão de código da F3.199 (REVISAO-CODIGO-F3-199, nota 12). O gatilho PAGAMENTO_RECEBIDO das automações (0721:260-267, a última versão de automacao_alvos) olha pagamentos_recebidos.criado_em e não a caixa. Já era assim com a 0651 (o alvará depois do lançar); a 1102 acrescenta o outro caminho (o lançar depois do alvará), em que o recebido_em fica no dia do alvará e o criado_em no dia do lançamento. O comportamento não mudou nesta entrega, como pedido: fica para a Carol dizer se TERCEIROS deve ficar de fora do gatilho ou sair com outro texto.",
+  "proximo": "Perguntar à Carol se o recebimento TERCEIROS deve disparar o \"pagamento recebido\""
+}

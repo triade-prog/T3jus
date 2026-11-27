@@ -1,0 +1,11 @@
+{
+  "id": "P29",
+  "texto": "Publicar o Portal e só então aplicar no Supabase a migration 1102 (o êxito lançado depois do alvará já nasce pago, F3.199), só com o ok da Carol",
+  "refs": [
+    "CH-07",
+    "FI-05"
+  ],
+  "status": "pendente",
+  "ordem": 290,
+  "nota": "Ordem (plano da F3.199, Parte A, seção A6, e README \"Financeiro do Portal, Repasses\"): 1) conferir com list_migrations que a 0640, a 0651 e a 1100 estão no ar (e que a 1110 a 1120 continuam no ar, para a 1102 ir fora de ordem); 2) guardar o pg_get_functiondef de portal_financeiro_exito_lancar, portal_financeiro_exito_nao_cobrar, exito_linha, portal_financeiro_destinacao_dispensar, repasse_proposta, repasse_proposta_sem_exito, destinacao_linha, financeiro_levantamento_registrar_base e o embrulho do registrar (a 1102 acha as funções pelo conteúdo e para se o trecho não aparecer exatamente uma vez); 3) rodar a consulta só de leitura da seção A6, passo 3 (os êxitos LANCADO conferidos depois de um levantamento com parte HONORARIOS não dispensada e sem pagamento ligado à destinação), que hoje deve dar 0; se achar algum, avisar a Carol e não mudar nada sozinho; 4) com o ok da Carol, publicar o Portal (a api-portal não mudou nesta entrega: as rotas só passam o JSON; o Portal novo aguenta o banco velho, porque honorariosAlvara, pagoPeloAlvara, exitoSituacao, semLimite, pagou e parcelaValor são opcionais); 5) só então aplicar a 1102 pelo apply_migration, com o conteúdo do arquivo, fora de ordem (o número fica entre a 1101 e a 1103, e a 1110 em diante já estão no ar; nenhuma delas troca as funções que a 1102 muda). Um supabase db push futuro vai pedir --include-all por causa dela. Por que nesta ordem: a 1102 antes do Portal novo faria o Portal de hoje receber HONORARIOS_JA_ENTRARAM no \"Não cobrar\" com a mensagem genérica; o dinheiro fica certo nas duas ordens. Se der errado: recriar as funções com o que foi guardado no passo 2, apagar exito_honorarios_livres, exito_situacao, destinacao_pagou e a exito_linha nova e renomear exito_linha_sem_alvara de volta; nada de tabela muda."
+}

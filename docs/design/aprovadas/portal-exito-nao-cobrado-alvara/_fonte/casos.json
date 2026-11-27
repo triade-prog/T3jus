@@ -1,0 +1,82 @@
+[
+ {
+  "nome": "enc-proposta",
+  "url": "financeiro.html?estado=enc-proposta",
+  "rotulo": "A divisão vem sem os honorários: o aviso e a escolha, sem nada marcado"
+ },
+ {
+  "nome": "enc-indevido",
+  "url": "financeiro.html?estado=enc-indevido",
+  "rotulo": "Indevido: sem a escolha, e o caminho é falar com quem conferiu"
+ },
+ {
+  "nome": "enc-sem",
+  "url": "financeiro.html?estado=enc-sem",
+  "rotulo": "“Deixar sem os honorários”: tudo fica com Sebastião"
+ },
+ {
+  "nome": "enc-cobrar",
+  "url": "financeiro.html?estado=enc-cobrar",
+  "rotulo": "“Cobrar os honorários neste alvará”: a linha volta, o combinado e a caixa"
+ },
+ {
+  "nome": "enc-erro",
+  "url": "financeiro.html?estado=enc-erro",
+  "rotulo": "Registrar sem escolher: o erro do grupo"
+ },
+ {
+  "nome": "enc-erro-cobrar",
+  "url": "financeiro.html?estado=enc-erro-cobrar",
+  "rotulo": "Variação: “Cobrar” sem o combinado, sem a caixa e acima do calculado"
+ },
+ {
+  "nome": "enc-conflito",
+  "url": "financeiro.html?estado=enc-conflito",
+  "rotulo": "Marina marcou o êxito como não cobrado com a janela aberta: nada foi registrado"
+ },
+ {
+  "nome": "enc-historico",
+  "url": "financeiro.html?estado=enc-historico",
+  "rotulo": "Marina, na ficha do repasse: registrado com “Cobrar”"
+ },
+ {
+  "nome": "enc-historico-sem",
+  "url": "financeiro.html?estado=enc-historico-sem",
+  "rotulo": "Variação: a ficha do repasse registrado com “Deixar sem”"
+ },
+ {
+  "nome": "enc-sino",
+  "url": "sino.html?estado=enc-sino",
+  "rotulo": "Marina (com Financeiro): o aviso com valor, calculado e combinado"
+ },
+ {
+  "nome": "enc-sino-larissa",
+  "url": "sino.html?estado=enc-sino-larissa",
+  "rotulo": "Larissa (só Jurídico): o mesmo aviso, sem valores"
+ },
+ {
+  "nome": "enc-caso-historico",
+  "url": "caso.html?estado=enc-caso-historico",
+  "rotulo": "“De onde veio”, na ficha do contrato: a cobrança no alvará"
+ },
+ {
+  "nome": "enc-acerto",
+  "url": "caso.html?estado=enc-acerto",
+  "rotulo": "Ficha do caso: o acerto diz “Êxito não cobrado · cobrado no alvará”"
+ },
+ {
+  "nome": "enc-acerto-larissa",
+  "url": "caso.html?estado=enc-acerto-larissa",
+  "rotulo": "Variação: Larissa (só Jurídico), o acerto sem valores"
+ },
+ {
+  "nome": "enc-resumo-fechado",
+  "url": "financeiro.html?estado=enc-resumo-fechado",
+  "rotulo": "O caso encerrado: o êxito cobrado no alvará no fechamento do repasse"
+ },
+ {
+  "nome": "enc-ficha-cliente",
+  "url": "caso.html?estado=enc-ficha-cliente",
+  "rotulo": "Ficha de Sebastião: o passo do êxito diz “cobrado no alvará”"
+ }
+]
