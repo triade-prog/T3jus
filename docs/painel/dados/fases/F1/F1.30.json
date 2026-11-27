@@ -1,0 +1,11 @@
+{
+  "id": "F1.30",
+  "texto": "Fatura de R$ 0,00 com Pix ou boleto (desconto de 100%): recusar ou dar baixa sozinha, porque o meio de pagamento não emite cobrança de valor zero",
+  "peca": "C1",
+  "refs": [
+    "CO-06"
+  ],
+  "status": "pendente",
+  "ordem": 67.43,
+  "nota": "No carnê a 1170 já recusa 100% (CARNE_DESCONTO_ATE_99). Com Pix e boleto o problema já existe desde a 0690 (a fila do Inter não filtra valor 0)."
+}

@@ -224,6 +224,10 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PRECO_INVALIDO: "Escreva o preço com os centavos, por exemplo 290,00.",
   MESMO_PLANO: "O escritório já está neste plano.",
   CARNE_SEM_PARCELA_A_TROCAR: "Não há parcela do carnê a trocar: todas já têm fatura ou foram pagas.",
+  // CO-10 (1170): o desconto de entrada no carnê.
+  CARNE_TROCA_CONFIRMAR: "Mudar o desconto troca o carnê. Peça à Administração ou ao Financeiro para gerar um carnê novo.",
+  CARNE_DESCONTO_ATE_99: "No carnê, o desconto vai até 99%.",
+  DESCONTO_JA_PASSOU: "O desconto precisa valer pelo menos na próxima fatura.",
   PARCELA_FECHADA: "Esta parcela já foi paga ou cancelada. Recarregue a página para ver como está.",
   JA_SO_CONSULTA: "O Portal deste escritório já está só para consulta.",
   SEM_ATRASO_30: "Só dá para passar o Portal para só consulta com uma fatura em atraso há 30 dias ou mais.",
