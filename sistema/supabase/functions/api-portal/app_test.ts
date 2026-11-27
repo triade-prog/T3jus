@@ -1295,6 +1295,31 @@ Deno.test("F1.15: excluir pede a conferência e o nome; quem não é a dona é r
   assertEquals((await erro(e)).detalhes?.motivo, "SO_SOCIO_DONO");
 });
 
+Deno.test("F3.188: a exclusão e o arquivamento levam ao banco os outros cadastros marcados; id que não é uuid é erro de campo", async () => {
+  const OUTRO = "7f9a1c52-3b4d-4e8f-9a0b-1c2d3e4f5a6b";
+  const corpo = { pedidoEm: "2026-11-20", canal: "WHATSAPP", quemPediu: "TITULAR", versao: 2, conferido: true, nomeConfirmado: "Marina Alves Coelho" };
+  const m = montar();
+  const cookie = await noEscritorio(m);
+  const ruim = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao`, { metodo: "POST", corpo: { ...corpo, abrirNoMesmoDocumento: ["x"] }, cookie });
+  assertEquals((await erro(ruim)).detalhes?.campos, ["abrirNoMesmoDocumento"]);
+  const ok = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao`, { metodo: "POST", corpo: { ...corpo, abrirNoMesmoDocumento: [OUTRO] }, cookie });
+  assertEquals(ok.status, 200);
+  const ch = m.chamadas.find((c) => c.funcao === "portal_cliente_excluir_dados")!;
+  assertEquals((ch.args.p_dados as Record<string, unknown>).abrirNoMesmoDocumento, [OUTRO]);
+  assertEquals(ch.args.p_escritorio !== undefined, true);
+  const { nomeConfirmado: _n, ...arq } = corpo;
+  const a = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/arquivar-lgpd`, { metodo: "POST", corpo: { ...arq, abrirNoMesmoDocumento: [OUTRO] }, cookie });
+  assertEquals(a.status, 200);
+  const cha = m.chamadas.find((c) => c.funcao === "portal_cliente_arquivar_lgpd")!;
+  assertEquals((cha.args.p_dados as Record<string, unknown>).abrirNoMesmoDocumento, [OUTRO]);
+  // O escritório vem da sessão: um escritorioId no corpo não chega ao banco.
+  const x = await m.pedir(`/v1/escritorio/clientes/${CLIENTE}/exclusao`, { metodo: "POST", corpo: { ...corpo, escritorioId: OUTRO }, cookie });
+  assertEquals(x.status, 200);
+  const chx = m.chamadas.filter((c) => c.funcao === "portal_cliente_excluir_dados").at(-1)!;
+  assertEquals("escritorioId" in (chx.args.p_dados as Record<string, unknown>), false);
+  assertEquals(chx.args.p_escritorio === OUTRO, false);
+});
+
 Deno.test("F1.16: arquivar a pedido pede a conferência, sem o nome; quem não é a dona é recusado", async () => {
   const corpo = { pedidoEm: "2026-11-18", canal: "EMAIL", quemPediu: "TITULAR", versao: 3 };
   const m = montar();

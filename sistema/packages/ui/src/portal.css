@@ -7487,3 +7487,19 @@ aside.fi-col .rv-item .fi-lado{justify-items:start;text-align:left;grid-auto-flo
 @media (max-width:760px){
   .pt .folha :is(table td,:is(.cartoes,.cb-cartoes).so-cel) .btn-compacto:not(dialog *){min-height:44px}
 }
+
+/* F3.188 (desenho portal-exclusao-contratos-conversas, Carol 27/11/2026): o outro cadastro com o mesmo CPF */
+.pd-mesmo p+p{margin-top:6px}
+.pd-mesmo .pd-mesmo-caixa{margin:10px 0 0;padding:10px 12px;background:var(--papel);border:1px solid transparent;border-radius:var(--raio)}
+.pd-mesmo .pd-mesmo-caixa:has(input:checked){border-color:var(--vinho)}
+.pd-mesmo .pd-mesmo-caixa span{font-size:13px;line-height:1.45}
+.pd-mesmo .pd-mesmo-caixa small{margin-top:2px;color:var(--texto-2)}
+.pd-mesmo-sem{display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:12px;line-height:1.45}
+.pd-mesmo-sem .ico{width:16px;height:16px;color:var(--vinho-3);flex:none;margin-top:1px}
+.pd-mesmo-cads{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:10px}
+.pd-mesmo-cads li{padding:12px 14px;border-radius:var(--raio);background:var(--papel);display:grid;gap:4px;min-width:0}
+.pd-mesmo-cads .pd-mesmo-caixa{margin:6px 0 0;background:transparent}
+.pd-mesmo-nome a{font-family:var(--serifa);font-size:18px;font-weight:500;color:var(--vinho);display:inline-flex;align-items:center;min-height:44px;margin:-10px 0 -8px}
+.pd-mesmo-nome small{display:block;font-size:12px;color:var(--texto-2);line-height:1.45}
+.pd-mesmo-ja{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:4px}
+.pd-mesmo-ja .ico{width:16px;height:16px;color:var(--vinho-4);flex:none}

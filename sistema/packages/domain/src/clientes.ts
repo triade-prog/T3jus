@@ -317,6 +317,11 @@ export interface PedidoExclusao {
   resolvidoEm?: string;
   motivoRecusa?: string;
   protocolo?: string;
+  /**
+   * F3.188 (M4): MESMO_DOCUMENTO quando o pedido foi aberto pela sócia dona ao atender o pedido de outro
+   * cadastro com o mesmo CPF ou CNPJ (a observação é a fixa, sem protocolo). A faixa da ficha troca de texto.
+   */
+  origem?: "MESMO_DOCUMENTO";
 }
 
 const pedidoExclusaoBase = {
@@ -331,18 +336,33 @@ const pedidoExclusaoBase = {
     .transform((v) => (v ? v : null)),
 };
 export const pedirExclusaoSchema = z.object({ ...pedidoExclusaoBase, quemPediu: pedidoExclusaoBase.quemPediu.optional() });
+/**
+ * F3.188 (C7 na B', C8): os outros cadastros com o mesmo CPF ou CNPJ marcados na janela, que ganham um
+ * pedido de exclusão aberto. O banco só aceita os que cliente_mesmo_documento devolve na hora.
+ */
+const abrirNoMesmoDocumento = z.array(z.string().uuid()).max(50).optional();
 export const excluirDadosSchema = z.object({
   ...pedidoExclusaoBase,
   versao: z.number().int().min(1),
   conferido: z.literal(true),
   nomeConfirmado: z.string().trim().min(1).max(160),
+  abrirNoMesmoDocumento: abrirNoMesmoDocumento,
 });
 /** Arquivar a pedido (F1.16): o mesmo pedido, sem escrever o nome, porque nada se perde. */
 export const arquivarLgpdSchema = z.object({
   ...pedidoExclusaoBase,
   versao: z.number().int().min(1),
   conferido: z.literal(true),
+  abrirNoMesmoDocumento: abrirNoMesmoDocumento,
 });
+/** O retorno da exclusão e do arquivamento a pedido (POST /clientes/:id/exclusao e /arquivar-lgpd). */
+export interface ExclusaoFeita {
+  protocolo: string;
+  versao: number;
+  pedido: PedidoExclusao;
+  /** F3.188 (M3): os outros cadastros com o mesmo CPF que ficaram com pedido de exclusão aberto. */
+  mesmoDocumento?: PessoaRef[];
+}
 export const recusarExclusaoSchema = z.object({ motivo: z.string().trim().min(1).max(300) });
 
 /** O nome digitado confere com o do cliente, sem diferença de maiúsculas e espaços (igual ao servidor). */
@@ -517,6 +537,13 @@ export interface FichaCliente {
   basesDeCondicao?: string[];
   /** F3.193: quantas explicações de baixa sem receber viram texto fixo (hoje sempre 0: o contrato prende o cliente). */
   baixasComExplicacao?: number;
+  /**
+   * F3.188: os outros cadastros do escritório com o mesmo CPF ou CNPJ, só para a sócia dona, no cliente ativo ou
+   * inativo (com ou sem contrato: a janela de excluir e a de arquivar, C8). Vazio sem outro; até 5.
+   */
+  mesmoDocumento?: MesmoDocumento[];
+  /** Quantos outros cadastros além dos 5 de mesmoDocumento. */
+  mesmoDocumentoMais?: number;
   /** O próximo passo, as contagens das abas e o "No escritório" (F3.110). Não vêm no excluído nem no arquivado. */
   passo?: PassoCliente;
   contagens?: ContagensCliente;
@@ -559,6 +586,17 @@ export interface ConversasParaApagar {
   ficamCom: PessoaRef[];
   /** Quantos outros clientes além dos de ficamCom. */
   ficamComMais: number;
+}
+
+/** Outro cadastro do escritório com o mesmo CPF ou CNPJ (F3.188). */
+export interface MesmoDocumento extends PessoaRef {
+  situacao: Exclude<SituacaoCliente, "EXCLUIDO">;
+  /** Quando o cadastro foi criado ("cliente desde"). */
+  desde: string;
+  /** Tem contrato ou processo: o pedido dele vira arquivamento. */
+  contratoOuProcesso: boolean;
+  /** Já tem pedido de exclusão aberto (a janela não mostra a caixa). */
+  pedidoAberto: boolean;
 }
 
 /** C9: outro cliente em que ele assina; esses dados ficam na ficha do outro, porque servem ao contrato dele. */

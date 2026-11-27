@@ -1350,7 +1350,7 @@ export function FichaClientePortal({ id, aba, editarAoAbrir = false, cadastrado 
     <MolduraPortal atual="clientes" trilha={trilha} escritorio={escritorio} pagina="co-ficha">
       <div className="cl">
         {cab}
-        {fimLgpd ? null : <FaixaPedido f={f} aoExcluir={() => abrir("excluir")} aoRecusar={() => abrir("recusar")} />}
+        {fimLgpd ? null : <FaixaPedido f={f} eu={escritorio.pessoa} nomeDona={dona ?? null} aoExcluir={() => abrir("excluir")} aoRecusar={() => abrir("recusar")} />}
         {abas}
         {faixaVolta}
         {faixaInativo}
