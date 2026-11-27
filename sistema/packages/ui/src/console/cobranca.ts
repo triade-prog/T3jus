@@ -2,7 +2,7 @@
 // que elas calculam deles. Telas aprovadas em docs/design/aprovadas/console-cobranca. Módulo
 // simples (sem "use client"), para os testes e as páginas do servidor usarem.
 
-import { diaBrasilia, dinheiro, ErroDinheiro, faixasDoCarne, formatar, lerReais, mesPorExtenso, textoFaixas, type FormaAssinatura, type SituacaoFatura } from "@t3jus/domain";
+import { diaBrasilia, dinheiro, ErroDinheiro, faixasDoCarne, formatar, lerReais, mesPorExtenso, textoFaixas, type FormaAssinatura, type ImplantacaoNaCobranca, type SituacaoFatura, type TipoItemFatura } from "@t3jus/domain";
 import type { NomeIcone } from "../Icone.tsx";
 
 /** As abas de Cobrança (fora do componente de cliente para a página do servidor conferir). */
@@ -61,7 +61,8 @@ export interface EventoCb {
 }
 
 export interface ItemFatura {
-  tipo: "MENSALIDADE" | "PESSOA_A_MAIS" | "DESCONTO";
+  /** IMPLANTACAO e ISENCAO só na 1ª fatura, com a chave ligada (1182; os rótulos são do F1.47). */
+  tipo: TipoItemFatura;
   descricao: string;
   quantidade: number;
   valorUnitarioCentavos?: number;
@@ -319,6 +320,18 @@ export interface AssinaturaResposta {
   planos: { id: string; nome: string; precoCentavos: number; pessoasIncluidas: number; previa: PreviaPlano | null }[] | null;
   pessoaAMaisCentavos: number | null;
   assinatura: AssinaturaCb | null;
+  /** CO-08 (1182): a implantação assistida e se ela vai, ou foi, na 1ª fatura; o valor só com `valores`. */
+  implantacao?: ImplantacaoNaCobranca | null;
+}
+
+/** O rótulo do item na tabela da fatura. Só o DESCONTO é "Desconto de entrada"; a implantação e a
+ * isenção (1182) ficam com um rótulo neutro até as telas aprovadas (F1.47), e a descrição do item
+ * aparece embaixo, como nos outros. */
+export function rotuloItem(tipo: TipoItemFatura): string {
+  if (tipo === "MENSALIDADE") return "Mensalidade";
+  if (tipo === "PESSOA_A_MAIS") return "Pessoa a mais";
+  if (tipo === "DESCONTO") return "Desconto de entrada";
+  return "Outro item";
 }
 
 /** Centavos inteiros → "R$ 1.234,56"; negativo → "− R$ 98,00" (desenho). */

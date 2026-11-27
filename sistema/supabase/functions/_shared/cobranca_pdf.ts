@@ -13,7 +13,7 @@
 
 import { PDFDocument, type PDFFont, type PDFImage, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 import qrcode from "qrcode-generator";
-import { dataBr, ErroDominio, mesPorExtenso, reais, valorPorExtenso } from "@t3jus/domain";
+import { dataBr, ErroDominio, type ImplantacaoNoDocumento, mesPorExtenso, reais, type TipoItemFatura, valorPorExtenso } from "@t3jus/domain";
 import { type Arquivos, VALIDADE_LEITURA_S } from "./arquivos.ts";
 import { logoCompletoPng, LOGO_PROPORCAO, simboloPng } from "./marca_t3jus.ts";
 
@@ -55,13 +55,16 @@ export interface DocumentoCobranca {
     socio: string | null;
     endereco: { cep: string; logradouro: string; numero: string; complemento: string | null; bairro: string; cidade: string; uf: string } | null;
   };
-  itens: { tipo: "MENSALIDADE" | "PESSOA_A_MAIS" | "DESCONTO"; descricao: string; quantidade: number; valorUnitarioCentavos: number; valorCentavos: number }[] | null;
+  /** IMPLANTACAO e ISENCAO só na 1ª fatura, com a chave ligada (1182): o PDF usa a descrição do item. */
+  itens: { tipo: TipoItemFatura; descricao: string; quantidade: number; valorUnitarioCentavos: number; valorCentavos: number }[] | null;
   motivoDesconto: string | null;
   codigos: { provedor: string | null; pixCopiaCola: string | null; linhaBoleto: string | null; codigoBarras: string | null } | null;
   pagamento: { pagaEm: string; forma: string; baixa: "MANUAL" | "MEIO_DE_PAGAMENTO"; registradoEm: string | null; registradoPor: string | null } | null;
   canceladaEm: string | null;
   outrasAbertas: { numero: number; competencia: string; vencimento: string; totalCentavos: number }[];
   carne: { numero: string; parcela: number; de: number; geradoEm: string } | null;
+  /** A implantação das linhas desta fatura, como estava na emissão (1182); nula sem elas. */
+  implantacao?: ImplantacaoNoDocumento | null;
 }
 
 export interface Emissor {

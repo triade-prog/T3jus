@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CONDICOES_IMPLANTACAO, implantacaoConcluirSchema, implantacaoPrazoSchema, implantacaoRegraSchema } from "./implantacao.ts";
+import { CONDICOES_IMPLANTACAO, TIPOS_ITEM_FATURA, implantacaoConcluirSchema, implantacaoPrazoSchema, implantacaoRegraSchema } from "./implantacao.ts";
 import { TEXTOS_MOTIVO } from "./textos.ts";
 
 const REGRA = {
@@ -33,5 +33,9 @@ describe("implantação assistida (CO-08)", () => {
     expect(implantacaoPrazoSchema.safeParse({ versao: 2, prazoAte: "20/01/2027", motivo: "Sócia viajou" }).success).toBe(false);
     expect(implantacaoPrazoSchema.safeParse({ prazoAte: "2027-01-20", motivo: "x" }).success).toBe(false);
     for (const m of ["IMPLANTACAO_NAO_ABERTA", "PRAZO_INVALIDO"]) expect(TEXTOS_MOTIVO[m]).toBeTruthy();
+  });
+  it("CO-08: a fatura conhece os itens da implantação e a recusa do carnê cobrado tem texto (1182)", () => {
+    expect(TIPOS_ITEM_FATURA).toEqual(["MENSALIDADE", "PESSOA_A_MAIS", "DESCONTO", "IMPLANTACAO", "ISENCAO"]);
+    expect(TEXTOS_MOTIVO.IMPLANTACAO_COBRADA_NO_CARNE).toBeTruthy();
   });
 });

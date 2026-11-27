@@ -56,3 +56,39 @@ export const implantacaoPrazoSchema = z.object({
   motivo: z.string().max(600),
 });
 export type ImplantacaoPrazoEntrada = z.infer<typeof implantacaoPrazoSchema>;
+
+/** Os tipos de item da fatura do escritório. IMPLANTACAO e ISENCAO entram só na 1ª fatura, com a
+ * chave `implantacao_na_fatura` ligada (1182, F1.44). */
+export const TIPOS_ITEM_FATURA = ["MENSALIDADE", "PESSOA_A_MAIS", "DESCONTO", "IMPLANTACAO", "ISENCAO"] as const;
+export type TipoItemFatura = (typeof TIPOS_ITEM_FATURA)[number];
+
+/** O bloco `implantacao` de `console_assinatura` e de `portal_plano_faturas` (1182). Nulo sem
+ * implantação. `valorCentavos` só para quem vê a cobrança (Administração e Financeiro; o sócio dono). */
+export interface ImplantacaoNaCobranca {
+  id: string;
+  numero: number;
+  estado: EstadoImplantacao;
+  nome: string;
+  descricao: string;
+  condicao: CondicaoImplantacao;
+  condicaoTexto: string | null;
+  /** A chave `implantacao_na_fatura`. */
+  naFatura: boolean;
+  /** Há linha IMPLANTACAO numa fatura não cancelada. */
+  faturada: boolean;
+  faturaId: string | null;
+  faturaNumero: number | null;
+  faturaCompetencia: string | null;
+  /** As linhas ainda vão na 1ª fatura (chave ligada e 1ª fatura por sair). */
+  naPrimeiraFatura: boolean;
+  valorCentavos?: number;
+}
+
+/** O bloco `implantacao` de `cobranca_documento_json` (1182): a implantação das linhas da fatura. */
+export interface ImplantacaoNoDocumento {
+  nome: string;
+  descricao: string;
+  condicao: CondicaoImplantacao;
+  condicaoTexto: string | null;
+  valorCentavos: number;
+}

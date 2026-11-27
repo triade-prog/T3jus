@@ -50,3 +50,17 @@ Deno.test("F1.29 (CO-10): a capa do carnê diz as faixas; sem faixas, o valor ú
     "1 × R$ 399,20, 1 × R$ 468,20 e 10 × R$ 568,00",
   );
 });
+
+Deno.test("CO-08: a 1ª fatura com a implantação e a isenção (1182) sai numa página, sem mudar o visual", async () => {
+  const d = {
+    ...BASE,
+    itens: [
+      ...(BASE.itens ?? []),
+      { tipo: "IMPLANTACAO" as const, descricao: "Implantação assistida · treino de toda a equipe e acompanhamento por 30 dias", quantidade: 1, valorUnitarioCentavos: 149000, valorCentavos: 149000 },
+      { tipo: "ISENCAO" as const, descricao: "Isenção da implantação · Oferta de lançamento", quantidade: 1, valorUnitarioCentavos: -149000, valorCentavos: -149000 },
+    ],
+    implantacao: { nome: "Implantação assistida", descricao: "treino de toda a equipe e acompanhamento por 30 dias", condicao: "ISENTA" as const, condicaoTexto: "Oferta de lançamento", valorCentavos: 149000 },
+  };
+  const pdf = await PDFDocument.load(await pdfDaFatura(d));
+  assertEquals(pdf.getPageCount(), 1);
+});

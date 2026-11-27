@@ -8,7 +8,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { FORMAS_ASSINATURA, mesPorExtenso } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { brl, centavosDe, dataBr, diasEntre, lerDataBr, numeroFatura, reaisDe, type FaturaAberta } from "./cobranca.ts";
+import { brl, centavosDe, dataBr, diasEntre, lerDataBr, numeroFatura, reaisDe, rotuloItem, type FaturaAberta } from "./cobranca.ts";
 import { formatarCnpj } from "./ficha.ts";
 import { CARTEIRA, chamarConsole, COBRANCA, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
@@ -522,7 +522,7 @@ export function FaturaConsole({ escritorioId, faturaId }: { escritorioId: string
                         {f.itens.map((i, k) => (
                           <tr key={k} className={i.valorCentavos < 0 ? "cb-desc" : undefined}>
                             <td>
-                              {i.tipo === "MENSALIDADE" ? "Mensalidade" : i.tipo === "PESSOA_A_MAIS" ? "Pessoa a mais" : "Desconto de entrada"}
+                              {rotuloItem(i.tipo)}
                               <small>
                                 {i.descricao}
                                 {i.tipo === "PESSOA_A_MAIS" && i.valorUnitarioCentavos ? ` · ${i.quantidade} × ${brl(i.valorUnitarioCentavos)}` : ""}

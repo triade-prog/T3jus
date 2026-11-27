@@ -1,0 +1,12 @@
+{
+  "data": "27/11/2026",
+  "inicio": "14:35",
+  "fim": "15:10",
+  "texto": "Implantação assistida na 1ª fatura, no servidor: as linhas IMPLANTACAO e ISENCAO (texto da isenção congelado no item) saem só na 1ª fatura e só com a chave implantacao_na_fatura, que continua desligada; cobranca_emitir refeita a partir da 1170 abre a implantação de quem não tem; o carnê isento funciona e o carnê com a implantação cobrada é recusado na emissão, ao salvar, no carnê novo, na troca e na conclusão, enquanto a rotina pula o escritório sem travar os outros; a fatura cancelada não volta a cobrar (DC14); blocos na assinatura, no Portal e no documento (migration 1182); falta aplicar (P35).",
+  "refs": [
+    "F1.44",
+    "P35",
+    "CO-08",
+    "CO-06"
+  ]
+}
