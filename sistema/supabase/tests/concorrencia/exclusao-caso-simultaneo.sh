@@ -12,6 +12,17 @@
 #      TEM_CONTRATO_OU_PROCESSO.
 #  k5. A exclusão segura: a importação dos processos (a prévia já conferida) espera no INSERT da
 #      ligação e volta inteira com CLIENTE_EXCLUIDO (caso_cliente_nasce); nenhum caso novo fica.
+# F3.185 (1134; plano, 5.4, e revisão, M3): a exclusão de quem só tem a ligação ao caso novo de
+# importação desfeita (o caso X) apaga a ligação e troca o nome de X, que fica sem cliente.
+#  k6. Adicionar outra pessoa a X pela tela segura (o caso com FOR UPDATE): a exclusão espera no caso
+#      e vê a ligação nova; exclui, e X, que tem cliente, fica com o nome.
+#  k7. A exclusão segura (já com o UPDATE de X): adicionar a cliente a X espera no cliente (antes do
+#      caso, 1131) e recusa com CLIENTE_EXCLUIDO. É a rodada que prova a ordem cliente → caso.
+#  k8. A importação dos processos junta outra pessoa a X (pelo número, JUNTAR) e segura: a exclusão
+#      troca o nome de X sem esperar (FOR NO KEY UPDATE contra o FOR KEY SHARE da chave), sem deadlock;
+#      X fica com a outra pessoa e o nome novo (limite no README).
+#  k9. A exclusão segura: o levantamento da cliente em X (levantamento_erros ainda vê a ligação) espera
+#      no cliente e recusa com CLIENTE_EXCLUIDO (levantamento_nasce, revisão M3); nada nasce.
 # O ciclo que ainda é possível (revisão, M4: quem trava vários clientes contra quem atualiza dois dos
 # mesmos em outra ordem) cai com 40P01 sem dado errado e está escrito no README; não tem rodada aqui.
 set -euo pipefail
@@ -88,13 +99,23 @@ create function teste.cso_importar(p_importacao uuid) returns text language sql 
   select teste.cso_tentar('IMPORTOU', format('select portal_importacao_importar(%L, %L, %L, %s)', socia, esc, p_importacao,
     (select versao from importacoes where id = p_importacao)))
   from teste.cso_ids $$;
-create table teste.cso_set (chave text primary key, cli uuid, outro uuid, caso uuid, imp uuid);
+create table teste.cso_set (chave text primary key, cli uuid, outro uuid, caso uuid, imp uuid, imp2 uuid);
 insert into teste.cso_set (chave, cli, outro) select k, teste.cso_cliente('Cliente ' || k), teste.cso_cliente('Base ' || k)
-  from unnest(array['k1', 'k2', 'k3', 'k4', 'k5']) k;
+  from unnest(array['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k7', 'k8', 'k9']) k;
 update teste.cso_set set caso = teste.cso_caso('Caso ' || chave, array[outro]) where chave in ('k1', 'k2');
 SQL
 # A prévia da importação dos processos (uma prévia aberta por vez: a nova encerra a anterior).
 previa() { "${PSQL[@]}" -c "update teste.cso_set set imp = teste.cso_importacao('Cliente $1', '$2', '$3') where chave = '$1'" >/dev/null; }
+# F3.185: o caso X de cada rodada, o caso novo de uma importação dos processos já desfeita, só com a
+# cliente da rodada (a ligação da própria importação).
+desfeito() {
+  previa "$1" "$2" "$3"
+  "${PSQL[@]}" >/dev/null <<SQL
+select portal_importacao_importar(i.socia, i.esc, s.imp, (select versao from importacoes where id = s.imp)) from teste.cso_set s, teste.cso_ids i where s.chave = '$1';
+select portal_importacao_desfazer(i.socia, i.esc, s.imp, 'Backup errado') from teste.cso_set s, teste.cso_ids i where s.chave = '$1';
+update teste.cso_set s set caso = (select c.id from casos c where c.importacao_id = s.imp) where s.chave = '$1';
+SQL
+}
 
 # Roda $2 numa conexão que segura a transação por 2 segundos e, 0,7 segundo depois, $3 em outra.
 # As saídas ficam em $DIR/$1.1 e $DIR/$1.2.
@@ -154,10 +175,45 @@ r=$(q "select (select count(*) from caso_clientes where cliente_id = s.cli) || '
          || ' ' || i.estado from teste.cso_set s join importacoes i on i.id = s.imp where s.chave = 'k5'")
 [ "$r" = "0 0 PREVIA" ] || falhas+=("k5: esperava nenhuma ligação, nenhum caso e a importação em prévia, veio '$r'")
 
+# k6. Adicionar outra pessoa a X segura; a exclusão espera no caso, exclui e X fica com o nome.
+desfeito k6 2000103-17.2025.5.02.0001 '(11) 93333-0106'
+corrida k6 "select teste.cso_adicionar($(de k6 caso), $(de k6 outro));" "$(excluir k6)"
+confere k6 ADICIONOU EXCLUIU
+r=$(q "select (select count(*) from caso_clientes where caso_id = s.caso) || ' ' || c.nome from teste.cso_set s join casos c on c.id = s.caso where s.chave = 'k6'")
+[ "$r" = "1 Cliente k6 x Banco Sul" ] || falhas+=("k6: esperava X com a outra pessoa e o nome, veio '$r'")
+
+# k7. A exclusão segura (já com o UPDATE de X); adicionar a cliente a X espera no cliente e recusa.
+desfeito k7 2000104-02.2025.5.02.0001 '(11) 93333-0107'
+corrida k7 "$(excluir k7)" "$(adicionar k7)"
+confere k7 EXCLUIU "TC422 CLIENTE_EXCLUIDO"
+r=$(q "select (select count(*) from caso_clientes where caso_id = s.caso) || ' ' || c.nome from teste.cso_set s join casos c on c.id = s.caso where s.chave = 'k7'")
+[ "$r" = "0 Caso de importação desfeita" ] || falhas+=("k7: esperava X sem cliente e com o nome novo, veio '$r'")
+
+# k8. A importação junta outra pessoa a X e segura; a exclusão troca o nome sem esperar.
+desfeito k8 2000105-84.2025.5.02.0001 '(11) 93333-0108'
+"${PSQL[@]}" >/dev/null <<'SQL'
+update teste.cso_set set imp2 = teste.cso_importacao('Base k8', '2000105-84.2025.5.02.0001', '(11) 93333-0118') where chave = 'k8';
+select portal_importacao_decidir(i.socia, i.esc, s.imp2, '{"codigo": "CASO_DUPLICADO", "decisao": "JUNTAR"}') from teste.cso_set s, teste.cso_ids i where s.chave = 'k8';
+SQL
+corrida k8 "select teste.cso_importar($(de k8 imp2));" "$(excluir k8)"
+confere k8 IMPORTOU EXCLUIU
+r=$(q "select (select string_agg(k.nome, ',') from caso_clientes cc join clientes_escritorio k on k.id = cc.cliente_id where cc.caso_id = s.caso) || ' ' || c.nome
+         from teste.cso_set s join casos c on c.id = s.caso where s.chave = 'k8'")
+[ "$r" = "Base k8 Caso de importação desfeita" ] || falhas+=("k8: esperava X com Base k8 e o nome novo, veio '$r'")
+
+# k9. A exclusão segura; o levantamento da cliente em X espera no cliente e recusa.
+desfeito k9 2000106-69.2025.5.02.0001 '(11) 93333-0109'
+levantamento="select teste.cso_tentar('REGISTROU', format('select portal_financeiro_levantamento_registrar(%L, %L, %L)', i.socia, i.esc,
+  jsonb_build_object('tipo', 'ALVARA', 'casoId', s.caso, 'clienteId', s.cli, 'valor', 100000, 'entrouEm', hoje_brasilia(),
+    'divisao', jsonb_build_array(jsonb_build_object('para', 'CLIENTE', 'valor', 100000))))) from teste.cso_set s, teste.cso_ids i where s.chave = 'k9';"
+corrida k9 "$(excluir k9)" "$levantamento"
+confere k9 EXCLUIU "TC422 CLIENTE_EXCLUIDO"
+[ "$(q "select count(*) from levantamentos where cliente_id = $(de k9 cli)")" = "0" ] || falhas+=("k9: nasceu levantamento para a cliente excluída")
+
 if grep -qi "deadlock\|40P01" "$DIR"/k*; then falhas+=("deadlock: $(grep -il "deadlock\|40P01" "$DIR"/k* | xargs -n1 basename | tr '\n' ' ')"); fi
 if [ ${#falhas[@]} -gt 0 ]; then
   echo "Exclusão com ligação a caso simultânea: falhou"
   printf '  %s\n' "${falhas[@]}"
   exit 1
 fi
-echo "Exclusão com ligação a caso simultânea: ok (adicionar, cadastrar e importar antes ou depois da exclusão, sem deadlock)"
+echo "Exclusão com ligação a caso simultânea: ok (adicionar, cadastrar, importar e o levantamento antes ou depois da exclusão, com o caso desfeito, sem deadlock)"

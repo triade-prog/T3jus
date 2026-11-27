@@ -202,8 +202,11 @@ create temp table classes (classe text, tabela text);
 insert into classes values
   ('nasce com trava', 'caso_clientes'), ('nasce com trava', 'cliente_documentos'), ('nasce com trava', 'contas_pagar'),
   ('nasce com trava', 'contratos'), ('nasce com trava', 'historico_financeiro_anterior'), ('nasce com trava', 'lembrete_contrato'),
+  -- F3.185 (revisão, M3): a exclusão apaga a ligação ao caso desfeito, e levantamento_erros (0280) só
+  -- pede a ligação, sem exigir caso aberto; por isso o levantamento ganhou o gatilho (1134).
+  ('nasce com trava', 'levantamentos'),
   -- Exigem caso aberto ou contrato, que prendem o cliente.
-  ('precisa de caso ou contrato', 'documento_pedidos'), ('precisa de caso ou contrato', 'levantamentos'),
+  ('precisa de caso ou contrato', 'documento_pedidos'),
   ('precisa de caso ou contrato', 'requisicoes_a_caminho'), ('precisa de caso ou contrato', 'exitos_conferir'),
   -- A própria exclusão, as conversas (F3.157) e as linhas da importação (F3.158) tratam.
   ('da exclusão', 'pedidos_exclusao'), ('da exclusão', 'clientes_quem_assinava'), ('da exclusão', 'importacao_linhas'), ('da exclusão', 'conversas'),

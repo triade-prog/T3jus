@@ -52,7 +52,8 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-desfazer
 # JUNTAR (F3.180, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-contrato-simultaneo.sh"
 
-# A ligação nova a caso (adicionar, cadastrar e importar) ao mesmo tempo que a exclusão (F3.187, PT-11).
+# A ligação nova a caso (adicionar, cadastrar e importar) ao mesmo tempo que a exclusão, e o caso novo
+# de importação desfeita, com o levantamento (F3.187 e F3.185, PT-11).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/exclusao-caso-simultaneo.sh"
 
 # Dispensar, trazer de volta e o contrato novo do mesmo cliente ao mesmo tempo (F3.145, VA-05).
