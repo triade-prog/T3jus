@@ -7,6 +7,10 @@
 // excluído ou arquivado a pedido do titular "Não vira contrato", sem botões nem selo; no excluído, o que
 // está incluído e o arquivo Word dizem que foram apagados. O pedir recusado (CLIENTE_EXCLUIDO ou
 // CLIENTE_ARQUIVADO) ganha um aviso próprio e a página recarrega.
+// F3.204 (desenho portal-propostas-encerradas, Carol 27/11/2026): a proposta enviada, em negociação ou em
+// rascunho de cliente excluído ou arquivado a pedido "Não segue", sem botões; o selo do cabeçalho continua o
+// estado gravado; o histórico ganha a linha calculada "Encerrada a pedido do titular"; responder ou marcar
+// como enviada recusado no instante fecha a janela, mostra o aviso e recarrega. A aceita fica como a F3.181.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -18,7 +22,7 @@ import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { diaCurto, lerDia } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
-import { nomeSituacao, quandoRetorno, ROTAS_COMERCIAL, valorDaProposta } from "./comercial.ts";
+import { clienteSaiuNoErro, comoSaiu, encerradaDa, nomeSituacao, quandoRetorno, ROTAS_COMERCIAL, SELO_ENCERRADA, valorDaProposta } from "./comercial.ts";
 import { Selo } from "./Comercial.tsx";
 import { Toast } from "./FichaCliente.tsx";
 import { CondicoesLeitura } from "./Honorarios.tsx";
@@ -28,6 +32,14 @@ import { MolduraArea } from "./MolduraArea.tsx";
 import { useBaixar } from "./Peticoes.tsx";
 
 const EDITAVEL = new Set(["RASCUNHO", "ENVIADA", "NEGOCIACAO"]);
+
+/** As ações que o cliente que saiu recusa (CLIENTE_EXCLUIDO ou CLIENTE_ARQUIVADO), com o título do aviso. */
+type AcaoRecusada = "pedir-contrato" | "enviada" | "resposta";
+const TITULO_RECUSA: Record<AcaoRecusada, string> = {
+  "pedir-contrato": "Não deu para pedir o contrato.",
+  enviada: "Não deu para marcar como enviada.",
+  resposta: "Não deu para registrar a resposta.",
+};
 
 const fuso = { timeZone: "America/Sao_Paulo" } as const;
 const diaDoInstante = (em: string) => new Intl.DateTimeFormat("en-CA", { ...fuso, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(em));
@@ -66,7 +78,26 @@ export function fraseDaProposta(e: EventoProposta): { oque: string; detalhe?: st
   }
 }
 
-function Historico({ eventos, hoje }: { eventos: EventoProposta[]; hoje: string }) {
+/** F3.204: a linha calculada do histórico, no dia em que o cliente saiu (não é uma mudança gravada). */
+type LinhaEncerrada = { dia: string; quem: "excluído" | "arquivado" };
+
+function ItemEncerrada({ l }: { l: LinhaEncerrada }) {
+  return (
+    <li>
+      <time><span className="sr">sem hora</span></time>
+      <span className="pto" aria-hidden="true" />
+      <div>
+        <p>
+          Encerrada a pedido do titular
+          <span className={`selo selo-${SELO_ENCERRADA.tom}`}><Icone nome={SELO_ENCERRADA.icone} className="ico" />{SELO_ENCERRADA.texto}</span>
+        </p>
+        <small>O cliente foi {l.quem} a pedido do titular. A proposta não segue.</small>
+      </div>
+    </li>
+  );
+}
+
+function Historico({ eventos, hoje, encerrada }: { eventos: EventoProposta[]; hoje: string; encerrada?: LinhaEncerrada | null }) {
   const dias: { dia: string; itens: { e: EventoProposta; f: NonNullable<ReturnType<typeof fraseDaProposta>> }[] }[] = [];
   for (const e of eventos) {
     const f = fraseDaProposta(e);
@@ -84,10 +115,17 @@ function Historico({ eventos, hoje }: { eventos: EventoProposta[]; hoje: string 
           <p className="sub">Cada mudança e cada resposta, com quem e quando. Nada se apaga.</p>
         </div>
       </div>
-      {dias.map((g) => (
+      {encerrada && dias[0]?.dia !== encerrada.dia ? (
+        <div className="eventos-dia">
+          <h3>{dataBr(encerrada.dia)}{encerrada.dia === hoje ? " · hoje" : ""}</h3>
+          <ol className="eventos"><ItemEncerrada l={encerrada} /></ol>
+        </div>
+      ) : null}
+      {dias.map((g, n) => (
         <div className="eventos-dia" key={g.dia}>
           <h3>{dataBr(g.dia)}{g.dia === hoje ? " · hoje" : ""}</h3>
           <ol className="eventos">
+            {n === 0 && encerrada && encerrada.dia === g.dia ? <ItemEncerrada l={encerrada} /> : null}
             {g.itens.map(({ e, f }, i) => (
               <li key={`${e.em}-${i}`}>
                 <time dateTime={e.em}>{horaDoInstante(e.em)}</time>
@@ -123,11 +161,13 @@ const MSG_RESPOSTA: Record<string, string> = {
   observacao: "Escreva até 1.000 letras.",
 };
 
-export function JanelaResposta({ aberta, f, aoFechar, aoFeito }: {
+export function JanelaResposta({ aberta, f, aoFechar, aoFeito, aoClienteSaiu }: {
   aberta: boolean;
   f: FichaProposta;
   aoFechar: () => void;
   aoFeito: (saida: Saida) => void;
+  /** F3.204: o cliente saiu a pedido do titular enquanto a página estava aberta; a ficha fecha a janela e avisa. */
+  aoClienteSaiu?: (quem: "EXCLUIDO" | "ARQUIVADO") => void;
 }) {
   const hoje = hojeBrasilia();
   const [saida, setSaida] = useState<Saida>("ACEITOU");
@@ -164,6 +204,8 @@ export function JanelaResposta({ aberta, f, aoFechar, aoFeito }: {
       setErros([]);
       return aoFeito(saida);
     }
+    const saiu = clienteSaiuNoErro(r.erro);
+    if (saiu && aoClienteSaiu) return aoClienteSaiu(saiu);
     const campos = r.erro.detalhes?.campos;
     if (r.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       setErros(campos.map(String));
@@ -274,7 +316,23 @@ function Dir({ f, hoje, eu, aoResponder, aoEnviada, aoPedir, ocupado }: {
   const r = f.retornoCompleto;
   let corpo: ReactNode;
   let titulo: string;
-  if (f.situacao === "RASCUNHO") {
+  if (encerradaDa(f) && f.situacao !== "ACEITA") {
+    // F3.204: enviada, em negociação ou rascunho de cliente que saiu a pedido do titular. A aceita segue o quadro da F3.181.
+    titulo = f.situacao === "RASCUNHO" ? "Rascunho" : f.situacao === "NEGOCIACAO" ? "Em negociação"
+      : f.enviadaEm ? `Enviada em ${diaCurto(diaDoInstante(f.enviadaEm))}` : "Enviada";
+    const em = f.clienteSaiuEm ? ` em ${dataBr(diaDoInstante(f.clienteSaiuEm))}` : "";
+    const quem = `O cliente foi ${comoSaiu(f.clienteSituacao)} a pedido do titular${em}.`;
+    corpo = (
+      <>
+        <p className="grande" style={{ fontSize: 30 }}>Não segue</p>
+        <p className="hn-oque">
+          {f.situacao === "RASCUNHO"
+            ? `${quem} A proposta não foi enviada e fica só como registro.`
+            : `${quem} A proposta fica só como registro, sem resposta: não dá mais para registrar a resposta nem editar.`}
+        </p>
+      </>
+    );
+  } else if (f.situacao === "RASCUNHO") {
     titulo = "Rascunho";
     corpo = (
       <>
@@ -423,7 +481,8 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
   const [feito, setFeito] = useState<Feito | null>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
   // F3.181: o pedir recusado porque o cliente saiu enquanto a página estava aberta.
-  const [recusa, setRecusa] = useState<"EXCLUIDO" | "ARQUIVADO" | null>(null);
+  // F3.204: também o marcar como enviada e a resposta.
+  const [recusa, setRecusa] = useState<{ quem: "EXCLUIDO" | "ARQUIVADO"; acao: AcaoRecusada } | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const hoje = hojeBrasilia();
 
@@ -445,7 +504,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
     void Promise.resolve().then(() => setFeito(t));
   }, []);
   // Da ficha do cliente (F3.110): "Registrar resposta" abre a proposta com a janela da resposta.
-  const responder = f && f !== "erro" && f !== "nao" && (f.situacao === "ENVIADA" || f.situacao === "NEGOCIACAO");
+  const responder = f && f !== "erro" && f !== "nao" && (f.situacao === "ENVIADA" || f.situacao === "NEGOCIACAO") && !encerradaDa(f);
   useEffect(() => {
     if (!responder) return;
     const q = new URLSearchParams(window.location.search);
@@ -466,9 +525,9 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
     const r = await chamarPortal(`/v1/escritorio/propostas/${ficha.id}/${caminho}`, { metodo: "POST", corpo: corpo ?? {} });
     setOcupado(false);
     if (!r.ok) {
-      const motivo = r.erro.codigo === "VALIDATION_ERROR" ? r.erro.detalhes?.motivo : undefined;
-      if (caminho === "pedir-contrato" && (motivo === "CLIENTE_EXCLUIDO" || motivo === "CLIENTE_ARQUIVADO")) {
-        setRecusa(motivo === "CLIENTE_EXCLUIDO" ? "EXCLUIDO" : "ARQUIVADO");
+      const saiu = clienteSaiuNoErro(r.erro);
+      if (saiu && (caminho === "pedir-contrato" || caminho === "enviada")) {
+        setRecusa({ quem: saiu, acao: caminho });
         return void carregar();
       }
       return setFalha(r.erro);
@@ -477,16 +536,19 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
     await carregar();
   }
 
-  const editavel = EDITAVEL.has(f.situacao);
+  // F3.181 e F3.204: a proposta de cliente excluído ou arquivado a pedido do titular fica só como registro.
+  const registro = encerradaDa(f) || (f.situacao === "ACEITA" && saiuACliente(f));
+  const editavel = EDITAVEL.has(f.situacao) && !registro;
   const editar = (
     <a data-muda className="btn btn-sec" href={ROTAS_COMERCIAL.editar(f.id)}>
       <Icone nome="lapis" className="ico" />
       Editar
     </a>
   );
-  // F3.181: a proposta aceita de cliente excluído ou arquivado fica só como registro.
-  const registro = f.situacao === "ACEITA" && saiuACliente(f);
   const apagada = registro && f.clienteSituacao === "EXCLUIDO";
+  // P4 do desenho (sim): a linha calculada no topo do histórico, menos na aceita, que fica como a F3.181 aprovou.
+  const linhaEncerrada: LinhaEncerrada | null = registro && f.situacao !== "ACEITA" && f.clienteSaiuEm
+    ? { dia: diaDoInstante(f.clienteSaiuEm), quem: comoSaiu(f.clienteSituacao) } : null;
   const semContratos = f.situacao === "ACEITA" && !f.podeContrato && !registro;
   const dono = escritorio.socios[0];
 
@@ -517,8 +579,8 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
           aoPedir={() => void acao("pedir-contrato", { titulo: "Contrato pedido.", texto: f.quemTemContratos.length ? `${juntar(f.quemTemContratos)} ${f.quemTemContratos.length === 1 ? "recebeu" : "receberam"} o aviso, com o link desta proposta.` : "O pedido fica na proposta, com seu nome e a hora, para quem tem a área Contratos." })} />
       </div>
       {recusa ? (
-        <Aviso tom="urgencia" titulo="Não deu para pedir o contrato.">
-          O cliente foi {recusa === "EXCLUIDO" ? "excluído" : "arquivado"} a pedido do titular agora há pouco. A proposta abaixo já mostra como ficou: ela não vira contrato.
+        <Aviso tom="urgencia" titulo={TITULO_RECUSA[recusa.acao]}>
+          O cliente foi {comoSaiu(recusa.quem)} a pedido do titular agora há pouco. A proposta abaixo já mostra como ficou: ela {recusa.acao === "pedir-contrato" ? "não vira contrato" : "não segue"}.
         </Aviso>
       ) : falha ? (
         <Aviso tom="urgencia" titulo="Não deu para concluir.">
@@ -536,7 +598,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
           <CondicoesLeitura condicoes={f.condicoes} sub={f.situacao === "CONTRATO" ? "Passaram para o contrato." : registro ? "Ficam como registro." : "Passam para o contrato como estão."}
             acoes={editavel ? editar : undefined} gera={geraNaProposta} />
           <Escopo texto={f.escopo} apagado={apagada} />
-          <Historico eventos={f.historico} hoje={hoje} />
+          <Historico eventos={f.historico} hoje={hoje} encerrada={linhaEncerrada} />
         </div>
         <aside className="hn-col" aria-label="Sobre a proposta">
           <section className="folha" aria-labelledby="t-pc">
@@ -547,7 +609,7 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
               <div><dt>Nome</dt><dd><a href={ROTAS_COMERCIAL.ficha(f.cliente.id)}>{f.cliente.nome}</a></dd></div>
               <div><dt>Como chegou</dt><dd>{f.origem ? ORIGENS[f.origem] : "Não marcado no cadastro"}</dd></div>
               <div><dt>Responsável</dt><dd>{f.responsavel.nome}</dd></div>
-              <div><dt>Vale até</dt><dd>{f.validaAte ? dataBr(f.validaAte) : "Sem data"}{f.vencida ? " (vencida)" : ""}</dd></div>
+              <div><dt>Vale até</dt><dd>{f.validaAte ? dataBr(f.validaAte) : "Sem data"}{f.vencida && !registro ? " (vencida)" : ""}</dd></div>
             </dl>
             {bx.falha ? <div style={{ padding: "0 24px 12px" }}><Aviso tom="urgencia" titulo="Não deu para baixar.">{bx.falha}</Aviso></div> : null}
             <div className="hn-folha-acao">
@@ -581,6 +643,12 @@ function FichaConteudo({ id, escritorio, aoNumero }: { id: string; escritorio: E
         </aside>
       </div>
       <JanelaResposta key={janela ? "aberta" : "fechada"} aberta={janela} f={f} aoFechar={() => setJanela(false)}
+        aoClienteSaiu={(quem) => {
+          setJanela(false);
+          setFalha(null);
+          setRecusa({ quem, acao: "resposta" });
+          void carregar();
+        }}
         aoFeito={(s) => {
           setJanela(false);
           if (s === "MUDANCA") return irPara(ROTAS_COMERCIAL.editar(ficha.id));

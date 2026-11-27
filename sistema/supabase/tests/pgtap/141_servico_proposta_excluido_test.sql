@@ -104,10 +104,11 @@ select is((select count(*)::int from propostas p, pr where p.id = pr.ana and p.e
   'PT-11 F3.159: a proposta aceita continua aceita e com o pedido (o UPDATE não mexe no estado)');
 
 -- 6. A edição não devolve o serviço.
-select ok((select (teste.erro(format($$ select portal_proposta_editar(%L, %L, %L, %s, %L) $$, ids.socia, ids.rm, pr.hel_sem, p.versao,
-             jsonb_build_object('servico', 'Inventário do pai de Helena', 'rascunho', true, 'responsavelId', ids.socia)))) -> 'detalhe' -> 'campos' ? 'clienteId'
-             from ids, pr, propostas p where p.id = pr.hel_sem),
-  'PT-11 F3.159: editar a proposta do cliente excluído é recusado no campo clienteId');
+-- Desde a F3.204 (1145), a recusa vem antes dos campos, com o código CLIENTE_EXCLUIDO.
+select is((select (teste.erro(format($$ select portal_proposta_editar(%L, %L, %L, %s, %L) $$, ids.socia, ids.rm, pr.hel_sem, p.versao,
+             jsonb_build_object('servico', 'Inventário do pai de Helena', 'rascunho', true, 'responsavelId', ids.socia)))) -> 'detalhe' ->> 'motivo'
+             from ids, pr, propostas p where p.id = pr.hel_sem), 'CLIENTE_EXCLUIDO',
+  'PT-11 F3.159 F3.204: editar a proposta do cliente excluído é recusado (CLIENTE_EXCLUIDO)');
 select is((select servico from propostas, pr where id = pr.hel_sem), servico_apagado_texto(), 'PT-11 F3.159: o serviço não volta pela edição');
 
 -- 7. Os clientes excluídos antes da 1090 (a 1091).

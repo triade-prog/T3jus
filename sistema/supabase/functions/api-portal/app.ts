@@ -8,7 +8,7 @@ import {
   cancelarCompromissoSchema, type ContatoDaConversa, dadosCompromissoSchema, editarCompromissoSchema, periodoAgendaSchema, type Agenda, type FichaCompromisso, type CasoDoCompromisso,
   dadosPropostaSchema, editarPropostaSchema, respostaPropostaSchema, versaoSchema, PERIODOS_COMERCIAL, encerrarFunilSchema, type SaidaFunil, type ClienteFunil,
   type Retornos, type ListaPropostas, type FichaProposta, type Funil, type OrigemContatos,
-  baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS,
+  baseMesSchema, dadosContratoSchema, editarContratoSchema, encerrarContratoSchema, MOSTRAR_CONTRATOS, MOSTRAR_PROPOSTAS,
   type FichaContrato, type HonorariosContratos, type PedidoContrato, type ReciboParaImprimir, type ListaContratos, type PropostaParaContrato,
   anotarCobrancaSchema, FORMAS_PAGAMENTO, MOSTRAR_RECEBER, MOSTRAR_PAGAR, lancarContaSchema, contaPagaSchema, contaReembolsadaSchema, mudarRecorrenciaSchema, type ListaRecorrencias, type FichaRecorrencia, type RecorrenciaMudada, type ListaPagar, type ContaPagar, type ParaAdiantar, type AcertoCaso, registrarRecebimentoSchema, lancarExitoSchema, naoCobrarExitoSchema, type ExitosParaConferir, type ExitoParaConferir, type ParcelaLinha,
   propostaRepasseSchema, textoPrestacaoContas, type Levantamento, registrarLevantamentoSchema, destinacaoFeitaSchema, destinacaoDispensarSchema, anotarAtrasoSchema, prazoRepasseSchema, registrarRequisicaoSchema, dataRequisicaoSchema, type RequisicaoACaminho,
@@ -765,7 +765,8 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
 
   app.get("/v1/escritorio/propostas", async (c) => {
     const mostrar = (c.req.query("mostrar") || "ANDAMENTO").toUpperCase();
-    if (!["ANDAMENTO", "CONTRATO", "RECUSADAS"].includes(mostrar)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
+    // ENCERRADAS (F3.204): publicar antes da 1144; o banco velho recusa o valor no campo "mostrar".
+    if (!(MOSTRAR_PROPOSTAS as readonly string[]).includes(mostrar)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mostrar"] });
     const q = c.req.query("q") ?? null;
     if (q && q.length > 120) throw new ErroDominio("VALIDATION_ERROR", { campos: ["q"] });
     return c.json(await deps.banco.rpc<ListaPropostas>("portal_propostas", { ...quem(c), p_mostrar: mostrar, p_q: q }));
