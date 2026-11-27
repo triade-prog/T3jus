@@ -1,0 +1,13 @@
+{
+  "id": "F3.196",
+  "texto": "Êxito marcado como Indevido por engano na conferência: hoje não há como corrigir (a conferência não tem volta, 0640:60-75, e o alvará não cobra Indevido)",
+  "peca": "S4",
+  "refs": [
+    "CH-07",
+    "PT-03"
+  ],
+  "status": "pendente",
+  "ordem": 1500,
+  "nota": "Plano F3.194/F3.192/F3.191 (v5, C7 e C1 = a). Com a (a), os outros motivos do \"não cobrado\" já se cobram pelo alvará (F3.191), então este item fica só com o Indevido. Até lá, o aviso enc-indevido da F3.191 diz para não lançar como \"Outro\".",
+  "proximo": "Planejar depois da publicação da F3.191"
+}

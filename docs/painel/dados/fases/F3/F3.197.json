@@ -1,6 +1,6 @@
 {
   "id": "F3.197",
-  "texto": "Honorários do alvará acima do que falta do êxito lançado: o aviso na proposta, o limite e a devolução ao cliente do que foi descontado além do êxito",
+  "texto": "Alvará que chega antes da conferência do êxito, com o lançado menor que os honorários já entrados: o aviso e a devolução ao cliente do que foi descontado além do êxito",
   "peca": "S4",
   "refs": [
     "CH-07",
@@ -8,6 +8,6 @@
   ],
   "status": "pendente",
   "ordem": 1510,
-  "nota": "Plano F3.194/F3.192/F3.191 (v5, A2.8 e pergunta C3; nota 2 da segunda revisão). repasse_proposta_sem_exito propõe sempre o percentual do contrato (0280:261-272), mesmo com a parcela do êxito já paga. Abre nos dois caminhos da C3, com o escopo da resposta: com \"limitar\", a F3.199 (F3.194 no plano) já limita a proposta, e aqui fica a devolução do alvará que chega antes da conferência com o lançado menor; com \"só avisar\", aqui ficam o limite e a devolução. Até lá, a devolução é feita fora do T3jus, e Entrou continua contando esses honorários.",
+  "nota": "Plano F3.194/F3.192/F3.191 (v5, A2.8 e pergunta C3; nota 2 da segunda revisão). A Carol decidiu a C3 em 26/11/2026: \"Limitar ao que falta\". O limite da proposta ao que falta do êxito lançado, também nos alvarás seguintes, fica com a F3.199 (F3.194 no plano). Aqui fica só o caso que o limite não resolve: o alvará dividido antes da conferência, quando o êxito lançado depois sai menor que os honorários já entrados. A janela de conferir avisa e pede a devolução; até este item, ela é feita fora do T3jus, e Entrou continua contando esses honorários.",
   "proximo": "Planejar depois da F3.199, com o escopo da resposta da Carol à C3"
 }

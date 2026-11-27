@@ -8,6 +8,6 @@
   ],
   "status": "pendente",
   "ordem": 1450,
-  "nota": "Achado no plano da F3.174 (docs/design/aprovadas/portal-exito-baixado-alvara/PLANO.md). O plano chamava este item de F3.178, número já tomado por outra frente. Renumerado de novo ao juntar com a main, porque F3.184 a F3.186 também foram tomados. Carol decidiu em 27/11/2026 a C1 do plano F3.194/F3.192/F3.191 (v5, Parte C): (a), \"Cobrar com motivo escrito\". Ao ser feito: refs CH-07 e FI-05; migration 1104, pgTAP 151, desenho D40 e publicação P29 ou P30 (reservadas para esta frente; a P26 do plano foi tomada por outra frente).",
+  "nota": "Achado no plano da F3.174 (docs/design/aprovadas/portal-exito-baixado-alvara/PLANO.md). O plano chamava este item de F3.178, número já tomado por outra frente. Renumerado de novo ao juntar com a main, porque F3.184 a F3.186 também foram tomados. Carol decidiu em 26/11/2026 (Brasília) a C1 do plano F3.194/F3.192/F3.191 (v5, Parte C): (a), \"Cobrar com motivo escrito\". Ao ser feito: refs CH-07 e FI-05; migration 1104, pgTAP 151, desenho D40 e publicação P30.",
   "proximo": "Desenhar o D40 (12 estados enc-) e levar à Carol; programar depois da F3.192"
 }

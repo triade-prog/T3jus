@@ -8,10 +8,11 @@
 --      depois do desfazer de 12/11 e da baixa de dezembro das custas de Rita (pagas em outubro);
 --   6. regressão: a reembolsada no período não desconta, a reembolsada depois desconta, a conta sem
 --      cliente nunca entra;
---   7. a proteção da regra: nenhuma função relatorio_% lê conta_reembolso_baixado_no_dia;
+--   7. a proteção da regra: nenhuma função dos Relatórios lê conta_reembolso_baixado_no_dia, e o
+--      dono, a ACL e os atributos de relatorio_adiantadas não mudam;
 --   8. só a sócia dona, e o escritório B não vê as custas do A.
 begin;
-select plan(32);
+select plan(35);
 
 select ajustar_relogio(('2026-04-28 10:00-03'::timestamptz - now()));
 
@@ -191,6 +192,9 @@ select is((pg_temp.um(cli.rita, '2026-10-01', '2026-10-31') -> 'numeros' ->> 'ad
   'FI-25: as custas de Rita, pagas em outubro e baixadas em dezembro, continuam descontando em outubro') from cli;
 select is((pg_temp.resumo('2026-12-01', '2026-12-03') -> 'rendeu' ->> 'adiantado')::bigint, 0::bigint,
   'FI-07: e não descontam em dezembro, quando não foram pagas');
+-- O caminho "comparar" (adi_c, revisão L4): novembro comparado com outubro.
+select is((portal_relatorio_resumo(socia, rm, '2026-11-01', '2026-11-30', 'anterior') -> 'rendeu' ->> 'anterior')::bigint, 200000::bigint - 64230,
+  'IN-15: novembro comparado com outubro: o Rendeu anterior também desconta as custas baixadas (Entrou − R$ 642,30)') from ids;
 
 -- 6. Regressão.
 select ok(not exists (select 1 from ids, cp, relatorio_adiantadas(ids.rm, '2026-10-01', '2026-10-31') a where a.conta_id = cp.tomas_dentro),
@@ -201,11 +205,25 @@ select ok(not exists (select 1 from ids, cp, relatorio_adiantadas(ids.rm, '2026-
   'FI-07: a conta sem cliente nunca entra');
 
 -- 7. A proteção da regra.
-select ok(not exists (select 1 from pg_proc where proname like 'relatorio\_%' and strpos(prosrc, 'conta_reembolso_baixado_no_dia') > 0),
-  'FI-25: nenhuma função relatorio_% lê conta_reembolso_baixado_no_dia');
+-- Vale para toda função dos Relatórios (relatorio_% e os portal_relatorio_*) e para qualquer outra
+-- que leia relatorio_adiantadas (revisão, L3).
+select ok(not exists (select 1 from pg_proc
+                       where (proname like '%relatorio%' or strpos(prosrc, 'relatorio_adiantadas') > 0)
+                         and strpos(prosrc, 'conta_reembolso_baixado_no_dia') > 0),
+  'FI-25: nenhuma função dos Relatórios, nem quem lê relatorio_adiantadas, lê conta_reembolso_baixado_no_dia');
 select ok((select count(*) = 1 from pg_proc where proname = 'conta_reembolso_baixado_no_dia')
           and not exists (select 1 from pg_proc where proname = 't1103_trocar'),
   'FI-25: conta_reembolso_baixado_no_dia fica no banco, e a troca por trecho da 1103 não fica');
+-- A troca é CREATE OR REPLACE: o dono, a ACL e os atributos continuam os da 0410 (revisão, L5).
+select ok((select pg_get_userbyid(proowner) = 'dominio' and proacl::text = '{dominio=X/dominio}'
+             and not has_function_privilege('public', oid, 'execute')
+             and not has_function_privilege('authenticated', oid, 'execute')
+             and not has_function_privilege('service_role', oid, 'execute')
+             from pg_proc where oid = 'relatorio_adiantadas(uuid,date,date)'::regprocedure),
+  'IN-15: relatorio_adiantadas continua do dono dominio, sem execute para public, authenticated e service_role');
+select ok((select provolatile = 's' and not prosecdef and proconfig = '{search_path=public}' and prorettype = 'record'::regtype and proretset
+             from pg_proc where oid = 'relatorio_adiantadas(uuid,date,date)'::regprocedure),
+  'IN-15: e continua STABLE, sem security definer, com search_path public e o mesmo returns table');
 
 -- 8. Quem vê.
 select is((teste.erro($$ select portal_relatorio_resumo(diego, rm, '2026-10-01', '2026-10-31', 'nao') from ids $$)) -> 'detalhe' ->> 'motivo', 'SO_SOCIO_DONO',
