@@ -50,10 +50,25 @@ export const CARNE: DocumentoCarne = {
 const pagas = (ps: DocumentoCarne["itens"]) => ps.map((p) => p.numero === 1 ? { ...p, situacao: "PAGA" as const, pagaEm: "2026-10-02", formaPaga: "PIX", codigos: null }
   : p.numero === 2 ? { ...p, situacao: "PAGA" as const, pagaEm: "2026-11-04", formaPaga: "BOLETO", codigos: null } : p);
 
+/** O carnê com desconto de entrada (D41): 3 × R$ 399,20 e 9 × R$ 499,00. */
+export const CARNE_DESCONTO: DocumentoCarne = {
+  ...CARNE, valorParcelaCentavos: 39920, totalCentavos: 568860,
+  faixas: [{ de: "2026-10-01", ate: "2026-12-01", quantidade: 3, valorCentavos: 39920 }, { de: "2027-01-01", ate: "2027-09-01", quantidade: 9, valorCentavos: 49900 }],
+  itens: PARCELAS.map((p) => (p.numero <= 3 ? { ...p, valorCentavos: 39920, descontoCentavos: 9980 } : { ...p, valorCentavos: 49900, descontoCentavos: 0 })),
+};
+
 export const CARNES: Record<string, DocumentoCarne> = {
   padrao: CARNE,
   hoje: { ...CARNE, itens: pagas(PARCELAS) },
   trocado: { ...CARNE, substituto: { numero: "2027", primeiraCompetencia: "2027-01-01", ultimaCompetencia: "2027-12-01", valorParcelaCentavos: 52900 },
     itens: pagas(PARCELAS).map((p) => p.numero >= 4 ? { ...p, situacao: "CANCELADA" as const, canceladaEm: "2026-11-20T15:00:00Z", codigos: null } : p) },
   "sem-codigos": { ...CARNE, emissor: null, itens: PARCELAS.map((p) => ({ ...p, codigos: { pixCopiaCola: null, linhaBoleto: null, codigoBarras: null } })) },
+  // D41 (CO-10): 20% de desconto de entrada nas 3 primeiras parcelas, depois o valor cheio.
+  desconto: CARNE_DESCONTO,
+  "trocado-desconto": {
+    ...CARNE_DESCONTO,
+    substituto: { numero: "2027", primeiraCompetencia: "2027-01-01", ultimaCompetencia: "2027-12-01", valorParcelaCentavos: 41830, totalCentavos: 651660,
+      faixas: [{ de: "2027-01-01", ate: "2027-02-01", quantidade: 2, valorCentavos: 41830 }, { de: "2027-03-01", ate: "2027-12-01", quantidade: 10, valorCentavos: 56800 }] },
+    itens: CARNE_DESCONTO.itens.map((p) => p.numero >= 4 ? { ...p, situacao: "CANCELADA" as const, canceladaEm: "2026-11-27T15:00:00Z", codigos: null } : p),
+  },
 };

@@ -747,12 +747,20 @@ export interface DocumentoCarne {
   emissor: Emissor | null;
   plano: string;
   pagador: { nome: string; cnpj: string | null; email: string | null };
-  substituto: { numero: string; primeiraCompetencia: string; ultimaCompetencia: string; valorParcelaCentavos: number } | null;
+  substituto: {
+    numero: string; primeiraCompetencia: string; ultimaCompetencia: string; valorParcelaCentavos: number;
+    faixas?: FaixaPdf[]; totalCentavos?: number;
+  } | null;
+  /** As parcelas seguidas de mesmo valor (carne_faixas, 1170; CO-10). */
+  faixas?: FaixaPdf[];
+  totalCentavos?: number;
   itens: {
     numero: number;
     competencia: string;
     vencimento: string;
     valorCentavos: number;
+    /** O desconto de entrada da parcela (1170): 0 sem desconto. */
+    descontoCentavos?: number;
     situacao: "A_VENCER" | "PAGA" | "CANCELADA";
     emAtraso: boolean;
     pagaEm: string | null;
@@ -762,6 +770,16 @@ export interface DocumentoCarne {
   }[];
 }
 type Parcela = DocumentoCarne["itens"][number];
+interface FaixaPdf { de: string; ate: string; quantidade: number; valorCentavos: number }
+
+/** "3 × R$ 399,20 e 9 × R$ 499,00" (D41); sem faixas (antes da 1170), "12 × R$ 499,00". */
+export function faixasEmTexto(faixas: FaixaPdf[] | undefined, n: number, valor: number): string {
+  const fx = faixas && faixas.length ? faixas : [{ quantidade: n, valorCentavos: valor }];
+  const partes = fx.map((f) => `${f.quantidade} × ${reais(f.valorCentavos)}`);
+  return partes.length > 1 ? `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}` : partes[0]!;
+}
+const substitutoEmTexto = (s: NonNullable<DocumentoCarne["substituto"]>) =>
+  s.faixas && s.faixas.length > 1 ? faixasEmTexto(s.faixas, 0, 0) : `${reais(s.faixas?.[0]?.valorCentavos ?? s.valorParcelaCentavos)} por mês`;
 
 const FAIXA = { topo: 10 * MM, alto: (297 - 20) / 3 * MM, xl: 12 * MM, xr: A4.w - 12 * MM, canhoto: 46 * MM };
 const VIA_X = FAIXA.xl + FAIXA.canhoto + 5 * MM;
@@ -810,7 +828,8 @@ function capa(pena: Pena, logo: PDFImage, topoF: number, d: DocumentoCarne) {
   dado("Escritório", d.pagador.nome, d.pagador.cnpj ? `CNPJ ${cnpjLegivel(d.pagador.cnpj)}` : undefined);
   dado("Plano e dia", `${d.plano} · todo dia ${d.diaVencimento}`);
   dado("Período", `${mesPorExtenso(d.primeiraCompetencia)} a ${mesPorExtenso(d.ultimaCompetencia)}`);
-  dado("Valor", `${d.parcelas} × ${reais(d.valorParcelaCentavos)}`);
+  dado("Valor", faixasEmTexto(d.faixas, d.parcelas, d.valorParcelaCentavos),
+    d.itens.some((p) => (p.descontoCentavos ?? 0) > 0) ? "“desc.”: com o desconto de entrada" : undefined);
   pena.corrido([{ s: `Gerado em ${dataBr(diaDe(d.geradoEm))} pelo T3jus · `, cor: SUAVE }, dadoEmissor(e, "razaoSocial", "razão social do T3jus")],
     x1, b - 1.5 * MM, w1, 6.6);
 
@@ -831,6 +850,8 @@ function capa(pena: Pena, logo: PDFImage, topoF: number, d: DocumentoCarne) {
     pena.texto(dataBr(p.vencimento), cols[2]!, linhaY, { t: 6.8, cor, alto: alto / 6.8 });
     const valor = reais(p.valorCentavos);
     pena.texto(valor, cols[3]!, linhaY, { t: 6.8, cor, alto: alto / 6.8 });
+    // A marca da parcela com o desconto de entrada (D41): texto, nunca só a cor.
+    if ((p.descontoCentavos ?? 0) > 0) pena.texto("desc.", cols[3]! + pena.largura(valor, 6.8) + 1.2 * MM, linhaY, { t: 5.6, f: "b", cor: VINHO, alto: alto / 5.6 });
     if (cancelada) {
       const meio = linhaY - alto / 2;
       pena.linha(cols[0]!, meio, cols[3]! + pena.largura(valor, 6.8), meio, SUAVE, 0.5);
@@ -868,7 +889,7 @@ function capa(pena: Pena, logo: PDFImage, topoF: number, d: DocumentoCarne) {
   const canceladas = d.itens.filter((p) => p.situacao === "CANCELADA");
   const caixa: Pedaco[] = canceladas.length && d.substituto
     ? [{ s: `Carnê trocado em ${dataBr(diaDe(canceladas[0]!.canceladaEm!))}.`, f: "b" },
-      { s: ` ${faixaParcelas(canceladas)} ${canceladas.length === 1 ? "foi cancelada" : "foram canceladas"}; não pague. O carnê ${d.substituto.numero}, de ${reais(d.substituto.valorParcelaCentavos)} por mês, vale no lugar.` }]
+      { s: ` ${faixaParcelas(canceladas)} ${canceladas.length === 1 ? "foi cancelada" : "foram canceladas"}; não pague. O carnê ${d.substituto.numero}, com ${substitutoEmTexto(d.substituto)}, vale no lugar.` }]
     : canceladas.length
       ? [{ s: `${faixaParcelas(canceladas)} ${canceladas.length === 1 ? "foi cancelada" : "foram canceladas"}.`, f: "b" }, { s: " Não pague: os códigos delas não valem mais." }]
       : [{ s: "Cada parcela é a fatura do mês.", f: "b" },
@@ -908,7 +929,9 @@ function faixaParcela(pena: Pena, logo: PDFImage, simbolo: PDFImage, topoF: numb
   };
   dc("Escritório", d.pagador.nome);
   dc("Vencimento", dataBr(p.vencimento));
+  const desc = p.descontoCentavos ?? 0;
   dc("Valor", reais(p.valorCentavos));
+  if (desc > 0) b = pena.texto(`com ${reais(desc)} de desconto de entrada`, xc, b, { t: 6.2, cor: SUAVE, largura: wc });
   dc("Identificador", id, "mb");
   const baseC = baseF + 4 * MM;
   if (paga || cancelada) {
@@ -952,7 +975,9 @@ function faixaParcela(pena: Pena, logo: PDFImage, simbolo: PDFImage, topoF: numb
   const r1 = pena.texto(mesPorExtenso(p.competencia), xv, yr2, { t: 8.2, f: "b", largura: 22 * MM });
   const r2 = pena.texto(dataBr(p.vencimento), xv + 24 * MM, yr2, { t: 8.2, f: "b" });
   yd = pena.rotulo("Valor", xv, Math.min(r1, r2) - 0.8 * MM, { t: 5.2 });
-  pena.texto(reais(p.valorCentavos), xv, yd, { t: 15, f: "sb", alto: 1.1 });
+  const yValor = pena.texto(reais(p.valorCentavos), xv, yd, { t: 15, f: "sb", alto: 1.1 });
+  // A conta da parcela com o desconto de entrada (D41): o cheio, menos o desconto.
+  if (desc > 0) pena.texto(`${reais(p.valorCentavos + desc)} – ${reais(desc)} do desconto de entrada`, xv, yValor, { t: 6.2, cor: SUAVE, largura: wd });
 
   // À direita: os códigos, ou o que aconteceu com a parcela.
   const xb = xv + wd + 4 * MM, wb = xv + wv - xb, yb = fio - 2 * MM;
@@ -961,7 +986,7 @@ function faixaParcela(pena: Pena, logo: PDFImage, simbolo: PDFImage, topoF: numb
     const texto = paga
       ? "Esta parcela já está paga. Os códigos dela não valem mais e não aparecem aqui, para ninguém pagar de novo. O recibo foi para o e-mail de cobrança."
       : d.substituto
-        ? `O carnê ${d.substituto.numero} (${mesPorExtenso(d.substituto.primeiraCompetencia)} a ${mesPorExtenso(d.substituto.ultimaCompetencia)}, ${reais(d.substituto.valorParcelaCentavos)} por mês) vale no lugar desta parcela. Os códigos dela não valem mais.`
+        ? `O carnê ${d.substituto.numero} (${mesPorExtenso(d.substituto.primeiraCompetencia)} a ${mesPorExtenso(d.substituto.ultimaCompetencia)}, ${substitutoEmTexto(d.substituto)}) vale no lugar desta parcela. Os códigos dela não valem mais.`
         : "Os códigos desta parcela não valem mais.";
     caixaMarcada(pena, xb, yb, wb, titulo, [{ s: texto }], paga, paga ? VINHO : TINTA, false);
   } else if (!pix && !linha) {

@@ -1,0 +1,13 @@
+{
+  "data": "27/11/2026",
+  "inicio": "11:36",
+  "fim": "11:50",
+  "texto": "Telas e PDF do carnê com desconto de entrada programados (F1.29, desenho D41): Console com o valor e o selo em cada parcela, a prévia e a troca confirmada pelo desconto; Portal com o carnê substituído e os Carnês anteriores (migration 1171); PDF com as faixas. Aguardam o ok da Carol para aplicar a 1171 e publicar a api-console e a api-portal (P32); pendente F1.50.",
+  "refs": [
+    "F1.29",
+    "F1.50",
+    "P32",
+    "D41",
+    "CO-10"
+  ]
+}

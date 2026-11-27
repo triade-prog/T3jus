@@ -5,14 +5,17 @@
 // Implantação e Suporte veem o plano e a situação, sem valores nem faturas (o banco já esconde).
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { diaBrasilia, FORMAS_ASSINATURA, mesPorExtenso, UFS_BRASIL, type FormaAssinatura } from "@t3jus/domain";
+import { diaBrasilia, faixasDoCarne, FORMAS_ASSINATURA, mesPorExtenso, textoFaixas, UFS_BRASIL, type FormaAssinatura } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
-import { brl, dataBr, enderecoEmLinha, sedeParaCobranca, textoEvento, textoPessoas, type AssinaturaCb, type AssinaturaResposta, type FaturaCb } from "./cobranca.ts";
+import {
+  brl, dataBr, enderecoEmLinha, faixasDoCarneCb, mesesDasFaixas, nomeDoCarne, previaCarneNaTela, sedeParaCobranca, textoDoDesconto, textoEvento, textoFaixasX,
+  textoPessoas, type AssinaturaCb, type AssinaturaResposta, type CarneCb, type FaturaCb, type PreviaCarneCb, type TrocaPorDescontoCb,
+} from "./cobranca.ts";
 import { formatarCnpj } from "./ficha.ts";
 import { chamarConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
-import { BotaoBaixarDoc, FolhaCarne, hrefFatura, SituacaoDoc, TabelaDoEscritorio, useBaixarDoc } from "./PecasCobranca.tsx";
+import { BotaoBaixarDoc, FaixasCarne, FolhaCarne, hrefFatura, SituacaoDoc, TabelaDoEscritorio, useBaixarDoc } from "./PecasCobranca.tsx";
 import { hora } from "./tempo.ts";
 
 const MOTIVO_MAX = 300;
@@ -20,7 +23,7 @@ const DIAS = [5, 10, 15, 20, 25];
 const AJUDA_FORMA: Record<FormaAssinatura, string> = {
   PIX: "O boleto vai junto, como alternativa",
   BOLETO: "O Pix vai junto, como alternativa",
-  CARNE: "12 parcelas iguais, de uma vez, cada uma com Pix e boleto",
+  CARNE: "12 parcelas de uma vez, cada uma com Pix, boleto e o valor do mês dela",
 };
 
 type Falha = { tipo: "conflito"; quem: string | null; em: string | null } | { tipo: "erro"; erro: ErroApi };
@@ -70,34 +73,38 @@ export function FaixaSoConsulta({ id, desde, por }: { id: string; desde: string;
   );
 }
 
-function ComoFunciona({ carne }: { carne: boolean }) {
+function ComoFunciona({ carne, desconto = false }: { carne: boolean; desconto?: boolean }) {
   const ids = useId();
   return (
     <section className="explica campo-ambar" aria-labelledby={`${ids}-c`}>
       <p className="sobretitulo">Como funciona</p>
       {carne ? (
         <>
-          <h2 id={`${ids}-c`}>O carnê.</h2>
+          <h2 id={`${ids}-c`}>{desconto ? "O carnê com desconto de entrada." : "O carnê."}</h2>
           <ul>
             <li>
               <Icone nome="carne" className="ico" />
-              <span>12 parcelas com o mesmo valor, mandadas de uma vez em PDF. Cada parcela tem o próprio Pix e boleto.</span>
+              <span>12 parcelas mandadas de uma vez em PDF. Cada parcela tem o próprio Pix e boleto e o valor do mês dela.</span>
+            </li>
+            <li>
+              <Icone nome="desconto" className="ico" />
+              <span>O desconto de entrada vale só nas parcelas até o fim do prazo, contado da 1ª fatura. Depois, o valor cheio do plano, sem carnê novo.</span>
             </li>
             <li>
               <Icone nome="fatura" className="ico" />
-              <span>Cada parcela é a fatura do mês, emitida 20 dias antes, com os mesmos códigos. A régua de lembretes vale igual.</span>
-            </li>
-            <li>
-              <Icone nome="check" className="ico" />
-              <span>Pode pagar adiantado: a parcela fica paga e a fatura do mês já nasce paga.</span>
+              <span>Cada parcela é a fatura do mês, emitida 20 dias antes, com os mesmos códigos e os mesmos itens. Pode pagar adiantado.</span>
             </li>
             <li>
               <Icone nome="planos" className="ico" />
-              <span>Mudou o plano, o valor ou o dia: carnê novo a partir da próxima parcela sem fatura. As que faltam são canceladas com motivo, nunca apagadas.</span>
+              <span>Mudou o plano, o dia ou o desconto: você vê a prévia e confirma um carnê novo, a partir da próxima parcela sem fatura. Nenhum mês fica sem parcela nem se repete.</span>
             </li>
             <li>
-              <Icone nome="relogio" className="ico" />
-              <span>20 dias antes da última parcela, sai o próximo carnê.</span>
+              <Icone nome="pessoas" className="ico" />
+              <span>Mudou o número de pessoas: o Console avisa e você gera o carnê novo, com motivo.</span>
+            </li>
+            <li>
+              <Icone nome="check" className="ico" />
+              <span>Fatura emitida e parcela paga não mudam. Canceladas ficam na assinatura, nunca apagadas. 20 dias antes da última parcela, sai o próximo carnê.</span>
             </li>
           </ul>
         </>
@@ -282,6 +289,77 @@ function JanelaMotivo({ titulo, sobretitulo, descricao, children, botao, icone, 
   );
 }
 
+/**
+ * Do carnê de hoje para o carnê novo (D41, estados 5, 6, 7 e 9): as faixas dos dois e o valor de
+ * cada mês que muda. O de hoje conta só as parcelas ainda sem fatura, que seriam canceladas.
+ */
+function CompararCarnes({ atual, novo, pessoasHoje }: { atual: CarneCb; novo: PreviaCarneCb; pessoasHoje?: number }) {
+  const ids = useId();
+  const trocadas = atual.itens.filter((p) => p.situacao === "A_VENCER" && !p.faturaId);
+  const comFatura = atual.itens.filter((p) => p.situacao !== "CANCELADA" && !!p.faturaId).length;
+  const pessoasCarne = atual.itens.find((p) => p.pessoas !== undefined)?.pessoas;
+  const hoje = new Map(trocadas.map((p) => [p.competencia, p.valorCentavos]));
+  const depois = new Map(mesesDasFaixas(novo.faixas).map((m) => [m.competencia, m.valorCentavos]));
+  const meses = [...new Set([...hoje.keys(), ...depois.keys()])].sort();
+  // Meses seguidos com o mesmo "hoje → novo" viram uma linha só ("março a novembro de 2027").
+  const linhas: { de: string; ate: string; hoje: number | null; novo: number | null }[] = [];
+  for (const m of meses) {
+    const h = hoje.get(m) ?? null;
+    const n = depois.get(m) ?? null;
+    const u = linhas[linhas.length - 1];
+    if (u && u.hoje === h && u.novo === n && mesesDasFaixas([{ de: u.ate, ate: u.ate, quantidade: 2, valorCentavos: 0 }])[1]!.competencia === m) u.ate = m;
+    else linhas.push({ de: m, ate: m, hoje: h, novo: n });
+  }
+  const periodo = (l: { de: string; ate: string }) => (l.de === l.ate ? mesPorExtenso(l.de) : `${mesPorExtenso(l.de).replace(/ de \d{4}$/, l.de.slice(0, 4) === l.ate.slice(0, 4) ? "" : "$&")} a ${mesPorExtenso(l.ate)}`);
+  const valor = (c: number | null) => (c === null ? "—" : brl(c));
+  return (
+    <>
+      <div className="cb-compara-planos" aria-label="Do carnê de hoje para o carnê novo">
+        <div>
+          <span className="cb-peq">Hoje</span>
+          <strong>Carnê {atual.numero}</strong>
+          <span className="cb-fx">{textoFaixasX(faixasDoCarneCb(atual))}</span>
+          <span className="cb-peq">
+            {[pessoasCarne !== undefined ? `${pessoasCarne} pessoas` : "", comFatura ? `${comFatura} com fatura` : "", `${trocadas.length} sem fatura`].filter(Boolean).join(" · ")}
+          </span>
+        </div>
+        <span className="cb-seta" aria-hidden="true">
+          <Icone nome="seta" className="ico" />
+        </span>
+        <div className="cb-novo">
+          <span className="cb-peq">Novo</span>
+          <strong>Carnê {nomeDoCarne(novo.primeiraCompetencia, novo.ultimaCompetencia)}</strong>
+          <span className="cb-fx">{textoFaixasX(novo.faixas)}</span>
+          <span className="cb-peq">
+            {pessoasHoje ?? novo.pessoas} pessoas · {mesPorExtenso(novo.primeiraCompetencia)} a {mesPorExtenso(novo.ultimaCompetencia)} · total {brl(novo.totalCentavos)}
+          </span>
+        </div>
+      </div>
+      <ul className="cb-mudam" aria-label="O valor de cada mês, hoje e no carnê novo" id={`${ids}-m`}>
+        <li className="cb-cab" aria-hidden="true">
+          <span>Mês</span>
+          <span>Hoje</span>
+          <span />
+          <span>Novo</span>
+        </li>
+        {linhas.map((l) => (
+          <li key={l.de}>
+            <span>
+              {periodo(l)}
+              <span className="sr">
+                : hoje {valor(l.hoje)}, no carnê novo {valor(l.novo)}
+              </span>
+            </span>
+            <s style={l.hoje === l.novo ? { textDecoration: "none" } : undefined}>{valor(l.hoje)}</s>
+            <Icone nome="seta" className="ico" />
+            <b aria-hidden="true">{valor(l.novo)}</b>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 function JanelaMudarPlano({ id, r, a, nome, aoFechar, aoFeito }: { id: string; r: AssinaturaResposta; a: AssinaturaCb; nome: string; aoFechar: () => void; aoFeito: (plano: string) => void }) {
   const ids = useId();
   const corpo = useRef<HTMLDivElement>(null);
@@ -293,6 +371,7 @@ function JanelaMudarPlano({ id, r, a, nome, aoFechar, aoFeito }: { id: string; r
   const [enviando, setEnviando] = useState(false);
   const novo = planos.find((p) => p.id === planoId) ?? null;
   const ativas = r.pessoasAtivas;
+  const carneEmUso = a.forma === "CARNE" ? (a.carne?.emUso[a.carne.emUso.length - 1] ?? null) : null;
 
   async function enviar() {
     setFalha(null);
@@ -408,10 +487,17 @@ function JanelaMudarPlano({ id, r, a, nome, aoFechar, aoFeito }: { id: string; r
             </ul>
           </div>
         ) : null}
+        {novo?.previa?.carne && carneEmUso ? (
+          <div style={{ display: "grid", gap: 10 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, margin: 0 }}>O carnê novo no {novo.nome}</p>
+            <CompararCarnes atual={carneEmUso} novo={novo.previa.carne} />
+          </div>
+        ) : null}
         {novo ? (
           <p className="permissao">
             <Icone nome="ajuda" className="ico" />
             As faturas já emitidas não mudam. A assinatura guarda o preço de hoje do {novo.nome}, {brl(novo.precoCentavos)}.
+            {carneEmUso ? " Com o carnê em uso, sai um carnê novo, a partir da próxima parcela sem fatura." : ""}
           </p>
         ) : null}
         <div className="campo">
@@ -548,6 +634,8 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
   const [falha, setFalha] = useState<{ tipo: "erro"; erro: ErroApi } | null>(null);
   const [conflito, setConflito] = useState<{ quem: string | null; em: string | null; salvo: Formulario } | null>(null);
   const [confirmarCarne, setConfirmarCarne] = useState(false);
+  // A recusa CARNE_TROCA_CONFIRMAR (1170): mudar o desconto com o carnê em uso troca o carnê.
+  const [troca, setTroca] = useState<TrocaPorDescontoCb | null>(null);
   const [enviando, setEnviando] = useState(false);
   const muda = (k: keyof Formulario) => (valor: string) => setV((x) => ({ ...x, [k]: valor }));
   const carneEmUso = a?.forma === "CARNE" && (a.carne?.emUso.length ?? 0) > 0;
@@ -555,6 +643,18 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
   const meses = mesesDesde(proxima, 24);
   if (!meses.includes(v.ate)) meses.unshift(v.ate);
   const dias = DIAS.includes(Number(v.dia)) ? DIAS : [...DIAS, Number(v.dia)].sort((x, y) => x - y);
+  const pctNum = Number(v.pct.trim() || "0");
+  const comDesconto = Number.isInteger(pctNum) && pctNum > 0;
+  const planoDaPrevia = criar ? r.planos?.find((p) => p.id === v.planoId) : null;
+  const precoPrevia = criar ? planoDaPrevia?.precoCentavos : a?.precoCentavos;
+  const incluidasPrevia = criar ? planoDaPrevia?.pessoasIncluidas : a?.pessoasIncluidas;
+  const previa =
+    v.forma === "CARNE" && precoPrevia !== undefined && incluidasPrevia !== undefined && Number.isInteger(pctNum) && pctNum >= 0 && pctNum <= 99
+      ? previaCarneNaTela({
+          inicio: proxima, parcelas: Number(v.parcelas) || 12, precoCentavos: precoPrevia, incluidas: incluidasPrevia, pessoas: r.pessoasAtivas,
+          pessoaAMaisCentavos: r.pessoaAMaisCentavos ?? 0, pct: comDesconto ? pctNum : null, ate: comDesconto ? v.ate : null,
+        })
+      : null;
 
   function conferir(): Set<string> {
     const e = new Set<string>();
@@ -573,7 +673,7 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
     }
     if (v.pct.trim() && v.pct.trim() !== "0") {
       const n = Number(v.pct.trim());
-      if (!Number.isInteger(n) || n < 1 || n > 100) e.add("descontoPct");
+      if (!Number.isInteger(n) || n < 1 || n > (v.forma === "CARNE" ? 99 : 100)) e.add("descontoPct");
       if (!v.motivo.trim()) e.add("descontoMotivo");
     }
     return e;
@@ -586,10 +686,23 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
     if (e.size) return focarPrimeiroErro(corpo.current);
     if (!confirmado && carneEmUso && (Number(v.dia) !== a!.diaVencimento || v.forma !== a!.forma)) return setConfirmarCarne(true);
     setConfirmarCarne(false);
+    setTroca(null);
     setEnviando(true);
-    const res = await chamarConsole(`/v1/clientes/${id}/assinatura`, { metodo: "PUT", corpo: { ...(versaoUsada ? { versao: versaoUsada } : {}), ...corpoDe(v, criar, !r.valores ? "omitir" : mesmo ? "sede" : intocado ? (comSede ? "enviar" : "vazio") : "enviar") } });
+    // Confirmado numa janela, o servidor pode trocar o carnê também pelo desconto (uma troca só).
+    const res = await chamarConsole(`/v1/clientes/${id}/assinatura`, {
+      metodo: "PUT",
+      corpo: {
+        ...(versaoUsada ? { versao: versaoUsada } : {}),
+        ...corpoDe(v, criar, !r.valores ? "omitir" : mesmo ? "sede" : intocado ? (comSede ? "enviar" : "vazio") : "enviar"),
+        ...(confirmado && carneEmUso ? { trocarCarne: true } : {}),
+      },
+    });
     setEnviando(false);
     if (!res.ok) {
+      const d = res.erro.detalhes;
+      if (res.status === 422 && d?.motivo === "CARNE_TROCA_CONFIRMAR" && d.previa && typeof d.previa === "object") {
+        return setTroca(d.previa as TrocaPorDescontoCb);
+      }
       const campos = res.erro.detalhes?.campos;
       if (res.status === 422 && Array.isArray(campos) && campos.length) {
         setErros(new Set(campos.map(String)));
@@ -867,24 +980,29 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
           ) : null}
           <div className="campo c2">
             <label htmlFor={`${ids}-pct`}>
-              Desconto na mensalidade (%) <span className="opcional">(opcional)</span>
+              Desconto de entrada (%) <span className="opcional">(opcional)</span>
             </label>
             <input className="entrada" id={`${ids}-pct`} inputMode="numeric" autoComplete="off" value={v.pct} onChange={(e) => muda("pct")(e.target.value)}
               aria-invalid={inv("descontoPct")} aria-describedby={descritoPor(erros.has("descontoPct") && `${ids}-descontoPct-e`, `${ids}-pct-a`)} />
-            {erro("descontoPct", "O desconto é um número inteiro de 1 a 100.")}
+            {erro("descontoPct", v.forma === "CARNE" ? "No carnê, o desconto vai até 99%." : "O desconto é um número inteiro de 1 a 100.")}
             <p className="ajuda" id={`${ids}-pct-a`}>
-              De 0 a 100. Use 0 para sem desconto.
+              {v.forma === "CARNE" ? "Com carnê, de 0 a 99." : "De 0 a 100."} Use 0 para sem desconto.
             </p>
           </div>
           <div className="campo c2">
             <label htmlFor={`${ids}-ate`}>Até a fatura de</label>
-            <select className="entrada" id={`${ids}-ate`} value={v.ate} onChange={(e) => muda("ate")(e.target.value)} aria-invalid={inv("descontoAte")}>
+            <select className="entrada" id={`${ids}-ate`} value={v.ate} onChange={(e) => muda("ate")(e.target.value)} aria-invalid={inv("descontoAte")}
+              aria-describedby={descritoPor(erros.has("descontoAte") && `${ids}-descontoAte-e`, `${ids}-ate-a`)}>
               {meses.map((m) => (
                 <option key={m} value={m}>
                   {mesPorExtenso(m)}
                 </option>
               ))}
             </select>
+            {erro("descontoAte", "O desconto precisa valer pelo menos na próxima fatura.")}
+            <p className="ajuda" id={`${ids}-ate-a`}>
+              {a?.inicioCobranca ? "Precisa valer pelo menos na próxima fatura." : "Conta da 1ª fatura de verdade."}
+            </p>
           </div>
           <div className="campo c2">
             <label htmlFor={`${ids}-ini`}>Início da cobrança</label>
@@ -893,6 +1011,17 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
               {a?.inicioCobranca ? "Não muda depois da primeira fatura." : "Nenhuma fatura sai antes disso."}
             </p>
           </div>
+          {comDesconto && v.forma === "CARNE" ? (
+            <p className="permissao cb-ajuda-desc">
+              <Icone nome="desconto" className="ico" />
+              <span>
+                No carnê, o desconto vale só nas parcelas até a fatura de <b>{mesPorExtenso(v.ate)}</b>.
+                {a?.inicioCobranca
+                  ? " Fatura já emitida e parcela paga não mudam."
+                  : " Conta das primeiras faturas: se o escritório passar para Ativo mais tarde, o prazo anda junto, sozinho."}
+              </span>
+            </p>
+          ) : null}
           {v.pct.trim() && v.pct.trim() !== "0" ? (
             <div className="campo c6">
               <label htmlFor={`${ids}-mot`}>Motivo do desconto</label>
@@ -900,15 +1029,33 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
                 aria-invalid={inv("descontoMotivo")} aria-describedby={descritoPor(erros.has("descontoMotivo") && `${ids}-descontoMotivo-e`, `${ids}-mot-a`)} />
               {erro("descontoMotivo", "Escreva o motivo do desconto. Ele fica no histórico da assinatura.")}
               <p className="ajuda" id={`${ids}-mot-a`}>
-                Obrigatório quando há desconto. Fica no histórico da assinatura.
+                Aparece na fatura do escritório. Escreva para o cliente ler.
               </p>
+            </div>
+          ) : null}
+          {v.forma === "CARNE" && !carneEmUso ? (
+            <div className="cb-previa" role="group" aria-labelledby={`${ids}-pv`}>
+              <h3 id={`${ids}-pv`}>Como fica o carnê</h3>
+              {previa ? (
+                <>
+                  <p>
+                    <b>{textoFaixas(faixasDoCarne(previa))}</b> · {mesPorExtenso(previa[0]!.competencia)} a {mesPorExtenso(previa[previa.length - 1]!.competencia)} · total{" "}
+                    {brl(previa.reduce((t, p) => t + p.valorCentavos, 0))}
+                  </p>
+                  <FaixasCarne faixas={faixasDoCarne(previa)} parcelas={previa.map((p, i) => ({ ...p, id: String(i), numero: i + 1, vencimento: p.competencia, situacao: "A_VENCER" as const, faturaId: null, pagaEm: null, emAtraso: false, canceladaMotivo: null }))}
+                    rotulo="Faixas da prévia" />
+                  <p className="cb-peq">Prévia feita na tela, só para conferir. Quem gera o carnê é o sistema, com as pessoas do dia.</p>
+                </>
+              ) : (
+                <p className="cb-peq">A prévia volta quando o desconto estiver entre 0 e 99%.</p>
+              )}
             </div>
           ) : null}
           {carneEmUso ? (
             <div className="c6">
-              <Aviso tom="info" titulo="Com o carnê em uso, mudar o dia, a forma ou o valor gera um carnê novo.">
-                Ele começa na próxima parcela ainda sem fatura. As parcelas seguintes do carnê de hoje são canceladas com o motivo, nunca apagadas. As faturas já emitidas
-                continuam valendo. Ao salvar, você confirma numa janela.
+              <Aviso tom="info" titulo="Com o carnê em uso, mudar o dia, a forma ou o desconto troca o carnê.">
+                O carnê novo começa na próxima parcela ainda sem fatura, sem repetir mês já pago. As parcelas que faltam são canceladas com o motivo, nunca apagadas. As
+                faturas já emitidas continuam valendo. Ao salvar, você vê a prévia e confirma.
               </Aviso>
             </div>
           ) : null}
@@ -919,7 +1066,7 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
                   ? "Nenhuma fatura sai antes de o cliente passar para Ativo."
                   : "Com o cliente já Ativo, a cobrança começa hoje."
                 : carneEmUso
-                  ? "Mudar só o e-mail ou o CNPJ não mexe no carnê."
+                  ? "Mudar só o e-mail, o CNPJ ou o motivo do desconto não mexe no carnê."
                   : `Vale a partir da próxima fatura ainda não emitida (${mesPorExtenso(proxima)}).`}
             </p>
             <button className="btn btn-fantasma" type="button" onClick={aoCancelar} disabled={enviando}>
@@ -932,6 +1079,55 @@ function FormAssinatura({ id, r, nome, socio, aoCancelar, aoSalvar }: { id: stri
           </div>
         </form>
       </div>
+      {troca && a ? (
+        <Janela id={`${ids}-tr`} aberta alerta aoFechar={() => setTroca(null)} sobretitulo={`Assinatura · ${nome}`} titulo="Mudar o desconto troca o carnê"
+          descricao={`${ids}-tr-d`} aoEnviar={() => void enviar(true)}
+          pe={
+            <>
+              <button className="btn btn-fantasma" type="button" onClick={() => setTroca(null)} data-foco="">
+                Cancelar
+              </button>
+              <button className="btn btn-pri" type="submit" aria-busy={enviando || undefined}>
+                <Icone nome="carne" className="ico" />
+                {enviando ? "Trocando…" : "Trocar o carnê e salvar"}
+              </button>
+            </>
+          }>
+          <div style={{ display: "grid", gap: 14 }}>
+            <p id={`${ids}-tr-d`}>
+              O desconto de entrada passa de {textoDoDesconto(a.desconto?.pct, a.desconto?.ate)} para {textoDoDesconto(comDesconto ? pctNum : null, v.ate)}
+              {troca.pessoasHoje !== troca.pessoasCarne ? `, e a ${nome} tem ${troca.pessoasHoje} pessoas hoje` : ""}. As parcelas ainda sem fatura mudam de valor, então sai
+              um carnê novo, a partir de {mesPorExtenso(troca.previa.primeiraCompetencia)}.
+            </p>
+            {a.carne?.emUso.length ? <CompararCarnes atual={a.carne.emUso[a.carne.emUso.length - 1]!} novo={troca.previa} pessoasHoje={troca.pessoasHoje} /> : null}
+            <ul className="tratar" style={{ padding: 0, margin: 0 }}>
+              <li>
+                {troca.parcelas} {troca.parcelas === 1 ? "parcela ainda sem fatura é cancelada" : "parcelas ainda sem fatura são canceladas"}, com o motivo. Nada é apagado.
+              </li>
+              <li>Faturas emitidas e parcelas pagas não mudam.</li>
+              <li>
+                {troca.pessoasHoje !== troca.pessoasCarne ? (
+                  <>
+                    <b>O carnê novo conta as pessoas de hoje: {troca.pessoasHoje}</b>. O carnê de hoje contava {troca.pessoasCarne}, do dia em que nasceu.
+                  </>
+                ) : (
+                  `As pessoas continuam ${troca.pessoasHoje}, as mesmas do carnê de hoje.`
+                )}
+              </li>
+              <li>
+                O carnê novo vai em PDF para {v.email.trim() || "o e-mail de cobrança"}
+                {socio ? `, com cópia para ${socio}` : ""}, e aparece no Portal.
+              </li>
+            </ul>
+            <p className="cb-motivo-srv">
+              <b>Motivo da troca, escrito pelo sistema:</b> “O desconto de entrada mudou: de {textoDoDesconto(a.desconto?.pct, a.desconto?.ate)} para{" "}
+              {textoDoDesconto(comDesconto ? pctNum : null, v.ate)}
+              {troca.pessoasHoje !== troca.pessoasCarne ? `, e passa a contar ${troca.pessoasHoje} pessoas (eram ${troca.pessoasCarne})` : ""}.” Fica no histórico com o seu nome. O
+              escritório não vê.
+            </p>
+          </div>
+        </Janela>
+      ) : null}
       {confirmarCarne ? (
         <Janela id={`${ids}-cc`} aberta alerta aoFechar={() => setConfirmarCarne(false)} sobretitulo={`Assinatura · ${nome}`} titulo="Gerar um carnê novo ao salvar?"
           descricao={`${ids}-cc-d`} aoEnviar={() => void enviar(true)}
@@ -1103,7 +1299,7 @@ function Dados({ r, socio, aoPreencher }: { r: AssinaturaResposta; socio: string
             <dd>
               {a.desconto ? (
                 <>
-                  {a.desconto.pct}% na mensalidade <span className="cb-peq">{textoDesconto(a.desconto.ate, a.proxima?.competencia)}</span>
+                  Desconto de entrada de {a.desconto.pct}% na mensalidade <span className="cb-peq">{textoDesconto(a.desconto.ate, a.proxima?.competencia)}</span>
                 </>
               ) : (
                 "Sem desconto"
@@ -1117,6 +1313,7 @@ function Dados({ r, socio, aoPreencher }: { r: AssinaturaResposta; socio: string
                 <span className="cb-motivo" style={{ margin: 0 }}>
                   “{a.desconto.motivo}”
                 </span>
+                <span className="cb-peq">aparece na fatura do escritório</span>
               </dd>
             </div>
           ) : null}
@@ -1185,7 +1382,7 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
   const lateral = (
     <aside className="col" aria-label="Situação da cobrança">
       <Situacao r={r} />
-      <ComoFunciona carne={a?.forma === "CARNE"} />
+      <ComoFunciona carne={a?.forma === "CARNE"} desconto={!!a?.desconto} />
     </aside>
   );
 
@@ -1257,7 +1454,13 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
   const s = a!;
   const dias = s.atrasoDias ?? 0;
   const abertas = s.abertas;
-  const valorMudou = carneEmUso && a!.carne?.valorHojeCentavos !== null && a!.carne?.valorHojeCentavos !== undefined && a!.carne.valorHojeCentavos !== carneEmUso.valorParcelaCentavos;
+  // O aviso compara o mesmo mês (D41, estado 8): a parcela do carnê e a mensalidade de hoje. O fim
+  // do desconto já está nas parcelas, então não acende.
+  const valorHoje = a!.carne?.valorHojeCentavos ?? null;
+  const valorCarne = a!.carne?.valorCarneCentavos === undefined ? carneEmUso?.valorParcelaCentavos ?? null : a!.carne.valorCarneCentavos;
+  const valorMudou = !!carneEmUso && valorHoje !== null && valorCarne !== null && valorHoje !== valorCarne;
+  const mesAviso = s.proxima?.competencia ?? null;
+  const extraHoje = Math.max(0, r.pessoasAtivas - s.pessoasIncluidas);
 
   return (
     <>
@@ -1417,8 +1620,10 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
           {r.valores && carneEmUso ? (
             <FolhaCarne carne={carneEmUso}
               aviso={valorMudou ? (
-                <Aviso tom="atencao" titulo={`A mensalidade hoje é ${brl(a!.carne!.valorHojeCentavos!)}, e o carnê está em ${brl(carneEmUso.valorParcelaCentavos)}.`}>
-                  O valor da parcela fica fixo. A mensalidade nova só entra com um carnê novo, a partir da próxima parcela sem fatura.
+                <Aviso tom="atencao" titulo={`O valor de ${mesAviso ? mesPorExtenso(mesAviso) : "a próxima parcela"} mudou.`}>
+                  A parcela de {mesAviso ? mesPorExtenso(mesAviso) : "o próximo mês"} está em {brl(valorCarne!)}, e a mensalidade desse mês hoje é {brl(valorHoje!)} ({r.pessoasAtivas}{" "}
+                  {r.pessoasAtivas === 1 ? "pessoa" : "pessoas"}
+                  {extraHoje ? `, ${extraHoje} a mais` : ""}). As parcelas ficam como estão até um carnê novo, que começa na próxima parcela ainda sem fatura.
                 </Aviso>
               ) : undefined}
               acoes={
@@ -1437,7 +1642,9 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
                   </p>
                 </>
               }
-              rodape="Cada parcela é a fatura do mês, com o Pix e o boleto da página do carnê. Pagar adiantado pode: a parcela fica paga e a fatura do mês já nasce paga." />
+              rodape={carneEmUso.itens.some((p) => (p.descontoCentavos ?? 0) > 0)
+                ? "Cada parcela é a fatura do mês, com o Pix e o boleto da página do carnê. O desconto de entrada vale só nas parcelas até o fim do prazo; as outras já nascem com o valor cheio, sem pedir carnê novo."
+                : "Cada parcela é a fatura do mês, com o Pix e o boleto da página do carnê. Pagar adiantado pode: a parcela fica paga e a fatura do mês já nasce paga."} />
           ) : null}
           {r.valores && s.faturas ? (
             <FaturasDoEscritorio faturas={s.faturas} hoje={r.hoje} nome={nome} id={id} encerrado={encerrado} proxima={encerrado ? null : s.proxima?.competencia ?? null} />
@@ -1479,14 +1686,18 @@ export function AbaAssinatura({ id, nome, socio, consultaAoAbrir, aoMudarAcesso 
           aoFechar={fechar} aoFeito={() => pronto("O Portal voltou ao normal.", "A equipe do escritório já pode criar e mudar. O motivo ficou no histórico.", true)} />
       ) : janela === "carne" && carneEmUso ? (
         <JanelaMotivo titulo={`Gerar um carnê novo para a ${nome}?`} sobretitulo={`Assinatura · ${nome}`} icone="carne" botao="Gerar o carnê novo"
-          descricao={`O carnê novo começa na próxima parcela ainda sem fatura${s.proxima ? `: ${mesPorExtenso(s.proxima.competencia)}` : ""}${a!.carne?.valorHojeCentavos ? `, a ${brl(a!.carne.valorHojeCentavos)} por parcela` : ""}.`}
+          descricao={a!.carne?.previaNovo
+            ? `O carnê novo começa na próxima parcela ainda sem fatura: ${mesPorExtenso(a!.carne.previaNovo.primeiraCompetencia)}, com ${textoFaixas(a!.carne.previaNovo.faixas)}.`
+            : `O carnê novo começa na próxima parcela ainda sem fatura${s.proxima ? `: ${mesPorExtenso(s.proxima.competencia)}` : ""}${a!.carne?.valorHojeCentavos ? `, a ${brl(a!.carne.valorHojeCentavos)} por parcela` : ""}.`}
           caminho={`/v1/clientes/${id}/assinatura/carne-novo`} versao={s.versao} ajuda="Obrigatório. Fica no histórico da assinatura e das parcelas canceladas. O escritório não vê."
           aoFechar={fechar} aoFeito={() => pronto("Carnê novo gerado.", `O carnê vai para ${s.emailCobranca ?? "o e-mail de cobrança"} e aparece no Portal. As parcelas trocadas ficaram como Canceladas.`)}>
+          {a!.carne?.previaNovo ? <CompararCarnes atual={carneEmUso} novo={a!.carne.previaNovo} /> : null}
           <ul className="tratar" style={{ padding: 0, margin: 0 }}>
             <li>As faturas já emitidas continuam valendo, pelo valor delas.</li>
+            {s.desconto ? <li>O desconto de entrada continua como foi combinado: {textoDoDesconto(s.desconto.pct, s.desconto.ate)}.</li> : null}
             <li>As parcelas ainda sem fatura do carnê {carneEmUso.numero} são canceladas, com o motivo. Nada é apagado: elas ficam na assinatura como Canceladas.</li>
             <li>O carnê novo vai para {s.emailCobranca}{socio ? `, com cópia para ${socio}` : ""}, e aparece no Portal.</li>
-            <li>Parcela paga adiantada no carnê antigo continua paga, sem diferença a cobrar.</li>
+            <li>Parcela paga adiantada no carnê antigo continua paga, sem diferença a cobrar. O carnê novo pula esse mês.</li>
           </ul>
         </JanelaMotivo>
       ) : null}
