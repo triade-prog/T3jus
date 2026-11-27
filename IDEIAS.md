@@ -192,7 +192,7 @@ Etiquetas: [V1] primeira versão proposta; [VAL] hipótese a validar; [BASE] pri
 | CO-07 | Plano anual: o escritório contrata 12 meses com desconto sobre o mensal (o mercado dá de 8% a 30%; a proposta de preços sugere cerca de 15%), pago à vista por Pix ou boleto ou no carnê de 12 parcelas, com a regra de cancelamento e de devolução escrita no contrato; decidir o desconto depois dos primeiros 6 meses de pilotos (Carol pediu em 26/11/2026) | [VAL] |
 | CO-08 | Implantação assistida como serviço com valor anunciado: a equipe T3jus treina todas as pessoas do escritório, acompanha o uso e ajuda no que for preciso, em vez de uma videoconferência só, como faz a maioria dos concorrentes. Nos 6 primeiros meses do T3jus rodando a implantação sai grátis (o valor aparece e a isenção também); depois a Carol avalia se passa a cobrar ou se mantém grátis (Carol pediu em 26/11/2026) | [V1] |
 | CO-09 | Teste grátis de 7 dias antes de assinar: o escritório usa o Portal sem fatura nesse prazo e, ao fim, assina ou o acesso para, sem apagar os dados; muda a decisão de 20/11/2026 de não ter período grátis (Carol pediu em 26/11/2026) | [V1] |
-| CO-10 | Desconto de entrada nas primeiras faturas: 20% para escritório novo e 30% para quem vem de outro sistema, lançado na assinatura com o motivo; no carnê, o desconto vale só nas parcelas do prazo, sem se repetir nas 12 (Carol pediu em 26/11/2026) | [V1] |
+| CO-10 | Desconto de entrada nos 3 primeiros meses, depois volta o valor normal do plano: 20% para escritório novo e 30% para quem vem de outro sistema, lançado na assinatura com o motivo; no carnê, o desconto vale só nas 3 primeiras parcelas, sem se repetir nas 12 (Carol pediu em 26/11/2026) | [V1] |
 
 ## 11. Portal do advogado
 
