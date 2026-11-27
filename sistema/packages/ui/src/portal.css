@@ -3171,6 +3171,54 @@ mark.cl-m{background:var(--ambar-3);color:inherit;border-radius:3px;padding:0 1p
 }
 @media print{.pt-barra-area,.re-barra,.re-topo,.re-como,.pt-cab .btn{display:none}}
 
+/* ==========================================================================
+   Relatórios · "Baixado sem receber" (F3.173), desenho aprovado em
+   docs/design/aprovadas/portal-exito-baixado-alvara (estados rb-). Prefixo rb-. Família vinho e
+   neutros: a baixa é do escritório e não é dinheiro de terceiros. "Não soma" sempre escrito.
+   ========================================================================== */
+.rb-num{padding:0 24px 12px;display:grid;gap:4px}
+.rb-num .rb-v{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:0}
+.rb-num .rb-v b{font-family:var(--serifa);font-size:30px;font-weight:500;color:var(--vinho);line-height:1.1;white-space:nowrap}
+.rb-num .rb-v span{font-size:13px;color:var(--texto-2)}
+.rb-num p{margin:0;font-size:13px;line-height:1.5}
+.rb-mot b{font-weight:500}
+.rb-cmp{display:flex;gap:8px;align-items:flex-start;color:var(--texto-2)}
+.rb-cmp .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho-4)}
+.rb-lado{border-top:1px solid var(--divisor);padding-top:2px}
+.rb-lado dd small{display:block;font-weight:400;font-size:12px;color:var(--texto-2);text-align:right}
+.rb-nao{font-weight:500;color:var(--texto)}
+.rb-nada{margin:0 24px 14px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:13px;line-height:1.5;display:flex;gap:10px;align-items:flex-start}
+.rb-nada .rb-nq{white-space:nowrap}
+.rb-nada .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho)}
+.fi-quatro .rb-baixado{grid-column:1/-1;border-left:0;border-top:1px solid var(--divisor);background:var(--sal-2)}
+.fi-quatro .rb-baixado dd small{display:block;font-family:var(--sans,inherit);font-size:12px;color:var(--texto-2);font-weight:400}
+.rb-lista{list-style:none;margin:0;padding:0 24px 4px}
+.rb-lista>li{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:4px 14px;padding:14px 0;border-top:1px solid var(--divisor);font-size:13px;line-height:1.5}
+.rb-lista>li:first-child{border-top:0}
+.rb-lista time{font-weight:500;color:var(--texto-2);font-variant-numeric:tabular-nums}
+.rb-lista strong{display:block;font-weight:500}
+.rb-lista small{display:block;font-size:12px;color:var(--texto-2)}
+.rb-lista .rb-q{margin:4px 0 0}
+.rb-lista .rb-q q{font-family:var(--serifa);font-style:italic;font-size:15px;color:var(--texto)}
+.rb-lista .fi-v{font-size:14px;text-align:right}
+.rb-lista .fi-v small{font-weight:400}
+.rb-lista .selo{margin-top:6px}
+.rb-lista li.rb-desf strong{color:var(--texto)}
+.rb-custas{display:flex;gap:10px;align-items:flex-start;margin:4px 24px 14px;padding:10px 14px;border-radius:var(--raio);border:1px solid var(--borda-folha);font-size:13px;line-height:1.5}
+.rb-custas .ico{width:16px;height:16px;flex:none;margin-top:2px;color:var(--vinho)}
+.rb-tab thead th{white-space:normal;line-height:1.35;vertical-align:bottom}
+.rb-tab tfoot td,.rb-tab tfoot td small{white-space:normal}
+.re-ferr .campo:has(#re-ordem){flex-basis:280px}
+.re-tab td.rb-col b{font-weight:500}
+.re-tab td.rb-col small{white-space:normal}
+@media (max-width:760px){
+  .rb-num{padding:0 16px 12px}
+  .rb-nada,.rb-custas{margin-left:16px;margin-right:16px}
+  .rb-lista{padding:0 16px 4px}
+  .rb-lista>li{grid-template-columns:44px minmax(0,1fr)}
+  .rb-lista>li .fi-v{grid-column:2;text-align:left}
+}
+
 /* F3.55 · Importar planilha (docs/design/aprovadas/portal-importacao), sem mudança. */
 /* ==========================================================================
    Portal · Clientes › Importar planilha (VA-05). Prefixo im-. Só pares do contraste.md.

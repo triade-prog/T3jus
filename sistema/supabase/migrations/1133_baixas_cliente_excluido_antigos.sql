@@ -6,7 +6,7 @@
 -- "Explicação apagada a pedido do titular". A baixa não se apaga: o motivo, o valor, quem fez e
 -- quando ficam. Hoje deve achar 0 (o contrato impede a exclusão; P21: 0 clientes excluídos).
 --
--- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P23):
+-- Ordem da publicação (README, "Arquivos do cliente excluído"; painel, P24):
 --   1. conferir com list_migrations que a 1092, a 1110, a 1116 e a 1118 estão no ar;
 --   2. rodar a contagem só de leitura (project-files t3jus/f3-180/contagem-antes-1133.sql); se achar
 --      contrato ou ligação a caso de cliente EXCLUIDO, parar e avisar a Carol (é a corrida da F3.180
