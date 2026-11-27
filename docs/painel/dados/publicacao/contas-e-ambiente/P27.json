@@ -1,0 +1,11 @@
+{
+  "id": "P27",
+  "texto": "Aplicar no Supabase a migration 1134 (o caso novo de importação desfeita solta o cliente sem trabalho nele e perde o nome na exclusão, e o levantamento novo de cliente excluído é recusado, F3.185)",
+  "refs": [
+    "PT-11",
+    "VA-05"
+  ],
+  "status": "pendente",
+  "ordem": 270,
+  "nota": "Ordem (README, \"O caso novo de importação desfeita\" em \"Arquivos do cliente excluído\"; cabeçalho da 1134): 1) conferir com list_migrations que a 1118 e a 1131 estão no ar; 2) rodar a contagem só de leitura (project-files t3jus/f3-180/contagem-antes-1134.sql) e mostrar à Carol: excluidos_com_ligacao deve vir 0 (se não, parar e avisar); clientes_soltos, ligacoes_soltas e casos_que_perdem_o_nome dizem quantos passam a poder ser excluídos e quantos casos trocariam de nome se fossem; 3) aplicar a 1134 (project-files t3jus/migrations-para-colar/1134_COLAR_NO_SQL_EDITOR.sql, ou apply_migration com o nome 1134_caso_desfeito_cliente_excluido). Sem migration sem volta: nada muda nos dados ao aplicar. Nada a publicar na api-portal, na api-console nem no Portal. Se der errado: drop trigger importacao_casos_apagar_do_excluido on clientes_escritorio; drop trigger levantamento_nasce on levantamentos; recriar cliente_vinculos_lgpd da 1118 e trocar de volta o trecho de imp_desfazer_plano_clientes."
+}

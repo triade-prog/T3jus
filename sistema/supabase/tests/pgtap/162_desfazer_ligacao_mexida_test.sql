@@ -3,10 +3,11 @@
 -- caso com ele depois da importação (imp_ligacao_mexida, pelo catálogo; revisão v1, M3), decidida
 -- por linha (M4); a ligação de outro cliente feita depois não segura (revisão v2, m-b); o que veio
 -- antes da importação não segura; a regra (d) da exclusão (pedido de documento, levantamento,
--- requisição e petição com o nome dele) e o que não prende; o caso novo desfeito como hoje (F3.185);
+-- requisição e petição com o nome dele) e o que não prende; o caso novo desfeito, que solta o cliente
+-- sem trabalho nele (F3.185, 1134; o resto no pgTAP 167);
 -- a trava das 10 tabelas com caso_id e cliente_id.
 begin;
-select plan(33);
+select plan(35);
 
 select ajustar_relogio(('2026-11-25 10:00-03'::timestamptz - now()));
 -- A saída das entradas sem acesso (0540) não entra neste teste.
@@ -198,12 +199,15 @@ select is((select jsonb_object_agg(n, cliente_vinculos_lgpd(pg_temp.k(n))) from 
 select ok((select bool_and(pg_temp.excluir(pg_temp.k(n)) ->> 'protocolo' is not null) from unnest(array['Hugo', 'Gabi', 'Quim']) n),
   'PT-11 F3.158 regra (d): e eles podem ser excluídos');
 
--- 6. O caso novo desfeito continua como hoje: vai para Encerrados com a ligação, e Paulo não pode
--- ser excluído. É o item F3.185 (o desfazer dos clientes o conta como mexido e a exclusão o recusa).
+-- 6. O caso novo desfeito vai para Encerrados com a ligação. Sem trabalho nele, a ligação não prende
+-- Paulo (F3.185, 1134): ele pode ser excluído, a ligação sai e o caso perde o nome.
 select is((select array[c.situacao, c.encerrado_por] from casos c, imp where c.importacao_id = imp.id), array['ENCERRADO', 'IMPORTACAO_DESFEITA'],
   'o caso novo de Paulo vai para Encerrados');
-select is((teste.erro(format('select pg_temp.excluir(%L)', pg_temp.k('Paulo')))) -> 'detalhe' ->> 'motivo', 'TEM_CONTRATO_OU_PROCESSO',
-  'F3.185 (pendente): o caso novo desfeito ainda prende Paulo');
+create temp table caso_paulo as select c.id from casos c, imp where c.importacao_id = imp.id;
+select is(cliente_vinculos_lgpd(pg_temp.k('Paulo')), null, 'PT-11 F3.185: o caso novo desfeito sem trabalho não conta como processo de Paulo');
+select ok((select pg_temp.excluir(pg_temp.k('Paulo')) ->> 'protocolo') is not null, 'PT-11 F3.185: e Paulo pode ser excluído');
+select is((select array[c.nome, (select count(*) from caso_clientes cc where cc.caso_id = c.id)::text] from casos c, caso_paulo where c.id = caso_paulo.id),
+  array['Caso de importação desfeita', '0'], 'PT-11 F3.185: a ligação sai e o caso, sem cliente, perde o nome');
 
 -- 7. A trava: as tabelas com caso_id e cliente_id são as 10 conhecidas, cada uma classificada. Tabela
 -- nova quebra o teste e obriga a decidir em que regra ela entra (README, "A importação").

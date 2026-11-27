@@ -1,0 +1,12 @@
+{
+  "data": "27/11/2026",
+  "inicio": "09:35",
+  "fim": "10:15",
+  "texto": "F3.185 feita: a ligação ao caso novo de importação desfeita sem trabalho não prende o cliente; na exclusão a ligação sai e o caso sem cliente vira \"Caso de importação desfeita\"; levantamento novo de excluído recusado (migration 1134, pgTAP 167, k6 a k9); P27 pendente.",
+  "refs": [
+    "F3.185",
+    "P27",
+    "PT-11",
+    "VA-05"
+  ]
+}
