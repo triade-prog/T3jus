@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "15:10",
+  "fim": "15:25",
+  "texto": "Treinos da implantação assistida no servidor: cada treino guarda o dia (hoje ou antes), a duração de 15 a 480 minutos, a forma, os temas, quem participou (com acesso ao Portal do escritório) e quem deu, da sessão; não se edita e se desfaz uma vez, com motivo no histórico interno, ficando riscado na lista; quem chega depois da conclusão também é treinado na mesma lista (DC14); \"X de Y treinadas\" e o que já aconteceu (sócio entrou, importação, WhatsApp, aceite do convite) são calculados na leitura; quem acompanha só pode ser quem atende o escritório com Implantação ou Administração e deixa de acompanhar quando sai da equipe; rotas da aba no api-console (migration 1183); falta aplicar (P35).",
+  "refs": [
+    "F1.45",
+    "P35",
+    "CO-08"
+  ]
+}

@@ -246,6 +246,11 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PRAZO_INVALIDO: "Escolha um prazo diferente do de agora, a partir de hoje e até um ano depois da abertura.",
   // CO-08 (1182): a implantação cobrada vai à vista na 1ª fatura.
   IMPLANTACAO_COBRADA_NO_CARNE: "A implantação assistida deste escritório é cobrada e vai à vista na 1ª fatura. Escolha Pix ou boleto.",
+  // CO-08 (1183): os treinos e quem acompanha.
+  TREINO_NO_FUTURO: "O treino precisa ser de hoje ou de antes. Para combinar um treino futuro, use a Agenda.",
+  PESSOA_SEM_VINCULO: "Só participa do treino quem tem acesso ao Portal deste escritório. Recarregue a lista e marque de novo.",
+  TREINO_JA_DESFEITO: "Este registro já foi desfeito. Recarregue a página para ver a lista.",
+  RESPONSAVEL_SEM_ATRIBUICAO: "Só acompanha quem atende este escritório com a função Implantação ou Administração. Para incluir alguém, atribua na aba Equipe T3jus.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
