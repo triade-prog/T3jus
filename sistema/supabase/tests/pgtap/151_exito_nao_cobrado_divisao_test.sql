@@ -349,7 +349,7 @@ select is((select jsonb_build_array(j -> 'naoCobrado', j -> 'cobradoNoAlvara' ->
 select is((select j -> 'cobradoNoAlvara' -> 'valor' from cli, lateral pg_temp.passo(cli.seb, false) j), 'null'::jsonb,
   'PT-02: sem o Financeiro, o passo vem sem o valor');
 select is((select array_agg(k order by k) from cli, lateral pg_temp.passo(cli.seb, false) j, jsonb_object_keys(jsonb_strip_nulls(j -> 'cobradoNoAlvara')) k),
-  array['em', 'por'], 'revisão M2: e sem o levantamento, o tipo e o dia em que o dinheiro entrou, como o passo do repasse');
+  array['em', 'por', 'tipo'], 'revisão M2: e sem o levantamento e o dia em que o dinheiro entrou, como o passo do repasse (o tipo vai a todos, D40)');
 select is((select j -> 'cobradoNoAlvara' ->> 'entrouEm' from cli, lateral pg_temp.passo(cli.seb, true) j), '2026-11-18',
   'com o Financeiro, o dia em que entrou vem');
 select is((select x -> 'cobradoNoAlvara' -> 'valor' from ids, cs, jsonb_array_elements(caso_resumo_acerto(ids.diego, ids.rm, cs.id) -> 'exitos') x
@@ -359,7 +359,7 @@ select is((select jsonb_build_array(x -> 'naoCobrado', x -> 'cobradoNoAlvara' ->
   '[true, null, "Diego Almeida"]'::jsonb, 'PT-02: para Larissa, sem o valor');
 select is((select array_agg(k order by k) from ids, cs, jsonb_array_elements(caso_resumo_acerto(ids.larissa, ids.rm, cs.id) -> 'exitos') x,
              jsonb_object_keys(jsonb_strip_nulls(x -> 'cobradoNoAlvara')) k where x ->> 'cliente' = 'Sebastião Prado'),
-  array['em', 'por'], 'revisão M2: e sem o levantamento, o tipo e o dia');
+  array['em', 'por', 'tipo'], 'revisão M2: e sem o levantamento e o dia');
 select is((select x -> 'cobradoNoAlvara' from ids, cs, jsonb_array_elements(caso_resumo_acerto(ids.diego, ids.rm, cs.id) -> 'exitos') x
             where x ->> 'cliente' = 'Úrsula Prado'), 'null'::jsonb, 'sem cobrança, cobradoNoAlvara é null');
 select ok((select strpos(prosrc, 'cobradoNoAlvara') = 0 from pg_proc where oid = 'caso_acerto_quadro(uuid,uuid)'::regprocedure),
@@ -455,7 +455,7 @@ select is((select jsonb_build_array(exito_nao_cobrado(ids.outro, cs.id, cli.seb,
                                     exito_cobrado_no_alvara(ids.outro, pg_temp.exito(cli.seb), true), exito_honorarios_do_contrato(ids.outro, cs.id, cli.seb, 1500000),
                                     (select count(*) from exito_quem_avisar(ids.outro, pg_temp.exito(cli.seb))))
              from ids, cs, cli), '[null, 0, null, null, 0]'::jsonb, 'PT-01: as peças novas filtram o escritório');
-select is((select jsonb_build_array(exito_ja_cobrado(ids.rm, pg_temp.exito(cli.seb)), exito_cobrado_no_alvara(ids.rm, pg_temp.exito(cli.seb), true) ->> 'tipo')
+select is((select jsonb_build_array(exito_ja_cobrado(ids.rm, pg_temp.exito(cli.seb)), exito_cobrado_no_alvara(ids.rm, pg_temp.exito(cli.seb), false) ->> 'tipo')
              from ids, cli), '[300000, "ALVARA"]'::jsonb, 'e, no escritório certo, acham a cobrança');
 select is((select array_agg(p.proname::text order by p.proname) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prosecdef
             and p.proname in ('exito_honorarios_do_contrato', 'exito_ja_cobrado', 'exito_quem_avisar', 'exito_nao_cobrado', 'exito_cobrado_no_alvara',

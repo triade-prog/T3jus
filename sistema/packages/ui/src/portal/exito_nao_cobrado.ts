@@ -202,15 +202,13 @@ export function origemExitoCobrado(d: Record<string, unknown>): { fez: string; d
   };
 }
 
-/** Onde foi cobrado: "no alvará"; sem o Financeiro, o tipo não vem (revisão, M2) e fica "num levantamento". */
-const noLevantamento = (tipo: string | null | undefined) => (tipo ? `no ${nomeDoLevantamento(tipo)}` : "num levantamento");
 
 /** O acerto na ficha do caso (enc-acerto, enc-acerto-larissa). */
 export function acertoExitoCobrado(c: CobradoNoAlvara, conferido: { por: PessoaRef | null; em: string | null }): { texto: string; sub: string } {
   const nc = `Não cobrado${conferido.por ? ` por ${primeiroNome(conferido.por.nome)}` : ""}${conferido.em ? ` em ${curto(conferido.em)}` : ""}`;
   const quem = `${c.por ? ` por ${primeiroNome(c.por.nome)}` : ""} em ${curto(c.em)}`;
   return {
-    texto: `Êxito não cobrado · cobrado ${noLevantamento(c.tipo)}`,
+    texto: `Êxito não cobrado · cobrado no ${nomeDoLevantamento(c.tipo)}`,
     sub: `${nc} · ${typeof c.valor === "number" ? `${reais(c.valor)} cobrados` : "cobrado"}${quem}`,
   };
 }
@@ -220,7 +218,7 @@ export function passoExitoCobrado(c: CobradoNoAlvara, conferido: { por: PessoaRe
   const nc = `Não cobrado${conferido.por ? `, por ${primeiroNome(conferido.por.nome)}` : ""}${conferido.em ? ` em ${curto(conferido.em)}` : ""}`;
   // Sem o Financeiro, entrouEm não vem: fica o dia em que foi cobrado (revisão, M2).
   const quando = c.entrouEm ? ` de ${curto(c.entrouEm)}` : ` em ${curto(c.em)}`;
-  return `${nc} · cobrado ${noLevantamento(c.tipo)}${quando}${c.por ? `, por ${primeiroNome(c.por.nome)}` : ""}`;
+  return `${nc} · cobrado no ${nomeDoLevantamento(c.tipo)}${quando}${c.por ? `, por ${primeiroNome(c.por.nome)}` : ""}`;
 }
 
 /** A ficha do contrato só de êxito (enc-caso-historico): o âmbar e o vazio das parcelas. */

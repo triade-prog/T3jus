@@ -319,7 +319,7 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
   const exitoCobrado = (comValores: boolean) => ({
     cliente: JOANA.nome, feito: true, naoCobrado: true, em: "2026-11-10T19:40:00Z", por: MARINA, valor: null,
     cobradoNoAlvara: comValores ? { ...COBRADO, levantamentoId: "1e000000-0000-4000-8000-000000000001", tipo: "ALVARA", entrouEm: "2026-11-18", valor: 300000 }
-      : { ...COBRADO, levantamentoId: null, tipo: null, entrouEm: null, valor: null },
+      : { ...COBRADO, levantamentoId: null, tipo: "ALVARA", entrouEm: null, valor: null },
   });
   test("enc-acerto: o êxito não cobrado e cobrado no alvará, com o valor para quem tem o Financeiro", async ({ page }) => {
     const acerto = {
@@ -346,8 +346,8 @@ test.describe("Jurídico do Portal, casos (EX-01, EX-03, EX-07, EX-14, CH-05)", 
     await simular(page, { ...comuns(), [`GET /v1/escritorio/juridico/casos/${CASO}`]: { corpo: ficha } });
     await page.goto(`${P}/juridico/casos/${CASO}`);
     const q = page.getByRole("region", { name: "Acerto no Financeiro" });
-    // Revisão, M2: sem o Financeiro, o tipo do levantamento não vem (o desenho dizia "no alvará").
-    await expect(q).toContainText("Êxito não cobrado · cobrado num levantamento");
+    // Revisão, M2: sem o Financeiro, sem o levantamento e o dia; o tipo vem, como no D40.
+    await expect(q).toContainText("Êxito não cobrado · cobrado no alvará");
     await expect(q).toContainText("Não cobrado por Marina em 10/11 · cobrado por Diego em 18/11");
     await expect(q).not.toContainText("R$");
     await semViolacoes(page);

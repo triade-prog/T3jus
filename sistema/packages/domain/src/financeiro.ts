@@ -297,13 +297,13 @@ export interface ExitoNaoCobrado {
   honorarios: { para: "HONORARIOS"; nome: string; regra: string; valor: number } | null;
 }
 
-/** O êxito não cobrado que foi cobrado num alvará (F3.191; 1104, exito_cobrado_no_alvara). O
- *  levantamento, o tipo, o dia em que entrou e o valor só vêm para quem tem o Financeiro (PT-02). */
+/** O êxito não cobrado que foi cobrado num alvará (F3.191; 1104, exito_cobrado_no_alvara). O tipo
+ *  vem para todos (D40); o levantamento, o dia em que entrou e o valor, só com o Financeiro (PT-02). */
 export interface CobradoNoAlvara {
   em: string;
   por: PessoaRef | null;
   levantamentoId: string | null;
-  tipo: TipoLevantamento | null;
+  tipo: TipoLevantamento;
   entrouEm: string | null;
   valor?: number | null;
 }

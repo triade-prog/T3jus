@@ -300,7 +300,7 @@ test.describe("Jornada do cliente: o fechamento e o contrato sem caso", () => {
   });
 
   // F3.191 (CH-07; PT-02), desenho D40, estado 12 (enc-ficha-cliente): o passo "Conferir o êxito" diz
-  // que o êxito não cobrado foi cobrado no alvará; sem o Financeiro, sem o tipo e o dia do levantamento.
+  // que o êxito não cobrado foi cobrado no alvará; sem o Financeiro, sem o dia em que o dinheiro entrou.
   test("enc-ficha-cliente: o êxito não cobrado e cobrado no alvará, com e sem o Financeiro", async ({ page }) => {
     const cobrado = { em: "2026-11-18T10:14:00-03:00", por: DIEGO };
     const exito = { tipo: "EXITO", area: "FINANCEIRO", feito: true, em: "2026-11-10T16:40:00-03:00", por: MARINA, naoCobrado: true, valor: null,
@@ -316,7 +316,7 @@ test.describe("Jornada do cliente: o fechamento e o contrato sem caso", () => {
       .toHaveText("Conferir o êxito: feitoNão cobrado, por Marina em 10/11 · cobrado no alvará de 18/11, por Diego");
     await semViolacoes(page);
 
-    const semFin = { ...exito, cobradoNoAlvara: { ...cobrado, levantamentoId: null, tipo: null, entrouEm: null, valor: null } };
+    const semFin = { ...exito, cobradoNoAlvara: { ...cobrado, levantamentoId: null, tipo: "ALVARA", entrouEm: null, valor: null } };
     const semValor = [semFin, ...PASSOS.slice(1)].map((x) => ({ ...x, valor: null, pendentes: null, levantamentoId: null }));
     await page.unrouteAll();
     await simular(page, {
@@ -327,7 +327,7 @@ test.describe("Jornada do cliente: o fechamento e o contrato sem caso", () => {
     await page.reload();
     const ambar2 = page.getByRole("region", { name: "Próximo passo · fechamento" });
     await expect(ambar2.getByRole("list", { name: "Fechamento do caso, em 4 passos" }).getByRole("listitem").first())
-      .toHaveText("Conferir o êxito: feitoNão cobrado, por Marina em 10/11 · cobrado num levantamento em 18/11, por Diego");
+      .toHaveText("Conferir o êxito: feitoNão cobrado, por Marina em 10/11 · cobrado no alvará em 18/11, por Diego");
     await expect(ambar2).not.toContainText("R$");
     await semViolacoes(page);
   });

@@ -189,14 +189,15 @@ as $$
 $$;
 
 -- A última cobrança no alvará do êxito, para as telas do caso: {em, por, levantamentoId, tipo,
--- entrouEm, valor}. O levantamento, o tipo, o dia em que entrou e o valor só com p_valores (PT-02),
--- como cliente_fechamento e caso_resumo_acerto já fazem (0900). null sem cobrança.
+-- entrouEm, valor}. O tipo vai a todos, como no desenho aprovado (D40, enc-acerto-larissa) e no
+-- sino; o levantamento, o dia em que entrou e o valor só com p_valores (PT-02), como
+-- cliente_fechamento e caso_resumo_acerto já fazem (0900). null sem cobrança.
 create function exito_cobrado_no_alvara(p_escritorio uuid, p_exito uuid, p_valores boolean) returns jsonb
 language sql stable
 set search_path = public
 as $$
   select jsonb_build_object('em', c.criado_em, 'por', pessoa_ref(c.autor_id),
-                            'levantamentoId', case when p_valores then l.id end, 'tipo', case when p_valores then l.tipo end,
+                            'levantamentoId', case when p_valores then l.id end, 'tipo', l.tipo,
                             'entrouEm', case when p_valores then l.entrou_em end,
                             'valor', case when p_valores then c.valor end)
     from exito_cobrancas_alvara c
