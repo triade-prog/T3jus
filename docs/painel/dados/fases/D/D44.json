@@ -1,0 +1,13 @@
+{
+  "id": "D44",
+  "texto": "Desenho da página de planos e preços do site (t3jus.pro/precos) e das chamadas que mudam no Início, em Para quem é, em Como funciona, em Demonstração e no menu",
+  "peca": "W1",
+  "refs": [
+    "SC-07",
+    "SC-03",
+    "SC-06"
+  ],
+  "status": "feito",
+  "ordem": 94,
+  "evidencia": "docs/design/aprovadas/site-precos/ (12 estados, computador e celular; plano em PLANO.md e revisão independente em REVISAO.md; axe-core sem violação em 13 estados); aprovado pela Carol em 27/11/2026 com as recomendações das 4 perguntas do NOTAS.md (DC15)."
+}
