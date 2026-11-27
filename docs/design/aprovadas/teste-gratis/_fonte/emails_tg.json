@@ -1,0 +1,22 @@
+[
+ {
+  "nome": "dia1",
+  "assunto": "Seu teste grátis do T3jus vai até quinta-feira, 03/12",
+  "quando": "Sexta-feira, 27/11/2026, 23h40 · no primeiro acesso"
+ },
+ {
+  "nome": "dia5",
+  "assunto": "Faltam 3 dias para o fim do seu teste no T3jus",
+  "quando": "Terça-feira, 01/12/2026, 8h · dia 5"
+ },
+ {
+  "nome": "dia7",
+  "assunto": "Hoje é o último dia do seu teste no T3jus",
+  "quando": "Quinta-feira, 03/12/2026, 8h · dia 7"
+ },
+ {
+  "nome": "dia8",
+  "assunto": "O teste do T3jus terminou. Seus dados estão guardados",
+  "quando": "Sexta-feira, 04/12/2026, 8h · dia 8"
+ }
+]

@@ -1,0 +1,802 @@
+[
+ {
+  "nome": "assinatura-previsto",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-previsto",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-em-teste",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-em-teste",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-quer-assinar",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-quer-assinar",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-confirmar",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-confirmar",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-confirmar-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-confirmar-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-assinado",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-assinado",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-prorrogar",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-prorrogar",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-prorrogar-erros",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-prorrogar-erros",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-prorrogado",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-prorrogado",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-acabou",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-acabou",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-dispensar",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-dispensar",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-dispensado",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-dispensado",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-repetido",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-repetido",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-liberar",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-liberar",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-financeiro",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-financeiro",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-suporte",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "assinatura-suporte",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O teste grátis.\""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "historico-ribeiro",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "historico-ribeiro",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "historico-ipe",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "historico-ipe",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "notas-ribeiro",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O escritório nunca vê estas \""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "notas-ribeiro",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [
+   "h2 4.38:1 \"O escritório nunca vê estas \""
+  ],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira-em-teste",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira-em-teste",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira-acabou",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira-acabou",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira-quer",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "carteira-quer",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "sino-admin",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "sino-admin",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "sino-financeiro",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "sino-financeiro",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dia1",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dia1",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-equipe",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-equipe",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dona",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dona",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-quero",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-quero",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-pedido",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-pedido",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-ultimo",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-ultimo",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dia8",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dia8",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dia8-equipe",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-dia8-equipe",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-sino",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "portal-sino",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-teste",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-teste",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-pedido",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-pedido",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-assinado",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-assinado",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-dia8",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "plano-dia8",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia1",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia1",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia5",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia5",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia7",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia7",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia8",
+  "tam": "computador",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ },
+ {
+  "nome": "email-dia8",
+  "tam": "celular",
+  "rolagem": 0,
+  "contraste": [],
+  "contraste_a_ver": [],
+  "erros": [],
+  "pequenos": []
+ }
+]
