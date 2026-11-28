@@ -97,7 +97,7 @@ export function descreverAvisoConsole(a: AvisoConsole, hoje = hojeIso()): { icon
       };
     }
     case "IMPLANTACAO_CARNE_RECUSADO":
-      // Sem desenho próprio: segue o padrão do sino aprovado, à espera do ok da Carol.
+      // Sem desenho próprio: segue o padrão do sino aprovado; texto aprovado pela Carol em 27/11
       return {
         icone: "alerta", titulo: <>A 1ª fatura do escritório{d.escritorio ? <> <b>{d.escritorio}</b></> : null} não saiu: a implantação cobrada não vai no carnê</>,
         detalhe: [d.dia ? `A rotina da cobrança pulou o escritório em ${dataBr(d.dia)}.` : null,
