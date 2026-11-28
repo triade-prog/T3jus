@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  MOTIVOS_NAO_COBRAR, quandoDia, quandoEncerrouNoFinanceiro, reais,
+  diaComSemana, diaMesTeste, diaSeguinte, MOTIVOS_NAO_COBRAR, quandoDia, quandoEncerrouNoFinanceiro, reais,
   type AreaPortal, type AvisoSino, type ContratoNoAviso, type ListaAvisosSino, type MotivoNaoCobrar,
 } from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
@@ -551,6 +551,32 @@ export function descreverAviso(a: AvisoSino, agora: Date = new Date(), areas?: r
         onde: `Abrir o ${d.contrato ?? "contrato"} em Contratos`,
         href: ROTAS_CONTRATOS.contrato(d.contratoId ?? a.origemId),
         selo: { tom: "atencao", texto: "Mudar as condições" },
+      };
+    // O teste grátis (F1.34, CO-09), com os textos do desenho aprovado (teste-gratis, inicio.html,
+    // sino tg-socio): os mesmos do e-mail, em uma linha. Todos levam ao plano, menos o do dia 1.
+    case "TESTE_COMECOU":
+      return {
+        icone: "relogio", titulo: <>Boas-vindas. Seu teste vai até {d.fim ? diaComSemana(d.fim) : "o fim do teste"}.</>,
+        detalhe: d.origem === "LIBERADO" ? "O teste começou hoje." : "O teste começou no seu primeiro acesso.",
+        onde: "Abrir o Início", href: ROTAS_PORTAL.inicio,
+      };
+    case "TESTE_ACABANDO":
+      return {
+        icone: "relogio", titulo: <>Seu teste vai até {d.fim ? diaComSemana(d.fim) : "o fim do teste"}.</>,
+        detalhe: "Para continuar, fale com a equipe ou aperte Quero assinar.",
+        onde: "Ver o plano", href: `${ROTAS_PORTAL.escritorio}#plano`, selo: { tom: "atencao", texto: d.faltamDias ? `Faltam ${d.faltamDias} dias` : "Teste acabando" },
+      };
+    case "TESTE_ULTIMO_DIA":
+      return {
+        icone: "relogio", titulo: <>Hoje é o último dia do seu teste.</>,
+        detalhe: `A partir de amanhã${d.fim ? `, ${diaMesTeste(diaSeguinte(d.fim))}` : ""}, o Portal fica só para consulta até a assinatura.`,
+        onde: "Ver o plano", href: `${ROTAS_PORTAL.escritorio}#plano`, selo: { tom: "urgente", texto: "Último dia" },
+      };
+    case "TESTE_ACABOU":
+      return {
+        icone: "cadeado", titulo: <>O teste terminou{d.fim ? ` em ${diaMesTeste(d.fim)}` : ""}. <b>Seus dados estão guardados.</b></>,
+        detalhe: "O Portal está só para consulta: você vê e baixa tudo. Para voltar a usar tudo, aperte Quero assinar.",
+        onde: "Ver o plano", href: `${ROTAS_PORTAL.escritorio}#plano`,
       };
     case "PRAZO_2_DIAS":
       return {

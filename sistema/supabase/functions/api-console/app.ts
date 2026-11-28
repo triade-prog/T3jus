@@ -73,7 +73,7 @@ import { lerCorpo } from "../_shared/validar.ts";
 import { ipDaChamada } from "../_shared/repasse.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
 import type { MeioPagamento, PedidoCobranca } from "../_shared/pagamento.ts";
-import { avisoAutenticadorTirado, avisoFimContrato, confirmacaoPedidoDemonstracao, emailCobranca, type AvisoFimContrato, type EnvioCobranca, type Emails } from "../_shared/email.ts";
+import { avisoAutenticadorTirado, avisoFimContrato, avisoTesteGratis, confirmacaoPedidoDemonstracao, emailCobranca, type AvisoFimContrato, type AvisoTesteGratis, type EnvioCobranca, type Emails } from "../_shared/email.ts";
 import { BUCKET_EXCLUSAO, caminhoValido, pastaValida, type LimpezaArquivos } from "../_shared/guarda.ts";
 import { registrar } from "../_shared/registro.ts";
 
@@ -335,10 +335,11 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Fim do contrato (F0.16, PT-11): manda os avisos à sócia dona que o banco pôs na fila (no dia
   // do fim e 3 dias antes de o acesso fechar) e registra cada resultado. O e-mail dela vem do
-  // Auth. Sem o segredo do Resend, a fila espera.
+  // Auth. Sem o segredo do Resend, a fila espera. A mesma fila leva os quatro passos do teste
+  // grátis (F1.34, CO-09: TESTE_*), cada um com o seu texto.
   async function enviarAvisosFim(): Promise<{ enviados: number; falhas: number }> {
     if (!deps.emails) return { enviados: 0, falhas: 0 };
-    const fila = await rpc<(AvisoFimContrato & { id: string; paraPessoaId: string })[]>(
+    const fila = await rpc<((AvisoFimContrato | AvisoTesteGratis) & { id: string; paraPessoaId: string })[]>(
       "rotina_contrato_avisos_pendentes", { p_limite: ENVIOS_POR_CHAMADA });
     let enviados = 0;
     let falhas = 0;
@@ -346,7 +347,10 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
       try {
         const para = await deps.admin.emailDe(a.paraPessoaId);
         if (!para) throw new Error("Sem e-mail no Auth");
-        await deps.emails.enviar({ para, ...avisoFimContrato(a, deps.urlPortal, CONTATO_T3JUS) });
+        const mensagem = a.tipo.startsWith("TESTE_")
+          ? avisoTesteGratis(a as AvisoTesteGratis, deps.urlPortal, CONTATO_T3JUS)
+          : avisoFimContrato(a as AvisoFimContrato, deps.urlPortal, CONTATO_T3JUS);
+        await deps.emails.enviar({ para, ...mensagem });
         await rpc("rotina_contrato_aviso_registrar", { p_id: a.id, p_enviado: true });
         enviados++;
       } catch (erro) {

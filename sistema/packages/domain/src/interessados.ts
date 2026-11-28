@@ -233,7 +233,9 @@ export function whatsLegivel(v: string): string {
 
 // ---------------------------------------------------------------- sino do Console (F2.6)
 
-export type TipoAvisoConsole = "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO" | "FATURA_ATRASO";
+export type TipoAvisoConsole = "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO" | "FATURA_ATRASO"
+  /** O teste grátis (F1.34, CO-09). */
+  | "TESTE_COMECOU" | "TESTE_ACABANDO" | "TESTE_ACABOU" | "TESTE_QUER_ASSINAR" | "TESTE_REPETIDO";
 
 export interface AvisoConsole {
   id: string;
@@ -259,6 +261,13 @@ export interface AvisoConsole {
     totalCentavos?: number;
     dias?: number;
     marco?: "AVISO" | "CONSULTA";
+    /** O teste grátis (F1.34): as datas, se a assinatura está preparada (e o plano), se foi prorrogado,
+     *  o pedido (quando, se há recado, urgente no dia 7) e o teste anterior do repetido. "quem" é o
+     *  sócio do primeiro acesso, do pedido ou da repetição. */
+    inicio?: string; fim?: string; totalDias?: number; faltamDias?: number; soConsultaDesde?: string;
+    origem?: "PRIMEIRO_ACESSO" | "LIBERADO"; assinaturaPreparada?: boolean; plano?: string | null; prorrogado?: boolean;
+    querAssinarEm?: string | null; pedidoEm?: string; comRecado?: boolean; urgente?: boolean; ultimoDia?: boolean; acabou?: boolean;
+    lembrete?: boolean; proposta?: "ENCERRAR"; anteriorId?: string; anterior?: string; anteriorInicio?: string; anteriorFim?: string;
   };
   interessadoId: string | null;
   /** Fatura em atraso: a fatura do aviso. */

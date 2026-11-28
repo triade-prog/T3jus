@@ -2,6 +2,8 @@
 // Saem pela API do Resend, com o segredo RESEND_API_KEY nas funções. Sem o segredo, a função
 // segue sem mandar: a ação já foi feita e fica no histórico.
 
+import { diaComSemana, diaMesTeste, diaSeguinte, mesPorExtenso, type PassoAvisoTeste } from "@t3jus/domain";
+
 export interface MensagemEmail {
   para: string;
   assunto: string;
@@ -384,5 +386,121 @@ ${paragrafos.map((p) => `<tr><td style="padding:12px 32px 0 32px;${fonte}font-si
 </body>
 </html>`;
   const texto = `${ola}\n\n${paragrafos.join("\n\n")}\n\n${botao}: ${link}\n\nDúvidas ou pedido de cópia: ${contato}\n\nT3jus · Sistema Jurídico · t3jus.pro\nEste endereço não recebe respostas.`;
+  return { assunto, html, texto, responderPara: contato };
+}
+
+// ---------------------------------------------------------------------------------------
+// Teste grátis de 7 dias (F1.34, CO-09). Desenho aprovado em docs/design/aprovadas/teste-gratis
+// (emails.html, dia1, dia5, dia7 e dia8): os quatro passos à sócia dona, com o mesmo visual dos
+// e-mails do fim do contrato. O banco decide o que sai e manda o que cada texto precisa (1163).
+
+export interface AvisoTesteGratis {
+  tipo: PassoAvisoTeste;
+  escritorio: string;
+  socio: string | null;
+  /** O dia 1 e o último dia do teste, e o dia do envio (datas de Brasília). */
+  inicio: string;
+  fim: string;
+  hoje: string;
+  totalDias: number;
+  /** Quantos dias faltam, contando hoje (no dia 5, 3). */
+  faltamDias: number;
+  /** Como o teste começou: no primeiro acesso ou liberado pela Administração (o repetido). */
+  origem: "PRIMEIRO_ACESSO" | "LIBERADO";
+  /** Quem cuida da implantação do escritório, se houver (o e-mail do dia 1 cita). */
+  implantacao: string | null;
+  /** A competência da primeira fatura, se a assinatura for confirmada no teste (o e-mail do dia 5). */
+  primeiraCompetencia: string | null;
+}
+
+const NUMEROS = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez"];
+
+export function avisoTesteGratis(a: AvisoTesteGratis, urlPortal: string, contato: string): Omit<MensagemEmail, "para"> {
+  const primeiro = (a.socio ?? "").trim().split(/\s+/)[0] ?? "";
+  const ola = primeiro ? `Olá, ${primeiro}.` : "Olá.";
+  const ate = diaComSemana(a.fim);
+  const consulta = diaMesTeste(diaSeguinte(a.fim));
+  const plano = `${urlPortal}/meu-escritorio#plano`;
+  let assunto: string;
+  let previa: string;
+  let titulo: string;
+  let paragrafos: string[];
+  let botao = "Quero assinar";
+  let link = plano;
+  switch (a.tipo) {
+    case "TESTE_COMECOU": {
+      const dias = a.totalDias <= 10 ? NUMEROS[a.totalDias]! : String(a.totalDias);
+      assunto = `Seu teste grátis do T3jus vai até ${ate}`;
+      previa = `${dias.replace(/^./, (c) => c.toUpperCase())} dias, contando hoje.`;
+      titulo = "Boas-vindas ao T3jus";
+      paragrafos = [
+        `O teste grátis da ${a.escritorio} começou hoje${a.origem === "LIBERADO" ? "" : ", no seu primeiro acesso"}. Ele vai até ${ate}: ${a.totalDias} dias, contando hoje.`,
+        `Nesses dias, a equipe do escritório usa o Portal inteiro, e nada é cobrado.${a.implantacao ? ` ${a.implantacao}, da implantação do T3jus, acompanha vocês.` : ""}`,
+        "Para continuar depois do teste, aperte Quero assinar no Portal ou fale com a equipe do T3jus pelo contato abaixo.",
+      ];
+      botao = "Abrir o Portal";
+      link = `${urlPortal}/`;
+      break;
+    }
+    case "TESTE_ACABANDO":
+      assunto = `Faltam ${a.faltamDias} dias para o fim do seu teste no T3jus`;
+      previa = `O teste vai até ${ate}.`;
+      titulo = `Seu teste vai até ${ate}`;
+      paragrafos = [
+        `O teste grátis da ${a.escritorio} vai até ${ate}. Para continuar usando o T3jus depois disso, aperte Quero assinar no Portal ou fale com a equipe do T3jus.`,
+        `Nada é cobrado durante o teste.${a.primeiraCompetencia ? ` Com a assinatura, a primeira fatura é a de ${mesPorExtenso(a.primeiraCompetencia)}.` : ""}`,
+        `Se não assinar, nada é apagado: a partir de ${consulta}, o Portal fica só para consulta, e você continua vendo e baixando os dados do escritório.`,
+      ];
+      break;
+    case "TESTE_ULTIMO_DIA":
+      assunto = "Hoje é o último dia do seu teste no T3jus";
+      previa = "Amanhã, o Portal fica só para consulta até a assinatura.";
+      titulo = "Hoje é o último dia do seu teste";
+      paragrafos = [
+        `Hoje, ${ate}, é o último dia do teste grátis da ${a.escritorio}. A partir de amanhã, ${consulta}, à 0h, o Portal fica só para consulta até a assinatura.`,
+        "Para a equipe continuar trabalhando sem parar, aperte Quero assinar no Portal ainda hoje.",
+        "Nada é apagado. Se já pediu para assinar, pode desconsiderar este e-mail: a equipe do T3jus fala com você.",
+      ];
+      break;
+    case "TESTE_ACABOU":
+      assunto = "O teste do T3jus terminou. Seus dados estão guardados";
+      previa = "O Portal está só para consulta.";
+      titulo = "O teste terminou. Seus dados estão guardados";
+      paragrafos = [
+        `O teste grátis da ${a.escritorio} terminou em ${diaMesTeste(a.fim)}. ${a.hoje === diaSeguinte(a.fim) ? "Desde hoje" : `Desde ${consulta}`}, o Portal está só para consulta: a equipe vê tudo, mas ninguém cria nem muda nada.`,
+        "Você continua baixando os dados do escritório no Portal, em Escritório › Exportar os dados.",
+        "Para voltar a usar tudo, aperte Quero assinar no Portal. Quando a equipe do T3jus confirmar a assinatura, tudo volta na hora.",
+      ];
+      break;
+  }
+  const fonte = "font-family:'Source Sans 3',Arial,Helvetica,sans-serif;";
+  const html = `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>${escapar(assunto)}</title>
+</head>
+<body style="margin:0;padding:0;background:#F2ECE8;">
+<div style="display:none;max-height:0;overflow:hidden;">${escapar(previa)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2ECE8;">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#FFFFFF;border:1px solid #E6D9D0;border-radius:12px;">
+<tr><td style="padding:28px 32px 8px 32px;border-top:4px solid #DD9760;border-radius:12px 12px 0 0;">
+<img src="https://t3jus.pro/marca/logo-email.png" width="160" height="56" alt="T3jus" style="display:block;border:0;">
+</td></tr>
+<tr><td style="padding:16px 32px 0 32px;font-family:Alegreya,Georgia,'Times New Roman',serif;font-size:24px;line-height:1.3;color:#692746;font-weight:700;">${escapar(titulo)}</td></tr>
+<tr><td style="padding:12px 32px 0 32px;${fonte}font-size:16px;line-height:1.55;color:#2A1A22;">${escapar(ola)}</td></tr>
+${paragrafos.map((p) => `<tr><td style="padding:12px 32px 0 32px;${fonte}font-size:16px;line-height:1.55;color:#2A1A22;">${escapar(p)}</td></tr>`).join("\n")}
+<tr><td style="padding:20px 32px 0 32px;"><a href="${escapar(link)}" style="display:inline-block;background:#692746;color:#FFFFFF;${fonte}font-size:15px;font-weight:600;text-decoration:none;padding:13px 20px;border-radius:8px;min-height:44px;box-sizing:border-box;">${escapar(botao)}</a></td></tr>
+<tr><td style="padding:24px 32px 28px 32px;${fonte}font-size:13px;line-height:1.5;color:#5E4A54;">Dúvidas ou para assinar: <a href="mailto:${escapar(contato)}" style="color:#692746;">${escapar(contato)}</a></td></tr>
+</table>
+<p style="margin:16px 0 0 0;${fonte}font-size:12px;color:#5E4A54;">T3jus · Sistema Jurídico · <a href="https://t3jus.pro" style="color:#5E4A54;">t3jus.pro</a><br>Este endereço não recebe respostas.</p>
+</td></tr>
+</table>
+</body>
+</html>`;
+  const texto = `${ola}\n\n${paragrafos.join("\n\n")}\n\n${botao}: ${link}\n\nDúvidas ou para assinar: ${contato}\n\nT3jus · Sistema Jurídico · t3jus.pro\nEste endereço não recebe respostas.`;
   return { assunto, html, texto, responderPara: contato };
 }
