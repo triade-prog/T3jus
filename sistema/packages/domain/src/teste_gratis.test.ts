@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  COMO_CONFIRMOU, confirmarAssinaturaSchema, contarFiltrosTeste, filtrarPorTeste, filtroTesteSchema, FILTROS_TESTE, motivoTesteSchema,
+  COMO_CONFIRMOU, diaComSemana, diaMesTeste, diaSeguinte, confirmarAssinaturaSchema, contarFiltrosTeste, filtrarPorTeste, filtroTesteSchema, FILTROS_TESTE, motivoTesteSchema,
   noFiltroTeste, prorrogarTesteSchema, queroAssinarSchema, querAssinar, SITUACOES_TESTE, type TesteCarteira,
 } from "./teste_gratis.ts";
 import { TEXTOS_MOTIVO } from "./textos.ts";
@@ -52,5 +52,13 @@ describe("teste grátis (CO-09)", () => {
     expect(Object.keys(COMO_CONFIRMOU)).toEqual(["PORTAL", "EMAIL", "WHATSAPP", "REUNIAO_OU_LIGACAO", "OUTRO"]);
     expect(SITUACOES_TESTE.AGUARDANDO_LIBERACAO).not.toMatch(/repetid/i);
     expect(TEXTOS_MOTIVO.QUERO_ASSINAR_FORA_DO_TESTE).toBeTruthy();
+  });
+  it("CO-09: as datas dos avisos do teste: o dia da semana, o dia e o mês e o dia seguinte", () => {
+    expect(diaComSemana("2026-12-03")).toBe("quinta-feira, 03/12");
+    expect(diaComSemana("2026-11-27")).toBe("sexta-feira, 27/11");
+    expect(diaComSemana("2026-11-29")).toBe("domingo, 29/11");
+    expect(diaMesTeste("2026-12-04")).toBe("04/12");
+    expect(diaSeguinte("2026-12-31")).toBe("2027-01-01");
+    expect(diaSeguinte("2028-02-28")).toBe("2028-02-29");
   });
 });

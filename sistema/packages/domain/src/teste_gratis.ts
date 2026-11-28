@@ -86,3 +86,29 @@ export const queroAssinarSchema = z.object({ recado: z.string().max(2000).nullab
 
 export type ProrrogarTesteEntrada = z.infer<typeof prorrogarTesteSchema>;
 export type ConfirmarAssinaturaEntrada = z.infer<typeof confirmarAssinaturaSchema>;
+
+// ------------------------------------------------------------------ Avisos (F1.34, migration 1163)
+
+/** Os quatro passos à sócia dona, por e-mail e no sino do Portal (dia 1, dia 5, dia 7 e dia 8). */
+export type PassoAvisoTeste = "TESTE_COMECOU" | "TESTE_ACABANDO" | "TESTE_ULTIMO_DIA" | "TESTE_ACABOU";
+/** Os avisos do teste no sino do Console. */
+export type AvisoTesteConsole = "TESTE_COMECOU" | "TESTE_ACABANDO" | "TESTE_ACABOU" | "TESTE_QUER_ASSINAR" | "TESTE_REPETIDO";
+
+const SEMANA = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"] as const;
+
+/** "03/12" de "2026-12-03". */
+export function diaMesTeste(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
+/** "quinta-feira, 03/12" de "2026-12-03" (a data é de Brasília; o dia da semana sai da própria data). */
+export function diaComSemana(iso: string): string {
+  const [a, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return `${SEMANA[new Date(Date.UTC(a!, m! - 1, d!)).getUTCDay()]}, ${diaMesTeste(iso)}`;
+}
+
+/** O dia seguinte, em data ISO (o primeiro dia só de consulta). */
+export function diaSeguinte(iso: string): string {
+  const [a, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(Date.UTC(a!, m! - 1, d! + 1)).toISOString().slice(0, 10);
+}

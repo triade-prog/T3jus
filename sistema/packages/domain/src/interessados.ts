@@ -235,6 +235,8 @@ export function whatsLegivel(v: string): string {
 
 export type TipoAvisoConsole =
   | "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO" | "FATURA_ATRASO"
+  /** O teste grátis (F1.34, CO-09). */
+  | "TESTE_COMECOU" | "TESTE_ACABANDO" | "TESTE_ACABOU" | "TESTE_QUER_ASSINAR" | "TESTE_REPETIDO"
   /** Implantação assistida (F1.46, 1184): o prazo aos 7, 3 e 0 dias, o fim da isenção 30 dias antes e o escritório que a rotina pulou (carnê com a implantação cobrada). */
   | "IMPLANTACAO_PRAZO" | "IMPLANTACAO_ISENCAO_FIM" | "IMPLANTACAO_CARNE_RECUSADO";
 
@@ -262,6 +264,13 @@ export interface AvisoConsole {
     totalCentavos?: number;
     dias?: number;
     marco?: "AVISO" | "CONSULTA";
+    /** O teste grátis (F1.34): as datas, se a assinatura está preparada (e o plano), se foi prorrogado,
+     *  o pedido (quando, se há recado, urgente no dia 7) e o teste anterior do repetido. "quem" é o
+     *  sócio do primeiro acesso, do pedido ou da repetição. */
+    inicio?: string; fim?: string; totalDias?: number; faltamDias?: number; soConsultaDesde?: string;
+    origem?: "PRIMEIRO_ACESSO" | "LIBERADO"; assinaturaPreparada?: boolean; plano?: string | null; prorrogado?: boolean;
+    querAssinarEm?: string | null; pedidoEm?: string; comRecado?: boolean; urgente?: boolean; ultimoDia?: boolean; acabou?: boolean;
+    lembrete?: boolean; proposta?: "ENCERRAR"; anteriorId?: string; anterior?: string; anteriorInicio?: string; anteriorFim?: string;
     /** Prazo da implantação (dias = 7, 3 ou 0; prazo em dados.prazo): X de Y treinadas e quem falta. */
     treinadas?: number;
     total?: number;

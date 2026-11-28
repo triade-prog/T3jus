@@ -102,14 +102,16 @@ select is((select array_agg(m[1] order by m[1]) from pg_constraint c, regexp_mat
         'CASO_ENCERRADO_FINANCEIRO', 'CASO_PRONTO_FECHAR', 'CLIENTE_FEZ_18', 'CONTRATO_GERADO', 'CONVERSA_ASSUMIDA', 'CONVERSA_IA',
         'CONVERSA_PASSADA', 'DOCUMENTOS_INICIO_CHEGARAM', 'DOCUMENTO_CHEGOU', 'EXITO_COBRADO_NO_ALVARA', 'EXITO_NAO_COBRADO', 'EXITO_VALOR_MUDOU', 'EXPORTAR_CONTADOR',
         'MODELO_APROVADO', 'MODELO_RECUSADO', 'PEDIDO_CHAVE_PIX', 'PEDIDO_CONTRATO', 'PETICAO_DECIDIDA', 'PETICAO_PASSADA',
-        'PETICAO_REVISAR', 'PRAZO_2_DIAS', 'REPASSE_ATRASADO', 'REPASSE_PASSADO', 'REPASSE_PROXIMA_ACAO'],
+        'PETICAO_REVISAR', 'PRAZO_2_DIAS', 'REPASSE_ATRASADO', 'REPASSE_PASSADO', 'REPASSE_PROXIMA_ACAO',
+        'TESTE_ACABANDO', 'TESTE_ACABOU', 'TESTE_COMECOU', 'TESTE_ULTIMO_DIA'],
   -- F3.191 (1104): EXITO_COBRADO_NO_ALVARA tem origem levantamentos, que já aponta para cliente
   -- excluível; o cliente sai pela regra geral, e o combinado fica para a F3.201.
-  'PT-11 F3.172: os 29 tipos do sino são os da varredura (tipo novo decide se cita cliente excluível)');
+  -- F1.34 (1163): os TESTE_* têm origem testes_gratis e só falam do teste do escritório, nunca de cliente.
+  'PT-11 F3.172: os 33 tipos do sino são os da varredura (tipo novo decide se cita cliente excluível)');
 select is((select array_agg(m[1] order by m[1]) from pg_constraint c, regexp_matches(pg_get_constraintdef(c.oid), '''([a-z_]+)''', 'g') m
             where c.conname = 'avisos_sino_origem_tabela_check'),
-  array['automacoes', 'casos', 'clientes', 'contratos', 'conversas', 'escritorios', 'levantamentos', 'peticoes', 'prazos', 'propostas'],
-  'PT-11 F3.172: as 10 origens do sino são as da varredura (só clientes, propostas e levantamentos apontam para cliente excluível)');
+  array['automacoes', 'casos', 'clientes', 'contratos', 'conversas', 'escritorios', 'levantamentos', 'peticoes', 'prazos', 'propostas', 'testes_gratis'],
+  'PT-11 F3.172: as 11 origens do sino são as da varredura (só clientes, propostas e levantamentos apontam para cliente excluível)');
 
 select is((select count(*)::int from avisos_sino, pr where tipo = 'PEDIDO_CONTRATO' and origem_id = pr.hel and dados ->> 'cliente' = 'Helena Prado Souza'), 2,
   'antes da exclusão, a sócia e Bianca têm o aviso com o nome');

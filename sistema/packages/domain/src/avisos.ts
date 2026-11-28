@@ -74,7 +74,9 @@ export type TipoAvisoSino =
   | "EXPORTAR_CONTADOR" | "DOCUMENTO_CHEGOU" | "CARNE_DESATUALIZADO" | "PEDIDO_CHAVE_PIX"
   | "EXITO_VALOR_MUDOU" | "EXITO_NAO_COBRADO" | "CASO_ABERTO_NA_ASSINATURA" | "CLIENTE_FEZ_18"
   | "DOCUMENTOS_INICIO_CHEGARAM" | "CASO_PRONTO_FECHAR" | "CASO_ENCERRADO_FINANCEIRO" | "BAIXA_RENEGOCIADA"
-  | "EXITO_COBRADO_NO_ALVARA";
+  | "EXITO_COBRADO_NO_ALVARA"
+  /** O teste grátis (F1.34, CO-09): os quatro passos à sócia dona. */
+  | "TESTE_COMECOU" | "TESTE_ACABANDO" | "TESTE_ULTIMO_DIA" | "TESTE_ACABOU";
 
 /** Quem recebe o aviso de caso encerrado no financeiro (F3.150): quem encerra contratos ou a responsável. */
 export type PapelCasoFechou = "CONTRATOS" | "RESPONSAVEL";
@@ -126,8 +128,12 @@ export interface AvisoSino {
      *  com outro caso e, para a responsável com contrato aberto, quem encerra contratos. Sem valor (PT-02). */
     papel?: PapelCasoFechou; clienteId?: string; abertos?: ContratoNoAviso[]; juntos?: ContratoNoAviso[]; jaEncerrados?: ContratoNoAviso[];
     seguem?: ContratoNoAviso[]; quemContratos?: string[];
+    /** O teste grátis (F1.34, CO-09): o dia 1 e o último dia, os dias, o primeiro dia só de consulta,
+     *  quantos faltam (no dia 5) e como começou. */
+    inicio?: string; fim?: string; totalDias?: number; soConsultaDesde?: string; faltamDias?: number;
+    origem?: "PRIMEIRO_ACESSO" | "LIBERADO";
   };
-  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios" | "casos" | "clientes";
+  origem: "conversas" | "automacoes" | "prazos" | "peticoes" | "contratos" | "propostas" | "levantamentos" | "escritorios" | "casos" | "clientes" | "testes_gratis";
   origemId: string;
   em: string;
   lido: boolean;

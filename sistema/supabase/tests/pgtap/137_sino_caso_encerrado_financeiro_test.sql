@@ -399,8 +399,10 @@ select is((select array_agg(x order by x) from (select unnest(regexp_matches(pg_
     -- F3.139 (1010): o aviso a Contratos da baixa renegociada.
     'BAIXA_RENEGOCIADA',
     -- F3.191 (1104): a cobrança no alvará do êxito não cobrado.
-    'EXITO_COBRADO_NO_ALVARA']) x),
-  'o check do sino tem exatamente os 29 tipos do domain');
+    'EXITO_COBRADO_NO_ALVARA',
+    -- F1.34 (1163): os quatro passos do teste grátis à sócia dona.
+    'TESTE_COMECOU', 'TESTE_ACABANDO', 'TESTE_ULTIMO_DIA', 'TESTE_ACABOU']) x),
+  'o check do sino tem exatamente os 33 tipos do domain');
 
 -- 19. Ramos sem mistura: o "pronto" nunca traz agoraFechou, e o tipo novo nunca traz agora.
 select ok((select bool_or(aviso_sino_linha(s) ? 'agora') from avisos_sino s where s.tipo = 'CASO_PRONTO_FECHAR')

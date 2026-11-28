@@ -9,7 +9,7 @@
 // vazio, com o porquê.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { mesPorExtenso, TAMANHOS_INTERESSADO, type AvisoConsole, type ListaAvisosConsole } from "@t3jus/domain";
+import { diaComSemana, diaMesTeste, diaSeguinte, mesPorExtenso, TAMANHOS_INTERESSADO, type AvisoConsole, type ListaAvisosConsole } from "@t3jus/domain";
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { brl } from "./cobranca.ts";
 import { diaMes } from "./interessados.ts";
@@ -28,6 +28,9 @@ function rotuloDia(iso: string, agora = new Date()): string {
   if (d === diaDe(agora.toISOString())) return "Hoje";
   return d === diaDe(new Date(agora.getTime() - 86_400_000).toISOString()) ? `Ontem · ${curto}` : curto;
 }
+
+/** A aba Assinatura do escritório do aviso do teste (sem o id, a carteira). */
+const assinaturaDo = (escritorioId?: string) => (escritorioId ? `/clientes/${escritorioId}/assinatura` : "/");
 
 /** O que cada aviso diz: ícone, título, detalhe, destino e selo. */
 export function descreverAvisoConsole(a: AvisoConsole, hoje = hojeIso()): { icone: NomeIcone; titulo: ReactNode; detalhe: ReactNode; onde: string; href: string; selo?: { tom: string; texto: string } } {
@@ -71,6 +74,39 @@ export function descreverAvisoConsole(a: AvisoConsole, hoje = hojeIso()): { icon
         selo: consulta ? { tom: "urgente", texto: `Em atraso · ${dias} dias` } : { tom: "atencao", texto: `Em atraso · ${dias} dias` },
       };
     }
+    // O teste grátis (F1.34, CO-09), com os textos do desenho aprovado (teste-gratis, carteira.html,
+    // sinos tg-admin e tg-financeiro). Todos levam à aba Assinatura do escritório.
+    case "TESTE_COMECOU":
+      return {
+        icone: "relogio", titulo: <>O teste da <b>{d.escritorio ?? "escritório"}</b> começou</>,
+        detalhe: `${d.origem === "LIBERADO" ? "Teste liberado pela Administração." : d.quem ? `Primeiro acesso de ${d.quem}.` : "Primeiro acesso de um sócio."}${d.fim ? ` Vai até ${diaComSemana(d.fim)}.` : ""}`,
+        onde: "Abrir a assinatura", href: assinaturaDo(d.escritorioId),
+      };
+    case "TESTE_ACABANDO":
+      return {
+        icone: "relogio", titulo: <>O teste da <b>{d.escritorio ?? "escritório"}</b> acaba {d.fim ? `na ${diaComSemana(d.fim).replace("-feira", "")}` : "em breve"}</>,
+        detalhe: `${d.prorrogado ? "Prorrogado. " : ""}${d.assinaturaPreparada ? "A assinatura está preparada." : "A assinatura ainda não foi preparada."}`,
+        onde: "Abrir a assinatura", href: assinaturaDo(d.escritorioId),
+      };
+    case "TESTE_ACABOU":
+      return {
+        icone: "alerta", titulo: <>O teste da <b>{d.escritorio ?? "escritório"}</b> acabou sem assinar</>,
+        detalhe: `${d.fim ? `Acabou em ${diaMesTeste(d.fim)}. Portal só para consulta desde ${diaMesTeste(diaSeguinte(d.fim))}. ` : ""}Proposta: encerrar como fim de contrato, com o motivo “teste não assinado”.`,
+        onde: "Decidir", href: assinaturaDo(d.escritorioId), selo: { tom: "urgente", texto: "Propor encerrar" },
+      };
+    case "TESTE_QUER_ASSINAR":
+      return {
+        icone: "pena", titulo: <><b>{d.quem ?? "O sócio"}</b> pediu para assinar: <b>{d.escritorio ?? "escritório"}</b></>,
+        detalhe: `Pelo Portal. ${d.assinaturaPreparada ? `A assinatura está preparada${d.plano ? ` (plano ${d.plano})` : ""}.` : "A assinatura ainda não foi preparada."}${d.fim ? d.acabou ? ` O teste acabou em ${diaMesTeste(d.fim)}.` : d.ultimoDia ? " Hoje é o último dia do teste: confirme antes da meia-noite." : ` O teste vai até ${diaComSemana(d.fim).replace("-feira", "")}.` : ""}`,
+        onde: "Confirmar a assinatura", href: assinaturaDo(d.escritorioId),
+        selo: d.urgente ? { tom: "urgente", texto: "Último dia" } : { tom: "atencao", texto: "Quer assinar" },
+      };
+    case "TESTE_REPETIDO":
+      return {
+        icone: "alerta", titulo: <>Teste repetido: <b>{d.escritorio ?? "escritório"}</b></>,
+        detalhe: `${d.quem ?? "O sócio"} já foi sócio${d.anterior ? ` da ${d.anterior}` : " de outro escritório"}${d.anteriorInicio ? `, que teve teste em ${mesPorExtenso(d.anteriorInicio.slice(0, 7) + "-01", true)}` : ""}. O Portal ${d.escritorio ? `da ${d.escritorio} ` : ""}está só para consulta até a decisão.`,
+        onde: "Liberar ou dispensar", href: assinaturaDo(d.escritorioId), selo: { tom: "atencao", texto: "Decidir" },
+      };
     case "IMPLANTACAO_PRAZO": {
       // Os textos do desenho aprovado (console-implantacao, NOTAS.md item 9): 7, 3 e 0 dias.
       const dias = d.dias ?? 0;
