@@ -7,5 +7,5 @@
   ],
   "status": "pendente",
   "ordem": 67.64,
-  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12."
+  "nota": "Plano em project-files t3jus/co-09/plano-v2.md (revisado por especialista independente), decisões da Carol em DC12. Do F1.33 (1162): o pedido \"Quero assinar\" já fica em testes_gratis.quer_assinar_em/por (falta o aviso TESTE_QUER_ASSINAR nos sinos, também para o Financeiro) e o bloco do Console já traz avisosPrevistos (falta juntar o envio e o descarte de cada passo)."
 }

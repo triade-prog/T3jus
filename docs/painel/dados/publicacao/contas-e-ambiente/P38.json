@@ -1,0 +1,12 @@
+{
+  "id": "P38",
+  "texto": "Publicar a F3.204 (propostas encerradas a pedido do titular): a api-portal e o Portal antes, depois aplicar no Supabase as migrations 1144 e 1145, só com o ok da Carol",
+  "refs": [
+    "PT-11",
+    "AP-03",
+    "AP-05"
+  ],
+  "status": "pendente",
+  "ordem": 380,
+  "nota": "Ordem: 1) conferir com list_migrations que a 1140 a 1143 estão no ar (P31, P33) e a 1144 e a 1145 não; 2) rodar a contagem só de leitura (project-files t3jus/f3-204/contagem-antes-1144.sql) e guardar o resultado: são as propostas que passam a aparecer como encerradas e o número de arquivados que a barra do Funil vai mostrar; 3) publicar a api-portal (aceita mostrar=encerradas; sem a 1144, o banco recusa o filtro novo como \"Filtro inválido\", mas o Portal só o pede pelo chip, que não aparece); 4) publicar o Portal (tolera a contagem e a linha sem os campos novos: o chip só aparece com n > 0); 5) com o ok da Carol, colar project-files t3jus/migrations-para-colar/1144_propostas_encerradas_titular_COLAR_NO_SQL_EDITOR.sql e depois 1145_propostas_encerradas_escrita_COLAR_NO_SQL_EDITOR.sql no SQL Editor (ou apply_migration com os nomes 1144_propostas_encerradas_titular e 1145_propostas_encerradas_escrita). As duas só recriam funções: nenhuma linha muda ao aplicar. 6) conferir na tela: a lista de propostas com o chip quando houver encerrada, a ficha \"Não segue\" e o Funil. Se der errado: recriar os corpos anteriores (proposta_linha e portal_propostas da 0190; comercial_funil_sem_contratos e comercial_retornos_sem_funil da 0190, renomeadas na 0200 e na 0550; portal_inicio_contatos da 0400; portal_proposta da 1140; portal_proposta_editar, portal_proposta_enviada e portal_proposta_resposta da 0190) e apagar proposta_encerrada, proposta_esta_encerrada e proposta_cliente_travar."
+}

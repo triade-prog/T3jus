@@ -1,6 +1,6 @@
 {
   "id": "F1.46",
-  "texto": "Avisos no sino aos 7, 3 e 0 dias do prazo e 30 dias antes do fim da isenção, e a mudança do prazo com motivo (migration 1184)",
+  "texto": "Avisos no sino aos 7, 3 e 0 dias do prazo e 30 dias antes do fim da isenção (migration 1184); a mudança do prazo com motivo saiu no F1.43",
   "peca": "C2",
   "refs": [
     "CO-08"

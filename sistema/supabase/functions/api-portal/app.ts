@@ -38,6 +38,7 @@ import {
   encerrarCasoSchema,
   filtroLembretesSchema, pedidoDispensaSchema, registrarResultadoSchema, type ListaLembretes, type MudancaLembrete, type ResumoLembretes,
   diaBrasilia,
+  queroAssinarSchema,
 } from "@t3jus/domain";
 import type { Context } from "hono";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -176,11 +177,13 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     const pessoaId = c.get("sessao").pessoaId;
     // F3.136: as três juntas, sem fila. O erro sai na mesma ordem de antes: a lista, depois o
     // escritório fora dela (ESCRITORIO_REQUIRED) e só então a ficha ou a cobrança.
-    const [lista, ficha, cobrancaR] = await Promise.allSettled([
+    const [lista, ficha, cobrancaR, testeR] = await Promise.allSettled([
       deps.banco.rpc<EscritorioDaPessoa[]>("meus_escritorios", { p_pessoa: pessoaId }),
       deps.banco.rpc<Record<string, unknown>>("portal_escritorio", { p_pessoa: pessoaId, p_escritorio: id }),
       // F1.18 (CO-06): as faixas de atraso (só o sócio dono) e de só consulta (todos).
       deps.banco.rpc<Record<string, unknown>>("portal_cobranca", { p_pessoa: pessoaId, p_escritorio: id }),
+      // F1.33 (CO-09): a faixa do teste grátis (todos) e "Quero assinar" (só o sócio).
+      deps.banco.rpc<Record<string, unknown> | null>("portal_teste", { p_pessoa: pessoaId, p_escritorio: id }),
     ]);
     if (lista.status === "rejected") throw lista.reason;
     const escritorios = lista.value;
@@ -188,8 +191,9 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
     if (!atual) throw new ErroDominio("ESCRITORIO_REQUIRED");
     if (ficha.status === "rejected") throw ficha.reason;
     if (cobrancaR.status === "rejected") throw cobrancaR.reason;
+    if (testeR.status === "rejected") throw testeR.reason;
     const dados = ficha.value;
-    const cobranca = cobrancaR.value;
+    const cobranca = { ...cobrancaR.value, teste: testeR.value };
     return c.json({ ...dados, cobranca, id, nome: atual.nome, funcoes: atual.funcoes, outrosEscritorios: escritorios.length - 1 });
   });
 
@@ -205,9 +209,21 @@ export function criarApiPortal(segredo: string | undefined, deps: DepsPortal) {
   app.get("/v1/escritorio/advogados", async (c) =>
     c.json(await deps.banco.rpc("portal_escritorio_advogados", { p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") })));
 
-  // Escritório › Plano e faturas (F1.18, CO-06): só o sócio dono; o banco confere.
-  app.get("/v1/escritorio/faturas", async (c) =>
-    c.json(await deps.banco.rpc("portal_plano_faturas", { p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") })));
+  // Escritório › Plano e faturas (F1.18, CO-06): só o sócio dono; o banco confere. Com o teste
+  // grátis (F1.33, CO-09): o teste, o pedido e a primeira fatura antes da assinatura.
+  app.get("/v1/escritorio/faturas", async (c) => {
+    const quem = { p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId") };
+    const plano = await deps.banco.rpc<Record<string, unknown>>("portal_plano_faturas", quem);
+    return c.json({ ...plano, teste: await deps.banco.rpc("portal_teste", quem) });
+  });
+  // "Quero assinar" (F1.33, CO-09): só o sócio, com o escritório da sessão. Uma vez só: repetir
+  // devolve o mesmo pedido. Não muda a trava do dia 8 nem a cobrança.
+  app.post("/v1/escritorio/assinatura/quero-assinar", async (c) => {
+    const d = await lerCorpo(c, queroAssinarSchema);
+    return c.json(await deps.banco.rpc("portal_quero_assinar", {
+      p_pessoa: c.get("sessao").pessoaId, p_escritorio: c.get("escritorioId"), p_dados: { recado: d.recado ?? null },
+    }));
+  });
 
   // O PDF da fatura e o recibo do T3jus (F1.21): só o sócio dono, e só com os dados do T3jus completos.
   for (const [rota, recibo] of [["pdf", false], ["recibo", true]] as const) {

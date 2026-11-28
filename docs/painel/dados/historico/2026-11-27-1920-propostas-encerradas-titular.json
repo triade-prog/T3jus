@@ -2,11 +2,11 @@
   "data": "27/11/2026",
   "inicio": "19:20",
   "fim": "19:55",
-  "texto": "Propostas de cliente excluído ou arquivado a pedido do titular saem das listas, do Funil, dos retornos e do Início e ficam como \"Encerrada a pedido do titular\"; enviar, responder e editar são recusados (migrations 1144 e 1145, api-portal e Portal; F3.204 feito). Publicação no P37, só com o ok da Carol; a contagem dupla antiga do Funil ficou na F3.205.",
+  "texto": "Propostas de cliente excluído ou arquivado a pedido do titular saem das listas, do Funil, dos retornos e do Início e ficam como \"Encerrada a pedido do titular\"; enviar, responder e editar são recusados (migrations 1144 e 1145, api-portal e Portal; F3.204 feito). Publicação no P38, só com o ok da Carol; a contagem dupla antiga do Funil ficou na F3.205.",
   "refs": [
     "F3.204",
     "F3.205",
-    "P37",
+    "P38",
     "PT-11",
     "AP-03",
     "AP-05",

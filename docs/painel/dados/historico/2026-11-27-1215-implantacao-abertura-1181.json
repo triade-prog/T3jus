@@ -1,0 +1,12 @@
+{
+  "data": "27/11/2026",
+  "inicio": "12:15",
+  "fim": "14:33",
+  "texto": "Implantação assistida no servidor: abre no primeiro acesso de um sócio (gatilho em testes_gratis) com prazo de 30 dias do dia 1, conclui no Ativo (console_implantacao_concluir e aba Contrato), cancela no dia do fim do contrato, abre a número 2 na reabertura, muda o prazo só pela Administração com motivo e abre a dos escritórios que já existem (migration 1181, rotas concluir e prazo); falta aplicar e publicar (P35).",
+  "refs": [
+    "F1.43",
+    "P35",
+    "CO-08",
+    "CO-09"
+  ]
+}

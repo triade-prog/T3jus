@@ -2,7 +2,8 @@
 # O primeiro acesso de duas sócias ao mesmo tempo (F1.31; CO-09, migration 1160), com duas conexões
 # de verdade, as duas como service_role (como a api-portal chama o banco) e com commit:
 #  a. a primeira entrada segura a transação; a segunda espera a linha do teste e, quando ela sai,
-#     não muda nada. As duas entram, o dia 1 é o da primeira e teste.comecou sai uma vez só;
+#     não muda nada. As duas entram, o dia 1 é o da primeira e teste.comecou sai uma vez só; e
+#     a implantação assistida (CO-08, 1181) abre uma vez só, com um evento só;
 #  b. a mesma pessoa entra noutro escritório com teste: o teste fica REPETIDO (a leitura protegida
 #     dos outros escritórios funciona com o RLS de verdade);
 #  c. no dia 8, como a API, a escrita da sócia é recusada com TESTE_ENCERRADO.
@@ -49,9 +50,11 @@ wait
 fim=$("${PSQL[@]}" -c "select (select count(*) from sessoes_escritorio where escritorio_id = '$E') || ' ' ||
   (select count(*) from historico where escritorio_id = '$E' and acao = 'teste.comecou') || ' ' ||
   (select (autor_id = '$S1')::text from historico where escritorio_id = '$E' and acao = 'teste.comecou' limit 1) || ' ' ||
-  (select (fim - inicio)::text from testes_gratis where escritorio_id = '$E')")
-if [ "$fim" != "2 1 true 6" ] || grep -qi "warning\|error" "$DIR/a" "$DIR/b"; then
-  echo "Primeiro acesso simultâneo: falhou (sessões, eventos, autora, dias: $fim; primeira: $(cat "$DIR/a"); segunda: $(cat "$DIR/b"))"
+  (select (fim - inicio)::text from testes_gratis where escritorio_id = '$E') || ' ' ||
+  (select count(*) from implantacoes where escritorio_id = '$E' and estado = 'ABERTA') || ' ' ||
+  (select count(*) from historico where escritorio_id = '$E' and entidade = 'implantacoes' and dados ->> 'evento' = 'IMPLANTACAO_ABERTA')")
+if [ "$fim" != "2 1 true 6 1 1" ] || grep -qi "warning\|error" "$DIR/a" "$DIR/b"; then
+  echo "Primeiro acesso simultâneo: falhou (sessões, eventos, autora, dias, implantações, aberturas: $fim; primeira: $(cat "$DIR/a"); segunda: $(cat "$DIR/b"))"
   exit 1
 fi
 
