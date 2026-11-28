@@ -233,9 +233,12 @@ export function whatsLegivel(v: string): string {
 
 // ---------------------------------------------------------------- sino do Console (F2.6)
 
-export type TipoAvisoConsole = "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO" | "FATURA_ATRASO"
+export type TipoAvisoConsole =
+  | "INTERESSADO_NOVO" | "INTERESSADO_ATRIBUIDO" | "INTERESSADO_VENCIDO" | "FATURA_ATRASO"
   /** O teste grátis (F1.34, CO-09). */
-  | "TESTE_COMECOU" | "TESTE_ACABANDO" | "TESTE_ACABOU" | "TESTE_QUER_ASSINAR" | "TESTE_REPETIDO";
+  | "TESTE_COMECOU" | "TESTE_ACABANDO" | "TESTE_ACABOU" | "TESTE_QUER_ASSINAR" | "TESTE_REPETIDO"
+  /** Implantação assistida (F1.46, 1184): o prazo aos 7, 3 e 0 dias, o fim da isenção 30 dias antes e o escritório que a rotina pulou (carnê com a implantação cobrada). */
+  | "IMPLANTACAO_PRAZO" | "IMPLANTACAO_ISENCAO_FIM" | "IMPLANTACAO_CARNE_RECUSADO";
 
 export interface AvisoConsole {
   id: string;
@@ -268,6 +271,16 @@ export interface AvisoConsole {
     origem?: "PRIMEIRO_ACESSO" | "LIBERADO"; assinaturaPreparada?: boolean; plano?: string | null; prorrogado?: boolean;
     querAssinarEm?: string | null; pedidoEm?: string; comRecado?: boolean; urgente?: boolean; ultimoDia?: boolean; acabou?: boolean;
     lembrete?: boolean; proposta?: "ENCERRAR"; anteriorId?: string; anterior?: string; anteriorInicio?: string; anteriorFim?: string;
+    /** Prazo da implantação (dias = 7, 3 ou 0; prazo em dados.prazo): X de Y treinadas e quem falta. */
+    treinadas?: number;
+    total?: number;
+    faltam?: string[];
+    /** Fim da isenção: a data de corte, o primeiro dia cobrado e o valor da regra. */
+    isencaoAte?: string;
+    cobradaDesde?: string;
+    valorCentavos?: number;
+    /** Carnê recusado: o dia em que a rotina pulou o escritório. */
+    dia?: string;
   };
   interessadoId: string | null;
   /** Fatura em atraso: a fatura do aviso. */
@@ -284,6 +297,9 @@ export interface ListaAvisosConsole {
   veInteressados: boolean;
   /** Vê Cobrança (Administração e Financeiro): recebe o aviso de fatura em atraso. */
   veCobranca?: boolean;
+  /** Vê a implantação (console.implantacao.ver) e a regra dela (console.implantacao.regras, a Administração). */
+  veImplantacao?: boolean;
+  veRegraImplantacao?: boolean;
   itens: AvisoConsole[];
   marcados?: number;
 }

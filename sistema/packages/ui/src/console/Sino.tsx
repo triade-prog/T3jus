@@ -13,7 +13,7 @@ import { diaComSemana, diaMesTeste, diaSeguinte, mesPorExtenso, TAMANHOS_INTERES
 import { Icone, type NomeIcone } from "../Icone.tsx";
 import { brl } from "./cobranca.ts";
 import { diaMes } from "./interessados.ts";
-import { chamarConsole, COBRANCA, INTERESSADOS } from "./Moldura.tsx";
+import { CARTEIRA, chamarConsole, COBRANCA, INTERESSADOS } from "./Moldura.tsx";
 import { Aviso, Estado } from "./pecas.tsx";
 import { hora } from "./tempo.ts";
 
@@ -107,8 +107,48 @@ export function descreverAvisoConsole(a: AvisoConsole, hoje = hojeIso()): { icon
         detalhe: `${d.quem ?? "O sócio"} já foi sócio${d.anterior ? ` da ${d.anterior}` : " de outro escritório"}${d.anteriorInicio ? `, que teve teste em ${mesPorExtenso(d.anteriorInicio.slice(0, 7) + "-01", true)}` : ""}. O Portal ${d.escritorio ? `da ${d.escritorio} ` : ""}está só para consulta até a decisão.`,
         onde: "Liberar ou dispensar", href: assinaturaDo(d.escritorioId), selo: { tom: "atencao", texto: "Decidir" },
       };
+    case "IMPLANTACAO_PRAZO": {
+      // Os textos do desenho aprovado (console-implantacao, NOTAS.md item 9): 7, 3 e 0 dias.
+      const dias = d.dias ?? 0;
+      const quando = dias === 0 ? "vence hoje" : `vence em ${dias} dias`;
+      const treino = typeof d.total === "number" ? ` (${d.treinadas ?? 0} de ${d.total} ${d.total === 1 ? "pessoa treinada" : "pessoas treinadas"})` : "";
+      const faltam = d.faltam?.length ? `Faltam ${juntarNomes(d.faltam)}.`
+        : d.total ? "Todas as pessoas foram treinadas: dá para concluir." : null;
+      return {
+        icone: "relogio", titulo: <>A implantação do escritório{d.escritorio ? <> <b>{d.escritorio}</b></> : null} {quando}{treino}</>,
+        detalhe: [d.prazo && dias > 0 ? `Prazo: ${dataBr(d.prazo)}.` : null, faltam, d.responsavel ? `Quem acompanha: ${d.responsavel}.` : "Ninguém acompanha ainda."]
+          .filter(Boolean).join(" "),
+        // A aba Implantação entra com as telas (F1.47); até lá, a ficha abre no Contrato.
+        onde: "Abrir a ficha", href: d.escritorioId ? `/clientes/${d.escritorioId}/contrato` : CARTEIRA,
+        selo: dias === 0 ? { tom: "urgente", texto: "Vence hoje" } : { tom: "atencao", texto: `${dias} dias` },
+      };
+    }
+    case "IMPLANTACAO_ISENCAO_FIM": {
+      const dias = d.dias ?? 30;
+      return {
+        icone: "carteira", titulo: <>A isenção da implantação termina em {dias} {dias === 1 ? "dia" : "dias"}{d.isencaoAte ? `, em ${dataBr(d.isencaoAte)}` : ""}</>,
+        detalhe: `Quem abrir a implantação a partir de ${d.cobradaDesde ? dataBr(d.cobradaDesde) : "então"} paga ${typeof d.valorCentavos === "number" ? brl(d.valorCentavos) : "a implantação"} à vista na 1ª fatura. Para manter grátis, mude a data de corte em Cobrança › Planos.`,
+        onde: "Abrir a regra", href: `${COBRANCA}/planos`,
+        selo: { tom: "atencao", texto: "Fim da isenção" },
+      };
+    }
+    case "IMPLANTACAO_CARNE_RECUSADO":
+      // Sem desenho próprio: segue o padrão do sino aprovado, à espera do ok da Carol.
+      return {
+        icone: "alerta", titulo: <>A 1ª fatura do escritório{d.escritorio ? <> <b>{d.escritorio}</b></> : null} não saiu: a implantação cobrada não vai no carnê</>,
+        detalhe: [d.dia ? `A rotina da cobrança pulou o escritório em ${dataBr(d.dia)}.` : null,
+          "Passe a assinatura para Pix ou boleto e a 1ª fatura sai com a implantação à vista.",
+          d.responsavel ? `Quem acompanha: ${d.responsavel}.` : null].filter(Boolean).join(" "),
+        onde: "Abrir a assinatura", href: d.escritorioId ? `/clientes/${d.escritorioId}/assinatura` : CARTEIRA,
+        selo: { tom: "urgente", texto: "Fatura parada" },
+      };
   }
 }
+
+/** 2026-12-31 → 31/12/2026. */
+const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+/** ["A", "B", "C"] → "A, B e C". */
+const juntarNomes = (n: string[]) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} e ${n[n.length - 1]}` : n[0] ?? "");
 
 /** O estado do sino, compartilhado pelos dois botões (topo e barra do celular). */
 export function useSinoConsole() {

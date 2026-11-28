@@ -1,11 +1,12 @@
 {
   "id": "F1.46",
-  "texto": "Avisos no sino aos 7, 3 e 0 dias do prazo e 30 dias antes do fim da isenção (migration 1184); a mudança do prazo com motivo saiu no F1.43",
+  "texto": "Avisos no sino aos 7, 3 e 0 dias do prazo, 30 dias antes do fim da isenção e do escritório que a rotina pulou pelo carnê com a implantação cobrada (migration 1184); a mudança do prazo com motivo saiu no F1.43",
   "peca": "C2",
   "refs": [
     "CO-08"
   ],
-  "status": "pendente",
+  "status": "feito",
   "ordem": 67.84,
-  "nota": "Plano em project-files t3jus/co-08/plano-v2.md (revisado por especialista independente em revisao.md); decisões da Carol em DC14. Entra também o aviso de quem a rotina pulou por ter a implantação cobrada no carnê (evento implantacao.carne_recusado da 1182, F1.44)."
+  "nota": "Plano em docs/design/aprovadas/console-implantacao/PLANO.md (seção 4.4, a linha da 1184 e o PR 5; revisado em REVISAO.md, correção 17); desenho em NOTAS.md (item 9: o sino aprovado com textos novos); decisões da Carol em DC14 (nos 30 dias, só avisos e troca do prazo; nada passa a Ativo sozinho). O gancho é um job próprio do pg_cron (t3jus-implantacao, 8h), e não um passo de cobranca_rotina: a 1161 do CO-09 (PR #234, não mesclado) renomeia e envolve cobranca_rotina, e o job vale com ou sem ela. O aviso do carnê recusado nasce do evento implantacao.carne_recusado (gatilho em fatura_eventos), uma vez por escritório e competência; não tem desenho próprio e segue o padrão do sino, à espera do ok da Carol. Publicação no P35.",
+  "evidencia": "Migration 1184_implantacao_avisos.sql: avisos_console com os tipos IMPLANTACAO_PRAZO, IMPLANTACAO_ISENCAO_FIM e IMPLANTACAO_CARNE_RECUSADO e a coluna implantacao_id references implantacoes on delete cascade (check: obrigatória no prazo, nula no fim da isenção); implantacao_rotina (pg_cron t3jus-implantacao) com os avisos aos 7, 3 e 0 dias uma vez cada, contando do prazo de agora (o prazo mudado vale de novo e só o marco do dia sai), com \"X de Y\", quem falta treinar e quem acompanha, e o fim da isenção 30 dias antes de isencao_ate, uma vez por data de corte; o gatilho avisos_console_do_carne_recusado em fatura_eventos, que nunca derruba a rotina da cobrança; destinatários em implantacao_avisados (quem acompanha, se ainda pode, e a Administração que atende o escritório; sem ela, toda a Administração; o fim da isenção para toda a Administração); aviso_console_visivel e console_avisos (veImplantacao, veRegraImplantacao); inventário atualizado. Nada muda de estado (DC14). Sino do Console (Sino.tsx) com os três avisos e TipoAvisoConsole em packages/domain. Testes: pgTAP 194 (49), o 047 (fim da guarda com um aviso de implantação: o cascade não trava, 21); Vitest sino_console.test.ts (4 novos)."
 }
