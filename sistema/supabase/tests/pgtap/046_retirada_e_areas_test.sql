@@ -81,7 +81,8 @@ select is((
 -- PA-01: toda função do Portal, chamada por quem não tem área nenhuma, recusa como área não
 -- liberada. Ficam de fora as partes comuns (Início, Clientes, Agenda, Conversas, avisos,
 -- automações, que conferem a área de cada uma, e o carnê, que recebe a área), as do sócio dono
--- (Escritório, Equipe, WhatsApp, IA, Recebimento, a cobrança do T3jus) e a própria conta.
+-- (Escritório, Equipe, WhatsApp, IA, Recebimento, a cobrança do T3jus) e a própria conta. O teste
+-- grátis (portal_teste e portal_quero_assinar, 1162) é de todos ou do sócio, sem área.
 create temp table chamadas (funcao text, erro jsonb);
 do $$
 declare
@@ -91,7 +92,7 @@ begin
   for f in select p.proname, p.pronargs, p.proargtypes::regtype[] t, p.proargnames n
              from pg_proc p join pg_namespace s on s.oid = p.pronamespace
             where s.nspname = 'public' and p.proname like 'portal\_%'
-              and p.proname !~ '^portal_(agenda|compromisso|cliente|clientes|importacao|importacoes|conversa|conversas|automacao|automacoes|aviso|avisos|carne|conta|escritorio|exigir_escrita|ia|inicio_resumo|inicio_audiencias|pessoas_escritorio|recebimento|whatsapp|equipe|historico_equipe|convidar|mudar_areas|oab|reenviar_convite|retirar|cobranca|plano_faturas|so_consulta_desde|trava_escrita)(_|$)' loop
+              and p.proname !~ '^portal_(agenda|compromisso|cliente|clientes|importacao|importacoes|conversa|conversas|automacao|automacoes|aviso|avisos|carne|conta|escritorio|exigir_escrita|ia|inicio_resumo|inicio_audiencias|pessoas_escritorio|recebimento|whatsapp|equipe|historico_equipe|convidar|mudar_areas|oab|reenviar_convite|retirar|cobranca|plano_faturas|so_consulta_desde|trava_escrita|teste|quero_assinar)(_|$)' loop
     v_args := '';
     for i in 1..f.pronargs loop
       v_args := v_args || case when i > 1 then ', ' else '' end

@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planos e preços · T3jus</title>
+<meta name="description" content="Planos do T3jus para escritórios de advocacia: R$ 299, R$ 499 ou R$ 749 por mês, conforme a equipe, com todas as áreas. Veja o que está incluído.">
+<meta name="theme-color" content="#692746">
+<link rel="canonical" href="https://t3jus.pro/precos">
+<link rel="icon" href="marca/icone-app.svg" type="image/svg+xml">
+<script>(function(d){d.classList.add("js");try{if(matchMedia("(prefers-reduced-motion: no-preference)").matches&&window.CSS&&CSS.supports&&CSS.supports("animation-timeline: view()"))d.classList.add("sd")}catch(e){}})(document.documentElement);</script>
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "T3jus", "applicationCategory": "BusinessApplication", "operatingSystem": "Web", "offers": [{"@type": "Offer", "name": "Essencial", "price": "299.00", "priceCurrency": "BRL", "eligibleQuantity": {"@type": "QuantitativeValue", "maxValue": 3, "unitText": "pessoas"}, "priceSpecification": {"@type": "UnitPriceSpecification", "price": "299.00", "priceCurrency": "BRL", "billingDuration": "P1M"}}, {"@type": "Offer", "name": "Escritório", "price": "499.00", "priceCurrency": "BRL", "eligibleQuantity": {"@type": "QuantitativeValue", "maxValue": 6, "unitText": "pessoas"}, "priceSpecification": {"@type": "UnitPriceSpecification", "price": "499.00", "priceCurrency": "BRL", "billingDuration": "P1M"}}, {"@type": "Offer", "name": "Banca", "price": "749.00", "priceCurrency": "BRL", "eligibleQuantity": {"@type": "QuantitativeValue", "maxValue": 10, "unitText": "pessoas"}, "priceSpecification": {"@type": "UnitPriceSpecification", "price": "749.00", "priceCurrency": "BRL", "billingDuration": "P1M"}}]}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Quem conta como pessoa?", "acceptedAnswer": {"@type": "Answer", "text": "Toda pessoa com acesso liberado ao Portal do escritório no dia em que a fatura é calculada, mesmo quem ainda não entrou: sócios, advogados, estagiários e secretaria. Os clientes do escritório não contam. Quem sai da equipe deixa de contar quando o acesso é desativado."}}, {"@type": "Question", "name": "O WhatsApp com a assistente já funciona, e quem paga as mensagens?", "acceptedAnswer": {"@type": "Answer", "text": "A tela e a assistente estão prontas e testadas. Falta a ligação oficial do número do escritório com a Meta, que está em preparação. Quando ficar pronta, ela entra no seu plano sem mudar o preço. A Meta cobra por mensagem, direto do escritório, na conta do WhatsApp Business do número dele. A assistente do T3jus não tem cobrança por resposta. Até o WhatsApp do escritório estar ligado, nada é cobrado por mensagens."}}, {"@type": "Question", "name": "A assistente atende quem ainda não é cliente?", "acceptedAnswer": {"@type": "Answer", "text": "Só no primeiro contato. Quando um número novo escreve, ela se apresenta, pergunta o nome e o assunto e passa a conversa para a equipe. Ela não responde consulta jurídica e não fala de caso. O T3jus não envia propaganda nem mensagem em massa. As regras do atendimento são do escritório, que segue o Código de Ética da OAB."}}, {"@type": "Question", "name": "Quando pago a primeira mensalidade?", "acceptedAnswer": {"@type": "Answer", "text": "No mês seguinte ao fim dos 7 dias de teste, no dia de vencimento que você escolher, e só se você assinar."}}, {"@type": "Question", "name": "E se eu quiser sair?", "acceptedAnswer": {"@type": "Answer", "text": "Não há fidelidade nem multa. O cancelamento vale a partir da mensalidade seguinte, e, se você desistir antes do primeiro vencimento, nada é cobrado. No carnê, as mensalidades que ainda não venceram são canceladas junto. Depois de sair, o Portal fica só para consulta por 30 dias, e o sócio dono pode exportar tudo do escritório nesse prazo."}}, {"@type": "Question", "name": "O T3jus recebe o dinheiro dos meus clientes?", "acceptedAnswer": {"@type": "Answer", "text": "Não. O carnê dos seus clientes leva o Pix do próprio escritório, e o dinheiro cai direto na sua conta. O que o T3jus cobra é só a mensalidade."}}]}]</script>
+<style>
+/* Alegreya e Poppins servidas pelo próprio site (public/fontes), as mesmas das telas aprovadas. */
+@font-face{font-family:Alegreya;font-style:normal;font-weight:500;font-display:swap;src:url(fontes/alegreya-500.woff2) format('woff2')}
+@font-face{font-family:Alegreya;font-style:italic;font-weight:500;font-display:swap;src:url(fontes/alegreya-500-italico.woff2) format('woff2')}
+@font-face{font-family:Alegreya;font-style:normal;font-weight:600;font-display:swap;src:url(fontes/alegreya-600.woff2) format('woff2')}
+@font-face{font-family:Alegreya;font-style:normal;font-weight:700;font-display:swap;src:url(fontes/alegreya-700.woff2) format('woff2')}
+@font-face{font-family:Poppins;font-style:normal;font-weight:400;font-display:swap;src:url(fontes/poppins-400.woff2) format('woff2')}
+@font-face{font-family:Poppins;font-style:normal;font-weight:500;font-display:swap;src:url(fontes/poppins-500.woff2) format('woff2')}
+@font-face{font-family:Poppins;font-style:normal;font-weight:600;font-display:swap;src:url(fontes/poppins-600.woff2) format('woff2')}
+
+:root{
+  --vinho:#692746;--vinho-2:#87335B;--vinho-3:#AC3F6B;--vinho-4:#AC788D;
+  --ambar:#DD9760;--ambar-2:#E9AE90;--ambar-3:#F2CDB3;
+  --sal:#F1E6DF;--sal-2:#F2ECE8;
+  --tinta:#2A1A22;--tinta-2:#6E5562;--vinho-escuro:#4F1D35;--papel:#FFFFFF;
+  --serifa:"Alegreya","Iowan Old Style",Georgia,serif;
+  --sans:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --raio:10px;--raio-g:16px;--larg:1200px;--gut:48px;
+  --sombra:0 24px 60px -32px rgba(105,39,70,.45);
+  --grao:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27200%27%20height%3D%27200%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%27.85%27%20numOctaves%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27200%27%20height%3D%27200%27%20filter%3D%27url%28%23n%29%27%20opacity%3D%27.6%27%2F%3E%3C%2Fsvg%3E");--padrao:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20fill%3D%22none%22%20stroke%3D%22%23692746%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22square%22%3E%3Cg%20transform%3D%22translate%2812%2012%29%22%3E%3Cpath%20d%3D%22M12%203.5v16M7.5%2020.5h9M4.5%207h15%22%2F%3E%3Cpath%20d%3D%22M4.5%207%202%2013h5ZM19.5%207%2017%2013h5Z%22%2F%3E%3Cpath%20d%3D%22M2%2013a2.5%202.5%200%200%200%205%200M17%2013a2.5%202.5%200%200%200%205%200%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2872%2018%29%22%3E%3Cpath%20d%3D%22M4%204h16l-1.5%202.5h-13Z%22%2F%3E%3Cpath%20d%3D%22M7%206.5v11M10.3%206.5v11M13.7%206.5v11M17%206.5v11%22%2F%3E%3Cpath%20d%3D%22M5.5%2017.5h13L20%2020H4Z%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2842%2070%29%22%3E%3Cpath%20d%3D%22M20%204C12%204%207.5%209%206.5%2016.5L5%2021%22%2F%3E%3Cpath%20d%3D%22M20%204c0%207.5-5%2011.5-12.5%2012.5%22%2F%3E%3Cpath%20d%3D%22M9.5%2011h6M8%2014h4.5%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;font-family:var(--sans);font-size:16px;line-height:1.65;color:var(--tinta);background:var(--sal);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3{font-family:var(--serifa);font-weight:500;margin:0;letter-spacing:-.01em;line-height:1.1}
+p,ul,ol,dl,dd,figure,blockquote{margin:0}
+ul,ol{padding:0;list-style:none}
+a{color:var(--vinho)}
+img{max-width:100%;height:auto}
+:focus-visible{outline:3px solid var(--vinho-3);outline-offset:3px;border-radius:6px}
+.sobre-vinho :focus-visible,.topo :focus-visible,.rodape :focus-visible{outline-color:var(--ambar-3)}
+.ico{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter}
+.sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.pular{position:absolute;left:16px;top:-80px;z-index:50;background:var(--papel);color:var(--vinho);padding:12px 18px;border-radius:var(--raio);font-weight:500}
+.pular:focus{top:12px}
+.miolo{width:100%;max-width:calc(var(--larg) + 2*var(--gut));margin:0 auto;padding:0 var(--gut)}
+
+/* ---------- botões ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 24px;border-radius:var(--raio);font:500 15px/1.2 var(--sans);text-decoration:none;border:0;cursor:pointer;text-align:center}
+.btn-pri{background:var(--vinho);color:var(--papel);box-shadow:inset 0 -2px 0 var(--vinho-escuro)}
+.btn-pri:hover{background:var(--vinho-2)}
+.btn-pri:active{background:var(--vinho-escuro)}
+.btn-pri .ico{color:var(--ambar-3)}
+.btn-claro{background:var(--ambar-3);color:var(--vinho);box-shadow:inset 0 -2px 0 var(--ambar-2)}
+.btn-claro:hover{background:var(--papel)}
+.btn-contorno{background:transparent;color:var(--sal);box-shadow:inset 0 0 0 1.5px var(--vinho-4)}
+.btn-contorno:hover{box-shadow:inset 0 0 0 1.5px var(--ambar-3);color:var(--papel)}
+.btn-sec{background:var(--papel);color:var(--vinho);box-shadow:inset 0 0 0 1.5px var(--vinho-4)}
+.btn-sec:hover{box-shadow:inset 0 0 0 1.5px var(--vinho)}
+
+
+/* ---------- topo (todas as páginas) ----------
+   Fica no alto ao rolar, encolhe nos primeiros 140 px e mostra a leitura numa barra âmbar.
+   Com animation-timeline (.sd, posto no <head>) é só CSS; sem ele, src/scripts/topo.ts faz o mesmo (.compacto). */
+:root{--encolhe:12px}
+.topo{position:sticky;top:0;z-index:40;background:rgba(79,29,53,.94);-webkit-backdrop-filter:saturate(1.2) blur(14px);backdrop-filter:saturate(1.2) blur(14px);border-bottom:1px solid rgba(172,120,141,.28)}
+.topo .miolo{display:flex;align-items:center;justify-content:space-between;gap:24px;height:76px}
+.marca{display:inline-flex;align-items:center;min-height:44px}
+.marca img{display:block;height:44px;width:auto;transform-origin:0 50%}
+.menu{display:flex;align-items:center;gap:6px}
+.menu a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;color:var(--sal);text-decoration:none;font-size:15px;border-radius:10px}
+.menu a:not(.btn):hover{background:rgba(242,205,179,.1)}
+.menu a:not(.btn)[aria-current="page"]{color:var(--papel);box-shadow:inset 0 -2px 0 var(--ambar)}
+.topo .menu .btn{min-height:44px;padding:0 18px;margin-left:8px;color:var(--vinho-escuro);font-size:15px;border-radius:12px}
+.menu .ico{width:18px;height:18px;color:var(--ambar-2)}
+.menu-cel{display:none}
+.progresso{position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--ambar);transform-origin:0 50%;transform:scaleX(0);pointer-events:none}
+
+/* ---------- rodapé (todas as páginas) ---------- */
+.rodape{background:var(--vinho-escuro);color:var(--sal);padding:72px 0 32px}
+.rodape .fita9{display:flex;height:6px;margin-top:-72px;margin-bottom:66px}
+.rodape .fita9 i{flex:1}
+.rodape .grade-r{display:grid;grid-template-columns:1.6fr 1fr 1fr 1.2fr;gap:40px}
+.rodape .grade-r img{display:block;height:52px;width:auto}
+.rodape .sobre-t{margin-top:18px;font-size:15px;color:var(--sal);max-width:300px}
+.rodape h2{font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--ambar-2);line-height:1.08}
+.rodape ul{margin-top:12px}
+.rodape .grade-r a,.rodape .grade-r li>span{display:inline-flex;align-items:center;gap:8px;min-height:40px;color:var(--sal);text-decoration:none;font-size:15px}
+.rodape .grade-r a:hover{text-decoration:underline}
+.rodape .grade-r .ico{width:18px;height:18px;color:var(--ambar-2)}
+.rodape .grade-r li>.depois{display:block;min-height:0;font-size:13px;color:var(--ambar-2);margin-top:-6px}
+.rodape .pe{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:48px;padding-top:24px;border-top:1px solid rgba(172,120,141,.35);font-size:14px;color:var(--ambar-3)}
+
+@media (max-width:1020px){
+  .menu a:not(.btn):not(.entrar){display:none}
+  .rodape .grade-r{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  :root{--encolhe:10px}
+  .topo .miolo{height:64px}
+  .marca img{height:36px}
+  .menu{display:none}
+  .menu-cel{display:block;position:relative}
+  .menu-cel summary{list-style:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:10px;color:var(--sal);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(172,120,141,.5);font-size:15px}
+  .menu-cel summary::-webkit-details-marker{display:none}
+  .menu-cel .ico{width:20px;height:20px}
+  .menu-cel nav{position:absolute;right:0;top:54px;width:min(300px,calc(100vw - 32px));background:var(--papel);border-radius:16px;padding:10px;box-shadow:0 24px 50px -20px rgba(42,26,34,.6);display:grid;gap:2px}
+  .menu-cel nav a{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:10px;color:var(--tinta);text-decoration:none}
+  .menu-cel nav a[aria-current]{background:var(--sal-2);color:var(--vinho);font-weight:500}
+  .menu-cel nav .btn{color:var(--papel);margin-top:6px;justify-content:center}
+  .rodape .grade-r{grid-template-columns:1fr;gap:28px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .sd .progresso{animation:t-progresso linear both}
+  html.sd .progresso{animation-timeline:scroll(root)}
+  .sd .topo{animation:t-encolhe linear both}
+  html.sd .topo{animation-timeline:scroll(root);animation-range:0 140px}
+  .sd .topo .miolo{animation:t-encolhe-m linear both}
+  html.sd .topo .miolo{animation-timeline:scroll(root);animation-range:0 140px}
+  .sd .marca img{animation:t-encolhe-l linear both}
+  html.sd .marca img{animation-timeline:scroll(root);animation-range:0 140px}
+  html:not(.sd) .topo,html:not(.sd) .topo .miolo,html:not(.sd) .marca img{transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+  .compacto .topo{transform:translateY(calc(-1*var(--encolhe)))}
+  .compacto .topo .miolo{transform:translateY(calc(var(--encolhe)/2))}
+  .compacto .marca img{transform:scale(.86)}
+}
+@keyframes t-progresso{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes t-encolhe{to{transform:translateY(calc(-1*var(--encolhe)))}}
+@keyframes t-encolhe-m{to{transform:translateY(calc(var(--encolhe)/2))}}
+@keyframes t-encolhe-l{to{transform:scale(.86)}}
+
+@media (prefers-reduced-motion:no-preference){.btn{transition:background-color .15s ease,box-shadow .15s ease}}
+
+/* Páginas internas (Como funciona, Para quem é, Demonstração). O Início tem o próprio arquivo (inicio.css);
+   a base, o topo e o rodapé, que valem para todas, ficam em site.css. */
+.sobretitulo{display:block;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--vinho-2)}
+.fio{display:block;width:64px;height:2px;background:var(--ambar);margin-top:20px}
+.num{font-variant-numeric:lining-nums tabular-nums}
+.link-seta{display:inline-flex;align-items:center;gap:8px;min-height:44px;font-weight:500;color:var(--vinho);text-decoration:none}
+.link-seta:hover{text-decoration:underline}
+.link-seta .ico{width:18px;height:18px}
+/* ---------- cabeçalho vinho com corte (abertura) ---------- */
+.abertura{position:relative;isolation:isolate;overflow:hidden;background:var(--sal)}
+.abertura::after{content:"";position:absolute;inset:0;z-index:-3;opacity:.35;mix-blend-mode:multiply;background-image:var(--grao);pointer-events:none}
+.abertura .lado{position:absolute;inset:0;z-index:-2;background:var(--vinho);clip-path:polygon(0 0,64% 0,54% 100%,0 100%)}
+.abertura .lado::after{content:"";position:absolute;inset:0;opacity:.35;mix-blend-mode:soft-light;background-image:var(--grao)}
+.abertura .estatua{position:absolute;z-index:-1;left:44%;top:330px;width:260px;height:260px;color:var(--vinho-2);stroke-width:.8;pointer-events:none}
+.heroi{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:56px;align-items:center;padding-top:56px;padding-bottom:112px}
+.heroi .texto{color:var(--sal);max-width:620px}
+.heroi .sobretitulo{color:var(--ambar-2)}
+.heroi h1{margin-top:14px;font-size:clamp(44px,5vw,70px);line-height:1.03;color:var(--papel)}
+.heroi h1 i{font-style:italic;color:var(--ambar-3)}
+.heroi .lede{margin-top:24px;font-size:17px;line-height:1.65;max-width:50ch;color:var(--sal)}
+.heroi .acoes{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
+.heroi .nota-h{display:flex;align-items:center;gap:10px;margin-top:26px;font-size:13.5px;color:var(--ambar-2)}
+.heroi .nota-h .ico{width:18px;height:18px;color:var(--ambar)}
+.fita{position:absolute;z-index:-1;left:0;bottom:0;width:59%;height:10px;display:flex}
+.fita i{flex:1}
+
+/* folhas sobrepostas (lado sal) */
+.folhas{position:relative;width:100%;max-width:470px;justify-self:center;margin:16px 0}
+.folhas .f-ambar{position:absolute;inset:18px -10px 26px 14px;border-radius:var(--raio-g);background:var(--ambar);transform:rotate(-5deg);box-shadow:0 30px 60px -30px rgba(42,26,34,.55);overflow:hidden}
+.folhas .f-ambar::before{content:"";position:absolute;inset:0;background-image:var(--padrao);background-size:128px 128px;opacity:.55}
+.folhas .f-timbre{position:absolute;inset:8px 0 14px 4px;border-radius:var(--raio-g);background:var(--papel);transform:rotate(2.5deg);box-shadow:0 20px 50px -30px rgba(42,26,34,.5);overflow:hidden}
+.folhas .f-timbre::before{content:"";position:absolute;right:0;top:0;width:130px;height:10px;background:var(--vinho)}
+.folhas .f-timbre::after{content:"";position:absolute;right:130px;top:0;width:44px;height:10px;background:var(--ambar)}
+.folhas .selo-marca{position:absolute;z-index:2;left:-70px;bottom:-92px;width:136px;height:136px;filter:drop-shadow(0 14px 22px rgba(42,26,34,.35))}
+
+/* cartão de exemplo do produto (ilustração com dados fictícios) */
+.demo{position:relative;background:var(--papel);border-radius:var(--raio-g);box-shadow:var(--sombra);padding:26px 26px 22px;font-size:13.5px;line-height:1.5}
+.demo-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.demo-cab h2,.demo-cab h3,.demo-cab p.t{font-family:var(--serifa);font-size:24px;color:var(--vinho);font-weight:500;line-height:1.15}
+.ex{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;font-size:11.5px;font-weight:500;color:var(--vinho);box-shadow:inset 0 0 0 1px var(--vinho-4);white-space:nowrap;background:var(--papel)}
+.ex::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ambar)}
+.demo .fio{margin-top:12px;width:44px}
+.demo-lista{margin-top:14px;display:grid}
+.demo-lista li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--sal)}
+.demo-lista li:first-child{border-top:0}
+.demo-lista .bola{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.demo-lista .bola.v{background:var(--vinho);color:var(--ambar-3)}
+.demo-lista .bola.a{background:var(--ambar);color:var(--tinta)}
+.demo-lista .bola .ico{width:20px;height:20px}
+.demo-lista b{font-weight:600;color:var(--tinta)}
+.demo-lista small{display:block;color:var(--tinta-2);font-size:12.5px;margin-top:1px}
+.demo-lista .val{font-family:var(--serifa);font-size:17px;color:var(--vinho);font-weight:500}
+
+/* ---------- faixa de fatos ---------- */
+.fatos{background:var(--papel);border-bottom:1px solid var(--sal)}
+.fatos ul{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+.fatos li{display:flex;align-items:center;gap:14px;padding:26px 24px;border-left:1px solid var(--sal);font-size:14px;line-height:1.45}
+.fatos li:first-child{border-left:0;padding-left:0}
+.fatos .ico{width:28px;height:28px;color:var(--vinho-4);stroke-width:1.4}
+.fatos b{display:block;font-weight:600;color:var(--vinho)}
+
+/* ---------- seções ---------- */
+.secao{padding:104px 0}
+.secao.clara{background:var(--papel)}
+.secao.rebaixada{background:var(--sal-2)}
+.sec-cab{max-width:720px}
+.sec-cab h2{margin-top:12px;font-size:clamp(34px,3.6vw,48px);color:var(--vinho)}
+.sec-cab p.lede{margin-top:22px;font-size:17px;color:var(--tinta-2);max-width:60ch}
+.sec-cab.centro{margin:0 auto;text-align:center}
+.sec-cab.centro .fio{margin-left:auto;margin-right:auto}
+
+/* dores */
+.dores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:56px}
+.dor{background:var(--papel);border-radius:var(--raio-g);padding:30px 28px;box-shadow:0 1px 0 var(--sal-2),0 18px 40px -34px rgba(105,39,70,.5)}
+.secao.clara .dor{background:var(--sal-2);box-shadow:none}
+.dor .disco{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--vinho);color:var(--ambar-3)}
+.dor h3{margin-top:22px;font-size:24px;color:var(--vinho)}
+.dor p{margin-top:10px;font-size:15px;color:var(--tinta-2)}
+
+/* caminho (jornada em 5 passos) */
+.caminho{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-top:64px;counter-reset:passo}
+.caminho li{position:relative;padding:0 18px 0 0}
+.caminho li::before{content:"";position:absolute;left:64px;right:0;top:31px;height:2px;background:var(--ambar)}
+.caminho li:last-child::before{display:none}
+.caminho .disco{position:relative;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-family:var(--serifa);font-size:28px;font-weight:500;line-height:1;background:var(--vinho);color:var(--papel)}
+.caminho li:nth-child(2) .disco{background:var(--vinho-2)}
+.caminho li:nth-child(3) .disco{background:var(--ambar);color:var(--tinta)}
+.caminho li:nth-child(4) .disco{background:var(--ambar-2);color:var(--tinta)}
+.caminho li:nth-child(5) .disco{background:var(--ambar-3);color:var(--vinho)}
+.caminho h3{margin-top:22px;font-size:22px;color:var(--vinho)}
+.caminho p{margin-top:8px;font-size:14.5px;color:var(--tinta-2);max-width:26ch}
+.caminho-pe{margin-top:40px}
+
+/* recursos */
+.legenda{display:flex;flex-wrap:wrap;gap:12px 22px;margin-top:30px;font-size:13.5px;color:var(--tinta-2)}
+.legenda li{display:flex;align-items:center;gap:10px}
+.recursos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:40px}
+.recurso{display:flex;flex-direction:column;gap:12px;background:var(--papel);border:1px solid var(--sal);border-radius:var(--raio-g);padding:28px 26px 24px}
+.secao.clara .recurso{background:var(--papel);border-color:var(--sal)}
+.recurso .topo-r{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.recurso .ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.recurso h3{font-size:23px;color:var(--vinho);margin-top:6px}
+.recurso p{font-size:14.5px;color:var(--tinta-2)}
+.recurso ul.itens{display:grid;gap:6px;margin-top:2px;font-size:14px}
+.recurso ul.itens li{display:flex;gap:8px;align-items:flex-start}
+.recurso ul.itens .ico{width:16px;height:16px;color:var(--vinho-4);margin-top:4px}
+.recurso .falta{margin-top:auto;padding-top:12px;border-top:1px dashed var(--vinho-4);font-size:13px;color:var(--tinta-2)}
+.recurso .falta b{color:var(--tinta);font-weight:600}
+.st{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:14px;font-size:12.5px;font-weight:500;white-space:nowrap}
+.st .ico{width:15px;height:15px}
+.st-pronto{background:var(--papel);color:var(--vinho);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.st-prep{background:var(--ambar-3);color:var(--vinho-escuro)}
+.st-plan{background:var(--sal-2);color:var(--tinta-2);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.st-plan .ico{stroke-dasharray:none}
+
+/* planejado */
+.planejado{margin-top:48px;border:1.5px dashed var(--vinho-4);border-radius:var(--raio-g);padding:30px 32px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:32px;background:transparent}
+.planejado h3{font-size:26px;color:var(--vinho)}
+.planejado .sub{margin-top:10px;font-size:14.5px;color:var(--tinta-2)}
+.planejado ul{display:grid;grid-template-columns:1fr 1fr;gap:12px 28px}
+.planejado li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px}
+.planejado li .ico{width:18px;height:18px;color:var(--vinho-4);margin-top:3px}
+
+/* faixa vinho: dados */
+.faixa-vinho{position:relative;isolation:isolate;overflow:hidden;background:var(--vinho);color:var(--sal);padding:96px 0}
+.faixa-vinho::after{content:"";position:absolute;inset:0;z-index:-1;opacity:.35;mix-blend-mode:soft-light;background-image:var(--grao)}
+.faixa-vinho .estatua{position:absolute;right:4%;top:48px;width:300px;height:300px;color:var(--vinho-2);stroke-width:.8;z-index:-1}
+.faixa-vinho .sobretitulo{color:var(--ambar-2)}
+.faixa-vinho h2{margin-top:12px;font-size:clamp(34px,3.6vw,46px);color:var(--papel);max-width:20ch}
+.faixa-vinho .lede{margin-top:20px;font-size:17px;max-width:58ch}
+.dados{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 36px;margin-top:52px}
+.dados li{display:grid;grid-template-columns:48px minmax(0,1fr);gap:16px;align-items:start}
+.dados .bola{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--vinho-2);color:var(--ambar-3)}
+.dados b{display:block;font-family:var(--serifa);font-size:21px;font-weight:500;color:var(--papel);line-height:1.2}
+.dados span{display:block;margin-top:6px;font-size:14px;color:var(--ambar-3)}
+
+/* preço */
+.preco{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+.preco .cartao-p{background:var(--papel);border-radius:var(--raio-g);box-shadow:var(--sombra);padding:36px 36px 32px;position:relative;overflow:hidden}
+.preco .cartao-p::before{content:"";position:absolute;right:0;top:0;width:120px;height:8px;background:var(--vinho)}
+.preco .cartao-p::after{content:"";position:absolute;right:120px;top:0;width:40px;height:8px;background:var(--ambar)}
+.preco .cartao-p h3{font-size:30px;color:var(--vinho)}
+.preco .cartao-p p{margin-top:12px;color:var(--tinta-2);font-size:15px}
+.preco .cartao-p ul{margin-top:18px;display:grid;gap:10px;font-size:14.5px}
+.preco .cartao-p li{display:flex;gap:10px}
+.preco .cartao-p li .ico{width:18px;height:18px;color:var(--vinho);margin-top:3px}
+.preco .cartao-p .btn{margin-top:26px}
+
+/* chamada final (campo âmbar com padrão vinho) */
+.chamada{position:relative;isolation:isolate;overflow:hidden;background:var(--ambar);padding:88px 0}
+.chamada::before{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--padrao);background-size:128px 128px;opacity:.5;-webkit-mask-image:linear-gradient(90deg,transparent 30%,#000 75%);mask-image:linear-gradient(90deg,transparent 30%,#000 75%)}
+.chamada .miolo{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;align-items:center}
+.chamada .sobretitulo{color:var(--vinho-escuro)}
+.chamada h2{margin-top:12px;font-size:clamp(34px,3.6vw,48px);color:var(--vinho)}
+.chamada p.lede{margin-top:18px;font-size:16.5px;color:var(--tinta);max-width:48ch}
+.chamada .cartao-c{background:var(--papel);border-radius:var(--raio-g);box-shadow:var(--sombra);padding:30px;display:grid;gap:14px}
+.chamada .cartao-c .btn{width:100%}
+.chamada .cartao-c .ou{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--tinta-2)}
+.chamada .cartao-c .ou .ico{width:18px;height:18px;color:var(--vinho-4)}
+
+/* ---------- páginas internas ---------- */
+.abertura.interna .lado{clip-path:polygon(0 0,100% 0,100% 78%,0 100%)}
+.abertura.interna .estatua{left:auto;right:6%;top:70px;width:260px;height:260px}
+.cab-int{padding-top:36px;padding-bottom:120px;color:var(--sal);max-width:780px}
+.cab-int .sobretitulo{color:var(--ambar-2)}
+.cab-int h1{margin-top:14px;font-size:clamp(42px,4.6vw,62px);color:var(--papel);line-height:1.05}
+.cab-int h1 i{font-style:italic;color:var(--ambar-3)}
+.cab-int .lede{margin-top:22px;font-size:17px;max-width:56ch}
+.trilha-int{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ambar-2);margin-bottom:6px}
+.trilha-int a{color:var(--ambar-3)}
+
+/* passo detalhado (como funciona) */
+.passo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:72px;align-items:center;padding:88px 0;border-top:1px solid var(--sal-2)}
+.passo:first-of-type{border-top:0}
+.passo.inv .p-texto{order:2}
+.p-num{display:flex;align-items:center;gap:16px}
+.p-num .disco{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-family:var(--serifa);font-size:26px;line-height:1;background:var(--vinho);color:var(--papel)}
+.p-texto h2{margin-top:22px;font-size:clamp(32px,3.2vw,42px);color:var(--vinho)}
+.p-texto .lede{margin-top:16px;font-size:16.5px;color:var(--tinta-2)}
+.p-texto ul.itens{margin-top:22px;display:grid;gap:10px;font-size:15px}
+.p-texto ul.itens li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px}
+.p-texto ul.itens .ico{width:20px;height:20px;color:var(--vinho);margin-top:3px}
+.p-texto ul.itens li.p-plan .ico{color:var(--vinho-4)}
+.p-texto ul.itens li.p-plan span{color:var(--tinta-2)}
+.p-texto .st-linha{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.p-fig{position:relative}
+.p-fig .fundo{position:absolute;inset:22px -14px -18px 22px;border-radius:var(--raio-g);background:var(--ambar);transform:rotate(-2.5deg);overflow:hidden}
+.p-fig .fundo::before{content:"";position:absolute;inset:0;background-image:var(--padrao);background-size:128px 128px;opacity:.5}
+.p-fig .fundo.vinho{background:var(--vinho)}
+.p-fig .fundo.vinho::before{opacity:.18;filter:invert(1)}
+.p-fig .fundo.sal{background:var(--ambar-3)}
+.p-fig .demo{z-index:1}
+
+/* conversa de WhatsApp (ilustração) */
+.conversa{display:grid;gap:10px;margin-top:16px}
+.balao{max-width:86%;padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.5}
+.balao small{display:block;font-size:11.5px;color:var(--tinta-2);margin-top:4px}
+.balao.cli{background:var(--sal-2);border-top-left-radius:4px}
+.balao.ia{justify-self:end;background:var(--ambar-3);border-top-right-radius:4px}
+.balao.ia .quem{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--vinho-escuro);margin-bottom:2px}
+.balao.ia .quem .ico{width:14px;height:14px}
+.passagem{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--papel);box-shadow:inset 0 0 0 1px var(--vinho-4);font-size:13px}
+.passagem .ico{width:18px;height:18px;color:var(--vinho);margin-top:1px}
+.passagem b{font-weight:600}
+
+/* honorários (ilustração) */
+.linhas{margin-top:14px;display:grid}
+.linhas>div{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--sal);font-size:13.5px}
+.linhas>div:first-child{border-top:0}
+.linhas dt{color:var(--tinta-2)}
+.linhas dd{font-weight:600;text-align:right;white-space:nowrap}
+.linhas .tot{border-top:2px solid var(--vinho)}
+.linhas .tot dd{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho)}
+.parcelas{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:14px}
+.parcelas span{height:38px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--sal-2);color:var(--tinta-2)}
+.parcelas span.paga{background:var(--vinho);color:var(--papel)}
+.parcelas span.hoje{background:var(--ambar);color:var(--tinta)}
+.carne-mini{display:grid;grid-template-columns:86px minmax(0,1fr);gap:14px;align-items:center;margin-top:14px;padding:14px;border:1.5px dashed var(--vinho-4);border-radius:12px}
+.carne-mini .qr{width:86px;height:86px;border-radius:8px;background:var(--sal-2);display:grid;place-items:center;color:var(--vinho)}
+.carne-mini .qr .ico{width:52px;height:52px;stroke-width:1.2}
+.carne-mini b{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho)}
+.carne-mini small{display:block;font-size:12px;color:var(--tinta-2)}
+
+/* áreas por pessoa (ilustração) */
+.pessoas-areas{margin-top:14px;width:100%;border-collapse:collapse;font-size:13px}
+.pessoas-areas th,.pessoas-areas td{padding:10px 6px;border-top:1px solid var(--sal);text-align:center}
+.pessoas-areas th:first-child,.pessoas-areas td:first-child{text-align:left}
+.pessoas-areas thead th{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta-2);border-top:0}
+.pessoas-areas td .ico{width:18px;height:18px;color:var(--vinho)}
+.pessoas-areas td.nao{color:var(--tinta-2)}
+
+/* como começar */
+.comecar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:52px}
+.comecar li{background:var(--papel);border-radius:var(--raio-g);padding:26px 24px;display:grid;gap:10px;align-content:start}
+.comecar .disco{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--serifa);font-size:21px;background:var(--ambar-3);color:var(--vinho)}
+.comecar h3{font-size:21px;color:var(--vinho)}
+.comecar p{font-size:14px;color:var(--tinta-2)}
+
+/* para quem é */
+.perfil{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:52px}
+.perfil li{background:var(--papel);border-radius:var(--raio-g);padding:30px 28px;box-shadow:0 18px 40px -34px rgba(105,39,70,.5)}
+.perfil .grande{font-family:var(--serifa);font-size:46px;line-height:1;color:var(--vinho);font-weight:500}
+.perfil h3{margin-top:14px;font-size:22px;color:var(--vinho)}
+.perfil p{margin-top:8px;font-size:14.5px;color:var(--tinta-2)}
+.encaixe{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:52px}
+.encaixe section{border-radius:var(--raio-g);padding:30px 30px 26px}
+.encaixe .sim{background:var(--papel);box-shadow:var(--sombra)}
+.encaixe .nao{border:1.5px dashed var(--vinho-4)}
+.encaixe h3{font-size:25px;color:var(--vinho)}
+.encaixe ul{margin-top:18px;display:grid;gap:12px;font-size:15px}
+.encaixe li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px}
+.encaixe li .ico{width:20px;height:20px;margin-top:3px}
+.encaixe .sim li .ico{color:var(--vinho)}
+.encaixe .nao li .ico{color:var(--vinho-4)}
+.perguntas{margin-top:44px;display:grid;gap:12px;max-width:860px}
+.perguntas details{background:var(--papel);border-radius:var(--raio);border:1px solid var(--sal)}
+.perguntas summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;padding:14px 22px;cursor:pointer;font-family:var(--serifa);font-size:20px;color:var(--vinho);list-style:none}
+.perguntas summary::-webkit-details-marker{display:none}
+.perguntas summary .ico{width:20px;height:20px;transition:transform .15s}
+.perguntas details[open] summary .ico{transform:rotate(90deg)}
+.perguntas details p{padding:0 22px 20px;font-size:15px;color:var(--tinta-2);max-width:70ch}
+
+/* ---------- demonstração (formulário) ---------- */
+.dem-grade{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:56px;align-items:start;margin-top:-88px;position:relative;z-index:2;padding-bottom:104px}
+.form-cartao{background:var(--papel);border-radius:var(--raio-g);box-shadow:var(--sombra);padding:36px 36px 32px;position:relative}
+.form-cartao::before{content:"";position:absolute;right:0;top:0;width:120px;height:8px;background:var(--vinho);border-top-right-radius:var(--raio-g)}
+.form-cartao::after{content:"";position:absolute;right:120px;top:0;width:40px;height:8px;background:var(--ambar)}
+.form-cartao h2{font-size:30px;color:var(--vinho)}
+.form-cartao .sub{margin-top:8px;font-size:14px;color:var(--tinta-2)}
+.form-d{display:grid;grid-template-columns:1fr 1fr;gap:20px 20px;margin-top:26px}
+.campo{display:grid;gap:6px;align-content:start;min-width:0}
+.campo.inteiro{grid-column:1/-1}
+.campo label,.campo legend{font-size:14px;font-weight:500;color:var(--tinta)}
+.campo .opc{font-weight:400;color:var(--tinta-2)}
+.entrada{width:100%;min-height:50px;padding:12px 14px;border-radius:var(--raio);border:1.5px solid var(--vinho-4);background:var(--papel);font:400 15px/1.4 var(--sans);color:var(--tinta)}
+.entrada::placeholder{color:#8A7480}
+.entrada:hover{border-color:var(--vinho-2)}
+.entrada:focus{outline:3px solid var(--vinho-3);outline-offset:1px;border-color:var(--vinho)}
+textarea.entrada{min-height:104px;resize:vertical}
+select.entrada{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%23692746' stroke-width='1.6'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:44px}
+.entrada[aria-invalid="true"]{border-color:var(--vinho-3);box-shadow:inset 0 0 0 1px var(--vinho-3)}
+.entrada[readonly]{background:var(--sal-2);color:var(--tinta-2)}
+.ajuda{font-size:12.5px;color:var(--tinta-2);line-height:1.45}
+.erro-msg{display:flex;gap:6px;align-items:flex-start;font-size:13px;color:var(--vinho-3);font-weight:500;line-height:1.45}
+.erro-msg .ico{width:16px;height:16px;margin-top:2px}
+fieldset.campo{border:0;padding:0;margin:0}
+.tamanhos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
+.tamanhos label{position:relative;display:grid;place-items:center;min-height:50px;border-radius:var(--raio);border:1.5px solid var(--vinho-4);font-size:14px;font-weight:500;color:var(--tinta);cursor:pointer;text-align:center;padding:4px 6px;line-height:1.2}
+.tamanhos input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.tamanhos label:has(input:checked){background:var(--vinho);border-color:var(--vinho);color:var(--papel)}
+.tamanhos label:has(input:focus-visible){outline:3px solid var(--vinho-3);outline-offset:2px}
+.tamanhos.erro label{border-color:var(--vinho-3)}
+.aceite{grid-column:1/-1;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;padding:16px;border-radius:var(--raio);background:var(--sal-2)}
+.aceite input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--vinho)}
+.aceite label{font-size:13.5px;line-height:1.55;color:var(--tinta);font-weight:400}
+.aceite.erro{box-shadow:inset 0 0 0 1.5px var(--vinho-3);background:#FBF1F4}
+.aceite .erro-msg{grid-column:2}
+.isca{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.form-pe{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:16px 20px;margin-top:4px}
+.form-pe .btn{min-width:260px}
+.form-pe small{font-size:12.5px;color:var(--tinta-2);flex:1;min-width:200px}
+.btn[aria-busy="true"]{background:var(--vinho-2);cursor:progress}
+.giro{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:var(--papel);animation:giro 1s linear infinite}
+@keyframes giro{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.giro{animation:none;border-top-color:rgba(255,255,255,.35);border-right-color:var(--papel)}}
+.aviso{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;padding:16px 18px;border-radius:var(--raio);font-size:14px;line-height:1.5;margin-top:22px}
+.aviso .ico{color:currentColor;margin-top:1px}
+.aviso b{display:block;font-weight:600}
+.aviso-erro{background:#FBF1F4;color:var(--tinta);box-shadow:inset 4px 0 0 var(--vinho-3)}
+.aviso-erro .ico{color:var(--vinho-3)}
+.aviso-erro a{color:var(--vinho)}
+.sucesso{display:grid;gap:16px;justify-items:start;padding:8px 0 4px}
+.sucesso .disco{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--vinho);color:var(--ambar-3)}
+.sucesso .disco .ico{width:30px;height:30px}
+.sucesso h2{font-size:34px}
+.sucesso p{font-size:15px;color:var(--tinta-2);max-width:52ch}
+.sucesso .resumo{width:100%;margin-top:4px;padding:16px 18px;border-radius:var(--raio);background:var(--sal-2);display:grid;gap:6px;font-size:14px}
+.sucesso .resumo div{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sucesso .resumo dt{color:var(--tinta-2)}
+.sucesso .resumo dd{font-weight:500;overflow-wrap:anywhere}
+.lado-d{display:grid;gap:24px;padding-top:120px}
+.lado-d h2{font-size:28px;color:var(--vinho)}
+.depois-lista{display:grid;gap:18px;margin-top:18px}
+.depois-lista li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px}
+.depois-lista .disco{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--serifa);font-size:20px;background:var(--ambar-3);color:var(--vinho)}
+.depois-lista b{display:block;font-weight:600;font-size:15px}
+.depois-lista span{display:block;font-size:14px;color:var(--tinta-2)}
+.caixa-d{border-radius:var(--raio-g);padding:22px 24px;background:var(--papel);display:grid;gap:8px;font-size:14px}
+.caixa-d h3{font-size:20px;color:var(--vinho)}
+.caixa-d p{color:var(--tinta-2)}
+.caixa-d .btn{justify-self:start;margin-top:6px}
+
+/* ---------- tablet e celular ---------- */
+@media (max-width:1020px){
+  :root{--gut:24px}
+  .abertura{background:var(--sal)}
+  .abertura .lado{clip-path:none;bottom:auto;height:var(--alt-vinho,62%)}
+  .abertura .estatua{display:none}
+  .fita{display:none}
+  .heroi{grid-template-columns:1fr;gap:20px;padding-top:24px;padding-bottom:56px}
+  .heroi .texto{max-width:none;padding-bottom:64px;position:relative}
+  .abertura.inicio .lado{height:auto;bottom:0;clip-path:polygon(0 0,100% 0,100% calc(var(--corte,56%) - 40px),0 var(--corte,56%))}
+  .folhas{max-width:520px;padding:0 8px}
+  .folhas .selo-marca{display:none}
+  .fatos ul{grid-template-columns:1fr 1fr}
+  .fatos li{padding:20px 16px 20px 0;border-left:0;border-top:1px solid var(--sal)}
+  .fatos li:nth-child(-n+2){border-top:0}
+  .secao{padding:72px 0}
+  .dores,.recursos,.perfil{grid-template-columns:1fr 1fr}
+  .caminho{grid-template-columns:1fr;gap:0}
+  .caminho li{display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:18px;padding:0 0 28px}
+  .caminho li::before{left:31px;top:64px;bottom:0;right:auto;width:2px;height:auto}
+  .caminho h3{margin-top:4px;grid-column:2}
+  .caminho p{grid-column:2;max-width:none}
+  .caminho .disco{grid-row:span 2}
+  .planejado{grid-template-columns:1fr;gap:20px}
+  .dados{grid-template-columns:1fr 1fr}
+  .preco,.chamada .miolo{grid-template-columns:1fr}
+  .passo{grid-template-columns:minmax(0,1fr);gap:40px;padding:64px 0}
+  .passo.inv .p-texto{order:0}
+  .comecar{grid-template-columns:1fr 1fr}
+  .encaixe{grid-template-columns:1fr}
+  .abertura.interna .lado{clip-path:polygon(0 0,100% 0,100% calc(100% - 36px),0 100%);height:auto;bottom:0}
+  .cab-int{padding-bottom:110px}
+  .dem-grade{grid-template-columns:1fr;gap:40px}
+  .lado-d{padding-top:0}
+}
+@media (max-width:640px){
+  :root{--gut:16px}
+  body{font-size:15px}
+  .heroi h1{font-size:40px}
+  .heroi .lede,.cab-int .lede{font-size:15.5px}
+  .heroi .acoes .btn{width:100%}
+  .heroi .texto{padding-bottom:56px}
+  .demo{padding:20px 18px 16px}
+  .demo-cab{flex-direction:column;gap:8px}
+  .fatos ul{grid-template-columns:1fr}
+  .fatos li{border-top:1px solid var(--sal)!important;padding:16px 0}
+  .fatos li:first-child{border-top:0!important}
+  .secao{padding:60px 0}
+  .sec-cab h2{font-size:32px}
+  .sec-cab p.lede{font-size:15.5px}
+  .dores,.recursos,.perfil,.dados,.comecar{grid-template-columns:1fr}
+  .dores{margin-top:36px}
+  .planejado{padding:24px 20px}
+  .planejado ul{grid-template-columns:1fr}
+  .faixa-vinho{padding:64px 0}
+  .faixa-vinho .estatua{width:160px;height:160px;top:24px;right:-20px}
+  .chamada{padding:60px 0}
+  .preco .cartao-p{padding:28px 22px}
+  .preco .cartao-p .btn,.caixa-d .btn{width:100%}
+  .cab-int{padding-bottom:100px}
+  .cab-int h1{font-size:38px}
+  .p-fig .fundo{inset:14px -4px -12px 12px}
+  .p-fig{overflow:visible;margin-right:4px}
+  .form-cartao{padding:28px 20px 24px}
+  .form-d{grid-template-columns:1fr}
+  .tamanhos{grid-template-columns:1fr 1fr}
+  .form-pe .btn{width:100%;min-width:0}
+  .parcelas span{height:32px;font-size:11px}
+  .perguntas summary{font-size:18px;padding:12px 16px}
+  .perguntas details p{padding:0 16px 16px}
+  .pessoas-areas{font-size:12px}.pessoas-areas thead th{font-size:9.5px;letter-spacing:0}.pessoas-areas th,.pessoas-areas td{padding:8px 2px}
+}
+
+/* Planos e preços (desenho para a Carol aprovar, 27/11/2026).
+   Vem depois de site.css e paginas.css, que são usados sem mudança. As peças que vêm do Início
+   (legenda e grade dos itens prontos, bloco âmbar com o selo, entrada das seções com data-revelar)
+   estão copiadas aqui com nomes próprios; no código, a regra do data-revelar sai de inicio.css para site.css. */
+:root{--facil:cubic-bezier(.2,.7,.2,1)}
+
+/* ---------- abertura: linha de fatos sobre o vinho ---------- */
+.cab-int.precos-cab{padding-bottom:150px}
+.fatos-ab{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:28px}
+.fatos-ab a{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 16px 0 12px;border-radius:999px;color:var(--sal);text-decoration:none;font-size:14.5px;box-shadow:inset 0 0 0 1px rgba(233,174,144,.45);background:rgba(79,29,53,.35)}
+.fatos-ab a:hover{background:rgba(242,205,179,.12)}
+.fatos-ab .ico{width:18px;height:18px;color:var(--ambar-2)}
+
+/* ---------- os três planos (folhas brancas que sobem sobre o corte) ---------- */
+.planos-sec{position:relative;z-index:2;margin-top:-104px;padding-bottom:88px}
+.planos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.plano{position:relative;display:flex;flex-direction:column;background:var(--papel);border-radius:var(--raio-g);box-shadow:var(--sombra);padding:34px 32px 28px}
+.plano .fio{width:44px;margin-top:14px}
+.plano h3{font-size:30px;color:var(--vinho)}
+.plano .valor{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:18px;font-family:var(--serifa);color:var(--vinho);line-height:1}
+.plano .valor .rs{font-size:26px;font-weight:500}
+.plano .valor b{font-size:68px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:lining-nums}
+.plano .valor .mes{font-family:var(--sans);font-size:16px;color:var(--tinta-2)}
+.plano .incl{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:18px;font-weight:500;color:var(--tinta)}
+.plano .incl .ico{color:var(--vinho)}
+.plano .mais-conta{margin-top:18px;padding:12px 14px;border-radius:var(--raio);background:var(--sal-2);font-size:14px;line-height:1.5;color:var(--tinta-2)}
+.plano .mais-conta b{font-weight:600;color:var(--tinta)}
+.plano .extra{margin-top:12px;font-size:14px;color:var(--tinta-2)}
+.plano .acao{margin-top:auto;padding-top:24px;display:grid;gap:10px}
+.plano .acao .btn{width:100%}
+.plano .acao .escreva{font-size:13.5px;color:var(--tinta-2);text-align:center}
+.plano .acao .escreva span{color:var(--tinta);font-weight:500;user-select:all}
+.planos-pe{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 32px;margin-top:32px;padding:20px 24px;border-radius:var(--raio-g);box-shadow:inset 0 0 0 1px #E6D8D0}
+.planos-pe p{font-size:15px;color:var(--tinta-2);max-width:68ch}
+.planos-pe p b{color:var(--tinta);font-weight:500}
+.planos-pe .link-seta{white-space:nowrap}
+
+/* ---------- quanto fica para a sua equipe (tabela fixa) ---------- */
+.tabela-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:64px;align-items:start}
+.tabela-grade .sec-cab p.lede{max-width:46ch}
+.nota-i{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;margin-top:28px;padding:18px 20px;border-radius:var(--raio);background:var(--sal-2);font-size:14.5px;color:var(--tinta);max-width:52ch}
+.nota-i .ico{color:var(--vinho);margin-top:1px}
+.nota-i b{font-weight:600}
+.folha-t{background:var(--papel);border-radius:var(--raio-g);box-shadow:0 0 0 1px #E6D8D0,0 24px 50px -36px rgba(105,39,70,.5);padding:8px 28px 22px}
+.secao.clara .folha-t{box-shadow:0 0 0 1px #E6D8D0}
+.t-pessoas{width:100%;border-collapse:collapse;font-size:15px}
+.t-pessoas caption{caption-side:top;text-align:left;padding:18px 0 10px;font-size:13.5px;color:var(--tinta-2)}
+.t-pessoas th,.t-pessoas td{padding:0 8px;height:48px;border-top:1px solid var(--sal);text-align:left;vertical-align:middle}
+.t-pessoas th:first-child,.t-pessoas td:first-child{padding-left:0}
+.t-pessoas th:last-child,.t-pessoas td:last-child{padding-right:0;text-align:right}
+.t-pessoas thead th{height:40px;font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-2);border-top:0}
+.t-pessoas tbody th{font-weight:500;color:var(--tinta);white-space:nowrap}
+.t-pessoas td.v{font-family:var(--serifa);font-size:20px;font-weight:500;color:var(--vinho);white-space:nowrap;font-variant-numeric:lining-nums tabular-nums}
+.t-pessoas td.p span{color:var(--tinta-2)}
+.t-pessoas tr.vira th,.t-pessoas tr.vira td{border-top:2px solid var(--vinho-4)}
+.t-pessoas tr.vira td.p b{font-weight:600;color:var(--vinho)}
+.t-pessoas td.p b{font-weight:500}
+.t-pessoas tr.ult td.v{font-family:var(--sans);font-size:14px;font-weight:500}
+.desc-t{margin-top:18px;padding-top:16px;border-top:1px dashed var(--vinho-4);font-size:14px;color:var(--tinta-2);line-height:1.55}
+.desc-t b{color:var(--tinta);font-weight:600}
+
+/* ---------- o que todo plano inclui (itens e selos iguais aos do Início) ---------- */
+.legenda-p{display:flex;flex-wrap:wrap;gap:12px 28px;margin-top:36px;font-size:14.5px;color:var(--tinta-2)}
+.legenda-p li{display:flex;align-items:center;gap:10px}
+.inclui{background:var(--papel);border-radius:24px;padding:40px;margin-top:32px;box-shadow:0 0 0 1px #E6D8D0}
+.inclui h3{display:flex;align-items:center;flex-wrap:wrap;gap:14px;font-size:28px;color:var(--vinho-escuro)}
+.grade-incl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px 36px;margin-top:30px}
+.grade-incl li{display:flex;gap:14px}
+.grade-incl .ic{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--sal-2);color:var(--vinho)}
+.grade-incl b{display:block;font-weight:500;font-size:16px;line-height:1.35;color:var(--tinta)}
+.grade-incl span span{display:block;font-size:14.5px;color:var(--tinta-2);line-height:1.5;margin-top:4px}
+.prep-p{margin-top:24px;border-radius:24px;padding:32px 40px;background:var(--sal-2);box-shadow:inset 0 0 0 1px #E6D8D0}
+.prep-p h3{display:flex;align-items:center;flex-wrap:wrap;gap:14px;font-size:24px;color:var(--vinho-escuro)}
+.prep-p ul{display:grid;grid-template-columns:1fr 1fr;gap:20px 40px;margin-top:20px}
+.prep-p b{display:block;font-weight:500;font-size:16px;color:var(--tinta)}
+.prep-p p{font-size:14.5px;color:var(--tinta-2);margin-top:4px;line-height:1.55}
+.prep-p p strong{font-weight:600;color:var(--tinta)}
+.incl-pe{margin-top:22px;font-size:14.5px;color:var(--tinta-2)}
+.incl-pe a{display:inline-flex;align-items:center;min-height:44px;font-weight:500}
+
+/* ---------- teste de 7 dias ---------- */
+.passos-t{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:44px}
+.passos-t li{background:var(--sal-2);border-radius:var(--raio-g);padding:28px 26px;display:grid;gap:10px;align-content:start}
+.secao:not(.clara) .passos-t li{background:var(--papel)}
+.passos-t .disco{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-family:var(--serifa);font-size:22px;background:var(--vinho);color:var(--papel)}
+.passos-t h3{font-size:22px;color:var(--vinho);margin-top:6px}
+.passos-t p{font-size:14.5px;color:var(--tinta-2)}
+.nota-pe{margin-top:24px;font-size:14px;color:var(--tinta-2);max-width:80ch}
+
+/* ---------- implantação assistida ---------- */
+.impl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:center}
+.impl .sec-cab p.lede{max-width:50ch}
+.valor-impl{position:relative;background:var(--papel);border-radius:var(--raio-g);box-shadow:var(--sombra);padding:32px 32px 28px}
+.valor-impl::before{content:"";position:absolute;right:0;top:0;width:120px;height:8px;background:var(--vinho);border-top-right-radius:var(--raio-g)}
+.valor-impl::after{content:"";position:absolute;right:120px;top:0;width:40px;height:8px;background:var(--ambar)}
+.valor-impl h3{font-size:26px;color:var(--vinho)}
+.valor-impl dl{margin-top:14px}
+.valor-impl dl>div{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 0;border-top:1px solid var(--sal)}
+.valor-impl dl>div:first-child{border-top:0}
+.valor-impl dt{color:var(--tinta-2);font-size:15px}
+.valor-impl dd{font-family:var(--serifa);font-size:24px;font-weight:500;color:var(--vinho);white-space:nowrap}
+.valor-impl dl>div.gratis{border-top:2px solid var(--vinho)}
+.valor-impl dl>div.gratis dt{color:var(--tinta);font-weight:500}
+.valor-impl .cond{margin-top:8px;display:grid;gap:8px;font-size:14px;color:var(--tinta-2)}
+.valor-impl .cond li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px}
+.valor-impl .cond .ico{width:18px;height:18px;color:var(--vinho-4);margin-top:2px}
+.lista-impl{margin-top:24px;display:grid;gap:10px;font-size:15px}
+.lista-impl li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px}
+.lista-impl .ico{width:20px;height:20px;color:var(--vinho);margin-top:2px}
+
+/* ---------- desconto de entrada (uma faixa só) ---------- */
+.desc-faixa{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:0;margin-top:40px;background:var(--papel);border-radius:var(--raio-g);box-shadow:0 0 0 1px #E6D8D0;overflow:hidden}
+.desc-faixa>div{padding:28px 28px 26px;border-left:1px solid var(--sal)}
+.desc-faixa>div:first-child{border-left:0;background:var(--ambar-3)}
+.desc-faixa .pct{font-family:var(--serifa);font-size:54px;line-height:1;color:var(--vinho);font-weight:500}
+.desc-faixa h3{margin-top:10px;font-size:22px;color:var(--vinho)}
+.desc-faixa p{margin-top:8px;font-size:14.5px;color:var(--tinta-2)}
+.desc-faixa .ex-t{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho-escuro)}
+.desc-faixa .ex-v{margin-top:12px;font-size:15px;color:var(--tinta);line-height:1.55}
+.desc-faixa .ex-v b{font-family:var(--serifa);font-size:22px;font-weight:500;color:var(--vinho-escuro)}
+.desc-faixa>div:first-child p{color:var(--tinta)}
+
+/* ---------- como você paga e o que pode mudar ---------- */
+.paga{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:24px;margin-top:44px}
+.caixa-pg{background:var(--papel);border-radius:var(--raio-g);padding:30px 30px 26px;box-shadow:0 0 0 1px #E6D8D0}
+.secao.clara .caixa-pg{background:var(--sal-2);box-shadow:none}
+.caixa-pg h3{font-size:24px;color:var(--vinho)}
+.caixa-pg ul{margin-top:16px;display:grid;gap:16px}
+.caixa-pg li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;font-size:15px;color:var(--tinta-2)}
+.caixa-pg li .ico{color:var(--vinho);margin-top:1px}
+.caixa-pg li b{display:block;color:var(--tinta);font-weight:600}
+.meta-pg{margin-top:24px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:start;border-radius:var(--raio-g);padding:26px 30px;background:var(--papel);box-shadow:inset 0 0 0 1.5px var(--ambar-2)}
+.secao.clara .meta-pg{background:var(--papel)}
+.meta-pg .bola{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--ambar-3);color:var(--vinho)}
+.meta-pg h3{display:flex;align-items:center;flex-wrap:wrap;gap:12px;font-size:22px;color:var(--vinho)}
+.meta-pg p{margin-top:8px;font-size:15px;color:var(--tinta-2);max-width:80ch}
+.meta-pg p b{color:var(--tinta);font-weight:600}
+.pg-pe{margin-top:22px;font-size:14px;color:var(--tinta-2)}
+
+/* perguntas: o mesmo .perguntas de Para quem é */
+.perguntas details p+p{margin-top:-8px}
+
+/* ---------- chamada final: o bloco âmbar do Início, com o selo inteiro ---------- */
+.cham{padding:96px 0}
+.cham-bloco{position:relative;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:56px;align-items:center;border-radius:32px;padding:64px 64px;background:var(--ambar);color:var(--tinta);isolation:isolate;overflow:hidden}
+.cham-bloco::before{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--padrao);background-size:128px 128px;opacity:.42;-webkit-mask-image:linear-gradient(90deg,transparent 52%,#000 92%);mask-image:linear-gradient(90deg,transparent 52%,#000 92%)}
+.cham-bloco.sem-padrao::before{background:radial-gradient(60% 80% at 0% 0%,rgba(242,205,179,.6),transparent 60%);opacity:1;-webkit-mask-image:none;mask-image:none}
+.cham-bloco .sobretitulo{color:var(--vinho-escuro)}
+.cham-bloco h2{margin-top:14px;font-size:clamp(34px,3.8vw,50px);color:var(--vinho-escuro)}
+.cham-bloco .txt{margin-top:18px;font-size:17px;color:var(--tinta);max-width:46ch}
+.cham-bloco .acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.cham-bloco .ou{margin-top:16px;font-size:15px;color:var(--tinta);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cham-bloco .ou a{color:var(--vinho-escuro);font-weight:600;display:inline-flex;align-items:center;min-height:44px}
+.cham-bloco .ou .ico{width:18px;height:18px;color:var(--vinho-escuro)}
+.selo-cham{display:block;width:120px;height:120px;margin-top:28px}
+.cartao-cham{background:var(--papel);border-radius:20px;padding:32px;box-shadow:0 30px 60px -30px rgba(79,29,53,.55)}
+.cartao-cham h3{font-size:24px;color:var(--vinho-escuro)}
+.cartao-cham ul{margin-top:16px;display:grid;gap:12px;font-size:15.5px}
+.cartao-cham li{display:flex;gap:12px}
+.cartao-cham .ico{width:20px;height:20px;margin-top:2px;color:var(--vinho);stroke-width:2}
+.cartao-cham .resp{margin-top:18px;padding-top:16px;border-top:1px solid var(--sal);font-size:14px;color:var(--tinta-2)}
+
+/* ---------- rodapé: os dados da empresa (pedido de dados à Carol) ---------- */
+.rodape .empresa{flex-basis:100%;color:var(--ambar-3)}
+
+/* ---------- pranchas de estados (só no desenho) ---------- */
+.rotulo-d{display:flex;align-items:center;gap:12px;flex-wrap:wrap;max-width:calc(var(--larg) + 2*var(--gut));margin:0 auto;padding:28px var(--gut) 0;font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho-escuro)}
+.rotulo-d span{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:999px;background:var(--ambar-3);letter-spacing:.04em;text-transform:none;font-size:13.5px}
+.rotulo-d span.off{background:var(--sal-2);color:var(--tinta-2);box-shadow:inset 0 0 0 1px var(--vinho-4)}
+.vazio-d{max-width:calc(var(--larg) + 2*var(--gut));margin:12px auto 0;padding:0 var(--gut) 8px}
+.vazio-d p{border:1.5px dashed var(--vinho-4);border-radius:var(--raio-g);padding:22px 24px;font-size:15px;color:var(--tinta-2)}
+.par-d{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:calc(var(--larg) + 2*var(--gut));margin:0 auto;padding:16px var(--gut) 40px}
+.par-d>div{min-width:0}
+.par-d .cab-d{font-family:var(--sans);font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--tinta-2);margin-bottom:12px}
+.par-d .depois-t{color:var(--vinho)}
+.antes-d{opacity:.92}
+.trecho{background:var(--papel);border-radius:var(--raio-g);padding:24px;box-shadow:0 0 0 1px #E6D8D0;font-size:15px}
+.trecho .pg{display:block;font-size:12px;color:var(--tinta-2);margin-bottom:10px}
+.prancha mark{background:var(--ambar-3);color:var(--tinta);padding:0 3px;border-radius:3px}
+.trecho del{color:var(--tinta-2)}
+
+/* ---------- tablet e celular ---------- */
+@media (max-width:1020px){
+  .planos{grid-template-columns:1fr;max-width:560px;margin:0 auto}
+  .planos-sec{margin-top:-96px}
+  .tabela-grade,.impl{grid-template-columns:1fr;gap:36px}
+  .grade-incl{grid-template-columns:1fr 1fr}
+  .passos-t{grid-template-columns:1fr}
+  .desc-faixa{grid-template-columns:1fr}
+  .desc-faixa>div{border-left:0;border-top:1px solid var(--sal)}
+  .desc-faixa>div:first-child{border-top:0}
+  .paga{grid-template-columns:1fr}
+  .cham-bloco{grid-template-columns:1fr;padding:56px}
+  .par-d{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .cab-int.precos-cab{padding-bottom:128px}
+  .fatos-ab{flex-direction:column;align-items:stretch;gap:8px}
+  .fatos-ab a{font-size:14px;border-radius:12px;padding:8px 14px 8px 12px;line-height:1.4}
+  .planos-sec{margin-top:-92px;padding-bottom:60px}
+  .planos{gap:20px}
+  .plano{padding:28px 22px 22px}
+  .plano h3{font-size:28px}
+  .plano .valor b{font-size:60px}
+  .planos-pe{padding:18px 18px}
+  .planos-pe .link-seta{white-space:normal}
+  .folha-t{padding:4px 16px 18px}
+  .t-pessoas{font-size:14px}
+  .t-pessoas th,.t-pessoas td{padding:0 4px}
+  .t-pessoas thead th{font-size:11px;letter-spacing:.04em}
+  .t-pessoas td.v{font-size:18px}
+  .t-pessoas td.p span{display:block;font-size:12.5px;line-height:1.3}
+  .t-pessoas tr.ult td.v{font-size:12.5px;white-space:normal}
+  .inclui{padding:28px 20px;border-radius:20px}
+  .inclui h3{font-size:25px}
+  .grade-incl{grid-template-columns:1fr;gap:20px}
+  .prep-p{padding:26px 20px;border-radius:20px}
+  .prep-p ul{grid-template-columns:1fr}
+  .valor-impl{padding:28px 20px 22px}
+  .valor-impl dd{font-size:21px}
+  .desc-faixa>div{padding:24px 20px}
+  .caixa-pg{padding:24px 20px}
+  .meta-pg{grid-template-columns:1fr;padding:24px 20px}
+  .cham{padding:60px 0}
+  .cham-bloco{padding:36px 20px 40px;border-radius:24px;gap:32px}
+  .cham-bloco .acoes .btn{width:100%}
+  .cartao-cham{padding:24px 20px}
+  .selo-cham{width:100px;height:100px}
+  .rotulo-d{padding-top:20px}
+}
+
+/* ---------- movimento: o mesmo do Início, discreto ---------- */
+@media (prefers-reduced-motion:no-preference){
+  .cab-int>*{animation:sobe-h .8s var(--facil) both}
+  .cab-int>*:nth-child(2){animation-delay:.05s}
+  .cab-int>*:nth-child(3){animation-delay:.1s}
+  .cab-int>*:nth-child(4){animation-delay:.15s}
+  .cab-int>*:nth-child(5){animation-delay:.2s}
+  .cab-int>*:nth-child(6){animation-delay:.25s}
+  .plano{animation:sobe-p .9s var(--facil) both}
+  .plano:nth-child(2){animation-delay:.1s}
+  .plano:nth-child(3){animation-delay:.2s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn:active{transform:none}
+  .grade-incl .ic{transition:transform .35s var(--facil)}
+  .grade-incl li:hover .ic{transform:translateY(-4px) rotate(-6deg)}
+  .io [data-revelar]{opacity:0;transform:translateY(28px);transition:opacity .8s var(--facil),transform .8s var(--facil)}
+  .io [data-revelar].visivel{opacity:1;transform:none}
+  .io .grade-incl li{opacity:0;transform:translateY(18px);transition:opacity .6s var(--facil),transform .6s var(--facil);transition-delay:calc(.2s + var(--i,0)*70ms)}
+  .io .visivel .grade-incl li{opacity:1;transform:none}
+  .io .selo-cham{opacity:0}
+  .io .visivel .selo-cham{animation:gira 2.8s .3s cubic-bezier(.3,.6,.2,1) both}
+  .sd [data-revelar]{animation:revela linear both}
+  html.sd [data-revelar]{animation-timeline:view();animation-range:entry 0% entry min(60%, 320px)}
+  .sd .inclui{view-timeline:--inc block}
+  .sd .grade-incl li{animation:sobe-txt linear both}
+  html.sd .grade-incl li{animation-timeline:--inc;animation-range:entry calc(15% + var(--i,0)*6%) entry calc(55% + var(--i,0)*6%)}
+  .selo-cham.gira{animation:gira 2.8s cubic-bezier(.3,.6,.2,1) both}
+}
+@keyframes sobe-h{from{transform:translateY(16px)}to{transform:none}}
+@keyframes sobe-p{from{transform:translateY(40px)}to{transform:none}}
+@keyframes revela{from{opacity:0;transform:translateY(56px)}to{opacity:1;transform:none}}
+@keyframes sobe-txt{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:none}}
+@keyframes acende{from{opacity:0}to{opacity:1}}
+@keyframes gira{from{transform:rotate(-360deg)}to{transform:none}}
+
+/* ---------- ajustes do site que esta entrega leva para site.css ----------
+   1. Com "Preços", o menu completo precisa de 777 px; em 1021 px sobram 764. Entre 1021 e 1100 px os links
+      ficam com 11 px de folga lateral em vez de 14, e tudo cabe numa linha, sem tirar "O sistema".
+   2. Toque de 44 px no celular: a trilha da abertura e os links do rodapé (hoje com 40 px). */
+@media (min-width:1021px) and (max-width:1100px){.menu a:not(.btn){padding:0 11px}.topo .menu .btn{padding:0 16px}}
+.trilha-int a{display:inline-flex;align-items:center;min-height:44px}
+.trilha-int{margin-bottom:0}
+@media (max-width:760px){.rodape .grade-r a,.rodape .grade-r li>span{min-height:44px}}
+/* no tablet e no celular o bloco fica numa coluna só: o padrão sairia atrás do texto, então sai */
+@media (max-width:1020px){.cham-bloco::before{display:none}}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-whats" viewBox="0 0 24 24"><path d="M4.5 20 5.6 16A8.5 8.5 0 1 1 8.3 18.7Z"/><path d="M9 9.5c.3 2.3 2.2 4.3 4.5 5"/></symbol><symbol id="i-pena" viewBox="0 0 24 24"><path d="M20 4C12 4 7.5 9 6.5 16.5L5 21"/><path d="M20 4c0 7.5-5 11.5-12.5 12.5"/><path d="M9.5 11h6M8 14h4.5"/></symbol><symbol id="i-moeda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.6-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 2.9 5.8 1.4 5.8 4.3 0 1.3-1.3 2.2-3 2.2-1.3 0-2.5-.6-3-1.6M12 6v1.8M12 16.4v1.6"/></symbol><symbol id="i-carteira" viewBox="0 0 24 24"><path d="M3.5 6.5h17v13h-17Z"/><path d="M3.5 6.5 16 3.5v3"/><path d="M14 11.5h6.5v4H14Z"/></symbol><symbol id="i-balanca" viewBox="0 0 24 24"><path d="M12 3.5v16M7.5 20.5h9M4.5 7h15"/><path d="M4.5 7 2 13h5ZM19.5 7 17 13h5Z"/><path d="M2 13a2.5 2.5 0 0 0 5 0M17 13a2.5 2.5 0 0 0 5 0"/></symbol><symbol id="i-coluna" viewBox="0 0 24 24"><path d="M4 4h16l-1.5 2.5h-13Z"/><path d="M7 6.5v11M10.3 6.5v11M13.7 6.5v11M17 6.5v11"/><path d="M5.5 17.5h13L20 20H4Z"/></symbol><symbol id="i-envelope" viewBox="0 0 24 24"><path d="M3 5.5h18v13H3Z"/><path d="m3 5.5 9 7 9-7"/></symbol><symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol><symbol id="i-agenda" viewBox="0 0 24 24"><path d="M4 5.5h16v15H4Z"/><path d="M4 10h16M8.5 3v4.5M15.5 3v4.5"/><path d="M8 13.5h3v3H8Z"/></symbol><symbol id="i-conversas" viewBox="0 0 24 24"><path d="M3.5 4.5h17v12h-9l-4.5 3.5v-3.5H3.5Z"/><path d="M8 9h8M8 12.5h5"/></symbol><symbol id="i-ia" viewBox="0 0 24 24"><path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2Z"/></symbol><symbol id="i-carne" viewBox="0 0 24 24"><path d="M7 3.5h12.5v17H7Z"/><path d="M10 3.5v17" stroke-dasharray="1.6 1.6"/><path d="M4 7h3M4 12h3M4 17h3"/><path d="M13 8.5h4M13 12h4M13 15.5h2.5"/></symbol><symbol id="i-pessoas" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h3a4.5 4.5 0 0 1 4.5 4.5V20"/><path d="M15 4.9a3.2 3.2 0 0 1 0 6.2"/><path d="M18 14.2a4.5 4.5 0 0 1 3 4.3V20"/></symbol><symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3.5 19.5 6v6c0 4.5-3.2 7.6-7.5 8.5C7.7 19.6 4.5 16.5 4.5 12V6Z"/><path d="M12 7v10"/><path d="M8.5 9v4.5c0 1.5 1.3 2.6 3.5 3.5M15.5 9v4.5c0 1.5-1.3 2.6-3.5 3.5"/></symbol><symbol id="i-cadeado" viewBox="0 0 24 24"><path d="M5 10.5h14v10H5Z"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/><path d="M12 14v3"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 4.5 4.5L19.5 6.5"/></symbol><symbol id="i-dir" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol><symbol id="i-seta" viewBox="0 0 24 24"><path d="M4 12h15M14 7l5 5-5 5"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M5.5 3h9l4 4v14h-13Z"/><path d="M14.5 3v4h4M8.5 12h7M8.5 15.5h7"/></symbol><symbol id="i-maleta" viewBox="0 0 24 24"><path d="M3 8h18v12H3Z"/><path d="M9 8V4.5h6V8"/><path d="M3 13h18"/><path d="M10.5 12v2.5h3V12"/></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol><symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3.5 21.5 20h-19Z"/><path d="M12 10v4.5M12 16.8v.8"/></symbol><symbol id="i-reenviar" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></symbol><symbol id="i-telefone" viewBox="0 0 24 24"><path d="M5 4h4l1.5 4.5-2.5 1.5a11 11 0 0 0 6 6l1.5-2.5L20 15v4a1.5 1.5 0 0 1-1.5 1.5A16 16 0 0 1 3.5 5.5 1.5 1.5 0 0 1 5 4Z"/></symbol><symbol id="i-baixar" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5"/><path d="M4.5 19.5h15"/></symbol><symbol id="i-historico" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v4.5h4.5"/><path d="M12 8v4.5l3 2"/></symbol><symbol id="i-fatura" viewBox="0 0 24 24"><path d="M5.5 3h13v18l-2.2-1.5L14 21l-2-1.5L10 21l-2.3-1.5L5.5 21Z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4"/></symbol><symbol id="i-qr" viewBox="0 0 24 24"><path d="M4 4h6v6H4ZM14 4h6v6h-6ZM4 14h6v6H4Z"/><path d="M14 14h2.5v2.5H14ZM17.5 17.5H20V20h-2.5ZM14 20h1M20 14v1"/></symbol><symbol id="i-inicio" viewBox="0 0 24 24"><path d="M3 10 12 4l9 6"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/></symbol><symbol id="i-escritorios" viewBox="0 0 24 24"><path d="M3 9 12 4l9 5Z"/><path d="M5.5 9v9M10 9v9M14 9v9M18.5 9v9"/><path d="M3 20.5h18"/></symbol><symbol id="i-ajuda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.5v.7"/><path d="M12 16.6v.8"/></symbol><symbol id="i-funcoes" viewBox="0 0 24 24"><path d="M4 6.5h4M12 6.5h8M4 12h10M18 12h2M4 17.5h2M10 17.5h10"/><path d="M8 4.5v4M14 10v4M6 15.5v4"/></symbol><symbol id="i-sair" viewBox="0 0 24 24"><path d="M10 4H4.5v16H10"/><path d="m15 8 4 4-4 4M19 12H9"/></symbol><symbol id="i-abrir" viewBox="0 0 24 24"><path d="M5 10.5h14v10H5Z"/><path d="M8 10.5V7a4 4 0 0 1 7.6-1.7"/><path d="M12 14v3"/></symbol><symbol id="i-repasse" viewBox="0 0 24 24"><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/></symbol><symbol id="i-pix" viewBox="0 0 24 24"><path d="m12 3 9 9-9 9-9-9Z"/><path d="m8 12 4-4 4 4-4 4Z"/></symbol><symbol id="i-servidor" viewBox="0 0 24 24"><path d="M4 4.5h16v6H4ZM4 13.5h16v6H4Z"/><path d="M7.5 7.5h2M7.5 16.5h2"/></symbol><symbol id="i-tracejado" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></symbol></svg>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<header class="topo"><span class="progresso" aria-hidden="true"></span><div class="miolo">
+  <a class="marca" href="https://t3jus.pro/"><img src="marca/logo-completo-sobre-vinho.svg" width="1583" height="512" alt="T3jus, Sistema jurídico, página inicial"></a>
+  <nav class="menu" aria-label="Principal"><a href="https://t3jus.pro/#por-dentro">O sistema</a><a href="https://t3jus.pro/como-funciona">Como funciona</a><a href="https://t3jus.pro/para-quem-e">Para quem é</a><a href="precos.html" aria-current="page">Preços</a><a class="entrar" href="https://app.t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-sair"/></svg>Entrar</a><a class="btn btn-claro" href="https://t3jus.pro/demonstracao">Pedir demonstração</a></nav>
+  <details class="menu-cel"><summary aria-label="Abrir o menu"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg>Menu</summary><nav aria-label="Principal"><a href="https://t3jus.pro/">Início</a><a href="https://t3jus.pro/#por-dentro">O sistema</a><a href="https://t3jus.pro/como-funciona">Como funciona</a><a href="https://t3jus.pro/para-quem-e">Para quem é</a><a href="precos.html" aria-current="page">Planos e preços</a><a href="https://app.t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-sair"/></svg>Entrar no T3jus</a><a class="btn btn-pri" href="https://t3jus.pro/demonstracao">Pedir demonstração</a></nav></details>
+</div></header>
+<div class="abertura interna"><div class="lado" aria-hidden="true"></div><svg class="ico estatua" aria-hidden="true"><use href="#i-coluna"/></svg>
+  <div class="miolo"><div id="conteudo" class="cab-int precos-cab sobre-vinho"><nav class="trilha-int" aria-label="Você está em"><a href="https://t3jus.pro/">Início</a><span aria-hidden="true">/</span><span aria-current="page">Planos e preços</span></nav>
+  <span class="sobretitulo">Planos e preços</span><h1>Todas as áreas em todos os planos. <i>Muda só o tamanho da equipe.</i></h1><span class="fio" aria-hidden="true"></span><p class="lede">Você escolhe pelo número de pessoas que usam o T3jus. Os valores são por mês, e cada um é o valor final da fatura, sem nada somado.</p>
+  <ul class="fatos-ab" aria-label="Em resumo"><li><a href="#teste"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>7 dias para usar sem pagar</a></li><li><a href="#implantacao"><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg>Implantação assistida grátis na oferta de lançamento</a></li><li><a href="#pagamento"><svg class="ico" aria-hidden="true"><use href="#i-pix"/></svg>Pix, boleto ou carnê com as 12 mensalidades</a></li></ul></div></div>
+</div><main><section class="planos-sec" aria-labelledby="t-planos"><div class="miolo">
+  <h2 id="t-planos" class="sr">Os planos</h2>
+  <div class="planos">
+    <article class="plano" aria-labelledby="pl-essencial">
+      <h3 id="pl-essencial">Essencial</h3><span class="fio" aria-hidden="true"></span>
+      <p class="valor"><span class="rs">R$</span><b>299</b><span class="mes">por mês</span></p>
+      <p class="incl"><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg>3 pessoas incluídas</p>
+      <p class="mais-conta">Mais em conta para equipes de <b>1 a 5 pessoas</b>.</p>
+      <p class="extra">Pessoa a mais: R$&nbsp;69 por mês cada.</p>
+      <div class="acao"><a class="btn btn-pri" href="https://t3jus.pro/demonstracao?plano=essencial">Quero o Essencial<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div>
+    </article>
+    <article class="plano" aria-labelledby="pl-escritorio">
+      <h3 id="pl-escritorio">Escritório</h3><span class="fio" aria-hidden="true"></span>
+      <p class="valor"><span class="rs">R$</span><b>499</b><span class="mes">por mês</span></p>
+      <p class="incl"><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg>6 pessoas incluídas</p>
+      <p class="mais-conta">Mais em conta para equipes de <b>6 a 9 pessoas</b>.</p>
+      <p class="extra">Pessoa a mais: R$&nbsp;69 por mês cada.</p>
+      <div class="acao"><a class="btn btn-pri" href="https://t3jus.pro/demonstracao?plano=escritorio">Quero o Escritório<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div>
+    </article>
+    <article class="plano" aria-labelledby="pl-banca">
+      <h3 id="pl-banca">Banca</h3><span class="fio" aria-hidden="true"></span>
+      <p class="valor"><span class="rs">R$</span><b>749</b><span class="mes">por mês</span></p>
+      <p class="incl"><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg>10 pessoas incluídas</p>
+      <p class="mais-conta">Mais em conta para equipes de <b>10 pessoas ou mais</b>.</p>
+      <p class="extra">Pessoa a mais: R$&nbsp;69 por mês cada.</p>
+      <div class="acao"><a class="btn btn-pri" href="https://t3jus.pro/demonstracao?plano=banca">Quero a Banca<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div>
+    </article>
+  </div>
+  <div class="planos-pe" data-revelar><p><b>Todos os planos têm as mesmas áreas e o mesmo suporte da nossa equipe.</b> A diferença é o número de pessoas.</p><a class="link-seta" href="#incluido">Ver tudo o que está incluído<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div>
+</div></section><section class="secao clara" id="incluido" aria-labelledby="t-incluido"><div class="miolo">
+  <div class="sec-cab" data-revelar><span class="sobretitulo">Em todos os planos</span><h2 id="t-incluido">O mesmo T3jus, do Essencial à Banca.</h2><span class="fio" aria-hidden="true"></span></div>
+  <ul class="legenda-p" aria-label="O que cada situação quer dizer" data-revelar>
+    <li><span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span>construído e testado</li>
+    <li><span class="st st-prep"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Em preparação</span>construído; falta um passo de fora</li>
+    <li><span class="st st-plan"><svg class="ico" aria-hidden="true"><use href="#i-tracejado"/></svg>Planejado</span>ainda não existe, sem data</li>
+  </ul>
+  <div class="inclui" data-revelar><h3>Já no T3jus <span class="st st-pronto"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>No T3jus</span></h3><ul class="grade-incl"><li style="--i:0"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-inicio"/></svg></span><span><b>Todas as áreas do Portal</b><span>Início, Clientes, Agenda, Comercial, Contratos, Financeiro e Jurídico.</span></span></li><li style="--i:1"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-pessoas"/></svg></span><span><b>Áreas liberadas por pessoa</b><span>O sócio dono marca o que cada um vê.</span></span></li><li style="--i:2"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg></span><span><b>Documentos no timbrado</b><span>Proposta, contrato, procuração e declaração, em Word e PDF.</span></span></li><li style="--i:3"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-pena"/></svg></span><span><b>Petições a partir de modelos</b><span>Os modelos do escritório preenchidos com o cliente e o caso, para revisar.</span></span></li><li style="--i:4"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-carne"/></svg></span><span><b>Carnê com o Pix do escritório</b><span>E o recibo de cada pagamento, em PDF.</span></span></li><li style="--i:5"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-repasse"/></svg></span><span><b>Repasses, caixa e relatórios</b><span>O mês do escritório separado do dinheiro de terceiros.</span></span></li><li style="--i:6"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-baixar"/></svg></span><span><b>Importar de planilha</b><span>Clientes e contratos que o escritório já tem, com a nossa ajuda.</span></span></li><li style="--i:7"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-servidor"/></svg></span><span><b>Servidores no Brasil</b><span>Em São Paulo, com cada escritório separado.</span></span></li><li style="--i:8"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-escudo"/></svg></span><span><b>Os dados são seus</b><span>O sócio dono exporta tudo do escritório quando quiser.</span></span></li></ul></div>
+  <div class="prep-p" data-revelar><h3>A caminho, no mesmo plano <span class="st st-prep"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Em preparação</span></h3><ul>
+    <li><b>Atendimento pelo WhatsApp do escritório, com a assistente virtual</b><p>A tela está pronta e a assistente está testada. <strong>Falta:</strong> a ligação oficial com a Meta, para o número do escritório funcionar. Quando ficar pronta, entra no seu plano sem mudar o preço.</p></li>
+    <li><b>Trazer os dados do Astrea e do ADVBOX</b><p>Clientes, processos e o financeiro antigo. <strong>Falta:</strong> conferir com os arquivos reais de um escritório piloto.</p></li>
+  </ul></div>
+  <p class="incl-pe">O que ainda é planejado está no Início, em <a href="https://t3jus.pro/#t-existe">O que tem no T3jus</a>.</p>
+</div></section>
+<section class="secao " id="por-pessoas" aria-labelledby="t-pessoas"><div class="miolo tabela-grade">
+  <div data-revelar><div class="sec-cab"><span class="sobretitulo">Para a sua equipe</span><h2 id="t-pessoas">Quanto fica para a sua equipe.</h2><span class="fio" aria-hidden="true"></span><p class="lede">Conte todas as pessoas que vão entrar no T3jus, inclusive estagiários e secretaria. Os clientes do escritório não contam.</p></div>
+    <p class="nota-i"><svg class="ico" aria-hidden="true"><use href="#i-fatura"/></svg><span><b>A fatura segue o plano que você contratou.</b> Se a equipe crescer, você pode pedir a troca de plano. Com 6 pessoas no Essencial, por exemplo, a fatura é de R$&nbsp;506 até a troca para o Escritório, que sai R$&nbsp;499.</span></p></div>
+  <div class="folha-t"><table class="t-pessoas"><caption>Preço por mês, conforme o número de pessoas, com o plano mais em conta.</caption>
+    <thead><tr><th scope="col">Pessoas</th><th scope="col">Plano mais em conta</th><th scope="col">Por mês</th></tr></thead>
+    <tbody><tr style="--i:0"><th scope="row">1 a 3</th><td class="p"><b>Essencial</b></td><td class="v">R$&nbsp;299</td></tr><tr style="--i:1"><th scope="row">4</th><td class="p"><b>Essencial</b> <span>+ 1 pessoa</span></td><td class="v">R$&nbsp;368</td></tr><tr style="--i:2"><th scope="row">5</th><td class="p"><b>Essencial</b> <span>+ 2 pessoas</span></td><td class="v">R$&nbsp;437</td></tr><tr class="vira" style="--i:3"><th scope="row">6</th><td class="p"><b>Escritório</b></td><td class="v">R$&nbsp;499</td></tr><tr style="--i:4"><th scope="row">7</th><td class="p"><b>Escritório</b> <span>+ 1 pessoa</span></td><td class="v">R$&nbsp;568</td></tr><tr style="--i:5"><th scope="row">8</th><td class="p"><b>Escritório</b> <span>+ 2 pessoas</span></td><td class="v">R$&nbsp;637</td></tr><tr style="--i:6"><th scope="row">9</th><td class="p"><b>Escritório</b> <span>+ 3 pessoas</span></td><td class="v">R$&nbsp;706</td></tr><tr class="vira" style="--i:7"><th scope="row">10</th><td class="p"><b>Banca</b></td><td class="v">R$&nbsp;749</td></tr><tr style="--i:8"><th scope="row">11</th><td class="p"><b>Banca</b> <span>+ 1 pessoa</span></td><td class="v">R$&nbsp;818</td></tr><tr style="--i:9"><th scope="row">12</th><td class="p"><b>Banca</b> <span>+ 2 pessoas</span></td><td class="v">R$&nbsp;887</td></tr><tr style="--i:10"><th scope="row">13</th><td class="p"><b>Banca</b> <span>+ 3 pessoas</span></td><td class="v">R$&nbsp;956</td></tr></tbody></table><p class="desc-t" style="border-top:0;margin-top:6px;padding-top:0">Acima de 13 pessoas, some R$&nbsp;69 por mês a cada pessoa a mais.</p><p class="desc-t"><b>Nos 3 primeiros meses, o plano sai mais barato.</b> São 20% para escritório novo e 30% para quem usa hoje outro sistema jurídico pago: o Escritório, por exemplo, fica em R$&nbsp;399,20 ou R$&nbsp;349,30. O desconto vale sobre o plano, não sobre as pessoas a mais, e a tabela mostra sempre o preço cheio. <a href="#desconto">Ver o desconto de entrada</a>.</p></div>
+</div></section>
+<section class="secao clara" id="teste" aria-labelledby="t-teste"><div class="miolo">
+  <div class="sec-cab" data-revelar><span class="sobretitulo">Para experimentar</span><h2 id="t-teste">Use o T3jus por 7 dias antes de assinar.</h2><span class="fio" aria-hidden="true"></span></div>
+  <ol class="passos-t" data-revelar>
+    <li><span class="disco" aria-hidden="true">1</span><h3>Combinamos o começo</h3><p>A nossa equipe cadastra o escritório e manda o convite ao sócio.</p></li>
+    <li><span class="disco" aria-hidden="true">2</span><h3>Os 7 dias contam do primeiro acesso</h3><p>Nenhuma fatura sai nesse prazo. Ninguém pede cartão.</p></li>
+    <li><span class="disco" aria-hidden="true">3</span><h3>Você decide</h3><p>Se assinar, a primeira mensalidade vence no mês seguinte ao fim do teste. Se não assinar, a partir do 8º dia o Portal fica só para consulta: você vê e baixa tudo, mas não cria nem muda nada.</p></li>
+  </ol>
+  <p class="nota-pe" data-revelar>Sem assinatura, o Portal fica só para consulta. Quando a nossa equipe encerrar o teste, você tem 30 dias para baixar os dados. Depois, os dados ficam guardados por 12 meses e são apagados, como dizem os <a href="https://t3jus.pro/termos">Termos de uso</a>.</p>
+</div></section>
+<section class="secao " id="implantacao" aria-labelledby="t-impl"><div class="miolo impl">
+  <div data-revelar><div class="sec-cab"><span class="sobretitulo">Para começar bem</span><h2 id="t-impl">A nossa equipe treina todas as pessoas do escritório.</h2><span class="fio" aria-hidden="true"></span><p class="lede">Na implantação assistida, a nossa equipe traz os clientes e contratos da sua planilha, treina cada pessoa que vai usar o T3jus e acompanha o escritório nos primeiros 30 dias. Quem entrar na equipe depois também é treinado, sem custo.</p></div>
+    <ul class="lista-impl"><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Clientes e contratos trazidos da sua planilha, com as parcelas já pagas</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Treino de cada pessoa, na área que ela usa</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Acompanhamento da nossa equipe nos primeiros 30 dias</span></li></ul></div>
+  <div data-revelar><div class="valor-impl"><h3>O valor</h3><dl>
+      <div><dt>Implantação assistida</dt><dd>R$&nbsp;1.490,00</dd></div>
+      <div class="gratis"><dt>Na oferta de lançamento</dt><dd>Grátis</dd></div>
+    </dl><ul class="cond"><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Grátis na oferta de lançamento, para escritórios que fizerem o primeiro acesso nos 6 primeiros meses do T3jus.</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Depois da oferta, o valor é cobrado à vista na primeira fatura.</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span>Na primeira fatura aparecem as duas linhas: o valor e a isenção.</span></li></ul></div></div>
+</div></section>
+<section class="secao clara" id="desconto" aria-labelledby="t-desc"><div class="miolo">
+  <div class="sec-cab" data-revelar><span class="sobretitulo">Para quem chega</span><h2 id="t-desc">Desconto nas 3 primeiras mensalidades.</h2><span class="fio" aria-hidden="true"></span></div>
+  <div class="desc-faixa" data-revelar>
+    <div><p class="ex-t">Exemplo</p><p class="ex-v">Escritório com 6 pessoas, vindo de outro sistema: <b>R$&nbsp;349,30</b> nos meses 1, 2 e 3, e <b>R$&nbsp;499,00</b> a partir do 4º.</p></div>
+    <div><p class="pct">20%</p><h3>Para escritório novo</h3><p>Nos 3 primeiros meses: Essencial R$&nbsp;239,20, Escritório R$&nbsp;399,20 e Banca R$&nbsp;599,20.</p></div>
+    <div><p class="pct">30%</p><h3>Para quem usa hoje outro sistema jurídico pago</h3><p>Conferido pela nossa equipe. Nos 3 primeiros meses: Essencial R$&nbsp;209,30, Escritório R$&nbsp;349,30 e Banca R$&nbsp;524,30.</p></div>
+  </div>
+  <p class="nota-pe" data-revelar>O desconto vale sobre o preço do plano, não sobre as pessoas a mais. Ele conta a partir da primeira fatura, mesmo que a implantação ainda não tenha terminado. No carnê, vale só nas 3 primeiras mensalidades.</p>
+</div></section>
+<section class="secao " id="pagamento" aria-labelledby="t-pag"><div class="miolo">
+  <div class="sec-cab" data-revelar><span class="sobretitulo">Pagamento</span><h2 id="t-pag">Como você paga e o que pode mudar.</h2><span class="fio" aria-hidden="true"></span></div>
+  <div class="paga" data-revelar><div class="caixa-pg"><h3>Formas</h3><ul><li><svg class="ico" aria-hidden="true"><use href="#i-pix"/></svg><span><b>Pix ou boleto</b>Uma fatura por mês.</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-carne"/></svg><span><b>Carnê com as 12 mensalidades do ano</b>Cada mensalidade com o Pix e o boleto. As pessoas a mais entram pelo número do dia em que o carnê é gerado. Se a equipe mudar, geramos um carnê novo, com o motivo.</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-fatura"/></svg><span><b>Em nome do T3jus</b>O boleto é registrado pelo Banco Inter.</span></li></ul></div><div class="caixa-pg"><h3>Condições</h3><ul><li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span><b>Valor final</b>O valor da fatura é o da tabela, sem nada somado.</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-repasse"/></svg><span><b>A fatura segue o plano contratado</b>Se a equipe crescer, você pede a troca de plano. Subir vale na hora, e a fatura seguinte traz a diferença dos dias que faltavam no mês. Descer vale a partir do mês seguinte.</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-historico"/></svg><span><b>Reajuste uma vez por ano, pelo IPCA</b>O preço do plano e o da pessoa a mais sobem pelo IPCA acumulado em 12 meses, no aniversário da assinatura. Você recebe o aviso 30 dias antes, com o valor de hoje, o novo e o índice, e pode cancelar sem multa antes de o novo valor valer. Se o índice for negativo, o preço não muda.</span></li><li><svg class="ico" aria-hidden="true"><use href="#i-sair"/></svg><span><b>Sem fidelidade e sem multa</b>O cancelamento vale a partir da mensalidade seguinte.</span></li></ul></div></div>
+  <div class="meta-pg" data-revelar><span class="bola"><svg class="ico" aria-hidden="true"><use href="#i-whats"/></svg></span><div><h3>Mensagens do WhatsApp <span class="st st-prep"><svg class="ico" aria-hidden="true"><use href="#i-relogio"/></svg>Em preparação</span></h3><p>A Meta cobra por mensagem, direto do escritório, na conta do WhatsApp Business do número dele. O valor depende de quantas conversas o escritório tem e da tabela da Meta, que pode mudar. A assistente virtual do T3jus está no plano, sem cobrança por resposta. <b>Nada é cobrado por mensagens até o WhatsApp do escritório estar ligado.</b></p></div></div>
+  <p class="pg-pe">As condições completas estão no contrato e nos Termos de uso, que você recebe e aceita antes de assinar.</p>
+</div></section>
+<section class="secao clara" id="perguntas" aria-labelledby="t-perg"><div class="miolo">
+  <div class="sec-cab" data-revelar><span class="sobretitulo">Perguntas</span><h2 id="t-perg">Antes de escolher.</h2><span class="fio" aria-hidden="true"></span></div>
+  <div class="perguntas"><details><summary>Quem conta como pessoa?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Toda pessoa com acesso liberado ao Portal do escritório no dia em que a fatura é calculada, mesmo quem ainda não entrou: sócios, advogados, estagiários e secretaria. Os clientes do escritório não contam. Quem sai da equipe deixa de contar quando o acesso é desativado.</p></details><details><summary>O WhatsApp com a assistente já funciona, e quem paga as mensagens?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>A tela e a assistente estão prontas e testadas. Falta a ligação oficial do número do escritório com a Meta, que está em preparação. Quando ficar pronta, ela entra no seu plano sem mudar o preço. A Meta cobra por mensagem, direto do escritório, na conta do WhatsApp Business do número dele. A assistente do T3jus não tem cobrança por resposta. Até o WhatsApp do escritório estar ligado, nada é cobrado por mensagens.</p></details><details><summary>A assistente atende quem ainda não é cliente?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Só no primeiro contato. Quando um número novo escreve, ela se apresenta, pergunta o nome e o assunto e passa a conversa para a equipe. Ela não responde consulta jurídica e não fala de caso. O T3jus não envia propaganda nem mensagem em massa. As regras do atendimento são do escritório, que segue o Código de Ética da OAB.</p></details><details><summary>Quando pago a primeira mensalidade?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>No mês seguinte ao fim dos 7 dias de teste, no dia de vencimento que você escolher, e só se você assinar.</p></details><details><summary>E se eu quiser sair?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Não há fidelidade nem multa. O cancelamento vale a partir da mensalidade seguinte, e, se você desistir antes do primeiro vencimento, nada é cobrado. No carnê, as mensalidades que ainda não venceram são canceladas junto. Depois de sair, o Portal fica só para consulta por 30 dias, e o sócio dono pode exportar tudo do escritório nesse prazo.</p></details><details><summary>O T3jus recebe o dinheiro dos meus clientes?<svg class="ico" aria-hidden="true"><use href="#i-dir"/></svg></summary><p>Não. O carnê dos seus clientes leva o Pix do próprio escritório, e o dinheiro cai direto na sua conta. O que o T3jus cobra é só a mensalidade.</p></details></div>
+</div></section><section class="cham" aria-labelledby="t-cham"><div class="miolo">
+  <div class="cham-bloco" data-revelar>
+    <div><span class="sobretitulo">Vamos começar</span><h2 id="t-cham">Escolha o plano e fale com a nossa equipe.</h2><p class="txt">Cadastramos o escritório, mandamos o convite e os 7 dias começam no seu primeiro acesso.</p><div class="acoes"><a class="btn btn-pri" href="https://t3jus.pro/demonstracao">Pedir uma demonstração<svg class="ico" aria-hidden="true"><use href="#i-seta"/></svg></a></div><p class="ou"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg><span>Prefere e-mail?</span> <a href="mailto:contato@t3jus.pro">contato@t3jus.pro</a></p>
+      <img class="selo-cham" src="marca/selo-cor.svg" width="1162" height="1162" alt="" aria-hidden="true"></div>
+    <div class="cartao-cham"><h3>Na demonstração, você vê</h3><ul>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O T3jus com um exemplo parecido com o seu escritório</li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Como trazer os clientes e contratos que você já tem</li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>O que já existe e o que ainda é planejado</li>
+      <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Quanto fica para o tamanho da sua equipe</li></ul></div>
+  </div>
+</div></section></main>
+<footer class="rodape"><div class="fita9" aria-hidden="true"><i style="background:#692746"></i><i style="background:#87335B"></i><i style="background:#AC3F6B"></i><i style="background:#AC788D"></i><i style="background:#DD9760"></i><i style="background:#E9AE90"></i><i style="background:#F2CDB3"></i><i style="background:#F2ECE8"></i><i style="background:#F1E6DF"></i></div><div class="miolo">
+  <div class="grade-r">
+    <div><img src="marca/logo-completo-sobre-vinho.svg" width="1583" height="512" alt="T3jus, Sistema jurídico" loading="lazy"><p class="sobre-t">Gestão comercial e financeira ligada aos casos, para escritórios de advocacia.</p></div>
+    <div><h2>O T3jus</h2><ul><li><a href="https://t3jus.pro/#por-dentro">O sistema</a></li><li><a href="https://t3jus.pro/como-funciona">Como funciona</a></li><li><a href="https://t3jus.pro/para-quem-e">Para quem é</a></li><li><a href="precos.html">Planos e preços</a></li><li><a href="https://t3jus.pro/demonstracao">Pedir demonstração</a></li></ul></div>
+    <div><h2>Já é cliente</h2><ul><li><a href="https://app.t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-sair"/></svg>Entrar no T3jus</a></li></ul></div>
+    <div><h2>Contato</h2><ul><li><a href="mailto:contato@t3jus.pro"><svg class="ico" aria-hidden="true"><use href="#i-envelope"/></svg>contato@t3jus.pro</a></li><li><span>Política de privacidade</span><span class="depois">em preparação</span></li></ul></div>
+  </div>
+  <div class="pe"><span>© 2026 T3jus</span><span>Servidores no Brasil · São Paulo</span><span class="empresa">[Razão social do T3jus] · CNPJ [a informar] · [endereço completo]</span></div>
+</div></footer>
+<script>
+// Topo (como src/scripts/topo.ts) e entrada das seções (como a reserva de src/scripts/movimento.ts).
+(function(){
+var raiz=document.documentElement,menos=matchMedia("(prefers-reduced-motion: reduce)"),barra=document.querySelector(".topo .progresso");
+if(!raiz.classList.contains("sd")){var pedido=false;var quadro=function(){pedido=false;if(menos.matches){raiz.classList.remove("compacto");if(barra)barra.style.transform="";return}var y=scrollY,t=raiz.scrollHeight-innerHeight;if(barra)barra.style.transform="scaleX("+(t>0?Math.min(1,y/t):0).toFixed(4)+")";raiz.classList.toggle("compacto",y>60)};var pedir=function(){if(!pedido){pedido=true;requestAnimationFrame(quadro)}};addEventListener("scroll",pedir,{passive:true});addEventListener("resize",pedir);quadro()}
+if(!raiz.classList.contains("sd")&&!menos.matches&&"IntersectionObserver" in window){raiz.classList.add("io");var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("visivel");io.unobserve(e.target)}})},{rootMargin:"0px 0px -8% 0px",threshold:.08});document.querySelectorAll("[data-revelar]").forEach(function(el){io.observe(el)})}
+var selo=document.querySelector(".selo-cham");
+if(selo&&raiz.classList.contains("sd")&&!menos.matches&&"IntersectionObserver" in window){var is=new IntersectionObserver(function(es){if(es[0].isIntersecting){selo.classList.add("gira");is.disconnect()}},{threshold:.6});is.observe(selo)}
+})();
+</script>
+</body>
+</html>

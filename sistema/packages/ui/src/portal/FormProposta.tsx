@@ -3,15 +3,17 @@
 // docs/design/aprovadas/portal-comercial-contratos (estado proposta-nova; decisões 12 a 16):
 // uma página em três passos (para quem e o quê, condições de honorário, validade e retorno).
 // O rascunho pede só o cliente, o serviço e o responsável; salvar a proposta pede tudo.
+// F3.204 (desenho portal-propostas-encerradas): a proposta de cliente excluído ou arquivado a pedido do
+// titular não se edita; aberta pelo link, ou com o salvar recusado, o aviso fica no lugar do formulário.
 
 import { useEffect, useRef, useState } from "react";
-import { dataBr, ORIGENS, type ClienteLinha, type FichaProposta, type ListaClientes } from "@t3jus/domain";
+import { dataBr, diaBrasilia, ORIGENS, type ClienteLinha, type FichaProposta, type ListaClientes } from "@t3jus/domain";
 import { textoDoErro, type ErroApi } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, useFocoDepoisDoCommit } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { lerDia } from "./agenda.ts";
-import { ROTAS_COMERCIAL } from "./comercial.ts";
+import { clienteSaiuNoErro, comoSaiu, encerradaDa, ROTAS_COMERCIAL } from "./comercial.ts";
 import { EditorCondicoes, errosPorCondicao, idDoErro } from "./Honorarios.tsx";
 import { lerCondicao, mensagemCampo, rascunhoDe, type RascunhoCondicao } from "./honorarios.ts";
 import { chamarPortal, irPara, ROTAS_PORTAL, type EscritorioPortal } from "./Moldura.tsx";
@@ -68,6 +70,8 @@ function Formulario({ escritorio, ficha, clienteInicial }: { escritorio: Escrito
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState<"rascunho" | "proposta" | null>(null);
+  // F3.204: o cliente saiu a pedido do titular enquanto a pessoa editava.
+  const [saiu, setSaiu] = useState<"EXCLUIDO" | "ARQUIVADO" | null>(null);
   const topo = useRef<HTMLDivElement>(null);
   const focar = useFocoDepoisDoCommit();
   const eu = escritorio.pessoa;
@@ -107,6 +111,8 @@ function Formulario({ escritorio, ficha, clienteInicial }: { escritorio: Escrito
       : await chamarPortal<{ id: string }>("/v1/escritorio/propostas", { metodo: "POST", corpo: dados });
     setEnviando(null);
     if (x.ok) return irPara(`${ROTAS_COMERCIAL.proposta(x.dados.id)}?${ficha ? "salva=1" : "criada=1"}`);
+    const fora = ficha ? clienteSaiuNoErro(x.erro) : null;
+    if (fora) return setSaiu(fora);
     const campos = x.erro.detalhes?.campos;
     if (x.erro.codigo === "VALIDATION_ERROR" && Array.isArray(campos) && campos.length) {
       const lista = campos.map(String).filter((c) => c !== "retorno.oque");
@@ -162,6 +168,13 @@ function Formulario({ escritorio, ficha, clienteInicial }: { escritorio: Escrito
   }
 
   const eCli = tem("clienteId");
+  if (saiu && ficha) {
+    return (
+      <Aviso tom="urgencia" titulo="Não deu para salvar a proposta." acoes={<VoltarParaProposta id={ficha.id} />}>
+        O cliente foi {comoSaiu(saiu)} a pedido do titular agora há pouco. A proposta não segue: ela fica só como registro, sem as mudanças.
+      </Aviso>
+    );
+  }
   return (
     <div className="hn" ref={topo}>
       <div className="pt-cab">
@@ -302,6 +315,10 @@ export function NovaPropostaPortal({ clienteId }: { clienteId?: string | null })
   );
 }
 
+function VoltarParaProposta({ id }: { id: string }) {
+  return <a className="btn btn-sec" href={ROTAS_COMERCIAL.proposta(id)}><Icone nome="esquerda" className="ico" />Voltar para a proposta</a>;
+}
+
 function CarregarEditar({ id, escritorio }: { id: string; escritorio: EscritorioPortal }) {
   const [f, setF] = useState<FichaProposta | null | "erro" | "nao">(null);
   const [vez, setVez] = useState(0);
@@ -311,6 +328,14 @@ function CarregarEditar({ id, escritorio }: { id: string; escritorio: Escritorio
   if (f === "erro") return <ErroAoCarregar oque="a proposta" aoTentar={() => setVez((v) => v + 1)} />;
   if (f === "nao") return <ErroAoCarregar oque="a proposta" aoTentar={() => setVez((v) => v + 1)} texto="Ela não existe ou é de outro escritório. Volte para Propostas e abra de novo." />;
   if (!f) return <Carregando rotulo="Carregando a proposta…" linhas={4} />;
+  if (encerradaDa(f)) {
+    const em = f.clienteSaiuEm ? ` em ${dataBr(diaBrasilia(f.clienteSaiuEm))}` : "";
+    return (
+      <Aviso tom="info" titulo="A proposta não segue." acoes={<VoltarParaProposta id={f.id} />}>
+        O cliente foi {comoSaiu(f.clienteSituacao)} a pedido do titular{em}. Ela fica só como registro e não se edita mais.
+      </Aviso>
+    );
+  }
   if (!["RASCUNHO", "ENVIADA", "NEGOCIACAO"].includes(f.situacao)) {
     return (
       <Aviso tom="info" titulo="Esta proposta já foi respondida e não muda mais."

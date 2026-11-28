@@ -1,0 +1,66 @@
+[
+ {
+  "nome": "pl-encerradas",
+  "url": "comercial.html?estado=pl-encerradas"
+ },
+ {
+  "nome": "pl-encerradas-excluido",
+  "url": "comercial.html?estado=pl-encerradas-excluido"
+ },
+ {
+  "nome": "pr-encerrada-enviada-excluido",
+  "url": "comercial.html?estado=pr-encerrada-enviada-excluido"
+ },
+ {
+  "nome": "pr-encerrada-enviada-arquivado",
+  "url": "comercial.html?estado=pr-encerrada-enviada-arquivado"
+ },
+ {
+  "nome": "pr-encerrada-rascunho",
+  "url": "comercial.html?estado=pr-encerrada-rascunho"
+ },
+ {
+  "nome": "pr-historico-encerrada",
+  "url": "comercial.html?estado=pr-historico-encerrada"
+ },
+ {
+  "nome": "pr-acao-recusada",
+  "url": "comercial.html?estado=pr-acao-recusada"
+ },
+ {
+  "nome": "pr-acao-recusada-enviada",
+  "url": "comercial.html?estado=pr-acao-recusada-enviada"
+ },
+ {
+  "nome": "ed-encerrada",
+  "url": "comercial.html?estado=ed-encerrada"
+ },
+ {
+  "nome": "ed-encerrada-salvar",
+  "url": "comercial.html?estado=ed-encerrada-salvar"
+ },
+ {
+  "nome": "fu-hoje",
+  "url": "funil.html?estado=fu-hoje"
+ },
+ {
+  "nome": "fu-barra-encerrada",
+  "url": "funil.html?estado=fu-barra-encerrada"
+ },
+ {
+  "nome": "at-hoje",
+  "url": "funil.html?estado=at-hoje"
+ },
+ {
+  "nome": "at-depois",
+  "url": "funil.html?estado=at-depois"
+ },
+ {
+  "nome": "in-hoje",
+  "url": "inicio.html?estado=in-hoje"
+ },
+ {
+  "nome": "in-depois",
+  "url": "inicio.html?estado=in-depois"
+ }
+]

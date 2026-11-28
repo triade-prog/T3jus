@@ -1,0 +1,13 @@
+{
+  "data": "27/11/2026",
+  "inicio": "11:40",
+  "fim": "12:10",
+  "texto": "Cobrança só depois do teste grátis e confirmação da assinatura pelo Console (F1.32; migration 1161, pgTAP 185 e a concorrência da confirmação com a rotina); a 1160 conferida no Supabase (P34 feito) e a 1161 na fila de publicação (P36). O carnê com desconto já vem resolvido pela 1170, sem a recusa CARNE_COM_DESCONTO.",
+  "refs": [
+    "F1.32",
+    "P34",
+    "P36",
+    "CO-09",
+    "CO-10"
+  ]
+}

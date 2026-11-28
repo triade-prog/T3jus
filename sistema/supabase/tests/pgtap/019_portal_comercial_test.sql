@@ -124,7 +124,7 @@ select ok((select contrato_pedido_em is not null from propostas, pb where propos
 
 -- Lista e histórico.
 select is((select jsonb_array_length(portal_propostas(diego, rm, 'ANDAMENTO', 'gabri') -> 'propostas') from ids), 1, 'busca pelo nome do cliente');
-select is((select portal_propostas(diego, rm) -> 'contagem' from ids), '{"andamento": 2, "contrato": 0, "recusadas": 0}'::jsonb, 'contagem por situação');
+select is((select portal_propostas(diego, rm) -> 'contagem' from ids), '{"andamento": 2, "contrato": 0, "recusadas": 0, "encerradas": 0}'::jsonb, 'contagem por situação (com as encerradas a pedido, F3.204)');
 select is((select jsonb_agg(x ->> 'acao') from ids, pr, jsonb_array_elements(portal_proposta(socia, rm, pr.id) -> 'historico') x),
   '["proposta.resposta", "estado.mudou", "estado.mudou", "proposta.editada", "proposta.criada", "estado.mudou"]'::jsonb,
   'PT-03: o histórico da proposta guarda tudo, do mais novo ao mais antigo');

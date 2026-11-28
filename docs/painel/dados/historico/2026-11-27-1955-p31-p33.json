@@ -1,0 +1,15 @@
+{
+  "data": "27/11/2026",
+  "inicio": "19:55",
+  "fim": "20:00",
+  "texto": "P31 e P33 feitas: as migrations 1140 a 1143 estão no banco, a api-portal v47 e o Portal com o #223 e o #229 estão no ar (Vercel no main 728827b3).",
+  "refs": [
+    "P31",
+    "P33",
+    "F3.181",
+    "F3.186",
+    "F3.190",
+    "F3.188",
+    "PT-11"
+  ]
+}

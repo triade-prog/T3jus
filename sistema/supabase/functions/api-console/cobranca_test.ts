@@ -39,6 +39,7 @@ function montar(opcoes: { semEmail?: boolean; falhaEmail?: boolean } = {}) {
     },
     console_fatura_cancelar: () => ({ versao: 2 }),
     console_assinatura: () => ({ valores: true, assinatura: null }),
+    console_teste: () => null,
     console_assinatura_salvar: () => ({ id: "a", versao: 1 }),
     console_portal_so_consulta: () => erroBanco("TC401"),
     console_carne_documento: () => CARNE,
