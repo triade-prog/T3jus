@@ -49,6 +49,9 @@ import {
   implantacaoConcluirSchema,
   implantacaoPrazoSchema,
   implantacaoRegraSchema,
+  implantacaoResponsavelSchema,
+  implantacaoTreinoDesfazerSchema,
+  implantacaoTreinoSchema,
   assinaturaSalvarSchema,
   mudarPlanoSchema,
   motivoCobrancaSchema,
@@ -502,6 +505,35 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const d = await lerCorpo(c, implantacaoPrazoSchema);
     return c.json(await rpc("console_implantacao_prazo", {
       p_pessoa: pessoa(c), p_escritorio: id, p_prazo_ate: d.prazoAte, p_motivo: d.motivo, p_versao: d.versao,
+    }));
+  });
+
+  // A aba Implantação (F1.45): ler (console.implantacao.ver; o valor só com console.cobranca.ver),
+  // registrar e desfazer treinos e trocar quem acompanha (console.implantacao.editar). Quem deu o
+  // treino, quem desfez e quem trocou vêm da sessão; o escritório, da rota.
+  app.get("/v1/clientes/:id/implantacao", async (c) => {
+    const id = idDaRota(c, "id");
+    return c.json(await rpc("console_implantacao", { p_pessoa: pessoa(c), p_escritorio: id }));
+  });
+  app.post("/v1/clientes/:id/implantacao/treinos", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, implantacaoTreinoSchema);
+    return c.json(await rpc("console_implantacao_treino", {
+      p_pessoa: pessoa(c), p_escritorio: id,
+      p_dados: { dia: d.dia, duracaoMin: d.duracaoMin, forma: d.forma, pessoas: d.pessoas, temas: d.temas },
+    }));
+  });
+  app.post("/v1/clientes/:id/implantacao/treinos/:treino/desfazer", async (c) => {
+    const id = idDaRota(c, "id");
+    const treino = idDaRota(c, "treino");
+    const d = await lerCorpo(c, implantacaoTreinoDesfazerSchema);
+    return c.json(await rpc("console_implantacao_treino_desfazer", { p_pessoa: pessoa(c), p_escritorio: id, p_treino: treino, p_motivo: d.motivo }));
+  });
+  app.put("/v1/clientes/:id/implantacao/responsavel", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, implantacaoResponsavelSchema);
+    return c.json(await rpc("console_implantacao_responsavel", {
+      p_pessoa: pessoa(c), p_escritorio: id, p_responsavel: d.responsavelId, p_versao: d.versao,
     }));
   });
 

@@ -253,6 +253,11 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   TESTE_REPETIDO: "O teste repetido espera a decisão da Administração: libere ou dispense o teste antes de confirmar.",
   // CO-09 (1162): "Quero assinar" no Portal.
   QUERO_ASSINAR_FORA_DO_TESTE: "O pedido para assinar vale durante o teste grátis ou depois do fim. Para assinar agora, fale com a equipe do T3jus.",
+  // CO-08 (1183): os treinos e quem acompanha.
+  TREINO_NO_FUTURO: "O treino precisa ser de hoje ou de antes. Para combinar um treino futuro, use a Agenda.",
+  PESSOA_SEM_VINCULO: "Só participa do treino quem tem acesso ao Portal deste escritório. Recarregue a lista e marque de novo.",
+  TREINO_JA_DESFEITO: "Este registro já foi desfeito. Recarregue a página para ver a lista.",
+  RESPONSAVEL_SEM_ATRIBUICAO: "Só acompanha quem atende este escritório com a função Implantação ou Administração. Para incluir alguém, atribua na aba Equipe T3jus.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
