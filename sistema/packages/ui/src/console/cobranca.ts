@@ -325,13 +325,34 @@ export interface AssinaturaResposta {
 }
 
 /** O rótulo do item na tabela da fatura. Só o DESCONTO é "Desconto de entrada"; a implantação e a
- * isenção (1182) ficam com um rótulo neutro até as telas aprovadas (F1.47), e a descrição do item
- * aparece embaixo, como nos outros. */
+ * isenção (1182) têm rótulo próprio, nunca "Desconto" (desenho D43, F1.47). A descrição do item, a
+ * da emissão, vem junto. */
 export function rotuloItem(tipo: TipoItemFatura): string {
   if (tipo === "MENSALIDADE") return "Mensalidade";
   if (tipo === "PESSOA_A_MAIS") return "Pessoa a mais";
   if (tipo === "DESCONTO") return "Desconto de entrada";
-  return "Outro item";
+  if (tipo === "IMPLANTACAO") return "Implantação";
+  return "Isenção";
+}
+
+/** O rótulo curto do tipo, na etiqueta da fatura com a implantação (D43: Mensalidade, Desconto,
+ * Implantação e Isenção, em texto e não só em cor). */
+export function etiquetaItem(tipo: TipoItemFatura): string {
+  return tipo === "DESCONTO" ? "Desconto" : rotuloItem(tipo);
+}
+
+/** A fatura traz a implantação assistida (as linhas IMPLANTACAO e ISENCAO da 1ª fatura). */
+export function temImplantacao(itens: readonly Pick<ItemFatura, "tipo">[]): boolean {
+  return itens.some((i) => i.tipo === "IMPLANTACAO" || i.tipo === "ISENCAO");
+}
+
+/** O que a fatura diz da implantação, só pelas linhas (a descrição é a da emissão). */
+export function implantacaoDaFatura(itens: readonly ItemFatura[]): { valorCentavos: number; isenta: boolean; texto: string | null } | null {
+  const impl = itens.find((i) => i.tipo === "IMPLANTACAO");
+  if (!impl) return null;
+  const isen = itens.find((i) => i.tipo === "ISENCAO");
+  const texto = isen ? (isen.descricao.split(" · ").slice(1).join(" · ") || null) : null;
+  return { valorCentavos: impl.valorCentavos, isenta: !!isen, texto };
 }
 
 /** Centavos inteiros → "R$ 1.234,56"; negativo → "− R$ 98,00" (desenho). */

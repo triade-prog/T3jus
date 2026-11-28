@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "15:45",
+  "fim": "16:40",
+  "texto": "Telas da implantação assistida no Console: a aba Implantação da ficha (prazo, o que já aconteceu, pessoas e treinos, com registrar e desfazer treino, trocar quem acompanha, mudar o prazo e concluir com o efeito na cobrança e o conflito), a folha da regra em Cobrança › Planos com a prévia e o editar, o bloco da implantação na aba Assinatura com a recusa do carnê, e as linhas Implantação e Isenção (nunca Desconto) na fatura aberta e no PDF da fatura e do recibo; sem migration; falta publicar o Console (P35).",
+  "refs": [
+    "F1.47",
+    "P35",
+    "CO-08"
+  ]
+}

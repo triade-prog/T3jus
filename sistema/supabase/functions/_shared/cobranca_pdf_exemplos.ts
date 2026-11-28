@@ -72,3 +72,23 @@ export const CARNES: Record<string, DocumentoCarne> = {
     itens: CARNE_DESCONTO.itens.map((p) => p.numero >= 4 ? { ...p, situacao: "CANCELADA" as const, canceladaEm: "2026-11-27T15:00:00Z", codigos: null } : p),
   },
 };
+
+/** A 1ª fatura com a implantação assistida (CO-08, F1.47; desenho D43, pdf_im.py): isenta (duas
+ * linhas que somam zero) e cobrada à vista. Plano Escritório R$ 499,00, desconto de entrada de 20%. */
+const ITENS_1A = [
+  { tipo: "MENSALIDADE" as const, descricao: "Mensalidade do plano Escritório", quantidade: 1, valorUnitarioCentavos: 49900, valorCentavos: 49900 },
+  { tipo: "DESCONTO" as const, descricao: "Desconto de entrada (20% da mensalidade)", quantidade: 1, valorUnitarioCentavos: -9980, valorCentavos: -9980 },
+  { tipo: "IMPLANTACAO" as const, descricao: "Implantação assistida · treino de toda a equipe e acompanhamento por 30 dias", quantidade: 1, valorUnitarioCentavos: 149000, valorCentavos: 149000 },
+];
+const ISENCAO = { tipo: "ISENCAO" as const, descricao: "Isenção da implantação · Oferta de lançamento", quantidade: 1, valorUnitarioCentavos: -149000, valorCentavos: -149000 };
+const IMPL = { nome: "Implantação assistida", descricao: "treino de toda a equipe e acompanhamento por 30 dias", condicaoTexto: "Oferta de lançamento", valorCentavos: 149000 };
+const PRIMEIRA = { ...ESTADOS.padrao!, numero: 4, competencia: "2027-01-01", vencimento: "2027-01-10", emitidaEm: "2026-12-07T19:06:00Z", pessoasAtivas: 6, motivoDesconto: null };
+
+export const IMPLANTACAO_PDF: Record<"isenta" | "cobrada" | "recibo", DocumentoCobranca> = {
+  isenta: { ...PRIMEIRA, totalCentavos: 39920, itens: [...ITENS_1A, ISENCAO], implantacao: { ...IMPL, condicao: "ISENTA" } },
+  cobrada: { ...PRIMEIRA, totalCentavos: 188920, itens: ITENS_1A, implantacao: { ...IMPL, condicao: "COBRADA", condicaoTexto: null } },
+  recibo: {
+    ...PRIMEIRA, totalCentavos: 39920, itens: [...ITENS_1A, ISENCAO], implantacao: { ...IMPL, condicao: "ISENTA" }, situacao: "PAGA", codigos: null,
+    pagamento: { pagaEm: "2027-01-08", forma: "PIX", baixa: "MEIO_DE_PAGAMENTO", registradoEm: null, registradoPor: null },
+  },
+};

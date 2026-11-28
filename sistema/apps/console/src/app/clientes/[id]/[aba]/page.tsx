@@ -17,7 +17,7 @@ export default async function Pagina({ params, searchParams }: {
   const { id, aba } = await params;
   if (!ehAbaFicha(aba) || !/^[0-9a-f-]{36}$/i.test(id)) notFound();
   // Atalhos de outras telas: abrir a ficha já editando, a janela de mudar o estágio ou o aviso
-  // de escritório recém-cadastrado.
+  // de escritório recém-cadastrado; na aba Implantação, a janela de concluir.
   const q = await searchParams;
-  return <FichaCliente id={id} aba={aba} editar={q.editar === "1"} mudar={q.mudar === "1"} cadastrado={q.cadastrado === "1"} consulta={q.consulta === "1"} />;
+  return <FichaCliente id={id} aba={aba} editar={q.editar === "1"} mudar={q.mudar === "1"} cadastrado={q.cadastrado === "1"} consulta={q.consulta === "1"} concluir={q.concluir === "1"} />;
 }

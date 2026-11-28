@@ -14,6 +14,7 @@ import {
 import { CARTEIRA, chamarConsole, COBRANCA, MolduraConsole, useSessaoConsole } from "./Moldura.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, Estado, faltaAcertar, focarPrimeiroErro, Janela } from "./pecas.tsx";
 import { hrefAssinatura, TabelaFaturas } from "./PecasCobranca.tsx";
+import { FolhaRegraImplantacao } from "./RegraImplantacao.tsx";
 
 const hrefAba = (a: AbaCobranca) => (a === "faturas" ? COBRANCA : `${COBRANCA}/${a}`);
 
@@ -629,6 +630,9 @@ function AbaPlanos() {
           ) : undefined}>
           Crie o primeiro plano: o nome, o preço por mês e quantas pessoas ele inclui. Sem plano, não dá para começar a assinatura de um escritório.
         </Estado>
+      ) : null}
+      {ativos.length === 0 && arquivados.length === 0 ? (
+        <FolhaRegraImplantacao />
       ) : (
         <>
           <p className="cb-regra" role="note">
@@ -667,6 +671,7 @@ function AbaPlanos() {
               ) : null}
             </section>
           ) : null}
+          <FolhaRegraImplantacao />
           {arquivados.length ? (
             <>
               <div className="cb-titulo-sec">

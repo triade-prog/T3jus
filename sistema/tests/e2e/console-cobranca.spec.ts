@@ -296,7 +296,7 @@ test.describe("Console: cobrança dos escritórios", () => {
     await page.goto(`${C}/clientes/${AROEIRA.id}/assinatura`);
     await page.getByRole("button", { name: "Editar" }).click();
     await page.getByLabel("E-mail de cobrança").fill("financeiro@aroeira");
-    await page.getByLabel(/Desconto na mensalidade/).fill("20");
+    await page.getByLabel(/Desconto de entrada/).fill("20");
     await page.getByRole("button", { name: "Salvar a assinatura" }).click();
     await expect(page.getByText("Falta acertar 2 pontos, marcados abaixo.")).toBeVisible();
     await expect(page.getByLabel("E-mail de cobrança")).toHaveAttribute("aria-invalid", "true");
@@ -456,6 +456,63 @@ test.describe("Console: cobrança dos escritórios", () => {
     await expect(page.getByText("R$ 490,00")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Editar" })).toHaveCount(0);
     await semViolacoes(page);
+  });
+
+  test("CO-08: a implantação na assinatura (isenta e faturada) e na fatura, nunca como desconto", async ({ page }) => {
+    const im = {
+      id: "70000000-0000-4000-8000-000000000001", numero: 1, estado: "CONCLUIDA", nome: "Implantação assistida", descricao: "treino da equipe e acompanhamento por 30 dias",
+      condicao: "ISENTA", condicaoTexto: "Oferta de lançamento", naFatura: true, faturada: true, faturaId: F2, faturaNumero: 187, faturaCompetencia: comp(10),
+      naPrimeiraFatura: false, valorCentavos: 149000,
+    };
+    const itens = [
+      { tipo: "MENSALIDADE", descricao: "Plano Escritório, até 8 pessoas", quantidade: 1, valorCentavos: 49000 },
+      { tipo: "IMPLANTACAO", descricao: "Implantação assistida · treino da equipe e acompanhamento por 30 dias", quantidade: 1, valorCentavos: 149000 },
+      { tipo: "ISENCAO", descricao: "Isenção da implantação · Oferta de lançamento", quantidade: 1, valorCentavos: -149000 },
+    ];
+    await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${AROEIRA.id}`]: { corpo: ficha(AROEIRA, PERMISSOES) },
+      [`/v1/clientes/${AROEIRA.id}/notas`]: { corpo: { notas: [] } },
+      [`/v1/clientes/${AROEIRA.id}/assinatura`]: { corpo: { ...assinatura(), implantacao: im } },
+      [`/v1/clientes/${AROEIRA.id}/faturas/${F2}`]: { corpo: { ...ABERTA, ...FATURAS[1], escritorio: { ...ABERTA.escritorio, id: AROEIRA.id, nome: AROEIRA.nome, atrasoDias: null }, atrasoDias: null, itens, proporConsulta: false } },
+    });
+    await page.goto(`${C}/clientes/${AROEIRA.id}/assinatura`);
+    const bloco = page.locator(".im-ass");
+    await expect(bloco.getByText("Isenta · Oferta de lançamento")).toBeVisible();
+    await expect(bloco.getByRole("link", { name: "Ver a implantação" })).toHaveAttribute("href", `/clientes/${AROEIRA.id}/implantacao`);
+    await expect(bloco.getByText("A implantação só entra na 1ª fatura; as próximas não a trazem.")).toBeVisible();
+    await semViolacoes(page);
+
+    await page.goto(`${C}/cobranca/faturas/${AROEIRA.id}/${F2}`);
+    const linhas = page.locator(".im-tipo");
+    await expect(linhas).toHaveText(["Mensalidade", "Implantação", "Isenção"]);
+    await expect(page.getByText(/Desconto/)).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Ver a implantação" })).toHaveAttribute("href", `/clientes/${AROEIRA.id}/implantacao`);
+    await semViolacoes(page);
+  });
+
+  test("CO-08: implantação cobrada não salva com carnê, e o erro fica na forma de pagamento", async ({ page }) => {
+    const im = {
+      id: "70000000-0000-4000-8000-000000000001", numero: 1, estado: "ABERTA", nome: "Implantação assistida", descricao: "treino da equipe e acompanhamento por 30 dias",
+      condicao: "COBRADA", condicaoTexto: null, naFatura: true, faturada: false, faturaId: null, faturaNumero: null, faturaCompetencia: null, naPrimeiraFatura: true, valorCentavos: 149000,
+    };
+    const pedidos = await simular(page, {
+      "/v1/sessao": { corpo: ADM },
+      [`/v1/clientes/${AROEIRA.id}`]: { corpo: ficha(AROEIRA, PERMISSOES) },
+      [`/v1/clientes/${AROEIRA.id}/notas`]: { corpo: { notas: [] } },
+      [`/v1/clientes/${AROEIRA.id}/assinatura`]: { corpo: { ...assinatura(), implantacao: im } },
+      [`PUT /v1/clientes/${AROEIRA.id}/assinatura`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "IMPLANTACAO_COBRADA_NO_CARNE", campos: ["forma"] } } } },
+    });
+    await page.goto(`${C}/clientes/${AROEIRA.id}/assinatura`);
+    await expect(page.locator(".im-ass").getByText("Cobrada à vista")).toBeVisible();
+    await page.getByRole("button", { name: "Editar" }).click();
+    await page.getByRole("radio", { name: /^Carnê/ }).check();
+    await page.getByRole("button", { name: "Salvar a assinatura" }).click();
+    await expect(page.getByText("Não deu para salvar: Carnê não combina com a implantação cobrada.")).toBeVisible();
+    await expect(page.getByRole("radio", { name: /^Carnê/ })).toBeFocused();
+    await expect(page.getByText(/a 1ª fatura sai por Pix ou boleto/).first()).toBeVisible();
+    await semViolacoes(page);
+    expect(pedidos.filter((p) => p.metodo === "PUT")).toHaveLength(1);
   });
 
   test("carteira: selo de atraso, filtro e atalho para Cobrança", async ({ page }) => {
