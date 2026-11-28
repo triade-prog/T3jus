@@ -244,6 +244,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   // CO-08 (1181): a implantação assistida.
   IMPLANTACAO_NAO_ABERTA: "Este escritório não tem implantação em andamento. Recarregue a página para ver como está.",
   PRAZO_INVALIDO: "Escolha um prazo diferente do de agora, a partir de hoje e até um ano depois da abertura.",
+  // CO-08 (1182): a implantação cobrada vai à vista na 1ª fatura.
+  IMPLANTACAO_COBRADA_NO_CARNE: "A implantação assistida deste escritório é cobrada e vai à vista na 1ª fatura. Escolha Pix ou boleto.",
   // CO-09 (1161): a confirmação da assinatura e a cobrança depois do teste.
   JA_ASSINADO: "A assinatura deste escritório já foi confirmada. Recarregue a página para ver quem confirmou.",
   ASSINATURA_NAO_PREPARADA: "Prepare a assinatura antes de confirmar: plano, dia e forma de pagamento.",

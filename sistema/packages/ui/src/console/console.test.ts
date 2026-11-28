@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SocioCliente } from "@t3jus/domain";
 import { contarCarteira, filtrarCarteira, pendencias, situacaoSocio, tarefasDaCarteira, type ClienteCarteira } from "./carteira.ts";
 import { esperando, haQuanto, iniciais } from "./tempo.ts";
-import { dataBr as dataBrCobranca } from "./cobranca.ts";
+import { dataBr as dataBrCobranca, rotuloItem } from "./cobranca.ts";
 import { dataBr as dataBrFim } from "./FimContrato.tsx";
 
 const AGORA = new Date("2026-11-18T15:00:00Z"); // 12h em Brasília
@@ -100,5 +100,13 @@ describe("F3.175: datas do Console no dia de Brasília", () => {
     expect(dataBrFim("2026-11-25T01:30:00+00:00")).toBe("24/11/2026");
     expect(dataBrFim("2026-11-25T01:30:00+00:00", true)).toBe("24/11");
     expect(dataBrFim("2026-12-19")).toBe("19/12/2026");
+  });
+});
+
+describe("CO-08: os itens da implantação na fatura (1182)", () => {
+  it("CO-08: a implantação e a isenção não são rotuladas como desconto", () => {
+    expect(rotuloItem("DESCONTO")).toBe("Desconto de entrada");
+    expect(rotuloItem("IMPLANTACAO")).not.toMatch(/desconto/i);
+    expect(rotuloItem("ISENCAO")).not.toMatch(/desconto/i);
   });
 });

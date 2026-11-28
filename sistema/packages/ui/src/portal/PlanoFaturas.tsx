@@ -7,7 +7,7 @@
 // As faixas de atraso e de só consulta, que aparecem em todas as páginas, ficam na moldura.
 
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { CONTATO_T3JUS, mesPorExtenso } from "@t3jus/domain";
+import { CONTATO_T3JUS, mesPorExtenso, type ImplantacaoNaCobranca } from "@t3jus/domain";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, Estado, Janela } from "../console/pecas.tsx";
 import { brl, competenciaCurta, dataBr, detalheFatura, type CarneCb, type FaturaCb } from "../console/cobranca.ts";
@@ -43,6 +43,8 @@ export interface FaturaPortal extends FaturaCb {
 /** GET /v1/escritorio/faturas. */
 export interface PlanoFaturasPortal {
   hoje: string;
+  /** CO-08 (1182): a implantação assistida, com o valor (só o sócio dono chega aqui). */
+  implantacao?: ImplantacaoNaCobranca | null;
   assinatura: {
     plano: string;
     precoCentavos: number;
