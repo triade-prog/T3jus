@@ -2,7 +2,7 @@
 -- do escritório e dos clientes dele, inclusive o histórico, e deixa só o nome com a data. Os
 -- arquivos do Storage vão para a fila da api-console. O outro escritório não perde nada.
 begin;
-select plan(19);
+select plan(21);
 
 create temp table ids as select
   teste.equipe('Carol', 'ADMINISTRACAO') as adm,
@@ -35,6 +35,15 @@ select portal_juridico_caso_criar(socia, cedro, jsonb_build_object('nome', 'Prad
          'etapaId', (select id from etapas where escritorio_id = c.cedro and ordem = 3), 'responsavelId', ids.paula,
          'clientes', jsonb_build_array(jsonb_build_object('clienteId', cli.helena, 'papel', 'AUTOR'))))
   from ids, c, cli;
+
+-- A implantação com um aviso no sino do Console (CO-08, 1184): avisos_console é global, sem
+-- escritorio_id; o aviso sai junto com a implantação (on delete cascade; revisão do CO-08, 17).
+select entrar_escritorio_servico(cedro) from c;
+select implantacao_abrir(cedro, true) from c;
+select limpar_contexto();
+insert into avisos_console (pessoa_id, tipo, implantacao_id, dados)
+select adm, 'IMPLANTACAO_PRAZO', i.id, jsonb_build_object('dias', 7, 'escritorioId', c.cedro) from ids, c, implantacoes i where i.escritorio_id = c.cedro;
+select is((select count(*)::int from avisos_console where tipo = 'IMPLANTACAO_PRAZO'), 1, 'o escritório tem um aviso de implantação no sino');
 
 -- Quanto cada escritório tem, em todas as tabelas de escritório.
 create function pg_temp.linhas(p_esc uuid) returns bigint language plpgsql as $$
@@ -73,6 +82,8 @@ select ok((select not historico_tem_dado_proibido(dados) from historico, c where
 select is((select row(nome, cidade, uf, endereco, cnpj, contatos)::text from escritorios, c where id = c.cedro),
   row('Cedro & Lima', null::text, null::text, null::text, null::text, '[]'::jsonb)::text, 'do escritório fica só o nome');
 select ok((select guarda_terminada_em is not null and contrato_fim_em is not null from escritorios, c where id = c.cedro), 'com o fim do contrato e o da guarda');
+select is((select count(*)::int from avisos_console where tipo = 'IMPLANTACAO_PRAZO'), 0,
+  'CO-08: o aviso de implantação sai do sino junto com a implantação, sem travar o fim da guarda');
 select is((select pg_temp.linhas(rm) from c), (select rm from antes) + 0, 'o outro escritório não perde nada');
 select ok((select count(*) = 0 from pessoas where id = (select paula from ids)), 'quem só trabalhou ali e perdeu a entrada sai de pessoas');
 select ok((select count(*) = 1 from pessoas where id = (select ana from ids)), 'quem trabalha em outro escritório fica');
