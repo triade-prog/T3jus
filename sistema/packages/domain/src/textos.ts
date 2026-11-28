@@ -236,7 +236,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   // CO-09 (1160): o teste grátis de 7 dias.
   TESTE_ENCERRADO: "O teste grátis terminou e o Portal está só para consulta. Seus dados estão guardados. Para continuar, fale com a equipe do T3jus.",
   SEM_ASSINATURA: "A equipe do T3jus está liberando o seu acesso. Enquanto isso, o Portal fica só para consulta.",
-  SEM_TESTE_GRATIS: "Este escritório não tem teste grátis.",
+  SEM_TESTE_GRATIS: "Este escritório não tem teste grátis: segue a regra antiga, e a cobrança começa ao passar para Ativo.",
   TESTE_JA_DISPENSADO: "O teste deste escritório já foi dispensado.",
   TESTE_NAO_REPETIDO: "Só o teste repetido espera ser liberado.",
   TESTE_NAO_COMECOU: "Só dá para prorrogar o teste que já começou.",
@@ -246,6 +246,13 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PRAZO_INVALIDO: "Escolha um prazo diferente do de agora, a partir de hoje e até um ano depois da abertura.",
   // CO-08 (1182): a implantação cobrada vai à vista na 1ª fatura.
   IMPLANTACAO_COBRADA_NO_CARNE: "A implantação assistida deste escritório é cobrada e vai à vista na 1ª fatura. Escolha Pix ou boleto.",
+  // CO-09 (1161): a confirmação da assinatura e a cobrança depois do teste.
+  JA_ASSINADO: "A assinatura deste escritório já foi confirmada. Recarregue a página para ver quem confirmou.",
+  ASSINATURA_NAO_PREPARADA: "Prepare a assinatura antes de confirmar: plano, dia e forma de pagamento.",
+  TESTE_SEM_PRIMEIRO_ACESSO: "O teste ainda não começou: confirme depois do primeiro acesso de um sócio, ou dispense o teste.",
+  TESTE_REPETIDO: "O teste repetido espera a decisão da Administração: libere ou dispense o teste antes de confirmar.",
+  // CO-09 (1162): "Quero assinar" no Portal.
+  QUERO_ASSINAR_FORA_DO_TESTE: "O pedido para assinar vale durante o teste grátis ou depois do fim. Para assinar agora, fale com a equipe do T3jus.",
   // CO-08 (1183): os treinos e quem acompanha.
   TREINO_NO_FUTURO: "O treino precisa ser de hoje ou de antes. Para combinar um treino futuro, use a Agenda.",
   PESSOA_SEM_VINCULO: "Só participa do treino quem tem acesso ao Portal deste escritório. Recarregue a lista e marque de novo.",

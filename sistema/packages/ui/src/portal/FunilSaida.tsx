@@ -14,7 +14,7 @@ import { textoDoErro } from "../api.ts";
 import { Icone } from "../Icone.tsx";
 import { Aviso, Carregando, descritoPor, ErroAoCarregar, ErroCampo, faltaAcertar, focarPrimeiroErro, Janela } from "../console/pecas.tsx";
 import { diaCurto } from "./agenda.ts";
-import { taxa, textoPeriodo } from "./comercial.ts";
+import { partesDaBarra, taxa, textoPeriodo } from "./comercial.ts";
 import { Selo } from "./Comercial.tsx";
 import { chamarPortal } from "./Moldura.tsx";
 
@@ -33,22 +33,12 @@ function Leg({ c, n, t }: { c: string; n: number; t: string }) {
   return <li><span className={`fb-m ${c}`} aria-hidden="true" /><b className="num">{n}</b><span>{t}</span></li>;
 }
 
-const pessoas = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
-
 // ------------------------------------------------------------------------- três números e uma barra
 
 export function FunilBarra({ d }: { d: Funil }) {
-  const contrato = d.contratos;
-  const andamento = d.depoisProposta.andamento;
-  const recusaram = Math.max(0, d.comProposta - contrato - andamento);
-  const { naoPegou: pegou, naoVoltou: voltou, emAtendimento: atend } = d.semProposta;
-  const sem = pegou + voltou + atend;
-  const total = d.primeiros;
+  const { contrato, andamento, encerradas, recusaram, pegou, voltou, atend, sem, total, desc } = partesDaBarra(d);
   const motivos = d.depoisProposta.recusadas.filter((r) => r.n);
-  const segs: [string, number][] = [["fb-c", contrato], ["fb-a", andamento], ["fb-o", recusaram], ["fb-np", pegou], ["fb-nv", voltou], ["fb-at", atend]];
-  const desc = `Dos ${total}: ${pessoas(contrato, "virou contrato", "viraram contrato")}, ${andamento} com proposta em andamento, `
-    + `${pessoas(recusaram, "recusou a proposta", "recusaram a proposta")}`
-    + (sem ? `, o escritório não pegou ${pegou}, ${pessoas(voltou, "não voltou", "não voltaram")} e ${atend} ainda em atendimento.` : ". Ninguém saiu sem proposta.");
+  const segs: [string, number][] = [["fb-c", contrato], ["fb-a", andamento], ["fb-e", encerradas], ["fb-o", recusaram], ["fb-np", pegou], ["fb-nv", voltou], ["fb-at", atend]];
   const per = textoPeriodo(d.de, d.ate);
   return (
     <div className="cm-funil fb">
@@ -74,6 +64,7 @@ export function FunilBarra({ d }: { d: Funil }) {
             <ul>
               <Leg c="fb-c" n={contrato} t={contrato === 1 ? "virou contrato" : "viraram contrato"} />
               <Leg c="fb-a" n={andamento} t="proposta em andamento (abaixo)" />
+              {encerradas ? <Leg c="fb-e" n={encerradas} t="encerrada a pedido do titular" /> : null}
               {motivos.length
                 ? motivos.map((r) => <Leg key={r.motivo ?? "x"} c="fb-o" n={r.n} t={r.motivo ? MOTIVOS_RECUSA[r.motivo].toLowerCase() : "recusaram"} />)
                 : <Leg c="fb-o" n={0} t="recusaram" />}

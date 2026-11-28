@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "21:05",
+  "fim": "21:20",
+  "texto": "P38 em andamento: a api-portal v49 (main 9b561b33, #238) está no ar e as migrations 1144 e 1145 foram aplicadas a pedido da Carol (contagem antes: nenhuma proposta muda). Falta o Portal, que espera o limite diário da Vercel.",
+  "refs": [
+    "P38",
+    "F3.204",
+    "PT-11"
+  ]
+}

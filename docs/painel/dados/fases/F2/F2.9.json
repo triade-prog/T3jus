@@ -1,0 +1,11 @@
+{
+  "id": "F2.9",
+  "texto": "Rodapé do site com razão social, CNPJ e endereço do T3jus em todas as páginas (Decreto 7.962/2013)",
+  "peca": "W1",
+  "refs": [
+    "SC-07"
+  ],
+  "status": "pendente",
+  "ordem": 90,
+  "proximo": "Receber da Carol a razão social, o CNPJ e o endereço completo."
+}

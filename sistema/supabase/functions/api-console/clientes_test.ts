@@ -26,6 +26,7 @@ function montar(opcoes: { permissoes?: string[]; contas?: Record<string, string>
     console_vincular_socio: () => "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9",
     console_criar_escritorio: () => IPE,
     console_carteira_cobranca: () => [],
+    console_carteira_teste: () => [],
     console_carteira: () => [{
       escritorio_id: IPE, nome: "Ipê Advocacia", cidade: "Brasília", uf: "DF", estagio: "IMPLANTACAO",
       funcoes: ["ADMINISTRACAO"], situacoes: ["SEM_SOCIO"], criado_em: "2026-10-16T10:00:00Z",
@@ -64,7 +65,7 @@ Deno.test("CO-01: a carteira vem do banco, com estágio e situações a tratar",
   const { clientes } = await r.json();
   assertEquals(clientes[0], {
     id: IPE, nome: "Ipê Advocacia", cidade: "Brasília", uf: "DF", estagio: "IMPLANTACAO",
-    funcoes: ["ADMINISTRACAO"], situacoes: ["SEM_SOCIO"], criadoEm: "2026-10-16T10:00:00Z", cobranca: null,
+    funcoes: ["ADMINISTRACAO"], situacoes: ["SEM_SOCIO"], criadoEm: "2026-10-16T10:00:00Z", cobranca: null, teste: null,
   });
   assertEquals(m.chamadas.find((c) => c.funcao === "console_carteira")?.args, { p_pessoa: CAROLINA });
 });

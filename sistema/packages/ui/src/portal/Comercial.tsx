@@ -14,7 +14,10 @@ import { Carregando, ErroAoCarregar, Estado } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { contar, diaCurto, diaDe } from "./agenda.ts";
 import { primeiroNome } from "./equipe.ts";
-import { ateSemana, faixaVencidos, nomeSituacao, quandoRetorno, ROTAS_COMERCIAL, SELO_SITUACAO, taxa, textoPeriodo, textoUltimo } from "./comercial.ts";
+import {
+  ateSemana, contagemEncerradas, estaEncerrada, faixaVencidos, linhaDoEstadoGravado, nomeSituacao, quandoRetorno, ROTAS_COMERCIAL, SELO_ENCERRADA, SELO_SITUACAO,
+  taxa, textoPeriodo, textoUltimo,
+} from "./comercial.ts";
 import { SeloTipo } from "./Honorarios.tsx";
 import { chamarPortal, ROTAS_PORTAL } from "./Moldura.tsx";
 import { textoDoErro } from "../api.ts";
@@ -48,9 +51,11 @@ export function Selo({ tom, icone, children }: { tom: string; icone?: Parameters
   );
 }
 
-export function SeloSituacao({ s }: { s: PropostaLinha["situacao"] }) {
-  const x = SELO_SITUACAO[s];
-  return <Selo tom={x.tom} icone={x.icone}>{nomeSituacao(s)}</Selo>;
+/** F3.204: com `encerrada`, o selo "Encerrada a pedido" no lugar do estado gravado. Um valor desconhecido vira um selo neutro. */
+export function SeloSituacao({ s, encerrada }: { s: PropostaLinha["situacao"]; encerrada?: boolean }) {
+  if (encerrada) return <Selo tom={SELO_ENCERRADA.tom} icone={SELO_ENCERRADA.icone}>{SELO_ENCERRADA.texto}</Selo>;
+  const x = SELO_SITUACAO[s] ?? { tom: "neutro", icone: undefined };
+  return <Selo tom={x.tom} icone={x.icone}>{nomeSituacao(s) ?? s}</Selo>;
 }
 
 /** O retorno numa linha: vencido e hoje com selo; o resto, a data. */
@@ -352,9 +357,10 @@ function CabPropostas() {
   );
 }
 
-type Mostrar = "ANDAMENTO" | "CONTRATO" | "RECUSADAS";
+type Mostrar = "ANDAMENTO" | "CONTRATO" | "RECUSADAS" | "ENCERRADAS";
 
 function retornoNaLista(p: PropostaLinha, hoje: string): ReactNode {
+  if (estaEncerrada(p)) return <span className="hn-sem">—</span>;
   if (!p.retorno && p.situacao === "RASCUNHO") {
     const c = diaDe(p.criadaEm);
     return <span className="num">criada {c === hoje ? "hoje" : `em ${diaCurto(c)}`}</span>;
@@ -368,6 +374,7 @@ function contagemTexto(lista: PropostaLinha[], mostrar: Mostrar, busca: string):
   if (busca) return <b>{contar(n, "proposta encontrada", "propostas encontradas")} para “{busca}”</b>;
   if (mostrar === "CONTRATO") return <b>{n === 1 ? "1 proposta virou contrato" : `${n} propostas viraram contrato`}</b>;
   if (mostrar === "RECUSADAS") return <b>{contar(n, "proposta recusada", "propostas recusadas")}</b>;
+  if (mostrar === "ENCERRADAS") return <b>{contagemEncerradas(n)}</b>;
   const venc = lista.filter((p) => p.retorno?.vencido).length;
   const aceitas = lista.filter((p) => p.situacao === "ACEITA").length;
   return (
@@ -389,6 +396,11 @@ function PropostasConteudo() {
   }, [busca]);
   const { dados, recarregar } = useCarga<ListaPropostas>(`/v1/escritorio/propostas?mostrar=${mostrar}${q ? `&q=${encodeURIComponent(q)}` : ""}`);
   const hoje = hojeBrasilia();
+  // F3.204: o filtro "Encerradas a pedido" só existe com alguma; se a última sair, a lista volta para "Em andamento".
+  const semEncerradas = dados && dados !== "erro" && !(dados.contagem.encerradas ?? 0);
+  useEffect(() => {
+    if (mostrar === "ENCERRADAS" && semEncerradas) void Promise.resolve().then(() => setMostrar("ANDAMENTO"));
+  }, [mostrar, semEncerradas]);
 
   if (dados === "erro") return <><CabPropostas /><ErroAoCarregar oque="as propostas" aoTentar={recarregar} /></>;
   if (!dados) return <><CabPropostas /><Carregando rotulo="Carregando as propostas…" linhas={4} /></>;
@@ -412,21 +424,24 @@ function PropostasConteudo() {
     );
   }
   const c = dados.contagem;
+  const encerradas = c.encerradas ?? 0;
+  const opcoes = [{ v: "ANDAMENTO", t: `Em andamento (${c.andamento})` }, { v: "CONTRATO", t: `Viraram contrato (${c.contrato})` }, { v: "RECUSADAS", t: `Recusadas (${c.recusadas})` }];
+  if (encerradas) opcoes.push({ v: "ENCERRADAS", t: `Encerradas a pedido (${encerradas})` });
+  const larguras = mostrar === "ENCERRADAS" ? ["30%", "24%", "15%", "10%", "21%"] : ["30%", "27%", "15%", "15%", "13%"];
   return (
     <div className="hn">
       <CabPropostas />
       <section className="folha" aria-labelledby="t-pl" style={{ overflow: "hidden" }}>
         <h2 id="t-pl" className="sr">Lista de propostas</h2>
         <Busca id="pr-b" rotulo="Buscar por cliente ou número" dica="Cliente ou número da proposta" valor={busca} aoMudar={setBusca}>
-          <Chips rotulo="Mostrar" atual={mostrar} aoEscolher={(v) => setMostrar(v as Mostrar)}
-            opcoes={[{ v: "ANDAMENTO", t: `Em andamento (${c.andamento})` }, { v: "CONTRATO", t: `Viraram contrato (${c.contrato})` }, { v: "RECUSADAS", t: `Recusadas (${c.recusadas})` }]} />
+          <Chips rotulo="Mostrar" atual={mostrar} aoEscolher={(v) => setMostrar(v as Mostrar)} opcoes={opcoes} />
         </Busca>
         <p className="hn-cont" role="status">{contagemTexto(dados.propostas, mostrar, q)}</p>
         {dados.propostas.length ? (
           <table className="hn-tab" data-prio-tabela="propostas" data-sai3="760" data-sai2="640" data-cartoes="520">
             <caption className="sr">Propostas</caption>
             <colgroup>
-              {["30%", "27%", "15%", "15%", "13%"].map((w, i) => <col key={i} style={{ width: w }} />)}
+              {larguras.map((w, i) => <col key={i} style={{ width: w }} />)}
             </colgroup>
             <thead>
               <tr>
@@ -450,8 +465,17 @@ function PropostasConteudo() {
                   <td data-r="Responsável">{p.responsavel.nome}</td>
                   <td data-r="Retorno">{retornoNaLista(p, hoje)}</td>
                   <td data-r="Situação">
-                    <SeloSituacao s={p.situacao} />
-                    {p.vencida ? <> <Selo tom="neutro" icone="relogio">validade vencida</Selo></> : null}
+                    {estaEncerrada(p) ? (
+                      <div className="cm-sit">
+                        <SeloSituacao s={p.situacao} encerrada />
+                        <small>{linhaDoEstadoGravado(p)}</small>
+                      </div>
+                    ) : (
+                      <>
+                        <SeloSituacao s={p.situacao} />
+                        {p.vencida ? <> <Selo tom="neutro" icone="relogio">validade vencida</Selo></> : null}
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -464,7 +488,14 @@ function PropostasConteudo() {
         )}
         <p className="hn-pe">
           <Icone nome="historico" className="ico" />
-          <span>Proposta não se apaga. A recusada fica guardada com o motivo, e é dela que sai a conta de conversão do <a href={ROTAS_COMERCIAL.funil}>Funil</a>.</span>
+          {mostrar === "ENCERRADAS" ? (
+            <span>
+              Proposta de cliente excluído ou arquivado a pedido do titular não segue. Ela fica guardada como registro, com o que aconteceu até ali,
+              e sai de Atendimentos, do Início e das colunas do <a href={ROTAS_COMERCIAL.funil}>Funil</a>.
+            </span>
+          ) : (
+            <span>Proposta não se apaga. A recusada fica guardada com o motivo, e é dela que sai a conta de conversão do <a href={ROTAS_COMERCIAL.funil}>Funil</a>.</span>
+          )}
         </p>
       </section>
     </div>

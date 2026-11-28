@@ -1,0 +1,10 @@
+{
+  "id": "P37",
+  "texto": "Aplicar no Supabase a migration 1162 (o servidor das telas do teste grátis, F1.33) e publicar a api-console e a api-portal, só com o ok da Carol",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 370,
+  "nota": "Ordem: 1) a 1161 (P36) precisa estar no ar antes: rodar a contagem só de leitura (project-files t3jus/co-09/contagem-antes-1162.sql); as colunas *_no_ar, *_ausente e console_teste_corpo_antes devem vir true e funcoes_novas_no_ar deve dar 0 (registro_1161_no_ar ou colunas_assinada_1161_no_ar false: colar a 1161 antes, P36; corpo diferente: parar e avisar a Carol); 2) guardar o resultado da segunda consulta (o corpo de console_teste); 3) com o ok da Carol, colar project-files t3jus/migrations-para-colar/1162_teste_gratis_telas_COLAR_NO_SQL_EDITOR.sql no SQL Editor (ou apply_migration com o nome 1162_teste_gratis_telas); 4) só depois, publicar as funções api-console e api-portal (as rotas chamam console_carteira_teste e portal_teste em toda carteira e em toda moldura: publicadas antes da 1162, a carteira e o Portal quebram). A 1162 só preenche primeiro_acesso_por nas linhas com primeiro acesso, pelo histórico; com a chave desligada, nada muda para os escritórios. Se der errado: publicar de volta as funções anteriores; drop das funções portal_quero_assinar, portal_teste, teste_bloco_portal, console_carteira_teste, teste_bloco_console, teste_cobranca_prevista, teste_nome e testes_gratis_primeiro_acesso_por (com o gatilho); recriar console_teste guardada; drop policy teste_quer_assinar_historico on historico; apagar a ação portal.teste.quero_assinar e as colunas novas de testes_gratis (vazias enquanto a chave estiver desligada)."
+}

@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "12:00",
+  "fim": "19:25",
+  "texto": "Desenho da página de planos e preços do site aprovado pela Carol (D44, DC15), guardado em docs/design/aprovadas/site-precos, e ideia SC-07 registrada; programação (F2.8) espera rodapé, preços no Console, nota fiscal e leitura da OAB.",
+  "refs": [
+    "SC-07",
+    "SC-03",
+    "SC-06"
+  ]
+}
