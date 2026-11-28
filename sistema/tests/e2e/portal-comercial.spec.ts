@@ -349,6 +349,125 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await semViolacoes(page);
   });
 
+  // F3.204 (desenho portal-propostas-encerradas): a proposta de cliente excluído ou arquivado a pedido do titular.
+  const SAIU = "2026-11-20T13:00:00Z";
+  const ENC_EXC = { ...L15, cliente: { id: cli(15), nome: "Cliente excluído", tipo: "PF" }, servico: "Serviço apagado a pedido do titular", retorno: null,
+    encerrada: true, enviadaEm: utc(-8, "22:30"), respondidaEm: null };
+  const ENC_ARQ = { ...L14, cliente: { id: cli(14), nome: "Marina Alves Coelho", tipo: "PF" }, retorno: null, encerrada: true, enviadaEm: em(-14, "10:00"), respondidaEm: dia(-10) };
+  const LISTA_ENC = { algum: true, contagem: { andamento: 3, contrato: 0, recusadas: 1, encerradas: 2 }, propostas: [ENC_EXC, ENC_ARQ] };
+
+  test("F3.204: o filtro \"Encerradas a pedido\" só aparece com alguma e mostra o selo com o que aconteceu", async ({ page }) => {
+    const pedidos = await simular(page, {
+      ...comuns(),
+      "GET /v1/escritorio/propostas?mostrar=ANDAMENTO": { corpo: { ...LISTA, contagem: { ...LISTA.contagem, andamento: 3, encerradas: 2 } } },
+      "GET /v1/escritorio/propostas?mostrar=ENCERRADAS": { corpo: LISTA_ENC },
+    });
+    await page.goto(`${P}/comercial/propostas`);
+    await page.getByRole("button", { name: "Encerradas a pedido (2)" }).click();
+    await expect.poll(() => pedidos.some((p) => p.busca === "?mostrar=ENCERRADAS")).toBe(true);
+    await expect(page.getByRole("status").filter({ hasText: "encerradas a pedido" })).toHaveText("2 propostas encerradas a pedido do titular");
+    const exc = page.getByRole("row").filter({ hasText: "Cliente excluído" });
+    await expect(exc).toContainText("P-2026-015 · Serviço apagado a pedido do titular");
+    await expect(exc.locator(".cm-sit")).toContainText("Encerrada a pedido");
+    // Enviada às 22h30 de Brasília, em UTC: o dia de Brasília.
+    await expect(exc.locator(".cm-sit small")).toHaveText(`Enviada em ${curto(-8)}`);
+    await expect(exc.locator("td[data-r=\"Retorno\"]")).toHaveText("—");
+    const arq = page.getByRole("row").filter({ hasText: "Marina Alves Coelho" });
+    await expect(arq.locator(".cm-sit small")).toHaveText(`Aceita em ${curto(-10)}`);
+    await expect(page.getByText("validade vencida")).toHaveCount(0);
+    await expect(page.locator(".hn-pe")).toContainText("Proposta de cliente excluído ou arquivado a pedido do titular não segue.");
+    await expect(page.locator(".hn-pe").getByRole("link", { name: "Funil" })).toHaveAttribute("href", "/comercial/funil");
+    await semViolacoes(page);
+  });
+
+  test("F3.204: sem encerrada (ou com o banco de antes da 1144), não há o filtro novo", async ({ page }) => {
+    await simular(page, comuns());
+    await page.goto(`${P}/comercial/propostas`);
+    await expect(page.getByRole("button", { name: "Recusadas (1)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Encerradas a pedido/ })).toHaveCount(0);
+  });
+
+  test("F3.204: a enviada de cliente excluído não segue, sem botões, com a linha no histórico", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/propostas/${prop(16)}`]: { corpo: { ...F16, cliente: { id: cli(16), nome: "Cliente excluído", tipo: "PF" }, servico: "Serviço apagado a pedido do titular",
+        situacao: "ENVIADA", encerrada: true, vencida: false, escopo: null, retornoCompleto: null, enviadaEm: em(-8, "16:40"), clienteSituacao: "EXCLUIDO", clienteSaiuEm: SAIU,
+        historico: F16.historico.slice(2) } },
+    });
+    await page.goto(`${P}/comercial/propostas/${prop(16)}`);
+    await expect(page.locator(".ficha-cab .meta .selo")).toHaveText("Enviada");
+    await expect(page.locator(".dir .sobretitulo")).toHaveText(`Enviada em ${curto(-8)}`);
+    await expect(page.locator(".dir")).toContainText("Não segue");
+    await expect(page.locator(".dir")).toContainText("O cliente foi excluído a pedido do titular em 20/11/2026. A proposta fica só como registro, sem resposta: não dá mais para registrar a resposta nem editar.");
+    for (const nome of ["Registrar resposta", "Marcar como enviada"]) await expect(page.getByRole("button", { name: nome })).toHaveCount(0);
+    for (const nome of ["Editar", "Editar a proposta"]) await expect(page.getByRole("link", { name: nome, exact: true })).toHaveCount(0);
+    await expect(page.getByText("A proposta aceita vira contrato.")).toHaveCount(0);
+    await expect(page.getByText("Ficam como registro.")).toBeVisible();
+    await expect(page.getByText("Apagado a pedido do titular.")).toBeVisible();
+    await expect(page.getByText("O arquivo Word da proposta foi apagado com os dados do cliente.")).toBeVisible();
+    const h = page.getByRole("region", { name: "Histórico da proposta" });
+    await expect(h.locator(".eventos-dia").first().locator("h3")).toHaveText("20/11/2026");
+    await expect(h.locator(".eventos-dia").first()).toContainText("Encerrada a pedido do titular");
+    await expect(h.locator(".eventos-dia").first()).toContainText("O cliente foi excluído a pedido do titular. A proposta não segue.");
+    await semViolacoes(page);
+  });
+
+  test("F3.204: o rascunho do arquivado não segue, e marcar como enviada recusado no instante avisa e recarrega", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/propostas/${prop(17)}`]: [{ corpo: F17 }, { corpo: { ...F17, encerrada: true, clienteSituacao: "ARQUIVADO", clienteSaiuEm: SAIU } }],
+      [`POST /v1/escritorio/propostas/${prop(17)}/enviada`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", mensagem: "Cliente arquivado", detalhes: { motivo: "CLIENTE_ARQUIVADO" } } } },
+    });
+    await page.goto(`${P}/comercial/propostas/${prop(17)}`);
+    await page.getByRole("button", { name: "Marcar como enviada" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Não deu para marcar como enviada." }))
+      .toContainText("O cliente foi arquivado a pedido do titular agora há pouco. A proposta abaixo já mostra como ficou: ela não segue.");
+    await expect(page.locator(".dir .sobretitulo")).toHaveText("Rascunho");
+    await expect(page.locator(".dir")).toContainText("O cliente foi arquivado a pedido do titular em 20/11/2026. A proposta não foi enviada e fica só como registro.");
+    await expect(page.getByRole("button", { name: "Marcar como enviada" })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("F3.204: a resposta recusada no instante fecha a janela, avisa e recarrega", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/propostas/${prop(16)}`]: [{ corpo: F16 }, { corpo: { ...F16, encerrada: true, retornoCompleto: null, clienteSituacao: "EXCLUIDO", clienteSaiuEm: SAIU } }],
+      [`POST /v1/escritorio/propostas/${prop(16)}/resposta`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", mensagem: "Cliente excluído", detalhes: { motivo: "CLIENTE_EXCLUIDO" } } } },
+    });
+    await page.goto(`${P}/comercial/propostas/${prop(16)}`);
+    await page.getByRole("button", { name: "Registrar resposta" }).click();
+    const j = page.getByRole("dialog", { name: "Registrar resposta" });
+    await j.getByRole("button", { name: "Registrar e gerar o contrato" }).click();
+    await expect(j).toHaveCount(0);
+    await expect(page.getByRole("alert").filter({ hasText: "Não deu para registrar a resposta." }))
+      .toContainText("O cliente foi excluído a pedido do titular agora há pouco. A proposta abaixo já mostra como ficou: ela não segue.");
+    await expect(page.locator(".dir .sobretitulo")).toHaveText("Em negociação");
+    await expect(page.getByRole("button", { name: "Registrar resposta" })).toHaveCount(0);
+    await semViolacoes(page);
+  });
+
+  test("F3.204: editar a encerrada pelo link e o salvar recusado trocam o formulário pelo aviso", async ({ page }) => {
+    await simular(page, {
+      ...comuns(),
+      [`GET /v1/escritorio/propostas/${prop(15)}`]: { corpo: { ...ficha(L15), encerrada: true, clienteSituacao: "EXCLUIDO", clienteSaiuEm: SAIU } },
+      [`PUT /v1/escritorio/propostas/${prop(16)}`]: { status: 422, corpo: { erro: { codigo: "VALIDATION_ERROR", mensagem: "Cliente arquivado", detalhes: { motivo: "CLIENTE_ARQUIVADO" } } } },
+    });
+    await page.goto(`${P}/comercial/propostas/${prop(15)}/editar`);
+    await expect(page.getByRole("status").filter({ hasText: "A proposta não segue." }))
+      .toContainText("O cliente foi excluído a pedido do titular em 20/11/2026. Ela fica só como registro e não se edita mais.");
+    await expect(page.getByRole("link", { name: "Voltar para a proposta" })).toHaveAttribute("href", `/comercial/propostas/${prop(15)}`);
+    await expect(page.getByText("escreva uma proposta nova")).toHaveCount(0);
+    await semViolacoes(page);
+
+    await page.goto(`${P}/comercial/propostas/${prop(16)}/editar`);
+    await page.getByRole("button", { name: "Salvar as mudanças" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Não deu para salvar a proposta." }))
+      .toContainText("O cliente foi arquivado a pedido do titular agora há pouco. A proposta não segue: ela fica só como registro, sem as mudanças.");
+    await expect(page.getByRole("button", { name: "Salvar as mudanças" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Voltar para a proposta" })).toHaveAttribute("href", `/comercial/propostas/${prop(16)}`);
+    await semViolacoes(page);
+  });
+
   test("Quem tem Contratos gera o contrato da proposta aceita", async ({ page }) => {
     await simular(page, comuns());
     await page.goto(`${P}/comercial/propostas/${prop(14)}`);
@@ -504,6 +623,16 @@ test.describe("Comercial do Portal (AP-02 a AP-06, PD-02)", () => {
     await semViolacoes(page);
     await page.getByRole("button", { name: "12 meses" }).click();
     await expect.poll(() => pedidos.some((p) => p.caminho === "/v1/escritorio/comercial/funil" && p.busca === "?periodo=12")).toBe(true);
+  });
+
+  test("F3.204: a barra do Funil ganha \"encerrada a pedido do titular\" e a conta fecha", async ({ page }) => {
+    await simular(page, { ...comuns(), "GET /v1/escritorio/comercial/funil": { corpo: { ...FUNIL, depoisProposta: { ...FUNIL.depoisProposta, andamento: 3, encerradas: 1 } } } });
+    await page.goto(`${P}/comercial/funil`);
+    const f = page.locator(".fb");
+    await expect(page.getByRole("img", { name: /Dos 24: 9 viraram contrato, 3 com proposta em andamento, 1 encerrada a pedido do titular, 1 recusou a proposta/ })).toBeVisible();
+    await expect(f.locator(".fb-legs li").filter({ hasText: "encerrada a pedido do titular" })).toContainText("1");
+    await expect(f.locator(".fb-barra .fb-e")).toHaveCount(1);
+    await semViolacoes(page);
   });
 
   test("Funil: encerrar sem proposta pede o motivo, manda ao servidor e deixa desfazer; voltar ao funil", async ({ page }) => {

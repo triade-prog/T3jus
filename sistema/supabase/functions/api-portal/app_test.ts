@@ -1404,6 +1404,10 @@ Deno.test("AP-05, IN-01: proposta com condições, marcar como enviada e registr
   const rs = m.chamadas.find((c) => c.funcao === "portal_proposta_resposta")!;
   assertEquals([rs.args.p_versao, (rs.args.p_dados as Record<string, unknown>).versao], [3, undefined]);
   assertEquals((await erro(await m.pedir("/v1/escritorio/propostas?mostrar=todas", { cookie }))).detalhes?.campos, ["mostrar"]);
+  // F3.204: o filtro "Encerradas a pedido" vai ao banco como ENCERRADAS, com a busca.
+  assertEquals((await m.pedir("/v1/escritorio/propostas?mostrar=encerradas&q=Marina", { cookie })).status, 200);
+  const enc = m.chamadas.findLast((c) => c.funcao === "portal_propostas")!;
+  assertEquals([enc.args.p_escritorio, enc.args.p_mostrar, enc.args.p_q], [AURORA, "ENCERRADAS", "Marina"]);
   assertEquals((await erro(await m.pedir("/v1/escritorio/comercial/funil?periodo=7", { cookie }))).detalhes?.campos, ["periodo"]);
   assertEquals((await (await m.pedir("/v1/escritorio/comercial/funil?periodo=12", { cookie })).json()).periodo, "12");
   assertEquals((await erro(await m.pedir("/v1/escritorio/comercial/retornos?responsavel=x", { cookie }))).detalhes?.campos, ["responsavel"]);

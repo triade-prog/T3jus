@@ -16,6 +16,13 @@ export const SITUACOES_PROPOSTA = {
 } as const;
 export type SituacaoProposta = keyof typeof SITUACOES_PROPOSTA;
 
+/** F3.204: o selo da proposta de cliente excluído ou arquivado a pedido do titular (a situação continua a gravada). */
+export const PROPOSTA_ENCERRADA = { curto: "Encerrada a pedido", longo: "Encerrada a pedido do titular" } as const;
+
+/** Os filtros da lista de Propostas (GET /v1/escritorio/propostas?mostrar=). ENCERRADAS desde a F3.204. */
+export const MOSTRAR_PROPOSTAS = ["ANDAMENTO", "CONTRATO", "RECUSADAS", "ENCERRADAS"] as const;
+export type MostrarPropostas = (typeof MOSTRAR_PROPOSTAS)[number];
+
 export const RESPOSTAS_PROPOSTA = { ACEITOU: "Aceitou", MUDANCA: "Pediu mudança", RECUSOU: "Recusou" } as const;
 export type RespostaProposta = keyof typeof RESPOSTAS_PROPOSTA;
 
@@ -108,14 +115,24 @@ export interface PropostaLinha {
   servico: string;
   responsavel: PessoaRef;
   situacao: SituacaoProposta;
+  /**
+   * F3.204: cliente excluído ou arquivado a pedido do titular e a proposta aberta ou aceita sem contrato.
+   * Fica como registro: sai das listas de trabalho e não se envia, responde nem edita. Vem do banco a
+   * partir da 1144; antes dela, falta (o Portal lê `?? false`).
+   */
+  encerrada?: boolean;
   vencida: boolean;
   condicoes: Condicao[];
   retorno: { em: string; vencido: boolean } | null;
+  /** Desde a 1144, para "Enviada em 14/11" e "Aceita em 12/11" na lista. */
+  enviadaEm?: string | null;
+  respondidaEm?: string | null;
   criadaEm: string;
 }
 export interface ListaPropostas {
   propostas: PropostaLinha[];
-  contagem: { andamento: number; contrato: number; recusadas: number };
+  /** `encerradas` vem a partir da 1144 (F3.204). */
+  contagem: { andamento: number; contrato: number; recusadas: number; encerradas?: number };
   algum: boolean;
 }
 
@@ -146,7 +163,8 @@ export interface Funil {
   comProposta: number;
   contratos: number;
   semProposta: { naoPegou: number; naoVoltou: number; emAtendimento: number };
-  depoisProposta: { andamento: number; recusadas: { motivo: MotivoRecusa; n: number }[] };
+  /** `encerradas` (F3.204, a partir da 1144): o arquivado a pedido sem contrato e com a última proposta aberta. */
+  depoisProposta: { andamento: number; encerradas?: number; recusadas: { motivo: MotivoRecusa; n: number }[] };
   agora: {
     primeiro: { clienteId: string; nome: string; detalhe: string; rascunho: boolean; semRetorno: boolean }[];
     enviada: AgoraProposta[];
