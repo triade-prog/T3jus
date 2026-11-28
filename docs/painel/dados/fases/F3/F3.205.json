@@ -1,0 +1,12 @@
+{
+  "id": "F3.205",
+  "texto": "Funil: o cliente que virou contrato e ainda tem outra proposta em andamento conta duas vezes depois da proposta (em contrato e em andamento), desde a 0190",
+  "peca": "S2",
+  "refs": [
+    "AP-03"
+  ],
+  "status": "pendente",
+  "ordem": 1590,
+  "nota": "Achado da revisão da F3.204 (M1). A F3.204 contou as encerradas por cliente e só quem não virou contrato, para não somar mais uma vez; a soma antiga de contrato com andamento ficou como estava, porque mudar o número que a Carol já vê pede decisão dela. A barra do Portal limita o resto (recusaram) a zero.",
+  "proximo": "Levar à Carol: o cliente com contrato e outra proposta em andamento conta só em contrato, ou o Funil passa a contar propostas e não clientes"
+}

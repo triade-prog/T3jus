@@ -1,7 +1,10 @@
 // Comercial (AP-03, AP-06, CH-06): textos dos retornos, o rascunho das condições de honorário
 // indo e voltando do formato do servidor, e o histórico da proposta.
 import { describe, expect, it } from "vitest";
-import { faixaVencidos, quandoRetorno, taxa, textoPeriodo, textoUltimo, valorDaProposta } from "./comercial.ts";
+import {
+  clienteSaiuNoErro, comoSaiu, contagemEncerradas, encerradaDa, estaEncerrada, faixaVencidos, linhaDoEstadoGravado, partesDaBarra, quandoRetorno, SELO_ENCERRADA,
+  taxa, textoPeriodo, textoUltimo, valorDaProposta,
+} from "./comercial.ts";
 import { errosPorCondicao, idDoErro } from "./Honorarios.tsx";
 import { lerCondicao, ordenar, rascunhoCondicao, rascunhoDe, temDado } from "./honorarios.ts";
 import { fraseDaProposta } from "./FichaProposta.tsx";
@@ -68,5 +71,50 @@ describe("AP-03: histórico da proposta", () => {
     const r = fraseDaProposta(ev("proposta.resposta", { resposta: "RECUSOU", motivo: "VALOR_ALTO", canal: "WHATSAPP", em: "2026-11-18", observacao: null }));
     expect(r).toMatchObject({ oque: "registrou a resposta: recusou", detalhe: "Motivo: Achou o valor alto. Por WhatsApp, em 18/11/2026." });
     expect(fraseDaProposta(ev("proposta.editada", { campos: ["servico"], condicoes_depois: [] }))?.detalhe).toBe("Mudou o serviço e as condições de honorário. A versão anterior fica guardada.");
+  });
+});
+
+describe("F3.204: a proposta encerrada a pedido do titular (AP-03, AP-05, PT-11)", () => {
+  it("o selo fica fora da situação gravada, neutro e com o ícone do histórico", () => {
+    expect(SELO_ENCERRADA).toEqual({ tom: "neutro", icone: "historico", texto: "Encerrada a pedido" });
+    expect(estaEncerrada({})).toBe(false);
+    expect(estaEncerrada({ encerrada: true })).toBe(true);
+  });
+  it("a linha embaixo do selo diz o que aconteceu até ali", () => {
+    const base = { criadaEm: "2026-11-13T13:40:00Z", enviadaEm: "2026-11-15T01:30:00Z", respondidaEm: "2026-11-12" };
+    expect(linhaDoEstadoGravado({ ...base, situacao: "RASCUNHO" })).toBe("Rascunho desde 13/11");
+    // 22h30 de Brasília do dia 14, em UTC: vale o dia de Brasília.
+    expect(linhaDoEstadoGravado({ ...base, situacao: "ENVIADA" })).toBe("Enviada em 14/11");
+    expect(linhaDoEstadoGravado({ ...base, situacao: "NEGOCIACAO" })).toBe("Em negociação");
+    expect(linhaDoEstadoGravado({ ...base, situacao: "ACEITA" })).toBe("Aceita em 12/11");
+    expect(contagemEncerradas(1)).toBe("1 proposta encerrada a pedido do titular");
+    expect(contagemEncerradas(2)).toBe("2 propostas encerradas a pedido do titular");
+  });
+  it("a ficha vale antes da 1144 pela situação do cliente, e depois pela marca do banco", () => {
+    expect(encerradaDa({ situacao: "ENVIADA", clienteSituacao: "ARQUIVADO" })).toBe(true);
+    expect(encerradaDa({ situacao: "RASCUNHO", clienteSituacao: "EXCLUIDO" })).toBe(true);
+    expect(encerradaDa({ situacao: "RECUSADA", clienteSituacao: "ARQUIVADO" })).toBe(false);
+    expect(encerradaDa({ situacao: "ENVIADA", clienteSituacao: "INATIVO" })).toBe(false);
+    expect(encerradaDa({ situacao: "ENVIADA", clienteSituacao: "ATIVO", encerrada: false })).toBe(false);
+    expect(comoSaiu("EXCLUIDO")).toBe("excluído");
+    expect(comoSaiu("ARQUIVADO")).toBe("arquivado");
+  });
+  it("reconhece a recusa de quem saiu a pedido do titular", () => {
+    expect(clienteSaiuNoErro({ codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_EXCLUIDO" } })).toBe("EXCLUIDO");
+    expect(clienteSaiuNoErro({ codigo: "VALIDATION_ERROR", detalhes: { motivo: "CLIENTE_ARQUIVADO" } })).toBe("ARQUIVADO");
+    expect(clienteSaiuNoErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["clienteId"] } })).toBeNull();
+    expect(clienteSaiuNoErro({ codigo: "VERSION_CONFLICT", detalhes: { motivo: "CLIENTE_EXCLUIDO" } })).toBeNull();
+  });
+  it("a barra do Funil: o arquivado vai para \"encerrada a pedido do titular\" e não para \"recusou\"", () => {
+    const d = { primeiros: 24, comProposta: 14, contratos: 9, semProposta: { naoPegou: 5, naoVoltou: 3, emAtendimento: 2 } };
+    const nova = partesDaBarra({ ...d, depoisProposta: { andamento: 3, encerradas: 1, recusadas: [{ motivo: "OUTRO_ESCRITORIO", n: 1 }] } });
+    expect([nova.andamento, nova.encerradas, nova.recusaram]).toEqual([3, 1, 1]);
+    expect(nova.desc).toBe("Dos 24: 9 viraram contrato, 3 com proposta em andamento, 1 encerrada a pedido do titular, 1 recusou a proposta, "
+      + "o escritório não pegou 5, 3 não voltaram e 2 ainda em atendimento.");
+    expect(partesDaBarra({ ...d, depoisProposta: { andamento: 2, encerradas: 2, recusadas: [] } }).desc).toContain("2 encerradas a pedido do titular");
+    // O banco de antes da 1144 não manda `encerradas`: a barra é a de hoje.
+    const velha = partesDaBarra({ ...d, depoisProposta: { andamento: 4, recusadas: [] } });
+    expect([velha.encerradas, velha.recusaram]).toEqual([0, 1]);
+    expect(velha.desc).not.toContain("encerrada");
   });
 });

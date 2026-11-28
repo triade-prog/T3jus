@@ -143,6 +143,7 @@ function montar(opcoes: { comAutenticador?: boolean; vazadas?: string[]; naoDono
     dados_convite: () => ({ nome: "Ana", escritorio: "Aurora Advocacia", quem: "Ricardo Almeida", papel: "ESCRITORIO" }),
     aceitar_convite: () => null,
     portal_cobranca: () => ({ soConsultaDesde: null, socioDono: "Ricardo Almeida", veFaturas: true, atraso: null }),
+    portal_teste: () => null,
     portal_escritorio: (a) => {
       if (!vinculos.has(String(a.p_escritorio))) erroBanco("TC401");
       return { id: a.p_escritorio, nome: "Aurora Advocacia", dono: true, areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"] };
@@ -618,7 +619,7 @@ Deno.test("PT-01: o escritório fica na sessão do servidor; o navegador não o 
   assertEquals(await r.json(), {
     id: AURORA, nome: "Aurora Advocacia", funcoes: ["SOCIO"], dono: true,
     areas: ["COMERCIAL", "CONTRATOS", "FINANCEIRO", "JURIDICO"], outrosEscritorios: 0,
-    cobranca: { soConsultaDesde: null, socioDono: "Ricardo Almeida", veFaturas: true, atraso: null },
+    cobranca: { soConsultaDesde: null, socioDono: "Ricardo Almeida", veFaturas: true, atraso: null, teste: null },
   });
 });
 
@@ -695,7 +696,7 @@ Deno.test("F3.136: a moldura confere o login uma vez só (antes, /v1/escritorio 
   const m = montar();
   const cookie = await comEscritorio(m);
   assertEquals((await m.pedir("/v1/escritorio", { cookie })).status, 200);
-  assertEquals(doBanco(m).sort(), ["acesso_portal_sessao", "meus_escritorios", "portal_cobranca", "portal_escritorio"]);
+  assertEquals(doBanco(m).sort(), ["acesso_portal_sessao", "meus_escritorios", "portal_cobranca", "portal_escritorio", "portal_teste"]);
 });
 
 Deno.test("F3.136: token vencido renova e usa a consulta feita junto (mesma pessoa e mesma sessão)", async () => {
@@ -1403,6 +1404,10 @@ Deno.test("AP-05, IN-01: proposta com condições, marcar como enviada e registr
   const rs = m.chamadas.find((c) => c.funcao === "portal_proposta_resposta")!;
   assertEquals([rs.args.p_versao, (rs.args.p_dados as Record<string, unknown>).versao], [3, undefined]);
   assertEquals((await erro(await m.pedir("/v1/escritorio/propostas?mostrar=todas", { cookie }))).detalhes?.campos, ["mostrar"]);
+  // F3.204: o filtro "Encerradas a pedido" vai ao banco como ENCERRADAS, com a busca.
+  assertEquals((await m.pedir("/v1/escritorio/propostas?mostrar=encerradas&q=Marina", { cookie })).status, 200);
+  const enc = m.chamadas.findLast((c) => c.funcao === "portal_propostas")!;
+  assertEquals([enc.args.p_escritorio, enc.args.p_mostrar, enc.args.p_q], [AURORA, "ENCERRADAS", "Marina"]);
   assertEquals((await erro(await m.pedir("/v1/escritorio/comercial/funil?periodo=7", { cookie }))).detalhes?.campos, ["periodo"]);
   assertEquals((await (await m.pedir("/v1/escritorio/comercial/funil?periodo=12", { cookie })).json()).periodo, "12");
   assertEquals((await erro(await m.pedir("/v1/escritorio/comercial/retornos?responsavel=x", { cookie }))).detalhes?.campos, ["responsavel"]);

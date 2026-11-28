@@ -1,0 +1,11 @@
+{
+  "data": "27/11/2026",
+  "inicio": "18:20",
+  "fim": "19:45",
+  "texto": "Servidor das telas do teste grátis (F1.33; migration 1162, pgTAP 186): o quadro do teste no Console, a situação e os filtros na carteira, a faixa do Portal e o pedido \"Quero assinar\", com as rotas na api-console e na api-portal; a 1162 e as duas funções na fila de publicação (P37), depois da 1161 (P36).",
+  "refs": [
+    "F1.33",
+    "P37",
+    "CO-09"
+  ]
+}

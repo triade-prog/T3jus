@@ -1,0 +1,10 @@
+{
+  "id": "P36",
+  "texto": "Aplicar no Supabase a migration 1161 (a cobrança só depois do teste grátis e a confirmação da assinatura pelo Console, F1.32), só com o ok da Carol",
+  "refs": [
+    "CO-09"
+  ],
+  "status": "pendente",
+  "ordem": 360,
+  "nota": "Ordem: 1) conferir com list_migrations que a 1160 (P34) e a 1170 estão no ar e a 1161 não; a 1161 entra depois da 1170, fora de ordem, e foi feita para isso (a guarda da cobrança é um gatilho, e cobranca_comecar não muda); 2) rodar a contagem só de leitura (project-files t3jus/co-09/contagem-antes-1161.sql): as colunas *_no_ar, *_ausente e *_corpo_antes devem vir true e funcoes_novas_no_ar deve dar 0 (se algum corpo vier diferente, parar e avisar a Carol); 3) guardar o resultado da segunda consulta da contagem (os corpos de cobranca_rotina, teste_situacao_de, teste_json, console_teste_dispensar e console_teste_prorrogar); 4) com o ok da Carol, colar project-files t3jus/migrations-para-colar/1161_teste_gratis_cobranca_COLAR_NO_SQL_EDITOR.sql no SQL Editor (ou apply_migration com o nome 1161_teste_gratis_cobranca). Não precisa publicar função: as rotas da confirmação ficam no F1.33. A 1161 não muda nenhuma linha ao ser aplicada; com a chave desligada, nenhum escritório tem teste e a cobrança segue a regra antiga. Depois, conferir que o pg_cron t3jus-cobranca continua chamando public.cobranca_rotina() e que a rotina devolve testesComecados. Se der errado: drop trigger teste_guarda_cobranca on assinaturas; drop das funções cobranca_rotina(), console_assinatura_confirmar, assinatura_confirmar, teste_guarda_cobranca, teste_inicio_cobranca e assinatura_do_teste; renomear cobranca_rotina_sem_teste de volta para cobranca_rotina (com security definer); recriar as quatro funções guardadas do teste; apagar as ações console.assinatura.confirmar e as colunas assinada_* (vazias enquanto a chave estiver desligada)."
+}

@@ -1,8 +1,8 @@
 // Comercial do Portal (AP-02 a AP-06, PD-02): textos e contas da tela, sem React, para os
 // testes de unidade. As contas de verdade (grupos, funil, origem) vêm prontas do servidor.
 
-import { CANAIS, SITUACOES_PROPOSTA, valorCerto, reais, type Condicao, type SituacaoProposta } from "@t3jus/domain";
-import { DIAS_SEMANA, diaCurto, diaDaSemana, somarDias } from "./agenda.ts";
+import { CANAIS, PROPOSTA_ENCERRADA, SITUACOES_PROPOSTA, valorCerto, reais, type Condicao, type Funil, type PropostaLinha, type SituacaoProposta } from "@t3jus/domain";
+import { DIAS_SEMANA, diaCurto, diaDaSemana, diaDe, somarDias } from "./agenda.ts";
 
 export const ROTAS_COMERCIAL = {
   atendimentos: "/comercial/atendimentos",
@@ -53,7 +53,8 @@ export function textoUltimo(u: { em: string; canal: string; comQuem: string | nu
   return [dia, u.canal === "WHATSAPP" ? canal : canal.toLowerCase(), u.comQuem ? `com ${u.comQuem}` : null].filter(Boolean).join(" · ");
 }
 
-export const SELO_SITUACAO: Record<SituacaoProposta, { tom: string; icone: "lapis" | "enviar" | "conversas" | "check" | "pena" | "xis" }> = {
+export type IconeSelo = "lapis" | "enviar" | "conversas" | "check" | "pena" | "xis" | "historico";
+export const SELO_SITUACAO: Record<SituacaoProposta, { tom: string; icone: IconeSelo }> = {
   RASCUNHO: { tom: "neutro", icone: "lapis" },
   ENVIADA: { tom: "andamento", icone: "enviar" },
   NEGOCIACAO: { tom: "atencao", icone: "conversas" },
@@ -62,6 +63,33 @@ export const SELO_SITUACAO: Record<SituacaoProposta, { tom: string; icone: "lapi
   RECUSADA: { tom: "neutro", icone: "xis" },
 };
 export const nomeSituacao = (s: SituacaoProposta) => SITUACOES_PROPOSTA[s];
+
+// ------------------------------------------------------------------------- F3.204
+// A proposta de cliente excluído ou arquivado a pedido do titular (desenho aprovado em
+// docs/design/aprovadas/portal-propostas-encerradas): a situação continua a gravada e entra a marca.
+
+/** O selo da encerrada, fora de SELO_SITUACAO (a situação não muda). */
+export const SELO_ENCERRADA: { tom: string; icone: IconeSelo; texto: string } = { tom: "neutro", icone: "historico", texto: PROPOSTA_ENCERRADA.curto };
+
+/** A marca vem do banco a partir da 1144; antes, falta e vale falso (o Portal publica antes da migration). */
+export const estaEncerrada = (p: { encerrada?: boolean }) => p.encerrada ?? false;
+
+/** A linha embaixo do selo, a partir do estado gravado: "Rascunho desde 13/11", "Enviada em 14/11", "Em negociação", "Aceita em 12/11". */
+export function linhaDoEstadoGravado(p: Pick<PropostaLinha, "situacao" | "criadaEm" | "enviadaEm" | "respondidaEm">): string {
+  switch (p.situacao) {
+    case "RASCUNHO": return `Rascunho desde ${diaCurto(diaDe(p.criadaEm))}`;
+    case "ENVIADA": return p.enviadaEm ? `Enviada em ${diaCurto(diaDe(p.enviadaEm))}` : "Enviada";
+    case "NEGOCIACAO": return "Em negociação";
+    case "ACEITA": return p.respondidaEm ? `Aceita em ${diaCurto(p.respondidaEm)}` : "Aceita";
+    default: return nomeSituacao(p.situacao);
+  }
+}
+
+/** "1 proposta encerrada a pedido do titular", "2 propostas encerradas a pedido do titular". */
+export const contagemEncerradas = (n: number) => (n === 1 ? "1 proposta encerrada a pedido do titular" : `${n} propostas encerradas a pedido do titular`);
+
+/** Quem saiu, para os textos: "excluído" ou "arquivado". */
+export const comoSaiu = (s: string | null | undefined): "excluído" | "arquivado" => (s === "EXCLUIDO" ? "excluído" : "arquivado");
 
 /** Valor curto da proposta para o cabeçalho: "R$ 4.000,00", "R$ 2.000,00 mais êxito", "Só êxito". */
 export function valorDaProposta(condicoes: Condicao[]): string {
@@ -86,3 +114,40 @@ export function textoPeriodo(de: string, ate: string): string {
 
 /** Até quando vão os "próximos 7 dias". */
 export const ateSemana = (hoje: string) => diaCurto(somarDias(hoje, 7));
+
+const ABERTA = new Set(["RASCUNHO", "ENVIADA", "NEGOCIACAO", "ACEITA"]);
+
+/**
+ * F3.204: a proposta aberta ou aceita de cliente excluído ou arquivado a pedido do titular fica só como
+ * registro. A marca vem do banco a partir da 1144; antes, sai da situação do cliente (F3.181), que já vem.
+ */
+export function encerradaDa(f: { encerrada?: boolean; situacao: SituacaoProposta; clienteSituacao?: string | null }): boolean {
+  return f.encerrada ?? ((f.clienteSituacao === "EXCLUIDO" || f.clienteSituacao === "ARQUIVADO") && ABERTA.has(f.situacao));
+}
+
+/** CLIENTE_EXCLUIDO ou CLIENTE_ARQUIVADO no erro da API (recusar_motivo): o cliente saiu a pedido do titular. */
+export function clienteSaiuNoErro(e: { codigo: string; detalhes?: Record<string, unknown> }): "EXCLUIDO" | "ARQUIVADO" | null {
+  const m = e.codigo === "VALIDATION_ERROR" ? e.detalhes?.motivo : undefined;
+  return m === "CLIENTE_EXCLUIDO" ? "EXCLUIDO" : m === "CLIENTE_ARQUIVADO" ? "ARQUIVADO" : null;
+}
+
+const pessoas = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+
+/**
+ * Os pedaços da barra "Onde os N pararam" do Funil e a frase para o leitor de tela. F3.204: o arquivado a
+ * pedido que recebeu proposta e não fechou entra em `encerradas` (`?? 0` antes da 1144) e sai de "recusaram".
+ */
+export function partesDaBarra(d: Pick<Funil, "primeiros" | "comProposta" | "contratos" | "semProposta" | "depoisProposta">) {
+  const contrato = d.contratos;
+  const andamento = d.depoisProposta.andamento;
+  const encerradas = d.depoisProposta.encerradas ?? 0;
+  const recusaram = Math.max(0, d.comProposta - contrato - andamento - encerradas);
+  const { naoPegou: pegou, naoVoltou: voltou, emAtendimento: atend } = d.semProposta;
+  const sem = pegou + voltou + atend;
+  const total = d.primeiros;
+  const desc = `Dos ${total}: ${pessoas(contrato, "virou contrato", "viraram contrato")}, ${andamento} com proposta em andamento, `
+    + (encerradas ? `${pessoas(encerradas, "encerrada", "encerradas")} a pedido do titular, ` : "")
+    + `${pessoas(recusaram, "recusou a proposta", "recusaram a proposta")}`
+    + (sem ? `, o escritório não pegou ${pegou}, ${pessoas(voltou, "não voltou", "não voltaram")} e ${atend} ainda em atendimento.` : ". Ninguém saiu sem proposta.");
+  return { contrato, andamento, encerradas, recusaram, pegou, voltou, atend, sem, total, desc };
+}

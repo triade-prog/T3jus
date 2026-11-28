@@ -15,7 +15,7 @@ import { Carregando, Estado } from "../console/pecas.tsx";
 import { iniciais } from "../console/tempo.ts";
 import { rotuloProx } from "./clientes.ts";
 import { Selo, SeloSituacao } from "./Comercial.tsx";
-import { valorDaProposta } from "./comercial.ts";
+import { estaEncerrada, linhaDoEstadoGravado, valorDaProposta } from "./comercial.ts";
 import { nomeSituacaoContrato, SELO_CONTRATO, textoProximo } from "./contratos.ts";
 import { primeiroNome } from "./equipe.ts";
 import { JanelaPedirPelaConversa } from "./DocumentosPessoais.tsx";
@@ -370,6 +370,8 @@ export function AbaItensCliente({ aba, f, passo, hoje, vez, juridico, aoJanela }
 }
 
 function textoSituacaoProposta(p: PropostaDoCliente): string {
+  // F3.204: a aba não aparece para o cliente excluído ou arquivado, mas a linha não diz "falta o contrato".
+  if (estaEncerrada(p)) return `${linhaDoEstadoGravado(p)} · encerrada a pedido do titular`;
   switch (p.situacao) {
     case "RASCUNHO": return `Rascunho desde ${dia(p.criadaEm)}`;
     case "ENVIADA":
@@ -430,7 +432,7 @@ function AbaPropostas({ lista, f, passo, hoje }: { lista: PropostaDoCliente[]; f
               </td>
               <td>
                 <div className="fl-et">
-                  {p.situacao === "ACEITA" && p.temContrato ? <Selo tom="ok" icone="pena">Virou contrato</Selo> : <SeloSituacao s={p.situacao} />}
+                  {p.situacao === "ACEITA" && p.temContrato ? <Selo tom="ok" icone="pena">Virou contrato</Selo> : <SeloSituacao s={p.situacao} encerrada={estaEncerrada(p)} />}
                   <small>{textoSituacaoProposta(p)}</small>
                 </div>
               </td>
@@ -447,7 +449,7 @@ function AbaPropostas({ lista, f, passo, hoje }: { lista: PropostaDoCliente[]; f
         {lista.map((p) => (
           <Cartao key={p.id} nome={p.numero} href={ROTAS_PASSO.proposta(p.id)} sub={`Criada em ${dia(p.criadaEm)}${p.criadoPor ? ` por ${p.criadoPor.nome}` : ""}`}
             dados={[["Honorários", valorDaProposta(p.condicoes)], ["Situação", textoSituacaoProposta(p)]]}
-            selos={p.situacao === "ACEITA" && p.temContrato ? <Selo tom="ok" icone="pena">Virou contrato</Selo> : <SeloSituacao s={p.situacao} />} />
+            selos={p.situacao === "ACEITA" && p.temContrato ? <Selo tom="ok" icone="pena">Virou contrato</Selo> : <SeloSituacao s={p.situacao} encerrada={estaEncerrada(p)} />} />
         ))}
       </ul>
       <div className="fl-pe">
